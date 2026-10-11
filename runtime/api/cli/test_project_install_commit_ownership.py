@@ -244,3 +244,20 @@ def test_retired_installer_files_remain_proven_after_record_moves(tmp_path):
     assert ownership.unproven_commits(
         (commit,), ownership.InstallerTerritory(), repo_root=tmp_path
     )
+
+
+def test_installer_commit_preserves_already_staged_retirement(tmp_path):
+    from yoke_cli.project_install import checkout_gate
+    from runtime.api.cli.test_project_install_recovery import _commit, _file, _git
+
+    _git(tmp_path, "init")
+    rel = ".codex/skills/yoke/SKILL.md"
+    _file(tmp_path, rel, "installed skill\n")
+    _commit(tmp_path, "Install Yoke operating layer 1.0.0")
+    _git(tmp_path, "rm", "--", rel)
+    result = checkout_gate.commit_paths(
+        tmp_path, [rel], message="Refresh installed Yoke operating layer to 1.0.1"
+    )
+    assert result["status"] == "committed"
+    assert not _git(tmp_path, "status", "--porcelain").stdout.strip()
+    assert rel in _git(tmp_path, "diff", "--name-only", "HEAD~1", "HEAD").stdout

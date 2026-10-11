@@ -5,6 +5,7 @@ Generated ignored views stay local. Publication owns remote reconciliation.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -110,9 +111,7 @@ def commit_paths(
 ) -> dict[str, Any]:
     """Commit the given repo-relative paths under the installer identity.
 
-    Outputs the ignore policy covers are generated local views: they stay on
-    disk, are never staged and never force-added, and are dropped from the
-    index when an older checkout still tracked them.
+    Ignored generated views stay on disk and are dropped from the index.
     """
     if skip:
         return {"status": "skipped", "reason": "no-commit"}
@@ -134,7 +133,10 @@ def commit_paths(
     ]
     if not to_stage and not untracked_from_index:
         return {"status": "nothing_to_commit", "paths": [], **views}
+    indexed = set(_tracked_paths(repo_root, set(to_stage)))
     for path in to_stage:
+        if path not in indexed and not os.path.lexists(repo_root / path):
+            continue  # A previously staged deletion needs no second git add.
         added = run_git(repo_root, "add", "-A", "--", path)
         if added.returncode != 0:
             raise ProjectInstallError(
