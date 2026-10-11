@@ -258,7 +258,7 @@ def test_installer_commit_preserves_already_staged_retirement(tmp_path):
     result = checkout_gate.commit_paths(
         tmp_path, [rel], message="Refresh installed Yoke operating layer to 1.0.1"
     )
-    assert result["status"] == "committed"
+    assert result["status"] == "created"
     assert not _git(tmp_path, "status", "--porcelain").stdout.strip()
     assert rel in _git(tmp_path, "diff", "--name-only", "HEAD~1", "HEAD").stdout
 
