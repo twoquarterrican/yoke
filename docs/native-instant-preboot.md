@@ -13,7 +13,12 @@ canonically only at a declared live TEXT column. Native columns continue to
 take datetime parameters. This is temporary write compatibility, with no
 parser fallback or correction of historical data.
 
-At the traced optional storage read sites, exact empty TEXT means absence,
+Comparison cutoffs declare the stored column too: PostgreSQL cannot compare
+a native datetime parameter with a pre-boot TEXT clock. Canonical text is
+used only while that declared column is TEXT; native columns keep datetime
+parameters. This does not cast or repair historical values or relax decoding.
+
+At the optional storage read sites, exact empty TEXT means absence,
 matching ordered history's conversion to NULL: queue marker/receipt/arming
 clocks, terminal merged time, composition freeze and refresh completion.
 Close-out falls back to qualified commit time when the queue clock is absent.
@@ -21,7 +26,7 @@ Candidate selection, observer guards and carried-work SQL apply the same
 absence semantics before comparison. Required clocks and all nonempty
 clock evidence still require strict decoding.
 
-## Complete pre-boot read trace
+## Pre-boot clock boundaries
 
 | Path | Clock consumption and treatment |
 | --- | --- |
@@ -36,6 +41,8 @@ clock evidence still require strict decoding.
 | Driver attach / heartbeat / release / authority | Strictly parses canonical JSON attachment clocks. Scalar run clocks do not enter these operations. |
 | Run pin / execution context / retry | Whole-row pipe projection preserves stored TEXT. Status, flow, stage and lineage reads do not parse clocks. Explicit clock-field reads remain strict. |
 | Composition / carried-work metadata | Strictly compares active successors relevant to a requested chain. SQL filters landings by qualified commit-clock windows; only passing rows enter strict attribution. Exact commit evidence remains independent. |
+| Containment visibility / `item_finished_times` | Both finished-window queries bind their cutoff for the live type of `item_status_transitions.created_at`. Only relevant recent transition clocks are decoded, strictly. The inclusive cutoff and finished/unfinished semantics remain the same after boot. |
+| Lifecycle / `item_status_transitions._record` | The driver can transition an implemented member to release before boot. Its recorder declares the same clock column, supplying canonical TEXT for subsequent finished-window reads and native datetime after boot. |
 | Composition freeze / replay | First freeze consumes native `utc_now`. Replay strictly formats its stored freeze clock; the declared writer supplies canonical TEXT. Snapshots use semantic fields and timestamp presence. |
 | `qa_seed` | Reads flow, pinned stages and requirement identity; no run clocks are decoded. |
 | QA stage result / attempt ordering | `_clock_columns` and completion ingress remain strict. `execution_start` uses actual attempt starts; capture settlement uses creation clocks. New attempt clocks are canonical TEXT before boot. |
@@ -57,9 +64,10 @@ after the delivered engine boots history. They retain strict decoding.
 | `deployment_runs` | `composition_frozen_at` | Idempotent freeze replay |
 | `deployment_runs` | `current_stage_entered_at` | Stage-entry `CASE` with the stored clock |
 | `qa_runs` | `started_at`, `completed_at`, `created_at` | Ordering, capture settlement and result completion |
+| `item_status_transitions` | `created_at` | Transition readback and finished-window SQL comparison cutoffs |
 
 The process cache uses database/server/user connection identity, without a
-DSN or credential. One catalog read loads the thirteen declared fields; a
+DSN or credential. One catalog read loads the fourteen declared fields; a
 lock prevents duplicate fills. Writes then use cache lookups. Boot clears
 the cache, and a change of stage clears it because the preceding execution stage
 may have booted history in another process. Repeating the same stage keeps
@@ -69,7 +77,7 @@ live types refuse.
 ## Regression proof and removal
 
 The isolated PostgreSQL TEXT fixture covers relevance, superseded/retained
-markers, all thirteen declared fields, cache reuse across connections, driver
+markers, all fourteen declared fields, cache reuse across connections, driver
 attachment replay, freeze replay, QA seeding/ordering, queue record/refresh
 reads, receipt replay and run update retry reads. It applies the unchanged
 ordered migration and proves native datetime parameters after invalidation.
@@ -80,3 +88,15 @@ Once applied-history evidence confirms this migration in every live universe,
 remove `preboot_instant_parameters`, declared writer arguments and boot/stage
 cache invalidations. Keep strict decoders, relevance filtering and permanent
 history. Delivery Notes name this cleanup for steering to file after release.
+
+Tracing and small fixtures do not prove the whole pre-boot driver. Before
+re-driving a failed self-deploy, restore the actual pre-cutover production
+database through `migration_fleet_preflight.rehearse`, keep its copy admission
+through the driver callback, and exercise run creation with a real member,
+execution context, QA seeding, start and stage entry up to hosted dispatch.
+When the flow allocates its receipt after that boundary, probe its actual
+receipt contract separately on the copy and record that distinction.
+Retain the source/copy identity, catalog types, candidate
+code identity and each operation's outcome. Apply no history or data repair
+in this diagnostic and credit no release receipt. The kernel owns copy
+cleanup. A one-off operator script and its evidence stay outside the repo.

@@ -87,6 +87,15 @@ def window_cutoff(window: timedelta = FINISHED_WINDOW) -> datetime:
     return utc_now() - window
 
 
+def _cutoff_parameter(conn: Any, window: timedelta) -> datetime | str:
+    return instant_parameter(
+        conn,
+        window_cutoff(window),
+        table="item_status_transitions",
+        column="created_at",
+    )
+
+
 def finished_status_clause(
     versions: FrontierWorkflowVersions,
     marker: str,
@@ -145,7 +154,7 @@ def finished_window_clause(
         "WHERE t.item_id = i.id AND t.task_num IS NULL "
         f"AND t.to_status = i.status AND t.created_at >= {marker}))"
     )
-    return clause, [*finished_params, instant_parameter(conn, window_cutoff(window))]
+    return clause, [*finished_params, _cutoff_parameter(conn, window)]
 
 
 def finished_times_in_window(
@@ -163,7 +172,7 @@ def finished_times_in_window(
         return {}
     cursor = conn.execute(
         _FINISHING_TRANSITION_SQL.format(marker=_marker(conn)),
-        (instant_parameter(conn, window_cutoff(window)),),
+        (_cutoff_parameter(conn, window),),
     )
     times: Dict[int, datetime] = {}
     for row in cursor.fetchall():

@@ -8,7 +8,7 @@ from threading import RLock
 from typing import Any
 
 # Only these clocks are consumed again before the release can boot history,
-# or share a SQL expression with their pre-boot stored value.
+# or share a SQL expression or comparison with their pre-boot stored value.
 FIELDS = frozenset(
     (table, column)
     for table, columns in (
@@ -25,6 +25,7 @@ FIELDS = frozenset(
         ("merge_queue_landing_refreshes", ("started_at", "completed_at")),
         ("deployment_runs", ("composition_frozen_at", "current_stage_entered_at")),
         ("qa_runs", ("started_at", "completed_at", "created_at")),
+        ("item_status_transitions", ("created_at",)),
     )
     for column in columns
 )
