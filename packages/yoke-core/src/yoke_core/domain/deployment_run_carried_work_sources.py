@@ -225,7 +225,8 @@ def _resolve_item_metadata(
         # SQL narrows the candidates; only the strict codec admits a clock
         # used as ownership evidence. The cast is an identity on native storage.
         landing_window = (
-            "COALESCE(i.merge_queue_landed_at,i.merged_at)::timestamptz "
+            "COALESCE(NULLIF(i.merge_queue_landed_at::text,''),"
+            "NULLIF(i.merged_at::text,''))::timestamptz "
             "BETWEEN %s AND %s"
         )
         bounds = (min(instants) - tolerance, max(instants) + tolerance)

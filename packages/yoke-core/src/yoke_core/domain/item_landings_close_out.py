@@ -63,7 +63,9 @@ def landing_time(
     landing takes the commit's time, which for that boundary IS the landing.
     A landing nobody timed falls back to now, and says nothing stronger.
     """
-    if queue_landed_at is not None:
+    # Optional pre-boot TEXT uses an empty value for the NULL that ordered
+    # history will establish. It carries no queue landing clock.
+    if queue_landed_at not in (None, ""):
         return parse_instant(queue_landed_at)
     recorded = git.commit_time(repo_root, merge_sha) if repo_root else None
     return recorded if recorded is not None else utc_now()

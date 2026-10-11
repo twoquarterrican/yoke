@@ -133,11 +133,21 @@ def test_absent_composition_has_null_clock(monkeypatch):
     }
 
 
-@pytest.mark.parametrize("clock", ("", "2026-10-09", "2026-10-09T15:00:00-00:00"))
+@pytest.mark.parametrize("clock", ("2026-10-09", "2026-10-09T15:00:00-00:00"))
 def test_invalid_repeated_composition_clock_refuses(monkeypatch, clock):
     monkeypatch.setattr(composition, "requires_release_admission", lambda *args: True)
     monkeypatch.setattr(composition, "_require_schema", lambda *args: None)
     with pytest.raises(InvalidInstant):
+        composition.freeze_run_composition(
+            Connection(("flow", "opaque", clock, 1, "[]")), "run"
+        )
+
+
+@pytest.mark.parametrize("clock", (None, ""))
+def test_absent_composition_clock_requires_a_new_freeze(monkeypatch, clock):
+    monkeypatch.setattr(composition, "requires_release_admission", lambda *args: True)
+    monkeypatch.setattr(composition, "_require_schema", lambda *args: None)
+    with pytest.raises(ValueError, match="release_lineage"):
         composition.freeze_run_composition(
             Connection(("flow", "opaque", clock, 1, "[]")), "run"
         )

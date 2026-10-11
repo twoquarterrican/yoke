@@ -75,7 +75,7 @@ def mark_landing_pending(
         ) or {}
         if str(queue.get("pr_number") or "") == str(pr_number):
             existing_at = queue.get("enqueued_at")
-            if existing_at is not None:
+            if existing_at not in (None, ""):
                 enqueued_at = parse_instant(existing_at)
     response = dispatch(
         function_id="merge_queue.landing_pending.mark",

@@ -144,6 +144,16 @@ def test_unqualified_commit_clocks_do_not_decode_landing_candidates(clocks):
     assert _resolve(clocks, {"a" * 40: None}) == {}
 
 
+@pytest.mark.parametrize("native", [False, True])
+def test_empty_optional_landing_clocks_are_absent_in_sql_window(clocks, native):
+    clocks.execute("UPDATE items SET merge_queue_landed_at='' WHERE id=1")
+    clocks.execute("UPDATE items SET merged_at='',merge_queue_landed_at='' WHERE id=2")
+    if native:
+        history.apply(clocks)
+        history.invariants(clocks)
+    assert _resolve(clocks) == {"a" * 40: {1}}
+
+
 def test_recorded_commit_evidence_survives_outside_landing_window(clocks):
     clocks.execute("UPDATE items SET resolution_ref=%s WHERE id=2", ("a" * 40,))
     assert _resolve(clocks) == {"a" * 40: {1, 2}}

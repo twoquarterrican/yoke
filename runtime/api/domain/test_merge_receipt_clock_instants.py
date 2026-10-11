@@ -1,4 +1,4 @@
-"""Local and relayed merge receipts retain one native clock contract."""
+"""Receipt reads defer clocks until coverage; actual arming stays native."""
 
 from datetime import timedelta, timezone
 
@@ -26,14 +26,14 @@ def response(function, result):
         "1970-01-01T05:29:59.123456+05:30",
     ],
 )
-def test_recorded_landing_parses_actual_response_clock(clock):
+def test_recorded_landing_keeps_response_clock_opaque_until_coverage(clock):
     def dispatch(*, function_id, target, payload):
         return response(
             function_id,
             {"item": {"merge_queue": {"pr_number": "42", "landed_at": clock}}},
         )
 
-    assert recorded_landing(dispatch, "ITEM-101") == ("42", INSTANT)
+    assert recorded_landing(dispatch, "ITEM-101") == ("42", clock)
 
 
 def test_recorded_landing_absence_stays_null():

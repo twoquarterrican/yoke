@@ -58,7 +58,7 @@ def pending_landing_rows(conn: Any, project_ids: Iterable[int]) -> list[dict[str
         "LEFT JOIN merge_queue_landing_records l ON l.item_id=i.id "
         f"WHERE i.project_id IN ({slots}) "
         "AND i.merge_queue_pr_number IS NOT NULL "
-        "AND i.merge_queue_notified_at IS NULL "
+        "AND NULLIF(CAST(i.merge_queue_notified_at AS TEXT),'') IS NULL "
         f"AND i.status NOT IN ({terminal_slots}) ORDER BY i.id",
         (PENDING, MERGE_WHEN_READY_ARMED, ENQUEUED, *projects, *terminal),
     ).fetchall()

@@ -149,8 +149,17 @@ def observe_pending_landings(
                     updated = conn.execute(
                         f"UPDATE items SET merge_queue_enqueued_at={marker} "
                         f"WHERE id={marker} AND merge_queue_pr_number={marker} "
-                        "AND merge_queue_enqueued_at IS NULL",
-                        (instant_parameter(conn, episode), item_id, pr_number),
+                        "AND NULLIF(CAST(merge_queue_enqueued_at AS TEXT),'') IS NULL",
+                        (
+                            instant_parameter(
+                                conn,
+                                episode,
+                                table="items",
+                                column="merge_queue_enqueued_at",
+                            ),
+                            item_id,
+                            pr_number,
+                        ),
                     )
                     if not updated.rowcount:
                         conn.rollback()
@@ -188,7 +197,7 @@ def observe_pending_landings(
                 head_sha = readback.state.head_sha if readback.state else ""
                 head_key = f"merge-queue-ejected:{item_id}:{pr_number}:{head_sha}"
                 episode = row.get("merge_queue_enqueued_at")
-                episode = parse_instant(episode) if episode is not None else None
+                episode = parse_instant(episode) if episode not in (None, "") else None
                 key = arming_notice_key(conn, head_key=head_key, enqueued_at=episode)
                 if episode is None and notice_already_sent(
                     conn, idempotency_key=head_key
@@ -220,7 +229,16 @@ def observe_pending_landings(
                         f"UPDATE items SET merge_queue_enqueued_at=NULL "
                         f"WHERE id={marker} AND merge_queue_pr_number={marker} "
                         f"AND merge_queue_enqueued_at={marker}",
-                        (item_id, pr_number, instant_parameter(conn, episode)),
+                        (
+                            item_id,
+                            pr_number,
+                            instant_parameter(
+                                conn,
+                                episode,
+                                table="items",
+                                column="merge_queue_enqueued_at",
+                            ),
+                        ),
                     )
                 result["ejected"] += 1
                 conn.commit()
@@ -233,9 +251,7 @@ def observe_pending_landings(
             merge_clock = state.merged_at if state is not None else None
             landed_at = current if merge_clock is None else merge_clock
             merge_commit = state.merge_commit_sha if state is not None else ""
-            prior_landing = row.get("merge_queue_landed_at")
-            if prior_landing is not None:
-                parse_instant(prior_landing)
+            prior_landing = row.get("merge_queue_landed_at") or None
             if prior_landing is None:
                 # merged_at is assigned, not coalesced: the guard below fires
                 # this once per landing, so the only value it could preserve
@@ -246,10 +262,17 @@ def observe_pending_landings(
                     f"UPDATE items SET merge_queue_landed_at={marker}, "
                     f"merged_at={marker} "
                     f"WHERE id={marker} AND merge_queue_pr_number={marker} "
-                    "AND merge_queue_landed_at IS NULL",
+                    "AND NULLIF(CAST(merge_queue_landed_at AS TEXT),'') IS NULL",
                     (
-                        instant_parameter(conn, landed_at),
-                        instant_parameter(conn, landed_at),
+                        instant_parameter(
+                            conn,
+                            landed_at,
+                            table="items",
+                            column="merge_queue_landed_at",
+                        ),
+                        instant_parameter(
+                            conn, landed_at, table="items", column="merged_at"
+                        ),
                         item_id,
                         pr_number,
                     ),
@@ -278,8 +301,17 @@ def observe_pending_landings(
                 conn.execute(
                     f"UPDATE items SET merge_queue_notified_at={marker} "
                     f"WHERE id={marker} AND merge_queue_pr_number={marker} "
-                    "AND merge_queue_notified_at IS NULL",
-                    (instant_parameter(conn, current), item_id, pr_number),
+                    "AND NULLIF(CAST(merge_queue_notified_at AS TEXT),'') IS NULL",
+                    (
+                        instant_parameter(
+                            conn,
+                            current,
+                            table="items",
+                            column="merge_queue_notified_at",
+                        ),
+                        item_id,
+                        pr_number,
+                    ),
                 )
                 result["notified"] += 1
             conn.commit()

@@ -101,8 +101,8 @@ def land_item_through_merge_queue(
             return fail_landing(
                 recorded_pr,
                 (
-                    f"pull request {recorded_pr} is recorded as landed at "
-                    f"{format_instant(recorded_landed_at)}, but whether candidate {short} "
+                    f"pull request {recorded_pr} has a recorded landing, "
+                    f"but whether candidate {short} "
                     f"is on {target!r} could not be verified. Re-run "
                     "`yoke merge item` from a readable checkout of the "
                     "lane; close-out will not declare this candidate "

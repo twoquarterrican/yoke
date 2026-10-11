@@ -29,7 +29,9 @@ def _placeholder(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
 
 
-def read_landing_marker(conn: Any, item_id: int) -> Dict[str, Any] | None:
+def read_landing_marker(
+    conn: Any, item_id: int, *, for_pr_number: str | None = None
+) -> Dict[str, Any] | None:
     """The item's four landing facts, or ``None`` when the item is absent."""
     p = _placeholder(conn)
     row = conn.execute(
@@ -39,11 +41,20 @@ def read_landing_marker(conn: Any, item_id: int) -> Dict[str, Any] | None:
     ).fetchone()
     if row is None:
         return None
+    if for_pr_number is not None and str(row[0] or "") != for_pr_number:
+        # Repointing drops the old carrier's stamps; none is clock evidence
+        # for the replacement, even when historical storage is noncanonical.
+        return dict(
+            pr_number=str(row[0] or ""),
+            enqueued_at=None,
+            landed_at=None,
+            notified_at=None,
+        )
     return {
         "pr_number": str(row[0] or ""),
-        "enqueued_at": parse_instant(row[1]) if row[1] is not None else None,
-        "landed_at": parse_instant(row[2]) if row[2] is not None else None,
-        "notified_at": parse_instant(row[3]) if row[3] is not None else None,
+        "enqueued_at": parse_instant(row[1]) if row[1] not in (None, "") else None,
+        "landed_at": parse_instant(row[2]) if row[2] not in (None, "") else None,
+        "notified_at": parse_instant(row[3]) if row[3] not in (None, "") else None,
     }
 
 
@@ -63,7 +74,7 @@ def point_item_at_pull_request(
     idempotent when it declares the same arming timestamp. A fresh timestamp
     replaces the stopped episode; a caller declaring none preserves it. ``None`` when the item does not exist.
     """
-    marker = read_landing_marker(conn, item_id)
+    marker = read_landing_marker(conn, item_id, for_pr_number=pr_number)
     if marker is None:
         return None
     supplied = parse_instant(enqueued_at) if enqueued_at is not None else None
@@ -85,9 +96,18 @@ def point_item_at_pull_request(
         "merge_queue_notified_at = {0} WHERE id = {0}".format(p),
         (
             pr_number,
-            instant_parameter(conn, recorded_enqueued_at),
-            instant_parameter(conn, landed_at),
-            instant_parameter(conn, notified_at),
+            instant_parameter(
+                conn,
+                recorded_enqueued_at,
+                table="items",
+                column="merge_queue_enqueued_at",
+            ),
+            instant_parameter(
+                conn, landed_at, table="items", column="merge_queue_landed_at"
+            ),
+            instant_parameter(
+                conn, notified_at, table="items", column="merge_queue_notified_at"
+            ),
             int(item_id),
         ),
     )

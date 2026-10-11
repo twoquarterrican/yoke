@@ -241,7 +241,7 @@ def freeze_run_composition(conn: Any, run_id: str) -> dict[str, Any]:
     if row is None:
         raise LookupError(f"deployment run {run_id!r} not found")
     frozen_at = _cell(row, "composition_frozen_at", 2)
-    if frozen_at is not None:
+    if frozen_at not in (None, ""):
         return {"run_id": run_id, "frozen_at": format_instant(frozen_at)}
     from yoke_core.domain.deployment_run_lineage_rebind import is_full_commit
     from yoke_core.domain.deployment_run_carried_membership_refusal import (
@@ -286,17 +286,15 @@ def freeze_run_composition(conn: Any, run_id: str) -> dict[str, Any]:
     from yoke_core.domain.deployment_qa_direct_case_target import (
         UNBOUND_BEFORE_START_REPAIR,
     )
-    from yoke_core.domain.db_helpers import query_rows
 
-    unbound = query_rows(
-        conn,
+    unbound = conn.execute(
         "SELECT id FROM qa_requirements WHERE deployment_run_id=%s "
         "AND method_id IS NOT NULL AND waived_at IS NULL "
         "AND (execution_target_digest IS NULL OR execution_target_digest='') "
         "AND (plan_case_key IS NULL OR plan_case_key NOT LIKE %s) "
         "ORDER BY id",
         (str(run_id), f"{ADMITTED_REQUIREMENT_CASE_PREFIX}%"),
-    )
+    ).fetchall()
     if unbound:
         requirement_id = int(unbound[0]["id"])
         raise ValueError(
@@ -341,6 +339,12 @@ def freeze_run_composition(conn: Any, run_id: str) -> dict[str, Any]:
     conn.execute(
         f"UPDATE deployment_runs SET composition_frozen_at={marker},"
         f"requirement_snapshot={marker} WHERE id={marker}",
-        (instant_parameter(conn, frozen_at), flow_snapshot, run_id),
+        (
+            instant_parameter(
+                conn, frozen_at, table="deployment_runs", column="composition_frozen_at"
+            ),
+            flow_snapshot,
+            run_id,
+        ),
     )
     return {"run_id": run_id, "frozen_at": format_instant(frozen_at)}

@@ -162,7 +162,7 @@ def _merged_at(item_id: int) -> datetime | None:
         return None
     fields = (getattr(response, "result", None) or {}).get("fields") or {}
     clock = fields.get("merged_at")
-    return None if clock is None else parse_instant(clock)
+    return None if clock in (None, "") else parse_instant(clock)
 
 
 def recorded_landing(item_id: int) -> Optional[dict[str, Any]]:

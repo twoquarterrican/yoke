@@ -77,7 +77,9 @@ def _clock_columns(conn: Any, columns: Mapping[str, Any]) -> dict[str, Any]:
             instant = (
                 None if value is None and name != "created_at" else parse_instant(value)
             )
-            result[name] = instant_parameter(conn, instant)
+            result[name] = instant_parameter(
+                conn, instant, table="qa_runs", column=name
+            )
     return result
 
 
@@ -117,7 +119,10 @@ def update_qa_run(
     columns = _clock_columns(conn, columns)
     if default_completed_at is not None:
         default_completed_at = instant_parameter(
-            conn, parse_instant(default_completed_at)
+            conn,
+            parse_instant(default_completed_at),
+            table="qa_runs",
+            column="completed_at",
         )
     p = marker(conn)
     subject = conn.execute(

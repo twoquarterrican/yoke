@@ -15,7 +15,7 @@ from yoke_core.domain.public_item_target import public_item_target
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from yoke_contracts.timestamps import as_utc, parse_instant
+from yoke_contracts.timestamps import as_utc
 from typing import Any, Callable, Optional
 
 from yoke_core.domain import standalone_item_merge_git as git
@@ -78,7 +78,7 @@ def recorded_landing_covers_candidate(
 
 def recorded_landing(
     dispatch: Callable[..., Any], item_id: int
-) -> tuple[str, datetime | None]:
+) -> tuple[str, datetime | str | None]:
     """The pull request and landing time already recorded, if any.
 
     Read through the registered item detail so the answer follows the
@@ -98,9 +98,11 @@ def recorded_landing(
     result = getattr(response, "result", None) or {}
     queue = (result.get("item") or {}).get("merge_queue") or {}
     landed_at = queue.get("landed_at")
-    return str(queue.get("pr_number") or ""), (
-        None if landed_at is None else parse_instant(landed_at)
-    )
+    if landed_at == "":
+        landed_at = None  # Optional TEXT absence before history maps it to NULL.
+    # A prior landing may not contain this candidate. Its clock is evidence
+    # only after coverage is proved, so leave it opaque until that decision.
+    return str(queue.get("pr_number") or ""), landed_at
 
 
 def close_out(
