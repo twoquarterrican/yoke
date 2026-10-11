@@ -97,10 +97,11 @@ def write_manifest(repo_root: Path, manifest: Dict[str, Any]) -> Path:
         context="install manifest write",
     )
     path = manifest_path(repo_root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    from yoke_cli.project_install.install_recovery import atomic_text
+    from yoke_cli.project_install.install_recovery import atomic_text, record_manifest
 
-    atomic_text(path, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    content = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+    record_manifest(repo_root, content)
+    atomic_text(path, content)
     return path
 
 

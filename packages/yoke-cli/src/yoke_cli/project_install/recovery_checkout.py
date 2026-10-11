@@ -38,6 +38,9 @@ def plan(
     def json_state(rel: str, value: Any):
         add(rel, json.dumps(value, indent=2) + "\n")
 
+    expected[".yoke/install-manifest.json"] = {
+        state(root / ".yoke/install-manifest.json")
+    }
     for rel in prior.get("files") or {}:
         expected.setdefault(rel, {state(root / rel)})
     for entry in bundle["files"]:

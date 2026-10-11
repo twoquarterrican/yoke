@@ -72,13 +72,14 @@ resolved or archived release bytes, interrupted-apply digest, or installer-histo
 real edits refuse as `install_drift_local_edits` before mutation. The local
 `.yoke/install-pending.json` record identifies an unfinished apply. Rerun
 `yoke project refresh` to complete it; preserve that record until recovery.
+Git metadata locally excludes the recovery record even with an older bundle.
 The record also stores exact planned intermediate settings and instruction
 bytes, so a dirty interrupted checkout can resume without admitting new edits.
 Bundle files and the final manifest use atomic replacement. Completion verifies
 every recorded whole-file digest and retains the recovery record through the
 installer-owned local commit. Retired paths remain provable during publication.
 
-Source maintainers regenerate packaged release hashes from fetched annotated
+Yoke source repo only: maintainers regenerate packaged release hashes from fetched annotated
 release tags with `yoke dev run -- python3 -m runtime.api.tools.released_install_hashes
 --source-checkout /absolute/claimed/checkout` and commit the generated catalogue.
 

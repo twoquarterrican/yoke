@@ -202,8 +202,10 @@ def _ignored_outputs(repo_root: Path, paths: list[str]) -> set[str]:
     install left tracked is still recognized as a view rather than as
     repository content.
     """
+    from yoke_cli.project_install.install_recovery import PENDING_REL
+
     if not paths:
-        return set()
+        return {PENDING_REL}
     result = run_git_input(
         repo_root,
         "\0".join(paths),
@@ -220,7 +222,7 @@ def _ignored_outputs(repo_root: Path, paths: list[str]) -> set[str]:
             "could not classify bundle output against the ignore policy: "
             f"{detail}. rerun with --no-commit to write without committing"
         )
-    return {path for path in result.stdout.split("\0") if path}
+    return {PENDING_REL, *(path for path in result.stdout.split("\0") if path)}
 
 
 def _untrack_local_views(repo_root: Path, views: set[str]) -> list[str]:

@@ -199,13 +199,46 @@ def plan(root: Path, bundle: dict[str, Any], prior: dict[str, Any]) -> dict[str,
 
 
 def begin(root: Path, plan: dict[str, Any]) -> None:
-    atomic_text(
-        root / PENDING_REL,
-        json.dumps(
-            {"files": plan["candidate"], "checkout": plan["checkout"]}, sort_keys=True
-        )
-        + "\n",
-    )
+    # Recovery is machine-local even when an older serving bundle lacks its ignore.
+    if checkout_gate.is_git_checkout(root):
+        result = checkout_gate.run_git(root, "rev-parse", "--git-path", "info/exclude")
+        if result.returncode:
+            raise ProjectInstallError(
+                "install_recovery_ignore_unreadable: repair Git metadata, then rerun refresh; files were preserved"
+            )
+        exclude = Path(result.stdout.strip())
+        if not exclude.is_absolute():
+            exclude = root / exclude
+        text = exclude.read_text() if exclude.is_file() else ""
+        entry = "/" + PENDING_REL
+        if entry not in text.splitlines():
+            atomic_text(
+                exclude,
+                text
+                + ("\n" if text and not text.endswith("\n") else "")
+                + entry
+                + "\n",
+            )
+    value = {"files": plan["candidate"], "checkout": plan["checkout"]}
+    previous = pending_record(root)
+    if previous.get("files") == value["files"]:
+        for rel, states in previous["checkout"].items():
+            value["checkout"][rel] = sorted(
+                set(states) | set(value["checkout"].get(rel, []))
+            )
+    atomic_text(root / PENDING_REL, json.dumps(value, sort_keys=True) + "\n")
+
+
+def record_manifest(root: Path, content: str) -> None:
+    """Authorize the exact completed manifest before its atomic replacement."""
+    value = pending_record(root)
+    if not value:
+        return
+    rel = ".yoke/install-manifest.json"
+    states = set(value["checkout"].get(rel, []))
+    states.add(sha256_text(content))
+    value["checkout"][rel] = sorted(states)
+    atomic_text(root / PENDING_REL, json.dumps(value, sort_keys=True) + "\n")
 
 
 def finish(root: Path, hashes: dict[str, str], *, clear_pending: bool = True) -> None:
