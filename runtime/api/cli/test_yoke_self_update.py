@@ -16,6 +16,7 @@ from yoke_contracts.server_image import pinned_server_image
 
 @pytest.fixture(autouse=True)
 def recorded_distribution(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(tmp_path / "config.json"))
     distribution.save(origin="https://distribution.example", channel="stable")
 
@@ -102,6 +103,7 @@ def test_already_current_skips_reinstall_but_repairs_helper_in_process(monkeypat
         "credential_helper_configured": True,
         "credential_helper_repaired": True,
         "credential_helper_error": None,
+        "project_refresh": {"status": "not_installed"},
     }
 
 
@@ -291,6 +293,7 @@ def test_command_reports_update_and_repair(monkeypatch, capsys):
             "credential_helper_configured": True,
             "credential_helper_repaired": True,
             "credential_helper_error": None,
+            "project_refresh": {"status": "not_installed"},
         },
     )
 

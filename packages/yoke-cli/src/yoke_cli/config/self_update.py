@@ -23,6 +23,8 @@ from typing import Any
 
 from yoke_cli.config import distribution, github_repo_helper_reconnect, install_binding
 from yoke_cli.self_host import release_target
+from yoke_cli.config import project_update
+from yoke_cli.project_install.files import ProjectInstallError
 
 VERSION_PROBE_TIMEOUT_SECONDS = 30.0
 _RUN = subprocess.run
@@ -75,7 +77,9 @@ def run_update(*, channel: str | None = None) -> dict[str, Any]:
         # this process's own site-packages is untouched, and repairing the
         # credential helper in place is cheap and always safe to retry.
         repair = github_repo_helper_reconnect.restore_missing_bundle(None)
-        return _result(old_version, old_version, target, repair)
+        return _with_project_refresh(
+            yoke_bin, _result(old_version, old_version, target, repair)
+        )
 
     try:
         installer_bytes = release_target.fetch_installer(target)
@@ -102,7 +106,17 @@ def run_update(*, channel: str | None = None) -> dict[str, Any]:
             f"`yoke --version` reports {new_version!r}, not the requested "
             f"{target.version!r}"
         )
-    return _result(old_version, new_version, target, _INSTALLER_OWNED_REPAIR)
+    return _with_project_refresh(
+        yoke_bin, _result(old_version, new_version, target, _INSTALLER_OWNED_REPAIR)
+    )
+
+
+def _with_project_refresh(yoke_bin: str, result: dict[str, Any]) -> dict[str, Any]:
+    try:
+        result["project_refresh"] = project_update.refresh_current(yoke_bin)
+    except ProjectInstallError as exc:
+        raise SelfUpdateError(str(exc)) from exc
+    return result
 
 
 def _result(

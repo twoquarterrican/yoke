@@ -101,16 +101,16 @@ def installer_territory(
     the reading that would authorize discarding an operator edit.
     """
     manifest = files_layer.load_manifest(repo_root)
-    regions = frozenset(
-        installed_output_paths.managed_region_paths(manifest, report)
-    )
-    shared = frozenset(
-        installed_output_paths.shared_paths(manifest, report)
-    ) - regions
+    regions = frozenset(installed_output_paths.managed_region_paths(manifest, report))
+    shared = frozenset(installed_output_paths.shared_paths(manifest, report)) - regions
     whole = (
-        frozenset(installed_output_paths.manifest_owned_paths(manifest))
-        | frozenset(installed_output_paths.owned_paths(report))
-    ) - regions - shared
+        (
+            frozenset(installed_output_paths.manifest_owned_paths(manifest))
+            | frozenset(installed_output_paths.owned_paths(report))
+        )
+        - regions
+        - shared
+    )
     return InstallerTerritory(
         whole_files=whole,
         managed_regions=regions,
@@ -120,7 +120,9 @@ def installer_territory(
 
 
 def read_local_only_commits(
-    repo_root: Path, remote_sha: str, local_sha: str,
+    repo_root: Path,
+    remote_sha: str,
+    local_sha: str,
 ) -> tuple[tuple[LocalCommit, ...], bool, str]:
     """Read the commits the remote lacks, or report that the read failed.
 
@@ -129,7 +131,10 @@ def read_local_only_commits(
     that permits replacing their work, so the failure is carried instead.
     """
     listed = checkout_gate.run_git(
-        repo_root, "log", "--format=%H%x00%s", f"{remote_sha}..{local_sha}",
+        repo_root,
+        "log",
+        "--format=%H%x00%s",
+        f"{remote_sha}..{local_sha}",
     )
     if listed.returncode != 0:
         detail = (
@@ -137,7 +142,11 @@ def read_local_only_commits(
             or listed.stdout.strip()
             or "git log failed with no diagnostic"
         )
-        return (), False, f"could not read the commits {remote_sha[:12]} lacks: {detail}"
+        return (
+            (),
+            False,
+            f"could not read the commits {remote_sha[:12]} lacks: {detail}",
+        )
     commits: list[LocalCommit] = []
     for line in listed.stdout.splitlines():
         sha, _, subject = line.partition("\0")
@@ -158,7 +167,12 @@ def read_local_only_commits(
 def _changed_paths(repo_root: Path, sha: str) -> tuple[tuple[str, ...], bool]:
     """Every repo-relative path one commit changed, and whether git said so."""
     listed = checkout_gate.run_git(
-        repo_root, "show", "--name-only", "--format=", "--no-renames", sha,
+        repo_root,
+        "show",
+        "--name-only",
+        "--format=",
+        "--no-renames",
+        sha,
     )
     if listed.returncode != 0:
         return (), False
@@ -183,7 +197,9 @@ def unproven_commits(
 
 
 def _unproven_reason(
-    commit: LocalCommit, territory: InstallerTerritory, repo_root: Path,
+    commit: LocalCommit,
+    territory: InstallerTerritory,
+    repo_root: Path,
 ) -> str:
     if commit.sha in territory.own_commits:
         return ""
@@ -201,15 +217,18 @@ def _unproven_reason(
         if path in territory.whole_files:
             continue
         if path not in territory.managed_regions:
+            from yoke_cli.project_install.retired_file_ownership import (
+                proves_retirement,
+            )
+
+            if proves_retirement(repo_root, commit.sha, path):
+                continue
             foreign.append(path)
             continue
         if _changed_outside_block(repo_root, commit.sha, path):
             operator_text.append(path)
     if foreign:
-        return (
-            "it changes paths the install does not own "
-            f"({_named(sorted(foreign))})"
-        )
+        return f"it changes paths the install does not own ({_named(sorted(foreign))})"
     if shared:
         return (
             "it changes files the install shares with the operator, where "

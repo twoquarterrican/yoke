@@ -9,6 +9,7 @@ either caller.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Mapping
 
 from yoke_cli.project_install.files import MANIFEST_REL
@@ -31,6 +32,8 @@ def owned_paths(report: Mapping[str, Any] | None) -> list[str]:
     paths: list[str] = []
     for key in (
         "files_written",
+        "skill_discovery_paths",
+        "files_recovered",
         "files_pruned",
         "contract_files_written",
         "contract_files_adopted",
@@ -198,3 +201,15 @@ __all__ = [
     "owned_paths",
     "shared_paths",
 ]
+
+
+def discovery_commit_paths(root: Path, paths: list[str]) -> list[str]:
+    from yoke_contracts.project_contract.install_bundle import SKILL_DISCOVERY_LINKS
+
+    linked = [rel for rel in SKILL_DISCOVERY_LINKS if (root / rel).is_symlink()]
+    return normalized(
+        [
+            next((entry for entry in linked if path.startswith(entry + "/")), path)
+            for path in paths
+        ]
+    )

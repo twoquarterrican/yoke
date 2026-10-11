@@ -16,7 +16,11 @@ from yoke_cli.project_install import (
     settings_status_line as settings_status_line_layer,
 )
 from yoke_cli.project_install import strategy as strategy_layer
-from yoke_cli.project_install import instruction_discovery, skill_discovery
+from yoke_cli.project_install import (
+    instruction_discovery,
+    skill_discovery,
+    install_recovery,
+)
 from yoke_contracts.cursor_permissions import CURSOR_CONFIG_RELS
 
 
@@ -30,7 +34,7 @@ def preflight_apply(
     if old_manifest:
         files_layer.validate_manifest(old_manifest, source="prior install manifest")
     skill_discovery.validate_links(bundle.get("skill_discovery_links"))
-    skill_discovery.preflight(repo_root, old_manifest)
+    legacy_files = skill_discovery.preflight(repo_root, old_manifest, bundle)
     instruction_retirement = instruction_discovery.preflight(repo_root, old_manifest)
     files_layer.validate_manifest(
         {"manifest_schema": files_layer.MANIFEST_SCHEMA, "files": preserved_files},
@@ -80,6 +84,8 @@ def preflight_apply(
         context="prior manifest mutation",
     )
 
+    recovery = install_recovery.plan(repo_root, bundle, old_manifest)
+
     created_settings = set(old_manifest.get("created_settings_files", []))
     prior_hooks = {
         rel: list(records)
@@ -116,8 +122,10 @@ def preflight_apply(
         repo_root
     )
     worktrees_ignore = project_worktrees_ignore.report(repo_root, apply=False)
-    return {
+    result = {
         "instruction_retirement": instruction_retirement,
+        "install_recovery": recovery,
+        "legacy_files": legacy_files,
         "hook_plans": hook_plans,
         "git_hook_specs": git_hook_specs,
         "git_hook_preview": git_hook_preview,
@@ -133,6 +141,14 @@ def preflight_apply(
         "cursor_permissions_preview": cursor_permissions_preview,
         "worktrees_ignore": worktrees_ignore,
     }
+
+    from yoke_cli.project_install.recovery_checkout import plan
+
+    recovery["removed_paths"] = sorted(
+        set(recovery["prior_files"]) - set(recovery["candidate"]) - set(preserved_files)
+    )
+    recovery["checkout"] = plan(repo_root, bundle, old_manifest, result)
+    return result
 
 
 __all__ = ["preflight_apply"]

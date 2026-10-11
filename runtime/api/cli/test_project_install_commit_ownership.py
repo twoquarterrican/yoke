@@ -33,6 +33,7 @@ from runtime.api.cli.project_install_publication_test_support import (
 @pytest.fixture(autouse=True)
 def _isolated_machine_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path / "machine-home"))
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-home"))
     monkeypatch.delenv("YOKE_MACHINE_CONFIG_FILE", raising=False)
     monkeypatch.delenv("YOKE_ENV", raising=False)
 
@@ -45,7 +46,9 @@ def test_reconcile_refuses_when_the_operator_owns_a_local_commit(
     git(world.checkout, "add", "-A")
     git(world.checkout, "commit", "-q", "-m", "operator work")
     world.advance_remote(
-        path="teammate.md", content="theirs\n", message="teammate change",
+        path="teammate.md",
+        content="theirs\n",
+        message="teammate change",
     )
     local = git(world.checkout, "rev-parse", "main").stdout.strip()
 
@@ -65,7 +68,8 @@ def test_reconcile_refuses_when_the_operator_owns_a_local_commit(
 
 
 def test_an_installer_subject_over_unowned_changes_is_not_treated_as_ours(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A matching subject is not proof; the diff has to stay in our territory.
 
@@ -81,7 +85,9 @@ def test_an_installer_subject_over_unowned_changes_is_not_treated_as_ours(
     git(world.checkout, "commit", "-q", "-m", "Install Yoke operating layer 9.9.9")
     disguised = git(world.checkout, "rev-parse", "HEAD").stdout.strip()
     world.advance_remote(
-        path="teammate.md", content="theirs\n", message="teammate change",
+        path="teammate.md",
+        content="theirs\n",
+        message="teammate change",
     )
 
     outcome = reconcile.reconcile_by_regeneration(
@@ -94,22 +100,23 @@ def test_an_installer_subject_over_unowned_changes_is_not_treated_as_ours(
     )
 
     assert outcome["status"] == "unproven_commits_present"
-    assert any(
-        "operator_notes.md" in line for line in outcome["unproven_commits"]
-    )
+    assert any("operator_notes.md" in line for line in outcome["unproven_commits"])
     assert git(world.checkout, "rev-parse", "main").stdout.strip() == disguised
     assert (world.checkout / "operator_notes.md").is_file()
 
 
 def test_an_unreadable_commit_list_refuses_instead_of_reading_as_empty(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """No commits and unreadable commits are different answers."""
     world = remote_world(tmp_path)
     bind_bundle(monkeypatch)
     runner.install(world.checkout, project_id=7, publish=False)
     world.advance_remote(
-        path="teammate.md", content="theirs\n", message="teammate change",
+        path="teammate.md",
+        content="theirs\n",
+        message="teammate change",
     )
     monkeypatch.setattr(
         ownership,
@@ -134,7 +141,8 @@ def test_an_unreadable_commit_list_refuses_instead_of_reading_as_empty(
 
 
 def test_a_change_outside_the_managed_block_is_the_operators_not_ours(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The install owns its marked block, not the whole co-owned file.
 
@@ -153,7 +161,9 @@ def test_a_change_outside_the_managed_block_is_the_operators_not_ours(
     git(world.checkout, "commit", "-q", "-m", "Install Yoke operating layer 9.9.9")
     theirs = git(world.checkout, "rev-parse", "HEAD").stdout.strip()
     world.advance_remote(
-        path="teammate.md", content="theirs\n", message="teammate change",
+        path="teammate.md",
+        content="theirs\n",
+        message="teammate change",
     )
 
     outcome = reconcile.reconcile_by_regeneration(
@@ -171,13 +181,14 @@ def test_a_change_outside_the_managed_block_is_the_operators_not_ours(
         for line in outcome["unproven_commits"]
     )
     assert git(world.checkout, "rev-parse", "main").stdout.strip() == theirs
-    assert "my own paragraph" in (
-        world.checkout / "AGENTS.md"
-    ).read_text(encoding="utf-8")
+    assert "my own paragraph" in (world.checkout / "AGENTS.md").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_a_change_confined_to_the_managed_block_stays_ours(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The proof must not refuse the install's own block rewrite."""
     world = remote_world(tmp_path)
@@ -185,7 +196,8 @@ def test_a_change_confined_to_the_managed_block_stays_ours(
     runner.install(world.checkout, project_id=7, publish=False)
     territory = ownership.installer_territory(world.checkout)
     (world.checkout / "AGENTS.md").write_text(
-        agents_markdown(STALE_BLOCK), encoding="utf-8",
+        agents_markdown(STALE_BLOCK),
+        encoding="utf-8",
     )
     git(world.checkout, "add", "-A")
     git(world.checkout, "commit", "-q", "-m", "Install Yoke operating layer 9.9.8")
@@ -201,3 +213,91 @@ def test_a_change_confined_to_the_managed_block_stays_ours(
     )
 
     assert unproven == ()
+
+
+def test_retired_installer_files_remain_proven_after_record_moves(tmp_path):
+    from runtime.api.cli.test_project_install_recovery import _commit, _file, _git
+
+    _git(tmp_path, "init")
+    rel = ".codex/skills/yoke/old/SKILL.md"
+    old = _file(tmp_path, rel, "old installed skill\n")
+    _commit(tmp_path, "Install Yoke operating layer 1.0.0")
+    old.unlink()
+    _commit(tmp_path, "Refresh installed Yoke operating layer to 1.0.1")
+    sha = _git(tmp_path, "rev-parse", "HEAD").stdout.strip()
+    commit = ownership.LocalCommit(
+        sha, "Refresh installed Yoke operating layer to 1.0.1", (rel,)
+    )
+    assert (
+        ownership.unproven_commits(
+            (commit,), ownership.InstallerTerritory(), repo_root=tmp_path
+        )
+        == ()
+    )
+    _file(tmp_path, rel, "operator custom skill\n")
+    _commit(tmp_path, "Customize skill")
+    (tmp_path / rel).unlink()
+    _commit(tmp_path, "Refresh installed Yoke operating layer to 1.0.2")
+    sha = _git(tmp_path, "rev-parse", "HEAD").stdout.strip()
+    commit = ownership.LocalCommit(
+        sha, "Refresh installed Yoke operating layer to 1.0.2", (rel,)
+    )
+    assert ownership.unproven_commits(
+        (commit,), ownership.InstallerTerritory(), repo_root=tmp_path
+    )
+
+
+def test_installer_commit_preserves_already_staged_retirement(tmp_path):
+    from yoke_cli.project_install import checkout_gate
+    from runtime.api.cli.test_project_install_recovery import _commit, _file, _git
+
+    _git(tmp_path, "init")
+    rel = ".codex/skills/yoke/SKILL.md"
+    _file(tmp_path, rel, "installed skill\n")
+    _commit(tmp_path, "Install Yoke operating layer 1.0.0")
+    _git(tmp_path, "rm", "--", rel)
+    result = checkout_gate.commit_paths(
+        tmp_path, [rel], message="Refresh installed Yoke operating layer to 1.0.1"
+    )
+    assert result["status"] == "created"
+    assert not _git(tmp_path, "status", "--porcelain").stdout.strip()
+    assert rel in _git(tmp_path, "diff", "--name-only", "HEAD~1", "HEAD").stdout
+
+
+def test_interrupted_retirement_checks_native_link_instead_of_old_children(tmp_path):
+    import json
+    import shutil
+    from yoke_cli.project_install import install_recovery as recovery
+    from yoke_cli.project_install.files import sha256_text
+    from runtime.api.cli.test_project_install_recovery import _commit, _file, _git
+
+    _git(tmp_path, "init")
+    canonical = ".agents/skills/yoke/SKILL.md"
+    legacy = ".claude/skills/yoke"
+    _file(tmp_path, canonical, "new installed skill\n")
+    _file(tmp_path, legacy + "/SKILL.md", "old installed skill\n")
+    _commit(tmp_path, "Install Yoke operating layer 1.0.0")
+    shutil.rmtree(tmp_path / legacy)
+    (tmp_path / legacy).symlink_to(
+        "../../.agents/skills/yoke", target_is_directory=True
+    )
+    _file(
+        tmp_path,
+        recovery.PENDING_REL,
+        json.dumps(
+            {
+                "files": {},
+                "checkout": {
+                    legacy: ["link:../../.agents/skills/yoke"],
+                    canonical: [sha256_text("new installed skill\n")],
+                    legacy + "/SKILL.md": [
+                        "absent",
+                        sha256_text("old installed skill\n"),
+                    ],
+                },
+            }
+        ),
+    )
+    assert recovery.recoverable_checkout(tmp_path)
+    (tmp_path / canonical).write_text("operator edit\n")
+    assert not recovery.recoverable_checkout(tmp_path)

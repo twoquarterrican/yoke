@@ -18,7 +18,11 @@ from yoke_cli.project_install import (
     settings_status_line as settings_status_line_layer,
 )
 from yoke_cli.project_install import strategy as strategy_layer
-from yoke_cli.project_install import instruction_discovery, skill_discovery
+from yoke_cli.project_install import (
+    instruction_discovery,
+    skill_discovery,
+    install_recovery,
+)
 from yoke_cli.project_install.files import (
     DISCARDED_PRIOR_CONTRACT_RECORDS_KEY,
     DISCARDED_PRIOR_STRATEGY_RECORDS_KEY,
@@ -65,6 +69,7 @@ def apply_bundle(
     source: str = "in-process",
     prior_manifest: Dict[str, Any] | None = None,
     preserved_manifest_files: Dict[str, str] | None = None,
+    retain_pending: bool = False,
 ) -> Dict[str, Any]:
     """Apply a resolved bundle to ``repo_root`` (the network-free core)."""
     _validate_bundle(bundle)
@@ -97,11 +102,18 @@ def apply_bundle(
         preserved_files,
     )
 
+    install_recovery.begin(repo_root, preflight["install_recovery"])
     hashes, written = files_layer.apply_files(repo_root, bundle_files)
     hashes.update(preserved_files)
     pruned, skipped, warnings = files_layer.prune_files(
         repo_root,
-        skill_discovery.prune_records(repo_root, dict(old_manifest.get("files") or {})),
+        skill_discovery.prune_records(
+            repo_root,
+            {
+                **preflight["install_recovery"]["prior_files"],
+                **preflight["legacy_files"],
+            },
+        ),
         hashes,
     )
     discovery_written = skill_discovery.apply(repo_root)
@@ -174,9 +186,6 @@ def apply_bundle(
         if teaching and (result["added"] or result["removed"]):
             hook_trust.append(teaching)
 
-    # Git hook shims (§2.K guardrail mandate): same pre/post-commit
-    # install as source-link mode; skips gracefully without .git/hooks/
-    # (linked worktree or not a git repo) and warns on foreign hooks.
     git_hooks = git_hooks_layer.BootstrapResult()
     git_hooks_layer.install_git_hooks(
         repo_root,
@@ -267,6 +276,7 @@ def apply_bundle(
         }
     )
     manifest_file = files_layer.write_manifest(repo_root, manifest)
+    install_recovery.finish(repo_root, hashes, clear_pending=not retain_pending)
     # Machine-local Cursor stop/sessionEnd backstop: project hooks cannot
     # spawn when Cursor's project cwd is a deleted linked worktree.
     try:
@@ -285,6 +295,16 @@ def apply_bundle(
         "project_slug": bundle["project_slug"],
         "yoke_version": bundle["yoke_version"],
         "source": source,
+        "install_drift": {
+            k: preflight["install_recovery"][k]
+            for k in ("missing", "changed", "interrupted")
+        },
+        "legacy_skill_files_adopted": sorted(preflight["legacy_files"]),
+        "skill_discovery_paths": [
+            ".claude/skills/yoke",
+            ".codex/skills/yoke",
+            ".cursor/skills/yoke",
+        ],
         "files_written": written,
         "files_unchanged": len(hashes) - len(written),
         "files_pruned": pruned,

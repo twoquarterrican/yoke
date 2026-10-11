@@ -20,6 +20,7 @@ YOKE_TREE_IGNORED_NAMES = (
     ".github-retry.log",
     ".merge-lock",
     "install-manifest.json",
+    "install-pending.json",
 )
 
 # Surfaces a bundle must never name as contract files: generated board
@@ -30,6 +31,7 @@ FORBIDDEN_CONTRACT_RELATIVE_PATHS = (
     ".yoke/BOARD.md.ts",
     ".yoke/board-art.example",
     ".yoke/install.json",
+    ".yoke/install-pending.json",
     ".yoke/generated",
     ".yoke/qa-artifacts",
     ".yoke/scratch",

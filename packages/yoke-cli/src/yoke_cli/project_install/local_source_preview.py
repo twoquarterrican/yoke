@@ -47,7 +47,8 @@ def preview_report(
     would_prune: list[str] = []
     would_preserve: list[str] = []
     old_files = skill_discovery.prune_records(
-        root, dict(prior_manifest.get("files") or {})
+        root,
+        {**preflight["install_recovery"]["prior_files"], **preflight["legacy_files"]},
     )
     keep_paths = set(new_hashes) | set(preserved_files)
     for rel in sorted(set(old_files) - keep_paths):
@@ -82,6 +83,11 @@ def preview_report(
     )
     worktrees_ignore["would_add"] = not worktrees_ignore["present"]
     return {
+        "install_drift": {
+            k: preflight["install_recovery"][k]
+            for k in ("missing", "changed", "interrupted")
+        },
+        "legacy_skill_files_adopted": sorted(preflight["legacy_files"]),
         "operation": "refresh",
         "mode": "copy",
         "repo_root": str(root),

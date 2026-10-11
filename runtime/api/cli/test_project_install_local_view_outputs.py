@@ -106,7 +106,7 @@ def test_install_manifest_is_classified_as_a_local_view(tmp_path: Path) -> None:
     )
     manifest = root / ".yoke/install-manifest.json"
     manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text("{}\n", encoding="utf-8")
+    manifest.write_text('{"manifest_schema":1,"files":{}}\n', encoding="utf-8")
 
     result = checkout_gate.commit_touched_paths(
         root,

@@ -45,6 +45,8 @@ def update(args: List[str]) -> int:
             f"Updated Yoke {result['old_version']} -> {result['new_version']} "
             f"({result['channel']})."
         )
+    if result.get("project_refresh", {}).get("status") == "refreshed":
+        print("Refreshed the current checkout’s installed Yoke operating layer.")
     if result["credential_helper_repaired"]:
         print("Rebuilt the git credential helper bundle a reinstall had wiped.")
     if credential_error:

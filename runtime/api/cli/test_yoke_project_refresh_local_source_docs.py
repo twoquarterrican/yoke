@@ -3,7 +3,7 @@
 The explicit source-checkout refresh owns the same public documentation
 corpus the server-built bundle ships. These clean-room runs prove the
 corpus converges, drifted copies are rewritten, retired copies are pruned,
-locally edited copies are preserved out of Yoke management, and a second
+locally edited copies refuse before mutation, and a second
 apply is inert.
 """
 
@@ -74,25 +74,32 @@ def _write_manifest(root: Path, manifest: dict) -> None:
 
 
 def _seed_manifest(root: Path, project_id: int, files: dict[str, str]) -> None:
-    _write_manifest(root, {
-        "manifest_schema": 1,
-        "yoke_version": "packaged-baseline",
-        "project_id": project_id,
-        "project_slug": "external-project",
-        "mode": "copy",
-        "files": dict(files),
-        "contract_files": {},
-        "strategy_files": {},
-        "created_settings_files": [],
-        "hook_entries": {},
-    })
+    _write_manifest(
+        root,
+        {
+            "manifest_schema": 1,
+            "yoke_version": "packaged-baseline",
+            "project_id": project_id,
+            "project_slug": "external-project",
+            "mode": "copy",
+            "files": dict(files),
+            "contract_files": {},
+            "strategy_files": {},
+            "created_settings_files": [],
+            "hook_entries": {},
+        },
+    )
 
 
 def _base_args(target: Path, project_id: int) -> list[str]:
     return [
-        "project", "refresh", str(target),
-        "--source-checkout", str(REPO_ROOT),
-        "--project-id", str(project_id),
+        "project",
+        "refresh",
+        str(target),
+        "--source-checkout",
+        str(REPO_ROOT),
+        "--project-id",
+        str(project_id),
     ]
 
 
@@ -103,7 +110,10 @@ def _refresh_args(target: Path, project_id: int) -> list[str]:
 def _apply_args(target: Path, project_id: int) -> list[str]:
     return [
         *_base_args(target, project_id),
-        "--force", "--no-commit", "--apply", "--json",
+        "--force",
+        "--no-commit",
+        "--apply",
+        "--json",
     ]
 
 
@@ -113,8 +123,7 @@ def _installed_docs(report_paths: list[str]) -> list[str]:
 
 def test_source_bundle_renders_the_public_docs_corpus_project_neutrally() -> None:
     canonical = {
-        entry["path"]: entry["content"]
-        for entry in docs_bundle_files(REPO_ROOT)
+        entry["path"]: entry["content"] for entry in docs_bundle_files(REPO_ROOT)
     }
 
     bundle = build_source_bundle(
@@ -136,16 +145,13 @@ def test_source_bundle_renders_the_public_docs_corpus_project_neutrally() -> Non
     # Documentation is source-derived, so two different target projects
     # receive byte-identical entries.
     assert [
-        entry for entry in other["files"]
-        if entry["path"].startswith(DOCS_PREFIX)
-    ] == [
-        entry for entry in bundle["files"]
-        if entry["path"].startswith(DOCS_PREFIX)
-    ]
+        entry for entry in other["files"] if entry["path"].startswith(DOCS_PREFIX)
+    ] == [entry for entry in bundle["files"] if entry["path"].startswith(DOCS_PREFIX)]
 
 
 def test_retired_doc_is_pruned_when_it_matches_the_prior_manifest(
-    tmp_path: Path, capsys,
+    tmp_path: Path,
+    capsys,
 ) -> None:
     target = tmp_path / "external-project"
     _git_init(target)
@@ -166,7 +172,8 @@ def test_retired_doc_is_pruned_when_it_matches_the_prior_manifest(
 
 
 def test_installed_doc_that_drifted_from_source_is_rewritten(
-    tmp_path: Path, capsys,
+    tmp_path: Path,
+    capsys,
 ) -> None:
     target = tmp_path / "external-project"
     _git_init(target)
@@ -176,9 +183,9 @@ def test_installed_doc_that_drifted_from_source_is_rewritten(
 
     manifest = _read_manifest(target)
     doc_rel = _installed_docs(sorted(manifest["files"]))[0]
-    canonical_body = (
-        REPO_ROOT / DOCS_SOURCE / doc_rel[len(DOCS_PREFIX):]
-    ).read_text(encoding="utf-8")
+    canonical_body = (REPO_ROOT / DOCS_SOURCE / doc_rel[len(DOCS_PREFIX) :]).read_text(
+        encoding="utf-8"
+    )
     drifted = "# superseded installed copy\n"
     _write_file(target, doc_rel, drifted)
     manifest["files"][doc_rel] = _sha(drifted)
@@ -197,42 +204,35 @@ def test_installed_doc_that_drifted_from_source_is_rewritten(
 
 
 def test_edited_retired_doc_is_preserved_while_unrendered_files_survive(
-    tmp_path: Path, capsys,
+    tmp_path: Path,
+    capsys,
 ) -> None:
     target = tmp_path / "external-project"
     _git_init(target)
     edited = RETIRED_DOC_BODY + "\nOperator notes kept locally.\n"
     _write_file(target, RETIRED_DOC_REL, edited)
     _write_file(target, UNRENDERED_REL, UNRENDERED_BODY)
-    _seed_manifest(target, 65, {
-        RETIRED_DOC_REL: _sha(RETIRED_DOC_BODY),
-        UNRENDERED_REL: _sha(UNRENDERED_BODY),
-    })
-
-    assert cli_main(_refresh_args(target, 65)) == 0
-    preview = json.loads(capsys.readouterr().out)
-    assert preview["files_would_preserve_modified"] == [RETIRED_DOC_REL]
-    assert preview["files_preserved_unrendered"] == [UNRENDERED_REL]
-    assert preview["files_would_prune"] == []
-
-    assert cli_main(_apply_args(target, 65)) == 0
-    report = json.loads(capsys.readouterr().out)
-    assert report["files_skipped_modified"] == [RETIRED_DOC_REL]
-    assert report["files_preserved_unrendered"] == [UNRENDERED_REL]
-    assert report["files_pruned"] == []
-    assert any(
-        RETIRED_DOC_REL in warning and "no longer Yoke-managed" in warning
-        for warning in report["warnings"]
+    _seed_manifest(
+        target,
+        65,
+        {
+            RETIRED_DOC_REL: _sha(RETIRED_DOC_BODY),
+            UNRENDERED_REL: _sha(UNRENDERED_BODY),
+        },
     )
+
+    assert cli_main(_refresh_args(target, 65)) == 1
+    assert "install_drift_local_edits" in capsys.readouterr().err
+    assert cli_main(_apply_args(target, 65)) == 1
+    assert "install_drift_local_edits" in capsys.readouterr().err
     assert (target / RETIRED_DOC_REL).read_text(encoding="utf-8") == edited
-    refreshed = _read_manifest(target)["files"]
-    assert RETIRED_DOC_REL not in refreshed
-    assert refreshed[UNRENDERED_REL] == _sha(UNRENDERED_BODY)
     assert (target / UNRENDERED_REL).read_text(encoding="utf-8") == UNRENDERED_BODY
+    assert _read_manifest(target)["files"][RETIRED_DOC_REL] == _sha(RETIRED_DOC_BODY)
 
 
 def test_second_apply_writes_and_prunes_no_documentation(
-    tmp_path: Path, capsys,
+    tmp_path: Path,
+    capsys,
 ) -> None:
     target = tmp_path / "external-project"
     _git_init(target)

@@ -54,16 +54,35 @@ and names the public-installer upgrade. Source previews, local/self-hosted
 servers, and hosted servers render the same canonical tree and discovery
 contract; wheels carry the same authored inputs.
 
-Refresh deletes legacy skill copies only when every file has its original
-matching install-manifest digest. Modified files, unexpected links, and
-copies with no baseline cause `skill_discovery_ownership_ambiguous` before
-project mutation. Move saved edits into the canonical skill tree and move the
-obsolete entry outside skill discovery roots, then retry. Equal copies alone
-do not prove installer ownership. For a cloned source-dev test checkout,
-transfer the original manifest through `--manifest-from`; never fabricate it.
+Refresh deletes legacy skill copies only when every file has positive ownership
+proof: its recorded install digest, bytes from the resolved released bundle,
+identical bytes in its last installer-authored git commit, or bytes in an
+annotated release tree. Packaged CLIs carry a catalogue of released file hashes;
+source-dev CLIs can also read fetched annotated release trees. A copy without a
+manifest baseline can therefore retire automatically when its complete tree
+is proved. Equal local copies alone do not prove ownership. Modified files,
+unexpected links, unreadable history, and unknown files still cause
+`skill_discovery_ownership_ambiguous` before project mutation. Save local edits
+outside installer-owned skill paths, then retry. For a cloned source-dev test
+checkout, transfer the original manifest through `--manifest-from`.
 
-Legacy CODEX/CURSOR/CLAUDE managed blocks retire only with a matching recorded
-block digest. Text outside their markers is preserved byte for byte.
+Install and refresh report `install_drift.missing`, `changed`, and `interrupted`.
+Missing recorded files are restored. Changed files require the recorded digest,
+resolved or archived release bytes, interrupted-apply digest, or installer-history proof;
+real edits refuse as `install_drift_local_edits` before mutation. The local
+`.yoke/install-pending.json` record identifies an unfinished apply. Rerun
+`yoke project refresh` to complete it; preserve that record until recovery.
+Git metadata locally excludes the recovery record even with an older bundle.
+The record also stores exact planned intermediate settings and instruction
+bytes, so a dirty interrupted checkout can resume without admitting new edits.
+Bundle files and the final manifest use atomic replacement. Completion verifies
+every recorded whole-file digest and retains the recovery record through the
+installer-owned local commit. Retired paths remain provable during publication.
+
+Yoke source repo only: regenerate packaged release hashes from fetched annotated tags with `yoke dev run -- python3 -m runtime.api.tools.released_install_hashes --source-checkout /absolute/claimed/checkout` and commit the catalogue.
+
+Legacy CODEX/CURSOR/CLAUDE managed blocks retire with a matching recorded
+block digest or positively proven installer-committed whole-file bytes. Text outside their markers is preserved byte for byte.
 `instruction_ownership_ambiguous` preserves all files and asks for the prior
 baseline. Installer-created empty shells are removed; user-created files stay.
 

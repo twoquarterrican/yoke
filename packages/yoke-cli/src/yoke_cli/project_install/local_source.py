@@ -86,12 +86,27 @@ def refresh_from_source(
         )
     from yoke_cli.project_install import checkout_gate
 
+    from yoke_cli.project_install.install_recovery import (
+        PENDING_REL,
+        recoverable_checkout,
+    )
+
+    recovering = recoverable_checkout(root)
+    recovered_paths = (
+        [
+            checkout_gate._porcelain_path(line)
+            for line in checkout_gate.porcelain(root)
+            if checkout_gate._porcelain_path(line) != PENDING_REL
+        ]
+        if recovering
+        else []
+    )
     checkout_gate.assert_ready_for_write(
         root,
         default_branch=str(
             bundle.get("default_branch") or checkout_gate.FALLBACK_DEFAULT_BRANCH
         ),
-        force=force,
+        force=force or recovering,
         require_default_branch=False,
     )
     try:
@@ -105,8 +120,10 @@ def refresh_from_source(
         source=source_label,
         prior_manifest=prior_manifest,
         preserved_manifest_files=preserved_files,
+        retain_pending=True,
     )
     report["git_credentials"] = git_credentials
+    report["files_recovered"] = recovered_paths
     report["codex_hook_trust"] = repository_layer.mint_codex_hook_trust(root)
     report.update(
         {
@@ -130,6 +147,11 @@ def refresh_from_source(
         skip=not commit,
         operation="refresh",
     )
+    if commit:
+        from yoke_cli.project_install.installed_output_paths import owned_paths
+
+        checkout_gate.assert_paths_committed(root, owned_paths(report))
+        (root / PENDING_REL).unlink(missing_ok=True)
     # This path builds an unshipped bundle from a local Yoke checkout, so the
     # commit it makes is a local experiment: publishing it would push content
     # no released Yoke version renders.
