@@ -242,6 +242,17 @@ class TestLabeling:
             is None
         )
 
+    def test_equivalent_cursor_effort_names_compare_by_ordinal(self):
+        assert (
+            level_for_session(
+                default_levels(),
+                executor="cursor",
+                model="claude-fable-5-1-extra-high",
+                reasoning_effort="xhigh",
+            )
+            == "PRINCIPAL"
+        )
+
     def test_fast_speed_does_not_promote_a_lower_model_to_principal(self):
         assert (
             level_for_session(

@@ -55,7 +55,7 @@ def selection_capability(model: str, effort: str | None) -> tuple[int, int, int]
     token = model.strip().lower()
     encoded = cursor_token_effort(token)
     effort_name = (effort or encoded or "").strip().lower()
-    if encoded and effort_name != encoded:
+    if encoded and EFFORT_RANKS.get(effort_name) != EFFORT_RANKS[encoded]:
         return None
     base = cursor_selector_without_effort(token).removesuffix("-fast")
     capability = MODEL_CAPABILITIES.get(base)
