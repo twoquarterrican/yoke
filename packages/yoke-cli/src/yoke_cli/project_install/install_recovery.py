@@ -264,8 +264,10 @@ def recoverable_checkout(root: Path) -> bool:
     expected = pending_record(root).get("checkout", {})
     if not expected:
         return False
-    for line in checkout_gate.porcelain(root):
-        rel = checkout_gate._porcelain_path(line)
+    paths = [
+        checkout_gate._porcelain_path(line) for line in checkout_gate.porcelain(root)
+    ]
+    for rel in checkout_gate.discovery_commit_paths(root, paths):
         if rel == PENDING_REL:
             continue
         try:

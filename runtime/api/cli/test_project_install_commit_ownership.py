@@ -261,3 +261,42 @@ def test_installer_commit_preserves_already_staged_retirement(tmp_path):
     assert result["status"] == "committed"
     assert not _git(tmp_path, "status", "--porcelain").stdout.strip()
     assert rel in _git(tmp_path, "diff", "--name-only", "HEAD~1", "HEAD").stdout
+
+
+def test_interrupted_retirement_checks_native_link_instead_of_old_children(tmp_path):
+    import json
+    import shutil
+    from yoke_cli.project_install import install_recovery as recovery
+    from yoke_cli.project_install.files import sha256_text
+    from runtime.api.cli.test_project_install_recovery import _commit, _file, _git
+
+    _git(tmp_path, "init")
+    canonical = ".agents/skills/yoke/SKILL.md"
+    legacy = ".claude/skills/yoke"
+    _file(tmp_path, canonical, "new installed skill\n")
+    _file(tmp_path, legacy + "/SKILL.md", "old installed skill\n")
+    _commit(tmp_path, "Install Yoke operating layer 1.0.0")
+    shutil.rmtree(tmp_path / legacy)
+    (tmp_path / legacy).symlink_to(
+        "../../.agents/skills/yoke", target_is_directory=True
+    )
+    _file(
+        tmp_path,
+        recovery.PENDING_REL,
+        json.dumps(
+            {
+                "files": {},
+                "checkout": {
+                    legacy: ["link:../../.agents/skills/yoke"],
+                    canonical: [sha256_text("new installed skill\n")],
+                    legacy + "/SKILL.md": [
+                        "absent",
+                        sha256_text("old installed skill\n"),
+                    ],
+                },
+            }
+        ),
+    )
+    assert recovery.recoverable_checkout(tmp_path)
+    (tmp_path / canonical).write_text("operator edit\n")
+    assert not recovery.recoverable_checkout(tmp_path)
