@@ -57,7 +57,12 @@ def plan(
         add(rel, content)
     for rel, destination in SKILL_DISCOVERY_LINKS.items():
         expected.setdefault(
-            rel, {state(root / rel) if not (root / rel).is_dir() else "directory"}
+            rel,
+            {
+                "directory"
+                if (root / rel).is_dir() and not (root / rel).is_symlink()
+                else state(root / rel)
+            },
         )
         expected[rel].add("link:" + destination)
     for rel, planned in preflight["hook_plans"].items():

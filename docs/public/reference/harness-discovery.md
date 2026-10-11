@@ -79,9 +79,7 @@ Bundle files and the final manifest use atomic replacement. Completion verifies
 every recorded whole-file digest and retains the recovery record through the
 installer-owned local commit. Retired paths remain provable during publication.
 
-Yoke source repo only: maintainers regenerate packaged release hashes from fetched annotated
-release tags with `yoke dev run -- python3 -m runtime.api.tools.released_install_hashes
---source-checkout /absolute/claimed/checkout` and commit the generated catalogue.
+Yoke source repo only: regenerate packaged release hashes from fetched annotated tags with `yoke dev run -- python3 -m runtime.api.tools.released_install_hashes --source-checkout /absolute/claimed/checkout` and commit the catalogue.
 
 Legacy CODEX/CURSOR/CLAUDE managed blocks retire with a matching recorded
 block digest or positively proven installer-committed whole-file bytes. Text outside their markers is preserved byte for byte.
