@@ -1,22 +1,7 @@
-"""Product side of ``yoke project install`` / ``refresh`` / ``uninstall``.
+"""Install, refresh, and uninstall the product operating layer.
 
-One repo-bootstrap command for external project checkouts, with the product
-copy delivery strategy:
-
-* ``copy`` (external project repos, the default) — fetches the rendered
-  operating layer from the CLI's active HTTPS env and writes it
-  idempotently, tracked by ``.yoke/install-manifest.json`` so refresh
-  can prune and uninstall can remove cleanly.
-The Yoke source checkout is not a product install target. Its tracked
-source-link/admin wiring is owned by the explicit ``yoke dev setup``
-branch so normal project installs stay external-project safe.
-
-Never written: credentials, the machine active env, the CLI binary, the
-browser runtime, or any ``.yoke/`` path other than the manifest and the
-seed-if-missing project contract. The bundle is authority for its own
-``files``; contract files are seeded only when absent and become
-project-owned the moment they land; project-authored content (including
-foreign hook entries) is untouchable.
+External checkouts receive tracked copy output and preserved project content.
+Source checkout wiring belongs to ``yoke dev setup``.
 """
 
 from __future__ import annotations
@@ -107,10 +92,28 @@ def install(
         if require_branch
         else checkout_gate.FALLBACK_DEFAULT_BRANCH
     )
+    from yoke_cli.project_install.install_recovery import (
+        pending,
+        recoverable_checkout,
+        PENDING_REL,
+    )
+
+    recovery_checkout = (recoverable_checkout(root) if pending(root) else False) and (
+        not require_branch or checkout_gate.current_branch(root) == default_branch
+    )
+    recovered_paths = (
+        [
+            checkout_gate._porcelain_path(line)
+            for line in checkout_gate.porcelain(root)
+            if checkout_gate._porcelain_path(line) != PENDING_REL
+        ]
+        if recovery_checkout
+        else []
+    )
     checkout = checkout_gate.assert_ready_for_write(
         root,
         default_branch=default_branch,
-        force=force,
+        force=force or recovery_checkout,
         require_default_branch=require_branch,
     )
     try:
@@ -141,6 +144,7 @@ def install(
 
     report = regenerate()
     report["git_credentials"] = git_credentials
+    report["files_recovered"] = recovered_paths
     if upstream.get("warning"):
         report.setdefault("warnings", []).append(upstream["warning"])
     report["snapshot_sync"] = sync_local_snapshot_for_write(
@@ -178,6 +182,8 @@ def install(
         skip=not commit,
         operation=operation,
     )
+    if commit:
+        checkout_gate.assert_paths_committed(root, recovered_paths)
     report["publication"] = publication.publish_installed_layer(
         root,
         report,
@@ -188,6 +194,11 @@ def install(
         project_slug=str(bundle.get("project_slug") or "") or None,
         publish=publish,
     )
+    if commit:
+        from yoke_cli.project_install.installed_output_paths import owned_paths
+
+        checkout_gate.assert_paths_committed(root, owned_paths(report))
+        (root / PENDING_REL).unlink(missing_ok=True)
     publication_outcome.announce(report)
     return report
 

@@ -101,26 +101,23 @@ def test_refresh_preserves_locally_modified_dropped_file(repo) -> None:
     dropped = DEFAULT_FILES[-1]["path"]
     (repo / dropped).write_text("operator edits\n", encoding="utf-8")
 
-    report = apply_bundle(
-        repo, make_bundle(DEFAULT_FILES[:-1]), operation="refresh", source="test"
-    )
-
-    assert report["files_pruned"] == []
-    assert report["files_skipped_modified"] == [dropped]
-    assert report["warnings"]
-    assert (repo / dropped).read_text("utf-8") == "operator edits\n"
-    assert dropped not in _manifest(repo)["files"]
+    before = _tree_bytes(repo)
+    with pytest.raises(ProjectInstallError, match="install_drift_local_edits"):
+        apply_bundle(
+            repo, make_bundle(DEFAULT_FILES[:-1]), operation="refresh", source="test"
+        )
+    assert _tree_bytes(repo) == before
+    assert dropped in _manifest(repo)["files"]
 
 
-def test_bundle_content_is_authority_over_local_edits(repo) -> None:
+def test_bundle_refresh_refuses_real_local_edits(repo) -> None:
     apply_bundle(repo, make_bundle(), source="test")
     target = DEFAULT_FILES[0]["path"]
-    (repo / target).write_text("local drift\n", encoding="utf-8")
-
-    report = apply_bundle(repo, make_bundle(), operation="refresh", source="test")
-
-    assert target in report["files_written"]
-    assert (repo / target).read_text("utf-8") == DEFAULT_FILES[0]["content"]
+    (repo / target).write_text("local edits\n", encoding="utf-8")
+    before = _tree_bytes(repo)
+    with pytest.raises(ProjectInstallError, match="install_drift_local_edits"):
+        apply_bundle(repo, make_bundle(), operation="refresh", source="test")
+    assert _tree_bytes(repo) == before
 
 
 @pytest.mark.parametrize(

@@ -60,7 +60,9 @@ def test_project_install_product_wheel_uses_https_bundle_with_inert_engine(
             str(venv_python),
             "-c",
             "import importlib.util; "
-            "assert importlib.util.find_spec('yoke_core') is not None",
+            "assert importlib.util.find_spec('yoke_core') is not None; "
+            "from yoke_cli.project_install.released_bundle_files import _catalogue; "
+            "assert _catalogue()",
         ],
         cwd=checkout,
         env=env,

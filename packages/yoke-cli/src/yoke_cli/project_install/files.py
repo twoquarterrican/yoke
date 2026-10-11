@@ -1,12 +1,7 @@
-"""File/manifest layer for ``yoke install`` / ``refresh`` / ``uninstall``.
+"""Filesystem paths, manifest reads, bundle writes, and refresh pruning.
 
-Owns the client-side install manifest (``.yoke/install-manifest.json``),
-sha256-idempotent file writes, refresh pruning, the seed-if-missing
-project-contract pass, and path-safety guards. Pure local filesystem
-mechanics — bundle resolution and hook merging live in the sibling
-:mod:`runner` / :mod:`hooks` modules.
-
-JSON via stdlib follows the :mod:`machine_config_writer` precedent.
+Bundles own whole files; contract files seed project-owned content.
+Uninstall removal lives in its own operation module.
 """
 
 from __future__ import annotations
@@ -17,7 +12,9 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
 from yoke_contracts.cursor_permissions import CURSOR_CONFIG_RELS
-from yoke_contracts.project_contract.install_policy import FORBIDDEN_CONTRACT_RELATIVE_PATHS
+from yoke_contracts.project_contract.install_policy import (
+    FORBIDDEN_CONTRACT_RELATIVE_PATHS,
+)
 
 MANIFEST_SCHEMA = 1
 MANIFEST_REL = ".yoke/install-manifest.json"
@@ -34,7 +31,12 @@ DISCARDED_PRIOR_STRATEGY_RECORDS_KEY = "_discarded_prior_strategy_records"
 
 # Hook-merge targets — bundle ``files`` must never name these directly;
 # their content flows through the bundle's ``hooks`` subtrees.
-HOOK_MERGE_TARGETS = (".claude/settings.json", ".codex/hooks.json", ".cursor/hooks.json")
+HOOK_MERGE_TARGETS = (
+    ".claude/settings.json",
+    ".codex/hooks.json",
+    ".cursor/hooks.json",
+)
+
 
 class ProjectInstallError(RuntimeError):
     """Install/refresh/uninstall cannot proceed; message names the repair."""
@@ -64,7 +66,9 @@ def load_manifest(repo_root: Path) -> Dict[str, Any] | None:
     return load_manifest_path(manifest_path(repo_root), missing_ok=True)
 
 
-def load_manifest_path(path: Path, *, missing_ok: bool = False) -> Dict[str, Any] | None:
+def load_manifest_path(
+    path: Path, *, missing_ok: bool = False
+) -> Dict[str, Any] | None:
     """Read a manifest from an explicit path for lineage transfer."""
     path = path.expanduser().resolve()
     if not path.is_file():
@@ -73,7 +77,7 @@ def load_manifest_path(path: Path, *, missing_ok: bool = False) -> Dict[str, Any
         raise ProjectInstallError(f"install manifest does not exist: {path}")
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         raise ProjectInstallError(
             f"install manifest {path} is unreadable ({exc}); repair or delete "
             "it, then rerun `yoke project install`"
@@ -88,13 +92,15 @@ def load_manifest_path(path: Path, *, missing_ok: bool = False) -> Dict[str, Any
 def write_manifest(repo_root: Path, manifest: Dict[str, Any]) -> Path:
     validate_manifest(manifest, source="new install manifest")
     assert_resolved_targets_within(
-        repo_root, [MANIFEST_REL], context="install manifest write",
+        repo_root,
+        [MANIFEST_REL],
+        context="install manifest write",
     )
     path = manifest_path(repo_root)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    from yoke_cli.project_install.install_recovery import atomic_text
+
+    atomic_text(path, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     return path
 
 
@@ -106,7 +112,10 @@ def validate_manifest(manifest: Any, *, source: str = "install manifest") -> Non
 
 
 def assert_resolved_targets_within(
-    repo_root: Path, paths: Iterable[str], *, context: str,
+    repo_root: Path,
+    paths: Iterable[str],
+    *,
+    context: str,
 ) -> None:
     """Refuse mutation targets whose existing symlink parents escape root."""
     root = repo_root.expanduser().resolve()
@@ -132,7 +141,10 @@ def assert_resolved_targets_within(
 
 
 def assert_file_targets_plannable(
-    repo_root: Path, paths: Iterable[str], *, context: str,
+    repo_root: Path,
+    paths: Iterable[str],
+    *,
+    context: str,
 ) -> None:
     """Reject predictable non-file/parent-shape failures before mutation."""
     selected = list(paths)
@@ -212,7 +224,8 @@ def apply_contract_files(
 
 
 def reconcile_gitignore(
-    repo_root: Path, contract_entries: List[Dict[str, str]],
+    repo_root: Path,
+    contract_entries: List[Dict[str, str]],
 ) -> List[str]:
     """Backfill canonical ignore entries into an existing contract file."""
     from yoke_cli.project_install.contract_files import reconcile_gitignore as apply
@@ -244,7 +257,9 @@ def apply_files(
             if current is not None and sha256_text(current) == digest:
                 continue
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
+        from yoke_cli.project_install.install_recovery import atomic_text
+
+        atomic_text(target, content)
         written.append(rel)
     return hashes, written
 
@@ -261,7 +276,9 @@ def prune_files(
     files are preserved with a warning and drop out of Yoke management.
     """
     assert_resolved_targets_within(
-        repo_root, old_files, context="bundle prune",
+        repo_root,
+        old_files,
+        context="bundle prune",
     )
     keep = set(new_paths)
     pruned: List[str] = []
@@ -288,46 +305,12 @@ def prune_files(
     return pruned, skipped, warnings
 
 
-def remove_manifest_files(
-    repo_root: Path, files: Dict[str, str]
-) -> Tuple[List[str], List[str], List[str], List[str]]:
-    """Uninstall pass over manifest files.
-
-    Returns (removed, skipped_modified, already_absent, warnings).
-    """
-    assert_resolved_targets_within(
-        repo_root, files, context="manifest-owned file removal",
-    )
-    removed: List[str] = []
-    skipped: List[str] = []
-    absent: List[str] = []
-    warnings: List[str] = []
-    for rel in sorted(files):
-        target = repo_root / rel
-        if not target.is_file():
-            absent.append(rel)
-            continue
-        try:
-            current = target.read_bytes().decode("utf-8")
-        except (OSError, UnicodeDecodeError):
-            current = None
-        if current is None or sha256_text(current) != files[rel]:
-            skipped.append(rel)
-            warnings.append(
-                f"{rel} has local modifications; preserved (delete manually "
-                "if unwanted)"
-            )
-            continue
-        target.unlink()
-        remove_empty_parents(repo_root, rel)
-        removed.append(rel)
-    return removed, skipped, absent, warnings
-
-
 def remove_empty_parents(repo_root: Path, rel: str) -> None:
     """Remove now-empty parent dirs of ``rel`` up to (excluding) repo root."""
     assert_resolved_targets_within(
-        repo_root, [rel], context="empty parent cleanup",
+        repo_root,
+        [rel],
+        context="empty parent cleanup",
     )
     parent = (repo_root / rel).parent
     root = repo_root.resolve()
@@ -358,7 +341,6 @@ __all__ = [
     "manifest_path",
     "prune_files",
     "remove_empty_parents",
-    "remove_manifest_files",
     "resolve_repo_root",
     "sha256_text",
     "validate_manifest",

@@ -112,6 +112,13 @@ the helper, just without the version-change report. Prior-runtime bundles
 are verified against their own launcher's declared files and content hash,
 so adding helper modules in a release does not invalidate an older bundle.
 
+When run inside an installed project, `yoke update` also runs
+`yoke project refresh` with the updated executable, even when the CLI version
+is already current. A refused or incomplete project refresh fails the update
+with `project_update_incomplete`; the CLI remains installed, and the refusal
+names how to finish the project refresh. Outside an installed project there
+is no project refresh. Source checkouts retain their `yoke dev setup` owner.
+
 `yoke update` and `yoke self-host upgrade` refuse to replace an active Yoke
 source-checkout install with packaged releases. Update that checkout with git;
 for a server built from it, rebuild through

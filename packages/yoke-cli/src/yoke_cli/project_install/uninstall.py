@@ -51,6 +51,8 @@ def uninstall(
     authorize de-installing the source checkout; manifests without the
     mode key are copy manifests (pre-mode installed state).
     """
+    from yoke_cli.project_install.install_recovery import PENDING_REL
+
     root = files_layer.resolve_repo_root(repo_root)
     manifest = files_layer.load_manifest(root)
     if manifest is None:
@@ -73,6 +75,7 @@ def uninstall(
             *dict(manifest.get("managed_markdown", {})),
             *(f".git/hooks/{name}" for name in git_hooks_layer.GIT_HOOK_NAMES),
             files_layer.MANIFEST_REL,
+            PENDING_REL,
         ],
         context="project uninstall",
     )
@@ -93,16 +96,12 @@ def uninstall(
     discovery_removed = skill_discovery.remove(
         root, manifest.get("skill_discovery_links")
     )
-    removed, skipped, absent, warnings = files_layer.remove_manifest_files(
-        root, file_records
-    )
+    removed, skipped, absent, warnings = remove_manifest_files(root, file_records)
     # Contract files: remove only installer-created files still byte-equal
     # to their seeded content; edited ones are preserved with a warning and
     # pre-existing files were never recorded, so they are never touched.
     contract_removed, contract_skipped, contract_absent, contract_warnings = (
-        files_layer.remove_manifest_files(
-            root, dict(manifest.get("contract_files") or {})
-        )
+        remove_manifest_files(root, dict(manifest.get("contract_files") or {}))
     )
     warnings.extend(contract_warnings)
     # Strip the managed permissions region and Markdown blocks first. Removing
@@ -160,6 +159,7 @@ def uninstall(
         if manifest.get("worktrees_ignore_added")
         else {"removed": False, "deleted_file": False}
     )
+    (root / PENDING_REL).unlink(missing_ok=True)
     files_layer.manifest_path(root).unlink()
     files_layer.remove_empty_parents(root, files_layer.MANIFEST_REL)
     report = {
@@ -199,3 +199,41 @@ def uninstall(
 
 
 __all__ = ["uninstall"]
+
+
+def remove_manifest_files(
+    repo_root: Path, files: dict[str, str]
+) -> tuple[list[str], list[str], list[str], list[str]]:
+    """Uninstall pass over manifest files.
+
+    Returns (removed, skipped_modified, already_absent, warnings).
+    """
+    files_layer.assert_resolved_targets_within(
+        repo_root,
+        files,
+        context="manifest-owned file removal",
+    )
+    removed: list[str] = []
+    skipped: list[str] = []
+    absent: list[str] = []
+    warnings: list[str] = []
+    for rel in sorted(files):
+        target = repo_root / rel
+        if not target.is_file():
+            absent.append(rel)
+            continue
+        try:
+            current = target.read_bytes().decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            current = None
+        if current is None or files_layer.sha256_text(current) != files[rel]:
+            skipped.append(rel)
+            warnings.append(
+                f"{rel} has local modifications; preserved (delete manually "
+                "if unwanted)"
+            )
+            continue
+        target.unlink()
+        files_layer.remove_empty_parents(repo_root, rel)
+        removed.append(rel)
+    return removed, skipped, absent, warnings

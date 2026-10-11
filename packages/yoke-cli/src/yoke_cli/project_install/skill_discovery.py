@@ -30,9 +30,21 @@ def validate_links(value: Any) -> dict[str, str]:
     return dict(SKILL_DISCOVERY_LINKS)
 
 
-def preflight(root: Path, prior: dict[str, Any]) -> None:
+def preflight(
+    root: Path, prior: dict[str, Any], bundle: dict[str, Any] | None = None
+) -> dict[str, str]:
     """Refuse unowned/edited obsolete copies before any install mutation."""
+    from yoke_cli.project_install.install_recovery import GitOwnership
+
     hashes = prior.get("files") or {}
+    released = {
+        e["path"]: sha256_text(e["content"]) for e in (bundle or {}).get("files", [])
+    }
+    adopted = {}
+    proof = None
+    from yoke_cli.project_install.released_bundle_files import ReleasedBundleFiles
+
+    archives = ReleasedBundleFiles()
     # Probe the native primitive before pruning a baseline-owned tree. No
     # project file is changed by this temporary capability check.
     try:
@@ -65,7 +77,18 @@ def preflight(root: Path, prior: dict[str, Any]) -> None:
             except (OSError, UnicodeError):
                 _refuse(path_rel, "an unreadable legacy copy")
             if hashes.get(path_rel) != digest:
-                _refuse(path_rel, "a modified copy or missing ownership baseline")
+                canonical = ".agents/skills/yoke/" + path.relative_to(target).as_posix()
+                if released.get(canonical) != digest:
+                    if proof is None:
+                        proof = GitOwnership(root)
+                    if not proof.proves(path_rel, digest) and not archives.proves(
+                        path_rel, path.read_text(encoding="utf-8")
+                    ):
+                        _refuse(
+                            path_rel, "a modified copy or missing ownership baseline"
+                        )
+            adopted[path_rel] = digest
+    return adopted
 
 
 def _refuse(rel: str, detail: str) -> None:
@@ -75,7 +98,8 @@ def _refuse(rel: str, detail: str) -> None:
         "your edits into the canonical .agents/skills/yoke tree, and move the "
         "obsolete discovery entry outside skill directories before refresh. "
         "For a clone, supply the original manifest with --manifest-from on "
-        "the source-dev refresh surface; do not infer ownership from equal copies."
+        "the source-dev refresh surface. A matching released bundle or committed "
+        "installer history can prove ownership; equal local copies alone cannot."
     )
 
 

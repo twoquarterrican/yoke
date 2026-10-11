@@ -39,15 +39,15 @@ def write_repository_layer(
     the replacement commit carries content regenerated on the new base
     rather than content merged onto it.
     """
-    report = apply_bundle(repo_root, bundle, operation=operation, source=source)
+    report = apply_bundle(
+        repo_root, bundle, operation=operation, source=source, retain_pending=True
+    )
     report["codex_hook_trust"] = mint_codex_hook_trust(repo_root)
     # A clean copy install can still be shadowed at commit time: a
     # core.hooksPath override sends git elsewhere, or a missing `yoke`
     # launcher leaves the shims unable to exec. Surface both loudly.
     if mode == MODE_COPY:
-        report.setdefault("warnings", []).extend(
-            collect_hooks_path_warnings(repo_root)
-        )
+        report.setdefault("warnings", []).extend(collect_hooks_path_warnings(repo_root))
     # Runs after apply so the seeded .yoke/project.config exists to move into.
     report["file_line_config_migration"] = migrate_file_line_exceptions(repo_root)
     # The install writes the managed rules files AND the gate that measures

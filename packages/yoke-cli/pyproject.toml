@@ -44,3 +44,6 @@ where = ["src"]
 # The self-host compose bundle ships inside the wheel; `yoke self-host
 # init` materializes it via importlib.resources.
 "yoke_cli.self_host" = ["docker-compose.yml"]
+
+# Immutable ownership evidence lets packaged clients retire known released copies.
+"yoke_cli.project_install" = ["released_bundle_hashes.json"]

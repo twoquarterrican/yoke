@@ -40,12 +40,35 @@ def retirement_plan(root: Path, prior: dict[str, Any]) -> dict[str, str | None]:
         current = target.read_bytes().decode("utf-8")
         span = block_span(current)
         if span is None:
+            # Re-entry after retirement but before the install commit.
+            from yoke_cli.project_install.install_recovery import GitOwnership
+            from yoke_cli.project_install import checkout_gate
+
+            writer = GitOwnership(root).writers.get(rel)
+            if writer:
+                old = checkout_gate.run_git(root, "show", f"{writer}:{rel}")
+                old_span = block_span(old.stdout) if old.returncode == 0 else None
+                if (
+                    old_span
+                    and current == old.stdout[: old_span[0]] + old.stdout[old_span[1] :]
+                ):
+                    plans[rel] = current
             continue
         start, end = span
         record = records.get(rel) or {}
         if record.get("block_sha") != sha256_text(
             current[start:end].replace("\r\n", "\n")
         ):
+            from yoke_cli.project_install.install_recovery import GitOwnership
+
+            if GitOwnership(root).proves(rel, sha256_text(current)):
+                remainder = current[:start] + current[end:]
+                plans[rel] = (
+                    None
+                    if record.get("file_created") and not remainder.strip()
+                    else remainder
+                )
+                continue
             raise ProjectInstallError(
                 f"instruction_ownership_ambiguous: {rel} has a modified Yoke "
                 "block or no prior baseline. Preserved all files; compare "

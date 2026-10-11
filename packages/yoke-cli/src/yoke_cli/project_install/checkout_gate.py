@@ -1,23 +1,6 @@
-"""Working-tree preflight and bundle-output commit for project install.
+"""Preflight, commit, and verify the installer's repository outputs.
 
-Product ``install`` / ``refresh`` refuse a dirty tree or off-default-branch
-checkout before any write, then commit exactly the manifest-owned paths the
-run touched. Preview and dry-run callers skip this module. Source-dev apply
-still refuses a dirty tree and still commits, but does not require the
-default branch — its documented target is a linked worktree.
-
-Some manifest-owned outputs are generated local views the ignore policy
-deliberately keeps out of the repository — the board render, the strategy
-renders under ``.yoke/strategy/``, backups, and the install manifest itself.
-Those are written to the checkout and never staged. Classification asks git
-which outputs its ignore rules cover rather than naming paths here, so any
-output that lands on an ignored path inherits the same treatment.
-
-A caller that generates more repository content after the install commit —
-the onboard wizard writes the operator's ``.yoke/board-art`` once the
-checkout exists — commits it through :func:`commit_paths` and then proves
-the handoff with :func:`assert_paths_committed`, which refuses to report a
-clean install while any of those paths is still uncommitted.
+Generated ignored views stay local. Publication owns remote reconciliation.
 """
 
 from __future__ import annotations
@@ -27,9 +10,13 @@ from pathlib import Path
 from typing import Any
 
 from yoke_cli.project_install.files import ProjectInstallError
+from yoke_cli.project_install import files as files_layer
 from yoke_cli.project_install.installed_output_paths import (
     normalized,
+    discovery_commit_paths,
     owned_paths,
+    manifest_owned_paths,
+    managed_region_paths,
 )
 
 FALLBACK_DEFAULT_BRANCH = "main"
@@ -40,10 +27,7 @@ REFRESH_COMMIT_PREFIX = "Refresh installed Yoke operating layer to "
 def is_installer_commit_message(message: str) -> bool:
     """True when ``message`` is one this module authored.
 
-    Publication needs to know which unpushed commits on the default branch
-    are the installer's own, because those are the only ones it may replace
-    while reconciling with an advanced remote, and the only ones it may
-    publish without having been asked to publish the operator's work.
+    Publication separately proves installer territory before replacing commits.
     """
     subject = str(message or "").strip()
     return subject.startswith(INSTALL_COMMIT_PREFIX) or subject.startswith(
@@ -102,11 +86,18 @@ def commit_touched_paths(
 ) -> dict[str, Any]:
     """Commit manifest-owned paths this run touched."""
     version = str(report.get("yoke_version") or "current bundle")
+    manifest = files_layer.load_manifest(repo_root)
+    paths = normalized(
+        owned_paths(report)
+        + manifest_owned_paths(manifest)
+        + managed_region_paths(manifest)
+    )
+    if is_git_checkout(repo_root) and not skip:
+        from yoke_cli.project_install.install_recovery import removed_owned_paths
+
+        paths += removed_owned_paths(repo_root, paths)
     return commit_paths(
-        repo_root,
-        owned_paths(report),
-        message=_commit_message(operation, version),
-        skip=skip,
+        repo_root, paths, message=_commit_message(operation, version), skip=skip
     )
 
 
@@ -127,7 +118,7 @@ def commit_paths(
         return {"status": "skipped", "reason": "no-commit"}
     if not is_git_checkout(repo_root):
         return {"status": "skipped", "reason": "not a git checkout"}
-    owned = normalized(paths)
+    owned = discovery_commit_paths(repo_root, normalized(paths))
     local_views = _ignored_outputs(repo_root, owned)
     untracked_from_index = _untrack_local_views(repo_root, local_views)
     views = {
@@ -136,7 +127,10 @@ def commit_paths(
     }
     dirty = {_porcelain_path(line) for line in porcelain(repo_root)}
     to_stage = [
-        path for path in owned if path in dirty and path not in local_views
+        path
+        for path in owned
+        if path not in local_views
+        and (path in dirty or any(changed.startswith(path + "/") for changed in dirty))
     ]
     if not to_stage and not untracked_from_index:
         return {"status": "nothing_to_commit", "paths": [], **views}
@@ -178,18 +172,16 @@ def commit_paths(
 
 
 def assert_paths_committed(repo_root: Path, paths: list[str]) -> list[str]:
-    """Refuse a handoff that leaves installer-written paths uncommitted.
-
-    A generated write that lands after the commit leaves the checkout dirty
-    before its owner has done anything, and a run that reports success while
-    that is true teaches the operator to expect it. Name the exact paths and
-    the recovery instead. Returns the paths it verified.
-    """
-    wanted = normalized(paths)
+    """Verify all installer-written paths are committed before handoff."""
+    wanted = discovery_commit_paths(repo_root, normalized(paths))
     if not wanted or not is_git_checkout(repo_root):
         return wanted
     dirty = {_porcelain_path(line) for line in porcelain(repo_root)}
-    left = [path for path in wanted if path in dirty]
+    left = [
+        path
+        for path in wanted
+        if path in dirty or any(changed.startswith(path + "/") for changed in dirty)
+    ]
     if left:
         listed = "\n".join(f"  {path}" for path in left)
         raise ProjectInstallError(
@@ -213,7 +205,12 @@ def _ignored_outputs(repo_root: Path, paths: list[str]) -> set[str]:
     if not paths:
         return set()
     result = run_git_input(
-        repo_root, "\0".join(paths), "check-ignore", "-z", "--no-index", "--stdin",
+        repo_root,
+        "\0".join(paths),
+        "check-ignore",
+        "-z",
+        "--no-index",
+        "--stdin",
     )
     if result.returncode not in (0, 1):
         detail = (
@@ -273,7 +270,10 @@ def current_branch(repo_root: Path) -> str | None:
 
 def porcelain(repo_root: Path) -> list[str]:
     result = run_git(
-        repo_root, "status", "--porcelain", "--untracked-files=all",
+        repo_root,
+        "status",
+        "--porcelain",
+        "--untracked-files=all",
     )
     if result.returncode != 0:
         detail = result.stderr.strip() or result.stdout.strip() or "git status failed"
@@ -316,7 +316,9 @@ def run_git(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 def run_git_input(
-    repo_root: Path, stdin: str, *args: str,
+    repo_root: Path,
+    stdin: str,
+    *args: str,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["git", "-C", str(repo_root), *args],
