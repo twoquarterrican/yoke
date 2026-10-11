@@ -16,19 +16,6 @@ that gap for the declared stopped-session path. Follow the selected wait mode.
 
 ## Preview, create, confirm
 
-Encode sequencing before staffing: when one item must wait for another, write
-an edge on the dependent at filing or staffing, with the gate point and
-satisfaction matching the actual wait. Use activation for work that cannot
-start, integration for landing order, closure for delivery/close-out order;
-choose fact:merged, fact:deployed:ENV or the blocker's pinned status as needed.
-Do not hold staffing back by memory; the edge owns the wait.
-
-```text
-yoke items dependency add DEPENDENT BLOCKER operator --gate-point activation --satisfaction fact:merged --rationale "dependent needs blocker on trunk"
-```
-
-Read dependency add --help for other gate points and satisfaction conditions.
-
 Preview every steering-staffed item or itemless session. Do not create until
 preview returns launchable=true. Only session_control.launch.create: no native
 CLI/create_thread/alternate path after refusal. There is no second staffing

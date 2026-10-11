@@ -28,11 +28,6 @@ holds, scope bounds, and deployment gates: every standing decision, hold,
 scope bound, and deployment gate that constrains action survives in the plan.
 Refresh the live snapshot; do not restore historical statuses.
 
-Before accepting infrastructure scope, verify and record what currently uses
-it: workflow runs-on targets, live traffic, or workload-backed capacity. An
-existing resource with no consumer is not evidence for a cutover; reconcile
-the objective before sequencing work. The standing loop repeats this check.
-
 Only a genuinely missing document reaches this gate; an omitted slug never
 does, because it already resolved to `CURRENT-PLAN`. Offer to create objective,
 frontier, decisions and gates, then wait for explicit yes. No means stop;
