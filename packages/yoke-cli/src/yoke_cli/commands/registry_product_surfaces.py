@@ -13,6 +13,7 @@ from yoke_cli.commands.adapters import (
     models,
     models_level_proposal,
     overview,
+    operator_data_repair,
     qa_catalog,
     qa_catalog_defaults,
     qa_item_plan_retract,
@@ -268,6 +269,10 @@ OVERVIEW_SUBCOMMAND_REGISTRY = {
 }
 
 PRODUCT_SURFACE_SUBCOMMAND_REGISTRY = {
+    ("operator", "data-repair"): (
+        "operator.data_repair.run",
+        operator_data_repair.operator_data_repair,
+    ),
     ("items", "progress-log", "get"): (
         "items.progress_log.get",
         items_progress_log_get,

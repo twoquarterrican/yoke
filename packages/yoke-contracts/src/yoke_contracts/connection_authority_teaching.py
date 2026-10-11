@@ -7,6 +7,8 @@ from __future__ import annotations
 DB_GROUP_TEACHING = """\
 `yoke db` is read-only diagnostic SQL over the active connection.
 Ordinary writes use registered `yoke <subcommand>` surfaces.
+Human org administrators use `yoke operator data-repair --help` for reviewed,
+transactional row repair without a work lane; raw SQL writes are refused.
 When no registered command covers a required mutation, escalate the missing
 command to the control-plane operator. Name the required operation and the
 registered surfaces checked. `yoke env list` shows configured connections.
