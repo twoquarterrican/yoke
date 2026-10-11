@@ -1,15 +1,4 @@
-"""Run a deployment pipeline under the shared raw+progress watcher.
-
-A hosted deploy is the longest command an operator runs — the release
-bridge alone polls a GitHub Actions workflow for ten to twenty minutes —
-and it was the last long command with no wrapper, so every invocation
-hand-authored a capture-and-grep pair whose paired Monitor had no exit
-sentinel and kept running after the deploy finished.
-
-The wrapper drives the same module the ``yoke deployment-runs execute``
-adapter drives and repeats its self-deploy authority check before starting
-the watcher.
-"""
+"""Run a deployment pipeline under the shared raw+progress watcher."""
 
 from __future__ import annotations
 
@@ -50,6 +39,7 @@ from yoke_core.tools.deploy_pipeline_pinned_driver import (
     child_environment,
     frozen_driver_notice,
     pinned_driver_cwd,
+    pinned_driver_command,
 )
 
 WRAPPER_MODULE = "yoke_core.tools.watch_deploy"
@@ -161,9 +151,9 @@ def deployment_connection_error(run_id: str) -> str | None:
     return f"watch_deploy: {refusal}" if refusal else None
 
 
-def _engine_argv(args: Sequence[str]) -> list[str]:
+def _engine_argv(args: Sequence[str], env: dict[str, str] | None = None) -> list[str]:
     """Build the underlying pipeline invocation argv."""
-    return [sys.executable, "-m", ENGINE_MODULE, *list(args)]
+    return pinned_driver_command(ENGINE_MODULE, list(args), env)
 
 
 def _parse_args(
@@ -325,7 +315,7 @@ def main(argv: Sequence[str] | None = None, *, prog: str = DEFAULT_PROG) -> int:
             )
         header = frozen_driver_notice(pinned_env) if pinned_env else None
         return _watch_runner.run_watcher(
-            argv=_engine_argv(passthrough),
+            argv=_engine_argv(passthrough, pinned_env),
             classifier=classify_deploy_line,
             raw_capture=raw_path,
             progress_capture=progress_path,

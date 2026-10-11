@@ -55,6 +55,7 @@ def _reexec_into_pinned_source(argv: List[str]) -> Optional[int]:
     from yoke_core.tools.deploy_pipeline_pinned_driver import (
         child_environment,
         frozen_driver_notice,
+        pinned_driver_command,
     )
 
     try:
@@ -72,10 +73,16 @@ def _reexec_into_pinned_source(argv: List[str]) -> Optional[int]:
         timing_facts(source_sha=env.get(PINNED_RELEASE_ENV, ""))
         begin_reexec(env)
         try:
-            os.execve(sys.executable, [sys.executable, "-m", _ENGINE, *argv], env)
-        except OSError:
+            command = pinned_driver_command(_ENGINE, argv, env)
+            os.execve(command[0], command, env)
+        except OSError as exc:
             finish_reexec(argv[0], outcome="failed", environment=env)
-            raise
+            print(
+                f"error: DEPLOY-DRIVER-EXEC: could not start pinned interpreter "
+                f"({type(exc).__name__}). Re-drive the same run to prepare its environment again.",
+                file=sys.stderr,
+            )
+            return 2
     return None
 
 

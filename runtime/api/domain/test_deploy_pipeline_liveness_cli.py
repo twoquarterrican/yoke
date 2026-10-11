@@ -69,9 +69,9 @@ def test_liveness_cli_reexecs_into_the_pinned_tree(
             liveness_cli.main(["run-1"])
     assert exited.value.code == 0
     exe, argv, env = calls[0]
-    assert exe == liveness_cli.sys.executable
+    assert exe == "/pin/.venv/bin/python3"
     assert argv[:3] == [
-        liveness_cli.sys.executable,
+        exe,
         "-m",
         liveness_cli._ENGINE,
     ]
@@ -145,6 +145,20 @@ def test_liveness_cli_prints_freeze_failure(
     )
     assert liveness_cli.main(["run-1"]) == 2
     assert "cannot freeze" in capsys.readouterr().err
+
+
+def test_liveness_cli_reports_pinned_interpreter_launch_failure(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "yoke_core.tools.deploy_pipeline_pinned_driver.child_environment",
+        lambda _: dict(_PINNED_ENV),
+    )
+
+    def fail(*args):
+        raise OSError("unavailable")
+
+    monkeypatch.setattr(liveness_cli.os, "execve", fail)
+    assert liveness_cli.main(["run-1"]) == 2
+    assert "DEPLOY-DRIVER-EXEC" in capsys.readouterr().err
 
 
 def test_liveness_cli_records_the_driver_before_the_freeze(

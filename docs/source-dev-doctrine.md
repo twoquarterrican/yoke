@@ -147,6 +147,12 @@ authorization likewise prove through that paired HTTPS plane.
 
 ### Source execution and release rules
 
+Self-deploy drivers sync runtime dependencies from the detached candidate's
+`uv.lock` and execute its checkout-owned Python, including when started by an
+older installed CLI. Both direct execute and the deploy watcher use this
+preparation; failures name `DEPLOY-DRIVER-ENVIRONMENT` and the same-run recovery.
+See [deployment start diagnostics](public/reference/deployment-start.md).
+
 Doctor's launcher check excludes only the source runner's temporary `.venv/bin`
 when its source-root marker matches the running interpreter prefix. It still
 checks persistent machine PATH shadows, login-shell resolution and hook commands;

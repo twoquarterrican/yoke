@@ -1,5 +1,16 @@
 # Deployment start diagnostics
 
+A serving-API self-deploy prepares a detached checkout at the run's release
+lineage before launching its engine. Preparation runs `uv sync --frozen --no-dev`
+against that checkout's own `uv.lock`; the execute adapter and deploy watcher
+both launch its `.venv` Python with pinned source imports. Ambient uv environment
+selectors cannot redirect the sync into the installed tool environment.
+Preparation is bounded to five minutes. A missing lock, uv executable, failed
+sync, timeout, or missing interpreter refuses as `DEPLOY-DRIVER-ENVIRONMENT`,
+with the pinned path, repair recipe, and same-run re-drive instructions. Watcher
+failures remain in its raw and progress captures. Ordinary relayed delivery
+keeps the installed engine environment.
+
 A normal driver start builds its execution context once. Composition completes
 and validates membership before the driver reads it, and returns that pass’s
 enrolled references. Branch verification and QA seeding use those members.
