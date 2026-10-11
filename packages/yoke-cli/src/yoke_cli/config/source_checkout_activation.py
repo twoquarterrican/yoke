@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any, TypeVar
 
-from yoke_cli.config import editable_install
+from yoke_cli.config import editable_install, machine_config
 from yoke_cli.project_install.files import MODE_SOURCE_LINK
 
 _Error = TypeVar("_Error", bound=Exception)
@@ -19,8 +19,14 @@ _SOURCE_LINK_SNIPPET = (
     "import json, sys\n"
     "from pathlib import Path\n"
     "from yoke_core.domain.project_install_source_link import install_source_link\n"
-    "print(json.dumps("
-    "install_source_link(Path(sys.argv[1]), operation=sys.argv[2]), default=str))\n"
+    "from yoke_cli.config.github_project_setup import GitHubProjectSetupError\n"
+    "try:\n"
+    "    result = install_source_link(Path(sys.argv[1]), operation=sys.argv[2], "
+    "config_path=sys.argv[3])\n"
+    "except GitHubProjectSetupError as exc:\n"
+    "    print(str(exc), file=sys.stderr)\n"
+    "    sys.exit(1)\n"
+    "print(json.dumps(result, default=str))\n"
 )
 
 
@@ -28,6 +34,7 @@ def install_source_checkout(
     root: Path,
     *,
     editable: bool = True,
+    config_path: str | Path | None = None,
     error_type: type[_Error] = RuntimeError,
 ) -> dict[str, Any]:
     """Install the source-link layer and optionally repoint the tool venv."""
@@ -37,7 +44,11 @@ def install_source_checkout(
             root,
             error_type=error_type,
         )
-    source_link = _run_source_link_subprocess(root, error_type=error_type)
+    source_link = _run_source_link_subprocess(
+        root,
+        config_path=config_path,
+        error_type=error_type,
+    )
     provisioned["source_link"] = source_link
     provisioned["machine_config_newly_registered"] = bool(
         source_link.get("machine_config_newly_registered")
@@ -113,12 +124,20 @@ def _checkout_pythonpath(root: Path) -> str:
 def _run_source_link_subprocess(
     root: Path,
     *,
+    config_path: str | Path | None = None,
     error_type: type[_Error] = RuntimeError,
 ) -> dict[str, Any]:
     env = dict(os.environ)
     env["PYTHONPATH"] = _checkout_pythonpath(root)
     result = subprocess.run(
-        [sys.executable, "-c", _SOURCE_LINK_SNIPPET, str(root), "dev.setup"],
+        [
+            sys.executable,
+            "-c",
+            _SOURCE_LINK_SNIPPET,
+            str(root),
+            "dev.setup",
+            str(machine_config.config_path(config_path)),
+        ],
         cwd=root,
         text=True,
         stdout=subprocess.PIPE,

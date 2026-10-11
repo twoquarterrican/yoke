@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from yoke_cli.config import github_git_credentials
-from yoke_cli.config import github_repo_helper_reconnect
 from yoke_cli.config import machine_config
 from yoke_cli.config import onboard_apply_progress
 from yoke_cli.config import project_onboard_progress as progress_steps
@@ -96,24 +94,9 @@ def finish_after_dispatch(
             # Reviewed apply; the folder may be a just-cloned or
             # just-inited tree with leftover install dirt.
             force=True,
-            # The checkout's Git credential helper is configured below, after
-            # this call, so the install cannot push through it yet.
+            # Onboarding owns final publication after install convergence.
             publish=False,
         )
-        github = machine_config.github_config(config_path)
-        web_url = str(github.get("web_url") or "")
-        if (
-            web_url
-            and github_repo_helper_reconnect.has_matching_https_remote(
-                root,
-                web_url=web_url,
-            )
-            is True
-        ):
-            install["git_credentials"] = github_git_credentials.configure_repo_helper(
-                root,
-                config_path=config_path,
-            )
         # Onboarding leaves the operator with a checkout whose layer is on the
         # remote, not one carrying an unpushed commit they never made.
         install["publication"] = publication.publish_onboarded_layer(

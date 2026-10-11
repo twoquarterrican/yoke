@@ -12,6 +12,15 @@ from yoke_cli.config import machine_config_file
 from yoke_contracts.machine_config import schema as contract
 
 
+def planned_secret_path(env_name: str, *, error_type: type[RuntimeError]) -> Path:
+    safe = "".join(
+        char if char.isalnum() or char in "._-" else "_" for char in env_name.strip()
+    ).strip("._-")
+    if not safe:
+        raise error_type("--env must include a filesystem-safe label")
+    return machine_config.yoke_home() / contract.SECRETS_DIR_NAME / f"{safe}.dsn"
+
+
 def merge_connection_metadata(
     env_name: str,
     config_path: str | Path | None,
@@ -28,7 +37,8 @@ def merge_connection_metadata(
             with machine_config_file.exclusive_lock(cfg_path):
                 payload = machine_config.load_config(cfg_path)
                 entry = payload.setdefault("connections", {}).setdefault(
-                    env_name, {},
+                    env_name,
+                    {},
                 )
                 entry[contract.PROD_FLAG_KEY] = False
                 if postgres:
@@ -58,16 +68,16 @@ def _write_payload(
     error_type: type[RuntimeError],
 ) -> None:
     errors = [
-        issue for issue in contract.validate_payload(payload)
+        issue
+        for issue in contract.validate_payload(payload)
         if issue.severity == "error"
     ]
     if errors:
-        detail = "\n".join(
-            f"  - {issue.code}: {issue.message}" for issue in errors
-        )
+        detail = "\n".join(f"  - {issue.code}: {issue.message}" for issue in errors)
         raise error_type(f"refusing to write invalid machine config:\n{detail}")
     machine_config_file.atomic_write_text(
-        cfg_path, json.dumps(payload, indent=2) + "\n",
+        cfg_path,
+        json.dumps(payload, indent=2) + "\n",
     )
 
 

@@ -45,6 +45,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
+from yoke_cli.config import github_project_setup
 from yoke_cli.project_install.cursor_permissions import apply_cursor_permissions
 from yoke_cli.filesystem_safety import (
     atomic_replace_bytes,
@@ -246,11 +247,13 @@ def install_source_link(
     repo_root: Path,
     *,
     operation: str = "install",
+    config_path: str | Path | None = None,
 ) -> Dict[str, Any]:
     """Apply the source-link strategy to *repo_root* (no bundle, no fetch)."""
     from yoke_core.domain import project_contract
     from yoke_core.domain.install_bundle import yoke_version
 
+    git_credentials = github_project_setup.converge(repo_root, config_path=config_path)
     old_manifest = files_layer.load_manifest(repo_root) or {}
     for rel, source_rel in DEV_MATERIALIZED_FILES:
         files_layer.assert_resolved_targets_within(
@@ -265,9 +268,7 @@ def install_source_link(
     materialized = BootstrapResult()
     for rel, source_rel in DEV_MATERIALIZED_FILES:
         ensure_dev_materialized_file(repo_root, rel, source_rel, materialized)
-    # Cursor's command-approval and network-sandbox regions. Same merge pass
-    # the copy strategy runs, so the source checkout and an installed project
-    # get identical policy without a second implementation.
+    # Source and installed checkouts share Cursor permissions policy.
     cursor_permissions_records, cursor_permissions_report = apply_cursor_permissions(
         repo_root,
         prior_records=old_manifest.get(CURSOR_PERMISSIONS_MANIFEST_KEY),
@@ -309,6 +310,7 @@ def install_source_link(
     manifest_file = files_layer.write_manifest(repo_root, manifest)
     return {
         "operation": operation,
+        "git_credentials": git_credentials,
         MODE_KEY: MODE_SOURCE_LINK,
         "repo_root": str(repo_root),
         "yoke_version": manifest["yoke_version"],

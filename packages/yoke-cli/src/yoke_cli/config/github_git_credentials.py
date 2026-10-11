@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import shlex
-import os
-import stat
 import sys
 import sysconfig
 from pathlib import Path
 from typing import Any, Mapping
 
 from yoke_cli.config import github_git_credential_bundle
-from yoke_cli.config import github_git_credential_launcher
+from yoke_cli.config.github_prior_runtime_verification import (
+    verified_prior_runtime_helper,
+)
 from yoke_contracts import github_origin
 from yoke_cli.config import github_repo_config, machine_config
 from yoke_cli.config.project_git_transport import GENERAL_CREDENTIAL_HELPER_KEY
@@ -49,7 +49,7 @@ def configure_repo_helper(
     credential_ref = str(authorization.get("refresh_credential_ref") or "").strip()
     if not credential_ref:
         return {"configured": False, "reason": "machine-github-credential-ref-missing"}
-    helper_path = install_stable_helper()
+    helper_path = _helper_site_dir() / STABLE_HELPER_FILE_NAME
     helper = helper_command(config_path=config_path, helper_path=helper_path)
     helper_key = credential_helper_key(str(github.get("web_url") or ""))
     # Reset only this URL's helper chain. Global helpers remain available for
@@ -63,13 +63,20 @@ def configure_repo_helper(
             raise RuntimeError(
                 "repo-local GitHub helper chain contains a user-managed value"
             )
-        github_repo_config.replace_values(
-            root, helper_key, expected=current, replacement=["", helper],
-        )
+        install_stable_helper()
+        replacement = ["", helper]
+        if current != replacement:
+            github_repo_config.replace_values(
+                root,
+                helper_key,
+                expected=current,
+                replacement=replacement,
+            )
     except github_repo_config.GitHubRepoConfigError as exc:
         raise RuntimeError(str(exc)) from exc
     return {
         "configured": True,
+        "changed": current != replacement,
         "key": helper_key,
         "helper_path": str(helper_path),
     }
@@ -84,7 +91,8 @@ def remove_known_repo_helpers(
     failed = 0
     try:
         checkouts = machine_config.all_registered_checkouts(
-            config_path, existing_only=True,
+            config_path,
+            existing_only=True,
         )
     except (OSError, machine_config.MachineConfigError):
         return {"removed": 0, "failed": 1}
@@ -96,7 +104,9 @@ def remove_known_repo_helpers(
 
 
 def remove_repo_helpers(
-    root: Path, *, config_path: str | Path | None,
+    root: Path,
+    *,
+    config_path: str | Path | None,
 ) -> dict[str, int]:
     """Remove exact Yoke values/resets while preserving the user chain."""
 
@@ -117,12 +127,16 @@ def remove_repo_helpers(
                 failed += 1
                 continue
             replacement = _without_owned_helpers(
-                current, config_path=config_path,
+                current,
+                config_path=config_path,
             )
             if replacement == current:
                 continue
             github_repo_config.replace_values(
-                root, key, expected=current, replacement=replacement,
+                root,
+                key,
+                expected=current,
+                replacement=replacement,
             )
             removed += 1
         except github_repo_config.GitHubRepoConfigError:
@@ -145,7 +159,9 @@ def _local_config_values(root: Path, key: str) -> tuple[list[str], bool]:
 
 
 def _without_owned_helpers(
-    values: list[str], *, config_path: str | Path | None,
+    values: list[str],
+    *,
+    config_path: str | Path | None,
 ) -> list[str]:
     remove: set[int] = set()
     for index, value in enumerate(values):
@@ -187,65 +203,12 @@ def _is_yoke_helper(
     return (
         actual[2] == expected[2]
         and actual[1].name == STABLE_HELPER_FILE_NAME
-        and _verified_prior_runtime_helper(
-            actual[0], actual[1], current_python=expected[0],
+        and verified_prior_runtime_helper(
+            actual[0],
+            actual[1],
+            current_python=expected[0],
         )
     )
-
-
-def _verified_prior_runtime_helper(
-    python: Path,
-    helper: Path,
-    *,
-    current_python: Path,
-) -> bool:
-    """Recognize a safe prior-runtime launcher without trusting its path."""
-
-    try:
-        python_info = python.stat()
-        if (
-            not stat.S_ISREG(python_info.st_mode)
-            or not os.access(python, os.X_OK)
-        ):
-            return False
-        if (
-            python != current_python
-            and stat.S_IMODE(python_info.st_mode) & 0o022
-        ):
-            return False
-        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(
-            os, "O_NONBLOCK", 0,
-        )
-        descriptor = os.open(helper, flags)
-    except OSError:
-        return False
-    try:
-        info = os.fstat(descriptor)
-        if (
-            not stat.S_ISREG(info.st_mode)
-            or stat.S_IMODE(info.st_mode) & 0o022
-            or info.st_size > 256 * 1024
-        ):
-            return False
-        source = os.read(descriptor, 256 * 1024 + 1)
-    except OSError:
-        return False
-    finally:
-        os.close(descriptor)
-    if not all(marker in source for marker in (
-        b'BUNDLE_POINTER_NAME = "_yoke_github_helper_current"',
-        b'BUNDLE_HELPER_NAME = "_yoke_github_git_credential_helper.py"',
-        b"def selected_bundle(",
-    )):
-        return False
-    try:
-        # The stable launcher is meaningful only beside a content-addressed,
-        # integrity-checked bundle.  Marker-shaped files on their own remain
-        # user-managed lookalikes and must never be removed automatically.
-        github_git_credential_launcher.selected_bundle(helper.parent)
-    except (OSError, github_git_credential_launcher.GitHubCredentialLauncherError):
-        return False
-    return True
 
 
 def _looks_like_yoke_helper(value: str) -> bool:
@@ -274,17 +237,18 @@ def helper_command(
 ) -> str:
     """Return the git ``credential.helper`` command for this Python runtime."""
     selected_helper = (
-        Path(helper_path)
-        if helper_path is not None
-        else install_stable_helper()
+        Path(helper_path) if helper_path is not None else install_stable_helper()
     )
     command = [
         shlex.quote(sys.executable),
         shlex.quote(str(selected_helper)),
     ]
-    command.extend([
-        "--config", shlex.quote(str(machine_config.config_path(config_path))),
-    ])
+    command.extend(
+        [
+            "--config",
+            shlex.quote(str(machine_config.config_path(config_path))),
+        ]
+    )
     return "!" + " ".join(command)
 
 

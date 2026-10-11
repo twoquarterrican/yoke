@@ -28,6 +28,13 @@ your own git credentials” or “pushed with Yoke GitHub access”. A broken st
 authorization never falls back to your own credentials; GitHub API features
 still require the App connection.
 
+For ordinary Git commands in registered checkouts, run
+`yoke project install /path/to/checkout` after connecting. Install and refresh
+converge GitHub origins to HTTPS and attach the verified Yoke helper, including
+projects originally onboarded with SSH or before helper wiring existed.
+Changes and skipped or refused setup are reported by the command. See
+[projects.md](projects.md#checkout-github-sign-in).
+
 ## Merge connectivity and issue mirroring
 
 A project's active GitHub App repository binding determines whether a

@@ -130,9 +130,8 @@ def publish_onboarded_layer(
 ) -> dict[str, Any]:
     """Publish an onboarding install's commit once its credentials are set.
 
-    Onboarding configures the checkout's credential helper after the install
-    writes, so the install defers publication to here rather than pushing
-    through credentials that do not exist yet.
+    Install converges checkout credentials before upstream reads. Onboarding
+    defers publication to here so it owns the final setup outcome.
     """
     return publish_installed_layer(
         repo_root,
