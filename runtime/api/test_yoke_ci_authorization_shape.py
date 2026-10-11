@@ -86,12 +86,8 @@ def test_workflow_job_names_ignore_field_order(tmp_path, fields) -> None:
     assert orphan_required_contexts(("named-check",), names) == ()
 
 
-def test_reuse_coverage_runs_on_merge_group_as_well_as_main_push() -> None:
-    workflow = _yoke_ci()
-
-    condition = " ".join(str(workflow["jobs"]["reuse_coverage"]["if"]).split())
-    assert "github.event_name == 'merge_group'" in condition
-    assert "github.ref == 'refs/heads/main'" in condition
+def test_reuse_coverage_runs_on_every_ci_event() -> None:
+    assert "if" not in _yoke_ci()["jobs"]["reuse_coverage"]
 
 
 def _required_contexts() -> tuple[str, ...]:
@@ -133,7 +129,10 @@ def test_every_required_context_reports_on_the_reuse_skip_path() -> None:
     only the caller id and never the nested name, so the caller stays on the
     graph and the inner workflow no-ops.
     """
-    workflow = _yoke_ci()
+    workflows = (
+        _yoke_ci(),
+        load_document(WORKFLOWS / "yoke-build-artifacts.yml"),
+    )
     contexts = _required_contexts()
 
     # Pinned as a set rather than a count: the shard half is whatever the
@@ -142,6 +141,9 @@ def test_every_required_context_reports_on_the_reuse_skip_path() -> None:
     versions = ci_shards.python_versions()
     assert set(contexts) == {
         "repo-contracts",
+        "reuse-coverage",
+        "build",
+        "attest-validated-release-provenance",
         "container",
         "browser_runtime / browser-runtime",
     } | {
@@ -150,13 +152,19 @@ def test_every_required_context_reports_on_the_reuse_skip_path() -> None:
         for shard in ci_shards.shard_list()
     }
     for context in contexts:
-        matched = _jobs_for_context(workflow, context)
+        matched = [
+            job
+            for workflow in workflows
+            for job in _jobs_for_context(workflow, context)
+        ]
         assert matched, context
         for job in matched:
             condition = " ".join(str(job.get("if") or "").split())
             # An event filter is what would make the check absent rather than
             # skipped; the reuse verdict may gate only a non-matrix job.
-            assert "github.event_name" not in condition, context
+            if "github.event_name" in condition:
+                assert "github.event_name == 'merge_group'" in condition, context
+                continue  # The signer runs on queue candidates, never ordinary PRs.
             if job.get("uses") or (
                 "strategy" in job and "matrix" in job.get("strategy", {})
             ):
