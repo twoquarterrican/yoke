@@ -21,6 +21,10 @@ from yoke_core.api.service_client_structured_api_adapter_inventory_types import 
 )
 
 OPS_ADAPTERS: List[AdapterEntry] = [
+    AdapterEntry(
+        function_id="operator.data_repair.run",
+        cli_invocation="yoke operator data-repair --content-file FILE --reviewed-sha256 SHA [--dry-run] [--json]",
+    ),
     _read_entry(
         function_id="events.performance.aggregate",
         cli_invocation="yoke events performance aggregate --since ISO --until ISO [--project-ids ID,ID] [--points N]",
