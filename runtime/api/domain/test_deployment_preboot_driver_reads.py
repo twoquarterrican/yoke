@@ -52,6 +52,9 @@ def preboot(clocks, monkeypatch):
         "CREATE TABLE qa_runs (id integer,qa_requirement_id integer,started_at text,completed_at text,created_at text)"
     )
     clocks.execute(
+        "CREATE TABLE item_status_transitions (item_id integer,task_num integer,to_status text,created_at text)"
+    )
+    clocks.execute(
         "CREATE TABLE merge_queue_landing_refreshes (project_id integer PRIMARY KEY,started_at text,completed_at text,last_error text)"
     )
     clocks.execute(

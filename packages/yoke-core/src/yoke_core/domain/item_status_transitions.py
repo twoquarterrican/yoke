@@ -158,7 +158,12 @@ def _record(
                 resolved_session or None,
                 actor_id,
                 project_id,
-                instant_parameter(conn, utc_now()),
+                instant_parameter(
+                    conn,
+                    utc_now(),
+                    table="item_status_transitions",
+                    column="created_at",
+                ),
             ),
         )
         conn.execute("RELEASE SAVEPOINT item_status_transition")

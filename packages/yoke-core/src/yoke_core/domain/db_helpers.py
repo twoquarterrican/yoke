@@ -30,9 +30,10 @@ def instant_parameter(
 ) -> datetime | str | None:
     """Bind an aware instant natively, or canonically at the SQLite boundary.
 
-    SQL writers pass native datetimes. Declared pre-boot clocks alone use
-    canonical text while their live column is TEXT. Ingress must already
-    have parsed its wire value; strings, epochs and naive datetimes refuse.
+    SQL writers and comparison cutoffs pass native datetimes. Declared
+    pre-boot clocks alone use canonical text while their live column is TEXT.
+    Ingress must already have parsed its wire value; strings, epochs and naive
+    datetimes refuse.
     """
     if value is None:
         return None
