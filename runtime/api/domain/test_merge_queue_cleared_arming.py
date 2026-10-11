@@ -174,10 +174,10 @@ def test_recovered_arming_episode_is_native_before_sql_binding(
     bind = landing_observer.instant_parameter
     seen = []
 
-    def record_binding(connection, value):
+    def record_binding(connection, value, **storage):
         assert value.tzinfo is timezone.utc
         seen.append(value)
-        return bind(connection, value)
+        return bind(connection, value, **storage)
 
     monkeypatch.setattr(landing_observer, "instant_parameter", record_binding)
     observe(

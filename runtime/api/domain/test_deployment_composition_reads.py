@@ -68,6 +68,9 @@ def test_freeze_shares_one_custody_resolution_between_refusal_checks():
         patch.object(freeze, "snapshot_flow_requirements", return_value="{}"),
         patch.object(freeze, "record_bound_sources"),
         patch.object(freeze, "record_carried_work", return_value={}),
+        patch.object(
+            freeze, "instant_parameter", side_effect=lambda _conn, value, **_: value
+        ),
         patch(
             "yoke_core.domain.deployment_run_unheld_candidates.resolve_candidate_custody",
             return_value=custody,

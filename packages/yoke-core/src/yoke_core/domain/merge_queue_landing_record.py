@@ -7,7 +7,7 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any
 
-from yoke_contracts.timestamps import format_instant, parse_instant
+from yoke_contracts.timestamps import parse_instant, temporal_wire
 from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import instant_parameter
 from yoke_core.domain.merge_queue_enqueue_verification import LandingReadback
@@ -87,12 +87,8 @@ class LandingRecord(LandingObservation):
             "failed_checks": [check_payload(check) for check in self.failed_checks],
             "narrative": self.narrative,
             "disarm_note": self.disarm_note,
-            "observed_at": format_instant(self.observed_at)
-            if self.observed_at is not None
-            else None,
-            "changed_at": format_instant(self.changed_at)
-            if self.changed_at is not None
-            else None,
+            "observed_at": temporal_wire(self.observed_at),
+            "changed_at": temporal_wire(self.changed_at),
         }
 
 
@@ -213,8 +209,19 @@ def from_readback(
 
 def write_landing_record(conn: Any, record: LandingRecord) -> None:
     """Upsert one observation, preserving ``changed_at`` when facts match."""
-    observed = instant_parameter(conn, parse_instant(record.observed_at))
-    changed = instant_parameter(conn, parse_instant(record.changed_at))
+    observed, changed = map(parse_instant, (record.observed_at, record.changed_at))
+    observed = instant_parameter(
+        conn,
+        observed,
+        table="merge_queue_landing_records",
+        column="observed_at",
+    )
+    changed = instant_parameter(
+        conn,
+        changed,
+        table="merge_queue_landing_records",
+        column="changed_at",
+    )
     p = _p(conn)
     checks = json.dumps(
         [check_payload(check) for check in record.failed_checks],

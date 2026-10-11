@@ -57,8 +57,18 @@ def claim_due_projects(
     cadence_seconds: float = REFRESH_CADENCE_SECONDS,
 ) -> tuple[int, ...]:
     """Atomically claim each project whose last sweep began before cadence."""
-    current = instant_parameter(conn, parse_instant(now))
-    cutoff = instant_parameter(conn, now - timedelta(seconds=float(cadence_seconds)))
+    current = instant_parameter(
+        conn,
+        parse_instant(now),
+        table="merge_queue_landing_refreshes",
+        column="started_at",
+    )
+    cutoff = instant_parameter(
+        conn,
+        now - timedelta(seconds=float(cadence_seconds)),
+        table="merge_queue_landing_refreshes",
+        column="started_at",
+    )
     p = _p(conn)
     claimed: list[int] = []
     for project_id in sorted({int(value) for value in project_ids}):
@@ -99,7 +109,15 @@ def complete_projects(
     conn.execute(
         "UPDATE merge_queue_landing_refreshes SET "
         f"completed_at={p},last_error='' WHERE project_id IN ({slots})",
-        (instant_parameter(conn, parse_instant(now)), *projects),
+        (
+            instant_parameter(
+                conn,
+                parse_instant(now),
+                table="merge_queue_landing_refreshes",
+                column="completed_at",
+            ),
+            *projects,
+        ),
     )
     conn.commit()
 
@@ -119,7 +137,16 @@ def fail_projects(
     conn.execute(
         "UPDATE merge_queue_landing_refreshes SET "
         f"completed_at={p},last_error={p} WHERE project_id IN ({slots})",
-        (instant_parameter(conn, parse_instant(now)), str(error), *projects),
+        (
+            instant_parameter(
+                conn,
+                parse_instant(now),
+                table="merge_queue_landing_refreshes",
+                column="completed_at",
+            ),
+            str(error),
+            *projects,
+        ),
     )
     conn.commit()
 
@@ -137,7 +164,7 @@ def read_refresh(conn: Any, project_id: int) -> LandingRefresh:
     return LandingRefresh(
         project_id=int(value["project_id"]),
         started_at=parse_timestamp(value.get("started_at")),
-        completed_at=parse_timestamp(value.get("completed_at")),
+        completed_at=parse_timestamp(value.get("completed_at") or None),
         last_error=str(value.get("last_error") or ""),
     )
 

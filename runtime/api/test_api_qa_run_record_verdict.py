@@ -54,6 +54,14 @@ class TestQaRunRecordVerdict(unittest.TestCase):
             def fetchone(self):
                 return (99,)
 
+            def fetchall(self):
+                # This handler-only double supplies the native clock catalog;
+                # real TEXT/native storage is exercised by PostgreSQL fixtures.
+                return [
+                    ("qa_runs", name, "timestamp with time zone")
+                    for name in ("started_at", "completed_at", "created_at")
+                ]
+
         class _Conn:
             def execute(self, sql, params):
                 return _Cursor()

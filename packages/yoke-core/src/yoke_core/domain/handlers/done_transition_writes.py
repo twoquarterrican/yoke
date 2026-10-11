@@ -209,7 +209,15 @@ def handle_populate_merged_at(request: FunctionCallRequest) -> HandlerOutcome:
             )
             conn.execute(
                 f"UPDATE items SET merged_at = {assignment} WHERE id = {p}",
-                (instant_parameter(conn, parse_instant(body.merged_at)), item_id),
+                (
+                    instant_parameter(
+                        conn,
+                        parse_instant(body.merged_at),
+                        table="items",
+                        column="merged_at",
+                    ),
+                    item_id,
+                ),
             )
             row = conn.execute(
                 f"SELECT merged_at FROM items WHERE id = {p}",

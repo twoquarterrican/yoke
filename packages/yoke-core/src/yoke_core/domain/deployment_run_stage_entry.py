@@ -20,13 +20,32 @@ def set_current_stage(
     converges, the stage still advances; readers show an unknown age rather
     than guessing from another clock. No old run is backfilled.
     """
+    # The preceding execution stage may have booted history in another
+    # process. Re-read types once at this boundary, never per clock write.
+    from yoke_core.domain.preboot_instant_parameters import clear_storage_types
+
+    previous = conn.execute(
+        "SELECT current_stage FROM deployment_runs WHERE id=%s", (run_id,)
+    ).fetchone()
+    if previous is not None and previous[0] != stage:
+        clear_storage_types()
     guard = " AND status='executing'" if only_executing else ""
     if _column_exists(conn, "deployment_runs", "current_stage_entered_at"):
         conn.execute(
             "UPDATE deployment_runs SET current_stage_entered_at=CASE "
             "WHEN current_stage IS DISTINCT FROM %s THEN %s "
             f"ELSE current_stage_entered_at END,current_stage=%s WHERE id=%s{guard}",
-            (stage, instant_parameter(conn, utc_now()), stage, run_id),
+            (
+                stage,
+                instant_parameter(
+                    conn,
+                    utc_now(),
+                    table="deployment_runs",
+                    column="current_stage_entered_at",
+                ),
+                stage,
+                run_id,
+            ),
         )
     else:
         conn.execute(

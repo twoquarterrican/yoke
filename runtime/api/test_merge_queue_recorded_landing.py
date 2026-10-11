@@ -10,6 +10,8 @@ landed. An earlier queue receipt must not satisfy a later candidate.
 """
 
 from pathlib import Path
+import pytest
+from yoke_contracts.timestamps import InvalidInstant
 
 from runtime.api.merge_queue_landing_test_helpers import (
     UNARMED,
@@ -96,8 +98,10 @@ def test_a_later_uncontained_candidate_does_not_close_out_from_the_recorded_pr(
     monkeypatch.setattr(
         outcome_mod,
         "record_landing",
-        lambda _ctx, **kw: closed.append(kw["pr_num"])
-        or QueueCloseOut(merge_sha="n" * 40, touched_files=("a.py",)),
+        lambda _ctx, **kw: (
+            closed.append(kw["pr_num"])
+            or QueueCloseOut(merge_sha="n" * 40, touched_files=("a.py",))
+        ),
     )
 
     outcome = land(
@@ -118,8 +122,10 @@ def test_unverifiable_containment_refuses_instead_of_closing_out(monkeypatch):
     monkeypatch.setattr(
         outcome_mod,
         "record_landing",
-        lambda _ctx, **kw: closed.append(kw["pr_num"])
-        or QueueCloseOut(merge_sha="n" * 40, touched_files=("a.py",)),
+        lambda _ctx, **kw: (
+            closed.append(kw["pr_num"])
+            or QueueCloseOut(merge_sha="n" * 40, touched_files=("a.py",))
+        ),
     )
 
     outcome = land(dispatch=dispatch_for({"YOK-200": {}}, merge_queue=LANDED))
@@ -149,6 +155,25 @@ def test_later_commits_on_the_same_lane_are_unlanded(monkeypatch):
         outcome_mod.recorded_landing_covers_candidate("/repo", LATER, "main")
         == "unlanded"
     )
+
+
+@pytest.mark.parametrize("coverage", ["unlanded", "unverifiable", "landed"])
+def test_historical_receipt_clock_is_decoded_only_for_proved_coverage(
+    monkeypatch, coverage
+):
+    wire_happy_path(monkeypatch, landing_states=[UNARMED])
+    _cover(monkeypatch, coverage)
+    dispatch = dispatch_for(
+        {"YOK-200": {}},
+        merge_queue={"pr_number": "42", "landed_at": "2026-10-10 21:47:27+00"},
+    )
+    if coverage == "landed":
+        with pytest.raises(InvalidInstant):
+            land(commit_sha=LATER, dispatch=dispatch)
+    else:
+        result = land(commit_sha=LATER, dispatch=dispatch)
+        assert result.ok == (coverage == "unlanded")
+        assert not result.already_merged
 
 
 def test_an_unreadable_comparison_is_unverifiable(monkeypatch):
@@ -189,8 +214,9 @@ def test_uncontained_candidate_from_release_does_not_advance_status(
     monkeypatch.setattr(
         merge_cli.close_out,
         "transition_to_done",
-        lambda **kw: advanced.append(str(kw.get("source_status") or ""))
-        or ("done", ""),
+        lambda **kw: (
+            advanced.append(str(kw.get("source_status") or "")) or ("done", "")
+        ),
     )
     monkeypatch.setattr(
         verify,
@@ -198,7 +224,9 @@ def test_uncontained_candidate_from_release_does_not_advance_status(
         lambda *_a, **_k: (None, "take the candidate path"),
     )
 
-    assert merge_cli.run(["ITEM-1", "--result", "x", "--verification", "y", "--json"]) == 1
+    assert (
+        merge_cli.run(["ITEM-1", "--result", "x", "--verification", "y", "--json"]) == 1
+    )
     assert advanced == []
     assert item["status"] == "release"
     assert "take the candidate path" in capsys.readouterr().out
