@@ -22,7 +22,7 @@ from runtime.api.tools import migration_rehearsal_release_surfaces as surfaces
 from yoke_core.domain.deployment_runs_crud_mutate import CompositionRefused
 from yoke_core.domain.deployment_run_ci_tested_source import ReleaseSourceRefused
 from yoke_core.domain.project_github_auth_models import MissingAppCredentials
-from runtime.api.tools.yoke_migration_fleet import rehearsal_plan
+from runtime.api.tools.yoke_migration_fleet import rehearsal_plan, verify_migrated_copy
 from yoke_core.domain import db_backend
 
 
@@ -46,10 +46,7 @@ class _Connection:
 
 
 def test_yoke_rehearsal_plan_binds_release_surface_validation() -> None:
-    assert (
-        rehearsal_plan().post_converge_validator
-        is surfaces.verify_migrated_release_surfaces
-    )
+    assert rehearsal_plan().post_converge_validator is verify_migrated_copy
 
 
 def test_release_surfaces_run_against_disposable_postgres(release_pin_db: dict) -> None:

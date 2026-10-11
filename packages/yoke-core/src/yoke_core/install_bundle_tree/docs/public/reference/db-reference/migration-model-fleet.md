@@ -112,6 +112,24 @@ or authoring a repair; this mode supplies no timezone or nullability decisions.
 
 ## Release gate
 
+For the engine tenant fleet, each restored copy first exercises the candidate's
+real member-bearing release driver operations against the pre-boot schema:
+run creation with inherited membership, execution context, containment, QA
+seeding, start, stage entry and receipt allocation. It never dispatches an
+executor. Copied driver attachments and executing target occupancy are cleared
+only on the disposable database. Stored flow/target subjects and their exact
+source revisions are replayed; a universe with no stored member-bearing release
+refuses with `preboot_release_subject_missing` and cannot earn driver proof.
+Supply a real release declaration before retrying. After real boot
+convergence and history invariants, product sessions, frontier, board, launch
+get/list, message-attempt and item get/list readers must consume the copied
+rows. Per-record session/item reads and paged launch reads cover rows beyond
+list windows. A refused or crashing driver/reader fails preflight with its
+operation and recovery; it earns no fleet receipt. All these operations stay
+inside the existing copy admission and cleanup. Named-database fleets retain
+their project-declared boot and verification commands.
+
+
 Before a deployment run dispatches a GitHub workflow for a project that
 declares a `migration_model`, it reads every model's fleet. A `none` fleet is
 skipped with its reason printed. An undeclared fleet refuses the dispatch with

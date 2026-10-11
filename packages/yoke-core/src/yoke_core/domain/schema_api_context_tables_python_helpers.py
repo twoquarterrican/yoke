@@ -23,6 +23,26 @@ from __future__ import annotations
 
 
 PYTHON_HELPERS_TABLES: dict[str, dict] = {
+    "yoke_core.domain.handlers.deployment_common": {
+        "columns": [("run_id", "callable")],
+        "notes": (
+            "Deployment execution handlers resolve TargetRef(kind='workflow_run', "
+            "workflow_run_id=run_id). Wrong guess: deployment_run_id on a "
+            "deployment_run target names the execution subject. It is ignored "
+            "and refuses target_invalid before the real driver path runs. "
+            "Follow deploy_pipeline_control_plane's actual target contract."
+        ),
+    },
+    "yoke_core.domain.merge_queue_landing_record_schema": {
+        "columns": [("ensure_merge_queue_landing_record_schema", "callable")],
+        "notes": (
+            "This production schema owner creates merge_queue_landing_records "
+            "and merge_queue_landing_refreshes. Wrong guess: the relaxed test_db "
+            "fixture already contains every table in preboot_instant_parameters.FIELDS. "
+            "Call this owner before converting those landing clocks in a test; "
+            "do not invent replacement table DDL or apply schema to a live database."
+        ),
+    },
     "yoke_core.domain.project_identity": {
         "columns": [("render_item_ref", "callable")],
         "notes": (
