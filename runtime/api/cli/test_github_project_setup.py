@@ -1,0 +1,143 @@
+"""Checkout GitHub sign-in convergence across remote types and install dates."""
+
+import json
+
+import pytest
+
+from runtime.api.cli.test_github_git_credential_install import _configured_repo, _git
+from yoke_cli.config import github_git_credentials, github_project_setup
+from yoke_cli.project_install import runner
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "git@github.com:octo/repo.git",
+        "ssh://git@github.com/octo/repo.git",
+        "https://github.com/octo/repo.git",
+    ],
+)
+def test_checkout_converges_to_https_and_verified_helper(tmp_path, monkeypatch, origin):
+    repo, config, _credential = _configured_repo(tmp_path, monkeypatch)
+    _git(repo, "remote", "add", "origin", origin)
+    _git(repo, "config", "remote.origin.pushurl", origin)
+    monkeypatch.setattr(
+        github_git_credentials, "_helper_site_dir", lambda: tmp_path / "site"
+    )
+    report = github_project_setup.converge(repo, config_path=config)
+    assert report["configured"] is True
+    assert "credential-helper" in report["changes"]
+    assert _git(repo, "remote", "get-url", "origin").stdout.strip() == (
+        "https://github.com/octo/repo.git"
+    )
+    assert _git(repo, "remote", "get-url", "--push", "origin").stdout.strip() == (
+        "https://github.com/octo/repo.git"
+    )
+    second = github_project_setup.converge(repo, config_path=config)
+    assert second["changes"] == []
+    assert second["changed"] is False
+
+
+def test_different_push_target_refuses_before_any_rewrite(tmp_path, monkeypatch):
+    repo, config, _credential = _configured_repo(tmp_path, monkeypatch)
+    _git(repo, "remote", "add", "origin", "git@github.com:octo/repo.git")
+    _git(repo, "config", "remote.origin.pushurl", "git@github.com:octo/other.git")
+    before = (repo / ".git/config").read_bytes()
+    with pytest.raises(
+        github_project_setup.GitHubProjectSetupError, match="push-target-mismatch"
+    ):
+        github_project_setup.converge(repo, config_path=config)
+    assert (repo / ".git/config").read_bytes() == before
+
+
+def test_missing_authorization_teaches_connect_and_preserves_origin(
+    tmp_path, monkeypatch
+):
+    repo, config, _credential = _configured_repo(tmp_path, monkeypatch)
+    _git(repo, "remote", "add", "origin", "git@github.com:octo/repo.git")
+    payload = json.loads(config.read_text())
+    payload["github"].pop("authorization")
+    config.write_text(json.dumps(payload))
+    report = github_project_setup.converge(repo, config_path=config)
+    assert report["configured"] is False
+    assert "yoke github connect" in report["recovery"]
+    assert _git(repo, "remote", "get-url", "origin").stdout.strip().startswith("git@")
+
+
+@pytest.mark.parametrize("operation", ["install", "refresh"])
+def test_install_and_refresh_converge_before_upstream_and_publication(
+    tmp_path,
+    monkeypatch,
+    operation,
+):
+    repo, config, _credential = _configured_repo(tmp_path, monkeypatch)
+    _git(repo, "remote", "add", "origin", "git@github.com:octo/repo.git")
+    monkeypatch.setattr(
+        github_git_credentials, "_helper_site_dir", lambda: tmp_path / "site"
+    )
+    monkeypatch.setattr(runner, "_resolve_project_id", lambda *args: (7, False))
+    monkeypatch.setattr(
+        runner, "_resolve_bundle", lambda *a, **kw: ({"default_branch": "main"}, "test")
+    )
+    monkeypatch.setattr(runner, "validate_bundle_for_project", lambda *args: None)
+    monkeypatch.setattr(
+        runner.git_hooks_layer, "assert_pre_commit_runtime_available", lambda: None
+    )
+    monkeypatch.setattr(
+        runner.checkout_gate,
+        "assert_ready_for_write",
+        lambda *a, **kw: {"branch": "main"},
+    )
+    monkeypatch.setattr(runner, "preflight_apply", lambda *args: None)
+    monkeypatch.setattr(runner, "_register_in_machine_config", lambda *args: False)
+    monkeypatch.setattr(
+        runner.repository_layer, "write_repository_layer", lambda *a, **kw: {}
+    )
+    monkeypatch.setattr(runner, "sync_local_snapshot_for_write", lambda **kw: {})
+    monkeypatch.setattr(
+        runner.checkout_gate, "commit_touched_paths", lambda *a, **kw: {}
+    )
+
+    def check_https(*args, **kwargs):
+        assert (
+            _git(repo, "remote", "get-url", "origin")
+            .stdout.strip()
+            .startswith("https://")
+        )
+        assert _git(
+            repo,
+            "config",
+            "--local",
+            "--get-all",
+            github_git_credentials.GITHUB_CREDENTIAL_HELPER_KEY,
+        ).stdout
+        return {}
+
+    monkeypatch.setattr(runner, "_bring_branch_current", check_https)
+    monkeypatch.setattr(runner.publication, "publish_installed_layer", check_https)
+    report = getattr(runner, operation)(repo, config_path=config)
+    assert report["git_credentials"]["changes"] == ["credential-helper", "origin-url"]
+
+
+@pytest.mark.parametrize(
+    "origin",
+    ["https://github.com/octo/repo.git?bad=1", "ftp://github.com/octo/repo.git"],
+)
+def test_invalid_github_origin_refuses_without_rewrite(tmp_path, monkeypatch, origin):
+    repo, config, _credential = _configured_repo(tmp_path, monkeypatch)
+    _git(repo, "remote", "add", "origin", origin)
+    before = (repo / ".git/config").read_bytes()
+    with pytest.raises(
+        github_project_setup.GitHubProjectSetupError, match="github-origin-invalid"
+    ):
+        github_project_setup.converge(repo, config_path=config)
+    assert (repo / ".git/config").read_bytes() == before
+
+
+def test_other_origin_is_reported_as_skipped(tmp_path, monkeypatch):
+    repo, config, _credential = _configured_repo(tmp_path, monkeypatch)
+    _git(repo, "remote", "add", "origin", "https://elsewhere.example/octo/repo.git")
+    assert github_project_setup.converge(repo, config_path=config) == {
+        "configured": False,
+        "reason": "origin-outside-configured-github",
+    }

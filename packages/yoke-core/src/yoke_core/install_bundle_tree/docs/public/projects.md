@@ -99,3 +99,18 @@ Universe-wide settings live under **Universe settings**.
 
 Retired projects are hidden from active listings and pickers. Their historical
 records remain readable under the same project permissions as active projects.
+
+## Checkout GitHub sign-in
+
+`yoke project install ~/path/to/checkout` also converges GitHub sign-in on
+both new and previously registered projects. Install and refresh select the
+verified Yoke credential helper and convert the configured GitHub origin,
+including SSH origins, to clean HTTPS. A same-repository explicit push URL
+also becomes HTTPS. The report's `git_credentials.changes` names helper,
+origin, and push URL changes; a second run reports no changes.
+
+Run `yoke github connect` first when the report names missing machine
+GitHub authorization. Other hosts and checkouts without an origin are
+reported as skipped. A different push repository or unverified local helper
+refuses with a reason and recovery instead of overwriting it. Source checkout
+setup uses the same sign-in convergence through `yoke dev setup`.

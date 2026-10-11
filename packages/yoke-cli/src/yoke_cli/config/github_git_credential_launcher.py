@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import os
 import re
@@ -50,7 +51,11 @@ class GitHubCredentialLauncherError(RuntimeError):
     """The installed helper bundle pointer is absent or unsafe."""
 
 
-def selected_bundle(site_dir: str | Path | None = None) -> Path:
+def selected_bundle(
+    site_dir: str | Path | None = None,
+    *,
+    module_names: tuple[str, ...] = BUNDLE_MODULE_NAMES,
+) -> Path:
     """Resolve the complete immutable bundle selected by the stable pointer."""
     root = Path(site_dir) if site_dir is not None else Path(__file__).parent
     pointer = root / BUNDLE_POINTER_NAME
@@ -82,8 +87,58 @@ def selected_bundle(site_dir: str | Path | None = None) -> Path:
         raise GitHubCredentialLauncherError(
             "GitHub credential helper bundle is incomplete"
         )
-    _verified_bundle_sources(bundle, expected_hash=bundle_name)
+    _verified_bundle_sources(
+        bundle, expected_hash=bundle_name, module_names=module_names
+    )
     return bundle
+
+
+def prior_launcher_module_names(source: bytes) -> tuple[str, ...]:
+    """Read the prior launcher's literal file declaration without executing it."""
+    try:
+        tree = ast.parse(source)
+        constants: dict[str, str] = {}
+        declarations = []
+        for node in tree.body:
+            if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+                continue
+            target = node.targets[0]
+            if not isinstance(target, ast.Name):
+                continue
+            if target.id == "BUNDLE_MODULE_NAMES":
+                declarations.append(node.value)
+            elif target.id.startswith("BUNDLE_") and isinstance(
+                node.value, ast.Constant
+            ):
+                if isinstance(node.value.value, str):
+                    constants[target.id] = node.value.value
+        if len(declarations) != 1 or not isinstance(declarations[0], ast.Tuple):
+            raise ValueError("missing literal bundle declaration")
+        names = tuple(
+            constants[node.id] if isinstance(node, ast.Name) else ast.literal_eval(node)
+            for node in declarations[0].elts
+        )
+        if (
+            not names
+            or len(names) > 64
+            or len(set(names)) != len(names)
+            or names[-1] != BUNDLE_HELPER_NAME
+            or any(
+                not isinstance(name, str)
+                or not re.fullmatch(
+                    r"_yoke_[a-z_]+\.py",
+                    name,
+                )
+                for name in names
+            )
+        ):
+            raise ValueError("unsafe bundle declaration")
+        return names
+    except (SyntaxError, ValueError, TypeError, KeyError, RecursionError) as exc:
+        raise GitHubCredentialLauncherError(
+            "GitHub prior launcher bundle declaration is invalid; inspect the "
+            "checkout helper before reconnecting with yoke github connect"
+        ) from exc
 
 
 def main() -> None:
@@ -105,10 +160,11 @@ def _verified_bundle_sources(
     bundle: Path,
     *,
     expected_hash: str,
+    module_names: tuple[str, ...] = BUNDLE_MODULE_NAMES,
 ) -> dict[str, bytes]:
     digest = hashlib.sha256()
     sources: dict[str, bytes] = {}
-    for filename in BUNDLE_MODULE_NAMES:
+    for filename in module_names:
         payload = _read_regular(
             bundle / filename,
             maximum=BUNDLE_MODULE_MAX_BYTES,

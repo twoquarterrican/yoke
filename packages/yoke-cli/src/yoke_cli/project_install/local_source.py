@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from yoke_cli.config import github_project_setup
 from yoke_cli.project_install import files as files_layer
 from yoke_cli.project_install import publication_outcome
 from yoke_cli.project_install import repository_layer
@@ -93,6 +94,10 @@ def refresh_from_source(
         force=force,
         require_default_branch=False,
     )
+    try:
+        git_credentials = github_project_setup.converge(root, config_path=None)
+    except github_project_setup.GitHubProjectSetupError as exc:
+        raise ProjectInstallError(str(exc)) from exc
     report = runner.apply_bundle(
         root,
         bundle,
@@ -101,6 +106,7 @@ def refresh_from_source(
         prior_manifest=prior_manifest,
         preserved_manifest_files=preserved_files,
     )
+    report["git_credentials"] = git_credentials
     report["codex_hook_trust"] = repository_layer.mint_codex_hook_trust(root)
     report.update(
         {

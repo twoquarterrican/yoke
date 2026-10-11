@@ -27,6 +27,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from yoke_contracts.machine_config import checkout_env_mismatch
 
+from yoke_cli.config import github_project_setup
 from yoke_cli.config import machine_config
 from yoke_cli.config import writer as machine_config_writer
 from yoke_cli.commands.adapters.project_snapshot import (
@@ -36,6 +37,7 @@ from yoke_cli.project_install import files as files_layer
 from yoke_cli.project_install import git_hooks as git_hooks_layer
 from yoke_cli.project_install import checkout_gate
 from yoke_cli.project_install import repository_layer
+
 # Re-exported: ``project_install`` and the source-dev refresh path both reach
 # the bundle write through this module's name.
 from yoke_cli.project_install.bundle_apply import apply_bundle
@@ -79,8 +81,8 @@ def install(
 
     The run generates against current upstream, commits the paths it owns,
     and then publishes that commit to the branch's remote. ``publish=False``
-    keeps the commit local — the shape onboarding uses, because it configures
-    the checkout's Git credentials only after the install has written.
+    keeps the commit local for onboarding's final publication. GitHub sign-in
+    converges before upstream reads and publication on every install or refresh.
     """
     root = files_layer.resolve_repo_root(repo_root)
     resolved_mode, reason = source_dev.resolve_mode(root, mode)
@@ -111,6 +113,10 @@ def install(
         force=force,
         require_default_branch=require_branch,
     )
+    try:
+        git_credentials = github_project_setup.converge(root, config_path=config_path)
+    except github_project_setup.GitHubProjectSetupError as exc:
+        raise ProjectInstallError(str(exc)) from exc
     upstream = _bring_branch_current(root, checkout.get("branch") or default_branch)
     checkout["upstream"] = upstream
     preflight_apply(root, bundle, files_layer.load_manifest(root) or {}, {})
@@ -126,10 +132,15 @@ def install(
 
     def regenerate() -> Dict[str, Any]:
         return repository_layer.write_repository_layer(
-            root, bundle, operation=operation, source=source, mode=resolved_mode,
+            root,
+            bundle,
+            operation=operation,
+            source=source,
+            mode=resolved_mode,
         )
 
     report = regenerate()
+    report["git_credentials"] = git_credentials
     if upstream.get("warning"):
         report.setdefault("warnings", []).append(upstream["warning"])
     report["snapshot_sync"] = sync_local_snapshot_for_write(
@@ -271,7 +282,8 @@ def _resolve_project_id(
         return mapped, False
 
     other_env = checkout_env_mismatch.mismatch_note(
-        repo_root, config_path=config_path,
+        repo_root,
+        config_path=config_path,
     )
     if other_env:
         raise ProjectInstallError(
@@ -300,7 +312,10 @@ def _register_in_machine_config(
     # explicit_given means the operator typed --project-id themselves: a
     # deliberate reconfiguration, not routine unattended execution.
     machine_config_writer.register_project(
-        repo_root, project_id, reassign=True, path=config_path,
+        repo_root,
+        project_id,
+        reassign=True,
+        path=config_path,
     )
     return True
 

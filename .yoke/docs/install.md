@@ -108,7 +108,9 @@ The installer itself repairs the git credential
 helper a reinstall wipes from site-packages, as the last step of every
 successful run — so re-running the curl installer directly still resolves
 the same channel version for every Yoke product package and still repairs
-the helper, just without the version-change report.
+the helper, just without the version-change report. Prior-runtime bundles
+are verified against their own launcher's declared files and content hash,
+so adding helper modules in a release does not invalidate an older bundle.
 
 `yoke update` and `yoke self-host upgrade` refuse to replace an active Yoke
 source-checkout install with packaged releases. Update that checkout with git;
