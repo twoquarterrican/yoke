@@ -91,6 +91,23 @@ yoke watch qa-plan -- --deployment-run-id {RUN_ID} --stage STAGE --project {_pro
 Same optional-plan/correction rules apply. Member evidence cannot credit this
 run subject. Re-drive pinned runner afterward.
 
+## Verify before announcing delivery
+
+Before telling the operator an item is live, read the actual run and prove both
+that its frozen source lineage contains the item's full merge SHA and that the
+item is an enrolled member. Then confirm the target server reports the expected
+engine version. Record those identities with the announcement; run creation or
+success alone is insufficient. A member held by another live/succeeded run can
+be skipped, leaving a new run carrying only an already-live lineage.
+
+```text
+yoke --env CONTROL_PLANE deployment-runs get {RUN_ID} --json
+```
+
+Check membership and lineage against the item's recorded merge identity and
+the target's live version evidence; if any proof is missing, report the gap and
+resolve the actual carrying run before announcing delivery.
+
 ## Automatic selected-flow close-out and orphan recovery
 
 Without run QA/approval, final member closes from landing plus its own final

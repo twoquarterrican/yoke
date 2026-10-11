@@ -38,6 +38,12 @@ or differently ordered by the doc does not silently become next. Reconcile
 through registered authority; DB-gated work waits and updates the doc.
 charge.schedule is a frontier read, never dispatch or feed.
 
+Before accepting or sequencing infrastructure scope, verify a current consumer:
+workflow runs-on targets for runners, routed live traffic for serving resources,
+or allocated/non-zero capacity tied to a workload. Record the usage evidence;
+existence alone does not justify a cutover. If unused, reconcile the objective
+before staffing infrastructure work.
+
 ### Negative-space checks — first, every periodic pass
 
 Failures arrive as silence; the fleet report is the detector. Read the whole
@@ -147,6 +153,11 @@ reconcile all runnable scoped work for every held seat: verify live ownership,
 launch or restaff each authorized unclaimed item, unblock and resume cleared
 dependents, record exact hold/dependency/reserved decision for the remainder.
 A watcher finding is no authority outside the seat; keep independent work moving.
+
+Encode every decided sequencing wait on the dependent item before staffing,
+using the matching activation, integration or closure gate and satisfaction
+condition; follow [worker-launch.md](worker-launch.md). A plan note or manually
+withheld launch cannot replace the edge.
 
 ## 4. Vet before release admission; batch delivery
 
