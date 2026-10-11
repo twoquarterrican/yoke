@@ -68,7 +68,7 @@ jobs:
       - name: Publish shard fan-out
         id: fan_out
         run: >-
-          PYTHONPATH=packages/yoke-core/src python3 -m
+          PYTHONPATH=packages/yoke-core/src:packages/yoke-contracts/src python3 -m
           yoke_core.tools.ci_shards fan-out --write-github-output
 
       - name: Set up Python
@@ -118,7 +118,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: >-
-          PYTHONPATH=packages/yoke-core/src python3 -m
+          PYTHONPATH=packages/yoke-core/src:packages/yoke-contracts/src python3 -m
           yoke_core.tools.yoke_ci_tree_reuse --write-github-output
   test_shard:
     timeout-minutes: 35
@@ -154,7 +154,7 @@ jobs:
 
       - name: Reclaim runner disk
         run: >-
-          PYTHONPATH=packages/yoke-core/src python3 -m
+          PYTHONPATH=packages/yoke-core/src:packages/yoke-contracts/src python3 -m
           yoke_core.tools.github_runner_disk_reclaim
           --runner-environment "${{ runner.environment }}"
           --runner-os "${{ runner.os }}"
@@ -283,7 +283,7 @@ jobs:
         id: pytest
         if: env.SUITE_ALREADY_PROVEN != 'true'
         run: >-
-          PYTHONPATH=packages/yoke-core/src python3 -m
+          PYTHONPATH=packages/yoke-core/src:packages/yoke-contracts/src python3 -m
           yoke_core.tools.ci_shards run --group "${{ matrix.shard }}"
 
       - name: Upload pytest output
