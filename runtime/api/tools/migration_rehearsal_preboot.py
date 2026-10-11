@@ -56,7 +56,7 @@ def verify_preboot_release_driver(conn: Any, copy_dsn: str) -> str | None:
                     created_by="migration-rehearsal",
                     inherit_members_from=predecessor,
                 )
-                target = {"kind": "deployment_run", "deployment_run_id": run_id}
+                target = {"kind": "workflow_run", "workflow_run_id": run_id}
                 operation = f"execution context run={run_id}"
                 context = checked(
                     "deployment_runs.execution.context",

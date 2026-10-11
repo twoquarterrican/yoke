@@ -182,6 +182,7 @@ TOPIC_TABLES: dict[str, tuple[str, ...]] = {
         "project_pack_report_entries",
     ),
     "project": (
+        "yoke_core.domain.handlers.deployment_common",
         "yoke_core.domain.merge_queue_landing_record_schema",
         "projects",
         "project_structure",

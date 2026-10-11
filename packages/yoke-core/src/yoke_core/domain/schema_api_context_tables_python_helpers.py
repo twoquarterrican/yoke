@@ -23,6 +23,16 @@ from __future__ import annotations
 
 
 PYTHON_HELPERS_TABLES: dict[str, dict] = {
+    "yoke_core.domain.handlers.deployment_common": {
+        "columns": [("run_id", "callable")],
+        "notes": (
+            "Deployment execution handlers resolve TargetRef(kind='workflow_run', "
+            "workflow_run_id=run_id). Wrong guess: deployment_run_id on a "
+            "deployment_run target names the execution subject. It is ignored "
+            "and refuses target_invalid before the real driver path runs. "
+            "Follow deploy_pipeline_control_plane's actual target contract."
+        ),
+    },
     "yoke_core.domain.merge_queue_landing_record_schema": {
         "columns": [("ensure_merge_queue_landing_record_schema", "callable")],
         "notes": (
