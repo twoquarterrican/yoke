@@ -159,13 +159,16 @@ def test_local_canonical_edits_refuse_before_mutation(tmp_path, monkeypatch):
     assert not recovery.pending(tmp_path)
 
 
-def test_failed_atomic_replace_keeps_prior_manifest(tmp_path, monkeypatch):
+@pytest.mark.parametrize("failure", ["replace", "mkstemp"])
+def test_failed_atomic_write_keeps_prior_manifest(tmp_path, monkeypatch, failure):
     path = _file(tmp_path, ".yoke/install-manifest.json", '{"old": true}\n')
 
-    def refuse(*args):
+    def refuse(*args, **kwargs):
         raise OSError("disk unavailable")
 
-    monkeypatch.setattr(recovery.os, "replace", refuse)
+    monkeypatch.setattr(
+        recovery.os if failure == "replace" else recovery.tempfile, failure, refuse
+    )
     with pytest.raises(ProjectInstallError, match="install_write_failed"):
         recovery.atomic_text(path, '{"new": true}\n')
     assert path.read_text() == '{"old": true}\n'

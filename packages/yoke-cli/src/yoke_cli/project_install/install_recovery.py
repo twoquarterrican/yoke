@@ -21,9 +21,10 @@ PENDING_REL = ".yoke/install-pending.json"
 
 
 def atomic_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, name = tempfile.mkstemp(prefix="." + path.name, dir=path.parent)
+    name = None
     try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, name = tempfile.mkstemp(prefix="." + path.name, dir=path.parent)
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
             handle.write(content)
             handle.flush()
@@ -38,7 +39,8 @@ def atomic_text(path: Path, content: str) -> None:
             "refresh; the prior file and interrupted-apply record are preserved."
         ) from exc
     finally:
-        Path(name).unlink(missing_ok=True)
+        if name is not None:
+            Path(name).unlink(missing_ok=True)
 
 
 def pending_record(root: Path) -> dict[str, Any]:
