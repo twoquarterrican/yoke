@@ -10,13 +10,16 @@ path-free ``-- /bin/pwd`` through, narrowing the mission instrument to
 commands that happen to mention no path at all.
 
 ``aws logs`` / ``yoke aws exec -- logs`` ``--log-group-name`` operands
-name a CloudWatch group on another machine. ``file://`` / ``fileb://``
-values load a local file and stay path targets.
+name a CloudWatch group on another machine. ``aws ssm`` /
+``yoke aws exec -- ssm`` ``--name``, ``--names`` and ``--path`` operands
+name a parameter, not a file. ``file://`` / ``fileb://`` values load a
+local file and stay path targets.
 
 The shell target extractor
 (:mod:`lint_session_cwd_target_extract_shell`) consumes
-:func:`remote_argv_indexes` and :func:`aws_log_group_indexes` to skip
-those tokens, and the denial renderer
+:func:`remote_argv_indexes`, :func:`aws_log_group_indexes` and
+:func:`aws_ssm_parameter_indexes` to skip those tokens, and the denial
+renderer
 (:mod:`lint_session_cwd_control_plane`) consumes
 :func:`host_command_exemption_note` so an invocation that is still
 refused for some other reason says why the exemption did not cover the
@@ -155,6 +158,8 @@ _AWS_VALUE_FLAGS = frozenset(
 )
 _LOG_GROUP_FLAGS = frozenset({"--log-group-name", "--log-group"})
 _LOG_GROUP_EQUALS = ("--log-group-name=", "--log-group=")
+_SSM_SINGLE_VALUE_FLAGS = frozenset({"--name", "--path"})
+_SSM_EQUALS_PREFIXES = ("--name=", "--names=", "--path=")
 
 
 def _aws_cli_argv(
@@ -223,6 +228,50 @@ def aws_log_group_indexes(command_base: str, tokens: Sequence[str]) -> set[int]:
     return indexes
 
 
+def _remote_cli_value(value: str) -> bool:
+    """True when an AWS value is not a local ``file://`` / ``fileb://`` load."""
+    return bool(value) and unwrap_cli_file_param(value) == value
+
+
+def aws_ssm_parameter_indexes(command_base: str, tokens: Sequence[str]) -> set[int]:
+    """Indexes of SSM parameter name and path operands on an ``ssm`` argv.
+
+    ``--name`` and ``--path`` take one value. ``--names`` takes each
+    following value until the next flag. ``file://`` / ``fileb://`` values
+    load a local file and are not skipped. Other services keep path
+    extraction, including a misplaced parameter flag.
+    """
+    argv = _aws_cli_argv(command_base, tokens)
+    if argv is None or _aws_service(argv[0]) != "ssm":
+        return set()
+    inner, offset = argv
+    indexes: set[int] = set()
+    index = 0
+    limit = len(inner)
+    while index < limit:
+        token = inner[index]
+        if token == "--names":
+            index += 1
+            while index < limit and not inner[index].startswith("-"):
+                if _remote_cli_value(inner[index]):
+                    indexes.add(offset + index)
+                index += 1
+            continue
+        if token in _SSM_SINGLE_VALUE_FLAGS and index + 1 < limit:
+            if _remote_cli_value(inner[index + 1]):
+                indexes.add(offset + index + 1)
+            index += 2
+            continue
+        prefix = next(
+            (item for item in _SSM_EQUALS_PREFIXES if token.startswith(item)),
+            "",
+        )
+        if prefix and _remote_cli_value(token[len(prefix) :]):
+            indexes.add(offset + index)
+        index += 1
+    return indexes
+
+
 def is_host_command(command: str) -> bool:
     """True when any invocation in ``command`` is a host-command call."""
     for segment in shell_command_segments(command):
@@ -247,6 +296,7 @@ __all__ = [
     "HOST_COMMAND_SUBCOMMAND",
     "YOKE_VALUE_FLAGS",
     "aws_log_group_indexes",
+    "aws_ssm_parameter_indexes",
     "host_command_exemption_note",
     "is_host_command",
     "is_host_command_segment",

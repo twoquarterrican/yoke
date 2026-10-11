@@ -31,6 +31,9 @@ FLAG_EQUALS_PREFIXES = (
     "--worktree-path=",
     "--log-group-name=",
     "--log-group=",
+    "--name=",
+    "--names=",
+    "--path=",
 )
 
 

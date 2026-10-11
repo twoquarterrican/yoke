@@ -162,3 +162,82 @@ class TestHostCommandRecognition:
 
     def test_an_empty_body_is_not_a_host_command(self):
         assert not is_host_command("")
+
+
+_FLEET = "/yoke/github-actions-runner-fleet"
+_FLEET_STATE = f"{_FLEET}/lifecycle-state"
+
+
+class TestSsmParameterNamesAreRemoteResources:
+    """SSM parameter names and paths are provider identifiers, not files."""
+
+    def test_get_parameters_names_are_not_filesystem_targets(self):
+        assert (
+            extract_command_targets(
+                "yoke aws exec --project platform -- ssm get-parameters "
+                f"--names {_FLEET_STATE}"
+            )
+            == []
+        )
+
+    def test_get_parameters_by_path_is_not_a_filesystem_target(self):
+        assert (
+            extract_command_targets(
+                "yoke aws exec --project platform -- ssm get-parameters-by-path "
+                f"--path {_FLEET}"
+            )
+            == []
+        )
+
+    def test_several_names_and_equals_forms_are_remote(self):
+        assert (
+            extract_command_targets(
+                f"aws ssm get-parameters --names {_FLEET_STATE} {_FLEET}/desired-count"
+            )
+            == []
+        )
+        assert (
+            extract_command_targets(f"aws ssm get-parameter --name={_FLEET_STATE}")
+            == []
+        )
+        assert (
+            extract_command_targets(
+                "yoke aws exec -- ssm get-parameters-by-path "
+                f"--path={_FLEET} --recursive"
+            )
+            == []
+        )
+        assert (
+            extract_command_targets(
+                f"aws --region us-east-1 ssm get-parameter --name {_FLEET_STATE}"
+            )
+            == []
+        )
+
+    def test_file_param_and_local_redirect_stay_targets(self):
+        assert extract_command_targets(
+            "aws ssm get-parameter --name file:///tmp/parameter-name.txt"
+        ) == ["/tmp/parameter-name.txt"]
+        assert extract_command_targets(
+            "aws ssm get-parameter --name=fileb:///tmp/parameter-name.txt"
+        ) == ["/tmp/parameter-name.txt"]
+        destination = "/Users/dev/out.json"
+        assert extract_command_targets(
+            "yoke aws exec --project platform -- ssm get-parameters "
+            f"--names {_FLEET_STATE} > {destination}"
+        ) == [destination]
+
+    def test_misplaced_parameter_flag_on_s3_stays_a_path(self):
+        local = "/Users/dev/a.json"
+        assert extract_command_targets(
+            f"aws s3 cp --path {_FLEET} {local} s3://example/x"
+        ) == [_FLEET, local]
+        assert extract_command_targets(
+            f"aws s3 cp --name={_FLEET_STATE} {local} s3://example/x"
+        ) == [_FLEET_STATE, local]
+
+    def test_one_file_load_among_names_stays_local(self):
+        assert extract_command_targets(
+            "aws ssm get-parameters --names "
+            f"file:///tmp/parameter-name.txt {_FLEET_STATE}"
+        ) == ["/tmp/parameter-name.txt"]
