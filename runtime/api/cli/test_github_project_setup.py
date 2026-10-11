@@ -198,3 +198,21 @@ def test_source_activation_uses_selected_config_and_teaches_refusal(
         )
         assert "GitHub sign-in:" in human
         assert "origin-url" in human
+
+
+def test_unconfigured_github_skips_folder_git_inspection(tmp_path, monkeypatch):
+    repo = tmp_path / "folder-project"
+    (repo / ".git/hooks").mkdir(parents=True)
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"schema_version": 1}))
+
+    def unexpected_git_read(*args, **kwargs):
+        raise AssertionError("GitHub setup must not inspect Git when unconfigured")
+
+    monkeypatch.setattr(
+        github_project_setup.github_repo_config, "values", unexpected_git_read
+    )
+    report = github_project_setup.converge(repo, config_path=config)
+    assert report["configured"] is False
+    assert report["reason"] == "machine-github-not-configured"
+    assert "yoke github connect" in report["recovery"]

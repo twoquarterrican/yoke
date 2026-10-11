@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from typing import Any
 
-from yoke_cli.config import github_git_credentials, github_repo_config, machine_config
+from yoke_cli.config import github_git_credentials, github_repo_config
 from yoke_contracts import github_origin
 
 
@@ -19,6 +19,13 @@ def converge(root: Path, *, config_path: str | Path | None) -> dict[str, Any]:
     if not (root / ".git").exists():
         return {"configured": False, "reason": "git-checkout-absent"}
     try:
+        github = github_git_credentials._machine_github_config(config_path)
+        if not github:
+            return {
+                "configured": False,
+                "reason": "machine-github-not-configured",
+                "recovery": "Run yoke github connect, then rerun project install",
+            }
         origins = github_repo_config.values(root, "remote.origin.url")
         if not origins:
             return {"configured": False, "reason": "github-origin-absent"}
@@ -27,7 +34,6 @@ def converge(root: Path, *, config_path: str | Path | None) -> dict[str, Any]:
                 "github-origin-ambiguous: origin has multiple URLs; select one "
                 "repository with git remote set-url origin URL, then rerun install"
             )
-        github = machine_config.github_config(config_path)
         web_url = str(github.get("web_url") or "https://github.com")
         origin = origins[0]
         if "://" not in origin and not origin.startswith("git@"):
