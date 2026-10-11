@@ -39,6 +39,9 @@
           "do_not_enforce_on_create": false,
           "required_status_checks": [
             {"context": "repo-contracts"},
+            {"context": "reuse-coverage"},
+            {"context": "build"},
+            {"context": "attest-validated-release-provenance"},
             {"context": "container"},
             {"context": "browser_runtime / browser-runtime"},
             {"context": "test-shard (3.11, 1)"},

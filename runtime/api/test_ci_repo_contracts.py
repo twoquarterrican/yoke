@@ -15,6 +15,7 @@ from types import SimpleNamespace
 from typing import List
 
 import pytest
+import yaml
 
 from yoke_core.tools import ci_repo_contracts as crc
 
@@ -69,9 +70,7 @@ def test_yoke_ci_gates_shards_on_repo_contracts() -> None:
 def test_workflow_scopes_delta_checks_identically_on_every_event() -> None:
     workflow = YOKE_CI.read_text(encoding="utf-8")
 
-    assert (
-        '--base "origin/${{ github.event.repository.default_branch }}"' in workflow
-    )
+    assert '--base "origin/${{ github.event.repository.default_branch }}"' in workflow
     # github.base_ref is populated only on pull_request, so any diff-scoped
     # step reading it silently degrades to a skip on every other event.
     assert "github.base_ref" not in workflow
@@ -184,7 +183,8 @@ def test_changed_path_ruff_clean_when_no_python_diff(tmp_path: Path) -> None:
 
 
 def test_authored_file_limit_anchors_on_the_shared_base(
-    forked_repo: Path, monkeypatch: pytest.MonkeyPatch,
+    forked_repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     scope = crc.resolve_changed_path_scope(forked_repo, "main")
     seen: dict[str, object] = {}
@@ -203,7 +203,8 @@ def test_authored_file_limit_anchors_on_the_shared_base(
 
 
 def test_unresolvable_base_fails_instead_of_skipping(
-    forked_repo: Path, capsys: pytest.CaptureFixture[str],
+    forked_repo: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     assert crc.run_contracts(forked_repo, base="origin/never-fetched") == 1
 
@@ -250,7 +251,8 @@ def test_run_contracts_reports_named_failure(
 
 
 def test_run_contracts_passes_when_all_green(
-    forked_repo: Path, monkeypatch: pytest.MonkeyPatch,
+    forked_repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     passes: List[str] = []
     scopes: List[crc.ChangedPathScope] = []
@@ -272,3 +274,55 @@ def test_run_contracts_passes_when_all_green(
     assert passes == [name for name, _ in crc.CONTRACTS]
     # Every contract reads the same resolved scope object.
     assert len({id(scope) for scope in scopes}) == 1
+
+
+def test_every_main_push_workflow_and_event_gated_job_runs_in_the_queue() -> None:
+    for path in sorted(YOKE_CI.parent.glob("*.yml")):
+        workflow = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+        triggers = workflow["on"]
+        push = triggers.get("push") or {}
+        if "main" not in push.get("branches", []):
+            continue
+        assert "merge_group" in triggers, (
+            f"{path.name}: add merge_group so main jobs are checked before landing"
+        )
+        for name, job in workflow["jobs"].items():
+            condition = job.get("if", "")
+            if "github.event_name" in condition and "'push'" in condition:
+                assert "github.event_name == 'merge_group'" in condition, (
+                    f"{path.name}/{name}: include merge_group in the job condition"
+                )
+
+
+def test_queue_requires_main_ci_and_release_factory_checks() -> None:
+    declaration = json.loads((REPO_ROOT / ".yoke/merge-queue.json").read_text())
+    required = {
+        row["context"]
+        for rule in declaration["ruleset"]["rules"]
+        if rule["type"] == "required_status_checks"
+        for row in rule["parameters"]["required_status_checks"]
+    }
+    for filename in ("yoke-ci.yml", "yoke-build-artifacts.yml"):
+        workflow = yaml.load(
+            (YOKE_CI.parent / filename).read_text(), Loader=yaml.BaseLoader
+        )
+        assert not workflow["on"]["pull_request"].get("paths"), (
+            f"{filename}: required PR checks cannot have trigger path filters"
+        )
+        for name, job in workflow["jobs"].items():
+            if "matrix" in job.get("strategy", {}):
+                continue  # Fan-out coverage is owned by test_ci_shards.
+            context = job.get("name", name)
+            if "uses" in job:
+                called = yaml.load(
+                    (REPO_ROOT / job["uses"]).read_text(), Loader=yaml.BaseLoader
+                )
+                contexts = {
+                    f"{context} / {child.get('name', child_name)}"
+                    for child_name, child in called["jobs"].items()
+                }
+            else:
+                contexts = {context}
+            assert contexts <= required, (
+                f"{filename}: require {sorted(contexts - required)} in the queue"
+            )

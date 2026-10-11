@@ -15,20 +15,14 @@ name: yoke-build-artifacts
 #
 # Fork-PR safety: the build job has read-only repository access, never receives
 # signing authority, and runs only on GitHub-hosted infrastructure. A separate
-# trusted-ref signer job downloads the already-validated artifact and has no
+# trusted-ref and merge-queue signer downloads the validated artifact with no
 # checkout or run step, so repository code never executes with an OIDC identity
 # or attestation write scope.
 
 on:
   pull_request:
     branches: [main]
-    paths:
-      - ".github/workflows/yoke-build-artifacts.yml"
-      - "packages/**"
-      - "packaging/**"
-      - "runtime/**"
-      - "pyproject.toml"
-      - "uv.lock"
+  merge_group:
   push:
     branches: [main]
     paths:
@@ -132,6 +126,7 @@ jobs:
     name: attest-validated-release-provenance
     needs: build
     if: >-
+      github.event_name == 'merge_group' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))

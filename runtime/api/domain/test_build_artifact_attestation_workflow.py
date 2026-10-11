@@ -1,8 +1,8 @@
 """Supply-chain contract for the public wheel factory workflow.
 
 Untrusted repository code builds with read-only contents permission. Only a
-separate no-checkout, no-shell job on a trusted ref receives signing authority,
-and it signs the exact validated wheels transferred through the artifact
+separate no-checkout, no-shell job on a trusted ref or queue receives signing
+authority and signs the exact validated wheels transferred through the artifact
 service.
 """
 
@@ -69,6 +69,8 @@ def test_remains_fork_buildable_and_reusable_by_release_factory():
     text = _text()
     assert "\n  pull_request:\n    branches: [main]" in text
     assert "\n  push:\n    branches: [main]" in text
+    assert "\n  merge_group:\n" in text
+    assert not _trigger_paths(text, "pull_request")
     assert "workflow_dispatch:" in text
     assert "workflow_call:" in text
     assert "value: ${{ jobs.build.outputs.release_version }}" in text
@@ -77,14 +79,11 @@ def test_remains_fork_buildable_and_reusable_by_release_factory():
     assert "group: ${{ github.workflow }}-${{ github.ref }}" not in text
 
 
-def test_branch_triggers_cover_every_release_factory_input():
-    text = _text()
-    for event in ("pull_request", "push"):
-        paths = _trigger_paths(text, event)
-        assert _RELEASE_FACTORY_INPUTS <= paths, (
-            f"{event} trigger misses release inputs: "
-            f"{sorted(_RELEASE_FACTORY_INPUTS - paths)}"
-        )
+def test_main_push_trigger_covers_every_release_factory_input():
+    paths = _trigger_paths(_text(), "push")
+    assert _RELEASE_FACTORY_INPUTS <= paths, (
+        f"push trigger misses release inputs: {sorted(_RELEASE_FACTORY_INPUTS - paths)}"
+    )
 
 
 def test_hosted_runner_and_no_operator_credentials():
@@ -116,10 +115,11 @@ def test_untrusted_build_has_no_signing_authority():
     assert f'python -m pip install "uv=={_declared_uv_version()}"' in build_block
 
 
-def test_only_trusted_ref_signer_attests_without_repository_code():
+def test_trusted_ref_and_queue_signer_attest_without_repository_code():
     text = _text()
     signer = text[text.index("  attest:\n") :]
     assert "needs: build" in signer
+    assert "github.event_name == 'merge_group'" in signer
     assert "github.ref == 'refs/heads/main'" in signer
     assert "startsWith(github.ref, 'refs/tags/v')" in signer
     assert "actions: read" in signer

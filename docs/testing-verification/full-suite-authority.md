@@ -9,7 +9,14 @@ adoption, queue and reachability mechanics.
 The full suite — the project's Project Structure `test_roots` attachments,
 not a yoke-only path triple — runs off-machine in CI on both the pull request
 and the merged commit on `main` (`.github/workflows/yoke-ci.yml` triggers on
-`pull_request` and `push` to `main`). A main-push run may short-circuit when
+`pull_request`, `merge_group`, and `push` to `main`). Every main CI job also
+runs before landing, including `reuse-coverage` and the release-artifact build
+and isolated signer. The declared queue ruleset requires their named checks;
+artifact PR triggers have no path filter so required checks cannot stay pending.
+The signer runs on queue candidates without checking out or executing repository
+code; ordinary PR builds retain read-only authority. Apply the declaration with
+`yoke github merge-queue apply --project yoke`; preview it with `--preview` first.
+A main-push run may short-circuit when
 `reuse-coverage` finds a recent successful dispatch/push yoke-ci run whose
 head commit shares HEAD's tree object id (fail-open otherwise; merge commits
 that rewrite the tree still run the matrix). Branch protection on main
