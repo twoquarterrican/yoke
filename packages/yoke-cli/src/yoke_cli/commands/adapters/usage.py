@@ -157,6 +157,7 @@ from yoke_cli.commands.adapters.projects_capability_settings import (
     PROJECTS_CAPABILITY_SETTINGS_REMOVE_USAGE,
     PROJECTS_CAPABILITY_SETTINGS_SET_USAGE,
 )
+from yoke_cli.commands.adapters.operator_data_repair import USAGE as REPAIR_USAGE
 from yoke_cli.commands.adapters import (
     projects_environment_settings as _environment_settings_usage,
 )
@@ -176,10 +177,14 @@ from yoke_cli.commands.adapters.project_github_binding import (
 from yoke_cli.commands.adapters.usage_qa import QA_ADAPTER_USAGE
 from yoke_cli.commands.adapters.board import BOARD_REBUILD_USAGE
 from yoke_cli.commands.adapters.render import (
-    AGENTS_RENDER_CHECK_USAGE, AGENTS_RENDER_USAGE, BOARD_DATA_GET_USAGE,
+    AGENTS_RENDER_CHECK_USAGE,
+    AGENTS_RENDER_USAGE,
+    BOARD_DATA_GET_USAGE,
 )
 from yoke_cli.commands.adapters.packets import (
-    PACKETS_BUDGET_GET_USAGE, PACKETS_CHECK_USAGE, PACKETS_RENDER_USAGE,
+    PACKETS_BUDGET_GET_USAGE,
+    PACKETS_CHECK_USAGE,
+    PACKETS_RENDER_USAGE,
     PACKETS_STARTUP_DELIVERY_GET_USAGE,
 )
 from yoke_cli.commands.adapters.usage_extensions import extend_adapter_usage
@@ -227,6 +232,7 @@ ADAPTER_USAGE: Dict[str, str] = {
     "db_claim.amend": DB_CLAIM_AMEND_USAGE,
     "db_claim.prose_check": DB_CLAIM_PROSE_CHECK_USAGE,
     "db.read.run": DB_READ_USAGE,
+    "operator.data_repair.run": REPAIR_USAGE,
     MIGRATION_ID: migration_cli.VERIFY_USAGE,
     **_session_usage.USAGE_BY_FUNCTION_ID,
     "agents.render.run": AGENTS_RENDER_USAGE,

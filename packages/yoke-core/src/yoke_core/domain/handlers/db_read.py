@@ -1,8 +1,8 @@
 """Raw diagnostic DB read handler for ``db.read.run``.
 
-This is deliberately separate from ``yoke_core.cli.raw_query``. The legacy
-operator-debug query surface is write-capable; this product/API surface is a
-bounded, read-only diagnostic runner with dispatcher authorization.
+This product/API surface is a bounded, read-only diagnostic runner with
+dispatcher authorization. Source-debug raw_query likewise refuses writes;
+reviewed human repairs use operator.data_repair.run.
 """
 
 from __future__ import annotations

@@ -97,7 +97,10 @@ def test_source_dev_rules_retain_operator_authority() -> None:
         assert "prod-db-admin" in text
         assert "yoke dev db-admin setup" in text
     assert "migration rehearse" in doctrine
-    assert "db_router query" in doctrine
+    assert "yoke operator data-repair" in doctrine
+    assert "--reviewed-sha256 SHA --dry-run" in doctrine
+    assert "Raw query is read-only" in doctrine
+    assert "db_router query" not in doctrine
     assert "--dsn-var APP_DSN" in doctrine
     assert "release_lineage" in guide
     assert "yoke --env prod deployment-runs create" in guide

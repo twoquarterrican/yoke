@@ -20,24 +20,24 @@ from yoke_core.cli.db_router_dispatch import (
 # Canonical domain table — single source of truth for `_print_usage` and the
 # nearest-match suggestion path in `db_router_suggestions`.
 DOMAIN_TABLE = [
-    ("items",            "Backlog item reads and writes"),
-    ("epic",             "Epic task management"),
-    ("ouroboros",        "Learning loop entries and field-notes"),
-    ("shepherd",         "Verdicts and caveats"),
-    ("release",          "Release notes management"),
-    ("projects",         "Project registry management"),
-    ("project-structure","Project Structure aggregate (path registry constitution)"),
-    ("flows",            "Deployment flow definitions"),
-    ("events",           "Structured event logging"),
-    ("runs",             "Deployment runs lifecycle"),
-    ("envs",             "Ephemeral environment management"),
-    ("qa",               "QA requirements, runs, and artifacts"),
+    ("items", "Backlog item reads and writes"),
+    ("epic", "Epic task management"),
+    ("ouroboros", "Learning loop entries and field-notes"),
+    ("shepherd", "Verdicts and caveats"),
+    ("release", "Release notes management"),
+    ("projects", "Project registry management"),
+    ("project-structure", "Project Structure aggregate (path registry constitution)"),
+    ("flows", "Deployment flow definitions"),
+    ("events", "Structured event logging"),
+    ("runs", "Deployment runs lifecycle"),
+    ("envs", "Ephemeral environment management"),
+    ("qa", "QA requirements, runs, and artifacts"),
     ("harness-sessions", "Active session tracking and work claims"),
-    ("sections",         "Item sections CRUD (item_sections table)"),
-    ("merge",            "Worktree merge operations"),
-    ("query",            "Raw SQL escape hatch"),
-    ("init",             "Initialize DB schema"),
-    ("help",             "Show this help or domain-specific subcommands"),
+    ("sections", "Item sections CRUD (item_sections table)"),
+    ("merge", "Worktree merge operations"),
+    ("query", "Read-only SQL diagnostics"),
+    ("init", "Initialize DB schema"),
+    ("help", "Show this help or domain-specific subcommands"),
 ]
 ALL_DOMAINS = tuple(name for name, _ in DOMAIN_TABLE)
 
@@ -87,6 +87,7 @@ def _print_domain_help(domain: str) -> None:
         return
     if domain == "query":
         from yoke_core.cli import raw_query
+
         raw_query._print_help(sys.stdout)
         return
     if domain == "init":

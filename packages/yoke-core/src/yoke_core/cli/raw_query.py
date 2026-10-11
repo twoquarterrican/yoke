@@ -1,29 +1,12 @@
-"""Python owner for the raw-SQL escape hatch exposed via the DB router.
+"""Read-only source-debug PostgreSQL diagnostics behind db_router query.
 
-Implements the ``query`` domain behind
-``python3 -m yoke_core.cli.db_router query``.
+Normal diagnostic reads use the registered ``yoke db read`` surface. This
+source-debug adapter preserves pipe-separated output and ``-separator``
+selection, with NULL rendered empty. It validates one read statement and runs
+it in a read-only transaction. Mutations require a registered domain command
+or the human operator's reviewed repair boundary.
 
-Preserved contract
-==================
-
-Invocation::
-
-    python3 -m yoke_core.cli.raw_query "SELECT ..."
-    python3 -m yoke_core.cli.raw_query -separator '|' "SELECT ..."
-
-Semantics
----------
-
-* Default column separator is ``|`` (matches sqlite3 CLI list mode).
-* The ``-separator VALUE`` leading option overrides the separator, e.g.
-  ``-separator ';' "SELECT ..."``.
-* Connection is opened against the selected Postgres authority.
-* Result rows are printed one per line, columns joined by the separator.
-  NULL columns render as the empty string (sqlite3 CLI behavior).
-* DDL / DML statements commit their change and print nothing — matching
-  ``sqlite3`` CLI when ``cursor.description`` is ``None``.
-* SQL errors print ``Error: <message>`` on stderr and return exit 1.
-* Missing SQL argument prints the shell's usage block and returns exit 2.
+SQL failures return 1 with catalog hints; missing arguments return 2 with help.
 """
 
 from __future__ import annotations
@@ -45,16 +28,35 @@ DEFAULT_SEPARATOR = "|"
 # extracted in a separate post-match step so the regex never swallows
 # a following SQL keyword (``JOIN``, ``WHERE``, ...) as an alias.
 _TABLE_NAME_RE = re.compile(
-    r"\b(?:FROM|JOIN)\s+([A-Za-z_][A-Za-z0-9_]*)", re.IGNORECASE,
+    r"\b(?:FROM|JOIN)\s+([A-Za-z_][A-Za-z0-9_]*)",
+    re.IGNORECASE,
 )
 _IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # Keywords that may immediately follow a table name and must never be treated
 # as an alias. Anything else is a candidate alias.
-_NOT_AN_ALIAS = frozenset({
-    "ON", "WHERE", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "CROSS", "JOIN",
-    "GROUP", "ORDER", "HAVING", "LIMIT", "UNION", "INTERSECT", "EXCEPT",
-    "USING", "NATURAL", "AS",
-})
+_NOT_AN_ALIAS = frozenset(
+    {
+        "ON",
+        "WHERE",
+        "INNER",
+        "LEFT",
+        "RIGHT",
+        "FULL",
+        "OUTER",
+        "CROSS",
+        "JOIN",
+        "GROUP",
+        "ORDER",
+        "HAVING",
+        "LIMIT",
+        "UNION",
+        "INTERSECT",
+        "EXCEPT",
+        "USING",
+        "NATURAL",
+        "AS",
+    }
+)
 # Preserve the alias prefix on no-such-column so the hinter can resolve it
 # back to the right joined table.
 _NO_SUCH_COLUMN_RE = re.compile(r"^no such column:\s*(?:(\w+)\.)?(\w+)\s*$")
@@ -93,6 +95,15 @@ def execute_query(
         Column separator (default ``|``).
     """
     from yoke_core.domain import db_backend
+    from yoke_core.domain.handlers.db_read_sql import validate_read_only_sql
+
+    refusal = validate_read_only_sql(sql)
+    if refusal is not None:
+        print(
+            f"Error: {refusal.code}: raw query is read-only. Use registered mutations or `yoke operator data-repair --help` for a reviewed operator repair.",
+            file=err,
+        )
+        return 1
 
     try:
         # connect_psycopg routes through the connected-env readiness boundary:
@@ -105,6 +116,7 @@ def execute_query(
         return 1
 
     try:
+        conn.execute("SET TRANSACTION READ ONLY")
         try:
             cursor = conn.execute(sql)
         except Exception as exc:
@@ -141,7 +153,7 @@ def _extract_table_refs(sql: str) -> List[Tuple[str, Optional[str]]]:
     for m in _TABLE_NAME_RE.finditer(sql):
         table = m.group(1)
         alias = None
-        tail = sql[m.end():].lstrip()
+        tail = sql[m.end() :].lstrip()
         if tail[:2].upper() == "AS" and (len(tail) == 2 or not tail[2].isalnum()):
             tail = tail[2:].lstrip()
         tok = _IDENT_RE.match(tail)
@@ -157,7 +169,8 @@ def _extract_tables(sql: str) -> List[str]:
 
 
 def _resolve_alias(
-    refs: List[Tuple[str, Optional[str]]], prefix: str,
+    refs: List[Tuple[str, Optional[str]]],
+    prefix: str,
 ) -> Optional[str]:
     """Map an alias or table-name prefix back to the joined table name.
 
@@ -178,7 +191,9 @@ def _resolve_alias(
 
 
 def _schema_hint(
-    conn: Any, sql: str, exc: BaseException,
+    conn: Any,
+    sql: str,
+    exc: BaseException,
 ) -> str:
     """Return a schema hint for the most common shape mistakes.
 
@@ -202,7 +217,8 @@ def _schema_hint(
                 cols = columns_for_table(conn, resolved)
                 if cols:
                     return "Valid columns on {}: {}".format(
-                        resolved, ", ".join(cols),
+                        resolved,
+                        ", ".join(cols),
                     )
             # Alias did not resolve — fall through to multi-table listing.
         tables = [t for t, _ in refs]
@@ -210,7 +226,8 @@ def _schema_hint(
             cols = columns_for_table(conn, tables[0])
             if cols:
                 return "Valid columns on {}: {}".format(
-                    tables[0], ", ".join(cols),
+                    tables[0],
+                    ", ".join(cols),
                 )
             return ""
         lines: List[str] = []
@@ -233,10 +250,12 @@ def _schema_hint(
 
 
 USAGE_ERR_MSG = "Error: query requires a SQL string"
-USAGE_LINE = 'Usage: python3 -m yoke_core.cli.db_router query [-separator S] "SELECT ..."'
+USAGE_LINE = (
+    'Usage: python3 -m yoke_core.cli.db_router query [-separator S] "SELECT ..."'
+)
 
 USAGE_DETAIL = """\
-Raw SQL escape hatch against the selected Yoke Postgres authority.
+Read-only SQL diagnostics against the selected Yoke Postgres authority.
 
 Worked example (`PREFIX` and `N` come from the public `PREFIX-N` ref):
   python3 -m yoke_core.cli.db_router query \\
@@ -256,7 +275,7 @@ Options:
 
 Rules and gotchas:
   - One statement per invocation (no multi-statement multiplexing).
-  - DDL/DML commits its change and prints nothing.
+  - Writes refuse; use registered mutations or yoke operator data-repair --help.
   - A public `PREFIX-N` ref never appears as a literal in SQL. Resolve it with
     `WHERE project_id = <p> AND project_sequence = <n>`; join `projects` to
     match the prefix.

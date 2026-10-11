@@ -123,6 +123,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `models.restore.run` | `none` |
 | `models.revisions.run` | `none` |
 | `models.validate.run` | `none` |
+| `operator.data_repair.run` | `none` |
 | `organizations.create` | `none` |
 | `organizations.domain.set` | `none` |
 | `organizations.get` | `none` |

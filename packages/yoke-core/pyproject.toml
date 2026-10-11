@@ -35,6 +35,8 @@ dependencies = [
     # possession, not driver absence — https-transport machines hold no DSN
     # and never dispatch in-process.
     "psycopg[binary]>=3.1,<4",
+    # PostgreSQL's grammar validates operator repair statements before execution.
+    "pglast>=7,<8",
     # Cloud core-service resolves its current Aurora password from the
     # RDS-managed Secrets Manager secret instead of carrying a static DSN file.
     "boto3>=1.35,<2",

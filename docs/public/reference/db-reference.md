@@ -6,8 +6,11 @@ Source of truth: the configured Postgres authority. Agent-facing reads and
 writes route through registered `yoke ...` commands or the Yoke
 function-call surface. Everyday raw diagnostic SELECTs use
 `yoke db read "SELECT ..."`. `python3 -m yoke_core.cli.db_router query`
-remains source-dev/operator-debug break-glass only; never call raw database
+remains read-only source-dev/operator-debug diagnostics; never call raw database
 clients directly and never hardcode a DB path or DSN.
+Human org administrators use `yoke operator data-repair --content-file repair.json --reviewed-sha256 SHA --dry-run`
+for bounded guarded repairs without a lane. Review the simulation before applying;
+the [repair contract](../operator-data-repair.md) owns durable before/after evidence.
 
 Quickstart for session operators: `AGENTS.md` § Code Conventions, § Structured Item Writes, and § Governed DB Mutation. Update those sections when this file changes.
 

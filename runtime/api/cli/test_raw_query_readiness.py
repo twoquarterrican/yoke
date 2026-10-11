@@ -54,7 +54,13 @@ def test_execute_query_opens_via_readiness_boundary(monkeypatch):
 
     assert rc == 0
     assert out.getvalue() == "1\n"
-    assert log == ["connect_psycopg", "execute:SELECT 1", "commit", "close"]
+    assert log == [
+        "connect_psycopg",
+        "execute:SET TRANSACTION READ ONLY",
+        "execute:SELECT 1",
+        "commit",
+        "close",
+    ]
 
 
 def test_execute_query_surfaces_heal_failure_loudly(monkeypatch):
