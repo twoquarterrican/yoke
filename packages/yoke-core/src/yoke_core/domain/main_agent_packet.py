@@ -59,9 +59,9 @@ MAIN_AGENT_ROLE = "main_agent"
 # pointer at a Yoke source-repo doc would name a file that is not there.
 # Renders empty when ``yoke`` is on PATH so installed sessions see no noise.
 INSTALL_ADVISORY_HEADING = "Yoke CLI not on PATH — install with one command:"
-INSTALL_ADVISORY_COMMAND = "    python3 -m yoke_core.tools.install_yoke_launcher"
+INSTALL_ADVISORY_COMMAND = "    curl -fsSL https://upyoke.com/install | sh"
 INSTALL_ADVISORY_POINTER = (
-    "(add --help for variants; --repair rewrites ~/.local/bin/yoke)"
+    "(open a new terminal afterward; source checks use yoke dev run)"
 )
 
 # Stable heading. Both the compact and full variants share it so operators

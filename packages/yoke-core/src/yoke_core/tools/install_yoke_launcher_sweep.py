@@ -149,6 +149,7 @@ def _launcher_probe_passes(candidate: Path, *, default_home: Path) -> bool:
     """Return whether the rendered launcher completes its version probe."""
     probe_env = os.environ.copy()
     probe_env["YOKE_HOME"] = str(default_home)
+    probe_env.pop("YOKE_SOURCE_DEV", None)
     probe_env.pop("PYTHONHOME", None)
     probe_env.pop("PYTHONPATH", None)
     try:
@@ -201,7 +202,9 @@ def repair_canonical_launcher(
     else:
         raise InstallError(
             f"cannot repair canonical launcher {target}: "
-            "no candidate interpreter passed the launcher --version probe."
+            "released_cli_unavailable: no candidate interpreter passed the released CLI "
+            "probe; install with `curl -fsSL https://upyoke.com/install | sh`, "
+            "then retry --repair."
         )
 
     if stream is not None:
@@ -221,16 +224,24 @@ def converge_machine(
     """Write the canonical shim and quarantine every PATH shadow."""
     environ = os.environ if env is None else env
     target = repair_canonical_launcher(
-        checkout, home=home, force=force, env=environ, stream=stream,
+        checkout,
+        home=home,
+        force=force,
+        env=environ,
+        stream=stream,
     )
     report = SweepReport(canonical=target, written=True)
     report.shadows = enumerate_shadow_installs(
-        canonical=target, env=environ, extra_paths=extra_paths,
+        canonical=target,
+        env=environ,
+        extra_paths=extra_paths,
     )
     stamp = time.strftime("%Y%m%d%H%M%S")
     for shadow in report.shadows:
         quarantined = quarantine_shadow_launcher(
-            shadow.path, stamp=stamp, stream=stream,
+            shadow.path,
+            stamp=stamp,
+            stream=stream,
         )
         report.quarantined.append(quarantined)
     return report

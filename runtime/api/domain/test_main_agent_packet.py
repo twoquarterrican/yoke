@@ -207,9 +207,9 @@ def test_render_install_advisory_block_three_lines_when_missing(
         INSTALL_ADVISORY_COMMAND,
         INSTALL_ADVISORY_POINTER,
     ]
-    # Command line names the canonical install module (Refinement
-    # Addendum CR-3 — must match Task 003's module name exactly).
-    assert "install_yoke_launcher" in INSTALL_ADVISORY_COMMAND
+    assert (
+        INSTALL_ADVISORY_COMMAND.strip() == "curl -fsSL https://upyoke.com/install | sh"
+    )
 
 
 def test_main_agent_block_prepends_advisory_when_yoke_missing(

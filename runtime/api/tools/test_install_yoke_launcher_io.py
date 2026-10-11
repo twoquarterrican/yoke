@@ -20,10 +20,7 @@ def test_refuse_foreign_binary_passes_when_target_absent(tmp_path: Path):
 
 def test_refuse_foreign_binary_accepts_existing_launcher(tmp_path: Path):
     target = tmp_path / "yoke"
-    target.write_text(
-        "#!/usr/bin/env python3\n"
-        "from yoke_cli.main import main\n"
-    )
+    target.write_text("#!/usr/bin/env python3\nfrom yoke_cli.main import main\n")
     isl.refuse_foreign_binary(target)
 
 
@@ -41,8 +38,7 @@ def test_refuse_foreign_binary_accepts_pip_console_script(tmp_path: Path):
 def test_refuse_foreign_binary_accepts_legacy_runtime_launcher(tmp_path: Path):
     target = tmp_path / "yoke"
     target.write_text(
-        "#!/usr/bin/env python3\n"
-        "from runtime.api.cli.yoke_operations_cli import main\n"
+        "#!/usr/bin/env python3\nfrom runtime.api.cli.yoke_operations_cli import main\n"
     )
     isl.refuse_foreign_binary(target)
 
@@ -114,7 +110,7 @@ def test_write_launcher_bakes_install_home_default(tmp_path: Path):
 
     text = target.read_text()
     assert f"DEFAULT_YOKE_HOME = {str(home)!r}" in text
-    assert "os.environ.get(\"YOKE_HOME\")" in text
+    assert 'os.environ.get("YOKE_HOME")' in text
 
 
 def test_written_launcher_loads_package_src_roots(tmp_path: Path):
@@ -134,6 +130,7 @@ def test_written_launcher_loads_package_src_roots(tmp_path: Path):
     env = os.environ.copy()
     env.pop("PYTHONPATH", None)
     env["YOKE_HOME"] = str(home)
+    env["YOKE_SOURCE_DEV"] = "1"
     result = subprocess.run(
         [str(target), "--version"],
         env=env,

@@ -31,7 +31,7 @@ def cleanup_stale_editable_yoke_metadata(
     ``pip uninstall`` can report success while leaving an editable
     ``dist-info`` record whose ``direct_url.json`` still points at a removed
     worktree. The launcher install owns cleanup for those records because the
-    launcher supplies package source paths from ``YOKE_HOME``.
+    explicit source-dev opt-in supplies package paths from ``YOKE_HOME``.
     """
     removed = 0
     out = stream if stream is not None else sys.stdout
@@ -137,6 +137,7 @@ def quarantine_shadow_launcher(
     out = stream if stream is not None else sys.stdout
     out.write(f"Quarantined {path} -> {dest} (restore: mv {dest} {path})\n")
     return dest
+
 
 __all__ = [
     "YOKE_EDITABLE_PACKAGE_NAMES",
