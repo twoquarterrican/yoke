@@ -89,14 +89,11 @@ remove `preboot_instant_parameters`, declared writer arguments and boot/stage
 cache invalidations. Keep strict decoders, relevance filtering and permanent
 history. Delivery Notes name this cleanup for steering to file after release.
 
-Tracing and small fixtures do not prove the whole pre-boot driver. Before
-re-driving a failed self-deploy, restore the actual pre-cutover production
-database through `migration_fleet_preflight.rehearse`, keep its copy admission
-through the driver callback, and exercise run creation with a real member,
-execution context, QA seeding, start and stage entry up to hosted dispatch.
-When the flow allocates its receipt after that boundary, probe its actual
-receipt contract separately on the copy and record that distinction.
-Retain the source/copy identity, catalog types, candidate
-code identity and each operation's outcome. Apply no history or data repair
-in this diagnostic and credit no release receipt. The kernel owns copy
-cleanup. A one-off operator script and its evidence stay outside the repo.
+Fleet rehearsal now owns this proof through `migration_fleet_preflight.rehearse`.
+The candidate runs real member-driver operations on each restored pre-boot
+copy before history convergence, through start, stage entry and receipt
+allocation, without dispatching an executor. It then converges and requires
+real product readers to decode the migrated rows. Driver or reader refusals
+fail the gate. The [fleet contract](public/reference/db-reference/migration-model-fleet.md)
+owns subject selection and complete copy custody. The instant census remains
+read-only diagnostic evidence and cannot earn a release receipt.

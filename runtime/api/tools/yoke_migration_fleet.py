@@ -19,6 +19,7 @@ from yoke_core.tools.yoke_migration_fleet import (
 from runtime.api.tools.migration_rehearsal_release_surfaces import (
     verify_migrated_release_surfaces,
 )
+from runtime.api.tools.migration_rehearsal_preboot import verify_preboot_release_driver
 
 
 def history_entries() -> Tuple[Any, ...]:
@@ -93,6 +94,18 @@ def load_module(name: str) -> Any:
     return load_migration_module(entry.path, entry.name)
 
 
+def verify_migrated_copy(conn: Any, copy_dsn: str) -> str | None:
+    """Require product readers and release tooling to consume converged rows."""
+    from runtime.api.tools.migration_rehearsal_readers import verify_migrated_readers
+
+    failure = verify_migrated_readers(conn, copy_dsn)
+    return (
+        failure
+        if failure is not None
+        else verify_migrated_release_surfaces(conn, copy_dsn)
+    )
+
+
 def rehearsal_plan() -> RehearsalPlan:
     """Bind the generic rehearsal kernel to Yoke project authority."""
     return RehearsalPlan(
@@ -101,7 +114,8 @@ def rehearsal_plan() -> RehearsalPlan:
         converge=converge,
         live_ownership_validator=migration_content_ownership_detail,
         load_module=load_module,
-        post_converge_validator=verify_migrated_release_surfaces,
+        pre_converge_validator=verify_preboot_release_driver,
+        post_converge_validator=verify_migrated_copy,
     )
 
 

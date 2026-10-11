@@ -18,12 +18,10 @@ from yoke_core.domain import (
     migration_fleet_preflight_extensions,
     migration_fleet_preflight_transfer,
     migration_rehearsal_copy_lock,
-    postgres_cluster,
 )
 from yoke_core.domain.migration_fleet_applied_invariants import (
     format_fleet_summary,
 )
-from yoke_core.domain.migration_restore_point import named_restore_point
 from yoke_core.domain.postgres_cluster import ClusterSpec
 
 #: Throwaway copy prefix; a leftover name is visibly disposable.
@@ -65,6 +63,7 @@ class RehearsalPlan:
     #: invariants can run after convergence. Absent means the caller opts
     #: out of that proof (tests that only exercise dump/ownership paths).
     load_module: Callable[[str], Any] | None = None
+    pre_converge_validator: Callable[[Any, str], str | None] | None = None
     post_converge_validator: Callable[[Any, str], str | None] | None = None
     copy_observer: Callable[[str, Path], None] | None = None
     resource_guard: Callable[[], None] | None = None
@@ -255,53 +254,9 @@ def _converge_copy(
     dump: Path,
     plan: RehearsalPlan,
 ) -> Verdict:
-    from yoke_core.domain import db_backend
-    from yoke_core.domain.migration_fleet_applied_invariants import (
-        AppliedInvariantReport,
-        applied_shipped_names,
-        verify_applied_history_invariants,
-    )
+    from yoke_core.domain.migration_fleet_copy_validation import converge_copy
 
-    copy_dsn = postgres_cluster.dsn(spec, copy_name)
-    # Boot-shaped rows (name + index). connect_psycopg stays tuple-only.
-    conn = db_backend._open_native_postgres(copy_dsn)
-    try:
-        pending = plan.pending_names(conn, plan.history)
-        with named_restore_point(dump):
-            try:
-                plan.converge(conn, copy_dsn)
-            except BaseException as exc:  # noqa: BLE001 — a verdict, not a crash
-                conn.rollback()
-                return Verdict(database, False, str(exc).strip(), pending)
-        applied = applied_shipped_names(plan.history, plan.pending_names, conn)
-        report = (
-            AppliedInvariantReport()
-            if plan.load_module is None
-            else verify_applied_history_invariants(
-                conn,
-                applied,
-                history=plan.history,
-                load_module=plan.load_module,
-                redact=copy_dsn,
-            )
-        )
-        failure = report.failure
-        if failure is None and plan.post_converge_validator is not None:
-            failure = plan.post_converge_validator(conn, copy_dsn)
-        if failure is not None:
-            conn.rollback()
-        else:
-            conn.commit()
-        return Verdict(
-            database,
-            failure is None,
-            plan.success_detail if failure is None else failure,
-            pending,
-            applied,
-            skipped_invariants=report.skipped,
-        )
-    finally:
-        conn.close()
+    return converge_copy(spec, database, copy_name, dump, plan)
 
 
 def rehearse_fleet(
