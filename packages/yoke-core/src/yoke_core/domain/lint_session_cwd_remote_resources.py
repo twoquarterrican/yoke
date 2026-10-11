@@ -10,6 +10,7 @@ from typing import Sequence
 
 from yoke_core.domain.lint_session_cwd_host_command import (
     aws_log_group_indexes,
+    aws_ssm_parameter_indexes,
     remote_argv_indexes,
     test_machine_exec_argv_indexes,
     yoke_subcommand_positionals,
@@ -23,6 +24,7 @@ def remote_resource_indexes(command_base: str, tokens: Sequence[str]) -> set[int
         | remote_argv_indexes(command_base, tokens)
         | test_machine_exec_argv_indexes(command_base, tokens)
         | aws_log_group_indexes(command_base, tokens)
+        | aws_ssm_parameter_indexes(command_base, tokens)
     )
 
 
