@@ -99,9 +99,6 @@ jobs:
     # A main push re-proves its own tree; a train carrying a rebased item
     # builds the tree its entry run proved. Consumers skip per step, never
     # per job: see test_shard.
-    if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
-      || github.event_name == 'merge_group'
     runs-on: ${{ fromJSON(vars.YOKE_LINUX_RUNS_ON || '["ubuntu-latest"]') }}
     permissions:
       contents: read
