@@ -47,6 +47,10 @@ def test_hc_fails_when_login_shell_misses_canonical(
         "yoke_core.engines.doctor_hc_launcher_authority._resolve_checkout",
         lambda _args: None,
     )
+    monkeypatch.setattr(
+        "yoke_core.engines.doctor_hc_launcher_authority._release_problem",
+        lambda launcher, env: None,
+    )
     rec = _Rec()
     hc_launcher_authority(None, SimpleNamespace(fix=False), rec)
     assert rec.rows[0][0] == SLUG
@@ -75,6 +79,10 @@ def test_hc_passes_when_login_matches_canonical(monkeypatch, tmp_path: Path) -> 
     monkeypatch.setattr(
         "yoke_core.engines.doctor_hc_launcher_authority._resolve_checkout",
         lambda _args: None,
+    )
+    monkeypatch.setattr(
+        "yoke_core.engines.doctor_hc_launcher_authority._release_problem",
+        lambda launcher, env: None,
     )
     rec = _Rec()
     hc_launcher_authority(None, SimpleNamespace(fix=False), rec)
@@ -107,6 +115,10 @@ def test_hc_fix_calls_converge_machine(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
         "yoke_core.engines.doctor_hc_launcher_authority.shutil.which",
         lambda _name, path=None: str(canon),
+    )
+    monkeypatch.setattr(
+        "yoke_core.engines.doctor_hc_launcher_authority._release_problem",
+        lambda launcher, env: None,
     )
     rec = _Rec()
     hc_launcher_authority(None, SimpleNamespace(fix=True), rec)
@@ -208,3 +220,31 @@ def test_ordinary_venv_activation_remains_in_machine_probe(monkeypatch, tmp_path
     monkeypatch.setattr(check.sys, "prefix", str(activated_bin.parent))
     monkeypatch.delenv(check.SOURCE_DEV_RUN_ROOT_ENV, raising=False)
     assert check._machine_launcher_env()["PATH"] == str(activated_bin)
+
+
+@pytest.mark.parametrize(
+    "version,code,expected",
+    [
+        ("source", 0, "released_cli_required"),
+        ("", 2, "released_cli_required"),
+        ("1.2.3", 0, None),
+    ],
+)
+def test_release_probe_requires_versioned_cli(monkeypatch, version, code, expected):
+    from subprocess import CompletedProcess
+    from yoke_core.engines import doctor_hc_launcher_authority as check
+
+    monkeypatch.setattr(
+        check.subprocess,
+        "run",
+        lambda *args, **kwargs: CompletedProcess(args, code, version, ""),
+    )
+    problem = check._release_problem("/tmp/yoke", {})
+    assert problem is None if expected is None else expected in problem
+
+
+def test_machine_probe_ignores_operator_source_opt_in(monkeypatch):
+    from yoke_core.engines import doctor_hc_launcher_authority as check
+
+    monkeypatch.setenv("YOKE_SOURCE_DEV", "1")
+    assert "YOKE_SOURCE_DEV" not in check._machine_launcher_env()

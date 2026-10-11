@@ -172,6 +172,19 @@ gets the thing it asked for. The run records why it could not read the
 remote and publication then reports `publication_pending` — you are never
 told the remote has a layer it never received.
 
+## Source-maintainer launcher
+
+A source-maintainer launcher also runs the released `yoke-cli` uv tool by
+default, using isolated Python so a checkout, active venv or PYTHONPATH cannot
+change operator commands. Missing or source-bound tool installs refuse with
+`released_cli_unavailable` or `released_cli_required`; rerun the installer above.
+From the registered source main checkout, repair the launcher with
+`python3 -m yoke_core.tools.install_yoke_launcher --repair`.
+Use `yoke dev run -- <command>` for claimed-lane source checks. Operators can
+explicitly choose source code for one command with
+`YOKE_SOURCE_DEV=1 YOKE_HOME=/absolute/source/checkout yoke <command>`.
+Do not export that opt-in for everyday fleet or steering commands.
+
 ## Uninstall
 
 ```bash

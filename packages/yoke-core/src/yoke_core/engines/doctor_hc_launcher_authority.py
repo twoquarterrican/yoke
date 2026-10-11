@@ -31,12 +31,13 @@ _HOOK_CONFIG_RELATIVE = (
 
 
 SLUG = "launcher-authority"
-TITLE = "Machine launcher resolves to canonical editable install"
+TITLE = "Machine launcher resolves to the released CLI"
 
 
 def _machine_launcher_env() -> dict[str, str]:
     """Exclude only the verified source runner's temporary interpreter path."""
     env = dict(os.environ)
+    env.pop("YOKE_SOURCE_DEV", None)
     source_root = env.get(SOURCE_DEV_RUN_ROOT_ENV)
     if not source_root:
         return env
@@ -86,6 +87,25 @@ def _resolve_checkout(args: DoctorArgs) -> Path | None:
     raw = _base._resolve_repo_root()
     if raw:
         return Path(raw)
+    return None
+
+
+def _release_problem(launcher: str, env: dict[str, str]) -> str | None:
+    try:
+        result = subprocess.run(
+            [launcher, "--version"],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"released_cli_unavailable: version probe failed: {exc}"
+    version = (result.stdout or "").strip()
+    if result.returncode or not version or version == "source":
+        detail = (result.stderr or version or "no version returned").strip()
+        return f"released_cli_required: {detail}"
     return None
 
 
@@ -161,6 +181,10 @@ def hc_launcher_authority(conn, args: DoctorArgs, rec: RecordCollector) -> None:
         problems.append(
             f"login shell resolved {login!r}, not canonical {str(canonical)!r}"
         )
+    else:
+        release_problem = _release_problem(login, machine_env)
+        if release_problem:
+            problems.append(release_problem)
     if shadows:
         listed = ", ".join(f"{s.path} ({s.kind})" for s in shadows)
         problems.append(f"shadow installs on PATH: {listed}")
@@ -178,7 +202,8 @@ def hc_launcher_authority(conn, args: DoctorArgs, rec: RecordCollector) -> None:
             "FAIL",
             "Machine launcher is not canonical.\n  "
             + "\n  ".join(problems)
-            + "\n  Repair: python3 -m yoke_core.tools.install_yoke_launcher --repair"
+            + "\n  Install the release: curl -fsSL https://upyoke.com/install | sh."
+            + " Then repair: python3 -m yoke_core.tools.install_yoke_launcher --repair"
             + "  (or `yoke doctor run --quick --fix`). Shadows are quarantined, never deleted.",
         )
         return

@@ -123,27 +123,17 @@ def test_preferred_interpreter_failure_falls_back(tmp_path: Path, monkeypatch) -
     assert not list(target_dir.glob(".yoke.*.candidate"))
 
 
-def test_dependency_poor_venv_is_rejected_by_real_launcher_probe(
-    tmp_path: Path,
-) -> None:
-    checkout = _checkout(tmp_path)
-    home = tmp_path / "isolated-home"
-    subprocess.run(
-        [sweep.sys.executable, "-m", "venv", str(home / ".venv")],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    target_dir = tmp_path / "bin"
+def test_repair_probe_ignores_source_opt_in(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("YOKE_SOURCE_DEV", "1")
+    observed = {}
 
-    written = repair_canonical_launcher(
-        checkout,
-        home=home,
-        env={"XDG_BIN_HOME": str(target_dir)},
-    )
+    def run(command, **kwargs):
+        observed.update(kwargs["env"])
+        return subprocess.CompletedProcess(command, 0)
 
-    assert written.read_text().splitlines()[0] == f"#!{sweep.sys.executable}"
-    assert not list(target_dir.glob(".yoke.*.candidate"))
+    monkeypatch.setattr(sweep.subprocess, "run", run)
+    assert sweep._launcher_probe_passes(tmp_path / "yoke", default_home=tmp_path)
+    assert "YOKE_SOURCE_DEV" not in observed
 
 
 def test_all_probe_failures_preserve_regular_shim(tmp_path: Path, monkeypatch) -> None:
@@ -179,7 +169,9 @@ def test_all_probe_failures_preserve_regular_shim(tmp_path: Path, monkeypatch) -
     assert not list(target_dir.glob(".yoke.*.candidate"))
 
 
-def test_failed_repair_preserves_symlink_and_its_target(tmp_path: Path, monkeypatch) -> None:
+def test_failed_repair_preserves_symlink_and_its_target(
+    tmp_path: Path, monkeypatch
+) -> None:
     checkout = _checkout(tmp_path)
     home = tmp_path / "home"
     _candidate_python(home)

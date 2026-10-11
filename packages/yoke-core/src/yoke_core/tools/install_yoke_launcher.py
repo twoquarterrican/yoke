@@ -163,7 +163,11 @@ def configure_session_relay(*, stream=None) -> bool:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="install_yoke_launcher",
-        description="Install the venv-independent yoke launcher.",
+        description=(
+            "Install a launcher for uv's released yoke-cli. Install the release "
+            "with `curl -fsSL https://upyoke.com/install | sh` first. "
+            "YOKE_SOURCE_DEV=1 explicitly opts into YOKE_HOME source code."
+        ),
     )
     parser.add_argument(
         "--target-dir",

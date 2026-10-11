@@ -34,7 +34,7 @@ LOCAL_LAUNCHER_MISSING = "relay_local_launcher_missing"
 
 #: The one recovery for that refusal, named wherever the refusal is rendered.
 LOCAL_LAUNCHER_RECOVERY = (
-    "install it with `python3 -m yoke_core.tools.install_yoke_launcher`, "
+    "install the released CLI with `curl -fsSL https://upyoke.com/install | sh`,  "
     "then retry the relay install"
 )
 

@@ -179,8 +179,11 @@ before becoming agent-callable. HTTPS relays; non-prod local Postgres dispatches
 in process as its product path; prod-flagged Postgres is operator-only.
 
 Launcher installation/repair uses `yoke_core.tools.install_yoke_launcher` at
-the registered editable main checkout, never a linked lane. It writes the
-canonical XDG_BIN_HOME or `~/.local/bin/yoke` shim. Repair/Doctor quick fix
+the registered source main checkout, never a linked lane. Install the released
+CLI first with `curl -fsSL https://upyoke.com/install | sh`. The canonical
+UV_TOOL_BIN_DIR/XDG_BIN_HOME or `~/.local/bin/yoke` shim runs that released
+CLI; `YOKE_SOURCE_DEV=1` explicitly opts into YOKE_HOME source imports.
+Claimed-lane checks use `yoke dev run -- <command>`. Repair/Doctor quick fix
 quarantines PATH shadows, retaining them. Consult [install](../../install.md)
 and launcher help before repair.
 DB-router/service-client forms are operator-debug only. HTTP function-call
