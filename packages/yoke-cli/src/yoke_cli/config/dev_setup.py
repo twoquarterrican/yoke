@@ -84,9 +84,12 @@ def build_report(
         report["message"] = "write plan only; rerun with --yes to apply"
         return report
 
-    # Source-link resolves the checkout via PYTHONPATH, so it precedes the
-    # editable install, which replaces the product wheel this process uses.
-    provisioned = install_source_checkout(root, editable_install=False)
+    # Source-link precedes editable install, which replaces this product wheel.
+    provisioned = install_source_checkout(
+        root,
+        editable_install=False,
+        config_path=config_path,
+    )
     report["applied"] = True
     report["source_link"] = provisioned["source_link"]
     if with_test_postgres:
@@ -106,9 +109,6 @@ def build_report(
             authority=authority,
         )
         report["admin_connection"] = configured
-    # LAST in-process action — nothing yoke_cli-dependent may follow (the adapter
-    # only renders the already-built report). run_editable_install_step never
-    # raises: a failure lands in the report as {"ok": False, "error": ...}.
     if editable_install:
         report["editable_install"] = run_editable_install_step(root)
     report["message"] = "source-dev/admin setup applied"
@@ -119,11 +119,13 @@ def install_source_checkout(
     root: Path,
     *,
     editable_install: bool = True,
+    config_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Apply source-link and optionally repoint the tool environment."""
     return source_checkout_activation.install_source_checkout(
         root,
         editable=editable_install,
+        config_path=config_path,
         error_type=DevSetupError,
     )
 
@@ -149,6 +151,9 @@ def render_human(report: Mapping[str, Any]) -> str:
     ]
     for step in report["plan"]["steps"]:
         lines.append(f"  - {step['action']}: {step['target']}")
+    credentials = report.get("source_link", {}).get("git_credentials")
+    if credentials is not None:
+        lines.append(f"  GitHub sign-in: {json.dumps(credentials)}")
     editable = report.get("editable_install")
     if editable is not None:
         if editable.get("ok"):
@@ -235,7 +240,10 @@ def _resolve_dsn(
 
 
 def _dsn_source(env_name: str) -> dict[str, str]:
-    return {"kind": "dsn_file", "path": str(_planned_secret_path(env_name))}
+    selected = dev_setup_machine_config.planned_secret_path(
+        env_name, error_type=DevSetupError
+    )
+    return {"kind": "dsn_file", "path": str(selected)}
 
 
 def _start_disposable_postgres() -> dict[str, Any]:
@@ -253,15 +261,6 @@ def _start_disposable_postgres() -> dict[str, Any]:
             f"disposable Postgres cluster failed to start with exit code {rc}"
         )
     return {"ok": True, "dsn": pg_testcluster.dsn()}
-
-
-def _planned_secret_path(env_name: str) -> Path:
-    safe = "".join(
-        char if char.isalnum() or char in "._-" else "_" for char in env_name.strip()
-    ).strip("._-")
-    if not safe:
-        raise DevSetupError("--env must include a filesystem-safe label")
-    return machine_config.yoke_home() / contract.SECRETS_DIR_NAME / f"{safe}.dsn"
 
 
 def _configure_admin_connection(

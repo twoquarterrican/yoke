@@ -247,12 +247,13 @@ def install_source_link(
     repo_root: Path,
     *,
     operation: str = "install",
+    config_path: str | Path | None = None,
 ) -> Dict[str, Any]:
     """Apply the source-link strategy to *repo_root* (no bundle, no fetch)."""
     from yoke_core.domain import project_contract
     from yoke_core.domain.install_bundle import yoke_version
 
-    git_credentials = github_project_setup.converge(repo_root, config_path=None)
+    git_credentials = github_project_setup.converge(repo_root, config_path=config_path)
     old_manifest = files_layer.load_manifest(repo_root) or {}
     for rel, source_rel in DEV_MATERIALIZED_FILES:
         files_layer.assert_resolved_targets_within(

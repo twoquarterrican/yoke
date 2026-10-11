@@ -17,28 +17,33 @@ def test_dev_setup_editable_install_runs_last(tmp_path: Path, monkeypatch) -> No
     order: list[object] = []
 
     monkeypatch.setattr(
-        dev_setup, "_resolve_dsn",
+        dev_setup,
+        "_resolve_dsn",
         lambda *a, **k: (
             "secret-dsn",
             {"kind": "dsn_file", "path": str(tmp_path / "secret.dsn")},
         ),
     )
     monkeypatch.setattr(
-        dev_setup, "install_source_checkout",
-        lambda root, *, editable_install: order.append(
-            ("source_link", editable_install)
-        ) or {
-            "source_link": {"mode": "source-link"},
-            "machine_config_newly_registered": False,
-            "warnings": [],
-        },
+        dev_setup,
+        "install_source_checkout",
+        lambda root, *, editable_install, config_path: (
+            order.append(("source_link", editable_install, config_path))
+            or {
+                "source_link": {"mode": "source-link"},
+                "machine_config_newly_registered": False,
+                "warnings": [],
+            }
+        ),
     )
     monkeypatch.setattr(
-        dev_setup, "_configure_admin_connection",
+        dev_setup,
+        "_configure_admin_connection",
         lambda **kw: order.append("config") or {"connection": {}},
     )
     monkeypatch.setattr(
-        dev_setup, "run_editable_install_step",
+        dev_setup,
+        "run_editable_install_step",
         lambda root: order.append("editable") or {"ok": True, "editable_install": {}},
     )
 
@@ -54,7 +59,11 @@ def test_dev_setup_editable_install_runs_last(tmp_path: Path, monkeypatch) -> No
 
     # source-link is invoked decoupled (editable_install=False), admin-config
     # runs in-process, and the editable install runs strictly last.
-    assert order == [("source_link", False), "config", "editable"]
+    assert order == [
+        ("source_link", False, str(tmp_path / "config.json")),
+        "config",
+        "editable",
+    ]
     assert report["editable_install"] == {"ok": True, "editable_install": {}}
 
 
@@ -66,18 +75,22 @@ def test_dev_setup_editable_install_failure_is_reported_not_raised(
     # config stay intact and the operator gets a clear recovery hint.
     checkout = _source_checkout(tmp_path)
     monkeypatch.setattr(
-        dev_setup, "_resolve_dsn", lambda *a, **k: (None, None),
+        dev_setup,
+        "_resolve_dsn",
+        lambda *a, **k: (None, None),
     )
     monkeypatch.setattr(
-        dev_setup, "install_source_checkout",
-        lambda root, *, editable_install: {
+        dev_setup,
+        "install_source_checkout",
+        lambda root, *, editable_install, config_path: {
             "source_link": {"mode": "source-link"},
             "machine_config_newly_registered": False,
             "warnings": [],
         },
     )
     monkeypatch.setattr(
-        dev_setup, "run_editable_install_step",
+        dev_setup,
+        "run_editable_install_step",
         lambda root: {"ok": False, "error": "editable install failed: no uv"},
     )
 
@@ -92,7 +105,8 @@ def test_dev_setup_editable_install_failure_is_reported_not_raised(
 
     assert report["applied"] is True
     assert report["editable_install"] == {
-        "ok": False, "error": "editable install failed: no uv",
+        "ok": False,
+        "error": "editable install failed: no uv",
     }
     human = dev_setup.render_human(report)
     assert "editable install: FAILED" in human

@@ -141,3 +141,60 @@ def test_other_origin_is_reported_as_skipped(tmp_path, monkeypatch):
         "configured": False,
         "reason": "origin-outside-configured-github",
     }
+
+
+@pytest.mark.parametrize("refuse", [False, True])
+def test_source_activation_uses_selected_config_and_teaches_refusal(
+    tmp_path,
+    monkeypatch,
+    capsys,
+    refuse,
+):
+    from yoke_cli.config import source_checkout_activation as activation
+    from yoke_core.domain import project_install_source_link as source_link
+
+    repo, config, _credential = _configured_repo(tmp_path, monkeypatch)
+    _git(repo, "remote", "add", "origin", "git@github.com:octo/repo.git")
+    if refuse:
+        _git(repo, "config", "remote.origin.pushurl", "git@github.com:octo/other.git")
+    monkeypatch.setattr(
+        github_git_credentials, "_helper_site_dir", lambda: tmp_path / "site"
+    )
+    monkeypatch.setattr(
+        source_link,
+        "install_source_link",
+        lambda root, **kw: {
+            "git_credentials": github_project_setup.converge(
+                root, config_path=kw["config_path"]
+            ),
+        },
+    )
+    import sys
+
+    monkeypatch.setattr(
+        sys, "argv", ["source-link", str(repo), "dev.setup", str(config)]
+    )
+    if refuse:
+        with pytest.raises(SystemExit) as exit_result:
+            exec(activation._SOURCE_LINK_SNIPPET, {})
+        assert exit_result.value.code == 1
+        captured = capsys.readouterr()
+        assert "github-push-target-mismatch" in captured.err
+        assert "Traceback" not in captured.err
+        assert captured.out == ""
+    else:
+        exec(activation._SOURCE_LINK_SNIPPET, {})
+        report = json.loads(capsys.readouterr().out)
+        assert report["git_credentials"]["configured"] is True
+        from yoke_cli.config import dev_setup
+
+        human = dev_setup.render_human(
+            {
+                "checkout": {"path": str(repo)},
+                "applied": True,
+                "plan": {"steps": []},
+                "source_link": report,
+            }
+        )
+        assert "GitHub sign-in:" in human
+        assert "origin-url" in human
