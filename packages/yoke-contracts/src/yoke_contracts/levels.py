@@ -8,9 +8,9 @@ accepts, so a wildcard or an effort the harness cannot pass never reaches
 storage. A Cursor option may name a ``fallback`` on the same surface: the
 selection used only when the option's own pool is exhausted.
 
-The same options label sessions: a session is stamped with the lowest level
-whose option matches its harness and model, preferring an option at its own
-effort. There is no separately maintained rule list.
+The same options label sessions: a session takes the highest level whose
+option it equals or exceeds in declared model rank, speed, and effort, across
+harness families. Launch selections remain exact.
 
 One document holds the levels for the whole universe; a project may carry an
 override in its ``session-routing`` capability. Both stores hold the same
@@ -33,6 +33,7 @@ from yoke_contracts.session_control.model_selection import (
     validate_launch_model_selection,
 )
 from yoke_contracts.session_level import level_is_unresolved
+from yoke_contracts.model_capabilities import selection_capability, selection_dominates
 
 LEVELS_KEY = "levels"
 """The key holding the levels document in both the universe and project stores."""
@@ -290,37 +291,34 @@ def level_for_session(
     model: Optional[str],
     reasoning_effort: Optional[str] = None,
 ) -> Optional[str]:
-    """Return the level whose option matches this session, or ``None``.
+    """Return the highest level dominated on model rank, speed and effort.
 
-    An option matches on harness family and exact model. An option at the
-    session's own effort wins; otherwise (effort unknown, or one no option
-    lists) the model alone decides. Either way the lowest matching level
-    labels the session.
+    Harness identity validates the session, but does not restrict comparison
+    to that family's options. Unknown axes cannot establish a level.
     """
     if not executor or not model:
         return None
     try:
-        harness = canonical_harness_id(executor)
+        canonical_harness_id(executor)
     except ValueError:
         return None
-    effort = (reasoning_effort or "").strip().lower() or None
-    by_model: Optional[str] = None
-    for level in levels:
+    actual = selection_capability(model, reasoning_effort)
+    if actual is None:
+        return None
+    for level in reversed(levels):
         for option in level.options:
             for selection in (option, option.fallback):
-                if selection is None or (selection.harness, selection.model) != (
-                    harness,
-                    model,
+                if selection and selection_dominates(
+                    actual, selection.model, selection.reasoning_effort
                 ):
-                    continue
-                if effort is None or selection.reasoning_effort == effort:
                     return level.name
-                by_model = by_model or level.name
-    return by_model
+    return None
 
 
 def level_presentation(levels: Sequence[Level], level: Optional[str]) -> dict[str, str]:
     """Return the label and glyph a stamped level renders with."""
+    if level_is_unresolved(level):
+        return {"label": "no level", "glyph": ""}
     name = str(level or "")
     for candidate in levels:
         if candidate.name == name:

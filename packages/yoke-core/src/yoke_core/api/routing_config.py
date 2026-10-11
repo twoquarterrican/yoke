@@ -2,8 +2,8 @@
 
 A session's level comes from the levels its project reads (the project's
 ``session-routing`` override, else the universe definition, else the shipped
-scheme): the first level, lowest first, holding an option that matches the
-session's harness, model, and effort. See :mod:`yoke_contracts.levels`.
+scheme): the highest level whose option is equaled or exceeded on declared
+model rank, speed, and reasoning effort across harness families. See :mod:`yoke_contracts.levels`.
 
 The machine ``key=value`` config helpers here serve other machine settings;
 the machine config carries no level routing.

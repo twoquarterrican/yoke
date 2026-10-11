@@ -3,7 +3,7 @@
 An execution level is a named, ordered capability band. Each level holds an
 ordered list of **options**, and each option is one exact launchable
 selection. The same options label sessions: a session is stamped with the
-level whose option matches its harness, model, and effort. Levels carry
+highest level whose option it dominates on model rank, speed, and effort. Levels carry
 identity, presentation, and launch selections; workflow bindings select stage
 skills, and steering or explicit operator staffing assigns work.
 
@@ -307,25 +307,33 @@ contract and prints its location with the correction command above.
 
 ## Session labeling
 
-A session is stamped once, at registration, with the lowest level holding an
-option that matches it:
+An explicit operator level wins. Otherwise a session takes the highest level
+whose option (including a fallback) it equals or exceeds on **all three** axes:
+model rank, speed, and reasoning effort. Comparison crosses harness families;
+launch options remain exact surface selections. Context is not a labeling axis.
 
-1. an explicit level the caller supplied (a deliberate operator re-route)
-   wins;
-2. otherwise an option on the session's harness family with the session's
-   exact model **and** effort;
-3. otherwise an option on the session's harness family with its exact model
-   (effort unknown, or one no option lists);
-4. otherwise the session stays unresolved (`primary`), shown as a warning.
+The contract's `model_capabilities.MODEL_CAPABILITIES` declares operator policy:
 
-Harness family means any surface of the same harness: a `claude-desktop`
-session matches a `claude-cli` option. A fallback selection labels its
-option's level. The model matched is the provider-attested model when one
-exists, else the requested model with its context-tier suffix (`[1m]`)
-removed; the effort is the attested effort, else the requested one.
+| Rank | Models | Speed |
+|---|---|---|
+| 1 | claude-haiku-5-5, gpt-6-luna | 0 |
+| 2 | grok-4.7, gpt-5.6-terra, claude-sonnet-5-5 | 0 |
+| 3 | claude-opus-5-5, gpt-6.1-sol | 0 |
+| 4 | claude-fable-5-1, gpt-6-astra | 0 |
 
-A level is stamped once, so an edit reaches only sessions that register after
-it; a live session is never silently relabeled.
+`-fast` adds one speed ordinal without changing model rank. Effort order is
+none < minimal < low < medium < high < xhigh (extra-high) < max < ultra.
+Cursor effort suffixes are parsed with the shared native selector parser.
+`grok-4.7-high-fast` is rank 2, speed 1, effort high: it reaches JUNIOR,
+but its rank is below SENIOR and PRINCIPAL. These are policy ordinals, not
+benchmark scores or measured latency. Unknown models or efforts establish no
+level; declare a model in the contract or supply the session's missing effort.
+
+Provider-attested model/effort wins, else the requested facts; `[1m]` is removed
+from the requested model. An encoded effort can fill a missing effort fact.
+Unresolved stored rows are recomputed by roster reads, without a migration or
+DB write. Missing facts stay visibly **no level**, never `primary`. Existing
+explicit/resolved stamps remain authoritative.
 
 ## Stored settings convergence
 

@@ -6,7 +6,7 @@ The rules file every session loads carries the short normative form of each rule
 
 An execution level is an ordered capability band whose options are exact
 launchable selections; a registering session is labeled with the level whose
-option matches its harness, model, and effort (universe levels, or a
+option it equals or exceeds on model rank, speed, and effort (universe levels, or a
 project's `session-routing` override — see
 [execution levels](../session-level-routing.md)). Its name and glyph identify
 the group on the board and dashboard; it carries no skill permissions. Workflow bindings

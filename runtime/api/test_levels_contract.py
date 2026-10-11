@@ -162,17 +162,20 @@ class TestLabeling:
     def test_every_claude_surface_matches_a_claude_option(self, executor):
         assert (
             level_for_session(
-                default_levels(), executor=executor, model="claude-opus-5-5"
+                default_levels(),
+                executor=executor,
+                model="claude-opus-5-5",
+                reasoning_effort="medium",
             )
             == "SENIOR"
         )
 
-    def test_a_fallback_selection_labels_its_level(self):
+    def test_a_fallback_can_dominate_a_higher_level(self):
         assert (
             level_for_session(
                 default_levels(), executor="cursor", model="claude-opus-5-5-medium"
             )
-            == "JUNIOR"
+            == "SENIOR"
         )
 
     def test_a_model_no_option_names_is_unlabeled(self):
@@ -181,12 +184,15 @@ class TestLabeling:
             is None
         )
 
-    def test_the_harness_must_match_as_well_as_the_model(self):
+    def test_comparison_crosses_harness_families(self):
         assert (
             level_for_session(
-                default_levels(), executor="codex", model="claude-opus-5-5"
+                default_levels(),
+                executor="codex",
+                model="claude-opus-5-5",
+                reasoning_effort="medium",
             )
-            is None
+            == "SENIOR"
         )
 
     @pytest.mark.parametrize("executor", [None, "", "emacs"])
@@ -206,8 +212,56 @@ class TestLabeling:
         facts = {"executor": "claude-code", "model": "claude-opus-5-5"}
         assert level_for_session(levels, **facts, reasoning_effort="max") == "HIGH"
         assert level_for_session(levels, **facts, reasoning_effort="low") == "LOW"
-        assert level_for_session(levels, **facts) == "LOW"
+        assert level_for_session(levels, **facts) is None
         assert level_for_session(levels, **facts, reasoning_effort="high") == "LOW"
+
+    def test_fast_variant_dominates_the_standard_cursor_option(self):
+        assert (
+            level_for_session(
+                default_levels(), executor="cursor-desktop", model="grok-4.7-high-fast"
+            )
+            == "JUNIOR"
+        )
+
+    @pytest.mark.parametrize(
+        "model,effort",
+        [
+            ("grok-4.7-high-fast", "high"),  # lower model rank
+            ("claude-opus-5-5-fast", "low"),  # lower reasoning effort
+            ("claude-opus-5-5", "medium"),  # lower speed
+        ],
+    )
+    def test_no_axis_can_compensate_for_another(self, model, effort):
+        levels = parse_levels(
+            _doc(("ONLY", "\U0001f680", [_option(model="claude-opus-5-5-fast")]))
+        )
+        assert (
+            level_for_session(
+                levels, executor="cursor", model=model, reasoning_effort=effort
+            )
+            is None
+        )
+
+    def test_fast_speed_does_not_promote_a_lower_model_to_principal(self):
+        assert (
+            level_for_session(
+                default_levels(), executor="cursor", model="claude-opus-5-5-xhigh-fast"
+            )
+            == "SENIOR"
+        )
+
+    @pytest.mark.parametrize("effort", [None, "unknown", "low"])
+    def test_unknown_or_conflicting_effort_proves_no_dominance(self, effort):
+        model = "gpt-6.1-sol" if effort != "low" else "grok-4.7-high-fast"
+        assert (
+            level_for_session(
+                default_levels(),
+                executor="cursor",
+                model=model,
+                reasoning_effort=effort,
+            )
+            is None
+        )
 
 
 class TestPrecedenceAndPresentation:
@@ -235,6 +289,13 @@ class TestPrecedenceAndPresentation:
         }
         assert level_presentation(default_levels(), "DARIUS") == {
             "label": "DARIUS",
+            "glyph": "",
+        }
+
+    @pytest.mark.parametrize("level", [None, "", "primary", " PRIMARY "])
+    def test_unresolved_presentation_never_exposes_the_sentinel(self, level):
+        assert level_presentation(default_levels(), level) == {
+            "label": "no level",
             "glyph": "",
         }
 

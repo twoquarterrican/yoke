@@ -1,7 +1,7 @@
 """Shared execution-level sentinel for harness sessions.
 
 Every ``harness_sessions`` row carries an ``execution_level``. When one of a
-level's options matches the session's harness, model, and effort (see
+level's options is dominated on model rank, speed, and effort (see
 :mod:`yoke_contracts.levels`), that level name is stored. When nothing
 matches, the row stores the sentinel below — which means the session has no
 configured grouping. Work assignment follows

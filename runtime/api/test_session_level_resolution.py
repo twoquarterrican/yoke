@@ -1,7 +1,7 @@
 """Level resolution for a registering session.
 
-A session is stamped with the lowest level holding an option that matches
-its harness family and exact model, preferring an option at its own effort.
+A session is stamped with the highest level whose option it dominates on
+model rank, speed, and effort across harness families.
 The levels come from the project's ``session-routing`` override, else the
 stored universe definition, else the shipped scheme. An explicit real level
 wins; the unresolved sentinel and ``default`` yield to the option match, and
@@ -88,7 +88,6 @@ class TestShippedSchemeMatch:
         "executor,model",
         [
             ("claude-code", "claude-unlisted-model"),
-            ("codex", "claude-opus-5-5"),
             ("some-other-harness", "claude-opus-5-5"),
             ("claude-code", None),
         ],
@@ -108,11 +107,11 @@ class TestEffortDisambiguation:
             ("max", "UPPER"),
             ("MAX", "UPPER"),
             ("high", "LOWER"),
-            ("medium", "LOWER"),
-            (None, "LOWER"),
+            ("medium", UNRESOLVED_EXECUTION_LEVEL),
+            (None, UNRESOLVED_EXECUTION_LEVEL),
         ],
     )
-    def test_exact_effort_picks_its_level_else_the_lowest(self, effort, expected):
+    def test_effort_must_dominate_the_option(self, effort, expected):
         levels = parse_levels(_SPLIT_DOC)
         assert _resolve("claude-code", _SPLIT_MODEL, effort, levels=levels) == expected
 

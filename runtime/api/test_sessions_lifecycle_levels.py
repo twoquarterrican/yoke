@@ -2,7 +2,7 @@
 
 The wrapper ``begin_session``, the in-process hook registrar, and the
 ``POST /v1/sessions`` route each stamp the level the registering session's
-harness, model, and effort match in the levels its project reads.
+model rank, speed, and effort dominate in the levels its project reads.
 """
 
 from __future__ import annotations
@@ -69,10 +69,16 @@ class TestBeginSessionStampsLevel:
     @pytest.mark.parametrize(
         "executor,facts,expected",
         [
-            ("claude-code", SessionModelFacts(model=_OPUS), "SENIOR"),
+            (
+                "claude-code",
+                SessionModelFacts(model=_OPUS, reasoning_effort="medium"),
+                "SENIOR",
+            ),
             (
                 "claude-desktop",
-                SessionModelFacts(requested_model=f"{_OPUS}[1m]"),
+                SessionModelFacts(
+                    requested_model=f"{_OPUS}[1m]", requested_reasoning_effort="medium"
+                ),
                 "SENIOR",
             ),
             (
@@ -100,16 +106,20 @@ class TestBeginSessionStampsLevel:
 
     def test_stored_universe_definition_changes_the_stamp(self, conn):  # noqa: F811
         store_universe_levels(conn, _UNIVERSE_DOC)
-        assert _begin(conn, "claude-code", SessionModelFacts(model=_OPUS)) == (
-            "UNIVERSE_ONLY"
-        )
+        assert _begin(
+            conn,
+            "claude-code",
+            SessionModelFacts(model=_OPUS, reasoning_effort="medium"),
+        ) == ("UNIVERSE_ONLY")
 
     def test_project_override_wins_over_the_universe(self, conn):  # noqa: F811
         store_universe_levels(conn, _UNIVERSE_DOC)
         store_project_levels(conn, _PROJECT_ID, _PROJECT_DOC)
-        assert _begin(conn, "claude-code", SessionModelFacts(model=_OPUS)) == (
-            "PROJECT_ONLY"
-        )
+        assert _begin(
+            conn,
+            "claude-code",
+            SessionModelFacts(model=_OPUS, reasoning_effort="medium"),
+        ) == ("PROJECT_ONLY")
 
     def test_a_level_change_leaves_an_already_stamped_session_alone(
         self,
@@ -117,7 +127,7 @@ class TestBeginSessionStampsLevel:
     ):
         # Level is stamped once, at registration. Rewriting a live session's
         # level would move work away from a session already running it.
-        facts = SessionModelFacts(model=_OPUS)
+        facts = SessionModelFacts(model=_OPUS, reasoning_effort="medium")
         before = _sid("before")
         begin_session(
             conn,
@@ -141,7 +151,9 @@ class TestInProcessRegistrationStampsLevel:
             session_id,
             "claude-code",
             "test-provider",
-            SessionModelFacts(requested_model=model),
+            SessionModelFacts(
+                requested_model=model, requested_reasoning_effort="medium"
+            ),
             "/tmp/work",
             None,
             execution_level=level,
@@ -182,6 +194,7 @@ class TestRegisterRouteStampsLevel:
             "provider": "test-provider",
             "workspace": "/tmp/work",
             "project_id": _PROJECT_ID,
+            "requested_reasoning_effort": "medium",
             **body,
         }
         resp = self.client.post("/v1/sessions", json=payload)
