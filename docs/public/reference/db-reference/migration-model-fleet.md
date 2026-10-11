@@ -119,7 +119,8 @@ seeding, start, stage entry and receipt allocation. It never dispatches an
 executor. Copied driver attachments and executing target occupancy are cleared
 only on the disposable database. Stored flow/target subjects and their exact
 source revisions are replayed; a universe with no stored member-bearing release
-names that absence rather than inventing a release subject. After real boot
+refuses with `preboot_release_subject_missing` and cannot earn driver proof.
+Supply a real release declaration before retrying. After real boot
 convergence and history invariants, product sessions, frontier, board, launch
 get/list, message-attempt and item get/list readers must consume the copied
 rows. Per-record session/item reads and paged launch reads cover rows beyond

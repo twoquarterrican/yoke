@@ -54,3 +54,43 @@ def test_failed_reader_prevents_release_tooling(monkeypatch):
         lambda *_: (_ for _ in ()).throw(AssertionError("unreachable")),
     )
     assert fleet.verify_migrated_copy(None, "copy") == "launch decode failed"
+
+
+def test_numeric_diagnostic_expiry_in_stored_attempt_fails_real_reader(test_db):
+    import json
+    from yoke_core.domain.actors import seed_human_actor
+    from yoke_contracts.timestamps import utc_now
+
+    actor = seed_human_actor(test_db, "Rehearsal fixture")
+    insert_session(test_db, "diagnostic-session")
+    stamp = utc_now()
+    test_db.execute(
+        "INSERT INTO session_messages(message_id,sender_actor_id,body,body_sha256,"
+        "selector_snapshot,created_at,expires_at) VALUES ('diagnostic-message',%s,'fixture','digest','{}',%s,%s)",
+        (actor, stamp, stamp),
+    )
+    test_db.execute(
+        "INSERT INTO session_message_recipients(message_id,session_id,project_id,"
+        "resolution_evidence,routing_snapshot,created_at,wake_after) "
+        "VALUES ('diagnostic-message','diagnostic-session',1,'{}','{}',%s,%s)",
+        (stamp, stamp),
+    )
+    test_db.execute(
+        "INSERT INTO session_message_attempts(attempt_id,message_id,target_session_id,"
+        "attempt_kind,started_at,evidence) VALUES ('diagnostic-attempt','diagnostic-message',"
+        "'diagnostic-session','hook',%s,%s)",
+        (stamp, json.dumps({"diagnostic_expires_at": 1791748800})),
+    )
+    test_db.commit()
+    detail = readers.verify_migrated_readers(test_db, db_backend.resolve_pg_dsn())
+    assert detail is not None
+    assert "InvalidInstant" in detail and "RFC3339" in detail
+    assert any(
+        surface in detail
+        for surface in (
+            "sessions.list",
+            "frontier.list",
+            "board.data.get",
+            "messages.get attempts",
+        )
+    )

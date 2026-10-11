@@ -50,6 +50,11 @@ def test_real_member_context_start_and_receipt_on_text_schema(
     test_db, tmp_path, monkeypatch
 ):
     setup_release(test_db, tmp_path, monkeypatch)
+    from yoke_core.domain.merge_queue_landing_record_schema import (
+        ensure_merge_queue_landing_record_schema,
+    )
+
+    ensure_merge_queue_landing_record_schema(test_db)
     # Reproduce the pre-boot storage types while retaining complete product
     # tables and real release declarations, rather than stub driver logic.
     for table, column in preboot_instant_parameters.FIELDS:
@@ -96,9 +101,7 @@ def test_refused_create_cannot_silently_pass_rest_of_driver(
     )
 
 
-def test_universe_without_release_history_names_absence(test_db, capsys):
-    assert (
-        preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
-        is None
-    )
-    assert "no stored member-bearing release" in capsys.readouterr().out
+def test_universe_without_release_history_cannot_earn_driver_proof(test_db):
+    detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
+    assert "preboot_release_subject_missing" in detail
+    assert "supply a real release declaration" in detail

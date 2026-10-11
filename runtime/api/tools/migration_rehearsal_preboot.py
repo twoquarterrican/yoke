@@ -34,12 +34,12 @@ def verify_preboot_release_driver(conn: Any, copy_dsn: str) -> str | None:
             "ORDER BY dr.flow,dr.target_environment_id,dr.created_at DESC,dr.id DESC"
         ).fetchall()
         if not runs:
-            print(
-                "PRE_BOOT: no stored member-bearing release to replay in this universe",
-                flush=True,
-            )
             conn.rollback()
-            return None
+            return (
+                "preboot_release_subject_missing: no stored member-bearing release "
+                "to replay in this universe; supply a real release declaration "
+                "before earning migration rehearsal proof"
+            )
         conn.execute("UPDATE deployment_runs SET driver_attachment=NULL")
         conn.execute(
             "UPDATE deployment_runs SET status='cancelled' WHERE status='executing'"

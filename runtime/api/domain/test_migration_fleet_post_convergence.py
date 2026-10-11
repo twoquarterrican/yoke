@@ -79,6 +79,8 @@ def test_post_convergence_failure_becomes_a_failed_verdict(
     )
 
     assert not verdict.passed
-    assert verdict.detail == "release tooling invariants failed -- bad config"
+    assert "rehearsal_post_boot_failed" in verdict.detail
+    assert "release tooling invariants failed -- bad config" in verdict.detail
+    assert "rerun fleet preflight" in verdict.detail
     assert conn.rolled_back
     assert not conn.committed
