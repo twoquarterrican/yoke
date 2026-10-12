@@ -94,6 +94,7 @@ The candidate runs real member-driver operations on each restored pre-boot
 copy before history convergence, through start, stage entry and receipt
 allocation, without dispatching an executor. It then converges and requires
 real product readers to decode the migrated rows. Driver or reader refusals
-fail the gate. The [fleet contract](public/reference/db-reference/migration-model-fleet.md)
+fail the gate; a universe that never ran a release is named not applicable
+for the driver step. The [fleet contract](public/reference/db-reference/migration-model-fleet.md)
 owns subject selection and complete copy custody. The instant census remains
 read-only diagnostic evidence and cannot earn a release receipt.

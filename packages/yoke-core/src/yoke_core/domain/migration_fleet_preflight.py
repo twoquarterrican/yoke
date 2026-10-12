@@ -29,6 +29,22 @@ REHEARSAL_PREFIX = "migration_rehearsal_"
 
 
 @dataclass(frozen=True)
+class NotApplicable:
+    """A copy validator whose subject this universe has never held.
+
+    Returned instead of a failure only when the check has nothing to judge;
+    the verdict and the receipt name it so a pass never hides the gap.
+    """
+
+    check: str
+    reason: str
+
+    @property
+    def text(self) -> str:
+        return f"{self.check} not applicable -- {self.reason}"
+
+
+@dataclass(frozen=True)
 class Verdict:
     """What converging one database's copy did."""
 
@@ -39,6 +55,7 @@ class Verdict:
     applied: Tuple[str, ...] = ()
     pending_evaluated: bool = True
     skipped_invariants: Tuple[Tuple[str, str], ...] = ()
+    not_applicable: Tuple[NotApplicable, ...] = ()
 
     @property
     def line(self) -> str:
@@ -48,7 +65,11 @@ class Verdict:
             if self.pending_evaluated
             else "pending not evaluated"
         )
-        return f"{mark} {self.database}: {pending} -> {self.detail}"
+        line = f"{mark} {self.database}: {pending} -> {self.detail}"
+        return "; ".join([line, *(check.text for check in self.not_applicable)])
+
+
+Validator = Callable[[Any, str], "str | NotApplicable | None"]
 
 
 @dataclass(frozen=True)
@@ -63,8 +84,9 @@ class RehearsalPlan:
     #: invariants can run after convergence. Absent means the caller opts
     #: out of that proof (tests that only exercise dump/ownership paths).
     load_module: Callable[[str], Any] | None = None
-    pre_converge_validator: Callable[[Any, str], str | None] | None = None
-    post_converge_validator: Callable[[Any, str], str | None] | None = None
+    #: Validators return None on pass, a failure detail, or NotApplicable.
+    pre_converge_validator: Validator | None = None
+    post_converge_validator: Validator | None = None
     copy_observer: Callable[[str, Path], None] | None = None
     resource_guard: Callable[[], None] | None = None
     success_detail: str = "converged"
@@ -295,6 +317,7 @@ def rehearse_fleet(
 
 
 __all__ = [
+    "NotApplicable",
     "REHEARSAL_PREFIX",
     "RehearsalPlan",
     "Verdict",

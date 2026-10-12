@@ -1,8 +1,19 @@
 """Drive copied release declarations through receipt allocation, without dispatch.
 
-Stored runs supply real flows, source revisions and member snapshots. Driver
-attachments and target occupancy are cleared only on the disposable copy.
-Every refusal fails proof rather than silently skipping the remaining path.
+Stored runs supply real flows, source revisions and member snapshots. Each
+release target (a project environment, or a preview flow) replays its newest
+member-bearing run: that lineage is the frontier the next real release composes
+against, while an older flow's run on the same environment is superseded and
+any real release binding it would be refused as diverged too. The recorded
+source revision passed its CI gate when its run was created, so the replay
+writes the run without re-asking GitHub: a live provider read proves nothing
+about migrated rows and the rehearsal host holds no provider credentials.
+Driver attachments and target occupancy are cleared only on the disposable
+copy. Every refusal fails proof rather than silently skipping the remaining
+path. A universe that has never run a release (zero deployment runs, as in an
+org tenant whose releases live on the release control plane) has no driver
+subject: the check is named not applicable and the rest of rehearsal runs.
+Stored runs with no member-bearing release still refuse.
 """
 
 from __future__ import annotations
@@ -11,34 +22,53 @@ from typing import Any
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.deploy_qa_recorder import cmd_seed_from_flow
-from yoke_core.domain.deployment_runs_crud_mutate import cmd_create_run
+from yoke_core.domain.deployment_run_create_write import create_run
 from yoke_core.domain.handlers import deployment_run_execution as execution
 from yoke_core.domain.handlers import deployment_run_execution_receipt as receipts
+from yoke_core.domain.migration_fleet_preflight import NotApplicable
 from yoke_core.domain.project_checkout_locations import checkout_for_project_id
 from yoke_core.domain.project_identity import resolve_project_id
 from runtime.api.tools.migration_rehearsal_readers import checked
 
 
-def verify_preboot_release_driver(conn: Any, copy_dsn: str) -> str | None:
+PREBOOT_RELEASE_DRIVER = "preboot_release_driver"
+
+
+def verify_preboot_release_driver(
+    conn: Any, copy_dsn: str
+) -> str | NotApplicable | None:
     """Run candidate driver code against restored pre-migration rows."""
     operation = "release driver roster"
     try:
+        if conn.execute("SELECT NOT EXISTS (SELECT 1 FROM deployment_runs)").fetchone()[
+            0
+        ]:
+            conn.rollback()
+            return NotApplicable(
+                PREBOOT_RELEASE_DRIVER,
+                "preboot_release_never_run: this universe has no deployment "
+                "runs, so there is no stored release to replay; its first "
+                "release is rehearsed once it has stored runs",
+            )
         runs = conn.execute(
-            "SELECT DISTINCT ON (dr.flow,dr.target_environment_id) "
+            "SELECT DISTINCT ON (dr.project_id,dr.target_environment_id,"
+            "CASE WHEN dr.target_environment_id IS NULL THEN dr.flow END) "
             "dr.id,p.slug,dr.flow,dr.release_lineage,e.name "
             "FROM deployment_runs dr JOIN deployment_flows df ON df.id=dr.flow "
             "JOIN projects p ON p.id=dr.project_id "
             "LEFT JOIN environments e ON e.id=dr.target_environment_id "
             "WHERE df.status='active' AND dr.release_lineage IS NOT NULL "
             "AND EXISTS (SELECT 1 FROM deployment_run_items m WHERE m.run_id=dr.id) "
-            "ORDER BY dr.flow,dr.target_environment_id,dr.created_at DESC,dr.id DESC"
+            "ORDER BY dr.project_id,dr.target_environment_id,"
+            "CASE WHEN dr.target_environment_id IS NULL THEN dr.flow END,"
+            "dr.created_at DESC,dr.id DESC"
         ).fetchall()
         if not runs:
             conn.rollback()
             return (
-                "preboot_release_subject_missing: no stored member-bearing release "
-                "to replay in this universe; supply a real release declaration "
-                "before earning migration rehearsal proof"
+                "preboot_release_subject_missing: this universe has deployment "
+                "runs but no stored member-bearing release to replay; supply a "
+                "real release declaration before earning migration rehearsal proof"
             )
         conn.execute("UPDATE deployment_runs SET driver_attachment=NULL")
         conn.execute(
@@ -48,14 +78,14 @@ def verify_preboot_release_driver(conn: Any, copy_dsn: str) -> str | None:
         with db_backend.bound_pg_dsn(copy_dsn):
             for predecessor, project, flow, lineage, environment in runs:
                 operation = f"run create flow={flow} predecessor={predecessor}"
-                run_id = cmd_create_run(
+                run_id = create_run(
                     project,
                     flow,
                     environment=environment,
                     release_lineage=lineage,
                     created_by="migration-rehearsal",
                     inherit_members_from=predecessor,
-                )
+                ).run_id
                 target = {"kind": "workflow_run", "workflow_run_id": run_id}
                 operation = f"execution context run={run_id}"
                 context = checked(

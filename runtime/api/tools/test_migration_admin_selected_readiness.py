@@ -130,7 +130,14 @@ def test_preflight_keeps_receipt_on_preexisting_control_plane(
         assert conninfo.conninfo_to_dict(dsn_for("yoke_alpha"))["host"] == (
             "selected.example"
         )
-        return [SimpleNamespace(passed=True, line="yoke_alpha: PASS")]
+        return [
+            SimpleNamespace(
+                passed=True,
+                line="yoke_alpha: PASS",
+                database="yoke_alpha",
+                not_applicable=(),
+            )
+        ]
 
     monkeypatch.setenv("YOKE_ENV", "release")
     _declare_admin(monkeypatch, {"prod": "prod-db-admin"})
@@ -186,7 +193,14 @@ def test_preflight_records_receipt_on_registered_environment_not_admin(
 
     def rehearse(dsn_for: Any, **_kwargs: Any) -> list[SimpleNamespace]:
         del dsn_for
-        return [SimpleNamespace(passed=True, line="yoke_alpha: PASS")]
+        return [
+            SimpleNamespace(
+                passed=True,
+                line="yoke_alpha: PASS",
+                database="yoke_alpha",
+                not_applicable=(),
+            )
+        ]
 
     monkeypatch.setenv("YOKE_ENV", "release")
     _declare_admin(monkeypatch, {"review-west": "cluster-admin"})
@@ -242,7 +256,14 @@ def test_preflight_resolves_an_environment_name_to_the_admin_connection(
 
     def rehearse(dsn_for: Any, **_kwargs: Any) -> list[SimpleNamespace]:
         events.append("rehearse")
-        return [SimpleNamespace(passed=True, line="yoke_alpha: PASS")]
+        return [
+            SimpleNamespace(
+                passed=True,
+                line="yoke_alpha: PASS",
+                database="yoke_alpha",
+                not_applicable=(),
+            )
+        ]
 
     monkeypatch.setenv("YOKE_ENV", "release")
     _declare_admin(monkeypatch, {"stage": "stage-db-admin"})

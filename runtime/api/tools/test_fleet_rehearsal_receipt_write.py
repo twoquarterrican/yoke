@@ -64,7 +64,14 @@ def _rehearsal_passes(monkeypatch, tmp_path: Path) -> list[str]:
 
     def rehearse(_dsn_for: Any, **_kwargs: Any) -> list[SimpleNamespace]:
         rehearsed.append("rehearse")
-        return [SimpleNamespace(passed=True, line="yoke_alpha: PASS")]
+        return [
+            SimpleNamespace(
+                passed=True,
+                line="yoke_alpha: PASS",
+                database="yoke_alpha",
+                not_applicable=(),
+            )
+        ]
 
     _declare_admin(monkeypatch, {"prod": "prod-db-admin"})
     _select_yoke_fleet(monkeypatch)

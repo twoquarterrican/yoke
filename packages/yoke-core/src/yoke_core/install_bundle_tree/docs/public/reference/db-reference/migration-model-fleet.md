@@ -117,8 +117,18 @@ real member-bearing release driver operations against the pre-boot schema:
 run creation with inherited membership, execution context, containment, QA
 seeding, start, stage entry and receipt allocation. It never dispatches an
 executor. Copied driver attachments and executing target occupancy are cleared
-only on the disposable database. Stored flow/target subjects and their exact
-source revisions are replayed; a universe with no stored member-bearing release
+only on the disposable database. Each release target (a project environment,
+or a preview flow) replays its newest stored member-bearing run with its exact
+source revision; an older flow's run on the same environment is superseded and
+would be refused as diverged by any real release. A recorded source revision passed its CI gate
+when its run was created, so the replay writes the run without reading CI
+providers such as GitHub; the rehearsal host needs no provider credentials.
+A universe with no deployment runs at all (such as an org tenant whose
+releases are stored on the release control plane) has nothing to replay: the
+copy records `preboot_release_driver not applicable -- preboot_release_never_run`
+on its verdict line, in the fleet summary and under the receipt run's
+`not_applicable.<database>` leaf, and the rest of the copy's rehearsal still
+runs. A universe whose deployment runs include no member-bearing release
 refuses with `preboot_release_subject_missing` and cannot earn driver proof.
 Supply a real release declaration before retrying. After real boot
 convergence and history invariants, product sessions, frontier, board, launch

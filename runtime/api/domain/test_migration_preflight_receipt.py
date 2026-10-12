@@ -119,6 +119,20 @@ class TestReceiptAssignments:
         run, assignments = receipt.receipt_assignments("primary", "abc", ["0001_a"])
         assert f"{receipt.run_prefix('primary')}.{run}.databases" not in assignments
 
+    def test_the_run_names_checks_a_database_had_no_subject_for(self):
+        run, assignments = receipt.receipt_assignments(
+            "primary",
+            "abc",
+            ["0001_a"],
+            not_applicable={"yoke_tenant_1": ["driver not applicable -- never_run"]},
+        )
+        runs = f"{receipt.run_prefix('primary')}.{run}"
+        assert assignments[f"{runs}.not_applicable.yoke_tenant_1"] == (
+            "driver not applicable -- never_run"
+        )
+        _run, plain = receipt.receipt_assignments("primary", "abc", ["0001_a"])
+        assert not any(".not_applicable." in path for path in plain)
+
     def test_the_digest_leaf_points_at_the_same_run(self):
         run, assignments = receipt.receipt_assignments(
             "primary", "abc", ["0001_a"], schema_shape_digest="shape1"

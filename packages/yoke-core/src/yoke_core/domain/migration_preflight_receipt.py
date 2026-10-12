@@ -224,9 +224,14 @@ def receipt_assignments(
     engine_artifact: Mapping[str, Any] | None = None,
     schema_shape_digest: str = "",
     database_count: int | None = None,
+    not_applicable: Mapping[str, Sequence[str]] | None = None,
     moment: datetime | None = None,
 ) -> Tuple[str, Dict[str, Any]]:
-    """The run identity and settings assignments one passing rehearsal writes."""
+    """The run identity and settings assignments one passing rehearsal writes.
+
+    ``not_applicable`` maps each database to the copy checks it had no subject
+    for; the run records them so the pass states what it did not exercise.
+    """
     stamped = as_utc(utc_now() if moment is None else moment)
     run = receipt_id(stamped)
     digest = str(schema_shape_digest or "").strip()
@@ -239,6 +244,9 @@ def receipt_assignments(
     }
     if database_count is not None:
         assignments[f"{runs}.databases"] = int(database_count)
+    for database, checks in sorted((not_applicable or {}).items()):
+        segment = _leaf_segment(database, what="database name")
+        assignments[f"{runs}.not_applicable.{segment}"] = "; ".join(checks)
     # Sorted so two rehearsals covering the same entries write comparable
     # assignment sets, where the emission order is meaningless.
     for entry in sorted({str(e or "").strip() for e in entries} - {""}):
