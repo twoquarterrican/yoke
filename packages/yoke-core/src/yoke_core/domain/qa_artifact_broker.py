@@ -1,4 +1,10 @@
-"""Hosted tenant client for the scoped QA-evidence signing broker."""
+"""Hosted tenant client for the scoped storage signing broker.
+
+The broker signs one object URL at a time under the tenant's immutable
+prefix: QA evidence at ``qa-artifacts/{project}/{subject}/{run}/{file}`` and
+shared files at ``shared-files/{project}/{path}``. The tenant never holds
+AWS credentials.
+"""
 
 from __future__ import annotations
 
@@ -10,6 +16,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
+
+from yoke_contracts.shared_files import SHARED_FILES_STORAGE_KIND
 
 from yoke_core.domain.qa_artifact_handle import (
     build_artifact_key,
@@ -68,7 +76,7 @@ def broker_config(
     if missing:
         raise ArtifactBrokerError(
             "artifact_broker_configuration_invalid",
-            "hosted QA artifact broker configuration is incomplete; missing "
+            "hosted storage signing broker configuration is incomplete; missing "
             + ", ".join(missing)
             + ". Restart the tenant after its Platform runtime converges.",
         )
@@ -105,13 +113,13 @@ def _read_token(config: ArtifactBrokerConfig) -> str:
     except (OSError, IndexError) as exc:
         raise ArtifactBrokerError(
             "artifact_broker_token_unavailable",
-            f"the hosted QA artifact broker token file cannot be read at "
+            f"the hosted storage signing broker token file cannot be read at "
             f"{config.token_file}; restart the tenant after token publication",
         ) from exc
     if not token:
         raise ArtifactBrokerError(
             "artifact_broker_token_unavailable",
-            f"the hosted QA artifact broker token file is empty at "
+            f"the hosted storage signing broker token file is empty at "
             f"{config.token_file}; restart the tenant after token publication",
         )
     return token
@@ -131,7 +139,7 @@ def _broker_refusal(exc: urllib.error.HTTPError) -> ArtifactBrokerError:
         return ArtifactBrokerError(f"artifact_broker_{remote_code}", detail)
     return ArtifactBrokerError(
         "artifact_broker_request_refused",
-        f"the hosted QA artifact broker refused the request with HTTP {exc.code}",
+        f"the hosted storage signing broker refused the request with HTTP {exc.code}",
     )
 
 
@@ -144,22 +152,58 @@ def presign_with_broker(
     run_id: int,
     filename: str,
 ) -> BrokerPresign:
-    """Request and validate one server-derived PUT or GET URL."""
+    """Request and validate one server-derived QA evidence PUT or GET URL."""
 
-    if operation not in {"put", "get"}:
-        raise ValueError("broker operation must be 'put' or 'get'")
-    token = _read_token(config)
-    body = json.dumps(
-        {
-            "operation": operation,
+    return _broker_presign(
+        config,
+        operation=operation,
+        request={
             "project": project,
             "subject": str(subject),
             "run_id": int(run_id),
             "filename": filename,
         },
-        separators=(",", ":"),
+        expected_key=build_artifact_key(
+            project, subject, run_id, filename, storage_prefix=config.prefix
+        ),
+    )
+
+
+def presign_shared_file_with_broker(
+    config: ArtifactBrokerConfig,
+    *,
+    operation: str,
+    project: str,
+    path: str,
+) -> BrokerPresign:
+    """Request and validate one shared-file PUT or GET URL.
+
+    The signer derives ``tenants/<id>/shared-files/<project>/<path>`` from
+    the authenticated tenant; no QA run or subject is involved.
+    """
+
+    return _broker_presign(
+        config,
+        operation=operation,
+        request={"kind": "shared_file", "project": project, "path": path},
+        expected_key=(f"{config.prefix}/{SHARED_FILES_STORAGE_KIND}/{project}/{path}"),
+    )
+
+
+def _broker_presign(
+    config: ArtifactBrokerConfig,
+    *,
+    operation: str,
+    request: dict[str, object],
+    expected_key: str,
+) -> BrokerPresign:
+    if operation not in {"put", "get"}:
+        raise ValueError("broker operation must be 'put' or 'get'")
+    token = _read_token(config)
+    body = json.dumps(
+        {"operation": operation, **request}, separators=(",", ":")
     ).encode("utf-8")
-    request = urllib.request.Request(
+    http_request = urllib.request.Request(
         config.url,
         data=body,
         method="POST",
@@ -169,7 +213,7 @@ def presign_with_broker(
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(http_request, timeout=30) as response:
             raw = response.read(BROKER_RESPONSE_LIMIT + 1)
             status = int(response.status)
     except urllib.error.HTTPError as exc:
@@ -177,18 +221,18 @@ def presign_with_broker(
     except (OSError, urllib.error.URLError, ValueError) as exc:
         raise ArtifactBrokerError(
             "artifact_broker_unavailable",
-            "the hosted QA artifact broker could not be reached; verify the "
-            "tenant runtime broker listener and retry",
+            "the hosted storage signing broker could not be reached; verify "
+            "the tenant runtime broker listener and retry",
         ) from exc
     if not 200 <= status < 300:
         raise ArtifactBrokerError(
             "artifact_broker_request_refused",
-            f"the hosted QA artifact broker returned HTTP {status}",
+            f"the hosted storage signing broker returned HTTP {status}",
         )
     if len(raw) > BROKER_RESPONSE_LIMIT:
         raise ArtifactBrokerError(
             "artifact_broker_response_invalid",
-            "the hosted QA artifact broker response exceeded its size limit",
+            "the hosted storage signing broker response exceeded its size limit",
         )
     try:
         payload = json.loads(raw.decode("utf-8"))
@@ -202,12 +246,9 @@ def presign_with_broker(
     except (KeyError, TypeError, UnicodeDecodeError, ValueError) as exc:
         raise ArtifactBrokerError(
             "artifact_broker_response_invalid",
-            "the hosted QA artifact broker returned a malformed response",
+            "the hosted storage signing broker returned a malformed response",
         ) from exc
     expected_method = "PUT" if operation == "put" else "GET"
-    expected_key = build_artifact_key(
-        project, subject, run_id, filename, storage_prefix=config.prefix
-    )
     if (
         result.method != expected_method
         or result.bucket != config.bucket
@@ -217,14 +258,22 @@ def presign_with_broker(
     ):
         raise ArtifactBrokerError(
             "artifact_broker_response_invalid",
-            "the hosted QA artifact broker response did not match the requested "
-            "method, configured bucket, immutable tenant prefix, or expiry",
+            "the hosted storage signing broker response did not match the "
+            "requested method, configured bucket, immutable tenant prefix, "
+            "or expiry",
         )
     return result
 
 
 __all__ = [
-    "ArtifactBrokerConfig", "ArtifactBrokerError", "BROKER_URL_ENV",
-    "BUCKET_ENV", "BrokerPresign", "PREFIX_ENV", "TOKEN_FILE_ENV",
-    "broker_config", "presign_with_broker",
+    "ArtifactBrokerConfig",
+    "ArtifactBrokerError",
+    "BROKER_URL_ENV",
+    "BUCKET_ENV",
+    "BrokerPresign",
+    "PREFIX_ENV",
+    "TOKEN_FILE_ENV",
+    "broker_config",
+    "presign_shared_file_with_broker",
+    "presign_with_broker",
 ]

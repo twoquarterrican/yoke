@@ -276,6 +276,13 @@ def create_ui_app(token: str, *, port: int = DEFAULT_UI_PORT):
         payload, status_code = proxy_function_call(envelope)
         return JSONResponse(payload, status_code=status_code)
 
+    @app.get("/v1/files/{project}/{path:path}")
+    def shared_file(project: str, path: str, download: bool = False) -> Response:
+        from yoke_core.api.routes.shared_files import shared_file_response
+
+        # The per-run token admitted the machine-local operator.
+        return shared_file_response(project, path, actor_id=None, download=download)
+
     app.get("/{path:path}")(app_shell)
     return app
 

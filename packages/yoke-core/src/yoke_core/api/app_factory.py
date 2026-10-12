@@ -27,6 +27,7 @@ from yoke_core.api.http_auth import (
     authenticate_request,
     is_public_path,
 )
+from yoke_core.api.routes.shared_files import is_shared_file_browser_read
 from yoke_core.api.routes.workbench import (
     is_workbench_page,
     is_workbench_public_path,
@@ -190,6 +191,12 @@ async def _authenticate(request) -> tuple[Any, JSONResponse | None]:
         if web_auth is not None:
             setattr(request.state, WEB_AUTH_STATE_ATTR, web_auth)
         return web_auth, None
+    if is_shared_file_browser_read(request):
+        # A pasted shared-file link opened in a signed-in browser.
+        web_read = await run_in_threadpool(authenticate_web_session, request)
+        if web_read is not None:
+            setattr(request.state, WEB_AUTH_STATE_ATTR, web_read)
+        return web_read, None
     if is_web_session_function_call(request):
         # The signed-in workbench's reads and writes: the cookie stands for
         # the session's actor once the same-origin check passes (see
@@ -283,6 +290,7 @@ def _include_routes(application: FastAPI) -> FastAPI:
     from yoke_core.api.routes.deploy import router as deploy_router
     from yoke_core.api.routes.qa import router as qa_router
     from yoke_core.api.routes.functions import router as functions_router
+    from yoke_core.api.routes.shared_files import router as shared_files_router
     from yoke_core.api.routes.install import router as install_router
     from yoke_core.api.routes.pulumi_stack_config import (
         router as pulumi_stack_config_router,
@@ -307,6 +315,7 @@ def _include_routes(application: FastAPI) -> FastAPI:
     v1_router.include_router(deploy_router)
     v1_router.include_router(qa_router)
     v1_router.include_router(functions_router)
+    v1_router.include_router(shared_files_router)
     v1_router.include_router(install_router)
     v1_router.include_router(pulumi_stack_config_router)
     v1_router.include_router(hooks_router)
