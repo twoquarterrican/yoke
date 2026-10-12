@@ -92,10 +92,10 @@ def assert_claude_loading(
             )
     if mode == "claude-md-and-agents-md":
         return
-    canonical = {
-        (root / "AGENTS.md").resolve(),
-        (main_checkout(root) / "AGENTS.md").resolve(),
-    }
+    canonical = {(root / "AGENTS.md").resolve()}
+    primary = main_checkout(root) / "AGENTS.md"
+    if primary.is_file():
+        canonical.add(primary.resolve())
     for directory in (root, *root.parents):
         for rel in ("CLAUDE.md", "CLAUDE.local.md", ".claude/CLAUDE.md"):
             path = directory / rel

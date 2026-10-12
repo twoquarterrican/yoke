@@ -189,3 +189,14 @@ def test_git_identity_failure_refuses_before_routing(checkout, monkeypatch):
         match="checkout_identity_unavailable.*repair Git access",
     ):
         main_checkout(checkout)
+
+
+def test_parent_import_to_missing_main_instructions_refuses(checkout):
+    lane = checkout / ".worktrees/lane"
+    _git(checkout, "worktree", "add", "-b", "lane", str(lane))
+    (lane / "CLAUDE.md").unlink()
+    (checkout / "CLAUDE.md").unlink()
+    (checkout / "CLAUDE.md").write_text("@AGENTS.md\n")
+    (checkout / "AGENTS.md").unlink()
+    with pytest.raises(ProjectInstallError, match="canonical_instructions_not_loaded"):
+        instructions.assert_claude_loading(lane, settings={})
