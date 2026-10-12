@@ -19,8 +19,8 @@ from yoke_contracts.path_snapshot import (
     SnapshotFileEntry,
     SnapshotSymlinkFact,
     all_paths_with_kinds,
-    file_entry_from_source,
 )
+from yoke_contracts.path_source_scan import file_entry_from_source
 
 
 class ProjectSnapshotScanError(RuntimeError):
@@ -96,7 +96,7 @@ def scan_ref(
     progress = ScanProgress()
     if not include_contents:
         progress.emit(
-            f"{name} {commit_sha[:12]} identity only; file contents deferred",
+            f"{name} {commit_sha[:12]} identity only; no file contents",
             force=True,
         )
         return PathSnapshotPayload(
@@ -104,6 +104,7 @@ def scan_ref(
             commit_sha=commit_sha,
             files=[],
             warnings=_dirty_warnings(root),
+            contents_included=False,
         )
     progress.emit(f"scanning {name}", force=True)
     entries = _ls_tree(root, ref)

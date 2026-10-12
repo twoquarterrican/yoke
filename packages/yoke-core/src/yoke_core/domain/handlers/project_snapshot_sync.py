@@ -163,10 +163,7 @@ def _payload_size_error(
             f"API limit of {SNAPSHOT_SYNC_API_PAYLOAD_LIMIT_BYTES} bytes"
         ),
         jsonpath="$.payload",
-        recovery_hint=(
-            "Retry with `yoke project snapshot sync --head-only` or split "
-            "the sync into a smaller payload."
-        ),
+        recovery_hint="Retry over HTTPS, which uploads the snapshot in chunks.",
     )
 
 
@@ -270,6 +267,14 @@ def _sync(project_ref: str, payload: PathSnapshotSyncPayload) -> Dict[str, Any]:
     }
 
 
+def _head_inventory_row(rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """HEAD's row when it carries a file inventory; identity-only rows do not."""
+    return next(
+        (r for r in rows if r.get("ref") == "HEAD" and r.get("snapshot_id")),
+        None,
+    )
+
+
 def _refresh_architecture_context(
     conn: Any,
     project_id: int,
@@ -281,10 +286,7 @@ def _refresh_architecture_context(
     whenever the file inventory does. Projects without a declared map
     skip silently; the synced commit is the provenance token.
     """
-    head = next(
-        (row for row in rows if row.get("ref") == "HEAD"),
-        None,
-    )
+    head = _head_inventory_row(rows)
     if head is None:
         return None
     from yoke_core.domain.architecture_path_context_seed import (
@@ -319,7 +321,7 @@ def _refresh_render_relationship_context(
     Relationships derive from the project's own tracked paths, so a project
     with no generated outputs records none.
     """
-    if not any(row.get("ref") == "HEAD" for row in rows):
+    if _head_inventory_row(rows) is None:
         return None
     from yoke_core.domain.project_identity import resolve_project_slug
 

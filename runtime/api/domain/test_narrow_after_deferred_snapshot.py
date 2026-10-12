@@ -25,6 +25,7 @@ from yoke_core.domain.path_claims_boundary import (
 )
 from yoke_core.domain.path_claims_narrow_boundary import check_narrow_boundary
 from yoke_core.domain.project_snapshot_chunk_uploads import sync_chunk
+from yoke_core.domain.schema_init_path_tables import create_path_registry_tables
 from yoke_core.domain.workflow_behavior import LANE_IMPLEMENTATION
 
 _ITEM_ID = 9631
@@ -35,6 +36,7 @@ _KEPT = "src/kept.py"
 
 @pytest.fixture
 def lane(test_db, monkeypatch):
+    create_path_registry_tables(test_db)
     insert_item(test_db, id=_ITEM_ID, workflow_id="dash")
     record_item_worktree(
         test_db,
@@ -72,7 +74,13 @@ def _evidence() -> dict:
     }
 
 
-def _begin_head_upload(*, file_count: int, chunk_count: int, hook_mode: bool):
+def _begin_head_upload(
+    *,
+    file_count: int,
+    chunk_count: int,
+    hook_mode: bool,
+    contents_included: bool = True,
+):
     return sync_chunk(
         "yoke",
         PathSnapshotChunkSyncPayload(
@@ -85,6 +93,7 @@ def _begin_head_upload(*, file_count: int, chunk_count: int, hook_mode: bool):
                 commit_sha=_HEAD,
                 file_count=file_count,
                 chunk_count=chunk_count,
+                contents_included=contents_included,
             ),
             hook_mode=hook_mode,
         ),
@@ -116,10 +125,13 @@ def test_deferred_inventory_still_binds_the_lane_head(lane) -> None:
 
     assert result["status"] == "chunk_upload_started"
     assert result["lane_head_recorded"] is True
-    assert lane.execute(
-        "SELECT commit_sha FROM item_worktrees WHERE item_id = %s",
-        (_ITEM_ID,),
-    ).fetchone()[0] == _HEAD
+    assert (
+        lane.execute(
+            "SELECT commit_sha FROM item_worktrees WHERE item_id = %s",
+            (_ITEM_ID,),
+        ).fetchone()[0]
+        == _HEAD
+    )
 
 
 def test_narrowing_succeeds_while_the_inventory_is_deferred(lane) -> None:
@@ -127,7 +139,8 @@ def test_narrowing_succeeds_while_the_inventory_is_deferred(lane) -> None:
     sync_chunk(
         None,
         PathSnapshotChunkSyncPayload(
-            upload_id="upload-9631", operation="abort",
+            upload_id="upload-9631",
+            operation="abort",
         ),
         _unused_sync_payload,
     )
@@ -146,8 +159,7 @@ def test_narrowing_succeeds_while_the_inventory_is_deferred(lane) -> None:
 
 def test_reused_inventory_still_binds_the_lane_head(lane, monkeypatch) -> None:
     monkeypatch.setattr(
-        "yoke_core.domain.path_snapshot_payload_materializer."
-        "find_existing_snapshot_id",
+        "yoke_core.domain.path_snapshot_content_rows.find_content_snapshot_id",
         lambda *_a, **_k: 4242,
     )
 
@@ -155,10 +167,30 @@ def test_reused_inventory_still_binds_the_lane_head(lane, monkeypatch) -> None:
 
     assert result["status"] == "reused"
     assert result["lane_head_recorded"] is True
-    assert check_narrow_boundary(
-        lane,
-        claim=_claim(),
-        project_id=1,
-        candidate_paths=[_KEPT],
-        boundary_evidence=_evidence(),
-    ).status is BoundaryCheckStatus.VALID
+    assert (
+        check_narrow_boundary(
+            lane,
+            claim=_claim(),
+            project_id=1,
+            candidate_paths=[_KEPT],
+            boundary_evidence=_evidence(),
+        ).status
+        is BoundaryCheckStatus.VALID
+    )
+
+
+def test_identity_only_begin_binds_the_lane_head_and_stages_nothing(
+    lane,
+) -> None:
+    result = _begin_head_upload(
+        file_count=0, chunk_count=0, hook_mode=True, contents_included=False
+    )
+
+    assert result["status"] == "identity_only"
+    assert result["snapshots"][0]["snapshot_id"] is None
+    assert result["lane_head_recorded"] is True
+    assert (
+        lane.execute("SELECT COUNT(*) FROM path_snapshot_sync_uploads").fetchone()[0]
+        == 0
+    )
+    assert lane.execute("SELECT COUNT(*) FROM path_snapshots").fetchone()[0] == 0

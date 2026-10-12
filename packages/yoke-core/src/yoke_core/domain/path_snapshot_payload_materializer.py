@@ -15,6 +15,10 @@ from yoke_contracts.path_snapshot import (
     all_paths_with_kinds,
 )
 from yoke_core.domain import db_backend
+from yoke_core.domain.path_snapshot_content_rows import (
+    discard_contentless_snapshot,
+    find_content_snapshot_id,
+)
 from yoke_core.domain.path_snapshot_context_cache import (
     build_snapshot_context_cache,
 )
@@ -27,7 +31,7 @@ from yoke_core.domain.project_identity import resolve_project_id
 @dataclass(frozen=True)
 class PayloadMaterializeResult:
     status: str
-    snapshot_id: int
+    snapshot_id: Optional[int]
     ref: str
     commit_sha: str
     entry_count: int
@@ -38,20 +42,6 @@ def _p(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
 
 
-def find_existing_snapshot_id(
-    conn: Any, project_id: int, commit_sha: str
-) -> Optional[int]:
-    """Return the existing snapshot id for a project commit, when present."""
-    p = _p(conn)
-    row = conn.execute(
-        f"SELECT id FROM path_snapshots WHERE project_id = {p} AND commit_sha = {p}",
-        (project_id, commit_sha),
-    ).fetchone()
-    if row is None:
-        return None
-    return int(row[0])
-
-
 def materialize_snapshot_payload(
     conn: Any,
     *,
@@ -59,7 +49,18 @@ def materialize_snapshot_payload(
     payload: PathSnapshotPayload,
 ) -> PayloadMaterializeResult:
     resolved_project_id = resolve_project_id(conn, project_id)
-    existing = find_existing_snapshot_id(
+    if not payload.contents_included:
+        # Identity-only: the caller records the lane head; a row without
+        # contents would read as every path having disappeared.
+        return PayloadMaterializeResult(
+            status="identity_only",
+            snapshot_id=None,
+            ref=payload.ref,
+            commit_sha=payload.commit_sha,
+            entry_count=0,
+            symlink_count=0,
+        )
+    existing = find_content_snapshot_id(
         conn,
         resolved_project_id,
         payload.commit_sha,
@@ -80,7 +81,7 @@ def materialize_snapshot_payload(
     p = _p(conn)
     try:
         conn.execute("BEGIN")
-        existing = find_existing_snapshot_id(
+        existing = find_content_snapshot_id(
             conn,
             resolved_project_id,
             payload.commit_sha,
@@ -95,6 +96,7 @@ def materialize_snapshot_payload(
                 entry_count=0,
                 symlink_count=0,
             )
+        discard_contentless_snapshot(conn, resolved_project_id, payload.commit_sha)
         resolution = resolve_snapshot_target_ids(
             conn,
             project_id=resolved_project_id,
@@ -249,6 +251,5 @@ def _executemany(conn: Any, sql: str, rows: List[Tuple]) -> None:
 
 __all__ = [
     "PayloadMaterializeResult",
-    "find_existing_snapshot_id",
     "materialize_snapshot_payload",
 ]

@@ -37,3 +37,6 @@ def test_head_only_records_the_head_without_scanning_the_tree(
     payload = _CALLS[-1]["payload"]
     assert len(payload["snapshots"]) == 1
     assert payload["snapshots"][0]["files"] == []
+    # The flag, not the empty file list, tells the server to store no
+    # snapshot: a content-less row would hide the commit's real inventory.
+    assert payload["snapshots"][0]["contents_included"] is False

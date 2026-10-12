@@ -6,6 +6,12 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from yoke_cli.commands._helpers import ensure_handlers_loaded
+from yoke_cli.commands.adapters.project_snapshot_chunk_results import (
+    alias_snapshot_row,
+    begin_settled_row,
+    deferral_response,
+    upload_result,
+)
 from yoke_cli.commands.adapters.project_snapshot_chunk_sizing import (
     active_transport_is_https,
     needs_https_chunking,
@@ -13,11 +19,7 @@ from yoke_cli.commands.adapters.project_snapshot_chunk_sizing import (
     snapshot_file_chunks,
 )
 from yoke_cli.transport.dispatcher import build_actor, call_dispatcher
-from yoke_contracts.api.function_call import (
-    FunctionCallResponse,
-    FunctionError,
-    TargetRef,
-)
+from yoke_contracts.api.function_call import FunctionCallResponse, TargetRef
 from yoke_contracts.path_snapshot import (
     PathSnapshotPayload,
     PathSnapshotSyncPayload,
@@ -44,7 +46,7 @@ def dispatch_chunked_sync_payload(
     for snapshot in payload.snapshots:
         existing_row = rows_by_commit_sha.get(snapshot.commit_sha)
         if existing_row is not None:
-            snapshots.append(_alias_snapshot_row(snapshot, existing_row))
+            snapshots.append(alias_snapshot_row(snapshot, existing_row))
             warnings.extend(snapshot.warnings)
             continue
         response = _upload_snapshot_with_restart(
@@ -95,9 +97,7 @@ def _upload_snapshot_with_restart(**kwargs: Any) -> FunctionCallResponse:
 def _staging_went_missing(response: FunctionCallResponse) -> bool:
     if response.success:
         return False
-    return getattr(response.error, "code", "") == (
-        SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE
-    )
+    return getattr(response.error, "code", "") == (SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE)
 
 
 def _upload_snapshot(
@@ -129,24 +129,29 @@ def _upload_snapshot(
             chunk_count=len(chunks),
             symlinks=snapshot.symlinks,
             warnings=snapshot.warnings,
+            contents_included=snapshot.contents_included,
         ),
         hook_mode=hook_mode,
     )
     response = dispatch_chunk_payload(
-        project=project, payload=begin, session_id=session_id,
+        project=project,
+        payload=begin,
+        session_id=session_id,
         timeout_s=timeout_s,
     )
     if not response.success:
         return response
     begin_result = response.result or {}
-    reuse_row = _begin_reuse_row(snapshot, begin_result)
-    if reuse_row is not None:
-        return _upload_result(
-            begin_result, [reuse_row], begin_result.get("warnings") or [],
+    settled_row = begin_settled_row(snapshot, begin_result)
+    if settled_row is not None:
+        return upload_result(
+            begin_result,
+            [settled_row],
+            begin_result.get("warnings") or [],
         )
     if hook_mode:
         _abort(project, upload_id, session_id, timeout_s)
-        return _deferral_response()
+        return deferral_response()
     for chunk_index, files in enumerate(chunks):
         append = PathSnapshotChunkSyncPayload(
             project_id=project,
@@ -158,7 +163,11 @@ def _upload_snapshot(
             hook_mode=hook_mode,
         )
         response = _dispatch_or_abort(
-            project, upload_id, append, session_id, timeout_s,
+            project,
+            upload_id,
+            append,
+            session_id,
+            timeout_s,
         )
         if not response.success:
             return response
@@ -170,13 +179,19 @@ def _upload_snapshot(
         hook_mode=hook_mode,
     )
     response = _dispatch_or_abort(
-        project, upload_id, finalize, session_id, timeout_s,
+        project,
+        upload_id,
+        finalize,
+        session_id,
+        timeout_s,
     )
     if not response.success:
         return response
     result = response.result or {}
-    return _upload_result(
-        result, result.get("snapshots") or [], result.get("warnings") or [],
+    return upload_result(
+        result,
+        result.get("snapshots") or [],
+        result.get("warnings") or [],
     )
 
 
@@ -189,7 +204,9 @@ def _dispatch_or_abort(
 ) -> FunctionCallResponse:
     try:
         response = dispatch_chunk_payload(
-            project=project, payload=payload, session_id=session_id,
+            project=project,
+            payload=payload,
+            session_id=session_id,
             timeout_s=timeout_s,
         )
     except Exception:
@@ -207,84 +224,11 @@ def _abort(
     timeout_s: Optional[float],
 ) -> None:
     abort_chunk_upload(
-        project=project, upload_id=upload_id,
-        session_id=session_id, timeout_s=timeout_s,
+        project=project,
+        upload_id=upload_id,
+        session_id=session_id,
+        timeout_s=timeout_s,
     )
-
-
-def _upload_result(
-    source: Dict[str, Any],
-    rows: List[Dict[str, Any]],
-    warnings: List[str],
-) -> FunctionCallResponse:
-    return FunctionCallResponse(
-        success=True,
-        function="project.snapshot.sync",
-        version="v1",
-        result={
-            "project_id": source.get("project_id"),
-            "snapshots": rows,
-            "warnings": list(warnings),
-        },
-    )
-
-
-def _deferral_response() -> FunctionCallResponse:
-    return FunctionCallResponse(
-        success=False,
-        function="project.snapshot.sync",
-        version="v1",
-        error=FunctionError(
-            code="snapshot_sync_deferred",
-            message=(
-                "large path snapshot deferred to keep this write fast; "
-                "it uploads on the next `yoke project snapshot sync` "
-                "(nothing is broken)"
-            ),
-        ),
-    )
-
-
-def _begin_reuse_row(
-    snapshot: PathSnapshotPayload,
-    result: Dict[str, Any],
-) -> Optional[Dict[str, Any]]:
-    if result.get("status") != "reused":
-        return None
-    rows = result.get("snapshots") or []
-    for row in rows:
-        if row.get("commit_sha") == snapshot.commit_sha:
-            return {
-                **row,
-                "status": "reused",
-                "ref": snapshot.ref,
-                "commit_sha": snapshot.commit_sha,
-            }
-    snapshot_id = result.get("snapshot_id")
-    if snapshot_id is None:
-        return None
-    return {
-        "status": "reused",
-        "snapshot_id": snapshot_id,
-        "ref": snapshot.ref,
-        "commit_sha": snapshot.commit_sha,
-        "entry_count": 0,
-        "symlink_count": 0,
-    }
-
-
-def _alias_snapshot_row(
-    snapshot: PathSnapshotPayload,
-    source_row: Dict[str, Any],
-) -> Dict[str, Any]:
-    return {
-        "status": "reused",
-        "snapshot_id": source_row.get("snapshot_id"),
-        "ref": snapshot.ref,
-        "commit_sha": snapshot.commit_sha,
-        "entry_count": 0,
-        "symlink_count": 0,
-    }
 
 
 def dispatch_chunk_payload(
