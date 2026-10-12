@@ -89,20 +89,32 @@ def test_project_register_refuses_board_scope(cfg, tmp_path, capsys) -> None:
     assert "board is retired" in capsys.readouterr().err
 
 
-def test_project_register_reassign_refused_with_ambient_session(
-    cfg,
-    tmp_path,
-    capsys,
-) -> None:
-    _seed(cfg, tmp_path, "prod")
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    capsys.readouterr()
+def _verify_answer(success: bool):
+    from types import SimpleNamespace
 
-    with patch.object(
-        config_write_project,
-        "resolve_ambient",
-        return_value="sess-worker-1",
+    return SimpleNamespace(
+        success=success,
+        error=None
+        if success
+        else SimpleNamespace(
+            code="steering_seat_required",
+            message=(
+                "Moving a registered project's checkout requires a live steering "
+                "seat for project 7. Recovery: yoke claims steering acquire "
+                "--project 7"
+            ),
+        ),
+    )
+
+
+def _register_reassign(cfg, repo, *, seated: bool):
+    with (
+        patch.object(config_write_project, "ensure_handlers_loaded"),
+        patch.object(
+            config_write_project,
+            "call_dispatcher",
+            return_value=_verify_answer(seated),
+        ) as dispatch,
     ):
         rc = yoke_operations_cli.main(
             [
@@ -116,15 +128,12 @@ def test_project_register_reassign_refused_with_ambient_session(
                 str(cfg),
             ]
         )
-
-    assert rc == 1
-    err = capsys.readouterr().err
-    assert "--reassign refused" in err
-    assert "sess-worker-1" in err
-    assert json.loads(cfg.read_text()).get("projects", []) == []
+    assert dispatch.call_args.kwargs["function_id"] == "claims.steering.verify"
+    assert dispatch.call_args.kwargs["target"].project_id == "7"
+    return rc
 
 
-def test_project_register_reassign_allowed_without_ambient_session(
+def test_project_register_reassign_refused_without_steering_seat(
     cfg,
     tmp_path,
     capsys,
@@ -134,19 +143,26 @@ def test_project_register_reassign_allowed_without_ambient_session(
     repo.mkdir()
     capsys.readouterr()
 
-    with patch.object(config_write_project, "resolve_ambient", return_value=None):
-        rc = yoke_operations_cli.main(
-            [
-                "project",
-                "register",
-                str(repo),
-                "--project-id",
-                "7",
-                "--reassign",
-                "--config",
-                str(cfg),
-            ]
-        )
+    rc = _register_reassign(cfg, repo, seated=False)
+
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "steering_seat_required" in err
+    assert "yoke claims steering acquire --project 7" in err
+    assert json.loads(cfg.read_text()).get("projects", []) == []
+
+
+def test_project_register_reassign_allowed_with_steering_seat(
+    cfg,
+    tmp_path,
+    capsys,
+) -> None:
+    _seed(cfg, tmp_path, "prod")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    capsys.readouterr()
+
+    rc = _register_reassign(cfg, repo, seated=True)
 
     assert rc == 0
     checkout = json.loads(capsys.readouterr().out)["checkout"]
