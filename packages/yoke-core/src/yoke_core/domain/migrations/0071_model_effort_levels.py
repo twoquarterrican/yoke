@@ -59,7 +59,11 @@ def _decode(table, key, raw):
         document = json_helper.loads_text(str(raw))
         levels = document if table == "universe_settings" else document["levels"]
         converted = converged(levels)
-        return converted if table == "universe_settings" else {"levels": converted}
+        return (
+            converted
+            if table == "universe_settings"
+            else {**document, "levels": converted}
+        )
     except (TypeError, ValueError, KeyError) as exc:
         raise RuntimeError(
             f"levels_convergence_invalid: {table} row {key} cannot converge: {exc}. "

@@ -1,8 +1,7 @@
 """The one projection of a session row into resolved identity.
 
 Registration resolves a session's identity once — canonical executor id and
-display alias, provider, model, the execution level the project's routing
-policy maps that executor to, workspace, project, and actor — and writes it
+display alias, provider, model, workspace, project, and actor — and writes it
 to ``harness_sessions``. Every later consumer reads it back through here.
 
 Execution levels follow stored observed model facts and the current catalog,
@@ -37,7 +36,7 @@ UNREGISTERED_RECOVERY = (
 
 @dataclass(frozen=True)
 class SessionIdentity:
-    """Resolved identity as stored, with no locally derived field."""
+    """Stored session facts with their current model/effort level."""
 
     session_id: str
     executor: str

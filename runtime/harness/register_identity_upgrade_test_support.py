@@ -6,6 +6,8 @@ consumes.
 """
 
 from __future__ import annotations
+import json
+from yoke_contracts.model_reference_data import MODEL_RECORDS
 
 
 class _Cursor:
@@ -20,7 +22,19 @@ class _Conn:
     def __init__(self, rows):
         self._rows = list(rows)
 
-    def execute(self, *_args, **_kwargs):
+    def execute(self, sql, *_args, **_kwargs):
+        if "model_reference_revisions" in sql:
+            return _Cursor(
+                (
+                    "fixture",
+                    "1970-01-01T00:00:00Z",
+                    "1970-01-01T00:00:00Z",
+                    None,
+                    json.dumps([record.to_dict() for record in MODEL_RECORDS]),
+                    "fixture",
+                    None,
+                )
+            )
         return _Cursor(self._rows.pop(0))
 
 

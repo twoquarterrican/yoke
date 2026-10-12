@@ -97,7 +97,7 @@ def test_apply_preserves_custom_levels_and_marks_only_item_or_level_launches():
     )
     conn.execute(
         "INSERT INTO project_capabilities VALUES (1,'session-routing',?)",
-        (json.dumps({"levels": current}),),
+        (json.dumps({"levels": current, "note": "preserve"}),),
     )
     migration.apply(conn)
     migration.invariants(conn)
@@ -114,6 +114,12 @@ def test_apply_preserves_custom_levels_and_marks_only_item_or_level_launches():
             "SELECT value FROM universe_settings WHERE key='cursor_quota_order'"
         ).fetchone()[0]
     ) == ["Cursor Models", "Other Models"]
+    assert (
+        json.loads(
+            conn.execute("SELECT settings FROM project_capabilities").fetchone()[0]
+        )["note"]
+        == "preserve"
+    )
     rows = dict(
         conn.execute(
             "SELECT launch_id,level_placement FROM session_launches"

@@ -23,6 +23,14 @@ CLOCKS = (
 )
 
 
+@pytest.fixture(autouse=True)
+def clock_only_identity_dependencies(monkeypatch):
+    from yoke_core.domain import session_level_resolution, session_model_catalog
+
+    monkeypatch.setattr(session_level_resolution, "session_levels", lambda *_a: ())
+    monkeypatch.setattr(session_model_catalog, "current_model_records", lambda *_a: ())
+
+
 class Connection:
     def __init__(self, row):
         self.row = row
@@ -56,6 +64,8 @@ def test_identity_and_release_readers_return_native_optional_instants(
         2,
         "wait",
         clock,
+        None,
+        None,
     )
     result = identity.resolve_session_identity(Connection(row), "sample")
     expected = None if clock is None else INSTANT
@@ -78,7 +88,7 @@ def test_invalid_stored_reader_clock_refuses(monkeypatch, clock):
     )
     with pytest.raises(InvalidInstant):
         identity.resolve_session_identity(
-            Connection(("sample",) * 12 + (clock,)), "sample"
+            Connection(("sample",) * 12 + (clock, None, None)), "sample"
         )
     with pytest.raises(InvalidInstant):
         checkpoint.last_released_at(Connection({"released_at": clock}), "sample")

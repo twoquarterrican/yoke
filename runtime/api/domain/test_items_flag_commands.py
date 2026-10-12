@@ -15,12 +15,22 @@ from typing import Any, List
 import pytest
 
 from runtime.api.fixtures.backlog import insert_item
-from yoke_contracts.api.function_call import ActorContext, FunctionCallRequest, TargetRef
+from runtime.api.fixtures.session_holdings import insert_session as _seed_session
+from yoke_contracts.api.function_call import (
+    ActorContext,
+    FunctionCallRequest,
+    TargetRef,
+)
 from yoke_core.domain import backlog, backlog_update_op
 from yoke_core.domain.db_helpers import iso8601_now
 from yoke_core.domain.sessions_lifecycle_claim import claim_work
 from yoke_core.domain.work_claim_targets import make_item_target
-from yoke_core.domain.handlers.items_flags import handle_block, handle_freeze, handle_thaw, handle_unblock
+from yoke_core.domain.handlers.items_flags import (
+    handle_block,
+    handle_freeze,
+    handle_thaw,
+    handle_unblock,
+)
 
 
 SESSION = "flag-verb-session"
@@ -32,24 +42,6 @@ def _isolate_write_side_effects(monkeypatch) -> None:
     monkeypatch.setattr(backlog_update_op, "run_post_db_sync", lambda **_kwargs: 0)
 
 
-def _seed_session(conn: Any, session_id: str) -> None:
-    """Register a live harness session so the handler can claim for it.
-
-    The heartbeat is stamped now, not at a fixed date: ``claim_work``
-    runs the stale-session sweep first, and a session whose heartbeat is
-    older than the stale TTL is ended out from under the claim.
-    """
-    now = iso8601_now()
-    conn.execute(
-        "INSERT INTO harness_sessions (session_id, executor, provider, model, "
-        "workspace, offered_at, last_heartbeat) VALUES "
-        "(%s, 'claude-code', 'anthropic', 'test', '/tmp', %s, %s) "
-        "ON CONFLICT (session_id) DO NOTHING",
-        (session_id, now, now),
-    )
-    conn.commit()
-
-
 @pytest.fixture(autouse=True)
 def _caller_session(test_db) -> None:
     """Every flag call runs as a registered session."""
@@ -59,20 +51,32 @@ def _caller_session(test_db) -> None:
 def _live_claims(conn: Any, item_id: int) -> list:
     target = make_item_target(item_id)
     rows = conn.execute(
-        "SELECT session_id FROM work_claims WHERE target_kind = %s AND scope = %s AND released_at IS NULL", (target.kind, target.scope_json())
+        "SELECT session_id FROM work_claims WHERE target_kind = %s AND scope = %s AND released_at IS NULL",
+        (target.kind, target.scope_json()),
     ).fetchall()
     return [str(row["session_id"]) for row in rows]
 
 
 def _request(item_id: int, **payload: Any) -> FunctionCallRequest:
     return FunctionCallRequest(
-        function="items.freeze.run", actor=ActorContext(actor_id="1", session_id=SESSION), target=TargetRef(kind="item", item_id=item_id), payload=payload
+        function="items.freeze.run",
+        actor=ActorContext(actor_id="1", session_id=SESSION),
+        target=TargetRef(kind="item", item_id=item_id),
+        payload=payload,
     )
 
 
 def _flags(conn: Any, item_id: int) -> tuple:
-    row = conn.execute("SELECT frozen, blocked, blocked_reason, status FROM items WHERE id = %s", (item_id,)).fetchone()
-    return (bool(row["frozen"]), bool(row["blocked"]), row["blocked_reason"], row["status"])
+    row = conn.execute(
+        "SELECT frozen, blocked, blocked_reason, status FROM items WHERE id = %s",
+        (item_id,),
+    ).fetchone()
+    return (
+        bool(row["frozen"]),
+        bool(row["blocked"]),
+        row["blocked_reason"],
+        row["status"],
+    )
 
 
 def _record_write_order(monkeypatch) -> List[str]:
@@ -141,21 +145,29 @@ class TestBlockAndUnblock:
         assert (blocked, reason, status) == (True, "Awaiting sign-off", "implementing")
         assert frozen is False
 
-    def test_block_writes_the_reason_before_the_flag(self, test_db, monkeypatch) -> None:
+    def test_block_writes_the_reason_before_the_flag(
+        self, test_db, monkeypatch
+    ) -> None:
         insert_item(test_db, id=8202, status="implementing")
         seen = _record_write_order(monkeypatch)
-        assert handle_block(_request(8202, reason="Upstream API change")).primary_success
+        assert handle_block(
+            _request(8202, reason="Upstream API change")
+        ).primary_success
         assert seen == ["blocked_reason", "blocked"]
 
     def test_block_replaces_the_reason_when_already_blocked(self, test_db) -> None:
-        insert_item(test_db, id=8203, status="implementing", blocked=1, blocked_reason="old")
+        insert_item(
+            test_db, id=8203, status="implementing", blocked=1, blocked_reason="old"
+        )
         outcome = handle_block(_request(8203, reason="new reason"))
         assert outcome.primary_success, outcome.error
         assert outcome.result_payload["changed"] is True
         assert _flags(test_db, 8203)[1:3] == (True, "new reason")
 
     def test_block_is_a_no_op_when_the_reason_is_unchanged(self, test_db) -> None:
-        insert_item(test_db, id=8204, status="implementing", blocked=1, blocked_reason="same")
+        insert_item(
+            test_db, id=8204, status="implementing", blocked=1, blocked_reason="same"
+        )
         outcome = handle_block(_request(8204, reason="same"))
         assert outcome.primary_success
         assert outcome.result_payload["changed"] is False
@@ -186,8 +198,12 @@ class TestBlockAndUnblock:
         frozen, blocked, reason, _status = _flags(test_db, 8208)
         assert (frozen, blocked, reason) == (True, True, "parked and blocked")
 
-    def test_unblock_clears_the_flag_before_the_reason(self, test_db, monkeypatch) -> None:
-        insert_item(test_db, id=8209, status="implementing", blocked=1, blocked_reason="why")
+    def test_unblock_clears_the_flag_before_the_reason(
+        self, test_db, monkeypatch
+    ) -> None:
+        insert_item(
+            test_db, id=8209, status="implementing", blocked=1, blocked_reason="why"
+        )
         seen = _record_write_order(monkeypatch)
         outcome = handle_unblock(_request(8209))
         assert outcome.primary_success, outcome.error
@@ -201,7 +217,14 @@ class TestBlockAndUnblock:
         assert outcome.result_payload["changed"] is False
 
     def test_unblock_works_on_a_frozen_item(self, test_db) -> None:
-        insert_item(test_db, id=8211, status="implementing", frozen=1, blocked=1, blocked_reason="parked")
+        insert_item(
+            test_db,
+            id=8211,
+            status="implementing",
+            frozen=1,
+            blocked=1,
+            blocked_reason="parked",
+        )
         outcome = handle_unblock(_request(8211))
         assert outcome.primary_success, outcome.error
         assert _flags(test_db, 8211)[:3] == (True, False, None)
@@ -217,7 +240,10 @@ class TestMissingTargets:
     def test_non_item_target_is_rejected(self, test_db) -> None:
         del test_db
         request = FunctionCallRequest(
-            function="items.freeze.run", actor=ActorContext(actor_id="1", session_id=SESSION), target=TargetRef(kind="global"), payload={}
+            function="items.freeze.run",
+            actor=ActorContext(actor_id="1", session_id=SESSION),
+            target=TargetRef(kind="global"),
+            payload={},
         )
         outcome = handle_freeze(request)
         assert not outcome.primary_success
@@ -237,7 +263,12 @@ class TestImplicitClaim:
 
     def test_a_claim_the_caller_already_held_survives_the_call(self, test_db) -> None:
         insert_item(test_db, id=8302, status="implementing")
-        claim_work(test_db, session_id=SESSION, target=make_item_target(8302), reason="already working")
+        claim_work(
+            test_db,
+            session_id=SESSION,
+            target=make_item_target(8302),
+            reason="already working",
+        )
         test_db.commit()
         outcome = handle_freeze(_request(8302))
         assert outcome.primary_success, outcome.error
@@ -247,7 +278,12 @@ class TestImplicitClaim:
     def test_a_foreign_holder_refuses_the_write(self, test_db) -> None:
         insert_item(test_db, id=8303, status="implementing")
         _seed_session(test_db, "someone-else")
-        claim_work(test_db, session_id="someone-else", target=make_item_target(8303), reason="mid-flight")
+        claim_work(
+            test_db,
+            session_id="someone-else",
+            target=make_item_target(8303),
+            reason="mid-flight",
+        )
         test_db.commit()
         outcome = handle_freeze(_request(8303))
         assert not outcome.primary_success
@@ -259,7 +295,12 @@ class TestImplicitClaim:
     def test_a_foreign_holder_refuses_block_before_any_write(self, test_db) -> None:
         insert_item(test_db, id=8304, status="implementing")
         _seed_session(test_db, "other-agent")
-        claim_work(test_db, session_id="other-agent", target=make_item_target(8304), reason="mid-flight")
+        claim_work(
+            test_db,
+            session_id="other-agent",
+            target=make_item_target(8304),
+            reason="mid-flight",
+        )
         test_db.commit()
         outcome = handle_block(_request(8304, reason="stop this"))
         assert not outcome.primary_success
@@ -268,9 +309,7 @@ class TestImplicitClaim:
         assert (blocked, reason) == (False, None)
 
 
-def _add_dependency(
-    conn: Any, dependent: int, blocking: int, gate_point: str
-) -> None:
+def _add_dependency(conn: Any, dependent: int, blocking: int, gate_point: str) -> None:
     conn.execute(
         "INSERT INTO item_dependencies "
         "(dependent_item_id, blocking_item_id, gate_point, satisfaction, "
@@ -283,7 +322,9 @@ def _add_dependency(
 class TestBlockRefusesALiveHardBlockEdge:
     @pytest.mark.parametrize("gate_point", ("activation", "integration", "closure"))
     def test_block_refuses_when_a_live_hard_block_edge_exists(
-        self, test_db, gate_point: str,
+        self,
+        test_db,
+        gate_point: str,
     ) -> None:
         insert_item(test_db, id=8310, status="implementing")
         insert_item(test_db, id=8311, status="idea")

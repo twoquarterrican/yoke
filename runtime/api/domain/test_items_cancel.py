@@ -12,13 +12,13 @@ from typing import Any
 import pytest
 
 from runtime.api.fixtures.backlog import insert_item
+from runtime.api.fixtures.session_holdings import insert_session as _seed_session
 from yoke_contracts.api.function_call import (
     ActorContext,
     FunctionCallRequest,
     TargetRef,
 )
 from yoke_core.domain import backlog_close_op, backlog_update_op
-from yoke_core.domain.db_helpers import iso8601_now
 from yoke_core.domain.sessions_lifecycle_claim import claim_work
 from yoke_core.domain.work_claim_targets import make_item_target
 from yoke_core.domain.handlers.items_cancel import handle_cancel
@@ -41,18 +41,6 @@ def _isolate_write_side_effects(monkeypatch) -> None:
     monkeypatch.setattr(
         backlog_close_op._rendering, "_close_issue", lambda *_a, **_k: None
     )
-
-
-def _seed_session(conn: Any, session_id: str) -> None:
-    now = iso8601_now()
-    conn.execute(
-        "INSERT INTO harness_sessions (session_id, executor, provider, model, "
-        "workspace, offered_at, last_heartbeat) VALUES "
-        "(%s, 'claude-code', 'anthropic', 'test', '/tmp', %s, %s) "
-        "ON CONFLICT (session_id) DO NOTHING",
-        (session_id, now, now),
-    )
-    conn.commit()
 
 
 @pytest.fixture(autouse=True)
