@@ -202,6 +202,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     from yoke_core.domain import (
         connected_env_tunnel_coordination,
         local_universe,
+        local_universe_autostart,
         migration_fleet_preflight,
     )
     from yoke_core.domain.connected_env_readiness import (
@@ -225,6 +226,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     spec = local_universe.cluster_spec(
         bin_dir=local_universe.ensure_engine_binaries(lambda msg: print(f"  {msg}"))
     )
+    try:
+        local_universe_autostart.ensure_running(spec, emit=print)
+    except local_universe.LocalUniverseError as exc:
+        print(
+            f"fleet rehearsal needs the local rehearsal cluster: {exc}", file=sys.stderr
+        )
+        return 2
 
     def dsn_for(database: str) -> str:
         return database_dsn(authority.dsn, database)

@@ -30,6 +30,17 @@ belongs to the client and lives in
 
 from __future__ import annotations
 
+from typing import Callable
+
+
+def ensure_own_universe_running(
+    emit: Callable[[str], None] = lambda _line: None,
+) -> None:
+    """Start this machine's stopped embedded cluster before serving it."""
+    from yoke_core.domain import local_universe_autostart
+
+    local_universe_autostart.ensure_running(emit=emit)
+
 
 def serves_own_universe(dsn: str) -> bool:
     """Whether *dsn* names the embedded universe this machine owns.
@@ -72,4 +83,8 @@ def converge_serving_schema() -> None:
         converge_core_schema(conn, backup_target_dsn=db_backend.resolve_pg_dsn())
 
 
-__all__ = ["converge_serving_schema", "serves_own_universe"]
+__all__ = [
+    "converge_serving_schema",
+    "ensure_own_universe_running",
+    "serves_own_universe",
+]

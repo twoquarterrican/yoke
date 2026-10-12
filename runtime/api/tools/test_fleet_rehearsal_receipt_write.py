@@ -19,7 +19,11 @@ from runtime.api.tools.test_migration_admin_selected_readiness import (
 )
 from yoke_contracts.machine_config import runtime as machine_config
 from yoke_core.domain import connected_env_readiness as readiness
-from yoke_core.domain import local_universe, migration_fleet_preflight
+from yoke_core.domain import (
+    local_universe,
+    local_universe_autostart,
+    migration_fleet_preflight,
+)
 
 _PLATFORM_LOGIN = "platform-prod-registry-db-admin"
 
@@ -72,6 +76,9 @@ def _rehearsal_passes(monkeypatch, tmp_path: Path) -> list[str]:
         local_universe,
         "cluster_spec",
         lambda **_kwargs: SimpleNamespace(sock_dir=tmp_path / "socket"),
+    )
+    monkeypatch.setattr(
+        local_universe_autostart, "ensure_running", lambda *_a, **_k: None
     )
     monkeypatch.setattr(migration_fleet_preflight, "rehearse_fleet", rehearse)
     return rehearsed

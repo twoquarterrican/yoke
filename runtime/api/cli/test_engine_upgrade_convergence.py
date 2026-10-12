@@ -23,6 +23,10 @@ class _Convergence:
         self.owned = owned
         self.fails = fails
         self.converge_calls = 0
+        self.ensure_running_calls = 0
+
+    def ensure_own_universe_running(self, emit=None) -> None:
+        self.ensure_running_calls += 1
 
     def serves_own_universe(self, dsn: str) -> bool:
         return self.owned
@@ -75,6 +79,20 @@ def test_first_serve_after_upgrade_converges_the_universe(machine_home, wiring):
 
     assert report["status"] == convergence.STATUS_CONVERGED
     assert engine.converge_calls == 1
+
+
+def test_every_serve_of_the_own_universe_starts_it_first(machine_home, wiring):
+    # A restart stops the embedded cluster even when the receipt is current.
+    engine = wiring(_Convergence())
+    convergence.converge_for_serving()
+    convergence.converge_for_serving()
+    assert engine.ensure_running_calls == 2
+
+
+def test_a_foreign_universe_is_never_started(machine_home, wiring):
+    engine = wiring(_Convergence(owned=False))
+    convergence.converge_for_serving()
+    assert engine.ensure_running_calls == 0
 
 
 def test_second_serve_on_the_same_build_does_not_reconverge(machine_home, wiring):
