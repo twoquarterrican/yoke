@@ -7,7 +7,8 @@ retries starts the same recovery. Authentication, quota and client-build errors
 retain their own named handling.
 
 The successor uses the worker's current execution level, actor and machine. Placement
-excludes the overloaded model across machines and native effort/speed selectors,
+excludes the overloaded model across machines, native effort/speed selectors,
+and identities the effective published model catalog declares equivalent,
 then applies the normal configured quota order, eligibility, spread and headroom
 rules. It never moves work to another level automatically.
 Keeping the machine pin preserves access to the registered lane and dirty files;

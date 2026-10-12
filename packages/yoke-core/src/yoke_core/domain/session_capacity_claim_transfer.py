@@ -10,7 +10,10 @@ from yoke_core.domain.db_helpers import instant_parameter
 from yoke_contracts.timestamps import parse_instant
 from yoke_core.domain.item_ref_resolution import resolve_item_ref_or_none
 from yoke_core.domain.project_identity import placeholder
-from yoke_core.domain.session_capacity_recovery import capacity_model_key
+from yoke_core.domain.session_capacity_recovery import (
+    capacity_catalog,
+    capacity_model_key,
+)
 from yoke_core.domain.session_launch_types import SessionLaunchError
 from yoke_core.domain.session_vendor_error_states import vendor_error_states
 from yoke_core.domain.work_claim_holder import holder_session_for_item
@@ -70,7 +73,11 @@ def admit_capacity_predecessor(
     ).fetchall()
     if len(claims) != 1 or int(claims[0][0]) != holder["claim_id"]:
         _refuse("predecessor holdings are not one exclusive item claim")
-    excluded = capacity_model_key(state["executor_surface"], state["model"])
+    excluded = capacity_model_key(
+        state["executor_surface"],
+        state["model"],
+        records=capacity_catalog(conn, now=now),
+    )
     if (
         request.level != state["execution_level"]
         or request.machine_id != state["machine_id"]
@@ -132,7 +139,11 @@ def transfer_capacity_claim(
     if not target_actor or target_actor[0] != state["actor_id"]:
         _refuse("registered successor actor differs")
     if (
-        capacity_model_key(launch.selected_surface, launch.resolved_model)
+        capacity_model_key(
+            launch.selected_surface,
+            launch.resolved_model,
+            records=capacity_catalog(conn, now=now),
+        )
         in recovery["excluded_models"]
     ):
         _refuse("successor selected the overloaded model")

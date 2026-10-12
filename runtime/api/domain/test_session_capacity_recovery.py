@@ -100,6 +100,47 @@ def test_placeholder_model_requires_identity_repair_before_relaunch(monkeypatch)
     assert claim(conn)[1] == PREDECESSOR
 
 
+def test_published_model_alias_excludes_the_same_capacity_overloaded_model(monkeypatch):
+    from yoke_core.domain.universe_levels import write_universe_levels
+    from runtime.api.domain.session_launch_level_test_support import CODEX_SOL
+
+    conn, _ = capacity_connection(monkeypatch)
+    write_universe_levels(
+        conn,
+        [
+            {
+                "name": "SENIOR",
+                "glyph": "🦉",
+                "options": [
+                    CODEX_SOL,
+                    {
+                        "surface": "claude-cli",
+                        "model": "claude-fable-5-1",
+                        "reasoning_effort": "medium",
+                        "context_window_tokens": None,
+                    },
+                ],
+            }
+        ],
+        actor_id=1,
+    )
+    conn.execute(
+        "UPDATE harness_sessions SET model='claude-fable-5.1',executor_surface='claude-cli',executor='claude-code' WHERE session_id=?",
+        (PREDECESSOR,),
+    )
+    conn.commit()
+    result = relaunch_capacity_worker(conn, state=state(conn), now=CURRENT)
+    assert "launch_id" in result
+    launch = conn.execute(
+        "SELECT resolved_model,level_placement FROM session_launches"
+    ).fetchone()
+    assert launch[0] == "gpt-6.1-sol"
+    candidates = json.loads(launch[1])["candidates"]
+    assert next(c for c in candidates if c["model"] == "claude-fable-5-1")[
+        "blocked"
+    ].startswith("model_capacity_excluded")
+
+
 def test_successor_launch_failure_is_actionable_and_does_not_loop(monkeypatch):
     conn, _ = capacity_connection(monkeypatch)
     result = relaunch_capacity_worker(conn, state=state(conn), now=CURRENT)

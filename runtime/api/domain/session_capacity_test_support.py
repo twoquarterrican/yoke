@@ -40,6 +40,13 @@ def capacity_connection(
 ):
     options = (CODEX_SOL, CLAUDE_OPUS) if alternative else (CODEX_SOL,)
     conn = level_connection(*options)
+    from yoke_core.domain.model_reference_store import (
+        create_model_reference_table,
+        seed_initial_catalog,
+    )
+
+    create_model_reference_table(conn)
+    seed_initial_catalog(conn)
     ref = _seed_pinned_item(conn, status="implementing")
     for declaration in (
         "native_process_gone_at TEXT",

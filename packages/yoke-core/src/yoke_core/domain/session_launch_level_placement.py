@@ -276,14 +276,20 @@ def place_level(
         now=now,
         eligibility=eligibility,
     )
-    from yoke_core.domain.session_capacity_recovery import capacity_model_key
+    if excluded_models:
+        from yoke_core.domain.session_capacity_recovery import (
+            capacity_catalog,
+            capacity_model_key,
+        )
 
-    weighed = [
-        replace(c, blocked="model_capacity_excluded: provider refused this model")
-        if capacity_model_key(c.surface, c.model) in excluded_models
-        else c
-        for c in weighed
-    ]
+        records = capacity_catalog(conn, now=now)
+        weighed = [
+            replace(c, blocked="model_capacity_excluded: provider refused this model")
+            if capacity_model_key(c.surface, c.model, records=records)
+            in excluded_models
+            else c
+            for c in weighed
+        ]
     open_ = [candidate for candidate in weighed if candidate.blocked is None]
     if not open_:
         return LevelPlacement(

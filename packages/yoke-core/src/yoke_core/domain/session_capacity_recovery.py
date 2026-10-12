@@ -7,6 +7,8 @@ import logging
 from typing import Any, Mapping
 
 from yoke_contracts.session_control.models import LaunchCreateRequest
+from yoke_contracts.model_reference import lookup_model_reference
+from yoke_contracts.model_reference_records import ModelReferenceError
 from yoke_contracts.session_model_facts import (
     CLAUDE_CONTEXT_TIER_SUFFIX,
     is_placeholder_model,
@@ -25,16 +27,34 @@ from yoke_core.domain.session_recovery_facts import resume_episode_key
 from yoke_core.domain.work_claim_target_sql import scope_int_sql
 
 
-def capacity_model_key(surface: str, model: str | None) -> str:
+def capacity_catalog(conn: Any, *, now: Any):
+    from yoke_core.domain.model_reference_store import revision_at
+
+    try:
+        return revision_at(conn, now)["records"]
+    except ModelReferenceError as exc:
+        raise SessionLaunchError(
+            "capacity_recovery_catalog_unavailable",
+            (
+                f"Effective model catalog is unavailable ({exc.code}: {exc}). "
+                "Recovery: ask the model-catalog operator to publish a valid revision "
+                "covering this time, then retry capacity recovery."
+            ),
+        ) from exc
+
+
+def capacity_model_key(surface: str, model: str | None, *, records) -> str:
     """Exclude the same model on every surface, including native variants."""
     token = str(model or "").strip().lower()
     if surface == "cursor-cli":
         token = cursor_selector_without_effort(token).removeprefix("cursor-")
-    return (
+    token = (
         token.removesuffix("-fast")
         .removesuffix("-thinking")
         .removesuffix(CLAUDE_CONTEXT_TIER_SUFFIX)
     )
+    lookup = lookup_model_reference(token, records)
+    return lookup.record.model_id if lookup.record is not None else token
 
 
 def recovery_key(state: Mapping[str, Any]) -> str:
@@ -98,7 +118,9 @@ def _record_refusal(
     conn.commit()
 
 
-def _excluded_models(conn: Any, state: Mapping[str, Any]) -> tuple[str, ...]:
+def _excluded_models(
+    conn: Any, state: Mapping[str, Any], *, now: Any
+) -> tuple[str, ...]:
     excluded = []
     if state["episode_key"] == resume_episode_key(None):
         p = placeholder(conn)
@@ -113,7 +135,13 @@ def _excluded_models(conn: Any, state: Mapping[str, Any]) -> tuple[str, ...]:
             excluded.extend(
                 (prior.get("capacity_recovery") or {}).get("excluded_models") or []
             )
-    excluded.append(capacity_model_key(str(state["executor_surface"]), state["model"]))
+    excluded.append(
+        capacity_model_key(
+            str(state["executor_surface"]),
+            state["model"],
+            records=capacity_catalog(conn, now=now),
+        )
+    )
     return tuple(dict.fromkeys(excluded))
 
 
@@ -188,7 +216,7 @@ def relaunch_capacity_worker(
             request,
             level=str(state["execution_level"]),
             machine_id=str(state["machine_id"]),
-            excluded_models=_excluded_models(conn, state),
+            excluded_models=_excluded_models(conn, state, now=now),
             capacity_predecessor_session_id=str(state["session_id"]),
         )
         outcome = create_launch(conn, auth=auth, request=request, now=now)
