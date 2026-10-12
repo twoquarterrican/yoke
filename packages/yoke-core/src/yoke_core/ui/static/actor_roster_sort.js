@@ -23,7 +23,7 @@ export function projectAccess(actor) {
   }))];
 }
 
-export function projectAccessText(actor) {
+function projectAccessText(actor) {
   return projectAccess(actor).map((entry) => (entry.from
     ? `${entry.project} · from org ${entry.from}` : `${entry.project} · ${entry.role}`)).join(", ");
 }
