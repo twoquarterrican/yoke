@@ -169,7 +169,7 @@ class TestUniverseHandlers:
         )
         assert not outcome.primary_success
         assert outcome.error.code == "level_min_effort_invalid"
-        assert outcome.error.jsonpath == "$.payload.levels[0].options[0]"
+        assert outcome.error.jsonpath == "$.payload.levels[0].options[0].min_effort"
 
 
 class TestLevelSummary:

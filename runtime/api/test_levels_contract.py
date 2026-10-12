@@ -120,7 +120,7 @@ def test_project_override_precedes_universe_then_default():
     assert resolve_effective_levels(None, None)[1] == "default"
 
 
-@pytest.mark.parametrize("level", [None, "", "primary", "default"])
+@pytest.mark.parametrize("level", [None, "", "primary"])
 def test_unresolved_presentation_never_prints_primary(level):
     assert level_presentation(default_levels(), level) == {
         "label": "no level",

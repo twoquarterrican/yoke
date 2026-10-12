@@ -170,9 +170,9 @@ def test_handle_thaw_revalidates_before_clearing_frozen(test_db, monkeypatch):
     monkeypatch.setattr(backlog_update_op, "run_post_db_sync", lambda **_kwargs: 0)
     now = iso8601_now()
     test_db.execute(
-        "INSERT INTO harness_sessions (session_id, executor, provider, model, "
+        "INSERT INTO harness_sessions (session_id, executor, provider, model, reasoning_effort, "
         "workspace, offered_at, last_heartbeat) VALUES "
-        "(%s, 'claude-code', 'anthropic', 'test', '/tmp', %s, %s) "
+        "(%s, 'claude-code', 'anthropic', 'claude-opus-5-5', 'medium', '/tmp', %s, %s) "
         "ON CONFLICT (session_id) DO NOTHING",
         (SESSION, now, now),
     )

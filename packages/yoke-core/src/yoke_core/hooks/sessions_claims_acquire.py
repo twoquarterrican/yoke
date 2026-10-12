@@ -124,6 +124,10 @@ def _claim_typed(
 ) -> str:
     now = utc_now()
     _require_active_session(conn, session_id)
+    try:
+        validate_work_claim_target(conn, target)
+    except WorkflowItemBindingError as exc:
+        raise PermissionError(str(exc)) from exc
     require_session_work_eligibility(conn, session_id, target)
     target_label = target.render()
 
