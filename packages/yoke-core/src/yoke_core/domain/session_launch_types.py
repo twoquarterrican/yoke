@@ -12,6 +12,7 @@ from typing import Any, Protocol
 
 from yoke_contracts.session_control.launch_origin import LAUNCH_ORIGIN_OPERATOR
 from yoke_core.domain.session_launch_capacity import MachineCapacity
+from yoke_core.domain.session_launch_machine_rejections import MachineRejection
 
 
 MAX_LAUNCH_LEASE_SECONDS = 300
@@ -99,6 +100,8 @@ class EligibilitySnapshot:
     # A code says which rule refused; a detail says which setting decided it,
     # so a refusal message can name the thing an operator has to change.
     rejection_details: tuple[str, ...] = ()
+    #: Each machine left without a usable relay, with its own reasons.
+    machine_rejections: tuple[MachineRejection, ...] = ()
 
 
 class LaunchEligibilityPort(Protocol):
@@ -155,6 +158,7 @@ class LaunchPreview:
     placement_reason: str | None = None
     machine_candidates: tuple[MachineCandidate, ...] = ()
     rejection_details: tuple[str, ...] = ()
+    machine_rejections: tuple[MachineRejection, ...] = ()
     #: How a level launch chose its option and machine: the level, every
     #: option weighed with the pools it read, and why the winner won. ``None``
     #: for a launch that named its exact selection.
@@ -189,6 +193,9 @@ class LaunchPreview:
                 candidate.to_dict() for candidate in self.machine_candidates
             ],
             "rejection_details": list(self.rejection_details),
+            "machine_rejections": [
+                entry.to_dict() for entry in self.machine_rejections
+            ],
             "level_placement": self.level_placement,
             "eligible_relays": [relay.to_dict() for relay in self.eligible_relays],
             "selected_relay": (

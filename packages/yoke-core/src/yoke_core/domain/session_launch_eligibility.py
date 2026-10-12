@@ -18,6 +18,10 @@ from yoke_core.domain.session_launch_capacity import (
     MachineCapacity,
     machine_capacity,
 )
+from yoke_core.domain.session_launch_machine_rejections import (
+    MachineRejection,
+    rejection_from_row,
+)
 from yoke_core.domain.session_launch_types import (
     EligibilitySnapshot,
     EligibleRelay,
@@ -130,42 +134,51 @@ def derive_launch_eligibility(
     selected_by_machine: dict[str, EligibleRelay] = {}
     capacities: dict[str, MachineCapacity] = {}
     rejected: set[str] = set()
+    # Each machine is judged by its freshest relay row, so an old relay a
+    # machine re-registered past cannot lend that machine its stale reasons.
+    machine_rejections: dict[str, MachineRejection] = {}
     for row in rows:
         relay_machine = str(_value(row, "machine_id", 1))
         considered.add(relay_machine)
-        row_rejected = False
+        codes: list[str] = []
         state = str(_value(row, "state", 5))
         connected_until = parse_instant(_value(row, "connected_until", 6))
         if state not in {"active", "idle"} or connected_until < current:
-            rejected.add("liveness_expired")
-            row_rejected = True
+            codes.append("liveness_expired")
         if not _serves_project(_value(row, "project_checkouts", 3), project_keys):
-            rejected.add("project_checkout_missing")
-            row_rejected = True
+            codes.append("project_checkout_missing")
         versions = _json(_value(row, "surface_versions", 2), {})
         offered = versions.get(surface) if isinstance(versions, dict) else None
         if not isinstance(offered, str) or not offered.strip():
-            rejected.add("surface_absent")
-            row_rejected = True
+            codes.append("surface_absent")
         elif not _allowed_version(surface, offered):
-            rejected.add("version_below_floor")
-            row_rejected = True
+            codes.append("version_below_floor")
         if live_mark(conn, relay_machine, surface) is not None:
-            rejected.add(SURFACE_DISABLED_REJECTION)
-            row_rejected = True
-        if row_rejected:
-            continue
-        if relay_machine in selected_by_machine:
-            continue
-        if relay_machine not in capacities:
-            capacities[relay_machine] = machine_capacity(
-                conn,
+            codes.append(SURFACE_DISABLED_REJECTION)
+        if not codes and relay_machine not in selected_by_machine:
+            if relay_machine not in capacities:
+                capacities[relay_machine] = machine_capacity(
+                    conn,
+                    machine_id=relay_machine,
+                    capacity_document=_value(row, "machine_capacity", 7),
+                    now=current,
+                )
+            if capacities[relay_machine].at_capacity:
+                codes.append(MACHINE_AT_CAPACITY)
+        if codes:
+            rejected.update(codes)
+            entry = rejection_from_row(
                 machine_id=relay_machine,
-                capacity_document=_value(row, "machine_capacity", 7),
+                hostname=str(_value(row, "hostname", 8) or ""),
+                codes=codes,
+                last_seen_at=_value(row, "last_seen_at", 4),
                 now=current,
             )
-        if capacities[relay_machine].at_capacity:
-            rejected.add(MACHINE_AT_CAPACITY)
+            prior = machine_rejections.get(relay_machine)
+            if prior is None or _fresher(entry, prior):
+                machine_rejections[relay_machine] = entry
+            continue
+        if relay_machine in selected_by_machine:
             continue
         try:
             owner_actor_id = int(_value(row, "actor_id", 9))
@@ -187,7 +200,18 @@ def derive_launch_eligibility(
         considered_machine_ids=tuple(sorted(considered)),
         rejection_codes=tuple(sorted(rejected)),
         machine_capacity=tuple(capacities[machine] for machine in sorted(capacities)),
+        machine_rejections=tuple(
+            machine_rejections[machine]
+            for machine in sorted(machine_rejections)
+            if machine not in selected_by_machine
+        ),
     )
+
+
+def _fresher(entry: MachineRejection, prior: MachineRejection) -> bool:
+    if entry.last_seen_at is None:
+        return False
+    return prior.last_seen_at is None or entry.last_seen_at > prior.last_seen_at
 
 
 __all__ = ["derive_launch_eligibility", "load_relay_eligibility_rows"]

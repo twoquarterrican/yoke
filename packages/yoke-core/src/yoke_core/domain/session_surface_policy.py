@@ -20,6 +20,9 @@ from yoke_core.domain.session_launch_capacity import (
     MACHINE_AT_CAPACITY,
     capacity_refusal,
 )
+from yoke_core.domain.session_launch_machine_rejections import (
+    ineligibility_clauses,
+)
 from yoke_core.domain.session_launch_store import marker, utc_now
 from yoke_core.domain.session_launch_types import LaunchPreview, SessionLaunchError
 
@@ -264,11 +267,11 @@ def launch_refusal_message(conn: Any, preview: LaunchPreview) -> str:
         suffix = f" {_MANUAL_START_RECOVERY}" if manual_recovery else ""
         return f"{prefix}: {preview.placement_reason}{suffix}"
     if SURFACE_DISABLED_REJECTION not in preview.rejection_codes:
-        codes = ", ".join(preview.rejection_codes) or "no relay evidence"
-        # A code alone ("machine_access_denied") does not tell the operator
-        # which setting to change; the detail carries that name.
-        detail = "; ".join(preview.rejection_details)
-        message = f"{prefix}: {codes}" + (f" — {detail}" if detail else "")
+        # Each machine's own reasons, never one merged set: a stale machine's
+        # code must not read as the live machine's fault. Details name the
+        # setting a bare code ("machine_access_denied") cannot.
+        clauses = ineligibility_clauses(preview)
+        message = f"{prefix}: {'; '.join(clauses) or 'no relay evidence'}"
         return f"{message}. {_MANUAL_START_RECOVERY}" if manual_recovery else message
     considered = set(preview.considered_machine_ids)
     details = [

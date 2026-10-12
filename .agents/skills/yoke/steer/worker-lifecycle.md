@@ -54,7 +54,7 @@ and level_placement. --machine only narrows; --surface is operator override.
 |---|---|
 | unsupported_surface | Preview supported CLI instead. |
 | surface_disabled | Respect manual mark; use another option. |
-| no_eligible_relay | Another eligible CLI/repair named relay. |
+| no_eligible_relay | Read machine_rejections: each machine's own codes, silent >1 day collapsed as offline. Repair only the live machine named, or another eligible CLI. |
 | machine_at_capacity | Actual live+assigned lane cap; free a lane, operator max_worker_lanes setting or --machine with room. No blind same-placement retry. |
 | machine_access_denied | Read per-machine placement_reason; use authorized machine. |
 | level_no_capacity | Named option/pool; deliberate permitted other level, reset wait or operator wall. |

@@ -27,6 +27,7 @@ from yoke_core.domain.level_native_selections import (
     native_selections,
 )
 from yoke_core.domain.session_launch_machine_models import machine_native_models
+from yoke_core.domain.session_launch_machine_rejections import ineligible_reason
 from yoke_core.domain.session_model_catalog import current_model_records
 from yoke_contracts.timestamps import as_utc
 from yoke_core.domain.machine_launch_access import filter_by_machine_access
@@ -80,14 +81,6 @@ def _level(levels: Sequence[Level], name: str, source: str) -> Level:
 
 def _percent(value: float | None) -> str:
     return "unreadable" if value is None else f"{int(round(value))}%"
-
-
-def _ineligible_reason(snapshot: Any, surface: str, denials: dict[str, str]) -> str:
-    """Why no machine could take this surface, in the snapshot's own words."""
-    parts = [*snapshot.rejection_codes, *snapshot.rejection_details]
-    parts.extend(f"{machine}: {why}" for machine, why in sorted(denials.items()))
-    detail = "; ".join(dict.fromkeys(str(part) for part in parts if part))
-    return f"no usable machine offers {surface}" + (f" ({detail})" if detail else "")
 
 
 def _weigh(
@@ -170,7 +163,7 @@ def _candidates(
                         reasoning_effort=entry.min_effort,
                         context_window_tokens=None,
                         machine_id=None,
-                        blocked=_ineligible_reason(snapshot, surface, denials),
+                        blocked=ineligible_reason(snapshot, surface, denials),
                     )
                 )
             for machine in sorted(relays):
