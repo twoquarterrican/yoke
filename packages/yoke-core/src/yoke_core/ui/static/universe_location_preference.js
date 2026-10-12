@@ -4,6 +4,16 @@ import { callFunction } from "./universe_view_support.js";
 
 const bareLocation = (href, base) => href === (base || "/") || href === `${base}/`;
 
+// Last-page preference owns destination, never a copy of the screen's scope.
+function withoutScope(href) {
+  if (typeof href !== "string" || !href.startsWith("/") || href.startsWith("//")) return null;
+  const [pathname, query = ""] = href.split("?");
+  const params = new URLSearchParams(query);
+  params.delete("project");
+  params.delete("selection");
+  return pathname + (params.size ? `?${params}` : "");
+}
+
 // Only a bare entry spends this read. Resource checks use the same authority
 // as the page itself; a stored route is never evidence of current access.
 export async function locationResolves(client, href, projects, sections = {}, basePath = "") {
@@ -92,7 +102,7 @@ export function createLocationPreference({ client, windowNode, navigation, selec
         // the access verdict, without adding a duplicate permission read.
         const denied = [401, 403, 404].includes(result.status) ||
           /not_found|not_allowed|forbidden|denied|unauthorized|permission|authz/.test(code);
-        if (href && denied && isMounted() && routePath(navigation.current(), navigation.basePath) === href) {
+        if (href && denied && isMounted() && withoutScope(routePath(navigation.current(), navigation.basePath)) === href) {
           restored = null;
           navigation.replace(buildUniverseRoute(NAV[0].id));
           onFallback?.();
@@ -102,7 +112,7 @@ export function createLocationPreference({ client, windowNode, navigation, selec
     },
     async restore(projects, sections) {
       if (!bareLocation(entryHref, navigation.basePath) || navigation.current() !== entryHref) return;
-      const saved = selections.lastLocation;
+      const saved = selections.lastLocation && withoutScope(selections.lastLocation);
       if (!saved) return;
       const valid = await locationResolves(client, saved, projects, sections);
       // A navigation or unmount during the resource read wins too.
@@ -112,8 +122,8 @@ export function createLocationPreference({ client, windowNode, navigation, selec
       navigation.replace(href);
     },
     remember() {
-      const location = navigation.current();
-      if (restored && routePath(location, navigation.basePath) !== restored) restored = null;
+      const location = withoutScope(navigation.current());
+      if (restored && withoutScope(routePath(location, navigation.basePath)) !== restored) restored = null;
       if (!selections.ready || !location || location === lastSaved) return;
       lastSaved = location;
       const { view } = parseUniverseRoute(location, navigation.basePath);

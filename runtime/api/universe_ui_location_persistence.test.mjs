@@ -56,31 +56,31 @@ test("a fresh mount and a new tab restore the actor's last page with its query",
   const first = await mountAt(t, "/sessions?project=1", client);
   await first.navigate("/items?project=2&return=workflows");
   const saved = client.state.last_location;
-  assert.equal(saved, "/items?return=workflows&project=2");
+  assert.equal(saved, "/items?return=workflows");
   first.app.unmount();
   // A new client bound to the same actor's persisted preference represents
   // the sign-in/new-tab boundary; no browser state is shared.
   const next = await mountAt(t, "", preferenceClient(client.state));
-  assert.equal(next.windowNode.location.href, saved);
+  assert.equal(next.windowNode.location.href, saved + "&project=all");
   assert.match(next.root.textContent, /Items/);
 });
 
-test("an explicit deep link or explicit default page wins and becomes the preference", async (t) => {
+test("an explicit deep link changes the destination without saving its scope", async (t) => {
   for (const hash of ["/items?project=1", "/strategy?project=all"]) {
     const client = preferenceClient({ views: {}, last_location: "/sessions?project=2" });
     const mounted = await mountAt(t, hash, client);
     assert.equal(mounted.windowNode.location.href, hash);
-    assert.equal(client.state.last_location, hash);
+    assert.equal(client.state.last_location, hash.split("?")[0]);
     mounted.app.unmount();
   }
 });
 
 test("invalid saved locations silently fall back to the current default page", async (t) => {
-  for (const saved of ["/removed", "/items?project=removed", "/items/%ZZ?project=1", "/actors/unknown"]) {
+  for (const saved of ["/removed", "/items/%ZZ?project=1", "/actors/unknown"]) {
     const client = preferenceClient({ views: {}, last_location: saved });
     const mounted = await mountAt(t, "", client);
     assert.equal(mounted.windowNode.location.href, "/strategy?project=all");
-    assert.equal(client.state.last_location, "/strategy?project=all");
+    assert.equal(client.state.last_location, "/strategy");
     assert.doesNotMatch(byClass(mounted.root, "content")[0].textContent, /unavailable|not found|read failed/);
     mounted.app.unmount();
   }
@@ -211,10 +211,10 @@ test("navigation writes stay serialized and failures only log coded diagnostics"
   windowNode.location.href = "/sessions?project=all";
   preference.remember();
   await settle();
-  assert.deepEqual(writes, ["/items?project=all"]);
+  assert.deepEqual(writes, ["/items"]);
   finish(ok({}));
   await settle();
-  assert.deepEqual(writes, ["/items?project=all", "/sessions?project=all"]);
+  assert.deepEqual(writes, ["/items", "/sessions"]);
   assert.equal(selections.notice, "");
   assert.deepEqual(warnings.mock.calls[0].arguments, [
     "Last page save failed", { code: "payload_invalid", status: 400 },
@@ -231,7 +231,7 @@ test("navigation writes stay serialized and failures only log coded diagnostics"
   windowNode.location.href = "/strategy?project=all";
   preference.remember();
   await settle();
-  assert.equal(writes.at(-1), "/strategy?project=all");
+  assert.equal(writes.at(-1), "/strategy");
   assert.equal(warnings.mock.calls.length, 2);
 });
 
@@ -257,14 +257,14 @@ test("hosted navigation saves path-only locations and restores them on a bare vi
   const mounted = await mountAt(t, "/orgs/acme/strategy", client, "/orgs/acme");
   for (const view of ["items", "sessions", "strategy"]) {
     await mounted.navigate(`/orgs/acme/${view}?project=1`);
-    assert.equal(client.state.last_location, `/${view}?project=1`);
+    assert.equal(client.state.last_location, `/${view}`);
   }
   const writes = client.requests.filter((request) => request.payload?.location);
   assert.ok(writes.every((request) => request.payload.location.startsWith("/") &&
     !request.payload.location.includes("#") && !request.payload.location.includes("/orgs/")));
   mounted.app.unmount();
   const restored = await mountAt(t, "/orgs/acme", preferenceClient(client.state), "/orgs/acme");
-  assert.equal(restored.windowNode.location.href, "/orgs/acme/strategy?project=1");
+  assert.equal(restored.windowNode.location.href, "/orgs/acme/strategy?project=all");
 });
 
 test("hosted bare entry retains restored access-loss fallback after remembering", async (t) => {
@@ -275,6 +275,6 @@ test("hosted bare entry retains restored access-loss fallback after remembering"
     : baseCall(request);
   const mounted = await mountAt(t, "/orgs/acme", client, "/orgs/acme");
   assert.equal(mounted.windowNode.location.href, "/orgs/acme/strategy?project=all");
-  assert.equal(client.state.last_location, "/strategy?project=all");
+  assert.equal(client.state.last_location, "/strategy");
   assert.doesNotMatch(mounted.root.textContent, /permission_denied/);
 });
