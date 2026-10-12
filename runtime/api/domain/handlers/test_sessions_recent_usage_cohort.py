@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from yoke_contracts.api.function_call import (
     ActorContext,
     FunctionCallRequest,
@@ -25,12 +27,22 @@ from yoke_contracts.session_usage_facts import (
     SessionUsage,
     usage_document,
 )
+from yoke_core.domain import sessions_history_read
 from yoke_core.domain.handlers.sessions_list import handle_sessions_list
 from yoke_core.domain.session_control_schema import create_session_control_tables
 
+#: The one instant every fixture stamp and the handler's cutoff are measured
+#: from, so window edges are exact however long the runner takes.
+NOW = datetime(2026, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
+
+
+@pytest.fixture(autouse=True)
+def _pinned_clock(monkeypatch):
+    monkeypatch.setattr(sessions_history_read, "utc_now", lambda: NOW)
+
 
 def _iso(hours_ago: float = 0) -> str:
-    stamp = datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+    stamp = NOW - timedelta(hours=hours_ago)
     return stamp.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -138,7 +150,7 @@ def test_window_boundary_includes_both_halves_at_the_cutoff(test_db):
     create_session_control_tables(test_db)
     test_db.commit()
     # The cutoff is inclusive on both halves, and one second past it is out.
-    inside = 24 - 1 / 3600
+    inside = 24
     outside = 24 + 1 / 3600
     _insert_session(test_db, "ended-at-cutoff", ended_at=_iso(inside), usage_tokens=1)
     _insert_session(
