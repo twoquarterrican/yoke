@@ -40,6 +40,11 @@ size), so a finding can name the region it was seen in. A region falling
 outside the image, an unreadable scale, and a non-image artifact each refuse
 by name and say where the recorded bytes landed.
 
+A read checks that stored evidence still exists before handing it out. When
+the object a capture recorded has been deleted from the store, the read
+reports `evidence_missing` with the address it looked for, rather than a link
+that cannot open; re-run the case to capture it again.
+
 Captures store their screenshots through the build serving the universe, so a
 hosted reviewer sees the same images through the configured evidence plane. No review request is raised against a screenshot a hosted reviewer
 cannot open. Evidence already recorded only on the capture machine is moved in

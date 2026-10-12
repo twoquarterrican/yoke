@@ -43,8 +43,9 @@ run, but never as the reader's signed-in Yoke session.
 
 Every read signs a fresh, short-lived store URL on the server. The returned
 link does not depend on any signed URL and stays valid while the file exists.
-Hosted buckets expire every object 365 days after upload, the same as QA
-evidence.
+Shared files never expire, the same as QA evidence: artifact buckets carry no
+expiry rule for either, and the permanent local tree keeps files until someone
+deletes them.
 
 ## Failures
 

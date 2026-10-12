@@ -14,7 +14,11 @@ import pytest
 from runtime.api.fixtures.backlog_inserts import insert_item, insert_qa_requirement
 from runtime.api.fixtures.pg_testdb import test_database
 from runtime.api.qa_artifact_read_test_support import artifact_read_request
-from yoke_contracts.api.function_call import ActorContext, FunctionCallRequest, TargetRef
+from yoke_contracts.api.function_call import (
+    ActorContext,
+    FunctionCallRequest,
+    TargetRef,
+)
 from yoke_core.domain import qa_artifact_broker as broker
 from yoke_core.domain.handlers.qa_artifact_add import handle_qa_artifact_add
 from yoke_core.domain.handlers.qa_artifact_presign import handle_qa_artifact_presign
@@ -40,9 +44,7 @@ def _request(function: str, requirement_id: int, payload: dict) -> FunctionCallR
     return FunctionCallRequest(
         function=function,
         actor=ActorContext(actor_id="op", session_id="s-1"),
-        target=TargetRef(
-            kind="qa_requirement", qa_requirement_id=requirement_id
-        ),
+        target=TargetRef(kind="qa_requirement", qa_requirement_id=requirement_id),
         payload=payload,
     )
 
@@ -203,13 +205,19 @@ def test_broker_named_refusal_keeps_recovery_without_token(
     ).encode("utf-8")
 
     def refuse(*_args, **_kwargs):
-        raise urllib.error.HTTPError(config.url, 401, "Unauthorized", {}, io.BytesIO(body))
+        raise urllib.error.HTTPError(
+            config.url, 401, "Unauthorized", {}, io.BytesIO(body)
+        )
 
     monkeypatch.setattr(broker.urllib.request, "urlopen", refuse)
     with pytest.raises(broker.ArtifactBrokerError) as raised:
         broker.presign_with_broker(
-            config, operation="get", project="yoke", subject=42,
-            run_id=5, filename="shot.png",
+            config,
+            operation="get",
+            project="yoke",
+            subject=42,
+            run_id=5,
+            filename="shot.png",
         )
     assert raised.value.code == "artifact_broker_authorization_invalid"
     assert "restart this tenant runtime" in str(raised.value)
@@ -232,6 +240,9 @@ def test_handlers_use_broker_for_presign_store_and_read(
         with (
             patch.object(broker, "presign_with_broker", side_effect=sign),
             patch("yoke_core.domain.qa_artifact_storage._upload_bytes") as upload,
+            patch(
+                "yoke_core.domain.signed_object_transfer.probe_signed_object"
+            ) as probe,
         ):
             presigned = handle_qa_artifact_presign(
                 _request(
@@ -265,4 +276,5 @@ def test_handlers_use_broker_for_presign_store_and_read(
     upload.assert_called_once()
     assert read.primary_success, read.error
     assert read.result_payload["download_url"] == "https://s3.example/get"
+    assert probe.call_args.args == ("https://s3.example/get",)
     assert operations == ["put", "put", "get"]

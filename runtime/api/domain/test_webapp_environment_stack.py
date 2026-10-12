@@ -56,9 +56,7 @@ def _fake_sibling_modules(recorder):
     api.WebappApiArgs = _recording_args_class()
     api.WebappApiStack = _FakeApiStack
 
-    distribution_variables = types.ModuleType(
-        "webapp_distribution_github_variables"
-    )
+    distribution_variables = types.ModuleType("webapp_distribution_github_variables")
 
     def _create_distribution_variables(**kwargs):
         recorder.distribution_variable_kwargs = kwargs
@@ -265,13 +263,13 @@ class TestArtifactsBucket:
         assert block.kwargs["ignore_public_acls"] is True
         assert block.kwargs["restrict_public_buckets"] is True
 
-    def test_bucket_lifecycle_expires_artifacts(self, monkeypatch):
+    def test_bucket_keeps_evidence_without_lifecycle_expiry(self, monkeypatch):
         recorder, _stack = _environment_stack(monkeypatch)
-        lifecycle = recorder.single("artifactsBucketLifecycle")
-        (rule,) = lifecycle.kwargs["rules"]
-        assert rule.kwargs["id"] == "expire-artifacts"
-        assert rule.kwargs["status"] == "Enabled"
-        assert rule.kwargs["expiration"].kwargs["days"] == 365
+        assert not [
+            resource
+            for resource in recorder.resources
+            if "Lifecycle" in getattr(resource, "resource_type", "")
+        ]
 
     def test_bucket_name_exported(self, monkeypatch):
         recorder, stack = _environment_stack(monkeypatch)

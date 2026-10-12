@@ -1,8 +1,10 @@
 """Byte transfer through presigned S3 URLs, independent of what the bytes are.
 
 QA evidence and shared files both move bytes with a plain HTTPS PUT or GET
-against a URL a project credential or the hosted signer minted. Failures
-carry a stable code and the ``s3://bucket/key`` they addressed.
+against a URL a project credential or the hosted signer minted, and a
+one-byte ranged GET proves an object still exists before a reader is handed
+its URL. Failures carry a stable code and the ``s3://bucket/key`` they
+addressed.
 """
 
 from __future__ import annotations
@@ -56,6 +58,48 @@ def put_signed_object(
         )
 
 
+def _missing_or_failed(
+    exc: urllib.error.HTTPError, address: str
+) -> ObjectTransferError:
+    """Classify a presigned GET's HTTP refusal.
+
+    A 404, or the 403 S3 answers for a missing key when the signer may not
+    list the bucket, is ``s3_object_missing``; other failures are
+    ``s3_download_failed``.
+    """
+    if exc.code in (403, 404):
+        return ObjectTransferError(
+            "s3_object_missing",
+            f"no readable object at {address} (S3 answered HTTP {exc.code})",
+        )
+    return ObjectTransferError(
+        "s3_download_failed",
+        f"S3 download failed for {address}: HTTP {exc.code} {exc.reason}",
+    )
+
+
+def probe_signed_object(download_url: str, *, bucket: str, key: str) -> None:
+    """Prove the object behind a presigned GET URL exists, reading one byte.
+
+    The ``Range`` header is not part of a presigned signature, so the same
+    URL a reader will follow answers the probe. A zero-byte object answers
+    416 and still exists.
+    """
+    address = f"s3://{bucket}/{key}"
+    request = urllib.request.Request(download_url, headers={"Range": "bytes=0-0"})
+    try:
+        with urllib.request.urlopen(request, timeout=TRANSFER_TIMEOUT_S):
+            return
+    except urllib.error.HTTPError as exc:
+        if exc.code == 416:
+            return
+        raise _missing_or_failed(exc, address) from exc
+    except (OSError, urllib.error.URLError, ValueError) as exc:
+        raise ObjectTransferError(
+            "s3_download_failed", f"S3 download failed for {address}: {exc}"
+        ) from exc
+
+
 def get_signed_object(
     download_url: str,
     *,
@@ -76,15 +120,7 @@ def get_signed_object(
         ) as response:
             content = response.read(max_bytes + 1)
     except urllib.error.HTTPError as exc:
-        if exc.code in (403, 404):
-            raise ObjectTransferError(
-                "s3_object_missing",
-                f"no readable object at {address} (S3 answered HTTP {exc.code})",
-            ) from exc
-        raise ObjectTransferError(
-            "s3_download_failed",
-            f"S3 download failed for {address}: HTTP {exc.code} {exc.reason}",
-        ) from exc
+        raise _missing_or_failed(exc, address) from exc
     except (OSError, urllib.error.URLError, ValueError) as exc:
         raise ObjectTransferError(
             "s3_download_failed", f"S3 download failed for {address}: {exc}"
@@ -101,5 +137,6 @@ __all__ = [
     "ObjectTransferError",
     "TRANSFER_TIMEOUT_S",
     "get_signed_object",
+    "probe_signed_object",
     "put_signed_object",
 ]
