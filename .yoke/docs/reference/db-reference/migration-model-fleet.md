@@ -140,7 +140,9 @@ exactly the release commit's code before dispatching: a `named_databases` fleet
 converges from a disposable checkout of that commit, and an `engine_tenants`
 fleet rehearses only after the dispatching engine's history bytes and schema
 shape are proven identical to the commit's (otherwise it refuses and names the
-release-driver recovery). It then re-reads coverage and refuses if the receipt
+release-driver recovery). A Yoke self-release driver, stage and production
+alike, executes the release commit itself, so that proof holds without any
+local install of the release. It then re-reads coverage and refuses if the receipt
 still falls short. The Yoke release workflow's pre-tag check,
 `require_fleet_migration_preflight --project P <environment>`, reads the same
 declarations and model-scoped receipts from a checkout of the release commit.

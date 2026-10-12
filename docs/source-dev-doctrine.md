@@ -147,10 +147,23 @@ authorization likewise prove through that paired HTTPS plane.
 
 ### Source execution and release rules
 
-Self-deploy drivers sync runtime dependencies from the detached candidate's
-`uv.lock` and execute its checkout-owned Python, including when started by an
-older installed CLI. Both direct execute and the deploy watcher use this
-preparation; failures name `DEPLOY-DRIVER-ENVIRONMENT` and the same-run recovery.
+Every Yoke self-release run — the stage run over HTTPS and the production run on
+paired `prod-db-admin` alike — re-execs its driver into the detached release
+commit, syncs runtime dependencies from that candidate's `uv.lock` and executes
+its checkout-owned Python, including when started by an older installed CLI. The
+fleet rehearsal therefore runs the migrations the release ships, and a release
+that adds a migration needs no pre-release local install. Before that re-exec the
+installed CLI reads only each `projects` entry's `checkout` and `project_id` from
+the raw machine config, so a release that changes the machine-config contract
+still locates its own source; the candidate validates the config under its own
+rules. Both direct execute and the deploy watcher use this preparation; failures
+name `DEPLOY-DRIVER-ENVIRONMENT` and the same-run recovery.
+
+The operator's installed CLI follows prod: the prod relay re-execs into each
+release it observes prod serving and, on that start, installs exactly that
+release with `yoke update --version VERSION`, recording the outcome in the relay
+log and `operator-cli-follow.json` in its state directory. A CLI still behind
+prod warns once per command relayed to prod, naming that command.
 See [deployment start diagnostics](public/reference/deployment-start.md).
 
 Doctor's launcher check excludes only the source runner's temporary `.venv/bin`

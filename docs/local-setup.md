@@ -96,7 +96,7 @@ DB-only — every issue-sync surface skips it and no GitHub App token is resolve
 Full semantics, the flip commands, and the safe ordering for changing a
 project's `github_repo` live in [github-sync.md](../.yoke/docs/reference/github-sync.md).
 
-Manage the embedded server directly when needed:
+Manage the embedded server directly when needed (after a restart, served commands, export and fleet rehearsal start an initialized server themselves):
 
 ```bash
 yoke local-postgres status
