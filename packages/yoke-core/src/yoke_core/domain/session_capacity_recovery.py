@@ -7,7 +7,10 @@ import logging
 from typing import Any, Mapping
 
 from yoke_contracts.session_control.models import LaunchCreateRequest
-from yoke_contracts.session_model_facts import is_placeholder_model
+from yoke_contracts.session_model_facts import (
+    CLAUDE_CONTEXT_TIER_SUFFIX,
+    is_placeholder_model,
+)
 from yoke_contracts.session_control.native_model_parsers import (
     cursor_selector_without_effort,
 )
@@ -27,7 +30,11 @@ def capacity_model_key(surface: str, model: str | None) -> str:
     token = str(model or "").strip().lower()
     if surface == "cursor-cli":
         token = cursor_selector_without_effort(token).removeprefix("cursor-")
-    return token.removesuffix("-fast").removesuffix("-thinking").removesuffix("[1m]")
+    return (
+        token.removesuffix("-fast")
+        .removesuffix("-thinking")
+        .removesuffix(CLAUDE_CONTEXT_TIER_SUFFIX)
+    )
 
 
 def recovery_key(state: Mapping[str, Any]) -> str:
