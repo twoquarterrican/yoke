@@ -109,6 +109,10 @@ CLAIMS_ADAPTERS = [
             "yoke claims steering list [--project P] [--session-id S] [--active-only]"
         ),
     ),
+    read_entry(
+        function_id="claims.steering.verify",
+        cli_invocation="yoke claims steering verify --project P",
+    ),
     AdapterEntry(
         "steering.report.get",
         "yoke steering report get [--project P] [--json]",

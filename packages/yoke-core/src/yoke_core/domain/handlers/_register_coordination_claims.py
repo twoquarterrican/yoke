@@ -62,15 +62,13 @@ def register(registry) -> None:
         side_effects=["work_claims_update_released_at"],
         emitted_event_names=["OperatorLeaseRelease", "LeaseReleased"],
         guardrails=[
-            "authenticated_human_actor_required",
-            "harness_session_refused",
-            "human_only_hook_guard",
+            "steering_seat_required",
+            "hook_context_forbidden",
             "exact_claim_holder_precondition",
             "operator_reason_required",
         ],
         adapter_status="live",
-        claim_required_kind=None,
-        ambient_session_required=False,
+        claim_required_kind="steering",
     )
     registry.register(
         "claims.coordination_claim.list",

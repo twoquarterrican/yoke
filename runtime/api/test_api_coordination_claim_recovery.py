@@ -1,8 +1,9 @@
-"""Authenticated HTTP recovery for a stranded coordination claim."""
+"""Steering-seat HTTP recovery for a stranded coordination claim."""
 
 from __future__ import annotations
 
 from contextlib import ExitStack
+import json
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -49,6 +50,18 @@ def recovery_api(tmp_path, request):
         conn = connect_test_db(db_path)
         auth = mint_api_auth_context(conn)
         seed_session(conn, "stranded-holder", auth.project_id)
+        for session_id in ("steering", "unseated"):
+            seed_session(conn, session_id, auth.project_id)
+            conn.execute(
+                "UPDATE harness_sessions SET actor_id=%s WHERE session_id=%s",
+                (auth.actor_id, session_id),
+            )
+        conn.execute(
+            "INSERT INTO work_claims (session_id, target_kind, scope, claimed_at, "
+            "last_heartbeat) VALUES ('steering', 'steering', %s, now(), now())",
+            (json.dumps({"project_id": auth.project_id}),),
+        )
+        conn.commit()
         target = (
             make_qa_admission_target("test-mac")
             if request.param == "qa_host"
@@ -74,10 +87,10 @@ def recovery_api(tmp_path, request):
             conn.close()
 
 
-def _envelope(claim, *, session_id: str = "") -> dict:
+def _envelope(claim, *, session_id: str = "steering") -> dict:
     return {
         "function": "claims.coordination_claim.operator_release",
-        "actor": {"actor_id": "untrusted", "session_id": session_id},
+        "actor": {"session_id": session_id},
         "target": {"kind": "global"},
         "payload": {
             **({"project_id": "yoke"} if claim.project_id is not None else {}),
@@ -89,7 +102,7 @@ def _envelope(claim, *, session_id: str = "") -> dict:
     }
 
 
-def test_signed_in_human_owner_can_release_over_http(recovery_api) -> None:
+def test_steering_seat_holder_can_release_over_http(recovery_api) -> None:
     client, conn, auth, target, claim = recovery_api
 
     response = client.post(
@@ -98,14 +111,14 @@ def test_signed_in_human_owner_can_release_over_http(recovery_api) -> None:
         headers=auth.headers,
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
     result = response.json()["result"]
     assert result["operator_actor_id"] == auth.actor_id
     assert active_claim(conn, target) is None
 
 
-@pytest.mark.parametrize("session_id", ("manual-agent", "launched-agent"))
-def test_harness_session_cannot_use_human_recovery(
+@pytest.mark.parametrize("session_id", ("unseated", ""))
+def test_session_without_a_steering_seat_cannot_recover(
     recovery_api, session_id: str
 ) -> None:
     client, conn, auth, target, claim = recovery_api
@@ -116,8 +129,10 @@ def test_harness_session_cannot_use_human_recovery(
         headers=auth.headers,
     )
 
-    assert response.status_code == 403
-    assert response.json()["error"]["code"] == "human_operator_required"
+    assert response.json()["success"] is False
+    if session_id:
+        assert response.json()["error"]["code"] == "steering_seat_required"
+        assert "yoke claims steering acquire" in response.json()["error"]["message"]
     assert active_claim(conn, target) is not None
 
 
@@ -139,7 +154,7 @@ def test_printed_recovery_command_releases_exact_row_and_audits_reason(recovery_
             "/v1/functions/call",
             json={
                 "function": kwargs["function_id"],
-                "actor": {"session_id": ""},
+                "actor": {"session_id": "steering"},
                 "target": {"kind": "global"},
                 "payload": kwargs["payload"],
             },

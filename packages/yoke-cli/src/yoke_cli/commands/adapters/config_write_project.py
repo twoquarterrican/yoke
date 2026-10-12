@@ -9,12 +9,17 @@ from __future__ import annotations
 import argparse
 from typing import List
 
-from yoke_cli.commands._helpers import parse_or_usage_error
+from yoke_cli.commands._helpers import (
+    call_dispatcher,
+    ensure_handlers_loaded,
+    parse_or_usage_error,
+)
 from yoke_cli.commands.adapters.config_write_shared import run
-from yoke_cli.commands.session_begin_corroboration import resolve_ambient
 from yoke_cli.config import writer
-from yoke_contracts.machine_config.schema_projects import (
-    reassign_ambient_session_refusal,
+from yoke_contracts.api.function_call import TargetRef
+
+REASSIGN_ACTION = (
+    "Moving a registered project's checkout (yoke project register --reassign)"
 )
 
 PROJECT_REGISTER_USAGE = (
@@ -41,7 +46,10 @@ def project_register(args: List[str]) -> int:
         "--reassign",
         action="store_true",
         default=False,
-        help="Deliberate setup/operator-authorized checkout move only.",
+        help=(
+            "Deliberate checkout move; requires this session's live steering "
+            "seat on the project."
+        ),
     )
     parser.add_argument("--config", dest="config_path", default=None)
     parsed = parse_or_usage_error(parser, args, PROJECT_REGISTER_USAGE)
@@ -50,11 +58,7 @@ def project_register(args: List[str]) -> int:
 
     def _register() -> dict:
         if parsed.reassign:
-            ambient_session_id = resolve_ambient()
-            if ambient_session_id:
-                raise writer.MachineConfigWriteError(
-                    reassign_ambient_session_refusal(ambient_session_id)
-                )
+            require_reassign_seat(parsed.project_id)
         return writer.register_project(
             parsed.repo_root,
             parsed.project_id,
@@ -67,4 +71,24 @@ def project_register(args: List[str]) -> int:
     return run(_register)
 
 
-__all__ = ["PROJECT_REGISTER_USAGE", "project_register"]
+def require_reassign_seat(project_id: int) -> None:
+    """Refuse a checkout move unless the control plane confirms the seat."""
+    ensure_handlers_loaded()
+    response = call_dispatcher(
+        function_id="claims.steering.verify",
+        target=TargetRef(kind="global", project_id=str(project_id)),
+        payload={"action": REASSIGN_ACTION},
+    )
+    if response.success:
+        return
+    error = response.error
+    raise writer.MachineConfigWriteError(
+        f"{error.code}: {error.message}"
+        if error is not None
+        else "steering_verify_failed: the control plane gave no answer; "
+        "run yoke claims steering verify --project "
+        f"{project_id} to diagnose, then retry"
+    )
+
+
+__all__ = ["PROJECT_REGISTER_USAGE", "project_register", "require_reassign_seat"]

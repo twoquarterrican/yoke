@@ -213,6 +213,57 @@ def handle_list(request: FunctionCallRequest) -> HandlerOutcome:
     )
 
 
+class VerifyRequest(BaseModel):
+    action: str = Field(
+        "This operation",
+        min_length=1,
+        description="Operator command named in a refusal.",
+    )
+
+
+class VerifyResponse(BaseModel):
+    claim_id: int
+    project_id: int
+    session_id: str
+
+
+def handle_verify(request: FunctionCallRequest) -> HandlerOutcome:
+    """Answer whether the calling session's live seat covers the project."""
+    try:
+        body = VerifyRequest.model_validate(request.payload or {})
+    except ValidationError as exc:
+        return _error("payload_invalid", f"verify payload invalid: {exc}")
+    project_id = _authorized_project_id(request)
+    if project_id is None:
+        return _error(
+            "project_context_required",
+            "steering verify requires project context",
+            "$.target.project_id",
+        )
+
+    from yoke_core.domain import db_helpers
+    from yoke_core.domain.session_steering_authority import require_operator_seat
+    from yoke_core.domain.sessions_analytics_core import SessionError
+
+    try:
+        with db_helpers.connect() as conn:
+            seat = require_operator_seat(
+                conn,
+                caller_session_id=request.actor.session_id,
+                project_id=project_id,
+                action=body.action,
+            )
+    except SessionError as exc:
+        return _error(exc.code, exc.message, "$.actor.session_id")
+    return HandlerOutcome(
+        result_payload={
+            "claim_id": int(seat["claim_id"]),
+            "project_id": project_id,
+            "session_id": str(request.actor.session_id),
+        }
+    )
+
+
 __all__ = [
     "AcquireRequest",
     "AcquireResponse",
@@ -222,7 +273,10 @@ __all__ = [
     "ReleaseResponse",
     "SteeringClaimRow",
     "SteeringMessageHandoff",
+    "VerifyRequest",
+    "VerifyResponse",
     "handle_acquire",
     "handle_list",
     "handle_release",
+    "handle_verify",
 ]

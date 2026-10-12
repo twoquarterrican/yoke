@@ -1,4 +1,4 @@
-"""Hosted operator and ordinary-holder coordination-claim release tests."""
+"""Steering-seat operator and ordinary-holder coordination-claim release tests."""
 
 from __future__ import annotations
 
@@ -61,14 +61,12 @@ def _operator_payload() -> dict:
     }
 
 
-@pytest.mark.parametrize(
-    "session_id",
-    ("manual-agent", "launched-agent"),
-)
-def test_agent_session_cannot_invoke_operator_release(session_id: str) -> None:
-    conn = MagicMock()
+@pytest.mark.parametrize("actor_id", ("", "anonymous"))
+def test_unauthenticated_actor_cannot_record_operator_release(actor_id: str) -> None:
     with (
-        patch("yoke_core.domain.db_helpers.connect", return_value=nullcontext(conn)),
+        patch(
+            "yoke_core.domain.db_helpers.connect", return_value=nullcontext(MagicMock())
+        ),
         patch(
             "yoke_core.domain.coordination_claims_operator.operator_release"
         ) as release,
@@ -77,38 +75,19 @@ def test_agent_session_cannot_invoke_operator_release(session_id: str) -> None:
             _request(
                 "claims.coordination_claim.operator_release",
                 _operator_payload(),
-                session_id=session_id,
+                actor_id=actor_id,
+                session_id="steering",
             )
         )
 
     assert outcome.primary_success is False
     assert outcome.error is not None
-    assert outcome.error.code == "human_operator_required"
-    release.assert_not_called()
-
-
-def test_non_human_actor_cannot_invoke_operator_release() -> None:
-    conn = MagicMock()
-    conn.execute.return_value.fetchone.return_value = ("system",)
-    with (
-        patch("yoke_core.domain.db_helpers.connect", return_value=nullcontext(conn)),
-        patch(
-            "yoke_core.domain.coordination_claims_operator.operator_release"
-        ) as release,
-    ):
-        outcome = handle_operator_release(
-            _request("claims.coordination_claim.operator_release", _operator_payload())
-        )
-
-    assert outcome.primary_success is False
-    assert outcome.error is not None
-    assert outcome.error.code == "human_operator_required"
+    assert outcome.error.code == "operator_identity_required"
     release.assert_not_called()
 
 
 def test_operator_release_passes_exact_reviewed_claim_to_domain() -> None:
     conn = MagicMock()
-    conn.execute.return_value.fetchone.return_value = ("human",)
     result = {
         "released": True,
         "claim_id": 42,
@@ -160,9 +139,7 @@ def test_ordinary_release_refuses_a_foreign_holder() -> None:
     assert outcome.primary_success is False
     assert outcome.error is not None
     assert outcome.error.code == "claim_not_held"
-    assert "authenticated human terminal outside any harness session" in (
-        outcome.error.message
-    )
+    assert "session holding the project's steering seat" in outcome.error.message
     assert "authorized operator session" not in outcome.error.message
     release.assert_not_called()
 

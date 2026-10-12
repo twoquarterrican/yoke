@@ -276,13 +276,13 @@ run.
 `migration_serialization` and `qa_admission` are sticky: the
 stale-session sweep, the session-end release, and the claim-free end
 check all skip them, because the migration and the remote suite keep
-running after the session that started them goes quiet. Recovery is the audited human operator release,
+running after the session that started them goes quiet. Recovery is the audited steering-seat operator release,
 never an automatic reclaim. `route_qualification` is liveness-bound like
 the backlog kinds — a grant is only valid while its steering session
 lives — so the sweep reclaims it normally.
 
 Each claim is addressed by one operator key: `LIVE_DB_MIGRATION:<model>`,
-`QA_HOST:<machine>`, and the qualification grant token. QA_HOST keys are machine-scoped: list with `yoke coordination-claim list --key QA_HOST:<machine> --active-only --json`, ignoring any project filter. Signed-in humans outside harness sessions recover a reviewed row with `yoke coordination-claim release --key QA_HOST:<machine> --claim-id N --holder-session-id S --reason R`; permission remains the holder's project `claims.release`. Other key kinds still require `--project P` for operator release. QA host holders can release by claim id with `yoke claims work release --claim-id N --reason TEXT` after run completion; requirement reads and artifact uploads retain the stored member's project authority after membership ends.
+`QA_HOST:<machine>`, and the qualification grant token. QA_HOST keys are machine-scoped: list with `yoke coordination-claim list --key QA_HOST:<machine> --active-only --json`, ignoring any project filter. A session holding a live steering seat on the holder's project recovers a reviewed row with `yoke coordination-claim release --key QA_HOST:<machine> --claim-id N --holder-session-id S --reason R`; permission remains the holder's project `claims.release`. Other key kinds still require `--project P` for operator release. QA host holders can release by claim id with `yoke claims work release --claim-id N --reason TEXT` after run completion; requirement reads and artifact uploads retain the stored member's project authority after membership ends.
 
 Deployment runs take no coordination claim. `deploy_serialization` is the
 retired per-project deploy lock: nothing takes one, a `DEPLOY:` key refuses

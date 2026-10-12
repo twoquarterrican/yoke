@@ -17,6 +17,7 @@ FUNCTION_MINIMUM_SERVING_VERSIONS: dict[str, str] = {
     "actors.role.set": "next-release",
     "actors.roster": "next-release",
     "actors.state.set": "next-release",
+    "claims.steering.verify": "next-release",
     "events.performance.aggregate": "next-release",
     "events.performance.detail": "next-release",
     "files.upload": "next-release",

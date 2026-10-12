@@ -27,6 +27,7 @@ def conn():
 
 def plan(**overrides):
     values = dict(
+        project="alpha",
         sql="UPDATE repair_documents SET document='new' WHERE id=1",
         table="repair_documents",
         key_columns=["id"],
@@ -44,6 +45,7 @@ def execute(conn, document, *, dry_run=False):
         document,
         reviewed_sha256=repair.review_digest(document),
         actor_id=2,
+        project_id=1,
         dry_run=dry_run,
     )
 
@@ -69,6 +71,7 @@ def test_commits_repair_and_exact_audit_together(conn):
     assert row[0] == "completed"
     assert row[1] == hashlib.sha256(document.sql.encode()).hexdigest()
     assert json.loads(row[2])["expected_before"] == document.before
+    assert json.loads(row[2])["project"] == "alpha"
     assert json.loads(row[3]) == {
         "observed_before": document.before,
         "observed_after": document.after,
@@ -222,3 +225,27 @@ def test_lost_commit_acknowledgement_reports_uncertainty(conn):
     assert refused.value.code == "repair_commit_outcome_unknown"
     assert receipt(conn)[0] == "completed"
     assert values(conn)[0] == (1, "new")
+
+
+@pytest.mark.parametrize(
+    "owner,code", [(1, None), (2, "repair_project_scope_mismatch")]
+)
+def test_project_owned_rows_must_belong_to_the_document_project(conn, owner, code):
+    conn.execute(
+        "CREATE TABLE repair_owned (id integer PRIMARY KEY, project_id integer, note text)"
+    )
+    conn.execute("INSERT INTO repair_owned VALUES (1, %s, 'old')", (owner,))
+    conn.commit()
+    document = plan(
+        sql="UPDATE repair_owned SET note='new' WHERE id=1",
+        table="repair_owned",
+        before=[{"id": 1, "project_id": owner, "note": "old"}],
+        after=[{"id": 1, "project_id": owner, "note": "new"}],
+    )
+    if code is None:
+        assert execute(conn, document)["outcome"] == "completed"
+        return
+    with pytest.raises(RepairRefusal) as refused:
+        execute(conn, document)
+    assert refused.value.code == code
+    assert conn.execute("SELECT note FROM repair_owned").fetchone()[0] == "old"

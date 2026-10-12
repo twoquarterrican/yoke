@@ -22,9 +22,6 @@ from yoke_contracts.api.function_call import (
     FunctionError,
     HandlerOutcome,
 )
-from yoke_contracts.machine_config.schema_projects import (
-    reassign_ambient_session_refusal,
-)
 
 
 class EnvUseRequest(BaseModel):
@@ -142,14 +139,10 @@ def handle_auth_set(request: FunctionCallRequest) -> HandlerOutcome:
 def handle_project_register(request: FunctionCallRequest) -> HandlerOutcome:
     payload = request.payload or {}
     reassign = bool(payload.get("reassign") or False)
-    if reassign and request.actor.session_id:
-        return HandlerOutcome(
-            primary_success=False,
-            error=FunctionError(
-                code="machine_config_write_refused",
-                message=reassign_ambient_session_refusal(request.actor.session_id),
-            ),
-        )
+    if reassign:
+        refusal = _reassign_seat_refusal(request, payload.get("project_id"))
+        if refusal is not None:
+            return refusal
     return _outcome(
         lambda: machine_config_writer.register_project(
             str(payload.get("repo_root") or ""),
@@ -160,6 +153,41 @@ def handle_project_register(request: FunctionCallRequest) -> HandlerOutcome:
             path=payload.get("config_path"),
         )
     )
+
+
+def _reassign_seat_refusal(
+    request: FunctionCallRequest, project_id: Any
+) -> Optional[HandlerOutcome]:
+    """Require the caller's live steering seat before moving a checkout."""
+    from yoke_core.domain import db_helpers
+    from yoke_core.domain.session_steering_authority import require_operator_seat
+    from yoke_core.domain.sessions_analytics_core import SessionError
+
+    try:
+        with db_helpers.connect() as conn:
+            require_operator_seat(
+                conn,
+                caller_session_id=request.actor.session_id,
+                project_id=int(project_id),
+                action=(
+                    "Moving a registered project's checkout "
+                    "(yoke project register --reassign)"
+                ),
+            )
+    except (TypeError, ValueError):
+        return HandlerOutcome(
+            primary_success=False,
+            error=FunctionError(
+                code="machine_config_write_refused",
+                message="--reassign needs a numeric --project-id to authorize",
+            ),
+        )
+    except SessionError as exc:
+        return HandlerOutcome(
+            primary_success=False,
+            error=FunctionError(code=exc.code, message=exc.message),
+        )
+    return None
 
 
 def _outcome(operation) -> HandlerOutcome:

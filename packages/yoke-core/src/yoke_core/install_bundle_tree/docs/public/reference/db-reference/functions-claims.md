@@ -9,7 +9,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `claims.coordination_claim.acquire` | `none` |
 | `claims.coordination_claim.heartbeat` | `none` |
 | `claims.coordination_claim.list` | `none` |
-| `claims.coordination_claim.operator_release` | `none` |
+| `claims.coordination_claim.operator_release` | `steering` |
 | `claims.coordination_claim.release` | `none` |
 | `claims.path.activation_run` | `item` |
 | `claims.path.amend` | `item` |
@@ -28,6 +28,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `claims.steering.acquire` | `none` |
 | `claims.steering.list` | `none` |
 | `claims.steering.release` | `self_only` |
+| `claims.steering.verify` | `none` |
 | `claims.work.acquire` | `none` |
 | `claims.work.holder_get` | `none` |
 | `claims.work.holder_list` | `none` |

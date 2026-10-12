@@ -72,8 +72,26 @@ def require_steering_authority(
     return seat
 
 
+def require_operator_seat(
+    conn: Any, *, caller_session_id: str | None, project_id: int, action: str
+) -> dict[str, Any]:
+    """Gate an operator-only command on the caller's live covering seat.
+
+    Actor kind and session mode never decide; a session-less call has no
+    seat and refuses with the same ``steering_seat_required`` recovery.
+    """
+    return require_steering_authority(
+        conn,
+        caller_session_id=caller_session_id or "",
+        project_id=project_id,
+        action=action,
+        error_code="steering_seat_required",
+    )
+
+
 __all__ = [
     "covering_session_seat",
+    "require_operator_seat",
     "require_steering_authority",
     "session_control_target",
     "steering_authority_message",

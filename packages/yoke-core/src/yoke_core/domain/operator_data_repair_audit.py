@@ -27,6 +27,7 @@ def begin(conn, *, plan, actor_id: int, sql_hash: str, review_hash: str) -> int:
             json.dumps(
                 {
                     "review_sha256": review_hash,
+                    "project": plan.project,
                     "expected_before": plan.before,
                     "expected_after": plan.after,
                 }

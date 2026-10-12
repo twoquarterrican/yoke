@@ -76,6 +76,7 @@ def test_document_scope_is_exact_and_authority_does_not_check_actor_kind_or_mode
         "lifecycle.repair_status.execute",
         "claims.path.override",
         "session_control.qualification.open",
+        "claims.coordination_claim.operator_release",
     ],
 )
 @pytest.mark.parametrize("allowed", [True, False])
@@ -170,3 +171,34 @@ def test_surface_policy_mutations_require_live_project_coverage(action):
     _authorize(conn, req, "alpha", action)
     with pytest.raises(SessionError, match="requires a live steering seat"):
         _authorize(conn, req, "beta", action)
+
+
+@pytest.mark.parametrize(
+    "session,project,code",
+    [
+        ("s1", 1, None),
+        ("s1", 2, "steering_seat_required"),
+        ("", 1, "steering_seat_required"),
+    ],
+)
+def test_verify_answers_the_callers_covering_seat(session, project, code):
+    from contextlib import nullcontext
+    from yoke_core.domain.handlers.claims_steering import handle_verify
+
+    conn = message_connection()
+    seat(conn, project=project)
+    req = FunctionCallRequest(
+        function="claims.steering.verify",
+        actor={"session_id": session},
+        target={"kind": "global"},
+        payload={"action": "Moving a checkout"},
+        options={"authorized_project_id": 1},
+    )
+    with patch("yoke_core.domain.db_helpers.connect", return_value=nullcontext(conn)):
+        outcome = handle_verify(req)
+    if code is None:
+        assert outcome.result_payload["project_id"] == 1
+        assert outcome.result_payload["session_id"] == "s1"
+    else:
+        assert outcome.error.code == code
+        assert outcome.error.message.startswith("Moving a checkout requires")

@@ -1,4 +1,4 @@
-"""Register the human operator's guarded SQL repair boundary."""
+"""Register the steering-seat operator's guarded SQL repair boundary."""
 
 from yoke_core.domain.handlers import operator_data_repair as repair
 
@@ -15,7 +15,8 @@ def register(registry) -> None:
         side_effects=["guarded_control_plane_row_repair", "migration_audit_insert"],
         emitted_event_names=[],
         guardrails=[
-            "authenticated_human_admin",
+            "steering_seat_required",
+            "org_admin_permission",
             "review_digest",
             "single_transactional_statement",
             "exact_before_after_rows",

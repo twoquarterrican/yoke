@@ -264,4 +264,5 @@ configuration to uv. Yoke does not write its own shell startup blocks.
 Project install and refresh never move an existing machine project mapping.
 Git resolves linked worktrees to their main checkout, including lanes outside
 that checkout. To deliberately move routing, run `yoke project register
-/absolute/checkout --project-id N --reassign` from a plain operator terminal.
+/absolute/checkout --project-id N --reassign` from a session holding project
+N's live steering seat (`yoke claims steering acquire --project N`).

@@ -61,7 +61,7 @@ class ClaimContention:
             f"{lead} {self.key} (project {self.project_id}): already held by "
             f"{self.holder_label} since {format_instant(self.acquired_at)}; "
             f"heartbeat age {_age_label(self.heartbeat_age_seconds)} "
-            f"(stale TTL {self.effective_stale_ttl_minutes}m). Human-only "
+            f"(stale TTL {self.effective_stale_ttl_minutes}m). Steering-seat "
             f"operator release: `{self.operator_release_command}`."
         )
 

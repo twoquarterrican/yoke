@@ -13,6 +13,7 @@ from yoke_cli.commands.adapters.claims_coordination_claim import (
 from yoke_cli.commands.adapters.claims_steering import (
     claims_steering_acquire,
     claims_steering_list,
+    claims_steering_verify,
     claims_steering_release,
 )
 from yoke_cli.commands.adapters.steering_report import steering_report_get
@@ -34,6 +35,10 @@ CLAIMS_SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
     ("claims", "steering", "list"): (
         "claims.steering.list",
         claims_steering_list,
+    ),
+    ("claims", "steering", "verify"): (
+        "claims.steering.verify",
+        claims_steering_verify,
     ),
     ("claims", "coordination-claim", "acquire"): (
         "claims.coordination_claim.acquire",
@@ -58,11 +63,26 @@ CLAIMS_SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
 }
 
 CLAIMS_SUBCOMMAND_ALIAS_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
-    ("claims", "work", "list"): ("claims.work.holder_list", _adapters.claims_work_holder_list),
-    ("claims", "work-claim", "acquire"): ("claims.work.acquire", _adapters.claims_work_acquire),
-    ("claims", "work-claim", "release"): ("claims.work.release", _adapters.claims_work_release),
-    ("claims", "work-claim", "list"): ("claims.work.holder_list", _adapters.claims_work_holder_list),
-    ("claims", "work-claim", "get"): ("claims.work.holder_get", _adapters.claims_work_holder_get),
+    ("claims", "work", "list"): (
+        "claims.work.holder_list",
+        _adapters.claims_work_holder_list,
+    ),
+    ("claims", "work-claim", "acquire"): (
+        "claims.work.acquire",
+        _adapters.claims_work_acquire,
+    ),
+    ("claims", "work-claim", "release"): (
+        "claims.work.release",
+        _adapters.claims_work_release,
+    ),
+    ("claims", "work-claim", "list"): (
+        "claims.work.holder_list",
+        _adapters.claims_work_holder_list,
+    ),
+    ("claims", "work-claim", "get"): (
+        "claims.work.holder_get",
+        _adapters.claims_work_holder_get,
+    ),
     ("coordination-claim", "list"): (
         "claims.coordination_claim.list",
         claims_coordination_claim_list,
