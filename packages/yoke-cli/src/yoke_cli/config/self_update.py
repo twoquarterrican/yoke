@@ -17,6 +17,7 @@ own that step here.
 
 from __future__ import annotations
 
+import dataclasses
 import shutil
 import subprocess
 from typing import Any
@@ -43,8 +44,15 @@ class SelfUpdateError(RuntimeError):
     """A safe, named ``yoke update`` refusal or failure."""
 
 
-def run_update(*, channel: str | None = None) -> dict[str, Any]:
-    """Rerun the official installer for this machine, then verify and repair."""
+def run_update(
+    *, channel: str | None = None, version: str | None = None
+) -> dict[str, Any]:
+    """Rerun the official installer for this machine, then verify and repair.
+
+    ``version`` installs that exact release from the same origin instead of
+    the channel's current one; the prod relay passes the release it observed
+    prod serving.
+    """
 
     try:
         binding = install_binding.require_packaged_install("yoke update")
@@ -70,6 +78,13 @@ def run_update(*, channel: str | None = None) -> dict[str, Any]:
         raise SelfUpdateError(str(exc)) from exc
     except release_target.ReleaseTargetError as exc:
         raise SelfUpdateError(f"could not resolve the release channel: {exc}") from exc
+    if version:
+        target = dataclasses.replace(
+            target,
+            version=version.strip().removeprefix("v"),
+            source_commit="",
+            image="",
+        )
 
     if target.version == old_version:
         # `uv tool install --reinstall --force` wipes and rebuilds the tool

@@ -56,6 +56,7 @@ from yoke_contracts.api.function_call import (
 from yoke_contracts.machine_config.schema import (
     MachineConfigContractError,
     TRANSPORT_HTTPS,
+    connection_is_prod,
 )
 
 _DEFAULT_TIMEOUT_S = 30.0
@@ -76,6 +77,7 @@ class HttpsConnection:
     api_url: str
     token: str
     env: str = ""
+    prod: bool = False
 
     @property
     def functions_url(self) -> str:
@@ -106,6 +108,7 @@ def resolve_https_connection(
         api_url=api_url,
         token=resolve_token(connection),
         env=env_name,
+        prod=connection_is_prod(connection),
     )
 
 
