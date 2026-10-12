@@ -215,3 +215,32 @@ def test_server_build_replaces_a_contentless_snapshot(tmp_path: Path) -> None:
         assert rebuilt != stored.snapshot_id
         assert _snapshot_file_count(conn, rebuilt) >= 3
         assert ensure_snapshot_at(conn, "demo", contentless.commit_sha) == rebuilt
+
+
+def test_a_newer_contentless_snapshot_does_not_mark_paths_disappeared(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    with path_snapshot_db(tmp_path, repo) as conn:
+        materialize_snapshot_payload(
+            conn, project_id="demo", payload=scan_ref(repo, "HEAD")
+        )
+        _commit_change(repo)
+        materialize_snapshot_payload(
+            conn,
+            project_id="demo",
+            payload=scan_ref(repo, "HEAD").model_copy(
+                update={"files": [], "symlinks": []}
+            ),
+        )
+        (repo / "README.md").write_text("changed\n")
+        subprocess.run(["git", "commit", "-qam", "edit"], cwd=repo, check=True)
+
+        materialize_snapshot_payload(
+            conn, project_id="demo", payload=scan_ref(repo, "HEAD")
+        )
+
+        generations = conn.execute(
+            "SELECT MAX(generation) FROM path_targets"
+        ).fetchone()[0]
+        assert generations == 1

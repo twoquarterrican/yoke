@@ -170,11 +170,20 @@ class TestTargetIdentity:
             f"VALUES ({_p(fresh_db)}, {_p(fresh_db)})",
             (s1, first_target_id),
         )
-        # Snapshot 2: path is absent (no entry inserted).
-        fresh_db.execute(
+        # Snapshot 2 carries another file; the path is absent from it.
+        cur = fresh_db.execute(
             "INSERT INTO path_snapshots "
-            f"(project_id, commit_sha, built_at) VALUES ({_p(fresh_db)}, {_p(fresh_db)}, {_p(fresh_db)})",
+            f"(project_id, commit_sha, built_at) VALUES ({_p(fresh_db)}, {_p(fresh_db)}, {_p(fresh_db)}) "
+            "RETURNING id",
             (4, "sha2", NOW),
+        )
+        fresh_db.execute(
+            "INSERT INTO path_snapshot_entries (snapshot_id, target_id) "
+            f"VALUES ({_p(fresh_db)}, {_p(fresh_db)})",
+            (
+                int(cur.fetchone()[0]),
+                _resolve_path_target_id(fresh_db, 4, "y.py", KIND_FILE, None, NOW),
+            ),
         )
         # Path reappears at scan time → must mint generation 2.
         second_target_id = _resolve_path_target_id(
