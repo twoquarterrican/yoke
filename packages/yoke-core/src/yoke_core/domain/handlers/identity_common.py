@@ -2,7 +2,8 @@
 
 Every identity handler is org-admin-gated at dispatch (the ``identity.``
 prefix classifies ORG + ``org.admin`` in ``function_authz_scope``); these
-helpers only translate payload references into row ids.
+helpers translate payload references into row ids and return the calling
+actor that every identity write is attributed to.
 """
 
 from __future__ import annotations
