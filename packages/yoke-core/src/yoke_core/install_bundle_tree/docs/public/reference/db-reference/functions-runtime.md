@@ -86,6 +86,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `github_actions.dispatch_tag.ensure` | `none` |
 | `github_actions.failed_log` | `none` |
 | `github_actions.run.jobs_count` | `none` |
+| `github_actions.run.rerun_failed` | `item` |
 | `github_actions.runners.status` | `none` |
 | `github_actions.secret.delete` | `none` |
 | `github_actions.secret.set` | `none` |
