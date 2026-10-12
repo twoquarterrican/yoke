@@ -15,7 +15,7 @@ Each registered id has one catalog owner:
 |---|---|
 | Work/path/coordination claims and decisions | [Claims](functions-claims.md) |
 | Items, sections, progress, readiness and lifecycle | [Items](functions-items.md) |
-| Projects, settings, strategy, Packs and environments | [Project configuration](functions-project-configuration.md) |
+| Projects, settings, strategy, Packs, environments and shared files | [Project configuration](functions-project-configuration.md) |
 | QA cases, evidence and test machines | [QA](functions-qa.md) |
 | Sessions, actors, deployment, messaging and live services | [Runtime](functions-runtime.md) |
 | Generated tasks, dispatch and reviews | [Tasks](functions-tasks.md) |

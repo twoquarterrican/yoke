@@ -16,6 +16,9 @@ from yoke_core.domain.function_authz_types import (
 
 
 PRODUCT_AUTHZ_BY_ID = {
+    # Shared files are project content: uploading writes into the project's
+    # store, so it takes the project's write grant.
+    "files.upload": AuthzSpec(PROJECT, PERM_ITEMS_WRITE),
     # Handler authorizes every selected project before reading observations.
     "events.performance.aggregate": AuthzSpec(ACTOR_SESSION, None),
     "events.performance.detail": AuthzSpec(ACTOR_SESSION, None),

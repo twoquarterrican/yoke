@@ -57,6 +57,7 @@ from yoke_cli.commands.adapters.db_claim import (
     DB_CLAIM_PROSE_CHECK_USAGE,
 )
 from yoke_cli.commands.adapters.db import DB_READ_USAGE
+from yoke_cli.commands.adapters.files_cli import FILES_UPLOAD_USAGE
 from yoke_cli.commands.adapters import migration_content_identity as migration_cli
 from yoke_cli.commands.adapters.doctor import (
     DOCTOR_LAST_RUN_GET_USAGE,
@@ -231,6 +232,7 @@ ADAPTER_USAGE: Dict[str, str] = {
     "db_claim.amend": DB_CLAIM_AMEND_USAGE,
     "db_claim.prose_check": DB_CLAIM_PROSE_CHECK_USAGE,
     "db.read.run": DB_READ_USAGE,
+    "files.upload": FILES_UPLOAD_USAGE,
     "operator.data_repair.run": REPAIR_USAGE,
     MIGRATION_ID: migration_cli.VERIFY_USAGE,
     **_session_usage.USAGE_BY_FUNCTION_ID,

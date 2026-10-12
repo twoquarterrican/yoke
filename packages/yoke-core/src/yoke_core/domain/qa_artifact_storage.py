@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import os
 import tempfile
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any, Callable, Optional
 
 from yoke_contracts.qa_artifact_limits import MAX_ARTIFACT_BYTES
 
 from yoke_core.domain.qa_artifact_owner import requirement_storage_owner
+from yoke_core.domain.signed_object_transfer import (
+    ObjectTransferError,
+    put_signed_object,
+)
 from yoke_core.domain.qa_evidence_portability import (
     EVIDENCE_NOT_PORTABLE,
     local_store_refusal,
@@ -103,30 +105,16 @@ def _upload_bytes(
     content: bytes,
     content_type: Optional[str],
 ) -> None:
-    request = urllib.request.Request(
-        upload_url,
-        data=content,
-        method="PUT",
-        headers={"Content-Type": content_type or "application/octet-stream"},
-    )
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            status = int(response.status)
-    except urllib.error.HTTPError as exc:
-        raise ArtifactStorageError(
-            "s3_upload_failed",
-            f"S3 upload failed for s3://{bucket}/{key}: HTTP {exc.code} {exc.reason}",
-        ) from exc
-    except (OSError, urllib.error.URLError, ValueError) as exc:
-        raise ArtifactStorageError(
-            "s3_upload_failed",
-            f"S3 upload failed for s3://{bucket}/{key}: {exc}",
-        ) from exc
-    if not 200 <= status < 300:
-        raise ArtifactStorageError(
-            "s3_upload_failed",
-            f"S3 upload failed for s3://{bucket}/{key}: HTTP {status}",
+        put_signed_object(
+            upload_url,
+            bucket=bucket,
+            key=key,
+            content=content,
+            content_type=content_type,
         )
+    except ObjectTransferError as exc:
+        raise ArtifactStorageError(exc.code, str(exc)) from exc
 
 
 def store_artifact_bytes(

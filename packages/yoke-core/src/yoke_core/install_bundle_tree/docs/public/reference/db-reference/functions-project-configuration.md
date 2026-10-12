@@ -12,6 +12,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `connection.set.run` | `none` |
 | `env.list.run` | `none` |
 | `env.use.run` | `none` |
+| `files.upload` | `none` |
 | `onboard.checklist.init` | `none` |
 | `onboard.checklist.run` | `none` |
 | `packs.bundle.get` | `none` |
@@ -142,3 +143,10 @@ yoke strategy revision restore SLUG --revision <revision-number> --base-updated-
 Archived content stays stored until explicitly changed. Refusals report field,
 count, limit and repair; successful writes normalize legacy headings. Render and
 mutation receipts cover the edited slug only; JSON retains the full envelope.
+
+## Shared files
+
+`files.upload` stores one file at a project path and returns its read route;
+`yoke files upload` prints the absolute URL. Reads use
+`GET /v1/files/{project}/{path}` with `items.read`. No item, QA or file record
+is written. Recipe and storage modes: [Shared files](../shared-files.md).

@@ -17,6 +17,7 @@ WRAPPED_ROWS = (
     *DIRECT_WORKFLOW_WRAPPED_ROWS,
     *ITEM_STRATEGY_SURFACE_WRAPPED_ROWS,
     *QA_CATALOG_WRAPPED_ROWS,
+    _w("yoke files upload", "files"),
     _w("yoke operator data-repair", "operator.data_repair"),
     _w("yoke actors role set", "actors"),
     _w("yoke actors state set", "actors"),
