@@ -43,12 +43,12 @@ Two things this deliberately does not do. It never proposes resuming a
 session inside an unreturned tool call — that turn is executing, and a
 resume would be a second turn on the same conversation. And it never
 spends the last attempt silently: when the budget is gone the row stays,
-naming the seat as the next actor, because a worker nobody is coming for
+naming same-level capacity recovery or the seat as the next actor, because a worker nobody is coming for
 must not look like one being handled.
 
 Deciding lives apart from acting on purpose. The fleet report reads these
 states to render them and changes nothing; the relay sweep in
-``session_vendor_error_resume`` acts only on the ones marked ``due``. One
+``session_vendor_error_resume`` acts on ``due`` and ``relaunch_due``. One
 computation, so the report and the sweep cannot disagree about who is
 being recovered.
 """
@@ -88,7 +88,7 @@ from yoke_core.domain.session_recovery_facts import (
 EVENT_SESSION_VENDOR_ERROR_RESUMED = "HarnessSessionVendorErrorResumed"
 
 #: How long after the observed turn end each successive attempt waits.
-#: Its length is the budget: three entries, three attempts, then the seat.
+#: Its length is the budget: three entries, then same-level capacity recovery or the seat.
 RESUME_BACKOFF_SECONDS: tuple[int, ...] = (60, 300, 900)
 
 
@@ -121,7 +121,7 @@ def _candidate_sessions(
     on_machine = f"hs.machine_id={marker} AND " if machine_id else ""
     rows = conn.execute(
         "SELECT hs.session_id,hs.project_id,hs.machine_id,hs.executor_surface,"
-        "hs.executor_version,hs.last_tool_call_at,hs.turn_posture,"
+        "hs.executor_version,hs.model,hs.actor_id,hs.execution_level,hs.last_tool_call_at,hs.turn_posture,"
         "hs.native_turn_end_recorded_at,hs.native_turn_end_observation,"
         "hs.vendor_resume_episode_key,hs.vendor_resume_attempts"
         f"{open_call} "
@@ -178,6 +178,9 @@ def _decision(
         "machine_id": str(row.get("machine_id") or ""),
         "executor_surface": str(row.get("executor_surface") or ""),
         "executor_version": str(row.get("executor_version") or ""),
+        "model": row.get("model"),
+        "actor_id": row.get("actor_id"),
+        "execution_level": row.get("execution_level"),
         "signature_id": signature.signature_id,
         "error_message": error_message,
         "observed_at": timestamp(observed_at),
@@ -188,8 +191,6 @@ def _decision(
         # No attempt can move this failure, so none is made and the row
         # says so from the first poll rather than after three wasted tries.
         return {**state, "status": "seat_required", "reason": signature.summary}
-    if attempts >= len(RESUME_BACKOFF_SECONDS):
-        return {**state, "status": "budget_spent", "reason": signature.summary}
     if session_call_is_live(row, started_at=row.get(OPEN_TOOL_CALL_COLUMN)):
         # The turn is executing. Whatever ended the previous one, this
         # session is working now and a resume would fork its conversation.
@@ -201,6 +202,21 @@ def _decision(
                 parse_timestamp(row.get(OPEN_TOOL_CALL_COLUMN))
             ),
         }
+    if signature.signature_id == "server_overloaded" and (
+        attempts >= len(RESUME_BACKOFF_SECONDS)
+        or "at capacity" in error_message.lower()
+        or "different model" in error_message.lower()
+    ):
+        refusal = observation.get("capacity_recovery_refusal") or {}
+        if refusal.get("episode_key") == state["episode_key"]:
+            return {
+                **state,
+                "status": "capacity_recovery_refused",
+                "reason": (f"{refusal['code']}: {refusal['detail']}"),
+            }
+        return {**state, "status": "relaunch_due", "reason": signature.summary}
+    if attempts >= len(RESUME_BACKOFF_SECONDS):
+        return {**state, "status": "budget_spent", "reason": signature.summary}
     due_at = observed_at + timedelta(seconds=RESUME_BACKOFF_SECONDS[attempts])
     state["due_at"] = timestamp(due_at)
     if due_at > now:
@@ -219,7 +235,8 @@ def vendor_error_states(
 
     One row per session, each carrying its named status — ``due``,
     ``waiting_backoff``, ``turn_in_flight``, ``budget_spent``, or
-    ``seat_required``. The resume sweep acts on ``due``; the fleet report
+    ``seat_required`` plus capacity relaunch/pending/refusal states. The sweep
+    acts on ``due`` and ``relaunch_due``; the fleet report
     renders all of them, which is why the states are computed here once
     rather than twice with two chances to disagree.
 
@@ -249,6 +266,12 @@ def vendor_error_states(
             now=current,
         )
         if decision is not None:
+            if decision["status"] in {"relaunch_due", "capacity_recovery_refused"}:
+                from yoke_core.domain.session_capacity_recovery import (
+                    capacity_recovery_state,
+                )
+
+                decision = capacity_recovery_state(conn, decision)
             states.append(decision)
     return states
 

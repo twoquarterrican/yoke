@@ -63,6 +63,7 @@ def refuse_held_assigned_item(
     project_id: int,
     predecessor_session_id: str | None = None,
     successor_level: str | None = None,
+    capacity_predecessor_session_id: str | None = None,
 ) -> None:
     """Refuse existing staffing or a live holder inside the create transaction."""
     if not workflow_pin_schema_present(conn):
@@ -90,8 +91,10 @@ def refuse_held_assigned_item(
     )
     holder = holder_session_for_item(conn, item_id)
     holder_id = str(holder.get("holder_session_id") or "")
+    predecessor = capacity_predecessor_session_id or predecessor
     live_holder = (
         holder_id
+        and holder_id != capacity_predecessor_session_id
         and conn.execute(
             f"SELECT 1 FROM harness_sessions s WHERE s.session_id={p} "
             f"AND {live_session_sql('s')}",

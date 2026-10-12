@@ -30,13 +30,17 @@ def stored_level_placement(preview: LaunchPreview) -> str | None:
     return json_helper.dumps_compact(preview.level_placement)
 
 
-def retry_request(launch: LaunchRecord) -> LaunchRequest:
+def retry_request(launch: LaunchRecord, *, conn: Any) -> LaunchRequest:
     """The ask a stored launch made, so a retry places it the same way.
 
     A level launch is placed again from its level, because the option and
     machine that fit at create time may not fit now; an explicit launch
     repeats its exact selection.
     """
+    placement = json_helper.loads_text(launch.level_placement or "{}")
+    recovery = placement.get("capacity_recovery") or {}
+    from yoke_core.domain.project_identity import render_item_ref
+
     return LaunchRequest(
         project_id=launch.project_id,
         executor_surface="" if launch.requested_level else launch.requested_surface,
@@ -49,6 +53,11 @@ def retry_request(launch: LaunchRecord) -> LaunchRequest:
         presentation=launch.presentation_preference,
         allow_surface_fallback=launch.allow_surface_fallback,
         level=launch.requested_level,
+        item=render_item_ref(conn, recovery["item_id"], required=True)
+        if recovery
+        else None,
+        excluded_models=tuple(recovery.get("excluded_models") or ()),
+        capacity_predecessor_session_id=recovery.get("predecessor_session_id"),
     )
 
 

@@ -73,7 +73,14 @@ CLAIMS_TABLES: dict[str, dict] = {
             ("last_chain_step", "INTEGER"),
             ("last_checkpoint_at", "TIMESTAMPTZ"),
         ],
-        "notes": HARNESS_SESSION_NOTES,
+        "notes": HARNESS_SESSION_NOTES
+        + (
+            " Capacity recovery uses session_resume_in_flight, which reads "
+            "harness_sessions.native_process_gone_at (TIMESTAMPTZ), last_tool_call_at "
+            "and last_heartbeat. A launch-only fixture does not contain these "
+            "relay liveness columns; include them before testing resume admission "
+            "rather than assuming launch_connection is a complete session schema."
+        ),
     },
     "session_tool_calls": {
         "columns": [

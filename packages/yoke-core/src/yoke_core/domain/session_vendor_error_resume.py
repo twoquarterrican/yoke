@@ -8,7 +8,8 @@ it did — including which client build the resumed turn runs on, because
 the incident this exists for was cured by a client update mid-outage and
 "which binary served the retry" is the first thing an operator asks.
 
-Injection is the only side effect. A resume that the wake path refuses is
+Capacity failures also launch a same-level successor, excluding the refused
+model and retaining custody until exact registration. A resume the wake path refuses is
 named and left for the next poll rather than retried here, and it does not
 consume an attempt, because nothing reached the session.
 """
@@ -119,7 +120,8 @@ def _resume_notice(state: Mapping[str, Any]) -> str:
         "check `git log` and `git status` in your lane, re-read the item's "
         "Progress Log for where you were, and carry on. If the same failure "
         f"repeats, this resume is attempt {int(state.get('attempts') or 0) + 1} "
-        f"of {state.get('budget')} before the seat is asked to step in."
+        f"of {state.get('budget')}; exhausted model-capacity failures move to another "
+        "same-level model, and other exhausted failures ask steering to step in."
     )
 
 
@@ -133,6 +135,7 @@ def resume_vendor_error_sessions(
 ) -> Dict[str, Any]:
     """Resume the sessions whose backoff has elapsed; name every refusal.
 
+    Capacity states use ordinary level placement and launch admission.
     Each resume goes through the ordinary explicit stopped-route wake, so
     it inherits that path's route qualification, its one-wake-in-flight
     guard, and its delivery record — this module decides *whether* to
@@ -150,11 +153,24 @@ def resume_vendor_error_sessions(
         authorized_projects=authorized_projects,
         now=current,
     )
-    due = [state for state in states if state["status"] == "due"]
+    due = [state for state in states if state["status"] in {"due", "relaunch_due"}]
     resumed: List[str] = []
     refused: List[Dict[str, Any]] = []
+    relaunched: List[Dict[str, Any]] = []
     for state in due[:MAX_RESUMES_PER_POLL]:
         session_id = str(state["session_id"])
+        if state["status"] == "relaunch_due":
+            from yoke_core.domain.session_capacity_recovery import (
+                relaunch_capacity_worker,
+            )
+
+            result = relaunch_capacity_worker(conn, state=state, now=current)
+            (
+                refused
+                if result.get("status") == "capacity_recovery_refused"
+                else relaunched
+            ).append(result)
+            continue
         # Reserve before waking. Two pollers can see the same due session,
         # and a poller can die after the wake lands; both are the same
         # hazard from the budget's point of view, and one statement that
@@ -226,6 +242,7 @@ def resume_vendor_error_sessions(
         resumed.append(session_id)
     return {
         "resumed": resumed,
+        "relaunched": relaunched,
         "refused": refused,
         "states": states,
         "deferred": max(0, len(due) - MAX_RESUMES_PER_POLL),

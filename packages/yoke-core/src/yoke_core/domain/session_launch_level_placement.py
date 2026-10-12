@@ -17,7 +17,7 @@ The choice, in order:
 When no option can launch anywhere, the launch is refused with every option
 and the pool or eligibility rule that blocked it. The Levels page previews its
 next launch through here, so it never predicts a different answer. A level
-never borrows another level's options: steering decides whether to relaunch.
+never borrows another level's options; capacity recovery excludes the refused model.
 """
 
 from __future__ import annotations
@@ -258,6 +258,7 @@ def place_level(
     machine_id: str | None,
     now: datetime,
     eligibility: LaunchEligibilityPort,
+    excluded_models: tuple[str, ...] = (),
 ) -> LevelPlacement:
     """Weigh every option of ``level`` and choose one, or say why none fits."""
     now = as_utc(now)
@@ -275,6 +276,14 @@ def place_level(
         now=now,
         eligibility=eligibility,
     )
+    from yoke_core.domain.session_capacity_recovery import capacity_model_key
+
+    weighed = [
+        replace(c, blocked="model_capacity_excluded: provider refused this model")
+        if capacity_model_key(c.surface, c.model) in excluded_models
+        else c
+        for c in weighed
+    ]
     open_ = [candidate for candidate in weighed if candidate.blocked is None]
     if not open_:
         return LevelPlacement(

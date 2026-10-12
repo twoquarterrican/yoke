@@ -196,6 +196,9 @@ def bind_launch_to_session(
     was created.
     """
     require_exact_launch_session(launch, session_id, facts)
+    from yoke_core.domain.session_capacity_claim_transfer import transfer_capacity_claim
+
+    transfer_capacity_claim(conn, launch=launch, session_id=session_id, now=now)
     hold_launch_registration_grace(conn, session_id, now=now)
     extend_launch_message_expiry(
         conn, message_id=launch.message_id, expires_at=launch.deadline_at
