@@ -17,6 +17,7 @@ from yoke_contracts.session_control.plan_limits import (
     unknown_window,
 )
 from yoke_core.domain import session_launch_level_placement as placement_module
+from yoke_core.domain.session_launch_machine_models import machine_native_models
 from yoke_core.domain.universe_levels import (
     create_universe_settings_table,
     write_universe_levels,
@@ -109,6 +110,7 @@ def add_surface(
     windows: list[dict[str, Any]] | None = None,
 ) -> None:
     """One relay on ``machine_id`` offering ``surface`` with these meters."""
+    readings = machine_native_models(conn, machine_id=machine_id)
     add_relay(
         conn,
         relay_id=f"relay-{machine_id}-{surface}",
@@ -123,9 +125,10 @@ def add_surface(
     reading = models_reading(
         surface, NATIVE_MODELS[surface], source="native fixture", observed_at=NOW
     )
+    readings[surface] = reading
     conn.execute(
-        "UPDATE session_relays SET surface_native_models = ? WHERE relay_id = ?",
-        (json.dumps({surface: reading}), f"relay-{machine_id}-{surface}"),
+        "UPDATE session_relays SET surface_native_models = ? WHERE machine_id = ?",
+        (json.dumps(readings), machine_id),
     )
     conn.commit()
 
