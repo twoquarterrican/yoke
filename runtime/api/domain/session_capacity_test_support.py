@@ -31,7 +31,12 @@ CLAIM_ID = 17
 
 
 def capacity_connection(
-    monkeypatch, *, alternative=True, error="server overloaded", attempts=3
+    monkeypatch,
+    *,
+    alternative=True,
+    alternative_machine="m-codex",
+    error="server overloaded",
+    attempts=3,
 ):
     options = (CODEX_SOL, CLAUDE_OPUS) if alternative else (CODEX_SOL,)
     conn = level_connection(*options)
@@ -66,7 +71,7 @@ def capacity_connection(
     )
     add_surface(conn, "m-codex", "codex-cli", [weekly(95)])
     if alternative:
-        add_surface(conn, "m-claude", "claude-cli", [weekly(40)])
+        add_surface(conn, alternative_machine, "claude-cli", [weekly(40)])
     record_native_turn_end(
         conn,
         PREDECESSOR,

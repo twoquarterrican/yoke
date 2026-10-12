@@ -23,7 +23,7 @@ def _successor(monkeypatch):
     conn, _ = capacity_connection(monkeypatch)
     result = relaunch_capacity_worker(conn, state=state(conn), now=CURRENT)
     conn.execute(
-        "INSERT INTO harness_sessions (session_id,project_id,executor_surface,machine_id,model) VALUES ('successor',10,'claude-cli','m-claude','claude-opus-5-5')"
+        "INSERT INTO harness_sessions (session_id,project_id,executor_surface,machine_id,model) VALUES ('successor',10,'claude-cli','m-codex','claude-opus-5-5')"
     )
     conn.commit()
     # Attribution's Postgres-only statements are independently tested; retain

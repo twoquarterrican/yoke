@@ -73,10 +73,13 @@ def admit_capacity_predecessor(
     excluded = capacity_model_key(state["executor_surface"], state["model"])
     if (
         request.level != state["execution_level"]
+        or request.machine_id != state["machine_id"]
         or auth.actor_id != state["actor_id"]
         or excluded not in request.excluded_models
     ):
-        _refuse("successor must preserve actor and level and exclude the refused model")
+        _refuse(
+            "successor must preserve actor, level and lane machine and exclude the refused model"
+        )
     return {
         "predecessor_session_id": predecessor,
         "claim_id": holder["claim_id"],
@@ -121,6 +124,8 @@ def transfer_capacity_claim(
         _refuse("predecessor performed new work after the capacity observation")
     if state["actor_id"] != launch.requester_actor_id:
         _refuse("predecessor actor changed")
+    if state["machine_id"] != launch.assigned_machine_id:
+        _refuse("predecessor lane machine changed")
     target_actor = conn.execute(
         f"SELECT actor_id FROM harness_sessions WHERE session_id={p}", (session_id,)
     ).fetchone()

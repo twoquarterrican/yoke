@@ -29,6 +29,7 @@ def test_exhausted_overload_relaunches_different_same_level_model_once(monkeypat
     assert len(outcome["relaunched"]) == 1
     launch = conn.execute("SELECT * FROM session_launches").fetchone()
     assert launch["requested_level"] == "SENIOR"
+    assert launch["requested_machine_id"] == launch["assigned_machine_id"] == "m-codex"
     assert launch["resolved_model"] == "claude-opus-5-5"
     assert launch["requester_actor_id"] == 1
     placement = json.loads(launch["level_placement"])
@@ -77,6 +78,26 @@ def test_no_alternative_preserves_claim_and_surfaces_named_refusal_to_steering(
     assert "level_no_capacity" in _next_actor(rows[0])
     assert "Relaunch at another level" in _next_actor(rows[0])
     assert state(conn)["status"] == "capacity_recovery_refused"
+
+
+def test_remote_alternative_refuses_when_local_model_overloaded(monkeypatch):
+    conn, _ = capacity_connection(monkeypatch, alternative_machine="m-remote")
+    result = relaunch_capacity_worker(conn, state=state(conn), now=CURRENT)
+    assert result["code"] == "level_no_capacity"
+    assert conn.execute("SELECT COUNT(*) FROM session_launches").fetchone()[0] == 0
+    assert claim(conn)[1] == PREDECESSOR
+
+
+def test_placeholder_model_requires_identity_repair_before_relaunch(monkeypatch):
+    conn, _ = capacity_connection(monkeypatch)
+    conn.execute(
+        "UPDATE harness_sessions SET model='default' WHERE session_id=?", (PREDECESSOR,)
+    )
+    conn.commit()
+    result = relaunch_capacity_worker(conn, state=state(conn), now=CURRENT)
+    assert result["code"] == "capacity_recovery_identity_missing"
+    assert state(conn)["status"] == "capacity_recovery_refused"
+    assert claim(conn)[1] == PREDECESSOR
 
 
 def test_successor_launch_failure_is_actionable_and_does_not_loop(monkeypatch):

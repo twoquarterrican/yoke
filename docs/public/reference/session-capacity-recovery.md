@@ -6,10 +6,12 @@ retain the existing one-, five-, and fifteen-minute retries; exhausting those
 retries starts the same recovery. Authentication, quota and client-build errors
 retain their own named handling.
 
-The successor uses the worker's current execution level and actor. Placement
+The successor uses the worker's current execution level, actor and machine. Placement
 excludes the overloaded model across machines and native effort/speed selectors,
 then applies the normal configured quota order, eligibility, spread and headroom
 rules. It never moves work to another level automatically.
+Keeping the machine pin preserves access to the registered lane and dirty files;
+an alternative available only on another machine is refused for steering to handle.
 
 Custody stays with the stopped predecessor until the exact successor registers.
 Registration transfers the same exclusive item claim, archives the predecessor's

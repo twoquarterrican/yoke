@@ -7,6 +7,7 @@ import logging
 from typing import Any, Mapping
 
 from yoke_contracts.session_control.models import LaunchCreateRequest
+from yoke_contracts.session_model_facts import is_placeholder_model
 from yoke_contracts.session_control.native_model_parsers import (
     cursor_selector_without_effort,
 )
@@ -135,13 +136,14 @@ def relaunch_capacity_worker(
             )
         if (
             not state.get("execution_level")
-            or not state.get("model")
+            or is_placeholder_model(state.get("model"))
             or not state.get("actor_id")
+            or not state.get("machine_id")
         ):
             raise SessionLaunchError(
                 "capacity_recovery_identity_missing",
                 (
-                    "Worker model, actor or level is unresolved. Recovery: steering must "
+                    "Worker model, actor, level or machine is unresolved. Recovery: steering must "
                     "correct the session identity before restaffing at its required level."
                 ),
             )
@@ -178,6 +180,7 @@ def relaunch_capacity_worker(
         request = replace(
             request,
             level=str(state["execution_level"]),
+            machine_id=str(state["machine_id"]),
             excluded_models=_excluded_models(conn, state),
             capacity_predecessor_session_id=str(state["session_id"]),
         )
