@@ -37,6 +37,10 @@ COMBINED_SHA = "3" * 40
 def test_no_posture_queue_handoff_stamps_ci_backed_merge(test_db, monkeypatch):
     """The queue receipt creates the only CI requirement this Dash needs."""
     _isolate_status_effects(monkeypatch)
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_target_sha",
+        lambda *_a: MERGE_SHA,
+    )
     item_id = 9601
     insert_item(
         test_db,

@@ -10,6 +10,8 @@ what the record says instead.
 
 from __future__ import annotations
 
+from runtime.api.domain.standalone_merge_simulation_support import integrate_candidate
+
 import json as json
 import subprocess
 from pathlib import Path as Path
@@ -128,7 +130,7 @@ def _wire_merge(monkeypatch: pytest.MonkeyPatch, repo: Path, item: dict) -> None
     )
     monkeypatch.setattr(sim, "sync_item_to_github", lambda item_id: None)
     monkeypatch.setattr(sim, "stamp_merged_at", lambda item_id, **_kwargs: None)
-    monkeypatch.setattr(sim, "_run_merge_engine", lambda **_k: (0, ""))
+    monkeypatch.setattr(sim, "_run_merge_engine", integrate_candidate)
 
 
 class TestEvidenceWriteRetry:

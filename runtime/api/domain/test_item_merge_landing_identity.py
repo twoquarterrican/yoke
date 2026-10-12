@@ -149,3 +149,84 @@ def test_checkout_mapping_to_a_relocated_lane_resolves_owning_main(
     monkeypatch.setattr(gates, "_get_base_branch", lambda *_a: "main")
     resolved, target = checkout_resolution.resolve_checkout({}, "")
     assert resolved == repo and target == "main"
+
+
+@pytest.mark.parametrize("no_changes", [False, True])
+def test_pr_cleanup_preserves_lane_without_fresh_remote_proof(
+    checkout, monkeypatch, no_changes
+):
+    from yoke_core.engines import merge_worktree as engine
+
+    repo, _, candidate, _, _, _ = checkout
+    lane = repo / "preserved-lane"
+    lane.mkdir()
+    monkeypatch.setattr(engine, "_print", lambda *_a, **_kw: None)
+    monkeypatch.setattr(engine, "_emit_merge_event", lambda *_a, **_kw: None)
+    monkeypatch.setattr(
+        engine,
+        "_run_git",
+        lambda *_a, **_kw: SimpleNamespace(returncode=0, stdout=candidate, stderr=""),
+    )
+    ctx = MergeContext(
+        args=MergeArgs(branch="ITEM-1", target="main"),
+        repo_root=str(repo),
+        worktree_path=str(lane),
+    )
+    assert engine._post_merge_cleanup(ctx, no_changes=no_changes) == 1
+    assert lane.is_dir()
+
+
+def test_retry_cannot_converge_on_an_unpublished_local_landing(checkout, monkeypatch):
+    from yoke_core.domain import standalone_item_merge_converge as convergence
+    from yoke_core.domain.standalone_item_merge_landed import LandedLane
+
+    repo, _, candidate, records, stamps, failures = checkout
+    monkeypatch.setattr(convergence, "stale_unlanded_work", lambda **_kw: "")
+    monkeypatch.setattr(convergence.git, "publish", lambda *_a: (False, "denied"))
+    result = convergence.converge(
+        item_id=7,
+        project="sample",
+        repo_root=str(repo),
+        lane=LandedLane(branch="ITEM-1", target="main", commit_sha=candidate),
+    )
+    assert not result.ok and "merge_candidate_not_landed" in result.error
+    assert not records and not stamps and failures
+
+
+def test_remote_tip_is_recorded_when_main_advanced_after_the_landing(
+    checkout, monkeypatch
+):
+    from yoke_core.domain.merge_queue_batch_receipt import BatchReceipt
+
+    repo, remote, candidate, records, _, _ = checkout
+    (repo / "neighbor.txt").write_text("neighbor\n")
+    git(repo, "add", "neighbor.txt")
+    git(repo, "commit", "-m", "advance default branch")
+    git(repo, "push", "origin", "main")
+    tip = git(remote, "rev-parse", "main")
+    monkeypatch.setattr(
+        queue,
+        "read_recorded_batch",
+        lambda *_a, **_kw: BatchReceipt(
+            pr_num="42",
+            merge_sha=candidate,
+            head_sha=candidate,
+            run_url="https://runs/42",
+        ),
+    )
+    monkeypatch.setattr(
+        queue, "read_pr_changed_files", lambda *_a: (("feature.txt",), "")
+    )
+    monkeypatch.setattr(queue, "repoint_to_landing_carrier", lambda *_a, **_kw: "")
+    monkeypatch.setattr(queue, "stamp_merged_at", lambda *_a, **_kw: None)
+    monkeypatch.setattr(queue, "fast_forward_main_checkout", lambda *_a: "")
+    result = queue.record_landing(
+        MergeContext(
+            args=MergeArgs(branch="ITEM-1", target="main"), repo_root=str(repo)
+        ),
+        item_id=7,
+        commit_sha=candidate,
+        pr_num="42",
+    )
+    assert result.merge_sha == tip and records[-1].merge_sha == tip
+    assert result.receipt_commit_sha == candidate

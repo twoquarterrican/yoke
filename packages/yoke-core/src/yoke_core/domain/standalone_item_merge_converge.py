@@ -154,7 +154,9 @@ def converge(
             pushed=pushed,
             warnings=tuple(warnings),
         )
-    stamp_error = stamp_merged_at(item_id, repo_root=repo_root, merge_sha=merge_sha)
+    stamp_error = stamp_merged_at(
+        item_id, repo_root=repo_root, merge_sha=lane.merge_sha or lane.commit_sha
+    )
     if stamp_error:
         warnings.append(f"merged_at not recorded: {stamp_error}")
     receipt_note = receipts.record(

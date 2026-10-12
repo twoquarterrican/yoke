@@ -30,7 +30,7 @@ from yoke_core.domain.work_claim_targets import make_item_target
 
 
 @pytest.mark.parametrize("layout", ["tracking-ref", "unfetched-remote", "no-remote"])
-def test_local_merge_item_records_evidence_and_reaches_done(
+def test_local_merge_item_closes_only_with_target_ancestry_proof(
     monkeypatch,
     tmp_path,
     test_db,
@@ -39,6 +39,9 @@ def test_local_merge_item_records_evidence_and_reaches_done(
 ):
     repo, lane, _ctx = make_local_checkout(monkeypatch, tmp_path, layout)
     source = git(lane, "rev-parse", "HEAD")
+    monkeypatch.setattr(
+        cli.merge_domain.receipts, "record_failure", lambda *_a, **_kw: ""
+    )
     item_id = 7
     session_id = "local-merge-test"
     insert_item(
@@ -139,21 +142,26 @@ def test_local_merge_item_records_evidence_and_reaches_done(
 
     monkeypatch.setattr(cli.close_out.terminal, "call_dispatcher", lifecycle_dispatch)
     monkeypatch.setattr(cli.evidence, "call_dispatcher", evidence_dispatch)
-    assert (
-        cli.run(
-            [
-                ref,
-                "--session-id",
-                session_id,
-                "--result",
-                "merged locally",
-                "--verification",
-                "credential-free Git ancestry and clean trees",
-                "--json",
-            ]
-        )
-        == 0
+    exit_code = cli.run(
+        [
+            ref,
+            "--session-id",
+            session_id,
+            "--result",
+            "merged locally",
+            "--verification",
+            "credential-free Git ancestry and clean trees",
+            "--json",
+        ]
     )
+    if layout != "no-remote":
+        assert exit_code == 1
+        assert not transitions
+        assert "merge_landing_fetch_failed" in capsys.readouterr().out
+        assert lane.is_dir()
+        return
+    assert exit_code == 0
+    source = git(lane, "rev-parse", "HEAD")
     # Engine progress precedes the JSON envelope on stdout.
     captured = capsys.readouterr()
     stdout = captured.out

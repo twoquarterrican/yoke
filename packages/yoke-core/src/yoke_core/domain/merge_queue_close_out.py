@@ -286,7 +286,9 @@ def record_landing(
         warnings.append(repoint_note)
 
     stamp_error = stamp_merged_at(
-        item_id, repo_root=ctx.repo_root or "", merge_sha=remote_sha
+        item_id,
+        repo_root=ctx.repo_root or "",
+        merge_sha=landing_sha or (batch.merge_sha if batch else receipt_commit),
     )
     if stamp_error:
         warnings.append(f"merged_at not recorded: {stamp_error}")

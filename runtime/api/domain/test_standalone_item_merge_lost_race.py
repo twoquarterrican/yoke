@@ -11,6 +11,8 @@ which would otherwise re-claim and re-transition a terminal item.
 
 from __future__ import annotations
 
+from runtime.api.domain.standalone_merge_simulation_support import integrate_candidate
+
 import json
 import subprocess
 from pathlib import Path
@@ -118,7 +120,7 @@ def _close_out_racing(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setattr(sim, "sync_item_to_github", lambda item_id: None)
     monkeypatch.setattr(sim, "stamp_merged_at", lambda item_id, **_kwargs: None)
-    monkeypatch.setattr(sim, "_run_merge_engine", lambda **_k: (0, ""))
+    monkeypatch.setattr(sim, "_run_merge_engine", integrate_candidate)
 
 
 def _run_close_out(capsys: pytest.CaptureFixture) -> tuple[int, str]:

@@ -63,8 +63,6 @@ class CheckRun:
 
 @dataclass(frozen=True)
 class PostPushVerdict:
-    """What the bounded observer proved about one pushed merge commit."""
-
     kind: str
     runs: tuple[CheckRun, ...] = field(default=())
     detail: str = ""
@@ -117,7 +115,6 @@ def read_check_runs(
     merge_sha: str,
     authority: str,
 ) -> tuple[Optional[tuple[CheckRun, ...]], str]:
-    """Read every check run for ``merge_sha`` under the merge's authority."""
     ctx = MergeContext(args=MergeArgs(branch=""), project=project)
     try:
         auth = resolve_auth(
@@ -185,7 +182,6 @@ def await_post_push_checks(
     sleep: Callable[[float], None] = time.sleep,
     monotonic: Callable[[], float] = time.monotonic,
 ) -> PostPushVerdict:
-    """Discover and then poll checks without violating the 60-second floor."""
     discovery_timeout = float(_setting_seconds(DISCOVERY_TIMEOUT_KEY))
     conclusion_timeout = float(_setting_seconds(CONCLUSION_TIMEOUT_KEY))
     started = monotonic()
@@ -246,7 +242,15 @@ def complete(
             not github_merge_enabled(project) if git.has_remote(repo_root) else True
         )
     except (LandingUnverified, RuntimeError) as exc:
-        reason = str(exc)
+        reason = (
+            str(exc)
+            if isinstance(exc, LandingUnverified)
+            else (
+                f"github_merge_mode_unreadable: {exc}. Repair the project GitHub "
+                f"binding status read, then retry {resume_command or f'yoke merge item {branch}'}; "
+                "the lane is retained and close-out has not advanced."
+            )
+        )
         note = receipts.record_failure(
             item_id,
             branch=branch,
@@ -268,7 +272,12 @@ def complete(
             error=reason,
             warnings=tuple(notes),
         )
-    stamp_error = stamp_merged_at(item_id, repo_root=repo_root, merge_sha=merge_sha)
+    landing_commit = (
+        receipts.landing_merge_commit(repo_root, merge_sha, commit_sha) or commit_sha
+    )
+    stamp_error = stamp_merged_at(
+        item_id, repo_root=repo_root, merge_sha=landing_commit
+    )
     if stamp_error:
         notes.append(f"merged_at not recorded: {stamp_error}")
 
@@ -337,14 +346,3 @@ def complete(
         publication_message=narration,
         warnings=tuple(notes),
     )
-
-
-__all__ = [
-    "CONCLUSION_TIMEOUT_KEY",
-    "DISCOVERY_TIMEOUT_KEY",
-    "CheckRun",
-    "PostPushVerdict",
-    "await_post_push_checks",
-    "complete",
-    "read_check_runs",
-]

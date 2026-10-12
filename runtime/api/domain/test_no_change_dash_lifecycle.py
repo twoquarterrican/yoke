@@ -165,6 +165,7 @@ def test_no_change_merge_records_base_identity_and_closes_dash(
         ),
     )
     monkeypatch.setattr(landed.git, "has_remote", lambda *_a: False)
+    monkeypatch.setattr(merge_cli.converge, "verified_target_sha", lambda *_a: LANE_SHA)
     monkeypatch.setattr(
         close_out_transition,
         "close_out_route",
@@ -179,12 +180,12 @@ def test_no_change_merge_records_base_identity_and_closes_dash(
     monkeypatch.setattr(
         merge_domain,
         "stamp_merged_at",
-        lambda _item_id: None,
+        lambda _item_id, **_kwargs: None,
     )
     monkeypatch.setattr(
         merge_domain,
         "sync_item_to_github",
-        lambda _item_id: None,
+        lambda _item_id, **_kwargs: None,
     )
     monkeypatch.setattr(terminal.git, "is_landed", lambda *_a: True)
     monkeypatch.setattr(terminal.recovery, "claim_error", lambda *_a: "")

@@ -110,7 +110,7 @@ def test_unresolved_ci_still_stamps_the_verified_remote_tip(
         pr_num="42",
     )
 
-    assert stamped == {"item_id": 7, "repo_root": REPO_ROOT, "merge_sha": MERGE_SHA}
+    assert stamped == {"item_id": 7, "repo_root": REPO_ROOT, "merge_sha": LANE_SHA}
 
 
 def test_a_checkout_less_context_refuses_without_stamping(monkeypatch) -> None:
