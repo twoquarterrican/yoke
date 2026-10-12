@@ -122,8 +122,15 @@ def run_smoke(
         )
 
         status = run_json(
-            [str(yoke), "status", "--config", str(config_path),
-             "--repo-root", str(clone), "--json"],
+            [
+                str(yoke),
+                "status",
+                "--config",
+                str(config_path),
+                "--repo-root",
+                str(clone),
+                "--json",
+            ],
             step="yoke-status",
             cwd=clone,
             commands=commands,
@@ -135,9 +142,12 @@ def run_smoke(
             step="direct-python-read-write",
             cwd=clone,
             commands=commands,
-            env={**env, "SMOKE_PROJECT_ID": str(project_id),
-                 "SMOKE_EVENT_NAME": SMOKE_EVENT_NAME,
-                 "SMOKE_EVENT_TYPE": SMOKE_EVENT_TYPE},
+            env={
+                **env,
+                "SMOKE_PROJECT_ID": str(project_id),
+                "SMOKE_EVENT_NAME": SMOKE_EVENT_NAME,
+                "SMOKE_EVENT_TYPE": SMOKE_EVENT_TYPE,
+            },
         )
         if not direct.get("write_ok"):
             raise SmokeError(
@@ -176,12 +186,17 @@ def build_machine_config(
 ) -> dict[str, Any]:
     payload = dict(example_payload)
     connections = payload.get("connections")
-    base = (dict(connections.get(env_name) or {})
-            if isinstance(connections, Mapping) else {})
-    base.update({
-        "transport": "local-postgres",
-        "credential_source": {"kind": "dsn_file", "path": str(copied_dsn)},
-    })
+    base = (
+        dict(connections.get(env_name) or {})
+        if isinstance(connections, Mapping)
+        else {}
+    )
+    base.update(
+        {
+            "transport": "local-postgres",
+            "credential_source": {"kind": "dsn_file", "path": str(copied_dsn)},
+        }
+    )
     payload["active_env"] = env_name
     payload["connections"] = {env_name: base}
     payload["temp_root"] = str(temp_root)
@@ -190,7 +205,6 @@ def build_machine_config(
         {
             "checkout": str(clone_root.resolve()),
             "project_id": project_id,
-            "env": env_name,
         }
     ]
     payload.setdefault("settings", {})
@@ -244,8 +258,16 @@ def _cli_readback_report(
     if not item_get.get("success"):
         raise SmokeError("yoke items get failed in clean clone")
     event_query = run_json(
-        [str(yoke), "events", "query", "--event-name", SMOKE_EVENT_NAME,
-         "--limit", "1", "--json"],
+        [
+            str(yoke),
+            "events",
+            "query",
+            "--event-name",
+            SMOKE_EVENT_NAME,
+            "--limit",
+            "1",
+            "--json",
+        ],
         step="yoke-events-query",
         cwd=clone,
         commands=commands,

@@ -199,7 +199,7 @@ def test_helper_cleanup_retains_and_reports_lookalike_user_command(
     ).stdout.splitlines() == ["", lookalike]
 
 
-def test_disconnect_removes_helpers_from_checkouts_in_every_env(
+def test_disconnect_removes_helpers_from_all_registered_checkouts(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -225,7 +225,6 @@ def test_disconnect_removes_helpers_from_checkouts_in_every_env(
             "projects": [
                 {"checkout": str(first), "project_id": 1},
                 {"checkout": str(second), "project_id": 2},
-                {"checkout": str(second), "project_id": 3},
             ],
         }
     )
