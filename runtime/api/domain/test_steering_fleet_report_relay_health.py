@@ -52,7 +52,7 @@ def test_quarantine_is_actionable_in_text_and_projection(fleet) -> None:
     assert "rejected report(s) quarantined" in rendered
     assert "run `yoke relay status`" in rendered
     assert "restore wire/transport compatibility" in rendered
-    assert "do not replay report_conflict" in rendered
+    assert "do not replay server-settled reports" in rendered
     assert projected["relay_health"][0]["state"] == "quarantined"
     assert projected["relay_health"][0]["error_code"] == "payload_invalid"
 
@@ -103,6 +103,79 @@ def test_settled_conflict_quarantine_is_not_fleet_actionable(fleet) -> None:
     assert "restore wire/transport compatibility" not in rendered
 
 
+def test_all_server_settled_quarantines_are_not_fleet_actionable(fleet) -> None:
+    codes = [
+        "report_conflict",
+        "report_conflict",
+        "attempt_missing",
+        "relay_lease_expired",
+        "invalid_state",
+        "lease_mismatch",
+    ]
+    _publish(
+        fleet,
+        {
+            "quarantined_reports": [
+                {
+                    "report_id": f"settled-{index}",
+                    "job_kind": "launch",
+                    "error_code": code,
+                    "attempts": 3,
+                    "quarantined_at": NOW,
+                }
+                for index, code in enumerate(codes)
+            ]
+        },
+    )
+
+    report = compose(fleet)
+
+    assert report.relay_health == ()
+    assert "attention required" not in report_body(report)
+
+
+@pytest.mark.parametrize(
+    "contract_code",
+    ["payload_invalid", "relay_report_payload_invalid", "request_validation_failed"],
+)
+def test_contract_rejection_among_settled_quarantines_stays_actionable(
+    fleet, contract_code: str
+) -> None:
+    _publish(
+        fleet,
+        {
+            "quarantined_reports": [
+                {
+                    "report_id": "settled-lease",
+                    "job_kind": "launch",
+                    "error_code": "relay_lease_expired",
+                    "attempts": 3,
+                    "quarantined_at": NOW,
+                },
+                {
+                    "report_id": "contract",
+                    "job_kind": "wake",
+                    "error_code": contract_code,
+                    "attempts": 3,
+                    "quarantined_at": NOW,
+                },
+                {
+                    "report_id": "settled-missing",
+                    "job_kind": "launch",
+                    "error_code": "attempt_missing",
+                    "attempts": 3,
+                    "quarantined_at": NOW,
+                },
+            ]
+        },
+    )
+
+    report = compose(fleet)
+
+    assert "attention required" in report_body(report)
+    assert report_dict(report)["relay_health"][0]["error_code"] == contract_code
+
+
 def test_mixed_quarantines_stay_actionable_and_name_unsettled_code(fleet) -> None:
     _publish(
         fleet,
@@ -133,7 +206,7 @@ def test_mixed_quarantines_stay_actionable_and_name_unsettled_code(fleet) -> Non
     assert report.relay_health
     assert "attention required" in rendered
     assert "restore wire/transport compatibility" in rendered
-    assert "do not replay report_conflict" in rendered
+    assert "do not replay server-settled reports" in rendered
     assert projected["error_code"] == "payload_invalid"
 
 

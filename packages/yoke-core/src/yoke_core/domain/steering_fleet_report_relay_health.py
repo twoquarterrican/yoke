@@ -12,8 +12,9 @@ from typing import Any
 
 from yoke_contracts.session_control.relay_health import (
     RELAY_NEWER_THAN_SERVER,
+    SETTLED_RELAY_REPORT_CODES,
     fleet_relay_error_code,
-    retained_settled_conflicts_only,
+    retained_settled_reports_only,
     sanitize_relay_health,
 )
 from yoke_core.domain.steering_fleet_report_detectors import age_seconds, marker
@@ -76,7 +77,7 @@ def relay_health_conditions(
         if not _serves(row["project_checkouts"], project_id):
             continue
         health = sanitize_relay_health(_document(row["relay_health"], {}))
-        if retained_settled_conflicts_only(health):
+        if retained_settled_reports_only(health):
             continue
         failure = health.get("report_failure")
         failure = failure if isinstance(failure, dict) else {}
@@ -167,7 +168,8 @@ def _recovery_clause(entry: RelayHealthCondition) -> str:
     if entry.state == "quarantined":
         return (
             f"{status}; restore wire/transport compatibility for contract "
-            "rejections; do not replay report_conflict"
+            "rejections; do not replay server-settled reports "
+            f"({', '.join(sorted(SETTLED_RELAY_REPORT_CODES))})"
         )
     return f"{status}; restore control-plane transport, then leave the relay running"
 
