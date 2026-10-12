@@ -3,9 +3,10 @@
 A flow's gate branch is the target env's declared long-lived deploy branch
 (``environments.settings.git.branch``: main<->prod, stage<->stage); flows
 without a target env, and envs that declare no branch, gate against the
-project base branch. The merged gate and the CI gate both verify against
-that one resolved branch, except for an ephemeral candidate, which has no
-branch to be merged into and is CI-verified by its exact commit instead.
+project base branch. The merged gate verifies containment in the run’s
+frozen source commit.
+The CI gate uses the resolved branch and exact source commit; ephemeral
+candidates skip merged verification.
 """
 
 from __future__ import annotations
@@ -64,11 +65,12 @@ def _resolve_and_verify_branch(
     project_repo_path: str,
     *,
     target_branch: str,
+    source_sha: str,
     first_branch: str = "",
     first_item_label: str = "",
     sd: Optional[str] = None,
 ) -> Tuple[bool, str, str]:
-    """Resolve the first member item's branch; verify it landed on *target_branch*.
+    """Resolve the first member branch; verify containment in the frozen source.
 
     ``target_branch`` is the flow's gate branch from
     :func:`resolve_flow_gate_branch`. Item-less runs (environment-level
@@ -95,7 +97,7 @@ def _resolve_and_verify_branch(
         branch,
         first_item,
         check_repo,
-        target_branch,
+        source_sha,
         public_ref=first_item_label,
     )
     if msg:
@@ -107,20 +109,32 @@ def _verify_branch_merged(
     branch: str,
     first_item: str,
     repo_path: str,
-    target_branch: str,
+    source_sha: str,
     *,
     public_ref: str = "",
 ) -> Tuple[bool, str]:
-    """Check that branch commits exist on *target_branch*.
+    """Check branch ancestry or squash evidence in the frozen source commit.
 
     Returns (ok, message).  ``ok=True`` means proceed.
     """
     public_ref = public_ref or str(public_item_target(first_item).public_ref)
     grep_pattern = public_ref
+    if (
+        len(source_sha) != 40
+        or _run_cmd(
+            ["git", "-C", repo_path, "cat-file", "-e", f"{source_sha}^{{commit}}"]
+        ).returncode
+        != 0
+    ):
+        return False, (
+            f"Blocked (release_source_unavailable): frozen source {source_sha!r} "
+            "is not a readable full commit. Restore the run's source commit in "
+            "the project checkout, or repair its release lineage, then retry."
+        )
     if not branch or branch == "null":
         return True, (
             f"Warning: {public_ref} has no branch set — cannot verify "
-            f"commits are on {target_branch}. Proceeding."
+            f"commits are on {source_sha}. Proceeding."
         )
 
     # Check if branch exists
@@ -136,7 +150,7 @@ def _verify_branch_merged(
                 "--oneline",
                 "-E",
                 f"--grep={grep_pattern}",
-                target_branch,
+                source_sha,
             ]
         )
         merge_found = r2.stdout.strip().split("\n")[0] if r2.stdout.strip() else ""
@@ -144,13 +158,13 @@ def _verify_branch_merged(
             return True, (
                 f"Warning: {public_ref} branch '{branch}' not found and "
                 f"no merge commit referencing {public_ref} found on "
-                f"{target_branch}. Proceeding with caution."
+                f"{source_sha}. Proceeding with caution."
             )
         return True, ""
 
     # Branch exists — check ancestry
     r = _run_cmd(
-        ["git", "-C", repo_path, "merge-base", "--is-ancestor", branch, target_branch]
+        ["git", "-C", repo_path, "merge-base", "--is-ancestor", branch, source_sha]
     )
     if r.returncode == 0:
         return True, ""
@@ -165,21 +179,21 @@ def _verify_branch_merged(
             "--oneline",
             "-E",
             f"--grep={grep_pattern}",
-            target_branch,
+            source_sha,
         ]
     )
     squash_evidence = r2.stdout.strip().split("\n")[0] if r2.stdout.strip() else ""
     if squash_evidence:
         return True, (
             f"Squash-merge detected for {public_ref} "
-            f"(branch exists but is not ancestor of {target_branch}). Proceeding."
+            f"(branch exists but is not ancestor of {source_sha}). Proceeding."
         )
 
     return False, (
-        f"Blocked: Cannot deploy — branch {branch} commits are not on {target_branch}.\n"
-        f"The deployment pipeline requires the item's code to be on the gate branch\n"
-        f"(the target env's declared deploy branch). Push and merge the branch into\n"
-        f"{target_branch} first, then re-run the pipeline."
+        f"Blocked (release_member_not_in_source): branch {branch} commits are not "
+        f"in frozen source {source_sha}.\n"
+        "Merge the member into the declared deploy branch and compose a new run "
+        "whose frozen source contains it; retrying this source cannot include it."
     )
 
 

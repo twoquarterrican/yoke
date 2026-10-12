@@ -145,7 +145,10 @@ learns the other's part from its own skill. The split is the whole rule:
   its candidate carries that no live or succeeded release already holds —
   whether the work landed since the last release or long before it — and
   validates before committing the run. Start revalidates before dispatch, so
-  membership needs no separate step:
+  membership needs no separate step. The pipeline checks member ancestry and
+  squash-merge evidence against the run’s frozen `release_lineage` commit,
+  independent of local deploy-branch refs. A missing member blocks with
+  `release_member_not_in_source`; merge it and compose a new run containing it:
   `yoke deployment-runs add-item RUN-ID PREFIX-N` is for the other case, an
   item whose code the candidate does not carry but which the run should still
   deliver, and `validate-composition` composes the run now and reports what
