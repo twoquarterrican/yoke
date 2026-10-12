@@ -32,4 +32,5 @@ sections:
       - reference/github-sync.md
       - reference/browser-scenarios.md
       - reference/browser-evidence.md
+      - reference/shared-files.md
       - reference/db-reference.md
