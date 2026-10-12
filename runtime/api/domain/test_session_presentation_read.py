@@ -117,3 +117,18 @@ def test_attested_roster_facts_outrank_requested_facts():
         records=RECORDS,
     )
     assert result["level_label"] == "JUNIOR"
+
+
+def test_embedded_observed_effort_outranks_requested_roster_effort():
+    from yoke_contracts.levels import default_levels
+
+    result = session_presentation(
+        {
+            "executor": "cursor",
+            "model": "grok-4.7-low-fast",
+            "requested_reasoning_effort": "high",
+        },
+        levels={None: default_levels()},
+        records=RECORDS,
+    )
+    assert result["level_label"] == "INTERN"

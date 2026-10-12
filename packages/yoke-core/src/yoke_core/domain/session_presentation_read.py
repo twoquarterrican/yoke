@@ -73,7 +73,9 @@ def session_presentation(
             executor=display_name,
             model=routing_model_of(row.get("model"), row.get("requested_model")),
             reasoning_effort=routing_effort_of(
-                row.get("reasoning_effort"), row.get("requested_reasoning_effort")
+                row.get("reasoning_effort"),
+                row.get("requested_reasoning_effort"),
+                row.get("model"),
             ),
             records=records,
         )
