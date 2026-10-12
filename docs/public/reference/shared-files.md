@@ -56,7 +56,7 @@ Each refusal carries a code and the step that fixes it:
 | `permission_denied` | Uploading needs `items.write` on the project. |
 | `project_not_found` | The project does not exist, or you lack `items.read` on it. |
 | `shared_file_not_found` | Nothing is stored at that path. Check the URL or upload the file again. |
-| `shared_file_not_portable` | A `*-db-admin` door has no bucket. Upload with `--env <https label>`. |
+| `shared_file_not_portable` | This connection reaches a universe that another server serves, and the project has no bucket. Upload through the https connection that serves the universe. |
 | `s3_configuration_invalid` | The bucket is declared but the `aws-admin` region or credentials are missing. Set them. |
 | `s3_upload_failed`, `s3_download_failed`, `artifact_broker_*` | The configured store failed. Yoke never falls back to disk. Retry after the store recovers. |
 | `function_version_skew` | The server predates `files.upload`. Upgrade the serving build. |
