@@ -266,6 +266,8 @@ def session_test_db(tmp_path, monkeypatch):
     target is the repointed DSN), the SML ``strategy/`` dir and any adjacent
     ``config`` file the test helpers read live under the same root.
     """
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    monkeypatch.setenv("YOKE_SCRATCH_ROOT", str(tmp_path / "scratch"))
     with init_test_db(tmp_path, apply_schema=_apply_session_schema) as db_path:
         # Create SML files so scheduler sees SML as coherent
         strategy_dir = os.path.join(str(tmp_path), "strategy")
