@@ -99,7 +99,7 @@ The `projects` list stores one checkout per project on this machine:
 
 Register it once with `yoke project register /work/my-project --project-id 7`.
 Checkout lookup does not depend on `--env`, `YOKE_ENV`, or `active_env`;
-HTTPS, paired DB-admin, stage, and local connections use the same entry.
+Every configured connection uses the same entry.
 Removing a connection keeps project checkouts. Moving an occupied project's
 checkout requires `--reassign` from a plain operator terminal.
 The config supports only this list shape and these two entry fields.
