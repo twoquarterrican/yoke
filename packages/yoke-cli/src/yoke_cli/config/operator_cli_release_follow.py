@@ -54,6 +54,8 @@ def follow_release(
         detail = ""
     except self_update.SelfUpdateError as exc:
         detail = str(exc)
+    except Exception as exc:  # noqa: BLE001 - the relay keeps serving; the record names it
+        detail = f"{type(exc).__name__}: {exc}"
     record["after"] = _version(run, yoke)
     if record["after"] == target:
         return _finish(record, state_dir, "updated")
