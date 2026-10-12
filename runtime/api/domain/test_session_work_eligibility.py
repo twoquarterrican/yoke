@@ -45,3 +45,42 @@ def test_unknown_or_below_all_options_refuses_with_recovery(configured, model, e
         )
     assert refusal.value.code == "SESSION_BELOW_INTERN"
     assert "Recovery:" in str(refusal.value)
+
+
+def test_steering_process_claim_never_reads_model_facts():
+    from yoke_core.domain.work_claim_targets import make_steering_target
+
+    admission.require_session_work_eligibility(
+        None, "unknown-session", make_steering_target(1)
+    )
+
+
+@pytest.mark.parametrize("work_required", [False, True])
+def test_launch_guard_exempts_only_itemless_steering(
+    configured, monkeypatch, work_required
+):
+    from types import SimpleNamespace
+    from yoke_core.domain import session_launch_request_storage as storage
+    from yoke_core.domain.session_launch_types import LaunchRequest, SessionLaunchError
+
+    selected = SimpleNamespace(model="unknown", reasoning_effort=None)
+    monkeypatch.setattr(storage, "resolve_machine_selection", lambda *a, **kw: selected)
+    request = LaunchRequest(
+        project_id=1,
+        executor_surface="cursor-cli",
+        instructions="Inspect",
+        idempotency_key="guard",
+        work_required=work_required,
+    )
+    relay = SimpleNamespace(machine_id="m1", surface="cursor-cli")
+    if work_required:
+        with pytest.raises(
+            SessionLaunchError, match="session_model_unknown"
+        ) as refusal:
+            storage.resolve_work_launch_selection(None, request=request, relay=relay)
+        assert refusal.value.code == "session_below_intern"
+    else:
+        assert (
+            storage.resolve_work_launch_selection(None, request=request, relay=relay)
+            is selected
+        )

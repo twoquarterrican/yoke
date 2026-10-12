@@ -27,10 +27,8 @@ _MARKER = "⚠️"
 
 def _option(model: str) -> dict:
     return {
-        "surface": "claude-cli",
         "model": model,
-        "reasoning_effort": "high",
-        "context_window_tokens": None,
+        "min_effort": "high",
     }
 
 

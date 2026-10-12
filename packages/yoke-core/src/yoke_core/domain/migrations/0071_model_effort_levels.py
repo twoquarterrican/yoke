@@ -68,8 +68,39 @@ def _decode(table, key, raw):
         ) from exc
 
 
+def _work_launches(conn):
+    if not all(
+        _table_exists(conn, name) for name in ("session_launches", "items", "projects")
+    ):
+        return ()
+    return conn.execute(
+        "SELECT l.launch_id,l.level_placement FROM session_launches l "
+        "WHERE l.requested_level IS NOT NULL OR EXISTS ("
+        "SELECT 1 FROM items i JOIN projects p ON p.id=i.project_id "
+        "WHERE i.project_id=l.project_id AND l.session_name LIKE "
+        "p.public_item_prefix || '-' || CAST(i.project_sequence AS TEXT) || ': %')"
+    ).fetchall()
+
+
+def _work_placement(raw):
+    try:
+        document = json_helper.loads_text(str(raw)) if raw else {}
+        if not isinstance(document, dict):
+            raise ValueError("launch placement must be an object")
+        return {**document, "work_required": True}
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "launch_work_convergence_invalid: repair the stored item launch placement before retrying rehearsal or boot"
+        ) from exc
+
+
 def apply(conn):
     p = "%s" if db_backend.connection_is_postgres(conn) else "?"
+    for launch_id, raw in _work_launches(conn):
+        conn.execute(
+            f"UPDATE session_launches SET level_placement={p} WHERE launch_id={p}",
+            (json_helper.dumps_compact(_work_placement(raw)), launch_id),
+        )
     for table, key_column, key, raw in _documents(conn):
         updated = json_helper.dumps_compact(_decode(table, key, raw))
         value_column = "value" if table == "universe_settings" else "settings"
@@ -90,6 +121,10 @@ def apply(conn):
 
 
 def invariants(conn):
+    for launch_id, raw in _work_launches(conn):
+        assert json_helper.loads_text(str(raw)) == _work_placement(raw), (
+            f"launch {launch_id} has unconverged work purpose"
+        )
     for table, _, key, raw in _documents(conn):
         original = json_helper.loads_text(str(raw))
         assert original == _decode(table, key, raw), (

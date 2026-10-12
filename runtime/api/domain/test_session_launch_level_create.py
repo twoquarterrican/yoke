@@ -92,12 +92,13 @@ def test_a_level_launch_stores_the_level_and_resolves_the_chosen_option() -> Non
     assert launch.selected_surface == "codex-cli"
     assert launch.assigned_machine_id == "m-codex"
     assert launch.resolved_model == CODEX_SOL["model"]
-    assert launch.resolved_reasoning_effort == CODEX_SOL["reasoning_effort"]
+    assert launch.resolved_reasoning_effort == CODEX_SOL["min_effort"]
     assert str(launch.placement_reason).startswith(f"level {LEVEL}: most headroom")
     evidence = json.loads(str(launch.level_placement))
     assert evidence["level"] == LEVEL
     assert evidence["chosen"]["surface"] == "codex-cli"
-    assert len(evidence["candidates"]) == 2
+    assert sum(candidate["chosen"] for candidate in evidence["candidates"]) == 1
+    assert evidence["work_required"] is True
 
 
 def test_the_public_record_names_a_level_selection_and_its_evidence() -> None:
