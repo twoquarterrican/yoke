@@ -18,6 +18,8 @@ from yoke_core.domain.qa_artifact_text_inline import (
 )
 
 READ_EXPIRES_S = 300
+#: The S3 object a row records is gone; only re-running the case restores it.
+EVIDENCE_MISSING = "evidence_missing"
 MAX_INLINE_BYTES = MAX_ARTIFACT_BYTES
 
 
@@ -163,11 +165,7 @@ def _s3_result(conn, row, handle: dict) -> tuple[dict, Optional[HandlerOutcome]]
             )
         except ArtifactBrokerError as exc:
             return {}, _error(exc.code, str(exc))
-        return {
-            "disposition": "ready",
-            "download_url": signed.url,
-            "expires_in_s": signed.expires_in,
-        }, None
+        return _probed(handle, signed.url, signed.expires_in)
     region = _aws_region(conn, int(row["project_id"]))
     credentials = _capability_credentials(str(row["project"]))
     if not region or credentials is None:
@@ -176,17 +174,46 @@ def _s3_result(conn, row, handle: dict) -> tuple[dict, Optional[HandlerOutcome]]
             "the configured project artifact store cannot mint a download "
             "URL because its aws-admin region or credentials are unavailable",
         )
+    url = presign_s3_url(
+        method="GET",
+        bucket=str(handle["bucket"]),
+        key=str(handle["key"]),
+        region=region,
+        credentials=credentials,
+        expires_s=READ_EXPIRES_S,
+    )
+    return _probed(handle, url, READ_EXPIRES_S)
+
+
+def _probed(
+    handle: dict, url: str, expires_in_s: int
+) -> tuple[dict, Optional[HandlerOutcome]]:
+    """Report ``ready`` only when the recorded object still exists.
+
+    A signed URL for a deleted object is a dead link, so the row recording
+    evidence that no longer exists is named ``evidence_missing`` instead.
+    """
+    from yoke_core.domain.signed_object_transfer import (
+        ObjectTransferError,
+        probe_signed_object,
+    )
+
+    try:
+        probe_signed_object(url, bucket=str(handle["bucket"]), key=str(handle["key"]))
+    except ObjectTransferError as exc:
+        if exc.code != "s3_object_missing":
+            return {}, _error(exc.code, str(exc))
+        return {
+            "disposition": EVIDENCE_MISSING,
+            "detail": (
+                f"{exc}; the recorded evidence no longer exists in the artifact "
+                "store. Re-run the QA case to capture it again."
+            ),
+        }, None
     return {
         "disposition": "ready",
-        "download_url": presign_s3_url(
-            method="GET",
-            bucket=str(handle["bucket"]),
-            key=str(handle["key"]),
-            region=region,
-            credentials=credentials,
-            expires_s=READ_EXPIRES_S,
-        ),
-        "expires_in_s": READ_EXPIRES_S,
+        "download_url": url,
+        "expires_in_s": expires_in_s,
     }, None
 
 
@@ -260,6 +287,7 @@ def handle_qa_artifact_read(
 
 
 __all__ = [
+    "EVIDENCE_MISSING",
     "QaArtifactReadRequest",
     "QaArtifactReadResponse",
     "handle_qa_artifact_read",

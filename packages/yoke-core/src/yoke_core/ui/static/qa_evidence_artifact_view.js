@@ -207,6 +207,7 @@ export function showArtifactResult(documentNode, host, artifact, result) {
     const state = {
       evidence_on_machine: `on ${result.machine || "capture machine"}`,
       evidence_not_portable: "not portable",
+      evidence_missing: "evidence missing",
       too_large: "too large",
       unavailable: "unavailable",
     }[disposition] || "unavailable";

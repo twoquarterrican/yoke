@@ -291,17 +291,7 @@ def _artifact_read_to_path(
                 print(f"yoke qa artifact read: {exc}", file=sys.stderr)
                 return 1
         else:
-            print(
-                "yoke qa artifact read: artifact "
-                f"{parsed.artifact_id} has no portable bytes to land "
-                f"(disposition={result.get('disposition') or 'unknown'}"
-                f"{_disposition_detail(result)}). On the machine that "
-                "captured it, run `yoke qa artifact rehome --requirement-id "
-                f"{parsed.requirement_id} --artifact-id {parsed.artifact_id}` "
-                "to move the recorded bytes into the store the read surface "
-                "serves; if the bytes are gone, re-run the case.",
-                file=sys.stderr,
-            )
+            print(_no_bytes_message(parsed, result), file=sys.stderr)
             return 1
         result["path"] = str(dest.resolve())
         # The file is the delivery. Inline bytes and the presigned download
@@ -329,12 +319,26 @@ def _artifact_read_to_path(
     return emit_response(response, json_mode=parsed.json_mode)
 
 
-def _disposition_detail(result: dict) -> str:
-    """Render the read handler's own explanation when it gave one."""
-    detail = result.get("detail")
-    machine = result.get("machine")
-    parts = [str(part) for part in (detail, machine) if part]
-    return f"; {'; '.join(parts)}" if parts else ""
+def _no_bytes_message(parsed, result: dict) -> str:
+    """Name why no bytes landed, with the handler's detail and the recovery."""
+    disposition = result.get("disposition") or "unknown"
+    parts = [
+        str(part) for part in (result.get("detail"), result.get("machine")) if part
+    ]
+    detail = f"; {'; '.join(parts)}" if parts else ""
+    if disposition == "evidence_missing":
+        recovery = "Re-run the QA case to capture the evidence again."
+    else:
+        recovery = (
+            "On the machine that captured it, run `yoke qa artifact rehome "
+            f"--requirement-id {parsed.requirement_id} --artifact-id "
+            f"{parsed.artifact_id}` to move the recorded bytes into the store "
+            "the read surface serves; if the bytes are gone, re-run the case."
+        )
+    return (
+        f"yoke qa artifact read: artifact {parsed.artifact_id} has no portable "
+        f"bytes to land (disposition={disposition}{detail}). {recovery}"
+    )
 
 
 __all__ = [

@@ -242,3 +242,23 @@ def test_read_names_the_disposition_when_no_bytes_can_be_landed() -> None:
     assert "evidence_on_machine" in message
     assert "test-mac-01" in message
     assert "not present on this machine" in message
+    assert "yoke qa artifact rehome" in message
+
+
+def test_read_of_missing_evidence_names_recapture_not_rehome() -> None:
+    err = io.StringIO()
+    code = _read_without_output(
+        {
+            "disposition": "evidence_missing",
+            "detail": "no readable object at s3://b/qa-artifacts/k",
+        },
+        io.StringIO(),
+        err,
+    )
+
+    assert code == 1
+    message = err.getvalue()
+    assert "evidence_missing" in message
+    assert "s3://b/qa-artifacts/k" in message
+    assert "Re-run the QA case" in message
+    assert "rehome" not in message
