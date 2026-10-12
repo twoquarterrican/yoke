@@ -47,8 +47,8 @@ permissions:
 env:
   # Bound for reuse-coverage: covering runs older than this still force suite.
   REUSE_WINDOW_HOURS: "24"
-  # AWS public mirror of the official image. Anonymous pulls can still be rate-limited.
-  POSTGRES_IMAGE: public.ecr.aws/docker/library/postgres:16
+  # Public GHCR copy of the official image; refreshed daily by ci-image-mirror.
+  POSTGRES_IMAGE: ghcr.io/upyoke/postgres:16
 
 jobs:
   # Tree-only contracts precede shards, which also enforce them.
@@ -213,7 +213,7 @@ jobs:
           socket_dir="$(mktemp -d /tmp/yoke-ci-pg.XXXXXX)"
           echo "YOKE_PG_SOCKET_DIR=${socket_dir}" >> "$GITHUB_ENV"
           for attempt in 1 2 3 4 5; do
-            # artifact-fetch-allow: public ECR throttles anonymous pulls per IP; five jittered attempts precede use
+            # artifact-fetch-allow: retry transient GHCR transport failures; five jittered attempts precede use
             docker pull "$POSTGRES_IMAGE" && break
             [ "$attempt" -eq 5 ] && exit 1
             sleep $((5 + RANDOM % 26))
@@ -331,11 +331,11 @@ jobs:
           echo "YOKE_ENGINE_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Build Yoke core image
-        # Pull retries before the build: public ECR throttles anonymous pulls per IP.
+        # Pull retries before the build: retry transient GHCR transport failures.
         run: |
           python_image="$(sed -n 's/^ARG PYTHON_IMAGE=//p' Dockerfile)"
           for attempt in 1 2 3 4 5; do
-            # artifact-fetch-allow: public ECR throttles anonymous pulls per IP; five jittered attempts precede the build
+            # artifact-fetch-allow: retry transient GHCR transport failures; five jittered attempts precede the build
             docker pull "$python_image" && break
             [ "$attempt" -eq 5 ] && exit 1
             sleep $((5 + RANDOM % 26))
