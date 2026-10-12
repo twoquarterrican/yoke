@@ -8,7 +8,8 @@ an EXISTING actor:
   on the first ladder rung.
 * ``email`` alone — write a pending pre-link invite carrying the target
   actor, so the next verified sign-in with that email binds its identity
-  to that actor instead of creating a new one.
+  to that actor instead of creating a new one. Hosted tenants refuse this
+  shape because Platform owns their invites.
 
 The handler is org-admin-gated at dispatch (``identity.`` prefix -> ORG scope).
 """
@@ -30,6 +31,8 @@ from yoke_core.domain.handlers.identity_common import (
     resolve_actor_ref,
     resolve_org_ref,
 )
+
+from yoke_core.domain.handlers.identity_invites import _hosted_refusal
 
 
 class LinkSetRequest(BaseModel):
@@ -76,10 +79,16 @@ def handle_identity_link_set(request: FunctionCallRequest) -> HandlerOutcome:
                 "(pre-link a future sign-in to this actor)",
             ),
         )
+    if not identity_shape:
+        hosted = _hosted_refusal()
+        if hosted is not None:
+            return hosted
     conn = connect()
     try:
         actor_id, actor_error = resolve_actor_ref(
-            conn, parsed.actor, "$.payload.actor",
+            conn,
+            parsed.actor,
+            "$.payload.actor",
         )
         if actor_error is not None:
             return HandlerOutcome(primary_success=False, error=actor_error)

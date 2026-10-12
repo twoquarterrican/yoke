@@ -146,6 +146,10 @@ yoke identity link set --actor <actor-id> --issuer <iss> --subject <sub>
 yoke identity link set --actor <actor-id> --email pat@corp.example
 ```
 
+Email-only pre-links create invites on local and self-hosted universes. A hosted
+tenant refuses them with `hosted_invites_platform_owned`; use hosted invite
+commands or the org's Members page. Direct issuer/subject links remain available.
+
 These invites are the server's own. On Yoke Cloud Platform owns invites; the
 same `yoke identity invite` commands reach Platform's invites over a hosted
 connection, and the hosted universe's engine refuses them as
