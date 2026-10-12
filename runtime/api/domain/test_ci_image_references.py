@@ -1,4 +1,4 @@
-"""CI pulls Docker Official Images from the AWS public mirror, not Docker Hub."""
+"""CI consumes public GHCR mirrors of Docker Official Images."""
 
 from __future__ import annotations
 
@@ -12,20 +12,12 @@ import yaml
 _ROOT = Path(__file__).resolve().parents[3]
 _WORKFLOWS = _ROOT / ".github" / "workflows"
 _DOCKERFILE = _ROOT / "Dockerfile"
-_MIRROR = "public.ecr.aws/docker/library"
+_MIRROR = "ghcr.io/upyoke"
 _EXPECTED_IMAGES = frozenset(
     {
         f"{_MIRROR}/postgres:16",
         f"{_MIRROR}/python:3.13-slim",
         f"{_MIRROR}/registry:2",
-    }
-)
-_DOCKER_HUB_HOSTS = frozenset(
-    {
-        "docker.io",
-        "index.docker.io",
-        "registry-1.docker.io",
-        "registry.hub.docker.com",
     }
 )
 # Flags that consume the next docker run/pull token. The image is the first
@@ -84,18 +76,18 @@ _DOCKER_INVOCATION = re.compile(r"\bdocker\s+(run|pull)\b")
 _BARE_OFFICIAL = re.compile(r"(?<![\w./-])(?:postgres|python|registry):[^\s\\'\"]+")
 
 
-def test_ci_pulls_official_images_from_the_aws_public_mirror() -> None:
+def test_ci_pulls_official_images_from_public_ghcr_mirrors() -> None:
     references = _ci_image_references()
-    docker_hub = [
+    offenders = [
         f"{path.relative_to(_ROOT)}: {image}"
         for path, image in references
-        if _is_docker_hub_image(image)
+        if not image.startswith(f"{_MIRROR}/")
     ]
-    assert docker_hub == [], (
-        "CI workflows and the root Dockerfile pulled a Docker Hub image. "
-        "Use the AWS public mirror of Docker Official Images "
+    assert offenders == [], (
+        "CI workflows and the root Dockerfile pulled outside the public GHCR mirrors. "
+        "Use the public GHCR mirror of Docker Official Images "
         f"({_MIRROR}/<name>:<tag>). Bare names and docker.io hosts are "
-        "anonymous rate-limited on GitHub-hosted runners: " + "; ".join(docker_hub)
+        "dependent on upstream registry quotas: " + "; ".join(offenders)
     )
     assert {image for _path, image in references} == _EXPECTED_IMAGES
 
@@ -118,7 +110,7 @@ def test_each_ci_image_is_declared_once_per_file() -> None:
 
 
 def test_ci_steps_retry_mirror_pulls_before_using_the_image() -> None:
-    """Public ECR throttles anonymous pulls per IP when shards start together."""
+    """Retry transient GHCR transport failures before consuming the image."""
     for name in ("yoke-ci.yml", "yoke-tests-selection.yml"):
         step = _step_body(_WORKFLOWS / name, "Start Postgres")
         assert 'docker pull "$POSTGRES_IMAGE"' in step, name
@@ -142,7 +134,7 @@ def test_ci_files_do_not_name_bare_docker_hub_official_images() -> None:
                     f"{path.relative_to(_ROOT)}:{lineno}: {match.group(0)}"
                 )
     assert offenders == [], (
-        "bare Docker Hub official image reference (declare the AWS public "
+        "bare Docker Hub official image reference (declare the public GHCR "
         "mirror instead): " + "; ".join(offenders)
     )
 
@@ -336,13 +328,3 @@ def _env_map(node: object) -> dict[str, str]:
     if not isinstance(env, dict):
         return {}
     return {str(key): str(value) for key, value in env.items()}
-
-
-def _is_docker_hub_image(reference: str) -> bool:
-    name = reference.split("@", 1)[0]
-    host, separator, _rest = name.partition("/")
-    if separator == "":
-        return True
-    if "." not in host and ":" not in host and host != "localhost":
-        return True
-    return host.split(":", 1)[0].lower() in _DOCKER_HUB_HOSTS

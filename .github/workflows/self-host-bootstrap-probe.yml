@@ -18,9 +18,9 @@ jobs:
     timeout-minutes: 30
     services:
       registry:
-        # Official image via the AWS public mirror. services.image cannot
+        # Public GHCR copy of the official image. services.image cannot
         # read workflow env, so this key is the one declaration.
-        image: public.ecr.aws/docker/library/registry:2
+        image: ghcr.io/upyoke/registry:2
         ports:
           - 5200:5000
     steps:
