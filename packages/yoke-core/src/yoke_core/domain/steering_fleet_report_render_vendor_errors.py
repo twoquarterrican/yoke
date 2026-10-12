@@ -37,6 +37,12 @@ def _said(message: str) -> str:
 def _next_actor(entry: VendorErrorSession) -> str:
     """What happens next for this session, and who does it."""
     attempt = entry.attempts + 1
+    if entry.status == "relaunch_due":
+        return "relay relaunches on another same-level model this poll"
+    if entry.status == "capacity_recovery_pending":
+        return entry.reason
+    if entry.status == "capacity_recovery_refused":
+        return f"{entry.reason} — yours: resolve the named refusal before restaffing"
     if entry.status == "due":
         return f"relay resumes it this poll (attempt {attempt} of {entry.budget})"
     if entry.status == "waiting_backoff":

@@ -7,6 +7,7 @@ from yoke_contracts.timestamps import parse_instant
 from typing import Any
 from uuid import uuid4
 
+from yoke_core.domain.session_capacity_claim_transfer import admit_assigned_launch
 from yoke_core.domain.session_launch_eligibility import derive_launch_eligibility
 from yoke_core.domain.session_launch_idempotency import deduplicated_outcome
 from yoke_core.domain.session_launch_item_level import pin_item_level
@@ -111,18 +112,9 @@ def create_launch(
             )
             conn.commit()
             return outcome
-        if request.item:
-            from yoke_core.domain.session_launch_assignment import (
-                refuse_held_assigned_item,
-            )
-
-            refuse_held_assigned_item(
-                conn,
-                public_ref=request.item,
-                project_id=request.project_id,
-                predecessor_session_id=auth.session_id,
-                successor_level=request.level,
-            )
+        preview = admit_assigned_launch(
+            conn, request=request, auth=auth, preview=preview, now=current
+        )
         if not preview.launchable:
             from yoke_core.domain.session_surface_policy import launch_refusal_message
 
@@ -272,7 +264,7 @@ def retry_launch(
                 "invalid_state",
                 f"launch in state {launch.state!r} cannot be retried",
             )
-        ask = retry_request(launch)
+        ask = retry_request(launch, conn=conn)
         if ask.level:
             ask, preview = preview_level_launch(
                 conn, auth=auth, request=ask, now=current, eligibility=eligibility
@@ -289,6 +281,10 @@ def retry_launch(
                 now=current,
                 model=launch.requested_model,
                 eligibility=eligibility,
+            )
+        if ask.capacity_predecessor_session_id:
+            preview = admit_assigned_launch(
+                conn, request=ask, auth=auth, preview=preview, now=current
             )
         if not preview.launchable:
             raise SessionLaunchError(

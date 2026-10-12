@@ -263,7 +263,8 @@ exhausted. When no option can launch anywhere the launch refuses as
 `level_no_capacity`, naming each option and the pool or eligibility rule
 that blocked it. Yoke never moves a launch to another level; relaunch at a
 different `--level` or wait for the named reset. An unknown level refuses as
-`level_unknown` with the levels the project reads.
+`level_unknown` with the levels the project reads. Capacity-stopped workers
+use [same-level recovery](session-capacity-recovery.md), excluding the refused model.
 
 The launch result, `launch preview`, and `launch get` name the level, the
 chosen option, every pool each option read, and why the winner won

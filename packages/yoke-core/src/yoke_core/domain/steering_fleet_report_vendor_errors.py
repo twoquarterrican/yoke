@@ -30,7 +30,9 @@ from yoke_core.domain.steering_fleet_report_detectors import age_seconds, marker
 
 #: Statuses no further poll will act on. Everything else the relay owns,
 #: and a row the relay owns is context for the seat rather than work.
-SEAT_OWNED_STATUSES = frozenset({"budget_spent", "seat_required"})
+SEAT_OWNED_STATUSES = frozenset(
+    {"budget_spent", "seat_required", "capacity_recovery_refused"}
+)
 
 
 @dataclass(frozen=True)

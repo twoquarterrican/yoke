@@ -70,6 +70,7 @@ def preview_level_launch(
         machine_id=request.machine_id,
         now=now,
         eligibility=eligibility,
+        excluded_models=request.excluded_models,
     )
     chosen = placement.chosen
     if chosen is None:

@@ -138,6 +138,8 @@ class LaunchRequest:
     #: Why ``level`` becomes the item's level for every stage. Set only on an
     #: item-bound launch that named a level; ``None`` records nothing.
     level_reason: str | None = None
+    excluded_models: tuple[str, ...] = ()
+    capacity_predecessor_session_id: str | None = None
 
 
 @dataclass(frozen=True)
