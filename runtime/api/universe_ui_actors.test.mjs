@@ -238,3 +238,70 @@ test("a person still holding several org roles shows them and asks for one", asy
   assert.equal(select.children[0].textContent, "admin, operator");
   assert.equal(select.children[0].disabled, true);
 });
+
+const GRANT_ROSTER_FIELDS = {
+  role_descriptions: {
+    deployment_ci: "Trigger deployments.", hosted_service: "Deliver hosted lifecycle.",
+    migration_verification_ci: "Verify migration content.", owner: "Project admin.",
+  },
+  machine_only_roles: ["deployment_ci", "hosted_service", "migration_verification_ci"],
+  bootstrap_only_roles: ["hosted_service"],
+};
+const machine = (id, name, org, projects) => actor("active", [], {
+  id, name, kind: "system", identity: null,
+  roles: { org: org.map((role) => ({ org: "Test", role })), projects },
+});
+const MACHINES = [
+  machine(169, "release-bridge", ["migration_verification_ci"], [{ project: "yoke", role: "deployment_ci" }]),
+  machine(367, "hosted_service", ["hosted_service"], []),
+];
+const grantTexts = (main) => byClass(main, "actors-grant").map((node) => node.textContent);
+
+test("machine grants name scope, role, how it is held and what it allows", async () => {
+  const { context, main } = fixture([{ current_actor_id: 1, rows: MACHINES, ...GRANT_ROSTER_FIELDS }], preferences());
+  await renderActorsView(context, main);
+  assert.deepEqual(grantTexts(main), [
+    "Orghosted_servicemachine-onlybootstrap-grantedDeliver hosted lifecycle.",
+    "Orgmigration_verification_cimachine-onlyVerify migration content.",
+    "Project · yokedeployment_cimachine-onlyTrigger deployments.",
+  ]);
+  assert.equal(byClass(main, "actors-grants").flatMap((cell) => byClass(cell, "idle")).length, 0);
+});
+
+test("an older server's roster still lists each grant's scope and role", async () => {
+  for (const missing of [...Object.keys(GRANT_ROSTER_FIELDS), "all"]) {
+    const fields = missing === "all" ? {} : { ...GRANT_ROSTER_FIELDS, [missing]: undefined };
+    const { context, main } = fixture([{ current_actor_id: 1, rows: MACHINES, ...fields }], preferences());
+    await renderActorsView(context, main);
+    const [hosted, verify, deploy] = grantTexts(main);
+    assert.ok(deploy.startsWith("Project · yokedeployment_ci"), missing);
+    assert.equal(hosted.includes("bootstrap-granted"), !["bootstrap_only_roles", "all"].includes(missing));
+    assert.equal(verify.includes("machine-only"), !["machine_only_roles", "all"].includes(missing));
+    assert.equal(verify.includes("Verify migration content."), !["role_descriptions", "all"].includes(missing));
+  }
+});
+
+test("every org role reaches all projects and project grants read as roles", async () => {
+  const person = (id, org, projects = []) => actor("active", [], {
+    id, name: `Person ${id}`, roles: { org: org.map((role) => ({ org: "Test", role })), projects },
+  });
+  const { context, main } = fixture([{
+    current_actor_id: 1, ...GRANT_ROSTER_FIELDS,
+    rows: [person(334, ["operator"]), person(5, ["viewer"], [{ project: "yoke", role: "owner" }]), person(6, [])],
+  }], preferences());
+  await renderActorsView(context, main);
+  const access = allNodes(main).filter((node) => node.getAttribute?.("data-label") === "Project access")
+    .map((cell) => cell.textContent);
+  assert.deepEqual(access, ["All projects · from org vieweryoke · owner", "—", "All projects · from org operator"]);
+  assert.equal(byClass(main, "actors-role")[0].title, "Project admin.");
+});
+
+test("grants sort machine accounts and an unknown saved column falls back to name", async () => {
+  const rows = [machine(2, "zeta", ["migration_verification_ci"], []), machine(3, "alpha", [], [])];
+  const sorted = fixture([{ current_actor_id: 1, rows }], preferences({ column: "grants", direction: "desc" }));
+  await renderActorsView(sorted.context, sorted.main);
+  assert.deepEqual(names(sorted.main), ["zeta", "alpha"]);
+  const stale = fixture([{ current_actor_id: 1, rows }], preferences({ column: "retired", direction: "asc" }));
+  await renderActorsView(stale.context, stale.main);
+  assert.deepEqual(names(stale.main), ["alpha", "zeta"]);
+});

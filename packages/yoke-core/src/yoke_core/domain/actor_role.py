@@ -40,6 +40,8 @@ MACHINE_ONLY_ROLES = (
     ROLE_INFRASTRUCTURE_CI,
     ROLE_MIGRATION_VERIFICATION_CI,
 )
+# Machine roles granted only by their own bootstrap, never by grants or invites.
+BOOTSTRAP_ONLY_ROLES = (ROLE_HOSTED_SERVICE,)
 
 
 class ActorRoleRefused(ValueError):

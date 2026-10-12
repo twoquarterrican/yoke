@@ -20,7 +20,7 @@ function groups(hosted) {
     },
     {
       title: "Machine accounts", includes: (actor) => actor.kind !== "human",
-      columns: ["Actor", "State", "Org role", "Project access", "API keys"],
+      columns: ["Actor", "State", "Grants", "API keys"],
     },
   ];
 }

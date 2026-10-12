@@ -14,8 +14,16 @@ from yoke_contracts.api.function_call import (
 from yoke_core.domain.profile_read import read_identity, read_roles
 from yoke_core.domain.profile_read import read_tokens
 from yoke_core.domain.actor_state import actor_status_sql
-from yoke_core.domain.actor_permissions import PERM_ORG_ADMIN, PermissionDenied
-from yoke_core.domain.actor_role import HUMAN_ORG_ROLES
+from yoke_core.domain.actor_permissions import (
+    PERM_ORG_ADMIN,
+    ROLE_DESCRIPTIONS,
+    PermissionDenied,
+)
+from yoke_core.domain.actor_role import (
+    BOOTSTRAP_ONLY_ROLES,
+    HUMAN_ORG_ROLES,
+    MACHINE_ONLY_ROLES,
+)
 from yoke_core.domain.control_plane_authority import require_control_plane_permission
 
 
@@ -28,6 +36,9 @@ class ActorsRosterResponse(BaseModel):
     current_actor_id: Optional[int]
     can_manage_actors: bool
     person_org_roles: List[str]
+    role_descriptions: Dict[str, str]
+    machine_only_roles: List[str]
+    bootstrap_only_roles: List[str]
 
 
 def handle_actors_roster(request: FunctionCallRequest) -> HandlerOutcome:
@@ -86,6 +97,9 @@ def handle_actors_roster(request: FunctionCallRequest) -> HandlerOutcome:
             "current_actor_id": current_actor_id,
             "can_manage_actors": can_manage_actors,
             "person_org_roles": list(HUMAN_ORG_ROLES),
+            "role_descriptions": dict(ROLE_DESCRIPTIONS),
+            "machine_only_roles": list(MACHINE_ONLY_ROLES),
+            "bootstrap_only_roles": list(BOOTSTRAP_ONLY_ROLES),
         },
         primary_success=True,
     )
