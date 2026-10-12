@@ -8,6 +8,7 @@ read-only ``github_actions.variable.get`` arming-gate probe, so the
 usher pre-merge / post-merge recipe and the CI arming / rotation
 recipes all run on a laptop with no host GitHub CLI binary.
 """
+
 from __future__ import annotations
 
 from yoke_core.domain.handlers import (
@@ -19,6 +20,7 @@ from yoke_core.domain.handlers import (
     github_actions_get,
     github_actions_runners,
     github_actions_run,
+    github_actions_rerun,
     github_actions_set,
     github_actions_workflow,
 )
@@ -35,6 +37,7 @@ def register(registry) -> None:
         *github_actions_get.REGISTRATIONS,
         *github_actions_runners.REGISTRATIONS,
         *github_actions_run.REGISTRATIONS,
+        *github_actions_rerun.REGISTRATIONS,
         *github_actions_set.REGISTRATIONS,
         *github_actions_workflow.REGISTRATIONS,
     ):

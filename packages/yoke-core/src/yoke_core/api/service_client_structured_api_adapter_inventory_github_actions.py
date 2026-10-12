@@ -12,6 +12,11 @@ from yoke_core.api.service_client_structured_api_adapter_inventory_types import 
 
 GITHUB_ACTIONS_ADAPTERS: Tuple[AdapterEntry, ...] = (
     AdapterEntry(
+        function_id="github_actions.run.rerun_failed",
+        cli_invocation="yoke github-actions run rerun-failed ITEM RUN-ID",
+        notes="Claimed-item CI recovery: current PR head and newest workflow run only; intent and outcome persist in the item Progress Log.",
+    ),
+    AdapterEntry(
         function_id="github_actions.workflow.dispatch",
         cli_invocation=(
             "yoke github-actions trigger <owner/repo> <workflow-file> "

@@ -93,6 +93,25 @@ GitHub issues. Public repos and permission posture constrain which modes are
 safe. Prefer the workbench **GitHub** tab and project settings over editing
 raw DB rows.
 
+## Failed CI job recovery
+
+Inspect the failed jobs with `yoke github-actions failed-log <owner/repo> <run-id> --project <project>`.
+For a transient infrastructure failure, the worker holding the item claim runs
+`yoke github-actions run rerun-failed ITEM RUN-ID`, then resumes the same CI/QA
+wait. The registered `github_actions.run.rerun_failed` mutation derives the
+repository and landing PR from the item, requires the run to match the PR's
+current head and be the newest run of that workflow on the PR branch, and
+records intent and outcome in the item's Progress Log. A stale head or
+superseded run refuses and names the current identity to inspect; never rerun
+an older run through another tool because it can cancel newer CI work.
+Repair test failures in the item and commit before retrying verification.
+A lost POST response reports `ci_rerun_ambiguous`: inspect the run's attempt
+and status before retrying. If GitHub accepted the rerun but receipt recording
+failed, restore item writes and append the returned receipt; resume the wait
+without another rerun. An older serving engine names the required serving
+floor; the control-plane operator must provide a serving release carrying the
+function before this recovery is available.
+
 ## Operator tips
 
 - Never treat `PREFIX-N` as a GitHub issue number — resolve via the item's

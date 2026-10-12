@@ -43,6 +43,25 @@ narrow-sweep advisory and audit-only suppression remain unchanged.
 - **Stream long commands via the harness surface.** Capture-first is the floor and never optional; streaming is required wherever the harness supports it. In Claude, run anything likely >60s via `Bash(run_in_background)` + `Monitor` on the capture, preferring the watcher wrappers (`watch_pytest` / `watch_merge` / `watch_deploy` / `watch_preflight` / `watch_doctor` / `watch_qa_case`) over hand-authored progress filters — the full Claude template + subagent rules live in your Claude harness session rules. Doctor has exactly one shape on every machine, `yoke watch doctor -- (--quick | --full | --only <slugs>)`, which wraps the transport-keyed `yoke doctor run` and streams a verdict line per check whichever transport serves it; `python3 -m yoke_core.engines.doctor` is the source-dev entrypoint, and it refuses before running a check on a relayed control plane. Codex has no idle-wake primitive (`agent_wake.idle_wake = none` in its manifest); a long `exec_command` that outlives its yield returns a `session_id` that must be continued with `write_stdin` until it completes. **A command that outlives its yield is still running — continue it, never relaunch it.** Every supported harness has some way of handing a long command back before it finishes (Claude moves the call to a background task, Codex returns a continuation `session_id`, Cursor notifies on output), and none of those is an interruption: the child process, and anything it is waiting on, is still alive. Read your harness's continuation surface and re-run only once the process is verifiably gone — a relaunch alongside a live first invocation spends the shared resource twice and can cancel the work the first one was about to finish. Taught exception: interrupt an overlong *local* test check (about one minute) cleanly, keep the capture as incomplete, commit, and continue on CI; do not interrupt a CI-routed watcher or background the slow local selection.
 - **Don't manually poll a running long command** — the streaming surface is the progress signal. The long-command-polling lint blocks same-capture polling loops (including `sleep N && tail` with N<60s). Subagents must run long commands foreground in one tool call (the subagent-background lint denies background/`Monitor` in subagent context). Suppression `# lint:no-polling-check` unblocks only legitimate post-capture inspections; the Monitor-duplicate/background-waiter tokens are audit-only.
 
+## Failed CI job recovery
+
+Inspect the failed jobs with `yoke github-actions failed-log <owner/repo> <run-id> --project <project>`.
+For a transient infrastructure failure, the worker holding the item claim runs
+`yoke github-actions run rerun-failed ITEM RUN-ID`, then resumes the same CI/QA
+wait. The registered `github_actions.run.rerun_failed` mutation derives the
+repository and landing PR from the item, requires the run to match the PR's
+current head and be the newest run of that workflow on the PR branch, and
+records intent and outcome in the item's Progress Log. A stale head or
+superseded run refuses and names the current identity to inspect; never rerun
+an older run through another tool because it can cancel newer CI work.
+Repair test failures in the item and commit before retrying verification.
+A lost POST response reports `ci_rerun_ambiguous`: inspect the run's attempt
+and status before retrying. If GitHub accepted the rerun but receipt recording
+failed, restore item writes and append the returned receipt; resume the wait
+without another rerun. An older serving engine names the required serving
+floor; the control-plane operator must provide a serving release carrying the
+function before this recovery is available.
+
 ## Verification failure ownership
 
 - **Current-item verification failures belong to the current item.** A future/planned item, planned path claim, or cleanup work item owning a touched file is not a waiver. If the current branch has a failing registered command, gate, or regression, fix it here — unless there's a live active-session conflict or explicit operator waiver.

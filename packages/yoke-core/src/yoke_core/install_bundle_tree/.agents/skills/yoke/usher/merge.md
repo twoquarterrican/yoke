@@ -158,3 +158,8 @@ telemetry. Reconcile dependencies/claims before any authorized override.
 After all landings, repeat collect's project-declared CI advisory (verified
 App repo, ci_workflow_file, default branch). Failed warns; passed/running/
 no_runs skip. Continue to [deploy](deploy.md).
+
+For transient CI infrastructure failures, the claimed item worker uses
+`yoke github-actions run rerun-failed ITEM RUN-ID`, then resumes the same
+CI/QA wait. It refuses stale PR heads and superseded workflow runs and records
+the outcome in the item Progress Log; inspect the newer identity on refusal.

@@ -139,3 +139,9 @@ prior receipt cannot replace this proof. A failed fetch or missing candidate
 returns a named refusal, retains the lane, and leaves the item before landing.
 Repair routing or remote access and re-enter the same governed merge command.
 A project with no remote proves candidate ancestry on its local default branch.
+
+For transient CI infrastructure failures, use
+`yoke github-actions run rerun-failed ITEM RUN-ID` and resume this same merge
+wait. The registered mutation checks current PR head and newest workflow run
+and records the rerun in the item Progress Log; inspect a named stale or
+superseded refusal instead of rerunning an older run.
