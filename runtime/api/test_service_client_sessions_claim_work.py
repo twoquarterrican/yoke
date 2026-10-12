@@ -32,9 +32,9 @@ class TestClaimItem:
         # Create an active session
         conn = connect_test_db(db_path)
         conn.execute(
-            "INSERT INTO harness_sessions (session_id, executor, provider, model, "
+            "INSERT INTO harness_sessions (session_id, executor, provider, model, reasoning_effort, "
             "execution_level, workspace, project_id, mode, offered_at, last_heartbeat) "
-            "VALUES (%s, 'claude-code', 'anthropic', 'opus', 'primary', %s, 1, "
+            "VALUES (%s, 'claude-code', 'anthropic', 'claude-opus-5-5', 'medium', 'SENIOR', %s, 1, "
             "'hook', '2026-04-20T00:00:00Z', '2026-04-20T00:00:00Z')",
             (sid, session_test_db["tmp_dir"]),
         )
@@ -79,9 +79,9 @@ class TestClaimItem:
 
         conn = connect_test_db(db_path)
         conn.execute(
-            "INSERT INTO harness_sessions (session_id, executor, provider, model, "
+            "INSERT INTO harness_sessions (session_id, executor, provider, model, reasoning_effort, "
             "execution_level, workspace, project_id, mode, offered_at, last_heartbeat) "
-            "VALUES (%s, 'claude-code', 'anthropic', 'opus', 'primary', %s, 1, "
+            "VALUES (%s, 'claude-code', 'anthropic', 'claude-opus-5-5', 'medium', 'SENIOR', %s, 1, "
             "'hook', '2026-04-20T00:00:00Z', '2026-04-20T00:00:00Z')",
             (sid, session_test_db["tmp_dir"]),
         )
@@ -124,9 +124,9 @@ class TestClaimItem:
 
         conn = connect_test_db(db_path)
         conn.execute(
-            "INSERT INTO harness_sessions (session_id, executor, provider, model, "
+            "INSERT INTO harness_sessions (session_id, executor, provider, model, reasoning_effort, "
             "execution_level, workspace, project_id, mode, offered_at, last_heartbeat) "
-            "VALUES (%s, 'claude-code', 'anthropic', 'opus', 'primary', %s, 1, "
+            "VALUES (%s, 'claude-code', 'anthropic', 'claude-opus-5-5', 'medium', 'SENIOR', %s, 1, "
             "'hook', '2026-04-20T00:00:00Z', '2026-04-20T00:00:00Z')",
             (sid, session_test_db["tmp_dir"]),
         )
@@ -163,9 +163,9 @@ class TestClaimItem:
         # Create an ended session
         conn = connect_test_db(db_path)
         conn.execute(
-            "INSERT INTO harness_sessions (session_id, executor, provider, model, "
+            "INSERT INTO harness_sessions (session_id, executor, provider, model, reasoning_effort, "
             "execution_level, workspace, project_id, mode, offered_at, last_heartbeat, ended_at) "
-            "VALUES (%s, 'claude-code', 'anthropic', 'opus', 'primary', %s, 1, "
+            "VALUES (%s, 'claude-code', 'anthropic', 'claude-opus-5-5', 'medium', 'SENIOR', %s, 1, "
             "'hook', '2026-04-20T00:00:00Z', '2026-04-20T00:00:00Z', "
             "'2026-04-20T00:00:00Z')",
             (sid, session_test_db["tmp_dir"]),
@@ -195,16 +195,16 @@ class TestClaimItem:
         fresh_ts = _fresh_ts()
         conn = connect_test_db(db_path)
         conn.execute(
-            "INSERT INTO harness_sessions (session_id, executor, provider, model, "
+            "INSERT INTO harness_sessions (session_id, executor, provider, model, reasoning_effort, "
             "execution_level, workspace, project_id, mode, offered_at, last_heartbeat) "
-            "VALUES ('owner-session', 'claude-code', 'anthropic', 'opus', 'primary', "
+            "VALUES ('owner-session', 'claude-code', 'anthropic', 'claude-opus-5-5', 'medium', 'SENIOR', "
             "%s, 1, 'hook', %s, %s)",
             (session_test_db["tmp_dir"], fresh_ts, fresh_ts),
         )
         conn.execute(
-            "INSERT INTO harness_sessions (session_id, executor, provider, model, "
+            "INSERT INTO harness_sessions (session_id, executor, provider, model, reasoning_effort, "
             "execution_level, workspace, project_id, mode, offered_at, last_heartbeat) "
-            "VALUES ('thief-session', 'claude-code', 'anthropic', 'opus', 'primary', "
+            "VALUES ('thief-session', 'claude-code', 'anthropic', 'claude-opus-5-5', 'medium', 'SENIOR', "
             "%s, 1, 'hook', %s, %s)",
             (session_test_db["tmp_dir"], fresh_ts, fresh_ts),
         )
@@ -237,9 +237,9 @@ class TestClaimProcess:
         fresh_ts = _fresh_ts()
         conn = connect_test_db(db_path)
         conn.execute(
-            "INSERT INTO harness_sessions (session_id, executor, provider, model, "
+            "INSERT INTO harness_sessions (session_id, executor, provider, model, reasoning_effort, "
             "execution_level, workspace, project_id, mode, offered_at, last_heartbeat) "
-            "VALUES (%s, 'claude-code', 'anthropic', 'opus', 'primary', %s, 1, 'hook', "
+            "VALUES (%s, 'claude-code', 'anthropic', 'claude-opus-5-5', 'medium', 'SENIOR', %s, 1, 'hook', "
             "%s, %s)",
             (session_id, workspace, fresh_ts, fresh_ts),
         )

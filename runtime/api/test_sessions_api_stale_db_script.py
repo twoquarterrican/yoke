@@ -40,7 +40,7 @@ _STALE_DB_SCHEMA = f"""
                 executor_surface TEXT DEFAULT NULL,
                 provider TEXT NOT NULL,
                 model TEXT,
-                reasoning_effort TEXT DEFAULT NULL,
+                reasoning_effort TEXT DEFAULT 'medium',
                 context_window_tokens INTEGER DEFAULT NULL,
                 requested_model TEXT DEFAULT NULL,
                 requested_reasoning_effort TEXT DEFAULT NULL,
@@ -130,6 +130,9 @@ def _apply_stale_db_schema() -> None:
     conn = db_backend.connect()
     try:
         apply_ddl_statements(conn, _STALE_DB_SCHEMA)
+        from runtime.api.fixtures.level_store import create_level_store_tables
+
+        create_level_store_tables(conn)
         conn.commit()
     finally:
         conn.close()

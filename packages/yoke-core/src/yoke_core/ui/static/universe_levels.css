@@ -15,7 +15,7 @@
 .universe-app-root table.level-options td { vertical-align: top; font-size: 12px; overflow-wrap: anywhere; white-space: normal; }
 .universe-app-root table.cursor-quota-order { width: 100%; }
 .universe-app-root .cursor-quota-order td:first-child { width: 28px; color: var(--yoke-muted); }
-.universe-app-root .cursor-quota-order td:last-child { width: 48px; text-align: right; }
+.universe-app-root .cursor-quota-order td:last-child { width: 48px; }
 .universe-app-root .quota-order-move { min-width: 32px; min-height: 32px; }
 @container dashboard-content (max-width: 600px) {
   .universe-app-root .level-surfaces { padding-left: 15px; }

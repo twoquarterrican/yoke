@@ -72,9 +72,9 @@ def seed_session_claim(conn, item_id: int, session_id: str) -> None:
     now = instant_parameter(conn, utc_now())
     conn.execute(
         "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, workspace, project_id, "
+        "(session_id, executor, provider, model, reasoning_effort, workspace, project_id, "
         "offered_at, last_heartbeat) "
-        "VALUES (%s, 'codex', 'openai', 'gpt', '/tmp', 1, %s, %s)",
+        "VALUES (%s, 'codex', 'openai', 'gpt-6.1-sol', 'medium', '/tmp', 1, %s, %s)",
         (session_id, now, now),
     )
     conn.execute(
@@ -91,9 +91,9 @@ def seed_session(conn, session_id: str) -> None:
     now = instant_parameter(conn, utc_now())
     conn.execute(
         "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, workspace, project_id, "
+        "(session_id, executor, provider, model, reasoning_effort, workspace, project_id, "
         "offered_at, last_heartbeat) "
-        "VALUES (%s, 'codex', 'openai', 'gpt', '/tmp', 1, %s, %s) "
+        "VALUES (%s, 'codex', 'openai', 'gpt-6.1-sol', 'medium', '/tmp', 1, %s, %s) "
         "ON CONFLICT (session_id) DO NOTHING",
         (session_id, now, now),
     )
