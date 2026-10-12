@@ -91,17 +91,14 @@ test("adding the last missing project is All, and the next click narrows from it
 });
 
 test("a stored full-roster member list resolves to All on the first render", async (t) => {
-  // What prod already holds for screens that reached the full set before it
-  // was canonical. The restore path must not carry that second form forward.
+  // Rendering normalizes a saved full set without rewriting the preference.
   const client = preferenceClient(
     { items: { selection: ["1", "2", "3"], focus: null } }, threeProjectClient,
   );
   const app = await mountAt(t, "/items", client);
   assert.deepEqual(app.on(), ["All"]);
   assert.equal(app.windowNode.location.href, "/items?project=all");
-  // Written back in the canonical form, so the next mount reads one scope
-  // in one shape rather than healing it again.
-  assert.equal(client.state.views.items.selection, "all");
+  assert.deepEqual(client.state.views.items.selection, ["1", "2", "3"]);
 });
 
 test("a route naming every project resolves to All rather than pinning the set", async (t) => {
@@ -110,13 +107,13 @@ test("a route naming every project resolves to All rather than pinning the set",
   assert.deepEqual(app.on(), ["All"]);
   assert.equal(app.windowNode.location.href, "/items?project=all");
   // Resolving the existing All scope does not save a selection change.
-  // Navigation saves only the last location with that canonical scope once.
+  // Navigation saves the last destination without another copy of scope.
   assert.equal(client.state.views.items, undefined);
   const saves = client.requests.filter(
     (request) => request.function === "ui_preferences.screen_selection.set",
   );
   assert.equal(saves.length, 1);
-  assert.deepEqual(saves[0].payload, { view_id: "items", location: "/items?project=all" });
+  assert.deepEqual(saves[0].payload, { view_id: "items", location: "/items" });
 });
 
 test("a screen's own links carry the canonical form of what it remembers", async (t) => {
