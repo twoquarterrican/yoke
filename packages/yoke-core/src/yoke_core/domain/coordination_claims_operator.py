@@ -1,7 +1,7 @@
 """Operator recovery for a stranded shared-operation claim.
 
 Sibling of :mod:`yoke_core.domain.coordination_claims`. Owns the
-human-only ``operator_release`` surface plus its WARN-severity
+steering-seat ``operator_release`` surface plus its WARN-severity
 ``OperatorLeaseRelease`` emission. The split keeps the core module lean
 while keeping authority on the durable claim mutation: the release row
 records the authenticated actor and operator-supplied reason, while the
@@ -52,7 +52,7 @@ def operator_release(
     operator_actor_id: int,
     now: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Human-only operator recovery for a stranded coordination claim.
+    """Steering-seat operator recovery for a stranded coordination claim.
 
     Refuses invocation from a hook context (``YOKE_HOOK_EVENT`` set),
     emits best-effort WARN ``OperatorLeaseRelease`` diagnostic telemetry,
@@ -65,7 +65,8 @@ def operator_release(
         raise CoordinationClaimHookContextError(
             "Operator claim-release cannot be invoked from a hook context "
             f"(YOKE_HOOK_EVENT={os.environ['YOKE_HOOK_EVENT']}). "
-            "This command is human-only."
+            "Run it as a deliberate command from a session holding the "
+            "project's steering seat."
         )
 
     if not operator_reason or not operator_reason.strip():
@@ -97,7 +98,7 @@ def operator_release(
 
     if int(operator_actor_id) <= 0:
         raise CoordinationClaimError(
-            "operator_actor_id must identify the authenticated human actor"
+            "operator_actor_id must identify the authenticated operator actor"
         )
 
     context = {

@@ -63,7 +63,8 @@ def register_project(
             f"project {normalized} is already routed to "
             f"{displaced!r}; registering {root} would move shared checkout "
             "routing. To move it deliberately, run yoke project register "
-            "--reassign from a plain operator terminal with no harness session."
+            "--reassign from a session holding the project's steering seat "
+            f"(yoke claims steering acquire --project {normalized})."
         )
     payload["projects"] = contract.upsert_project_entry(
         payload.get("projects"),

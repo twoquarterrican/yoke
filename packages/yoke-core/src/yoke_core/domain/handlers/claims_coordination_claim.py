@@ -223,9 +223,9 @@ def handle_release(request: FunctionCallRequest) -> HandlerOutcome:
                     f"coordination claim {claim_id} is held by session "
                     f"{current.session_id!r}, not calling session "
                     f"{request.actor.session_id!r}; ask the holder to release "
-                    "it, or use `yoke coordination-claim release` from an "
-                    "authenticated human terminal outside any harness session "
-                    "after reviewing the current claim id and holder",
+                    "it, or run `yoke coordination-claim release` from a "
+                    "session holding the project's steering seat after "
+                    "reviewing the current claim id and holder",
                 )
             claim = release(
                 conn,

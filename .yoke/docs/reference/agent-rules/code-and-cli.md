@@ -108,8 +108,9 @@ overrides for legacy content. Archive moves the view to `.yoke/strategy/archive/
 and retains the row. Edit generated views only through documented ingest paths.
 
 Raw SQL is diagnostic escape-hatch authority: `yoke db read "SELECT ..."`.
-The signed-in human org administrator can run reviewed row repair without a
-lane through `yoke operator data-repair --content-file repair.json --reviewed-sha256 SHA --dry-run`.
+A session holding a live steering seat on the repaired project, acting for an
+org administrator, can run operator-approved row repair without a lane through
+`yoke operator data-repair --content-file repair.json --reviewed-sha256 SHA --dry-run`.
 Review the simulation audit before applying; [the repair contract](../../operator-data-repair.md) owns its guards.
 Never construct a DB path/DSN; lower-level queries are source-dev/operator-debug
 only. SQL inequality is `<>`, never `!=`.

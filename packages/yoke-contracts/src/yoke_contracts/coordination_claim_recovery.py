@@ -1,4 +1,4 @@
-"""Canonical human recovery command for a stranded coordination claim."""
+"""Canonical steering-seat recovery command for a stranded coordination claim."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def operator_release_command(
     holder_session_id: str,
     reason: str = OPERATOR_RELEASE_REASON_EXAMPLE,
 ) -> str:
-    """Render the runnable human-only recovery command for one claim."""
+    """Render the runnable steering-seat recovery command for one claim."""
     project_args = (
         ()
         if key.startswith(QA_HOST_KEY_PREFIX)

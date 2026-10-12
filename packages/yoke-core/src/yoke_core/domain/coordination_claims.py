@@ -9,7 +9,7 @@ liveness policy, which
 :data:`yoke_core.domain.work_claim_targets.STICKY_TARGET_KINDS` owns and
 the stale-session sweep and session-end release consult: the resource
 keeps operating after the session that took it goes quiet, so recovery
-is the audited human operator release rather than an automatic reclaim.
+is the audited steering-seat operator release rather than an automatic reclaim.
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ class CoordinationClaimReleasedError(CoordinationClaimError):
 
 
 class CoordinationClaimHookContextError(CoordinationClaimError):
-    """Raised when the human-only operator override runs in a hook."""
+    """Raised when the steering-seat operator override runs in a hook."""
 
 
 def _p(conn: Any) -> str:

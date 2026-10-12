@@ -23,6 +23,7 @@ STEERING_RELEASE_USAGE = "yoke claims steering release CLAIM_ID --reason TEXT [-
 STEERING_LIST_USAGE = (
     "yoke claims steering list [--project P] [--session-id S] [--active-only] [--json]"
 )
+STEERING_VERIFY_USAGE = "yoke claims steering verify --project P [--json]"
 
 
 def _scope(claim: Dict[str, Any]) -> Dict[str, Any]:
@@ -216,10 +217,48 @@ def claims_steering_list(args: List[str]) -> int:
     )
 
 
+def claims_steering_verify(args: List[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="yoke claims steering verify",
+        description=STEERING_VERIFY_USAGE,
+        epilog=(
+            "Answers whether this session holds a live steering seat covering "
+            "the project, the authority operator-only commands require. "
+            "Refuses with steering_seat_required and the acquire command."
+        ),
+    )
+    parser.add_argument("--project", required=True, help="Project slug or id.")
+    add_json_arg(parser)
+    parsed = parse_or_usage_error(parser, args, STEERING_VERIFY_USAGE)
+    if parsed is None:
+        return 2
+    return dispatch_and_emit(
+        function_id="claims.steering.verify",
+        target=TargetRef(
+            kind="global",
+            project_id=client_project_context(parsed.project),
+        ),
+        payload={},
+        session_id=None,
+        json_mode=parsed.json_mode,
+        human_writer=None if parsed.json_mode else _print_verified,
+    )
+
+
+def _print_verified(response: Any, stdout, _stderr) -> None:
+    result = response.result or {}
+    print(
+        f"steering seat {result.get('claim_id', '')} covers project "
+        f"{result.get('project_id', '')} for session {result.get('session_id', '')}",
+        file=stdout,
+    )
+
+
 USAGE_BY_FUNCTION_ID = {
     "claims.steering.acquire": STEERING_ACQUIRE_USAGE,
     "claims.steering.release": STEERING_RELEASE_USAGE,
     "claims.steering.list": STEERING_LIST_USAGE,
+    "claims.steering.verify": STEERING_VERIFY_USAGE,
 }
 
 
@@ -227,8 +266,10 @@ __all__ = [
     "STEERING_ACQUIRE_USAGE",
     "STEERING_LIST_USAGE",
     "STEERING_RELEASE_USAGE",
+    "STEERING_VERIFY_USAGE",
     "USAGE_BY_FUNCTION_ID",
     "claims_steering_acquire",
     "claims_steering_list",
+    "claims_steering_verify",
     "claims_steering_release",
 ]

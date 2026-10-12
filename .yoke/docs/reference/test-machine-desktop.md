@@ -25,13 +25,14 @@ Run `yoke test-machine desktop-access --project P --machine NAME --view` on the
 workstation holding the registered fixture credentials. Read the command's
 `--help` for route prerequisites, refusals, and cleanup.
 
-A human operator can run this command from a plain terminal while a QA session
-leases the machine, to observe or assist that session. Access keeps the lease's
-owner, heartbeat, and lifetime unchanged. Harness sessions must own the lease
-and still receive `test_machine_leased` for another session's machine. The
-command names the assisting operator and lease, and records desktop access
-authorization as `SessionActionPerformed` in the holder's history with the
-actor and lease id. If audit capture is unavailable, the output names the
+A session holding a live steering seat on the machine's project can run this
+command while a QA session leases the machine, to observe or assist that
+session (`yoke claims steering acquire --project P`). Access keeps the lease's
+owner, heartbeat, and lifetime unchanged. Any other session must own the lease
+and receives `steering_seat_required` for another session's machine; the
+refusal names the seat to acquire. The command names the assisting operator,
+seat and lease, and records desktop access authorization as
+`SessionActionPerformed` in the holder's history with the actor and lease id. If audit capture is unavailable, the output names the
 reason and asks the control-plane operator to repair it; access still proceeds.
 
 The viewer uses the registered Linux or Windows WSL user's XFCE display over

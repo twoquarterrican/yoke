@@ -120,7 +120,7 @@ def claims_coordination_claim_release(args: List[str]) -> int:
         epilog=(
             "Releases a claim by the (project, key) that addresses it, or by "
             "row id. This is the holder's own release; freeing a claim "
-            "stranded by another session is the human-only "
+            "stranded by another session is the steering-seat "
             "`yoke coordination-claim release`, which records an "
             "OperatorLeaseRelease event."
         ),
@@ -166,9 +166,10 @@ def claims_coordination_claim_operator_release(args: List[str]) -> int:
         prog="yoke coordination-claim release",
         description=OPERATOR_RELEASE_USAGE,
         epilog=(
-            "Human-only recovery for a claim stranded by another session. "
-            "Invoke it as a signed-in human action outside a harness session; "
-            "manual and launched agent sessions are refused. Read the "
+            "Operator recovery for a claim stranded by another session. "
+            "Run it from a session holding a live steering seat on the "
+            "claim's project (yoke claims steering acquire --project P); "
+            "other sessions are refused with steering_seat_required. Read the "
             "active row with `yoke "
             "coordination-claim list [--project P] --key K --active-only "
             "--json`, then pass its exact claim id and holder session. The "

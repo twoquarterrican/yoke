@@ -1,4 +1,4 @@
-"""Human authorization, review digest and closed SQL grammar boundaries."""
+"""Steering-seat authorization, review digest and closed SQL grammar boundaries."""
 
 from unittest.mock import MagicMock, patch
 
@@ -52,6 +52,7 @@ def test_nontransactional_unbounded_and_side_effecting_sql_is_refused(sql):
 
 def document(**overrides):
     fields = dict(
+        project="alpha",
         sql="UPDATE documents SET body='new' WHERE id=1",
         table="documents",
         key_columns=["id"],
@@ -103,50 +104,94 @@ def test_semicolons_in_strings_are_not_statement_boundaries():
     assert stmt.changed_columns == ("body",)
 
 
-@pytest.mark.parametrize(
-    "actor,session", [("2", "agent"), ("anonymous", ""), ("service", "")]
-)
-def test_harness_or_anonymous_identity_cannot_repair(actor, session):
-    request = FunctionCallRequest(
+class _Unclosed:
+    """Keep the shared test connection open across the handler's close()."""
+
+    def __init__(self, inner):
+        self._inner = inner
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+    def close(self):
+        pass
+
+
+def _repair_request(session):
+    plan = document()
+    return FunctionCallRequest(
         function="operator.data_repair.run",
-        actor=ActorContext(actor_id=actor, session_id=session),
+        actor=ActorContext(actor_id="2", session_id=session),
         target=TargetRef(kind="global"),
-        payload={},
+        payload={"plan": plan.model_dump(), "reviewed_sha256": review_digest(plan)},
     )
+
+
+@pytest.mark.parametrize(
+    "session,project,code",
+    [
+        ("s1", 1, "repair_postgres_required"),
+        ("s1", 2, "steering_seat_required"),
+        ("", 1, "steering_seat_required"),
+    ],
+)
+def test_steering_seat_on_the_document_project_authorizes_repair(
+    session, project, code
+):
+    from runtime.api.domain.test_session_message_support import message_connection
+    from runtime.api.domain.test_steering_operation_authority import seat
+
+    conn = message_connection()
+    seat(conn, project=project)
+    with (
+        patch(
+            "yoke_core.domain.handlers.operator_data_repair.db_helpers.connect",
+            return_value=_Unclosed(conn),
+        ),
+        patch(
+            "yoke_core.domain.handlers.operator_data_repair.require_control_plane_permission"
+        ),
+    ):
+        outcome = handle_repair(_repair_request(session))
+    assert outcome.error.code == code
+    if code == "steering_seat_required":
+        assert "yoke claims steering acquire --project 1" in outcome.error.message
+
+
+def test_unauthenticated_actor_is_refused_before_any_read():
+    request = _repair_request("s1")
+    request.actor.actor_id = "anonymous"
     with patch(
         "yoke_core.domain.handlers.operator_data_repair.db_helpers.connect"
     ) as connect:
         outcome = handle_repair(request)
-    assert not outcome.primary_success
-    assert outcome.error.code == "human_operator_required"
+    assert outcome.error.code == "operator_permission_required"
     connect.assert_not_called()
 
 
-def test_human_identity_still_requires_control_plane_permission():
+def test_seat_holder_still_requires_control_plane_permission():
     from yoke_core.domain.actor_permissions import PermissionDenied
 
-    plan = document()
-    request = FunctionCallRequest(
-        function="operator.data_repair.run",
-        actor=ActorContext(actor_id="2", session_id=""),
-        target=TargetRef(kind="global"),
-        payload={"plan": plan.model_dump(), "reviewed_sha256": review_digest(plan)},
-    )
     with (
         patch(
             "yoke_core.domain.handlers.operator_data_repair.db_helpers.connect",
             return_value=MagicMock(),
         ),
         patch(
+            "yoke_core.domain.handlers.operator_data_repair.resolve_project_id",
+            return_value=1,
+        ),
+        patch("yoke_core.domain.handlers.operator_data_repair.require_operator_seat"),
+        patch(
             "yoke_core.domain.handlers.operator_data_repair.require_control_plane_permission",
             side_effect=PermissionDenied("no org grant"),
         ),
     ):
-        outcome = handle_repair(request)
+        outcome = handle_repair(_repair_request("s1"))
     assert outcome.error.code == "operator_permission_required"
 
 
-def test_registration_declares_floor_and_no_claim_or_session_requirement():
+def test_registration_declares_floor_and_handler_owned_seat_gate():
     from yoke_core.domain.handlers import _register_operator_data_repair
 
     registry = MagicMock()
@@ -155,6 +200,7 @@ def test_registration_declares_floor_and_no_claim_or_session_requirement():
     assert kwargs["minimum_serving_version"] == "next-release"
     assert kwargs["claim_required_kind"] is None
     assert kwargs["ambient_session_required"] is False
+    assert "steering_seat_required" in kwargs["guardrails"]
 
 
 def test_cli_dispatches_reviewed_document_without_project_or_lane_context(tmp_path):

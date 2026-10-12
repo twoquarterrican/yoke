@@ -3,10 +3,13 @@
 Run `yoke operator data-repair --content-file repair.json --reviewed-sha256 SHA --dry-run`.
 Review the durable simulation result, then omit `--dry-run` to apply the same
 document. This registered `operator.data_repair.run` command works over HTTPS
-and configured local PostgreSQL authority, without a project, item, claim,
-worktree, or source execution. Use the released CLI, signed in as the universe's
-human organization administrator, outside any harness session. Harness sessions
-and service actors refuse even if they carry an administrator's identity.
+and configured local PostgreSQL authority, without an item, work claim,
+worktree, or source execution. Run it from a session holding a live steering
+seat on the document's project (`yoke claims steering acquire --project P`),
+whose actor holds the organization administrator permission. Any other caller,
+including a session without that seat, refuses with `steering_seat_required`
+and the acquire command. A human operator or an agent steering session may
+run it once the operator has approved the document's digest.
 
 Use an existing domain command first. This named exception repairs bounded
 existing rows. Schema changes and broader transforms still use governed
@@ -15,10 +18,11 @@ command now runs read-only transactions and refuses writes.
 
 ## Review document
 
-All six fields below are required; additional fields refuse:
+All seven fields below are required; additional fields refuse:
 
 ```json
 {
+  "project": "yoke",
   "sql": "UPDATE repair_documents SET document=(document::jsonb - 'diagnostic_expires_at')::text WHERE id=1",
   "table": "repair_documents",
   "key_columns": ["id"],
@@ -30,6 +34,10 @@ All six fields below are required; additional fields refuse:
 
 The example illustrates a table with integer primary key id and TEXT document; use the live table's real primary key and
 document columns, discovered with `yoke db read`, rather than assuming names.
+`project` names the project (slug or id) whose rows the repair changes; the
+steering seat must cover it. When the table has a `project_id` column, every
+before row must include it and carry that project's id, or the attempt refuses
+with `repair_project_scope_mismatch`; split a cross-project repair per project.
 Each snapshot contains the complete primary key in catalog order and every
 assigned column. Include any other values the reviewer needs. The column set
 must match in every row. JSON document columns that are TEXT remain strings;
@@ -39,7 +47,7 @@ use the credential capability's own command for those values.
 
 Review the complete SQL, intended rows, expected result and reason. Then run
 `yoke operator data-repair --content-file repair.json --print-digest` to print
-the document's SHA-256 for the human review. Computing a digest does not
+the document's SHA-256 for the operator's review. Computing a digest does not
 approve the document. The digest is SHA-256 of its UTF-8 JSON with sorted keys,
 compact separators, Unicode preserved and no nonfinite numbers. Pass the exact
 reviewed digest to simulation and application. Editing SQL whitespace, values,

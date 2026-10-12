@@ -22,6 +22,7 @@ from yoke_core.domain.operator_data_repair_sql import (
 
 class RepairPlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    project: str = Field(min_length=1)
     sql: str = Field(min_length=1, max_length=100000)
     table: str
     key_columns: list[str] = Field(min_length=1)
@@ -95,7 +96,7 @@ def validate_plan(plan: RepairPlan, reviewed_sha256: str):
     return stmt, columns
 
 
-def _table_contract(conn, plan, columns):
+def _table_contract(conn, plan, columns, project_id: int):
     table = "public." + plan.table
     # A table lock closes races between predicate review and execution, including
     # inserts; no source lane or item claim is involved in operator authority.
@@ -145,6 +146,13 @@ def _table_contract(conn, plan, columns):
         (table,),
     ).fetchall()
     declared = {name: (schema, typename) for name, schema, typename in types}
+    if "project_id" in declared and any(
+        row.get("project_id") != project_id for row in plan.before
+    ):
+        raise RepairRefusal(
+            "repair_project_scope_mismatch",
+            "This table is project-owned: every before row must carry project_id equal to the document's project; split the repair per project.",
+        )
     if any(
         declared.get(name, (None, None))[0] != "pg_catalog"
         or declared[name][1] not in SAFE_TYPES
@@ -185,7 +193,13 @@ def _snapshot(conn, plan, columns, predicate: str, params=()):
 
 
 def run_repair(
-    conn, plan: RepairPlan, *, reviewed_sha256: str, actor_id: int, dry_run: bool
+    conn,
+    plan: RepairPlan,
+    *,
+    reviewed_sha256: str,
+    actor_id: int,
+    project_id: int,
+    dry_run: bool,
 ):
     stmt, columns = validate_plan(plan, reviewed_sha256)
     if plan.table in {
@@ -210,7 +224,9 @@ def run_repair(
         conn.execute("SET LOCAL search_path = pg_catalog")
         conn.execute("SET LOCAL statement_timeout = '5s'")
         conn.execute("SET LOCAL lock_timeout = '5s'")
-        _table_contract(conn, plan, sorted(set(columns) | set(stmt.read_columns)))
+        _table_contract(
+            conn, plan, sorted(set(columns) | set(stmt.read_columns)), project_id
+        )
         before = _snapshot(conn, plan, columns, stmt.predicate)
         if _rows_by_key(before, plan.key_columns) != _rows_by_key(
             plan.before, plan.key_columns

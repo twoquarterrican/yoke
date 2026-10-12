@@ -37,9 +37,10 @@ def test_machine_desktop_access(args: list[str]) -> int:
             "For SSH forwarding the control socket is PASSWORD_FILE.ssh; close it with "
             "ssh -S PASSWORD_FILE.ssh -O exit SSH_USER@SSH_HOST after connecting. "
             "Remove the private password copy after use."
-            " A human operator in a plain terminal can assist an actively leased desktop without "
-            "taking or releasing its lease. Harness sessions must own the lease. The output names "
-            "the assisting operator and lease; authorization is audited in the holder's session history."
+            " A session holding a live steering seat on the project can assist an actively leased "
+            "desktop without taking or releasing its lease; any other session must own the lease and "
+            "otherwise receives steering_seat_required. The output names the assisting operator, "
+            "seat and lease; authorization is audited in the holder's session history."
         ),
     )
     parser.add_argument("--project", required=True)

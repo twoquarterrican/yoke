@@ -1,4 +1,4 @@
-"""Tests for the human-only coordination-claim recovery command."""
+"""Tests for the steering-seat coordination-claim recovery command."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ def test_help_teaches_hosted_operator_recovery(capsys) -> None:
     captured = capsys.readouterr()
     assert OPERATOR_RELEASE_USAGE in captured.out
     assert "works through HTTPS or local authority" in captured.out
-    assert "signed-in human action" in captured.out
-    assert "agent sessions are refused" in captured.out
+    assert "steering_seat_required" in captured.out
+    assert "human" not in captured.out
     assert "--claim-id" in captured.out
     assert "--holder-session-id" in captured.out
     assert "--session-id" not in captured.out
@@ -189,7 +189,7 @@ def test_list_dispatches_item_filter_on_the_function_call_surface() -> None:
                     )
 
     assert result == 0
-    assert captured[-1]["payload"] == {"owner_item_id": 42}
+    assert captured[-1]["payload"] == {"owner_public_ref": "42"}
 
 
 def test_project_scoped_recovery_without_project_keeps_required_message(capsys):

@@ -101,7 +101,8 @@ Register it once with `yoke project register /work/my-project --project-id 7`.
 Checkout lookup does not depend on `--env`, `YOKE_ENV`, or `active_env`;
 Every configured connection uses the same entry.
 Removing a connection keeps project checkouts. Moving an occupied project's
-checkout requires `--reassign` from a plain operator terminal.
+checkout requires `--reassign` from a session holding that project's live
+steering seat; the CLI confirms it with `yoke claims steering verify`.
 The config supports only this list shape and these two entry fields.
 
 

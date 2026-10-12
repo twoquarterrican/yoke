@@ -58,6 +58,21 @@ def register(registry) -> None:
         adapter_status="live",
         claim_required_kind=None,
     )
+    registry.register(
+        "claims.steering.verify",
+        _steering.handle_verify,
+        _steering.VerifyRequest,
+        _steering.VerifyResponse,
+        stability="stable",
+        owner_module="yoke_core.domain.handlers.claims_steering",
+        target_kinds=["global"],
+        side_effects=[],
+        emitted_event_names=[],
+        guardrails=["steering_seat_required"],
+        adapter_status="live",
+        claim_required_kind=None,
+        minimum_serving_version="next-release",
+    )
 
 
 __all__ = ["register"]

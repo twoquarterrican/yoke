@@ -67,8 +67,9 @@ stage-targeted release and rehearsal receipts. Stage is disposable test state.
 
 When a sanctioned operator row repair has no domain command, use
 `yoke operator data-repair --content-file repair.json --reviewed-sha256 SHA --dry-run`
-from the released CLI as a signed-in human org administrator outside a harness
-session. Review the simulation audit, then omit `--dry-run` to apply the same
+from the released CLI in a session holding a live steering seat on the
+document's project, acting for an org administrator, once the operator has
+approved the digest. Review the simulation audit, then omit `--dry-run` to apply the same
 reviewed document. No item or source lane is required. The
 [repair contract](public/operator-data-repair.md) owns document guards and
 durable evidence. Raw query is read-only. Schema and broader data changes

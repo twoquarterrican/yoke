@@ -1,4 +1,4 @@
-"""Human assistance preserves a QA host lease; harness sessions remain bound."""
+"""Steering-seat assistance preserves a QA host lease; other sessions remain bound."""
 
 from copy import deepcopy
 import json
@@ -9,6 +9,7 @@ import pytest
 from yoke_contracts.api.function_call import FunctionCallRequest, HandlerOutcome
 from yoke_core.domain.handlers import machine_desktop_access as handler
 from yoke_core.domain import db_backend
+from yoke_core.domain.sessions_analytics_core import SessionError
 from runtime.api.fixtures.pg_testdb import test_database
 
 
@@ -33,15 +34,21 @@ def route(monkeypatch):
     )
     conn = SimpleNamespace(close=lambda: None)
     monkeypatch.setattr(handler.db_helpers, "connect", lambda: conn)
-    monkeypatch.setattr(
-        handler.actors, "is_human_actor", lambda conn, actor: actor == 3
-    )
     monkeypatch.setattr(handler.actors, "actor_name", lambda conn, actor: "Operator")
-    monkeypatch.setattr(handler, "bind_operating_actor", lambda req: req)
+    monkeypatch.setattr(handler, "resolve_project_id", lambda conn, project: 1)
+
+    def seat(conn, *, caller_session_id, project_id, action):
+        if caller_session_id != "steering":
+            raise SessionError(
+                "steering_seat_required", f"{action} requires a live steering seat"
+            )
+        return {"claim_id": 9}
+
+    monkeypatch.setattr(handler, "require_operator_seat", seat)
     return detail
 
 
-def request(session_id="", actor_id="3"):
+def request(session_id="steering", actor_id="3"):
     return FunctionCallRequest(
         function="test_machine.desktop_access",
         request_id="desktop-assistance",
@@ -51,7 +58,7 @@ def request(session_id="", actor_id="3"):
     )
 
 
-def test_human_access_records_actor_against_unchanged_lease(route, monkeypatch):
+def test_seat_holder_access_records_actor_against_unchanged_lease(route, monkeypatch):
     before = deepcopy(route)
     events = []
     monkeypatch.setattr(
@@ -64,6 +71,7 @@ def test_human_access_records_actor_against_unchanged_lease(route, monkeypatch):
     access = outcome.result_payload["operator_access"]
     assert access["actor_id"] == "3"
     assert access["lease_id"] == 17
+    assert access["steering_claim_id"] == 9
     assert access["audit_recorded"]
     assert route == before
     assert events[0][1]["session_id"] == "holder"
@@ -71,7 +79,7 @@ def test_human_access_records_actor_against_unchanged_lease(route, monkeypatch):
     assert events[0][1]["context"]["lease_id"] == 17
 
 
-def test_human_access_audit_persists_through_event_schema(route, monkeypatch):
+def test_seat_holder_access_audit_persists_through_event_schema(route, monkeypatch):
     # Exercise the real emitter and schema, including source-type constraints.
     # The handler owns a separate connection, so inspect after it closes.
     with test_database() as conn:
@@ -95,36 +103,54 @@ def test_human_access_audit_persists_through_event_schema(route, monkeypatch):
         assert context["actor_id"] == "3"
 
 
-@pytest.mark.parametrize("session_id", ["foreign", "holder"])
-def test_harness_access_remains_bound_to_session_even_for_human_actor(
-    route, session_id
-):
+@pytest.mark.parametrize("session_id", ["foreign", "", "holder"])
+def test_access_without_a_seat_remains_bound_to_the_lease_holder(route, session_id):
     outcome = handler.handle_desktop_access(request(session_id=session_id))
     assert outcome.primary_success == (session_id == "holder")
-    if session_id == "foreign":
-        assert outcome.error.code == "test_machine_leased"
-        assert "plain terminal" in outcome.error.recovery_hint
-    else:
+    if session_id == "holder":
         assert "operator_access" not in outcome.result_payload
+    else:
+        assert outcome.error.code == "steering_seat_required"
+        assert "steering seat" in outcome.error.recovery_hint
 
 
-@pytest.mark.parametrize("actor_id", [None, "1", "unbound"])
-def test_sessionless_unattributed_or_system_caller_cannot_assist(route, actor_id):
-    outcome = handler.handle_desktop_access(request(actor_id=actor_id))
-    assert outcome.error.code == "desktop_operator_identity_required"
+@pytest.mark.parametrize("seat_project,allowed", [(1, True), (2, False)])
+def test_live_seat_must_cover_the_machine_project(monkeypatch, seat_project, allowed):
+    from runtime.api.domain.test_session_message_support import message_connection
+    from runtime.api.domain.test_steering_operation_authority import seat
+    from yoke_core.domain import session_steering_authority
 
-
-def test_local_terminal_binds_its_operating_human(route, monkeypatch):
-    monkeypatch.setattr(handler, "bind_operating_actor", lambda req: request())
+    conn = message_connection()
+    seat(conn, project=seat_project)
+    detail = {
+        "project": "alpha",
+        "machine": "lab",
+        "settings": {"desktop_route": "direct"},
+        "active_lease": {"id": 17, "session_id": "holder"},
+    }
+    monkeypatch.setattr(
+        handler,
+        "handle_get",
+        lambda req: HandlerOutcome(primary_success=True, result_payload=detail),
+    )
+    monkeypatch.setattr(handler.db_helpers, "connect", lambda: conn)
+    monkeypatch.setattr(handler, "resolve_project_id", lambda c, project: 1)
+    monkeypatch.setattr(handler.actors, "actor_name", lambda c, actor: "Operator")
     monkeypatch.setattr(
         handler, "emit_event", lambda *a, **kw: SimpleNamespace(ok=True)
     )
-    outcome = handler.handle_desktop_access(request(actor_id=None))
-    assert outcome.primary_success
-    assert outcome.result_payload["operator_access"]["actor_id"] == "3"
+    monkeypatch.setattr(
+        handler,
+        "require_operator_seat",
+        session_steering_authority.require_operator_seat,
+    )
+    outcome = handler.handle_desktop_access(request(session_id="s1"))
+    assert outcome.primary_success is allowed
+    if not allowed:
+        assert outcome.error.code == "steering_seat_required"
 
 
-def test_audit_unavailable_is_explicit_and_does_not_prevent_human_access(
+def test_audit_unavailable_is_explicit_and_does_not_prevent_seat_access(
     route, monkeypatch
 ):
     monkeypatch.setattr(

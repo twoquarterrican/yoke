@@ -217,7 +217,19 @@ def test_route_authorization_refuses_foreign_lease_and_returns_only_settings(
         "handle_get",
         lambda request: HandlerOutcome(primary_success=True, result_payload=detail),
     )
-    assert handler.handle_desktop_access(_request()).error.code == "test_machine_leased"
+    from types import SimpleNamespace
+    from yoke_core.domain.sessions_analytics_core import SessionError
+
+    def no_seat(conn, **kwargs):
+        raise SessionError("steering_seat_required", "requires a live steering seat")
+
+    monkeypatch.setattr(
+        handler.db_helpers, "connect", lambda: SimpleNamespace(close=lambda: None)
+    )
+    monkeypatch.setattr(handler, "resolve_project_id", lambda conn, project: 1)
+    monkeypatch.setattr(handler, "require_operator_seat", no_seat)
+    refused = handler.handle_desktop_access(_request())
+    assert refused.error.code == "steering_seat_required"
     detail["active_lease"] = {"session_id": "caller"}
     result = handler.handle_desktop_access(_request()).result_payload
     assert set(result) == {"project", "machine", "settings"}

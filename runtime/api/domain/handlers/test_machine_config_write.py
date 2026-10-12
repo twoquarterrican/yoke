@@ -1,17 +1,25 @@
 """Tests for the machine-config writer function handlers.
 
-``handle_project_register`` gates ``--reassign`` on ambient session
-identity: any resolvable session id means a routine agent invocation
-(every Dash/Engineer/Conduct/Tester worker has one by construction), so
-the call is refused before it ever reaches the writer. A bare-terminal
-call (no session id) needs no such check.
+``handle_project_register`` gates ``--reassign`` on the caller's live
+steering seat covering the project whose checkout moves; a call without
+that seat is refused before it ever reaches the writer. Registration
+without ``--reassign`` needs no seat.
 """
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from unittest.mock import patch
 
-from yoke_contracts.api.function_call import ActorContext, FunctionCallRequest, TargetRef
+import pytest
+
+from runtime.api.domain.test_session_message_support import message_connection
+from runtime.api.domain.test_steering_operation_authority import seat
+from yoke_contracts.api.function_call import (
+    ActorContext,
+    FunctionCallRequest,
+    TargetRef,
+)
 from yoke_core.domain.handlers import machine_config_write as handlers
 
 
@@ -24,54 +32,101 @@ def _request(payload: dict, *, session_id: str = "") -> FunctionCallRequest:
     )
 
 
-class TestHandleProjectRegister:
-    def test_reassign_with_ambient_session_is_refused(self):
-        request = _request(
-            {"repo_root": "/repo", "project_id": 7, "reassign": True},
-            session_id="sess-worker-1",
-        )
-
-        with patch.object(handlers.machine_config_writer, "register_project") as mock_register:
-            outcome = handlers.handle_project_register(request)
-
-        mock_register.assert_not_called()
-        assert outcome.primary_success is False
-        assert outcome.error is not None
-        assert "sess-worker-1" in outcome.error.message
-        assert "--reassign refused" in outcome.error.message
-
-    def test_reassign_with_no_ambient_session_proceeds(self):
-        request = _request(
-            {"repo_root": "/repo", "project_id": 7, "reassign": True},
-            session_id="",
-        )
-
-        with patch.object(
-            handlers.machine_config_writer, "register_project",
+def _register(request, *, seat_project=None):
+    conn = message_connection()
+    if seat_project is not None:
+        seat(conn, project=seat_project)
+    with (
+        patch("yoke_core.domain.db_helpers.connect", return_value=nullcontext(conn)),
+        patch.object(
+            handlers.machine_config_writer,
+            "register_project",
             return_value={"checkout": "/repo", "entry": {}, "config": "/cfg"},
-        ) as mock_register:
-            outcome = handlers.handle_project_register(request)
+        ) as mock_register,
+    ):
+        return handlers.handle_project_register(request), mock_register
 
-        mock_register.assert_called_once_with(
-            "/repo", 7, board_scope=None, board_render_path=None,
-            reassign=True, path=None,
-        )
-        assert outcome.primary_success is True
 
-    def test_no_reassign_with_ambient_session_proceeds(self):
-        request = _request(
-            {"repo_root": "/repo", "project_id": 7},
-            session_id="sess-worker-1",
-        )
+@pytest.mark.parametrize("session_id,seat_project", [("s1", 2), ("s1", None), ("", 1)])
+def test_reassign_without_a_covering_seat_is_refused(session_id, seat_project):
+    outcome, mock_register = _register(
+        _request(
+            {"repo_root": "/repo", "project_id": 1, "reassign": True},
+            session_id=session_id,
+        ),
+        seat_project=seat_project,
+    )
 
-        with patch.object(
-            handlers.machine_config_writer, "register_project",
-            return_value={"checkout": "/repo", "entry": {}, "config": "/cfg"},
-        ) as mock_register:
-            outcome = handlers.handle_project_register(request)
+    mock_register.assert_not_called()
+    assert outcome.primary_success is False
+    assert outcome.error.code == "steering_seat_required"
+    assert "yoke claims steering acquire --project 1" in outcome.error.message
 
-        mock_register.assert_called_once_with(
-            "/repo", 7, board_scope=None, board_render_path=None,
-            reassign=False, path=None,
-        )
-        assert outcome.primary_success is True
+
+def test_reassign_with_the_project_steering_seat_proceeds():
+    outcome, mock_register = _register(
+        _request(
+            {"repo_root": "/repo", "project_id": 1, "reassign": True},
+            session_id="s1",
+        ),
+        seat_project=1,
+    )
+
+    mock_register.assert_called_once_with(
+        "/repo",
+        1,
+        board_scope=None,
+        board_render_path=None,
+        reassign=True,
+        path=None,
+    )
+    assert outcome.primary_success is True
+
+
+def test_no_reassign_needs_no_seat():
+    outcome, mock_register = _register(
+        _request({"repo_root": "/repo", "project_id": 7}, session_id="s1")
+    )
+
+    mock_register.assert_called_once_with(
+        "/repo",
+        7,
+        board_scope=None,
+        board_render_path=None,
+        reassign=False,
+        path=None,
+    )
+    assert outcome.primary_success is True
+
+
+@pytest.mark.parametrize("success", [True, False])
+def test_cli_reassign_asks_the_control_plane_for_the_seat(success):
+    from types import SimpleNamespace
+
+    from yoke_cli.commands.adapters import config_write_project as cli
+    from yoke_cli.config import writer
+
+    error = SimpleNamespace(
+        code="steering_seat_required",
+        message="requires a live steering seat for project 1.",
+    )
+    with (
+        patch.object(cli, "ensure_handlers_loaded"),
+        patch.object(
+            cli,
+            "call_dispatcher",
+            return_value=SimpleNamespace(
+                success=success, error=None if success else error
+            ),
+        ) as dispatch,
+    ):
+        if success:
+            cli.require_reassign_seat(1)
+        else:
+            with pytest.raises(
+                writer.MachineConfigWriteError, match="steering_seat_required"
+            ):
+                cli.require_reassign_seat(1)
+    call = dispatch.call_args.kwargs
+    assert call["function_id"] == "claims.steering.verify"
+    assert call["target"].project_id == "1"
