@@ -7,14 +7,17 @@ prompts on every ``Bash`` / ``Write`` / ``Edit`` / ``Monitor`` call, stalling
 the flow). It follows the same "manage exactly our region, never the operator's
 keys" contract as the hook merge:
 
-* ``permissions.allow`` — union in the entries Yoke requires; an operator's own
-  allow entries are never removed or reordered, and refresh is idempotent.
+* ``permissions.allow`` — union in the entries Yoke renders and remove the
+  entries a previous install recorded that the current bundle no longer
+  renders; an entry Yoke never recorded is operator-authored and is never
+  removed or reordered, and refresh is idempotent.
 * ``autoMemoryEnabled`` — seed to the bundle value only when the key is absent;
   an operator's explicit choice is never overwritten.
 
-The install manifest records exactly what this pass added (which allow entries,
-whether it seeded the flag) so uninstall removes precisely that and nothing an
-operator authored. File creation/deletion of ``.claude/settings.json`` itself is
+The install manifest records the full allow set this pass renders
+(``rendered_allow``) and whether it seeded the flag, so the next refresh can
+retire entries Yoke stopped rendering and uninstall removes the recorded set.
+File creation/deletion of ``.claude/settings.json`` itself is
 owned by :mod:`hooks` (the hook merge always runs first and creates it); this
 pass only mutates the region when the file already exists in the normal flow.
 """
@@ -75,27 +78,64 @@ def _validate(managed: Any) -> Tuple[List[str], Optional[bool]]:
 
 
 def _plan(
-    payload: Optional[Dict[str, Any]], managed: Dict[str, Any]
+    payload: Optional[Dict[str, Any]],
+    managed: Dict[str, Any],
+    prior_record: Optional[Dict[str, Any]],
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Return (new_payload, record) — pure, no IO. ``record`` names what we add."""
+    """Return (new_payload, record) — pure, no IO.
+
+    ``record`` names what this pass adds and removes: an entry the prior
+    record's ``rendered_allow`` carries that ``managed`` no longer renders is
+    retired; an entry absent from that record is the operator's and stays.
+    """
     allow_wanted, auto_wanted = _validate(managed)
+    prior = prior_record if isinstance(prior_record, dict) else {}
+    retired = [
+        entry
+        for entry in prior.get("rendered_allow") or []
+        if entry not in allow_wanted
+    ]
     payload = dict(payload) if payload else {}
     permissions = dict(payload.get("permissions") or {})
     created_permissions = "permissions" not in payload
     existing_allow = list(permissions.get("allow") or [])
-    added = [entry for entry in allow_wanted if entry not in existing_allow]
-    permissions["allow"] = existing_allow + added
+    kept = [entry for entry in existing_allow if entry not in retired]
+    removed = [entry for entry in existing_allow if entry in retired]
+    added = [entry for entry in allow_wanted if entry not in kept]
+    permissions["allow"] = kept + added
     payload["permissions"] = permissions
     set_auto = False
     if auto_wanted is not None and "autoMemoryEnabled" not in payload:
         payload["autoMemoryEnabled"] = auto_wanted
         set_auto = True
     record = {
+        "rendered_allow": allow_wanted,
         "added_allow": added,
+        "removed_allow": removed,
         "set_auto_memory": set_auto,
         "created_permissions": created_permissions and bool(added),
     }
     return payload, record
+
+
+def _summary(record: Dict[str, Any], *, preview: bool) -> str:
+    """Name the allow-list and flag changes a plan makes, for action lines."""
+    bits = []
+    if record["added_allow"]:
+        verb = "allow" if preview else "allowed"
+        bits.append(f"{verb} {len(record['added_allow'])} Yoke tool(s)")
+    if record["removed_allow"]:
+        verb = "remove" if preview else "removed"
+        bits.append(f"{verb} {len(record['removed_allow'])} retired Yoke permission(s)")
+    if record["set_auto_memory"]:
+        bits.append("set autoMemoryEnabled")
+    return ", ".join(bits) or "permissions"
+
+
+def _changes(record: Dict[str, Any]) -> bool:
+    return bool(
+        record["added_allow"] or record["removed_allow"] or record["set_auto_memory"]
+    )
 
 
 def apply_settings_permissions(
@@ -103,11 +143,12 @@ def apply_settings_permissions(
     managed: Optional[Dict[str, Any]],
     prior_record: Optional[Dict[str, Any]] = None,
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Union our permissions region into ``.claude/settings.json``.
+    """Reconcile our permissions region into ``.claude/settings.json``.
 
-    Returns ``(record, report)``. ``record`` (manifest-persisted) names exactly
-    what was added so uninstall is precise. ``report`` carries the user-facing
-    action line and the added counts.
+    Returns ``(record, report)``. ``record`` (manifest-persisted) carries the
+    full rendered allow set so the next refresh retires what Yoke stops
+    rendering and uninstall removes it. ``report`` carries the user-facing
+    action line.
     """
     if not managed:
         return {}, {"actions": [], "changed": False}
@@ -119,73 +160,45 @@ def apply_settings_permissions(
     target = repo_root / CLAUDE_SETTINGS_REL
     payload = _load(target)
     created_file = payload is None
-    new_payload, current_record = _plan(payload, managed)
-    current_record["created_file"] = created_file
-    changed = (
-        bool(current_record["added_allow"])
-        or current_record["set_auto_memory"]
-        or created_file
-    )
+    new_payload, current = _plan(payload, managed, prior_record)
+    changed = _changes(current) or created_file
     prior = prior_record if isinstance(prior_record, dict) else {}
     record = {
-        "added_allow": list(
-            dict.fromkeys(
-                [
-                    *list(prior.get("added_allow") or []),
-                    *current_record["added_allow"],
-                ]
-            )
-        ),
+        "rendered_allow": current["rendered_allow"],
         "set_auto_memory": bool(
-            prior.get("set_auto_memory") or current_record["set_auto_memory"]
+            prior.get("set_auto_memory") or current["set_auto_memory"]
         ),
         "created_permissions": bool(
-            prior.get("created_permissions") or current_record["created_permissions"]
+            prior.get("created_permissions") or current["created_permissions"]
         ),
         "created_file": bool(prior.get("created_file") or created_file),
     }
-    actions: List[str] = []
     if changed:
         _write(target, new_payload)
-        added_n = len(current_record["added_allow"])
-        bits = []
-        if added_n:
-            bits.append(f"allowed {added_n} Yoke tool(s)")
-        if current_record["set_auto_memory"]:
-            bits.append("set autoMemoryEnabled")
-        actions.append(
-            f"Updated: {CLAUDE_SETTINGS_REL} ({', '.join(bits) or 'permissions'}; "
+        action = (
+            f"Updated: {CLAUDE_SETTINGS_REL} ({_summary(current, preview=False)}; "
             "your other settings preserved)"
         )
     else:
-        actions.append(
-            f"Exists: {CLAUDE_SETTINGS_REL} (Yoke tool permissions up to date)"
-        )
-    return record, {"actions": actions, "changed": changed}
+        action = f"Exists: {CLAUDE_SETTINGS_REL} (Yoke tool permissions up to date)"
+    return record, {"actions": [action], "changed": changed}
 
 
 def preview_settings_permissions(
     repo_root: Path,
     managed: Optional[Dict[str, Any]],
+    prior_record: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Plan the permissions mutation without writing (review/preview)."""
     if not managed:
         return {"actions": [], "would_change": False}
     target = repo_root / CLAUDE_SETTINGS_REL
     payload = _load(target)
-    _new_payload, record = _plan(payload, managed)
-    would_change = (
-        bool(record["added_allow"]) or record["set_auto_memory"] or payload is None
-    )
-    added_n = len(record["added_allow"])
+    _new_payload, record = _plan(payload, managed, prior_record)
+    would_change = _changes(record) or payload is None
     if would_change:
-        bits = []
-        if added_n:
-            bits.append(f"allow {added_n} Yoke tool(s)")
-        if record["set_auto_memory"] or payload is None:
-            bits.append("set autoMemoryEnabled")
         line = (
-            f"Would update: {CLAUDE_SETTINGS_REL} ({', '.join(bits)}; "
+            f"Would update: {CLAUDE_SETTINGS_REL} ({_summary(record, preview=True)}; "
             "your other settings preserved)"
         )
     else:
@@ -197,7 +210,7 @@ def remove_settings_permissions(
     repo_root: Path,
     record: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Uninstall pass: remove exactly the allow entries and flag we added.
+    """Uninstall pass: remove the recorded allow set and the flag we seeded.
 
     Runs BEFORE the hook de-merge so that, once our region is gone, the hook
     de-merge's "delete when only an empty hooks block remains" check can fire.
@@ -214,12 +227,12 @@ def remove_settings_permissions(
     payload = _load(target)
     if payload is None:
         return {"removed_allow": [], "unset_auto_memory": False, "deleted_file": False}
-    added_allow = list(record.get("added_allow") or [])
+    rendered_allow = list(record.get("rendered_allow") or [])
     removed: List[str] = []
     permissions = payload.get("permissions")
     if isinstance(permissions, dict) and isinstance(permissions.get("allow"), list):
-        kept = [entry for entry in permissions["allow"] if entry not in added_allow]
-        removed = [entry for entry in permissions["allow"] if entry in added_allow]
+        kept = [entry for entry in permissions["allow"] if entry not in rendered_allow]
+        removed = [entry for entry in permissions["allow"] if entry in rendered_allow]
         if kept:
             permissions["allow"] = kept
         else:

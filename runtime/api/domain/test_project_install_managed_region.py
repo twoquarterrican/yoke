@@ -65,7 +65,7 @@ def test_install_creates_rules_and_permissions(repo) -> None:
     man = _manifest(repo)
     assert set(man["managed_markdown"]) == {"AGENTS.md"}
     assert man["managed_markdown"]["AGENTS.md"]["file_created"] is True
-    assert "Monitor" in man["settings_permissions"]["added_allow"]
+    assert "Monitor" in man["settings_permissions"]["rendered_allow"]
 
     assert any(
         "Created: AGENTS.md" in line for line in report["managed_markdown_actions"]
@@ -79,6 +79,23 @@ def test_refresh_is_idempotent(repo) -> None:
     report = apply_bundle(repo, _bundle(), operation="refresh", source="test")
     assert report["managed_markdown_written"] == []
     assert _manifest(repo)["settings_permissions"] == first_permissions
+
+
+def test_refresh_retires_permission_yoke_stopped_rendering(repo) -> None:
+    apply_bundle(repo, _bundle(), source="test")
+    settings = _settings(repo)
+    settings["permissions"]["allow"].append("OperatorTool")
+    (repo / ".claude/settings.json").write_text(json.dumps(settings), encoding="utf-8")
+    bundle = _bundle()
+    bundle["claude_settings_permissions"]["allow"].remove("Write(**)")
+
+    apply_bundle(repo, bundle, operation="refresh", source="test")
+
+    allow = _settings(repo)["permissions"]["allow"]
+    assert "Write(**)" not in allow
+    assert "OperatorTool" in allow
+    rendered = _manifest(repo)["settings_permissions"]["rendered_allow"]
+    assert "Write(**)" not in rendered
 
 
 def test_preexisting_file_preserved_and_uninstall(repo) -> None:

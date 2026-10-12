@@ -116,6 +116,7 @@ def preflight_apply(
         settings_permissions_layer.preview_settings_permissions(
             repo_root,
             bundle.get("claude_settings_permissions"),
+            old_manifest.get("settings_permissions"),
         )
     )
     cursor_permissions_preview = cursor_permissions_layer.preview_cursor_permissions(

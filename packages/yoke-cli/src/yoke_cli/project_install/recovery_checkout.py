@@ -69,7 +69,9 @@ def plan(
     payload = claude["payload"] if claude else None
     permissions = bundle.get("claude_settings_permissions")
     if permissions:
-        payload, _ = settings_permissions._plan(payload, permissions)
+        payload, _ = settings_permissions._plan(
+            payload, permissions, prior.get("settings_permissions")
+        )
         json_state(".claude/settings.json", payload)
     status = bundle.get(settings_status_line.MANAGED_STATUS_LINE_KEY)
     if status and (
