@@ -123,4 +123,10 @@ def prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str, 
         (dumps_compact(record), run_id),
     )
     invalidate_run_source_facts(conn, run_id)
-    return {"bound_sources": record, "rebound": stale}
+    return {
+        "bound_sources": record,
+        "rebound": [
+            {key: value for key, value in change.items() if key != "reason"}
+            for change in stale
+        ],
+    }

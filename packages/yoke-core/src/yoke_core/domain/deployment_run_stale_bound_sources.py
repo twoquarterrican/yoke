@@ -190,7 +190,8 @@ def _recovery_for_consumption(conn, run_id, entries, stale, unverified):
             change["reason"] = (
                 f"bound source {change['project']} {change['frozen_sha']} is stale "
                 f"(current {change['current_sha']}) and unused; re-drive {run_id}: "
-                "the runner re-binds it and re-derives members before first consumption"
+                "a driver carrying bound source preparation re-binds it before first consumption. "
+                "If this run pins an older driver, create a new run on the updated candidate"
             )
     return stale, unverified
 

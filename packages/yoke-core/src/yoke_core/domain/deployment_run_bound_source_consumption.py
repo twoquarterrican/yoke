@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 from typing import Any
+from yoke_core.domain.deploy_pipeline_github_workflow_inputs import (
+    workflow_dispatch_request_id,
+)
 from yoke_core.domain.deployment_run_bound_sources import declared_bindings
 from yoke_core.domain.schema_common import _table_exists
 
@@ -26,7 +29,7 @@ def consumed_stage(
         if current == "complete" or (position >= 0 and index < position):
             return name
         # Pending provider ambiguity already consumes the source.
-        request_id = f"deploy:{owner}:{run_id}:{name}"
+        request_id = workflow_dispatch_request_id(str(owner), run_id, name)
         if not _table_exists(conn, "github_workflow_dispatch_intents"):
             if not current:
                 continue
@@ -35,8 +38,8 @@ def consumed_stage(
                 "create a new run rather than changing a potentially consumed source"
             )
         if conn.execute(
-            "SELECT 1 FROM github_workflow_dispatch_intents WHERE (request_id=%s OR request_id LIKE %s) AND state<>'rejected' LIMIT 1",
-            (request_id, request_id + ":%"),
+            "SELECT 1 FROM github_workflow_dispatch_intents WHERE (request_id=%s OR LEFT(request_id,%s)=%s) AND state<>'rejected' LIMIT 1",
+            (request_id, len(request_id) + 1, request_id + ":"),
         ).fetchone():
             return name
     return ""

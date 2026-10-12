@@ -98,6 +98,7 @@ def derive_carried_work(
     *,
     repo_root: str | Path | None = None,
     bound_sources: Mapping[str, Any] | None = None,
+    preserved_work: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Derive every project's carried set for one run, own project first."""
     row = conn.execute(
@@ -111,39 +112,66 @@ def derive_carried_work(
     environment_id = _cell(row, "target_environment_id", 1)
     release_lineage = str(_cell(row, "release_lineage", 2) or "").strip()
     previous = _previous_run(conn, run_id, project_id, environment_id)
-    payload = derive_project_carried_work(
-        conn,
-        run_id,
-        project_id=project_id,
-        release_lineage=release_lineage,
-        previous=previous,
-        repo_root=repo_root,
+    # A consumer refresh cannot rewrite facts belonging to an unchanged,
+    # potentially consumed source, even if the preceding release advanced.
+    payload = (
+        dict(preserved_work)
+        if preserved_work is not None
+        else derive_project_carried_work(
+            conn,
+            run_id,
+            project_id=project_id,
+            release_lineage=release_lineage,
+            previous=previous,
+            repo_root=repo_root,
+        )
     )
     bound = bound_project_shas(
         bound_sources
         if bound_sources is not None
         else parse_bound_sources(_cell(row, BOUND_SOURCES_FIELD, 3))
     )
-    payload["bound_projects"] = [
-        dict(
-            derive_project_carried_work(
-                conn,
-                run_id,
-                project_id=bound_project_id,
-                release_lineage=bound[bound_project_id],
-                previous=previous,
-            ),
-            project_id=bound_project_id,
-            project=slug_for_project_id(conn, bound_project_id),
-        )
-        for bound_project_id in sorted(bound)
-        if bound_project_id != project_id
-    ]
+    saved = {
+        int(entry["project_id"]): entry
+        for entry in (preserved_work or {}).get("bound_projects") or []
+    }
+    projects = []
+    for pid in sorted(bound):
+        if pid == project_id:
+            continue
+        prior = saved.get(pid)
+        if (
+            prior is not None
+            and str(
+                (prior.get("derivation") or {}).get("release_lineage") or ""
+            ).lower()
+            == bound[pid].lower()
+        ):
+            projects.append(dict(prior))
+        else:
+            projects.append(
+                dict(
+                    derive_project_carried_work(
+                        conn,
+                        run_id,
+                        project_id=pid,
+                        release_lineage=bound[pid],
+                        previous=previous,
+                    ),
+                    project_id=pid,
+                    project=slug_for_project_id(conn, pid),
+                )
+            )
+    payload["bound_projects"] = projects
     return payload
 
 
 def derive_carried_work_safely(
-    conn: Any, run_id: str, *, bound_sources: Mapping[str, Any] | None = None
+    conn: Any,
+    run_id: str,
+    *,
+    bound_sources: Mapping[str, Any] | None = None,
+    preserved_work: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Derive without writing, and answer in the same shape when it cannot.
 
@@ -155,11 +183,12 @@ def derive_carried_work_safely(
     """
     conn.execute("SAVEPOINT carried_work_derivation")
     try:
-        payload = (
-            derive_carried_work(conn, run_id)
-            if bound_sources is None
-            else derive_carried_work(conn, run_id, bound_sources=bound_sources)
-        )
+        options = {}
+        if bound_sources is not None:
+            options["bound_sources"] = bound_sources
+        if preserved_work is not None:
+            options["preserved_work"] = preserved_work
+        payload = derive_carried_work(conn, run_id, **options)
     except Exception as exc:  # noqa: BLE001 - callers record named emptiness
         conn.execute("ROLLBACK TO SAVEPOINT carried_work_derivation")
         conn.execute("RELEASE SAVEPOINT carried_work_derivation")

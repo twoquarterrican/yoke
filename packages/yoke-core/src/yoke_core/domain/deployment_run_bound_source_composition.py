@@ -8,7 +8,10 @@ from yoke_core.domain.deployment_run_carried_membership import (
     enroll_carried_members,
     project_carried_sets,
 )
-from yoke_core.domain.deployment_run_carried_work import derive_carried_work_safely
+from yoke_core.domain.deployment_run_carried_work import (
+    derive_carried_work_safely,
+    parse_carried_work,
+)
 from yoke_core.domain.deployment_run_bound_sources import bound_project_shas
 from yoke_core.domain.deployment_run_composition_guard import has_frozen_composition
 from yoke_core.domain.deployment_requirement_snapshots import (
@@ -50,7 +53,12 @@ def preview_bound_source_composition(
     conn: Any, run_id: str, record: dict[str, Any], project_ids: frozenset[int]
 ) -> BoundSourceComposition:
     """Resolve network facts before any item/run write lock is taken."""
-    carried = derive_carried_work_safely(conn, run_id, bound_sources=record)
+    stored = conn.execute(
+        "SELECT carried_work FROM deployment_runs WHERE id=%s", (run_id,)
+    ).fetchone()[0]
+    carried = derive_carried_work_safely(
+        conn, run_id, bound_sources=record, preserved_work=parse_carried_work(stored)
+    )
     for project in project_carried_sets(carried):
         if not (project.get("derivation") or {}).get("contents_known"):
             derivation = project.get("derivation") or {}

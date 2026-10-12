@@ -20,7 +20,7 @@ the run's own candidate, so the run delivers two projects, not one.
   its own `release_lineage`. Before a bound stage dispatches, the runner may
   refresh an unused source to its declared branch's current head. That write
   records old/new commits and re-derives carried work, membership and containment.
-  Existing member requirement snapshots stay fixed; newly admitted members get
+  Facts for unchanged sources stay fixed. Existing member requirement snapshots stay fixed; newly admitted members get
   their own snapshots. Read the pins and history with
   `yoke deployment-runs get RUN-ID bound_sources`, and flow bindings with
   `yoke deployment-flows stages FLOW-ID`.
