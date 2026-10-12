@@ -35,6 +35,16 @@ class CloudAuthorityCommandError(RuntimeError):
         self.recovery = recovery
 
 
+def failure_cause(exc: BaseException) -> str:
+    """Name a failure safely: a refusal's redacted detail, else only its class.
+
+    Other loader errors may carry secret material in their text.
+    """
+    if isinstance(exc, CloudAuthorityCommandError):
+        return exc.detail
+    return type(exc).__name__
+
+
 @dataclass(frozen=True)
 class PostgresAuthorityLocation:
     stack: str

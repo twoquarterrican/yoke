@@ -36,7 +36,7 @@ from yoke_core.domain.project_renderer_settings import ProjectRendererSettings
 from yoke_core.domain.project_renderer_settings_snapshot import (
     settings_from_stack_config,
 )
-from yoke_core.domain.yoke_cloud_db_authority import load_secret_string
+from yoke_core.domain.yoke_cloud_db_authority import failure_cause, load_secret_string
 from yoke_core.tools.runner_fleet_authority_intent import (
     authority_intent_envelope,
 )
@@ -312,7 +312,7 @@ def _load_private_key(
         ).strip()
     except Exception as exc:
         raise RunnerFleetExecError(
-            f"GitHub App private key could not be loaded from Secrets Manager: {exc}"
+            f"GitHub App private key could not be loaded ({failure_cause(exc)})"
         ) from exc
     if not private_key_pem:
         raise RunnerFleetExecError(
