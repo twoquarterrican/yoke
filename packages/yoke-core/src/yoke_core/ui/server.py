@@ -44,6 +44,7 @@ from starlette.requests import Request
 from yoke_core.ui.dashboard_routes import is_dashboard_path
 from typing import Any, Dict, Optional
 
+from yoke_contracts.local_ui_address import DEFAULT_UI_HOST, DEFAULT_UI_PORT
 from yoke_contracts.runtime_identity import PORTABILITY_LOCAL, SERVED_BUILD_PATH
 from yoke_cli.config.hosted_machine_browser import open_url
 from yoke_core.ui.asset_roster import ASSET_CACHE_CONTROL, ASSET_CONTENT_TYPES
@@ -75,11 +76,6 @@ from yoke_core.ui.workbench_shell import (
     shell_response,
 )
 
-#: Default bind host and TCP port for the UI server (loopback only).
-#: Collision-probed at startup; ``--host`` and ``--port`` on ``yoke ui``
-#: override within the same loopback-only security boundary.
-DEFAULT_UI_HOST = "127.0.0.1"
-DEFAULT_UI_PORT = 8688
 LOOPBACK_UI_HOSTS = frozenset({"127.0.0.1", "localhost"})
 
 _BROWSER_OPEN_DELAY_S = 0.5

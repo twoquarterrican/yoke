@@ -40,7 +40,7 @@ upload, like QA evidence. Guide: .yoke/docs/reference/shared-files.md
 
 
 def _local_ui_base() -> str:
-    from yoke_core.ui.server import DEFAULT_UI_HOST, DEFAULT_UI_PORT
+    from yoke_contracts.local_ui_address import DEFAULT_UI_HOST, DEFAULT_UI_PORT
 
     return f"http://{DEFAULT_UI_HOST}:{DEFAULT_UI_PORT}"
 
