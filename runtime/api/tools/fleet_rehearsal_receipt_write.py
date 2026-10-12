@@ -85,6 +85,7 @@ def record_receipt(
     engine_artifact: Mapping[str, str],
     schema_shape_digest: str,
     database_count: int,
+    not_applicable: Mapping[str, Sequence[str]],
 ) -> Tuple[str, str]:
     """Write the pass to the control plane; return the run id and any reason."""
     from yoke_core.domain import migration_preflight_receipt as receipt
@@ -98,6 +99,7 @@ def record_receipt(
             engine_artifact=engine_artifact,
             schema_shape_digest=schema_shape_digest,
             database_count=database_count,
+            not_applicable=not_applicable,
         )
     except receipt.ReceiptPathError as exc:
         return "", str(exc)

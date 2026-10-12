@@ -299,6 +299,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         engine_artifact=engine_artifact.evidence(),
         schema_shape_digest=schema_digest,
         database_count=len(verdicts),
+        not_applicable={
+            v.database: [check.text for check in v.not_applicable]
+            for v in verdicts
+            if v.not_applicable
+        },
     )
     if unwritten:
         # A pass nobody recorded reads to the operator as an unblocked release

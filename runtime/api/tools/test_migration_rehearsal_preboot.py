@@ -6,7 +6,16 @@ from runtime.api.fixtures.bound_source_release import (
     two_project_release,
 )
 from runtime.api.tools import migration_rehearsal_preboot as preboot
-from yoke_core.domain import db_backend, preboot_instant_parameters
+from yoke_core.domain import (
+    db_backend,
+    deployment_run_ci_tested_source as ci_tested_source,
+    preboot_instant_parameters,
+)
+from yoke_core.domain.deployment_run_ci_tested_source import (
+    UNVERIFIABLE,
+    ReleaseSourceRefused,
+)
+from yoke_core.domain.migration_fleet_preflight import NotApplicable
 from yoke_core.domain.deployment_runs_crud_mutate import cmd_add_item
 from yoke_core.domain.domain_refusal import DomainRefusal
 from runtime.api.tools.yoke_migration_fleet import rehearsal_plan
@@ -92,7 +101,7 @@ def test_refused_create_cannot_silently_pass_rest_of_driver(
     def refuse(*_, **__):
         raise DomainRefusal("invalid_instant: copied driver failed")
 
-    monkeypatch.setattr(preboot, "cmd_create_run", refuse)
+    monkeypatch.setattr(preboot, "create_run", refuse)
     detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
     assert "run create" in detail and "invalid_instant" in detail
     assert (
@@ -101,7 +110,38 @@ def test_refused_create_cannot_silently_pass_rest_of_driver(
     )
 
 
-def test_universe_without_release_history_cannot_earn_driver_proof(test_db):
+def test_replay_never_asks_ci_provider_about_recorded_source(
+    test_db, tmp_path, monkeypatch
+):
+    setup_release(test_db, tmp_path, monkeypatch)
+
+    def no_credentials(*_, **__):
+        raise ReleaseSourceRefused(
+            UNVERIFIABLE, "missing_app_credentials: GitHub App credentials unavailable"
+        )
+
+    monkeypatch.setattr(ci_tested_source, "require_tested_lineage", no_credentials)
+    monkeypatch.setattr(ci_tested_source, "bind_tested_release_source", no_credentials)
+    detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
+    assert detail is None, detail
+
+
+def test_universe_that_never_ran_a_release_is_not_applicable(test_db):
+    assert test_db.execute("SELECT count(*) FROM deployment_runs").fetchone()[0] == 0
+    outcome = preboot.verify_preboot_release_driver(
+        test_db, db_backend.resolve_pg_dsn()
+    )
+    assert isinstance(outcome, NotApplicable)
+    assert outcome.check == preboot.PREBOOT_RELEASE_DRIVER
+    assert "preboot_release_never_run" in outcome.reason
+
+
+def test_runs_without_member_bearing_release_cannot_earn_driver_proof(
+    test_db, tmp_path, monkeypatch
+):
+    setup_release(test_db, tmp_path, monkeypatch)
+    test_db.execute("DELETE FROM deployment_run_items")
+    test_db.commit()
     detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
     assert "preboot_release_subject_missing" in detail
     assert "supply a real release declaration" in detail

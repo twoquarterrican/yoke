@@ -7,7 +7,11 @@ import pytest
 
 from yoke_core.domain import db_backend, migration_fleet_copy_validation as validation
 from yoke_core.domain import postgres_cluster
-from yoke_core.domain.migration_fleet_preflight import RehearsalPlan
+from yoke_core.domain.migration_fleet_preflight import (
+    NotApplicable,
+    RehearsalPlan,
+    format_fleet_summary,
+)
 
 
 @pytest.mark.parametrize("boundary", ["pre_boot", "post_boot"])
@@ -75,3 +79,27 @@ def test_failed_driver_never_applies_history(monkeypatch):
     assert "rehearsal_pre_boot_failed" in result.detail
     assert result.applied == ()
     assert calls == ["rollback", "close"]
+
+
+def test_not_applicable_check_passes_and_is_named(monkeypatch):
+    conn = SimpleNamespace(
+        rollback=lambda: None, commit=lambda: None, close=lambda: None
+    )
+    monkeypatch.setattr(postgres_cluster, "dsn", lambda *_: "host=copy")
+    monkeypatch.setattr(db_backend, "_open_native_postgres", lambda *_: conn)
+    absent = NotApplicable("release_driver", "never_run: no stored release")
+    plan = RehearsalPlan(
+        ("history",),
+        lambda *_: (),
+        lambda *_: None,
+        pre_converge_validator=lambda *_: absent,
+    )
+    result = validation.converge_copy(
+        None, "tenant", "copy", Path("/tmp/restore.dump"), plan
+    )
+    assert result.passed
+    assert result.not_applicable == (absent,)
+    assert "release_driver not applicable -- never_run" in result.line
+    summary = format_fleet_summary([result])
+    assert summary.splitlines()[0] == "1 passed, 0 failed, 0 skipped"
+    assert "tenant: release_driver not applicable -- never_run" in summary

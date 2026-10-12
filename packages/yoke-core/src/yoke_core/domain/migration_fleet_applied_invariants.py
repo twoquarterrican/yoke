@@ -62,7 +62,8 @@ def format_fleet_summary(verdicts: Sequence[Any]) -> str:
 
     Database verdicts stay the pass/fail counts. Distinct retired standing
     invariants are the third count, each named with its reason so a reader
-    who is not following a converge stream still sees them.
+    who is not following a converge stream still sees them. Copy checks a
+    database had no subject for are named per database after them.
     """
     failed = [verdict for verdict in verdicts if not verdict.passed]
     skipped: list[tuple[str, str]] = []
@@ -78,8 +79,12 @@ def format_fleet_summary(verdicts: Sequence[Any]) -> str:
         f"{len(skipped)} skipped"
     ]
     lines.extend(
-        skipped_standing_invariant_line(name, reason)
-        for name, reason in skipped
+        skipped_standing_invariant_line(name, reason) for name, reason in skipped
+    )
+    lines.extend(
+        f"{verdict.database}: {check.text}"
+        for verdict in verdicts
+        for check in getattr(verdict, "not_applicable", ())
     )
     return "\n".join(lines)
 
@@ -114,10 +119,7 @@ def verify_applied_history_invariants(
         retired_reason = RETIRED_STANDING_INVARIANTS.get(name)
         if retired_reason is not None:
             skipped.append((name, retired_reason))
-            print(
-                f"converging {name}: standing invariant skipped -- "
-                f"{retired_reason}"
-            )
+            print(f"converging {name}: standing invariant skipped -- {retired_reason}")
             continue
         if name in retired:
             continue
