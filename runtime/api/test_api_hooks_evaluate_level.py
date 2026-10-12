@@ -1,4 +1,4 @@
-"""Route coverage for wire-carried hook relay execution levels."""
+"""Route coverage proving wire level stamps cannot override observed facts."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def _level_for(session_id: str) -> str:
         conn.close()
 
 
-def test_hooks_evaluate_wire_level_heals_primary_and_registers_fresh(client) -> None:
+def test_hooks_evaluate_wire_level_cannot_resolve_unknown_model(client) -> None:
     session_id = "wire-level-register-session"
 
     assert (
@@ -85,7 +85,7 @@ def test_hooks_evaluate_wire_level_heals_primary_and_registers_fresh(client) -> 
         ).status_code
         == 200
     )
-    assert _level_for(session_id) == "SENIOR"
+    assert _level_for(session_id) == UNRESOLVED_EXECUTION_LEVEL
 
     fresh = "wire-level-fresh-session"
     assert (
@@ -99,4 +99,4 @@ def test_hooks_evaluate_wire_level_heals_primary_and_registers_fresh(client) -> 
         ).status_code
         == 200
     )
-    assert _level_for(fresh) == "PRINCIPAL"
+    assert _level_for(fresh) == UNRESOLVED_EXECUTION_LEVEL

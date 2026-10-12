@@ -44,7 +44,6 @@ def _placed(
         entry.update(
             {
                 "option_index": chosen["option_index"],
-                "fallback": chosen["fallback"],
                 "surface": chosen["surface"],
                 "model": chosen["model"],
                 "display_name": display(chosen["model"]),

@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
+from yoke_contracts.session_control.plan_limits import CLI_PLAN_LIMIT_SURFACES
 
 from yoke_core.domain.item_level_override import describe_level_override
 from yoke_core.domain.machine_registry import display_name
@@ -74,7 +75,7 @@ def read_level_readout(
 ) -> LevelReadout:
     """Dry-run a launch at every level the project reads, as this seat."""
     levels, source = effective_levels(conn, int(project_id))
-    surfaces = {option.surface for level in levels for option in level.options}
+    surfaces = set(CLI_PLAN_LIMIT_SURFACES)
     counts = live_workers(conn)
     workers = tuple((surface, counts.get(surface, 0)) for surface in sorted(surfaces))
     actor_id = _session_actor(conn, session_id)
@@ -145,15 +146,13 @@ def _pool(pool: PoolCheck) -> str:
 
 
 def _candidate(candidate: LevelCandidate, names: Mapping[str, str]) -> str:
-    via = " (fallback)" if candidate.fallback else ""
     where = (
         f" on {display_name(names, candidate.machine_id)}"
         if candidate.machine_id
         else ""
     )
     selection = (
-        f"{candidate.surface} {candidate.model} {candidate.reasoning_effort}"
-        f"{via}{where}"
+        f"{candidate.surface} {candidate.model} {candidate.reasoning_effort}{where}"
     )
     pools = " · ".join(_pool(pool) for pool in candidate.pools)
     if candidate.blocked:

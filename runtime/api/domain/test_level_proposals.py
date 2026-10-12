@@ -1,11 +1,7 @@
-"""Level proposals: extrapolation from the catalog, change application, checks."""
-
-from __future__ import annotations
+"""Catalog-driven model/minimum-effort proposals stay explicit and validated."""
 
 from dataclasses import replace
-
 import pytest
-
 from yoke_contracts.level_proposals import (
     apply_level_changes,
     generate_level_changes,
@@ -13,204 +9,107 @@ from yoke_contracts.level_proposals import (
     refuse_capability_conflicts,
     unplaced_models,
 )
-from yoke_contracts.levels import LevelsError, default_levels, levels_payload
-from yoke_contracts.model_reference_data import MODEL_RECORDS
-from yoke_contracts.model_reference_records import ModelRecord
+from yoke_contracts.levels import default_levels, levels_payload, LevelsError
+from runtime.api.fixtures.model_catalog import RECORDS
 
 
-def _records(**overrides) -> list[ModelRecord]:
-    """The bundled catalog with per-model field overrides and extra records."""
-    extra = overrides.pop("extra", ())
+def test_unchanged_current_catalog_proposes_no_changes():
+    assert generate_level_changes(default_levels(), RECORDS) == []
+
+
+def test_new_successor_replaces_all_threshold_rows_in_place():
+    current = next(
+        record for record in RECORDS if record.model_id == "claude-fable-5-1"
+    )
+    successor = replace(
+        current, model_id="claude-fable-6", aliases=(), replacement_model_id=None
+    )
     records = [
-        replace(record, **overrides.get(record.model_id, {}))
-        for record in MODEL_RECORDS
-    ]
-    return records + list(extra)
-
-
-def _options(levels, name):
-    level = next(level for level in levels_payload(levels) if level["name"] == name)
-    return [(o["surface"], o["model"], o["reasoning_effort"]) for o in level["options"]]
-
-
-def _record(model_id: str, **fields) -> ModelRecord:
-    return ModelRecord(model_id=model_id, provider="test", **fields)
-
-
-def test_unchanged_catalog_proposes_nothing() -> None:
-    assert generate_level_changes(default_levels(), MODEL_RECORDS) == []
-
-
-def test_superseded_model_is_replaced_in_place_by_its_successor() -> None:
-    records = _records(
-        **{"cursor-grok-4.7": {"replacement_model_id": "cursor-grok-4.8"}},
-        extra=[_record("cursor-grok-4.8", aliases=("grok-4.8",))],
-    )
-    levels = default_levels()
-    changes = generate_level_changes(levels, records)
-
-    assert [change["kind"] for change in changes] == ["retire", "add"]
-    added = changes[1]
-    assert added["level"] == "JUNIOR"
-    assert added["position"] == 0
-    assert added["option"]["model"] == "grok-4.8-high"
-    assert added["option"]["fallback"]["model"] == "claude-opus-5-5-medium"
-    assert "superseded by cursor-grok-4.8" in added["reason"]
-    proposed = apply_level_changes(levels, changes)
-    assert _options(proposed, "JUNIOR")[0] == ("cursor-cli", "grok-4.8-high", "high")
-    assert {r["model_id"] for r in unplaced_models(proposed, records)}.isdisjoint(
-        {"cursor-grok-4.8", "cursor-grok-4.7"}
-    )
-
-
-def test_successor_effort_moves_to_the_nearest_published_one() -> None:
-    records = _records(
-        **{"claude-fable-5-1": {"replacement_model_id": "claude-fable-6"}},
-        extra=[_record("claude-fable-6", reasoning_efforts=("low", "high", "max"))],
-    )
-    changes = generate_level_changes(default_levels(), records)
-    added = next(change for change in changes if change["kind"] == "add")
-    assert added["option"] == {
-        "surface": "claude-cli",
-        "model": "claude-fable-6",
-        "reasoning_effort": "high",
-        "context_window_tokens": 1_000_000,
-    }
-
-
-def test_unpublished_effort_and_window_are_corrected_in_place() -> None:
-    records = _records(
-        **{
-            "claude-opus-5-5": {
-                "reasoning_efforts": ("low", "minimal", "high"),
-                "context_window_tokens": (200_000,),
-            }
-        }
-    )
-    levels = default_levels()
-    conflicts, _ = published_capability_conflicts(levels, records)
-    assert {c["field"] for c in conflicts} == {
-        "reasoning_effort",
-        "context_window_tokens",
-    }
-
-    changes = generate_level_changes(levels, records)
-    change = next(c for c in changes if c["kind"] == "change")
-    assert change["option"]["model"] == "claude-opus-5-5"
-    assert change["reasoning_effort"] == "low"
-    assert change["context_window_tokens"] is None
-    fallback = next(c for c in changes if c["kind"] == "add")
-    assert fallback["option"]["fallback"]["model"] == "claude-opus-5-5-low"
-    proposed = apply_level_changes(levels, changes)
-    assert published_capability_conflicts(proposed, records)[0] == []
-
-
-def test_options_without_published_values_are_unverified_not_refused() -> None:
-    conflicts, unverified = published_capability_conflicts(
-        default_levels(), MODEL_RECORDS
-    )
-    assert conflicts == []
-    reasons = {(u["model"], u["reason"]) for u in unverified}
-    assert ("claude-haiku-5-5", "model not in catalog") in reasons
-    assert (
-        "claude-opus-5-5",
-        "catalog publishes no efforts or context windows",
-    ) in reasons
-
-
-def test_conflicts_refuse_by_name_with_the_recovery() -> None:
-    records = _records(**{"gpt-6-astra": {"reasoning_efforts": ("high",)}})
-    conflicts, _ = published_capability_conflicts(default_levels(), records)
-    with pytest.raises(LevelsError) as raised:
-        refuse_capability_conflicts(conflicts)
-    assert raised.value.code == "level_option_reasoning_effort_unpublished"
-    assert raised.value.field == "PRINCIPAL.reasoning_effort"
-    assert "yoke models level-proposal" in str(raised.value)
-
-
-def test_authored_add_move_retire_and_change_apply_in_order() -> None:
-    haiku = {
-        "surface": "claude-cli",
-        "model": "claude-haiku-5-5",
-        "reasoning_effort": "max",
-    }
-    sol = {"surface": "codex-cli", "model": "gpt-6.1-sol", "reasoning_effort": "medium"}
+        replace(record, replacement_model_id=successor.model_id)
+        if record is current
+        else record
+        for record in RECORDS
+    ] + [successor]
     proposed = apply_level_changes(
-        default_levels(),
+        default_levels(), generate_level_changes(default_levels(), records)
+    )
+    assert [entry.model for level in proposed for entry in level.options].count(
+        "claude-fable-6"
+    ) == 3
+    assert "claude-fable-5-1" not in [
+        entry.model for level in proposed for entry in level.options
+    ]
+
+
+def test_unpublished_threshold_is_named():
+    records = [
+        replace(record, reasoning_efforts=("low", "high", "max"))
+        if record.model_id == "claude-opus-5-5"
+        else record
+        for record in RECORDS
+    ]
+    conflicts, _ = published_capability_conflicts(default_levels(), records)
+    assert conflicts[0]["field"] == "min_effort"
+    with pytest.raises(LevelsError, match="level_min_effort_unpublished"):
+        refuse_capability_conflicts(conflicts)
+
+
+def test_unknown_model_facts_remain_unverified():
+    conflicts, unverified = published_capability_conflicts(default_levels(), ())
+    assert conflicts == []
+    assert len(unverified) == 18
+
+
+def test_add_move_retire_change_use_model_threshold_selectors():
+    levels = default_levels()
+    selector = {"model": "gpt-6-luna", "min_effort": "low"}
+    changed = apply_level_changes(
+        levels, [{"kind": "change", "option": selector, "min_effort": "medium"}]
+    )
+    assert (
+        next(
+            entry for entry in changed[0].options if entry.model == "gpt-6-luna"
+        ).min_effort
+        == "medium"
+    )
+    moved = apply_level_changes(
+        changed,
         [
-            {"kind": "move", "option": sol, "to_level": "JUNIOR"},
-            {"kind": "change", "option": haiku, "reasoning_effort": "high"},
-            {"kind": "retire", "option": {**sol, "surface": "codex-cli"}},
             {
-                "kind": "add",
-                "level": "SENIOR",
-                "position": 0,
-                "option": {**sol, "model": "gpt-6-sol", "context_window_tokens": None},
-            },
+                "kind": "move",
+                "option": {"model": "gpt-6-luna", "min_effort": "medium"},
+                "to_level": "JUNIOR",
+            }
         ],
     )
-    assert _options(proposed, "INTERN")[0] == ("claude-cli", "claude-haiku-5-5", "high")
-    assert ("codex-cli", "gpt-6.1-sol", "medium") not in _options(proposed, "JUNIOR")
-    assert _options(proposed, "SENIOR")[0] == ("codex-cli", "gpt-6-sol", "medium")
+    assert moved[1].options[-1].model == "gpt-6-luna"
+    retired = apply_level_changes(
+        moved,
+        [{"kind": "retire", "option": {"model": "gpt-6-luna", "min_effort": "medium"}}],
+    )
+    added = apply_level_changes(
+        retired, [{"kind": "add", "level": "INTERN", "option": selector, "position": 1}]
+    )
+    assert levels_payload(added) == levels_payload(levels)
 
 
-@pytest.mark.parametrize(
-    ("change", "code"),
-    [
-        ({"kind": "promote"}, "level_change_kind_invalid"),
-        (
-            {
-                "kind": "retire",
-                "option": {
-                    "surface": "claude-cli",
-                    "model": "nope",
-                    "reasoning_effort": "high",
-                },
-            },
-            "level_change_option_missing",
-        ),
-        (
-            {"kind": "add", "level": "STAFF", "option": {}},
-            "level_change_level_missing",
-        ),
-        (
-            {
-                "kind": "add",
-                "level": "SENIOR",
-                "position": "first",
-                "option": {
-                    "surface": "codex-cli",
-                    "model": "gpt-6-sol",
-                    "reasoning_effort": "high",
-                },
-            },
-            "level_change_position_invalid",
-        ),
-        (
-            {
-                "kind": "change",
-                "option": {
-                    "surface": "claude-cli",
-                    "model": "claude-haiku-5-5",
-                    "reasoning_effort": "max",
-                },
-                "reasoning_effort": "turbo",
-            },
-            "claude_reasoning_effort_unsupported",
-        ),
-    ],
-)
-def test_invalid_changes_refuse_by_name(change, code) -> None:
-    with pytest.raises(LevelsError) as raised:
-        apply_level_changes(default_levels(), [change])
-    assert raised.value.code == code
-
-
-def test_retiring_a_levels_last_option_is_refused() -> None:
-    intern = levels_payload(default_levels())[0]["options"]
-    with pytest.raises(LevelsError) as raised:
+def test_invalid_changes_cannot_leave_contradictory_thresholds():
+    with pytest.raises(LevelsError, match="level_min_effort_order_invalid"):
         apply_level_changes(
             default_levels(),
-            [{"kind": "retire", "option": option} for option in intern],
+            [
+                {
+                    "kind": "change",
+                    "option": {"model": "grok-4.7", "min_effort": "high"},
+                    "min_effort": "low",
+                }
+            ],
         )
-    assert raised.value.code == "level_options_missing"
+
+
+def test_unplaced_models_report_unplaced_facts_without_guessing_rows():
+    names = {
+        record["model_id"] for record in unplaced_models(default_levels(), RECORDS)
+    }
+    assert "composer-2.5" in names
+    assert "cursor-grok-4.7" not in names

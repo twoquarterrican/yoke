@@ -135,6 +135,7 @@ class LaunchRequest:
     deadline_seconds: int = DEFAULT_LAUNCH_DEADLINE_SECONDS
     item: str | None = None
     level: str | None = None
+    work_required: bool = False
     #: Why ``level`` becomes the item's level for every stage. Set only on an
     #: item-bound launch that named a level; ``None`` records nothing.
     level_reason: str | None = None

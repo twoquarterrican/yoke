@@ -30,8 +30,8 @@ from runtime.api.test_constants import TEST_MODEL_ID
 
 _PROJECT_ID = 1
 _OPUS = "claude-opus-5-5"
-_UNIVERSE_DOC = levels_doc(("UNIVERSE_ONLY", [option("claude-cli", _OPUS, "medium")]))
-_PROJECT_DOC = levels_doc(("PROJECT_ONLY", [option("claude-cli", _OPUS, "medium")]))
+_UNIVERSE_DOC = levels_doc(("UNIVERSE_ONLY", [option(_OPUS, "medium")]))
+_PROJECT_DOC = levels_doc(("PROJECT_ONLY", [option(_OPUS, "medium")]))
 
 
 def _begin(db: dict, executor: str, *extra: str) -> str:
@@ -87,13 +87,22 @@ def _store(db: dict, writer, *args) -> None:
 
 
 class TestSessionBeginLevel:
-    """session-begin stamps the level its harness, model, and effort match."""
+    """session-begin stamps the highest level its model, speed, and effort dominate."""
 
     @pytest.mark.parametrize(
         "executor,flags,expected",
         [
             ("codex", ("--model", "gpt-6-luna", "--reasoning-effort", "max"), "INTERN"),
-            ("claude-code", ("--requested-model", f"{_OPUS}[1m]"), "SENIOR"),
+            (
+                "claude-code",
+                (
+                    "--requested-model",
+                    f"{_OPUS}[1m]",
+                    "--requested-reasoning-effort",
+                    "medium",
+                ),
+                "SENIOR",
+            ),
             (
                 "claude-code",
                 ("--model", "claude-haiku-5-5", "--reasoning-effort", "max"),
@@ -113,7 +122,14 @@ class TestSessionBeginLevel:
 
     def test_stored_universe_definition_changes_the_stamp(self, session_test_db):
         _store(session_test_db, store_universe_levels, _UNIVERSE_DOC)
-        session_id = _begin(session_test_db, "claude-code", "--model", _OPUS)
+        session_id = _begin(
+            session_test_db,
+            "claude-code",
+            "--model",
+            _OPUS,
+            "--reasoning-effort",
+            "medium",
+        )
         (_executor, _surface, level), _context = _session_row(
             session_test_db, session_id
         )
@@ -122,7 +138,14 @@ class TestSessionBeginLevel:
     def test_project_override_wins_over_the_universe(self, session_test_db):
         _store(session_test_db, store_universe_levels, _UNIVERSE_DOC)
         _store(session_test_db, store_project_levels, _PROJECT_ID, _PROJECT_DOC)
-        session_id = _begin(session_test_db, "claude-code", "--model", _OPUS)
+        session_id = _begin(
+            session_test_db,
+            "claude-code",
+            "--model",
+            _OPUS,
+            "--reasoning-effort",
+            "medium",
+        )
         (_executor, _surface, level), _context = _session_row(
             session_test_db, session_id
         )
@@ -134,6 +157,8 @@ class TestSessionBeginLevel:
             "codex",
             "--model",
             "gpt-6.1-sol",
+            "--reasoning-effort",
+            "medium",
             "--entrypoint",
             "codex-desktop",
         )
@@ -158,6 +183,8 @@ class TestSessionBeginLevel:
             executor,
             "--requested-model",
             f"{_OPUS}[1m]",
+            "--requested-reasoning-effort",
+            "medium",
             "--entrypoint",
             entrypoint,
         )
@@ -166,7 +193,7 @@ class TestSessionBeginLevel:
         )
 
         # A legacy alias canonicalizes; the entrypoint lands as the surface,
-        # and the surface's harness family matches the shipped option.
+        # and its model/effort facts determine the execution level.
         assert (stored_executor, surface) == ("claude-code", entrypoint)
         assert level == "SENIOR"
         assert context["executor"] == "claude-code"

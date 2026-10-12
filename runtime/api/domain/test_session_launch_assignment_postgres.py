@@ -163,6 +163,8 @@ def _create(admission, monkeypatch, *, predecessor=None, level=None):
             item=render_item_ref(conn, item["id"], required=True),
             idempotency_key="ordinary",
             level=level,
+            model="gpt-6.1-sol",
+            reasoning_effort="low",
         ),
         now=_NOW,
     )

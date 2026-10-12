@@ -159,6 +159,7 @@ ASSET_CONTENT_TYPES: Dict[str, str] = {
     "universe_views_packs.js": "text/javascript; charset=utf-8",
     "universe_views_projects.js": "text/javascript; charset=utf-8",
     "universe_views_levels.js": "text/javascript; charset=utf-8",
+    "quota_pool_order_editor.js": "text/javascript; charset=utf-8",
     "universe_views_qa.js": "text/javascript; charset=utf-8",
     "universe_views_sessions.js": "text/javascript; charset=utf-8",
     "universe_sessions_history_loader.js": "text/javascript; charset=utf-8",

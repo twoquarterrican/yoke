@@ -13,6 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from runtime.api.fixtures import pg_testdb
+from runtime.api.fixtures.level_store import create_level_store_tables
 from yoke_core.api import app_factory
 from yoke_core.domain.actor_permissions import (
     ROLE_OWNER,
@@ -52,6 +53,7 @@ def _call(client: TestClient, headers: dict, session_id: str, payload: dict):
 @pytest.fixture()
 def claim_plane():
     with pg_testdb.test_database() as conn:
+        create_level_store_tables(conn)
         seed_roles_and_permissions(conn)
         project_id = resolve_project_id(conn, PROJECT)
         conn.execute(
@@ -93,9 +95,9 @@ def claim_plane():
         now = iso8601_now()
         conn.execute(
             "INSERT INTO harness_sessions "
-            "(session_id,executor,provider,model,execution_level,workspace,"
+            "(session_id,executor,provider,model,reasoning_effort,execution_level,workspace,"
             "project_id,mode,offered_at,last_heartbeat,actor_id) VALUES "
-            "(%s,'codex','openai','test','primary','/tmp/claim-default',%s,"
+            "(%s,'codex','openai','gpt-6.1-sol','medium','SENIOR','/tmp/claim-default',%s,"
             "'wait',%s,%s,%s)",
             (owner_session, project_id, now, now, owner_actor_id),
         )
@@ -121,9 +123,9 @@ def claim_plane():
         other_session = "claim-default-outsider-session"
         conn.execute(
             "INSERT INTO harness_sessions "
-            "(session_id,executor,provider,model,execution_level,workspace,"
+            "(session_id,executor,provider,model,reasoning_effort,execution_level,workspace,"
             "project_id,mode,offered_at,last_heartbeat,actor_id) VALUES "
-            "(%s,'codex','openai','test','primary','/tmp/claim-default-2',%s,"
+            "(%s,'codex','openai','gpt-6.1-sol','medium','SENIOR','/tmp/claim-default-2',%s,"
             "'wait',%s,%s,%s)",
             (other_session, project_id, now, now, other_actor_id),
         )

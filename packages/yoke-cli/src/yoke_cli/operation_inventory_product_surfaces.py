@@ -48,6 +48,8 @@ WRAPPED_ROWS = (
     _w("yoke models restore", "models"),
     _w("yoke universe levels get", "universe.levels"),
     _w("yoke universe levels set", "universe.levels"),
+    _w("yoke universe cursor-quota-order get", "universe.cursor_quota_order"),
+    _w("yoke universe cursor-quota-order set", "universe.cursor_quota_order"),
     _w("yoke universe level-capacity get", "universe.level_capacity"),
     _w("yoke machine register", "machine"),
     _w("yoke machine list", "machine"),

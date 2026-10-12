@@ -1,28 +1,26 @@
 # Model Level Proposals
 
 `yoke models level-proposal` reads current catalog and universe levels.
-It replaces superseded options with successors at the same position, preserving
-surface, selector shape, effort and window; unsupported effort/window changes
-to the nearest published effort the surface accepts or the model default window.
+Superseded model rows move to their successors in place; unpublished minimum
+effort moves to the nearest published effort. Rows contain only model and
+min_effort, without native surfaces, context or exhausted-pool fallbacks.
 
-It names `unverified` options (unresearched or no published efforts/windows)
-and `unplaced_models`. Author judgment places, moves or retires options from
-known facts/current placement. Start from generated JSON `changes`, then supply
-the complete list on stdin:
+The proposal names unverified model/effort facts and unplaced current models.
+Use researched facts to author adds, moves, retirements and threshold changes:
 
 ```json
-{"kind":"add","level":"SENIOR","option":{"surface":"...","model":"...","reasoning_effort":"...","context_window_tokens":null},"position":0,"reason":"..."}
-{"kind":"move","option":{"surface":"...","model":"...","reasoning_effort":"..."},"to_level":"JUNIOR","reason":"..."}
-{"kind":"retire","option":{"surface":"...","model":"...","reasoning_effort":"..."},"reason":"..."}
-{"kind":"change","option":{"surface":"...","model":"...","reasoning_effort":"..."},"reasoning_effort":"high","context_window_tokens":null,"reason":"..."}
+{"kind":"add","level":"SENIOR","option":{"model":"...","min_effort":"medium"},"position":0,"reason":"..."}
+{"kind":"move","option":{"model":"...","min_effort":"medium"},"to_level":"JUNIOR","reason":"..."}
+{"kind":"retire","option":{"model":"...","min_effort":"medium"},"reason":"..."}
+{"kind":"change","option":{"model":"...","min_effort":"medium"},"min_effort":"high","reason":"..."}
 ```
 
-Proposal and levels set both refuse contradictions to published values:
-`level_option_reasoning_effort_unpublished` and
-`level_option_context_window_tokens_unpublished`.
-Present the proposal; only operator approval authorizes storage.
+Thresholds must strictly increase within each model as levels rise. Proposal
+and Levels set refuse published-effort contradictions as
+`level_min_effort_unpublished`. Present the complete proposal and obtain
+operator approval before replacing stored Levels.
 
 ```sh
-yoke models level-proposal --levels-only [--stdin < changes.json] > /tmp/levels.json
+yoke models level-proposal --levels-only --stdin < changes.json > /tmp/levels.json
 yoke universe levels set --stdin < /tmp/levels.json
 ```

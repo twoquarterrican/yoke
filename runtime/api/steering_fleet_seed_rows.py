@@ -39,11 +39,11 @@ def seed_session(conn, session_id: str, **columns) -> None:
     """One live session, defaulting to an ordinary idle worker."""
     conn.execute(
         "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, execution_level, workspace, "
+        "(session_id, executor, provider, model, reasoning_effort, execution_level, workspace, "
         "project_id, mode, offered_at, last_heartbeat, actor_id, "
         "executor_surface, machine_id, last_tool_call_at, ended_at, "
         "terminated_at, current_item_id) "
-        "VALUES (%s, %s, 'openai', 'test-model', 'primary', %s, %s, "
+        "VALUES (%s, %s, 'openai', 'gpt-6.1-sol', 'medium', 'primary', %s, %s, "
         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (
             session_id,

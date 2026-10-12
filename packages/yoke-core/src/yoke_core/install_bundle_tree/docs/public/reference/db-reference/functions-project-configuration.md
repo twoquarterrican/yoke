@@ -99,6 +99,8 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `strategy.surface.get` | `none` |
 | `strategy.surface.list` | `none` |
 | `universe.level_capacity.get` | `none` |
+| `universe.cursor_quota_order.get` | `none` |
+| `universe.cursor_quota_order.set` | `none` |
 | `universe.levels.get` | `none` |
 | `universe.levels.set` | `none` |
 

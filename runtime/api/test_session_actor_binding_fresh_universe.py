@@ -89,7 +89,9 @@ def _begin(db) -> dict:
         session_id=_SESSION_ID,
         executor="claude-code",
         provider="anthropic",
-        model_facts=SessionModelFacts(requested_model=TEST_MODEL_ID),
+        model_facts=SessionModelFacts(
+            requested_model=TEST_MODEL_ID, requested_reasoning_effort="medium"
+        ),
         workspace="/tmp/fresh-universe",
         project_id=1,
     )

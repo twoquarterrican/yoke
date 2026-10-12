@@ -14,7 +14,7 @@ from yoke_cli.commands._helpers import (
     parse_or_usage_error,
     usage_error,
 )
-from yoke_contracts.api.function_call import TargetRef
+from yoke_contracts.api.function_call import TargetRef, FunctionError
 
 GET_FUNCTION_ID = "universe.levels.get"
 SET_FUNCTION_ID = "universe.levels.set"
@@ -31,16 +31,7 @@ _SOURCE_LINES = {
 
 
 def _option_line(option: Mapping[str, Any]) -> str:
-    context = option.get("context_window_tokens")
-    line = (
-        f"{option.get('surface')}  {option.get('model')}  "
-        f"effort={option.get('reasoning_effort')}  "
-        f"context={context if context else 'default'}"
-    )
-    fallback = option.get("fallback")
-    if isinstance(fallback, Mapping):
-        line += f"  (exhausted -> {_option_line(fallback)})"
-    return line
+    return f"{option.get('model')}  min_effort={option.get('min_effort')}"
 
 
 def write_levels(result: Mapping[str, Any], stdout: TextIO) -> None:
@@ -59,13 +50,36 @@ def _write(response: Any, stdout: TextIO, stderr: TextIO) -> None:
         write_levels(response.result or {}, stdout)
 
 
+def _require_min_effort_response(response, _actor):
+    missing = response.success and any(
+        "min_effort" not in row
+        for level in (response.result or {}).get("levels", [])
+        for row in level.get("options", [])
+    )
+    old_schema = (
+        response.error and response.error.code == "level_option_surface_unsupported"
+    )
+    if missing or old_schema:
+        return response.model_copy(
+            update={
+                "success": False,
+                "result": {},
+                "error": FunctionError(
+                    code="levels_schema_version_skew",
+                    message="This serving build predates model/min_effort Levels (required floor: next-release). Recovery: ask the control-plane operator to serve the release carrying this contract; keep the existing stored Levels until its boot convergence completes.",
+                ),
+            }
+        )
+    return response
+
+
 def universe_levels_get(args: List[str]) -> int:
     """Print the universe levels every project without an override reads."""
     parser = argparse.ArgumentParser(
         prog="yoke universe levels get",
         description=(
             "Read the universe execution levels, lowest first: each level's "
-            "glyph and its ordered launchable options. Projects read these "
+            "glyph and its ordered model/minimum-effort rows. Projects read these "
             "unless their session-routing capability carries a levels "
             "override (`yoke projects level-summary get --project P`)."
         ),
@@ -82,82 +96,36 @@ def universe_levels_get(args: List[str]) -> int:
         session_id=parsed.session_id,
         json_mode=parsed.json_mode,
         human_writer=_write,
+        response_recovery=_require_min_effort_response,
     )
-
-
-def _pool_text(pool: Mapping[str, Any]) -> str:
-    headroom = pool.get("headroom")
-    left = pool.get("left")
-    return (
-        f"{pool.get('label')} "
-        f"(headroom {'unreadable' if headroom is None else f'{headroom}%'}, "
-        f"{'unreadable' if left is None else f'{left}%'} left)"
-    )
-
-
-def _blocker_text(blocker: Mapping[str, Any]) -> str:
-    if blocker.get("kind") == "no_machine":
-        return f"no usable machine offers {blocker.get('surface')}"
-    return f"{blocker.get('label')} 0% left"
-
-
-def _write_next_launches(entries: Any, stdout: TextIO) -> None:
-    if entries is None:
-        stdout.write(
-            "  next launch: not reported; the serving build predates launch "
-            "previews on this read. Recovery: preview one with `yoke "
-            "session-control launch preview --project P --level L`\n"
-        )
-        return
-    for entry in entries:
-        where = f"  next launch in {entry.get('project')} -> "
-        if not entry.get("launchable"):
-            stdout.write(
-                f"{where}refused ({entry.get('code')}): {entry.get('reason')}\n"
-            )
-            continue
-        fallback = ", fallback" if entry.get("fallback") else ""
-        stdout.write(
-            f"{where}{entry.get('surface')} {entry.get('model')} "
-            f"(option {int(entry.get('option_index', 0)) + 1}{fallback}) on "
-            f"{entry.get('machine_id')}: {entry.get('reason')}\n"
-        )
 
 
 def write_capacity(result: Mapping[str, Any], stdout: TextIO) -> None:
-    """Print each level's launch standing, then the project overrides."""
-    workers = result.get("live_workers") or {}
-    stdout.write(
-        f"capacity read {result.get('read_at')} · "
-        f"{result.get('usable_machines')} usable machine(s) · live workers "
-        + " · ".join(f"{surface} {count}" for surface, count in workers.items())
-        + "\n"
-    )
+    """Print model thresholds and observed native launch standing."""
     for level in result.get("levels") or []:
         stdout.write(f"{level.get('glyph') or ' '} {level.get('name')}\n")
-        if not level.get("launchable_surfaces"):
-            stdout.write("  NO CAPACITY: no option can launch on any machine\n")
-        _write_next_launches(level.get("next_launches"), stdout)
-        for index, option in enumerate(level.get("options") or [], start=1):
-            now = option.get("now") or {}
-            if now.get("state") == "blocked":
-                state = "blocked: " + ", ".join(
-                    _blocker_text(b) for b in now.get("blockers") or []
+        stdout.write(
+            "  Launchable on: "
+            + ", ".join(level.get("launchable_surfaces") or [])
+            + "\n"
+        )
+        for index, entry in enumerate(level.get("options") or [], start=1):
+            now = entry.get("now") or {}
+            state = (
+                "can launch"
+                if now.get("state") == "can_launch"
+                else "blocked: "
+                + "; ".join(
+                    str(blocker.get("label") or "")
+                    for blocker in now.get("blockers") or []
                 )
-            else:
-                via = f" via {now['via']}" if now.get("via") else ""
-                state = f"can launch{via}"
-            stdout.write(f"  {index}. {_option_line(option)}  [{state}]\n")
-            for pool in option.get("pools") or []:
-                stdout.write(f"     draws on {_pool_text(pool)}\n")
-    for project in result.get("projects") or []:
-        if project.get("override"):
-            changes = "; ".join(
-                f"{name} {change}" for name, change in project.get("changes") or []
             )
-            stdout.write(
-                f"override: {project.get('project')}: {changes or 'same levels'}\n"
-            )
+            stdout.write(f"  {index}. {_option_line(entry)} [{state}]\n")
+    stdout.write(
+        "Cursor quota order: "
+        + " -> ".join(result.get("cursor_quota_order") or [])
+        + "\n"
+    )
 
 
 def _write_capacity(response: Any, stdout: TextIO, stderr: TextIO) -> None:
@@ -171,12 +139,9 @@ def universe_levels_capacity(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="yoke universe level-capacity get",
         description=(
-            "Read each universe level's launch standing: per option the quota "
-            "pools its model draws on, whether it can launch now or which pool "
-            "or machine gap blocks it, and, per project, where your next "
-            "launch at the level goes — previewed by the launcher's own level "
-            "placement, so it is the answer a launch would get. Also lists "
-            "projects whose session-routing capability overrides the levels."
+            "Read each universe level's launch standing: per model row the "
+            "native surfaces it can launch on, or the quota/native listing "
+            "rule blocking it, plus the universe-wide Cursor monthly order."
         ),
     )
     add_session_arg(parser)
@@ -191,6 +156,7 @@ def universe_levels_capacity(args: List[str]) -> int:
         session_id=parsed.session_id,
         json_mode=parsed.json_mode,
         human_writer=_write_capacity,
+        response_recovery=_require_min_effort_response,
     )
 
 
@@ -202,9 +168,7 @@ def universe_levels_set(args: List[str]) -> int:
             "Replace the universe execution levels with the JSON list on "
             "stdin, lowest level first. Each level is "
             '{"name", "glyph", "options": [...]}; each option is '
-            '{"surface", "model", "reasoning_effort", '
-            '"context_window_tokens"} plus an optional same-surface '
-            '"fallback". Start from `yoke universe levels get --json`. '
+            '{"model", "min_effort"}. Start from yoke universe levels get --json. '
             "Org admin required."
         ),
     )
@@ -234,6 +198,7 @@ def universe_levels_set(args: List[str]) -> int:
         session_id=parsed.session_id,
         json_mode=parsed.json_mode,
         human_writer=_write,
+        response_recovery=_require_min_effort_response,
     )
 
 

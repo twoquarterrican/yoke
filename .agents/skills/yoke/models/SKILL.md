@@ -21,11 +21,15 @@ Run `yoke ouroboros field-note append --help` for the worked failure modes and d
 
 Catalog facts include identity, successor `replacement_model_id`, published
 efforts/windows, API prices, subscription rules, optional benchmarks, URLs and
-dates. Unknown lookup is `researched=False`, never raises and never gates
-discovery, launch or usage. Server readers select `model_reference_store.revision_at`
+dates. Unknown lookup is `researched=False`, never raises and does not gate
+discovery or usage. Unknown model or unpublished effort refuses item work admission;
+steering without item claims remains available. Server readers select `model_reference_store.revision_at`
 before pure `lookup_model_reference`. `operator_notes` is annotation;
 retired `proposed_tier`, `tier_evidence`, `tier_provisional` keys refuse by name.
-Execution levels decide launches, with operator approval for every change.
+Execution levels contain model/minimum-effort rows, ignoring speed and launch
+stamps. Current successor facts drive exactly one class of older-model demotion.
+Pricing keeps the initial-start revision. Level changes need operator approval;
+thresholds strictly increase within each model as levels rise.
 
 ## Phase map
 

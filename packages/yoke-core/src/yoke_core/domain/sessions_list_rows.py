@@ -85,6 +85,9 @@ def render_session_roster_rows(
     """
     page = [dict(raw) for raw in rows]
     schedule = revision_schedule(conn) if page else []
+    current_records = (
+        revision_from_schedule(schedule, None)["records"] if schedule else ()
+    )
     actor_names = render_actor_names(conn, (row.get("actor_id") for row in page))
     levels = levels_by_project(conn, (row.get("project_id") for row in page))
     item_refs = render_item_ref_lookup(
@@ -136,7 +139,7 @@ def render_session_roster_rows(
             roles=roles_by_session.get(session_id, []),
             item_holders=item_holders,
         )
-        presentation = session_presentation(row, levels=levels)
+        presentation = session_presentation(row, levels=levels, records=current_records)
         holdings = holdings_by_session.get(session_id) or empty_holdings
         landing_wait = any(
             entry.get(ITEM_AWAITING_LANDING_KEY) for entry in holdings["current"]

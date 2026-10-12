@@ -1,12 +1,11 @@
 """The one projection of a session row into resolved identity.
 
 Registration resolves a session's identity once — canonical executor id and
-display alias, provider, model, the execution level the project's routing
-policy maps that executor to, workspace, project, and actor — and writes it
+display alias, provider, model, workspace, project, and actor — and writes it
 to ``harness_sessions``. Every later consumer reads it back through here.
 
-Reading the registered row keeps later consumers on the same identity and
-level without re-deriving either from local environment variables.
+Execution levels follow stored observed model facts and the current catalog,
+so a launch's requested level never overrides what the provider served.
 """
 
 from __future__ import annotations
@@ -37,7 +36,7 @@ UNREGISTERED_RECOVERY = (
 
 @dataclass(frozen=True)
 class SessionIdentity:
-    """Resolved identity as stored, with no locally derived field."""
+    """Stored session facts with their current model/effort level."""
 
     session_id: str
     executor: str
@@ -85,7 +84,7 @@ def resolve_session_identity(conn: Any, session_id: str) -> SessionIdentity:
     row = conn.execute(
         "SELECT executor, executor_surface, executor_version, machine_id, "
         "provider, model, requested_model, workspace, execution_level, "
-        "project_id, actor_id, mode, ended_at "
+        "project_id, actor_id, mode, ended_at, reasoning_effort, requested_reasoning_effort "
         f"FROM harness_sessions WHERE session_id = {_p(conn)}",
         (session_id,),
     ).fetchone()
@@ -100,6 +99,22 @@ def resolve_session_identity(conn: Any, session_id: str) -> SessionIdentity:
     )
 
     derived = resolve_harness_capabilities(_text(row[0]), _text(row[7]))
+    from yoke_core.domain.session_level_resolution import (
+        resolve_execution_level,
+        routing_effort_of,
+        routing_model_of,
+        session_levels,
+    )
+    from yoke_core.domain.session_model_catalog import current_model_records
+
+    execution_level = resolve_execution_level(
+        executor=_text(row[1]) or _text(row[0]),
+        explicit_level=None,
+        levels=session_levels(conn, _optional_int(row[9])),
+        model=routing_model_of(row[5], row[6]),
+        reasoning_effort=routing_effort_of(row[13], row[14], row[5]),
+        records=current_model_records(conn),
+    )
     return SessionIdentity(
         session_id=session_id,
         executor=_text(row[0]),
@@ -110,7 +125,7 @@ def resolve_session_identity(conn: Any, session_id: str) -> SessionIdentity:
         model=_text(row[5]),
         requested_model=_text(row[6]),
         workspace=_text(row[7]),
-        execution_level=_text(row[8]),
+        execution_level=execution_level,
         capabilities=[str(value) for value in derived["downstream_paths"]],
         project_id=_optional_int(row[9]),
         actor_id=_optional_int(row[10]),

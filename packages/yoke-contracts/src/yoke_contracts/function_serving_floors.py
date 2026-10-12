@@ -97,6 +97,8 @@ FUNCTION_MINIMUM_SERVING_VERSIONS: dict[str, str] = {
     "universe.level_capacity.get": "next-release",
     "universe.levels.get": "next-release",
     "universe.levels.set": "next-release",
+    "universe.cursor_quota_order.get": "next-release",
+    "universe.cursor_quota_order.set": "next-release",
     "workflows.canon_status.list": "next-release",
     "workflows.version.publish": "next-release",
 }

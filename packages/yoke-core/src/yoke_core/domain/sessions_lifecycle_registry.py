@@ -1,6 +1,7 @@
 """Session registration, heartbeat, and mode mutations."""
 
 from __future__ import annotations
+from .session_execution_level_write import refresh_session_execution_level
 
 import json
 from yoke_contracts.timestamps import utc_now
@@ -28,7 +29,6 @@ from .sessions_lifecycle_identity import (
     normalize_observed_identity,
     refresh_active_duplicate_identity,
     resolve_reactivation_executor_version,
-    resolve_reactivation_level,
     resolve_session_actor_id,
     resolve_session_project_id,
 )
@@ -164,6 +164,7 @@ def register_session(
             f"VALUES ({insert_placeholders})",
             tuple(insert_values),
         )
+        execution_level = refresh_session_execution_level(conn, session_id)
         conn.commit()
     except db_backend.integrity_error_types():
         # Postgres poisons the transaction after the duplicate INSERT; SQLite
@@ -201,9 +202,7 @@ def register_session(
             )
 
         resolved_facts = merged_facts(existing, model_facts)
-        resolved_level = resolve_reactivation_level(
-            existing, execution_level=execution_level
-        )
+        resolved_level = execution_level
         driver_version = executor_version
         executor_version = resolve_reactivation_executor_version(
             existing, incoming_surface=display_name, incoming_version=driver_version
@@ -260,6 +259,7 @@ def register_session(
                 "SESSION_EXISTS",
                 f"Session '{session_id}' is already registered.",
             )
+        resolved_level = refresh_session_execution_level(conn, session_id)
         conn.commit()
         reactivation_driver = build_reactivation_driver_stamp(
             driver_surface=display_name,

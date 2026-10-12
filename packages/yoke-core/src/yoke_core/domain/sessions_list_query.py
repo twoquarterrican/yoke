@@ -28,7 +28,8 @@ _HOLDS_ITEM = (
 _SELECT = (
     "SELECT s.session_id, s.executor, s.executor_surface, s.executor_version, "
     "s.model, "
-    "s.reasoning_effort, s.context_window_tokens, s.requested_model, "
+    "s.reasoning_effort, s.requested_reasoning_effort, "
+    "s.context_window_tokens, s.requested_model, "
     "s.usage_totals, "
     "s.presentation_surface, s.presentation_state, s.presentation_mode, "
     "s.presentation_source, s.presentation_observed_at, "

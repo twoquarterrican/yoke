@@ -26,9 +26,9 @@ def _session(conn, *, envelope=None):
     session = str(uuid4())
     actor = seed_human_actor(conn)
     conn.execute(
-        "INSERT INTO harness_sessions (session_id,executor,provider,model,workspace,"
+        "INSERT INTO harness_sessions (session_id,executor,provider,model,reasoning_effort,workspace,"
         "actor_id,project_id,offered_at,last_heartbeat,offer_envelope) "
-        "VALUES (%s,'codex','openai','clock-test','/tmp',%s,1,%s,%s,%s)",
+        "VALUES (%s,'codex','openai','gpt-6.1-sol','medium','/tmp',%s,1,%s,%s,%s)",
         (
             session,
             actor,

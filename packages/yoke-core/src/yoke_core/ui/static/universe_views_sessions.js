@@ -51,7 +51,7 @@ function levelChip(documentNode, row) {
   );
   attachTooltip(
     documentNode, chip,
-    "execution level — the job Yoke assigned, not the harness",
+    "execution level — capability from model rank, speed, and reasoning effort",
   );
   return chip;
 }

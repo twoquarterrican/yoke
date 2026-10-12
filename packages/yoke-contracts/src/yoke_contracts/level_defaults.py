@@ -1,65 +1,53 @@
-"""The shipped execution-level scheme: INTERN < JUNIOR < SENIOR < PRINCIPAL.
-
-Every universe reads this scheme until an operator stores its own with
-``yoke universe levels set``. The options are the operator-approved starting
-selections, each level's options in order; :func:`yoke_contracts.levels.parse_levels`
-validates them like any stored document.
-"""
-
-from __future__ import annotations
-
-from typing import Any, Mapping, Optional
+"""Operator-approved current-model minimum-effort bands."""
 
 
-def _option(surface: str, model: str, effort: str, context: Optional[int] = None):
-    return {
-        "surface": surface,
-        "model": model,
-        "reasoning_effort": effort,
-        "context_window_tokens": context,
-    }
+def _entry(model, effort):
+    return {"model": model, "min_effort": effort}
 
 
-#: The shipped scheme every universe reads until an operator stores its own:
-#: the operator-approved starting options, each level's options in order.
-DEFAULT_LEVELS: tuple[Mapping[str, Any], ...] = (
+DEFAULT_LEVELS = (
     {
         "name": "INTERN",
-        "glyph": "\U0001f423",
+        "glyph": "🐣",
         "options": [
-            _option("claude-cli", "claude-haiku-5-5", "max"),
-            _option("codex-cli", "gpt-6-luna", "max"),
+            _entry("claude-haiku-5-5", "low"),
+            _entry("gpt-6-luna", "low"),
+            _entry("claude-sonnet-5-5", "low"),
+            _entry("gpt-5.6-terra", "low"),
+            _entry("grok-4.7", "low"),
         ],
     },
     {
         "name": "JUNIOR",
-        "glyph": "\U0001f425",
+        "glyph": "🐥",
         "options": [
-            {
-                **_option("cursor-cli", "grok-4.7-high", "high"),
-                "fallback": _option("cursor-cli", "claude-opus-5-5-medium", "medium"),
-            },
-            _option("codex-cli", "gpt-5.6-terra", "xhigh"),
-            _option("claude-cli", "claude-sonnet-5-5", "xhigh", 1_000_000),
+            _entry("grok-4.7", "high"),
+            _entry("gpt-5.6-terra", "high"),
+            _entry("claude-sonnet-5-5", "high"),
+            _entry("claude-opus-5-5", "low"),
+            _entry("gpt-6.1-sol", "low"),
+            _entry("claude-fable-5-1", "low"),
+            _entry("gpt-6-astra", "low"),
         ],
     },
     {
         "name": "SENIOR",
-        "glyph": "\U0001f989",
+        "glyph": "🦉",
         "options": [
-            _option("claude-cli", "claude-opus-5-5", "medium", 1_000_000),
-            _option("codex-cli", "gpt-6.1-sol", "medium"),
+            _entry("claude-opus-5-5", "medium"),
+            _entry("gpt-6.1-sol", "medium"),
+            _entry("claude-fable-5-1", "medium"),
+            _entry("gpt-6-astra", "medium"),
         ],
     },
     {
         "name": "PRINCIPAL",
-        "glyph": "\U0001f985",
+        "glyph": "🦅",
         "options": [
-            _option("claude-cli", "claude-fable-5-1", "xhigh", 1_000_000),
-            _option("codex-cli", "gpt-6-astra", "xhigh"),
+            _entry("claude-fable-5-1", "xhigh"),
+            _entry("gpt-6-astra", "xhigh"),
         ],
     },
 )
-
 
 __all__ = ["DEFAULT_LEVELS"]

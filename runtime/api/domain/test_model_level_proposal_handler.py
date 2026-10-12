@@ -116,7 +116,7 @@ def test_refresh_proposes_the_successor_and_approval_applies_it(db) -> None:
     result = outcome.result_payload
     assert result["generated"] is True
     assert result["base_source"] == "default"
-    assert [c["kind"] for c in result["changes"]] == ["retire", "add"]
+    assert [c["kind"] for c in result["changes"]] == ["retire", "add"] * 3
     assert result["apply_command"] == "yoke universe levels set --stdin"
     principal = result["levels"][-1]["options"]
     assert principal[0]["model"] == "claude-fable-6"
@@ -133,62 +133,37 @@ def test_refresh_proposes_the_successor_and_approval_applies_it(db) -> None:
 
 
 def test_authored_changes_replace_the_generated_list(db) -> None:
-    sonnet = {
-        "surface": "claude-cli",
-        "model": "claude-sonnet-5-5",
-        "reasoning_effort": "xhigh",
-    }
+    sonnet = {"model": "claude-sonnet-5-5", "min_effort": "high"}
     outcome = _propose(
-        {"changes": [{"kind": "move", "option": sonnet, "to_level": "INTERN"}]}
+        {"changes": [{"kind": "move", "option": sonnet, "to_level": "SENIOR"}]}
     )
     assert outcome.primary_success is True, outcome.error
     result = outcome.result_payload
     assert result["generated"] is False
-    intern = [option["model"] for option in result["levels"][0]["options"]]
-    assert "claude-sonnet-5-5" in intern
+    senior = [option["model"] for option in result["levels"][2]["options"]]
+    assert "claude-sonnet-5-5" in senior
     assert {"model_id", "provider", "display_name"} <= set(result["unplaced_models"][0])
 
 
-def test_authored_option_with_an_unpublished_effort_is_refused(db) -> None:
-    _superseded_fable(db)
+def test_authored_option_with_an_unpublished_effort_is_refused(db):
     outcome = _propose(
         {
             "changes": [
                 {
                     "kind": "add",
                     "level": "PRINCIPAL",
-                    "option": {
-                        "surface": "claude-cli",
-                        "model": "claude-fable-6",
-                        "reasoning_effort": "high",
-                        "context_window_tokens": None,
-                    },
-                },
-                {
-                    "kind": "change",
-                    "option": {
-                        "surface": "claude-cli",
-                        "model": "claude-fable-6",
-                        "reasoning_effort": "high",
-                    },
-                    "context_window_tokens": 1_000_000,
-                },
+                    "option": {"model": "gpt-6.1-sol", "min_effort": "none"},
+                }
             ]
         }
     )
-    assert outcome.primary_success is True, outcome.error
-
-    narrowed = replace(SUCCESSOR, reasoning_efforts=("low", "max"))
-    kept = [r for r in revision_at(db)["records"] if r.model_id != SUCCESSOR.model_id]
-    _publish(db, [*kept, narrowed])
-    refused = _propose({"changes": outcome.result_payload["changes"]})
-    assert refused.primary_success is False
-    assert refused.error.code == "level_option_reasoning_effort_unpublished"
+    assert outcome.primary_success is False
+    assert outcome.error.code == "level_min_effort_order_invalid"
 
 
-def test_levels_set_refuses_an_option_the_catalog_contradicts(db) -> None:
+def test_levels_set_refuses_an_effort_the_catalog_contradicts(db):
     records = [
-        replace(r, context_window_tokens=(200_000,))
+        replace(r, reasoning_efforts=("low", "high"))
         if r.model_id == "claude-opus-5-5"
         else r
         for r in MODEL_RECORDS
@@ -196,12 +171,8 @@ def test_levels_set_refuses_an_option_the_catalog_contradicts(db) -> None:
     _publish(db, records)
     outcome = _set(levels_payload(default_levels()))
     assert outcome.primary_success is False
-    assert outcome.error.code == "level_option_context_window_tokens_unpublished"
-    assert "yoke models level-proposal" in outcome.error.message
-
-    corrected = _propose()
-    assert corrected.primary_success is True, corrected.error
-    assert _set(corrected.result_payload["levels"]).primary_success is True
+    assert outcome.error.code == "level_min_effort_unpublished"
+    assert "yoke models publish" in outcome.error.message
 
 
 def test_level_proposal_is_registered_as_a_read() -> None:

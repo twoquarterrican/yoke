@@ -117,6 +117,7 @@ def test_native_session_result_formats_at_http_boundary_only(
     monkeypatch.setattr(module, "_main_api", lambda: api)
     monkeypatch.setattr(lifecycle, "resolve_execution_level", lambda **kwargs: "SENIOR")
     monkeypatch.setattr(lifecycle, "session_levels", lambda *_args: [])
+    monkeypatch.setattr(lifecycle, "current_model_records", lambda *_args: ())
     fact = {
         "last_heartbeat": MOMENT,
         "ended_at": None,

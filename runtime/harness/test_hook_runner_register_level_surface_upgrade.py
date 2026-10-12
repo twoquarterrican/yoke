@@ -115,7 +115,7 @@ def test_existing_resolved_surface_is_never_replaced(
     )
 
 
-def test_existing_primary_level_with_wire_level_drives_reregister(monkeypatch):
+def test_a_wire_level_without_model_facts_cannot_drive_reregister(monkeypatch):
     _patch_existing_row(monkeypatch)
     calls: list[str] = []
     monkeypatch.setattr(
@@ -130,8 +130,8 @@ def test_existing_primary_level_with_wire_level_drives_reregister(monkeypatch):
         "s-level",
     )
 
-    assert drove is True
-    assert calls == ["s-level"]
+    assert drove is False
+    assert calls == []
 
 
 def _unresolved_row(executor: str, **facts) -> dict:
@@ -157,7 +157,10 @@ _NO_STORED_LEVELS = (None, None)
     "facts",
     [
         {"model": "claude-opus-5-5", "reasoning_effort": "medium"},
-        {"requested_model": "claude-opus-5-5[1m]"},
+        {
+            "requested_model": "claude-opus-5-5[1m]",
+            "requested_reasoning_effort": "medium",
+        },
     ],
 )
 def test_unresolved_level_drives_reregister_from_matching_option(monkeypatch, facts):
@@ -188,24 +191,19 @@ def test_unresolved_level_drives_reregister_from_matching_option(monkeypatch, fa
 
 
 def test_healed_level_stops_driving_reregister(monkeypatch):
-    """Once the row carries a real level the probe goes quiet again."""
     _patch_existing_row(monkeypatch)
     monkeypatch.setattr(
         register_module,
         "_register_from_hook",
-        lambda *_a, **_kw: pytest.fail("a resolved level must not re-register"),
+        lambda *_a, **_kw: pytest.fail("matching actual facts must not re-register"),
     )
-    monkeypatch.setattr(
-        "yoke_core.hooks.registration_identity.project_level_for_session",
-        lambda *_a, **_kw: pytest.fail("resolved rows must not read the levels"),
+    row = _unresolved_row(
+        "claude-code", model="claude-opus-5-5", reasoning_effort="medium"
     )
-
+    row["execution_level"] = "SENIOR"
     assert (
         register_module.ensure_registered_from_hook(
-            _Conn([{"execution_level": "SENIOR", "executor": "claude-code"}]),
-            "{}",
-            "s-level-healed",
-            project_id=1,
+            _Conn([row, *_NO_STORED_LEVELS]), "{}", "s-level-healed", project_id=1
         )
         is False
     )
@@ -255,3 +253,24 @@ def test_existing_real_level_with_other_wire_level_skips(monkeypatch):
         )
         is False
     )
+
+
+def test_actual_changed_model_refreshes_a_real_level(monkeypatch):
+    _patch_existing_row(monkeypatch)
+    calls = []
+    monkeypatch.setattr(
+        register_module,
+        "_register_from_hook",
+        lambda payload, sid, **kw: calls.append(sid) or ("", "c", "p", "m", None),
+    )
+    row = _unresolved_row(
+        "claude-code", model="claude-haiku-5-5", reasoning_effort="high"
+    )
+    row["execution_level"] = "SENIOR"
+    assert (
+        register_module.ensure_registered_from_hook(
+            _Conn([row, *_NO_STORED_LEVELS]), "{}", "s-changed", project_id=1
+        )
+        is True
+    )
+    assert calls == ["s-changed"]

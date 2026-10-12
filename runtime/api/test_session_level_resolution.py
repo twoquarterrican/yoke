@@ -1,11 +1,7 @@
 """Level resolution for a registering session.
 
-A session is stamped with the lowest level holding an option that matches
-its harness family and exact model, preferring an option at its own effort.
-The levels come from the project's ``session-routing`` override, else the
-stored universe definition, else the shipped scheme. An explicit real level
-wins; the unresolved sentinel and ``default`` yield to the option match, and
-a session no option matches stays unresolved.
+Observed model and effort determine the highest model-specific threshold.
+Launch stamps never override observed facts; unknown facts remain unresolved.
 """
 
 from __future__ import annotations
@@ -19,7 +15,7 @@ from yoke_contracts.session_level import (
     UNRESOLVED_EXECUTION_LEVEL,
     level_is_unresolved,
 )
-from yoke_core.api.routing_config import (
+from yoke_core.domain.session_level_resolution import (
     resolve_execution_level,
     routing_effort_of,
     routing_model_of,
@@ -27,6 +23,7 @@ from yoke_core.api.routing_config import (
 )
 from yoke_core.hooks.registration_identity import project_level_for_session
 from runtime.api.fixtures.level_store import levels_doc, option
+from runtime.api.fixtures.model_catalog import RECORDS
 
 # Every surface a live session registers under, with a shipped option for
 # its family and the shipped level that option belongs to.
@@ -40,8 +37,8 @@ _SHIPPED_MATCHES = [
 
 _SPLIT_MODEL = "claude-sonnet-5-5"
 _SPLIT_DOC = levels_doc(
-    ("LOWER", [option("claude-cli", _SPLIT_MODEL, "high")]),
-    ("UPPER", [option("claude-cli", _SPLIT_MODEL, "max")]),
+    ("LOWER", [option(_SPLIT_MODEL, "high")]),
+    ("UPPER", [option(_SPLIT_MODEL, "max")]),
 )
 
 
@@ -52,6 +49,7 @@ def _resolve(executor, model, effort=None, *, explicit=None, levels=None):
         levels=default_levels() if levels is None else levels,
         model=model,
         reasoning_effort=effort,
+        records=RECORDS,
     )
 
 
@@ -78,18 +76,16 @@ class TestShippedSchemeMatch:
             == "SENIOR"
         )
 
-    def test_real_explicit_level_wins(self):
+    def test_observed_model_overrides_explicit_launch_stamp(self):
         assert (
             _resolve("claude-code", "claude-opus-5-5", "medium", explicit="INTERN")
-            == "INTERN"
+            == "SENIOR"
         )
 
     @pytest.mark.parametrize(
         "executor,model",
         [
             ("claude-code", "claude-unlisted-model"),
-            ("codex", "claude-opus-5-5"),
-            ("some-other-harness", "claude-opus-5-5"),
             ("claude-code", None),
         ],
     )
@@ -108,11 +104,11 @@ class TestEffortDisambiguation:
             ("max", "UPPER"),
             ("MAX", "UPPER"),
             ("high", "LOWER"),
-            ("medium", "LOWER"),
-            (None, "LOWER"),
+            ("medium", UNRESOLVED_EXECUTION_LEVEL),
+            (None, UNRESOLVED_EXECUTION_LEVEL),
         ],
     )
-    def test_exact_effort_picks_its_level_else_the_lowest(self, effort, expected):
+    def test_effort_must_dominate_the_option(self, effort, expected):
         levels = parse_levels(_SPLIT_DOC)
         assert _resolve("claude-code", _SPLIT_MODEL, effort, levels=levels) == expected
 
@@ -160,6 +156,18 @@ class _LevelStoreConn:
             value = self._universe
         elif "project_capabilities" in sql:
             value = self._project
+        elif "model_reference_revisions" in sql:
+            return _Cursor(
+                (
+                    "fixture",
+                    "1970-01-01T00:00:00Z",
+                    "1970-01-01T00:00:00Z",
+                    None,
+                    json.dumps([record.to_dict() for record in RECORDS]),
+                    "fixture",
+                    None,
+                )
+            )
         else:
             raise AssertionError(f"unexpected query: {sql}")
         return _Cursor(None if value is None else (value,))
@@ -169,12 +177,8 @@ def _dump(document):
     return None if document is None else json.dumps(document)
 
 
-_UNIVERSE_DOC = levels_doc(
-    ("UNIVERSE_ONLY", [option("claude-cli", "claude-opus-5-5", "medium")])
-)
-_PROJECT_DOC = levels_doc(
-    ("PROJECT_ONLY", [option("claude-cli", "claude-opus-5-5", "medium")])
-)
+_UNIVERSE_DOC = levels_doc(("UNIVERSE_ONLY", [option("claude-opus-5-5", "medium")]))
+_PROJECT_DOC = levels_doc(("PROJECT_ONLY", [option("claude-opus-5-5", "medium")]))
 
 
 class TestProjectLevelForSession:
@@ -202,13 +206,16 @@ class TestProjectLevelForSession:
             == "UNIVERSE_ONLY"
         )
 
-    def test_explicit_level_wins_over_the_stores(self):
+    def test_explicit_level_cannot_override_observed_model(self):
         conn = _LevelStoreConn(project=_PROJECT_DOC)
-        assert self._level(conn, explicit_level="CHOSEN") == "CHOSEN"
+        assert self._level(conn, explicit_level="CHOSEN") == "PROJECT_ONLY"
 
     def test_unreadable_stored_document_labels_nothing(self):
         conn = _LevelStoreConn(raw_universe="{not json")
         assert self._level(conn) == UNRESOLVED_EXECUTION_LEVEL
 
-    def test_no_project_id_leaves_the_caller_in_charge(self):
-        assert project_level_for_session(None, None, "claude-code") is None
+    def test_no_project_and_no_model_reports_unresolved(self):
+        assert (
+            project_level_for_session(None, None, "claude-code")
+            == UNRESOLVED_EXECUTION_LEVEL
+        )

@@ -2,7 +2,8 @@
 
 The control plane supplies the selected catalog revision to each reader.
 Lookup never raises. ``researched=False`` is the explicit not-researched
-marker — missing facts are not a discovery, launch, or usage gate.
+marker. Execution levels require known model and published effort facts;
+discovery and usage remain readable when a lookup is unknown.
 The catalog holds facts about models only; which level launches a model is
 decided by the execution levels (:mod:`yoke_contracts.levels`).
 
@@ -41,11 +42,11 @@ def lookup_stem(model_id: str) -> str:
         token = token[: token.index("[")]
     if token.lower().endswith(CLAUDE_CONTEXT_TIER_SUFFIX):
         token = token[: -len(CLAUDE_CONTEXT_TIER_SUFFIX)]
-    token = token.removesuffix("-fast")
+    token = token.removesuffix("-fast").removesuffix("-thinking")
     for level in sorted(REASONING_EFFORT_VALUES, key=len, reverse=True):
         suffix = f"-{level}"
         if token.endswith(suffix):
-            return token[: -len(suffix)]
+            return token[: -len(suffix)].removesuffix("-thinking")
     return token
 
 

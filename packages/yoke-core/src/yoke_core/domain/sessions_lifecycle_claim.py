@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 
 from . import db_backend
 from .sessions_analytics import SessionError
+from .session_work_eligibility import require_session_work_eligibility
 from .sessions_claim_lifecycle_lock import lock_session_rows_for_claim_lifecycle
 from .sessions_ended_recovery import session_ended_message
 from .sessions_lifecycle_claim_events import emit_work_claimed
@@ -171,6 +172,8 @@ def claim_work(
             session_ended_message(conn, session_id),
         )
 
+    require_session_work_eligibility(conn, session_id, target)
+
     conflict = conn.execute(
         f"SELECT session_id FROM work_claims "
         f"WHERE {conflict_clause} AND released_at IS NULL AND session_id <> {p} "
@@ -205,6 +208,7 @@ def claim_work(
         )
 
     binding_lock.lock_work_claim_target_workflow_binding(conn, target)
+    require_session_work_eligibility(conn, session_id, target)
     try:
         validate_work_claim_target(conn, target)
     except WorkflowItemBindingError as exc:

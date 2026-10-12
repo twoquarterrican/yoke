@@ -4,9 +4,8 @@ The rules file every session loads carries the short normative form of each rule
 
 ## Execution levels and worktree lanes
 
-An execution level is an ordered capability band whose options are exact
-launchable selections; a registering session is labeled with the level whose
-option matches its harness, model, and effort (universe levels, or a
+An execution level is an ordered band of model/minimum-effort rows; a session
+is labeled with its highest model threshold met by observed effort (universe levels, or a
 project's `session-routing` override — see
 [execution levels](../session-level-routing.md)). Its name and glyph identify
 the group on the board and dashboard; it carries no skill permissions. Workflow bindings

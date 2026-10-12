@@ -1,23 +1,17 @@
 """Choose which option of a level a launch runs, and on which machine.
 
-Each level option is weighed on machines offering its surface and capacity,
-against its model's quota pools (:mod:`session_launch_level_pools`). Cursor
-fallback requires its own pool to be confirmed empty.
+Each model/minimum-effort row expands into observed native selectors, then
+uses the existing machine, quota, spread and headroom rules. Cursor's earlier
+monthly pool is preferred among available Cursor candidates.
 
-The choice, in order:
-
-1. **Spread.** A candidate on a surface with no live worker and more than
-   100% headroom wins first, so idle quota that cannot run out before its
-   reset is put to work rather than left behind.
-2. **Most headroom.** Otherwise the candidate with the most binding headroom
-   wins; a candidate whose pools publish no readable meter ranks below every
-   readable one.
-3. **Order.** The level's option order, then machine id, break ties.
+Empty and blocked candidates are skipped. Cursor pool order filters Cursor
+candidates first; spread, headroom and configuration position then select from
+all surfaces without adding an order to other vendors.
 
 When no option can launch anywhere, the launch is refused with every option
-and the pool or eligibility rule that blocked it. The Levels page previews its
-next launch through here, so it never predicts a different answer. A level
-never borrows another level's options; capacity recovery excludes the refused model.
+and the pool or eligibility rule that blocked it. Launch previews use the same
+selection. A level never borrows another level's options; capacity recovery
+excludes the refused model.
 """
 
 from __future__ import annotations
@@ -26,11 +20,19 @@ from datetime import datetime
 from dataclasses import replace
 from typing import Any, Sequence
 
-from yoke_contracts.levels import Level, LevelOption
+from yoke_contracts.levels import Level
+from yoke_contracts.session_control.model_selection import SURFACE_EFFORT_LEVELS
+from yoke_core.domain.level_native_selections import (
+    NativeLevelSelection,
+    native_selections,
+)
+from yoke_core.domain.session_launch_machine_models import machine_native_models
+from yoke_core.domain.session_model_catalog import current_model_records
 from yoke_contracts.timestamps import as_utc
 from yoke_core.domain.machine_launch_access import filter_by_machine_access
 from yoke_core.domain.machine_registry import display_name, machine_names
 from yoke_core.domain.refusal_recovery import compose_refusal
+from yoke_core.domain.quota_pool_order import pool_preference, read_pool_order
 from yoke_core.domain.session_launch_level_candidate import (
     LevelCandidate,
     LevelPlacement,
@@ -56,9 +58,8 @@ from yoke_core.domain.universe_levels import effective_levels
 
 LEVEL_NO_CAPACITY = "level_no_capacity"
 LEVEL_UNKNOWN = "level_unknown"
-RULE_SPREAD = "spread"
 RULE_HEADROOM = "most_headroom"
-#: Above this headroom a surface with no live worker takes the launch.
+RULE_SPREAD = "spread"
 SPREAD_HEADROOM_PERCENT = 100.0
 
 
@@ -90,7 +91,7 @@ def _ineligible_reason(snapshot: Any, surface: str, denials: dict[str, str]) -> 
 
 
 def _weigh(
-    option: LevelOption,
+    option: NativeLevelSelection,
     *,
     index: int,
     relay: EligibleRelay,
@@ -98,7 +99,6 @@ def _weigh(
     limits: Sequence[Any],
     workers: dict[str, int],
     now: datetime,
-    fallback: bool,
 ) -> LevelCandidate:
     pools = option_pools(
         limits,
@@ -117,7 +117,6 @@ def _weigh(
         context_window_tokens=option.context_window_tokens,
         machine_id=relay.machine_id,
         machine_name=display_name(names, relay.machine_id),
-        fallback=fallback,
         pools=pools,
         headroom_percent=binding.headroom_percent if binding else None,
         headroom_window=binding.window if binding else None,
@@ -144,13 +143,15 @@ def _candidates(
     workers = live_workers(conn)
     names = machine_names(conn)
     weighed: list[LevelCandidate] = []
-    for index, option in enumerate(level.options):
+    records = current_model_records(conn)
+    native = {}
+    for surface in SURFACE_EFFORT_LEVELS:
         snapshot, denials = filter_by_machine_access(
             conn,
             eligibility(
                 conn,
                 project_id=project_id,
-                surface=option.surface,
+                surface=surface,
                 machine_id=machine_id,
                 now=now,
             ),
@@ -159,68 +160,92 @@ def _candidates(
             is_admin=auth.can_administer_project,
         )
         relays = {relay.machine_id: relay for relay in reversed(snapshot.relays)}
-        if not relays:
-            weighed.append(
-                LevelCandidate(
-                    option_index=index,
-                    surface=option.surface,
-                    model=option.model,
-                    reasoning_effort=option.reasoning_effort,
-                    context_window_tokens=option.context_window_tokens,
-                    machine_id=None,
-                    fallback=False,
-                    blocked=_ineligible_reason(snapshot, option.surface, denials),
-                )
-            )
-            continue
-        for machine in sorted(relays):
-            primary = _weigh(
-                option,
-                index=index,
-                relay=relays[machine],
-                names=names,
-                limits=limits,
-                workers=workers,
-                now=now,
-                fallback=False,
-            )
-            weighed.append(primary)
-            if primary.blocked and option.fallback is not None:
+        for index, entry in enumerate(level.options):
+            if not relays:
                 weighed.append(
-                    _weigh(
-                        option.fallback,
-                        index=index,
-                        relay=relays[machine],
-                        names=names,
-                        limits=limits,
-                        workers=workers,
-                        now=now,
-                        fallback=True,
+                    LevelCandidate(
+                        option_index=index,
+                        surface=surface,
+                        model=entry.model,
+                        reasoning_effort=entry.min_effort,
+                        context_window_tokens=None,
+                        machine_id=None,
+                        blocked=_ineligible_reason(snapshot, surface, denials),
                     )
                 )
+            for machine in sorted(relays):
+                if machine not in native:
+                    native[machine] = machine_native_models(conn, machine_id=machine)
+                selections, unavailable = native_selections(
+                    entry,
+                    surface=surface,
+                    reading=native[machine].get(surface),
+                    records=records,
+                )
+                if unavailable:
+                    weighed.append(
+                        LevelCandidate(
+                            option_index=index,
+                            surface=surface,
+                            model=entry.model,
+                            reasoning_effort=entry.min_effort,
+                            context_window_tokens=None,
+                            machine_id=machine,
+                            blocked=unavailable,
+                        )
+                    )
+                for selection in selections:
+                    weighed.append(
+                        _weigh(
+                            selection,
+                            index=index,
+                            relay=relays[machine],
+                            names=names,
+                            limits=limits,
+                            workers=workers,
+                            now=now,
+                        )
+                    )
     return weighed
 
 
-def _choose(open_: list[LevelCandidate]) -> tuple[LevelCandidate, str]:
-    def rank(candidate: LevelCandidate) -> tuple[Any, ...]:
-        readable = candidate.headroom_percent is not None
+def _choose(
+    open_: list[LevelCandidate], consumption_order=None
+) -> tuple[LevelCandidate, str]:
+    from yoke_core.domain.quota_pool_order import DEFAULT_CURSOR_QUOTA_ORDER
+
+    order = consumption_order or DEFAULT_CURSOR_QUOTA_ORDER
+    cursor = [candidate for candidate in open_ if candidate.surface == "cursor-cli"]
+    preferred = min(
+        (pool_preference(order, model=candidate.model) for candidate in cursor),
+        default=None,
+    )
+    available = [
+        candidate
+        for candidate in open_
+        if candidate.surface != "cursor-cli"
+        or pool_preference(order, model=candidate.model) == preferred
+    ]
+
+    def rank(candidate):
         return (
-            not readable,
+            candidate.headroom_percent is None,
             -(candidate.headroom_percent or 0.0),
             candidate.option_index,
-            candidate.fallback,
             candidate.machine_id or "",
         )
 
     spread = [
         candidate
-        for candidate in open_
+        for candidate in available
         if candidate.live_workers == 0
         and (candidate.headroom_percent or 0.0) > SPREAD_HEADROOM_PERCENT
     ]
-    if spread:
-        return min(spread, key=rank), RULE_SPREAD
-    return min(open_, key=rank), RULE_HEADROOM
+    return (
+        (min(spread, key=rank), RULE_SPREAD)
+        if spread
+        else (min(available, key=rank), RULE_HEADROOM)
+    )
 
 
 def _reason(chosen: LevelCandidate, rule: str, open_: list[LevelCandidate]) -> str:
@@ -229,11 +254,7 @@ def _reason(chosen: LevelCandidate, rule: str, open_: list[LevelCandidate]) -> s
     if len(open_) == 1:
         return f"only option with capacity: {chosen.label}, headroom {headroom}{window}"
     if rule == RULE_SPREAD:
-        return (
-            f"spread rule: no live worker on {chosen.surface} and headroom "
-            f"{headroom}{window} above "
-            f"{int(SPREAD_HEADROOM_PERCENT)}%; chose {chosen.label}"
-        )
+        return f"spread rule: no live worker on {chosen.surface}; {chosen.label}, headroom {headroom}{window} above {int(SPREAD_HEADROOM_PERCENT)}%"
     return f"most headroom: {chosen.label} at {headroom}{window}"
 
 
@@ -295,13 +316,19 @@ def place_level(
         return LevelPlacement(
             wanted.name, source, tuple(weighed), None, None, _refusal(wanted, weighed)
         )
-    chosen, rule = _choose(open_)
+    chosen, rule = _choose(open_, read_pool_order(conn))
     reason = _reason(chosen, rule, open_)
     chosen = replace(chosen, chosen=True)
     marked = tuple(
         chosen
-        if (c.option_index, c.fallback, c.machine_id)
-        == (chosen.option_index, chosen.fallback, chosen.machine_id)
+        if (c.option_index, c.surface, c.model, c.reasoning_effort, c.machine_id)
+        == (
+            chosen.option_index,
+            chosen.surface,
+            chosen.model,
+            chosen.reasoning_effort,
+            chosen.machine_id,
+        )
         else c
         for c in weighed
     )

@@ -46,15 +46,15 @@ def insert_session(
     now = instant_parameter(conn, instant_ago())
     conn.execute(
         "INSERT INTO harness_sessions ("
-        "session_id, executor, provider, model, execution_level, workspace, "
+        "session_id, executor, provider, model, reasoning_effort, execution_level, workspace, "
         "project_id, mode, offered_at, last_heartbeat, current_item_id, "
         "ended_at"
-        ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        ") VALUES (%s, %s, %s, %s, 'medium', %s, %s, %s, %s, %s, %s, %s, %s)",
         (
             session_id,
             "claude-code",
             "anthropic",
-            "test-model",
+            "claude-opus-5-5",
             "primary",
             "/tmp/workspace",
             1,

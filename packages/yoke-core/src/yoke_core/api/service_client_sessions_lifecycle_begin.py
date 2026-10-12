@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoke_core.domain.session_model_catalog import current_model_records
+
 from yoke_core.domain.json_helper import dumps_compact
 import sys
 from pathlib import Path
@@ -13,7 +15,7 @@ from yoke_contracts.session_model_facts import (
     facts_from_mapping,
 )
 
-from yoke_core.api.routing_config import (
+from yoke_core.domain.session_level_resolution import (
     resolve_execution_level,
     routing_effort_of,
     routing_model_of,
@@ -89,9 +91,12 @@ def begin_session(
         executor=executor,
         explicit_level=None,
         levels=session_levels(conn, project_id),
+        records=current_model_records(conn),
         model=routing_model_of(model_facts.model, model_facts.requested_model),
         reasoning_effort=routing_effort_of(
-            model_facts.reasoning_effort, model_facts.requested_reasoning_effort
+            model_facts.reasoning_effort,
+            model_facts.requested_reasoning_effort,
+            model_facts.model,
         ),
     )
     try:

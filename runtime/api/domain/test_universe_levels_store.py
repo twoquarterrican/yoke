@@ -27,10 +27,8 @@ CUSTOM = [
         "glyph": "\U0001f680",
         "options": [
             {
-                "surface": "codex-cli",
                 "model": "gpt-6.1-sol",
-                "reasoning_effort": "high",
-                "context_window_tokens": None,
+                "min_effort": "high",
             }
         ],
     }
@@ -165,13 +163,13 @@ class TestUniverseHandlers:
 
     def test_set_refuses_by_name_and_points_at_the_field(self, handlers):
         bad = json.loads(json.dumps(CUSTOM))
-        bad[0]["options"][0]["reasoning_effort"] = "extreme"
+        bad[0]["options"][0]["min_effort"] = "extreme"
         outcome = _call(
             handle_universe_levels_set, "universe.levels.set", {"levels": bad}
         )
         assert not outcome.primary_success
-        assert outcome.error.code == "codex_reasoning_effort_unsupported"
-        assert outcome.error.jsonpath == "$.payload.levels[0].options[0]"
+        assert outcome.error.code == "level_min_effort_invalid"
+        assert outcome.error.jsonpath == "$.payload.levels[0].options[0].min_effort"
 
 
 class TestLevelSummary:

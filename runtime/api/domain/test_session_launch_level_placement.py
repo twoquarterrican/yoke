@@ -22,6 +22,7 @@ from runtime.api.domain.session_launch_level_test_support import (
     CLAUDE_OPUS,
     CODEX_SOL,
     CURSOR_GROK,
+    CURSOR_OPUS,
     FIVE_HOUR_RESET,
     LEVEL,
     MONTH_RESET,
@@ -69,7 +70,6 @@ def test_claude_reads_the_5h_weekly_and_its_own_family_window_only() -> None:
             window("rolling_5h", 80.0, resets_at=FIVE_HOUR_RESET),
             weekly(90.0),
             weekly(30.0, scope="Opus"),
-            # Another family's window at zero must neither block nor rank Opus.
             weekly(0.0, scope="Sonnet"),
         ],
     )
@@ -102,43 +102,40 @@ def test_an_empty_family_window_blocks_the_claude_option() -> None:
     assert "weekly · Opus pool exhausted" in placement.reason
 
 
-def test_cursor_falls_back_to_other_models_when_cursor_models_is_empty() -> None:
-    conn = level_connection(CURSOR_GROK)
+def test_cursor_selects_an_explicit_other_pool_row_when_first_pool_is_empty():
+    conn = level_connection(CURSOR_GROK, CURSOR_OPUS)
     add_surface(conn, "m-cursor", "cursor-cli", _cursor_pools(0.0, 50.0))
-
     placement = _place(conn)
-
-    primary, fallback = placement.candidates
-    assert primary.model == "grok-4.7-high"
-    assert "Cursor Models pool exhausted" in str(primary.blocked)
-    assert [pool.window for pool in primary.pools] == ["monthly · Cursor Models"]
-    assert placement.chosen == fallback
-    assert fallback.fallback is True
-    assert fallback.model == "claude-opus-5-5-medium"
-    assert fallback.reasoning_effort == "medium"
-    assert [pool.window for pool in fallback.pools] == ["monthly · Other Models"]
-    assert "(fallback)" in fallback.label
+    chosen = placement.chosen
+    assert chosen.model == "claude-opus-5-5-medium"
+    assert chosen.option_index == 1
+    assert chosen.reasoning_effort == "medium"
+    assert [pool.window for pool in chosen.pools] == ["monthly · Other Models"]
+    assert "fallback" not in chosen.to_dict()
 
 
-def test_other_models_never_blocks_the_grok_option() -> None:
+def test_other_models_never_blocks_the_grok_row():
     conn = level_connection(CURSOR_GROK)
     add_surface(conn, "m-cursor", "cursor-cli", _cursor_pools(40.0, 0.0))
-
-    placement = _place(conn)
-
-    # The primary is open, so its fallback is not even weighed.
-    assert len(placement.candidates) == 1
-    assert placement.chosen is not None
-    assert placement.chosen.model == "grok-4.7-high"
-    assert placement.chosen.fallback is False
+    assert _place(conn).chosen.model == "grok-4.7-high"
 
 
-def test_cursor_refuses_when_the_fallback_pool_is_empty_too() -> None:
+def test_cursor_does_not_borrow_an_unconfigured_other_pool_model():
     conn = level_connection(CURSOR_GROK)
-    add_surface(conn, "m-cursor", "cursor-cli", _cursor_pools(0.0, 0.0))
-
+    add_surface(conn, "m-cursor", "cursor-cli", _cursor_pools(0.0, 50.0))
     placement = _place(conn)
+    assert placement.chosen is None
+    assert "Cursor Models pool exhausted" in placement.reason
+    assert not any(
+        candidate.model == "claude-opus-5-5-medium"
+        for candidate in placement.candidates
+    )
 
+
+def test_cursor_refuses_when_both_configured_pools_are_empty():
+    conn = level_connection(CURSOR_GROK, CURSOR_OPUS)
+    add_surface(conn, "m-cursor", "cursor-cli", _cursor_pools(0.0, 0.0))
+    placement = _place(conn)
     assert placement.chosen is None
     assert "Cursor Models pool exhausted" in placement.reason
     assert "Other Models pool exhausted" in placement.reason
@@ -195,7 +192,7 @@ def test_most_headroom_wins_when_no_surface_qualifies_to_spread() -> None:
     assert placement.rule == RULE_HEADROOM
     assert placement.chosen.surface == "codex-cli"
     assert placement.chosen.headroom_percent == pytest.approx(80.0)
-    assert [c.chosen for c in placement.candidates] == [False, True]
+    assert sum(c.chosen for c in placement.candidates) == 1
 
 
 def test_an_unreadable_meter_does_not_block_but_ranks_last() -> None:
@@ -205,7 +202,7 @@ def test_an_unreadable_meter_does_not_block_but_ranks_last() -> None:
 
     placement = _place(conn)
 
-    claude = placement.candidates[0]
+    claude = next(c for c in placement.candidates if c.surface == "claude-cli")
     assert claude.blocked is None
     assert claude.headroom_percent is None
     assert placement.chosen.surface == "codex-cli"
@@ -238,7 +235,7 @@ def test_an_option_no_machine_offers_is_blocked_with_the_reason() -> None:
 
     placement = _place(conn)
 
-    claude = placement.candidates[0]
+    claude = next(c for c in placement.candidates if c.surface == "claude-cli")
     assert claude.machine_id is None
     assert str(claude.blocked).startswith("no usable machine offers claude-cli")
     assert placement.chosen.surface == "codex-cli"
@@ -295,7 +292,10 @@ def test_placement_keeps_native_pool_reset_until_json_projection(reset) -> None:
     payload = json.loads(json.dumps(placement.to_dict()))
     assert payload["chosen"]["pools"][0]["resets_at"] == "2026-08-26T00:00:00.123456Z"
     assert payload["chosen"]["label"] == chosen.label
-    assert payload["candidates"][0]["pools"] == payload["chosen"]["pools"]
+    assert (
+        next(c for c in payload["candidates"] if c["chosen"])["pools"]
+        == payload["chosen"]["pools"]
+    )
 
 
 def test_pool_projection_preserves_null_reset_and_opaque_window() -> None:
@@ -343,7 +343,7 @@ def test_exhausted_pool_refusal_formats_native_reset(microsecond, offset):
     )
     placement = _place(conn)
     assert placement.chosen is None
-    (candidate,) = placement.candidates
+    candidate = next(c for c in placement.candidates if c.surface == "codex-cli")
     assert candidate.pools[0].resets_at == expected
     rendered = "unknown" if expected is None else format_instant(expected)
     assert f"(resets {rendered})" in candidate.blocked

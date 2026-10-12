@@ -1,7 +1,7 @@
 """Coverage for the ``sessions.identity`` read-back handler.
 
 Identity is resolved once at registration and read back here. The handler
-must return the stored row verbatim — never a locally derived substitute —
+returns stored identity facts and recomputes the current execution level,
 and must refuse rather than invent when the authority has no row.
 """
 
@@ -44,7 +44,7 @@ def _insert_session(
     executor: str = "claude-code",
     executor_surface: str | None = "claude-desktop",
     provider: str = "anthropic",
-    model: str = "claude-opus-5",
+    model: str = "claude-opus-5-5",
     level: str = "DARIUS",
     workspace: str = "/tmp/workspace",
     project_id: int | None = 1,
@@ -52,10 +52,10 @@ def _insert_session(
 ) -> None:
     conn.execute(
         "INSERT INTO harness_sessions ("
-        "session_id, executor, executor_surface, provider, model, "
+        "session_id, executor, executor_surface, provider, model, reasoning_effort, "
         "execution_level, workspace, project_id, mode, offered_at, "
         "last_heartbeat, ended_at"
-        ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        ") VALUES (%s, %s, %s, %s, %s, 'medium', %s, %s, %s, %s, %s, %s, %s)",
         (
             session_id,
             executor,
@@ -82,8 +82,8 @@ class TestResolveSessionIdentity:
         assert identity.executor == "claude-code"
         assert identity.executor_surface == "claude-desktop"
         assert identity.provider == "anthropic"
-        assert identity.model == "claude-opus-5"
-        assert identity.execution_level == "DARIUS"
+        assert identity.model == "claude-opus-5-5"
+        assert identity.execution_level == "SENIOR"
         assert identity.workspace == "/tmp/workspace"
         assert identity.project_id == 1
         assert identity.ended_at is None
@@ -121,7 +121,7 @@ class TestHandleIdentity:
         assert payload["executor_surface"] == "cursor-desktop"
         assert payload["provider"] == "cursor"
         assert payload["model"] == "composer-1"
-        assert payload["execution_level"] == "MUSKY"
+        assert payload["execution_level"] == "primary"
         assert payload["workspace"] == "/tmp/workspace"
         assert "lane_allowed_paths" not in payload
         assert isinstance(payload["max_chain_steps"], int)

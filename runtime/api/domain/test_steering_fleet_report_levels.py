@@ -49,7 +49,6 @@ def _candidate(**overrides) -> LevelCandidate:
         reasoning_effort="medium",
         context_window_tokens=1_000_000,
         machine_id="machine-a",
-        fallback=False,
         pools=(_pool(),),
     )
     values.update(overrides)

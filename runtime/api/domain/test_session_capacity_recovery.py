@@ -114,10 +114,8 @@ def test_published_model_alias_excludes_the_same_capacity_overloaded_model(monke
                 "options": [
                     CODEX_SOL,
                     {
-                        "surface": "claude-cli",
                         "model": "claude-fable-5-1",
-                        "reasoning_effort": "medium",
-                        "context_window_tokens": None,
+                        "min_effort": "medium",
                     },
                 ],
             }
@@ -130,7 +128,7 @@ def test_published_model_alias_excludes_the_same_capacity_overloaded_model(monke
     )
     conn.commit()
     result = relaunch_capacity_worker(conn, state=state(conn), now=CURRENT)
-    assert "launch_id" in result
+    assert "launch_id" in result, result
     launch = conn.execute(
         "SELECT resolved_model,level_placement FROM session_launches"
     ).fetchone()

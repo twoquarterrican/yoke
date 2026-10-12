@@ -22,7 +22,6 @@ class LevelCandidate:
     reasoning_effort: str
     context_window_tokens: int | None
     machine_id: str | None
-    fallback: bool
     pools: tuple[PoolCheck, ...] = ()
     headroom_percent: float | None = None
     headroom_window: str | None = None
@@ -35,8 +34,7 @@ class LevelCandidate:
     def label(self) -> str:
         machine = self.machine_name or self.machine_id
         where = f" on {machine}" if machine else ""
-        via = " (fallback)" if self.fallback else ""
-        return f"{self.surface} {self.model} {self.reasoning_effort}{via}{where}"
+        return f"{self.surface} {self.model} {self.reasoning_effort}{where}"
 
     def to_dict(self) -> dict[str, Any]:
         out = asdict(self)

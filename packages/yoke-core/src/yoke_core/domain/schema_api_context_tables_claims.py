@@ -75,7 +75,9 @@ CLAIMS_TABLES: dict[str, dict] = {
         ],
         "notes": HARNESS_SESSION_NOTES
         + (
-            " Capacity recovery uses session_resume_in_flight, which reads "
+            " Observed effort is harness_sessions.reasoning_effort, not effort; "
+            "requested_reasoning_effort records launch intent, not observed selection. "
+            "Capacity recovery uses session_resume_in_flight, which reads "
             "harness_sessions.native_process_gone_at (TIMESTAMPTZ), last_tool_call_at "
             "and last_heartbeat. A launch-only fixture does not contain these "
             "relay liveness columns; include them before testing resume admission "

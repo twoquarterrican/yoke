@@ -4,8 +4,7 @@ Model refresh researches and publishes catalog facts first, then asks this
 function what those facts mean for the universe levels. With no ``changes``
 it extrapolates them from the catalog; with ``changes`` it applies the
 author's list instead. Either way it returns the resulting levels document
-and refuses an option whose effort or context window the model's provider
-does not publish. Nothing is written: approval stores the returned document
+and refuses an row whose minimum effort the model's provider does not publish. Nothing is written: approval stores the returned document
 with ``yoke universe levels set``.
 """
 

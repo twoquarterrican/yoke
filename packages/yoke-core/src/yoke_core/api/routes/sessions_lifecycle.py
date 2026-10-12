@@ -7,6 +7,8 @@ patches take effect.
 
 from __future__ import annotations
 
+from yoke_core.domain.session_model_catalog import current_model_records
+
 from typing import Any, Dict, Optional
 
 from fastapi import Query
@@ -26,7 +28,7 @@ from yoke_core.domain.sessions import (
     heartbeat,
     register_session,
 )
-from yoke_core.api.routing_config import (
+from yoke_core.domain.session_level_resolution import (
     resolve_execution_level,
     routing_effort_of,
     routing_model_of,
@@ -75,9 +77,10 @@ def api_register_session(req: RegisterSessionRequest) -> JSONResponse:
             executor=req.executor,
             explicit_level=req.execution_level,
             levels=session_levels(conn, req.project_id),
+            records=current_model_records(conn),
             model=routing_model_of(req.model, req.requested_model),
             reasoning_effort=routing_effort_of(
-                req.reasoning_effort, req.requested_reasoning_effort
+                req.reasoning_effort, req.requested_reasoning_effort, req.model
             ),
         )
         result = register_session(

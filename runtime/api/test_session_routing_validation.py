@@ -48,7 +48,7 @@ def test_an_invalid_level_is_refused_at_its_path():
     document["levels"][0]["options"][0]["model"] = "claude-*"
     error = _refusal(document)
     assert error.field == "levels[0].options[0].model"
-    assert "level_option_model_not_launchable" in str(error)
+    assert "level_model_invalid" in str(error)
 
 
 @pytest.mark.parametrize(

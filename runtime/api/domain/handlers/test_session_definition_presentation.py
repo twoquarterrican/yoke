@@ -2,18 +2,27 @@
 
 A roster row's level glyph comes from its project's effective levels: the
 project's ``session-routing`` override, else the stored universe ``levels``
-setting, else the shipped scheme. A stamped level none of those declare
-renders its name with no glyph.
+setting, else the shipped scheme. Observed model/effort facts determine its
+level; a requested stamp cannot override them.
 """
 
 import json
 
 from runtime.api.domain.handlers.test_sessions_list_handler import (
-    _insert_session,
+    _insert_session as _base_insert_session,
     _iso,
 )
 from yoke_core.domain.sessions_list_read import list_sessions
 from yoke_core.domain.universe_levels import write_universe_levels
+
+
+def _insert_session(conn, session_id, **kwargs):
+    _base_insert_session(conn, session_id, **kwargs)
+    conn.execute(
+        "UPDATE harness_sessions SET model='gpt-6.1-sol',reasoning_effort='medium' WHERE session_id=%s",
+        (session_id,),
+    )
+    conn.commit()
 
 
 def _levels(name: str, glyph: str) -> list[dict]:
@@ -23,10 +32,8 @@ def _levels(name: str, glyph: str) -> list[dict]:
             "glyph": glyph,
             "options": [
                 {
-                    "surface": "codex-cli",
                     "model": "gpt-6.1-sol",
-                    "reasoning_effort": "medium",
-                    "context_window_tokens": None,
+                    "min_effort": "medium",
                 }
             ],
         }
@@ -91,8 +98,8 @@ def test_project_override_wins_over_the_universe_levels(test_db) -> None:
     assert (row["level_label"], row["level_glyph"]) == ("RESEARCH", "🚀")
 
 
-def test_unknown_stamped_level_renders_label_only(test_db) -> None:
+def test_unknown_stamped_level_cannot_override_actual_model(test_db) -> None:
     _insert_session(test_db, "s-unknown", last_heartbeat=_iso(), level="DARIUS")
 
     row = _only_row()
-    assert (row["level_label"], row["level_glyph"]) == ("DARIUS", "")
+    assert (row["level_label"], row["level_glyph"]) == ("SENIOR", "🦉")

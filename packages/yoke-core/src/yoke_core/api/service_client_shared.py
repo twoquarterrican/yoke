@@ -129,7 +129,5 @@ from yoke_core.domain.dependency_planning import (  # noqa: F401
 from yoke_core.api.session_chain_policy import (  # noqa: F401
     get_max_chain_steps,
 )
-from yoke_core.api.routing_config import (  # noqa: F401
-    config_path_from_db_path,
-    resolve_execution_level,
-)
+from yoke_core.api.routing_config import config_path_from_db_path  # noqa: F401
+from yoke_core.domain.session_level_resolution import resolve_execution_level  # noqa: F401

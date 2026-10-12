@@ -2,7 +2,7 @@
 
 The wrapper ``begin_session``, the in-process hook registrar, and the
 ``POST /v1/sessions`` route each stamp the level the registering session's
-harness, model, and effort match in the levels its project reads.
+model and effort meet in the levels its project reads.
 """
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ from runtime.api.test_sessions import _p, _register, conn  # noqa: F401
 
 _PROJECT_ID = 1
 _OPUS = "claude-opus-5-5"
-_UNIVERSE_DOC = levels_doc(("UNIVERSE_ONLY", [option("claude-cli", _OPUS, "medium")]))
-_PROJECT_DOC = levels_doc(("PROJECT_ONLY", [option("claude-cli", _OPUS, "medium")]))
+_UNIVERSE_DOC = levels_doc(("UNIVERSE_ONLY", [option(_OPUS, "medium")]))
+_PROJECT_DOC = levels_doc(("PROJECT_ONLY", [option(_OPUS, "medium")]))
 
 
 def _sid(label: str) -> str:
@@ -69,10 +69,16 @@ class TestBeginSessionStampsLevel:
     @pytest.mark.parametrize(
         "executor,facts,expected",
         [
-            ("claude-code", SessionModelFacts(model=_OPUS), "SENIOR"),
+            (
+                "claude-code",
+                SessionModelFacts(model=_OPUS, reasoning_effort="medium"),
+                "SENIOR",
+            ),
             (
                 "claude-desktop",
-                SessionModelFacts(requested_model=f"{_OPUS}[1m]"),
+                SessionModelFacts(
+                    requested_model=f"{_OPUS}[1m]", requested_reasoning_effort="medium"
+                ),
                 "SENIOR",
             ),
             (
@@ -100,16 +106,20 @@ class TestBeginSessionStampsLevel:
 
     def test_stored_universe_definition_changes_the_stamp(self, conn):  # noqa: F811
         store_universe_levels(conn, _UNIVERSE_DOC)
-        assert _begin(conn, "claude-code", SessionModelFacts(model=_OPUS)) == (
-            "UNIVERSE_ONLY"
-        )
+        assert _begin(
+            conn,
+            "claude-code",
+            SessionModelFacts(model=_OPUS, reasoning_effort="medium"),
+        ) == ("UNIVERSE_ONLY")
 
     def test_project_override_wins_over_the_universe(self, conn):  # noqa: F811
         store_universe_levels(conn, _UNIVERSE_DOC)
         store_project_levels(conn, _PROJECT_ID, _PROJECT_DOC)
-        assert _begin(conn, "claude-code", SessionModelFacts(model=_OPUS)) == (
-            "PROJECT_ONLY"
-        )
+        assert _begin(
+            conn,
+            "claude-code",
+            SessionModelFacts(model=_OPUS, reasoning_effort="medium"),
+        ) == ("PROJECT_ONLY")
 
     def test_a_level_change_leaves_an_already_stamped_session_alone(
         self,
@@ -117,7 +127,7 @@ class TestBeginSessionStampsLevel:
     ):
         # Level is stamped once, at registration. Rewriting a live session's
         # level would move work away from a session already running it.
-        facts = SessionModelFacts(model=_OPUS)
+        facts = SessionModelFacts(model=_OPUS, reasoning_effort="medium")
         before = _sid("before")
         begin_session(
             conn,
@@ -141,7 +151,9 @@ class TestInProcessRegistrationStampsLevel:
             session_id,
             "claude-code",
             "test-provider",
-            SessionModelFacts(requested_model=model),
+            SessionModelFacts(
+                requested_model=model, requested_reasoning_effort="medium"
+            ),
             "/tmp/work",
             None,
             execution_level=level,
@@ -158,8 +170,8 @@ class TestInProcessRegistrationStampsLevel:
         store_project_levels(conn, _PROJECT_ID, _PROJECT_DOC)
         assert self._register(conn, model=_OPUS) == "PROJECT_ONLY"
 
-    def test_explicit_level_wins(self, conn):  # noqa: F811
-        assert self._register(conn, model=_OPUS, level="CHOSEN") == "CHOSEN"
+    def test_observed_facts_win_over_explicit_level(self, conn):  # noqa: F811
+        assert self._register(conn, model=_OPUS, level="CHOSEN") == "SENIOR"
 
     def test_unmatched_model_stays_unresolved(self, conn):  # noqa: F811
         assert self._register(conn, model="claude-unlisted") == (
@@ -182,6 +194,7 @@ class TestRegisterRouteStampsLevel:
             "provider": "test-provider",
             "workspace": "/tmp/work",
             "project_id": _PROJECT_ID,
+            "requested_reasoning_effort": "medium",
             **body,
         }
         resp = self.client.post("/v1/sessions", json=payload)
@@ -211,59 +224,66 @@ class TestRegisterRouteStampsLevel:
         self._store(store_project_levels, _PROJECT_ID, _PROJECT_DOC)
         assert self._post(model=_OPUS) == "PROJECT_ONLY"
 
-    def test_explicit_level_wins(self):
-        assert self._post(model=_OPUS, execution_level="CHOSEN") == "CHOSEN"
+    def test_observed_facts_win_over_explicit_level(self):
+        assert self._post(model=_OPUS, execution_level="CHOSEN") == "SENIOR"
 
     def test_unmatched_model_stays_unresolved(self):
         assert self._post(model="claude-unlisted") == UNRESOLVED_EXECUTION_LEVEL
 
 
 class TestRegisterSessionLevelHealing:
-    def test_duplicate_upgrades_primary_level_to_real_level(self, conn):  # noqa: F811
-        _register(conn, session_id="level-upgrade")
+    def test_duplicate_refreshes_from_actual_facts(self, conn):  # noqa: F811
+        _register(conn, session_id="level-refresh", execution_level="INTERN")
+        with pytest.raises(SessionError) as refusal:
+            _register(conn, session_id="level-refresh", execution_level="PRINCIPAL")
+        assert refusal.value.code == "SESSION_EXISTS"
+        assert _stored_level(conn, "level-refresh") == "SENIOR"
 
-        with pytest.raises(SessionError) as exc_info:
-            _register(conn, session_id="level-upgrade", execution_level="SENIOR")
+    def test_duplicate_cannot_preserve_a_stamp_for_unknown_facts(self, conn):  # noqa: F811
+        _register(
+            conn,
+            session_id="level-unknown",
+            execution_level="SENIOR",
+            model_facts=SessionModelFacts(model="unknown"),
+        )
+        with pytest.raises(SessionError):
+            _register(
+                conn,
+                session_id="level-unknown",
+                execution_level="PRINCIPAL",
+                model_facts=SessionModelFacts(model="unknown"),
+            )
+        assert _stored_level(conn, "level-unknown") == UNRESOLVED_EXECUTION_LEVEL
 
-        assert exc_info.value.code == "SESSION_EXISTS"
-        assert _stored_level(conn, "level-upgrade") == "SENIOR"
-
-    def test_duplicate_never_downgrades_real_level_to_primary(self, conn):  # noqa: F811
-        _register(conn, session_id="level-stable", execution_level="INTERN")
-
-        with pytest.raises(SessionError) as exc_info:
-            _register(conn, session_id="level-stable", execution_level="primary")
-
-        assert exc_info.value.code == "SESSION_EXISTS"
-        assert _stored_level(conn, "level-stable") == "INTERN"
-
-    def test_duplicate_never_swaps_real_level_laterally(self, conn):  # noqa: F811
-        _register(conn, session_id="level-lateral", execution_level="SENIOR")
-
-        with pytest.raises(SessionError) as exc_info:
-            _register(conn, session_id="level-lateral", execution_level="INTERN")
-
-        assert exc_info.value.code == "SESSION_EXISTS"
-        assert _stored_level(conn, "level-lateral") == "SENIOR"
-
-    def test_reactivation_never_downgrades_real_level_to_primary(self, conn):  # noqa: F811
+    def test_reactivation_refreshes_against_current_levels(self, conn):  # noqa: F811
         _register(conn, session_id="level-reactivate", execution_level="INTERN")
         end_session(conn, "level-reactivate")
-
-        result = _register(conn, session_id="level-reactivate")
-
-        assert result["execution_level"] == "INTERN"
-        assert _stored_level(conn, "level-reactivate") == "INTERN"
-
-    def test_reactivation_upgrades_primary_level_to_real_level(self, conn):  # noqa: F811
-        _register(conn, session_id="level-reactivate-upgrade")
-        end_session(conn, "level-reactivate-upgrade")
-
+        store_universe_levels(conn, _UNIVERSE_DOC)
         result = _register(
-            conn,
-            session_id="level-reactivate-upgrade",
-            execution_level="SENIOR",
+            conn, session_id="level-reactivate", execution_level="PRINCIPAL"
         )
+        assert result["execution_level"] == "UNIVERSE_ONLY"
+        assert _stored_level(conn, "level-reactivate") == "UNIVERSE_ONLY"
 
-        assert result["execution_level"] == "SENIOR"
-        assert _stored_level(conn, "level-reactivate-upgrade") == "SENIOR"
+
+@pytest.mark.parametrize("reactivated", [False, True])
+def test_started_event_uses_observed_level_instead_of_launch_stamp(
+    conn,  # noqa: F811
+    monkeypatch,
+    reactivated,
+):
+    captured = []
+    monkeypatch.setattr(
+        "yoke_core.domain.sessions_lifecycle_registry._sa._emit_session_event",
+        lambda *a, **kw: captured.append(kw),
+    )
+    if reactivated:
+        _register(conn, session_id="level-event")
+        end_session(conn, "level-event")
+        captured.clear()
+    _register(conn, session_id="level-event", execution_level="PRINCIPAL")
+    assert (
+        captured[-1]["context"]["execution_level"]
+        == _stored_level(conn, "level-event")
+        == "SENIOR"
+    )

@@ -8,8 +8,14 @@ from yoke_contracts.executor_labels import executor_presentation
 from yoke_contracts.levels import (
     Level,
     LevelsError,
+    level_for_session,
     level_presentation,
     resolve_effective_levels,
+)
+from yoke_contracts.session_level import UNRESOLVED_EXECUTION_LEVEL
+from yoke_core.domain.session_level_resolution import (
+    routing_effort_of,
+    routing_model_of,
 )
 from yoke_core.domain.universe_levels import (
     UniverseLevelsError,
@@ -50,6 +56,7 @@ def session_presentation(
     row: Mapping[str, Any],
     *,
     levels: Mapping[Optional[int], tuple[Level, ...]],
+    records=(),
 ) -> dict[str, Any]:
     """Return execution and observed-presentation metadata for a session.
 
@@ -59,10 +66,24 @@ def session_presentation(
     executor = executor_presentation(display_name)
     project_id = row.get("project_id")
     key = int(project_id) if project_id is not None else None
-    level = level_presentation(
-        levels.get(key, levels.get(None, ())), row.get("execution_level")
+    effective = levels.get(key, levels.get(None, ()))
+    execution_level = (
+        level_for_session(
+            effective,
+            executor=display_name,
+            model=routing_model_of(row.get("model"), row.get("requested_model")),
+            reasoning_effort=routing_effort_of(
+                row.get("reasoning_effort"),
+                row.get("requested_reasoning_effort"),
+                row.get("model"),
+            ),
+            records=records,
+        )
+        or UNRESOLVED_EXECUTION_LEVEL
     )
+    level = level_presentation(effective, execution_level)
     return {
+        "execution_level": execution_level,
         "level_label": level["label"],
         "level_glyph": level["glyph"],
         "executor_mark": executor["mark"],

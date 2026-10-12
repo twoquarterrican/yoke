@@ -1,25 +1,15 @@
-"""What each execution level can launch right now, and why.
-
-For every level option this evaluates the quota pools that option's model
-actually draws on, on every machine that can launch its surface, and says
-whether it can launch, through which selection (a Cursor option falls back
-only when its own pool is exhausted), and how much headroom it has. A level
-with no launchable option has no capacity, and each option names the pool or
-machine gap that blocked it. Where the next launch goes is not decided here:
-the launcher's own placement answers that
-(:mod:`yoke_core.domain.universe_level_next_launch`).
-
-Exhaustion is affirmative only: an unreadable or unpublished meter never
-blocks an option, it just leaves its headroom unknown. This module is pure;
-:mod:`yoke_core.domain.universe_level_capacity_read` loads its inputs.
-"""
+"""Model/minimum-effort rows with capacity from observed native selections."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Sequence
 
-from yoke_contracts.levels import Level, LevelOption
+from yoke_contracts.levels import Level
+from yoke_core.domain.level_native_selections import (
+    NativeLevelSelection,
+    native_selections,
+)
 from yoke_contracts.session_control.model_billing_pools import (
     pool_for_model,
     window_covers_model,
@@ -97,7 +87,7 @@ class _Fleet:
     def machines_for(self, surface: str) -> list[str]:
         return [machine for machine, offered in self.offered if offered == surface]
 
-    def read(self, selection: LevelOption, machine_id: str) -> _Reading:
+    def read(self, selection: NativeLevelSelection, machine_id: str) -> _Reading:
         windows = self.by_machine.get((machine_id, selection.surface), [])
         scoped = len({meter.scope for meter in windows}) > 1
         pools, blockers = [], []
@@ -119,7 +109,7 @@ class _Fleet:
         binding = min(known, key=lambda pool: pool["headroom"]) if known else None
         return _Reading(machine_id, tuple(pools), tuple(blockers), binding)
 
-    def best(self, selection: LevelOption) -> Optional[_Reading]:
+    def best(self, selection: NativeLevelSelection) -> Optional[_Reading]:
         """The machine reading this selection launches on, blocked or not."""
         readings = [
             self.read(selection, m) for m in self.machines_for(selection.surface)
@@ -131,67 +121,58 @@ class _Fleet:
         return max(pick_from, key=lambda r: _rank(r.headroom))
 
 
-def _option_payload(
-    option: LevelOption, reading: Optional[_Reading], display: Callable[[str], str]
-) -> dict[str, Any]:
-    return {
-        "surface": option.surface,
-        "model": option.model,
-        "display_name": display(option.model),
-        "native_selector": option.surface == "cursor-cli",
-        "reasoning_effort": option.reasoning_effort,
-        "context_window_tokens": option.context_window_tokens,
-        "pools": list(reading.pools) if reading else [],
-    }
-
-
-def _no_machine(surface: str) -> dict[str, Any]:
-    return {"kind": "no_machine", "surface": surface}
-
-
-def _evaluate_option(
-    option: LevelOption, fleet: _Fleet, display: Callable[[str], str]
-) -> dict[str, Any]:
-    primary = fleet.best(option)
-    payload = _option_payload(option, primary, display)
-    blockers = list(primary.blockers) if primary else [_no_machine(option.surface)]
-    selected: Optional[tuple[LevelOption, _Reading]] = None
-    if primary is not None and not primary.blockers:
-        selected = (option, primary)
-    if option.fallback is not None:
-        fallback = fleet.best(option.fallback)
-        payload["fallback"] = _option_payload(option.fallback, fallback, display)
-        if selected is None and fallback is not None:
-            if fallback.blockers:
-                blockers.extend(fallback.blockers)
-            else:
-                selected = (option.fallback, fallback)
-    if selected is None:
-        payload["now"] = {"state": "blocked", "blockers": blockers}
-        return payload
-    selection, reading = selected
-    payload["now"] = {
-        "state": "can_launch",
-        "via": None if selection is option else selection.model,
-        "via_display_name": None if selection is option else display(selection.model),
-        "machine_id": reading.machine_id,
-        "binding_pool": reading.binding,
-    }
-    return payload
-
-
 def evaluate_level_capacity(
     levels: Sequence[Level],
     *,
     meters: Sequence[Meter],
     offered: Sequence[tuple[str, str]],
     display: Callable[[str], str],
+    native_models: dict,
+    records: Sequence,
 ) -> list[dict[str, Any]]:
-    """Each level with its options' launch standing."""
+    """Report each base-model row's standing across observed native surfaces."""
     fleet = _Fleet(meters, offered)
-    out: list[dict[str, Any]] = []
+    out = []
     for level in levels:
-        options = [_evaluate_option(option, fleet, display) for option in level.options]
+        options = []
+        launchable = set()
+        for entry in level.options:
+            surfaces, blockers = set(), []
+            for machine, surface in fleet.offered:
+                selections, unavailable = native_selections(
+                    entry,
+                    surface=surface,
+                    reading=native_models.get(machine, {}).get(surface),
+                    records=records,
+                )
+                if unavailable:
+                    blockers.append({"kind": "native", "label": unavailable})
+                for selection in selections:
+                    reading = fleet.read(selection, machine)
+                    if reading.blockers:
+                        blockers.extend(reading.blockers)
+                    else:
+                        surfaces.add(surface)
+            launchable.update(surfaces)
+            options.append(
+                {
+                    **entry.payload(),
+                    "display_name": display(entry.model),
+                    "now": {
+                        "state": "can_launch" if surfaces else "blocked",
+                        "surfaces": sorted(surfaces),
+                        "blockers": []
+                        if surfaces
+                        else blockers
+                        or [
+                            {
+                                "kind": "no_machine",
+                                "label": "No usable machine offers this model.",
+                            }
+                        ],
+                    },
+                }
+            )
         out.append(
             {
                 "name": level.name,
@@ -199,10 +180,7 @@ def evaluate_level_capacity(
                 "launchable_surfaces": [
                     surface
                     for surface in CLI_PLAN_LIMIT_SURFACES
-                    if any(
-                        o["surface"] == surface and o["now"]["state"] == "can_launch"
-                        for o in options
-                    )
+                    if surface in launchable
                 ],
                 "options": options,
             }
@@ -210,9 +188,4 @@ def evaluate_level_capacity(
     return out
 
 
-__all__ = [
-    "Meter",
-    "SURFACE_VENDORS",
-    "evaluate_level_capacity",
-    "pool_label",
-]
+__all__ = ["Meter", "SURFACE_VENDORS", "evaluate_level_capacity", "pool_label"]
