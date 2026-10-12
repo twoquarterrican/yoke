@@ -23,6 +23,7 @@ from unittest.mock import patch
 
 from pydantic import BaseModel
 
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from yoke_core.domain import yoke_function_dispatch_events as events_module
 from yoke_core.domain import yoke_function_dispatch_idempotency as idempotency_module
 from yoke_core.domain.yoke_function_idempotency_scope import (
@@ -170,6 +171,7 @@ class TestLedgerBackedIdempotency(unittest.TestCase):
             events_module, "emit_event", _EventRecorder()
         )
         self._emit_patch.start()
+        self.enterContext(authorize_every_dispatch())
         self.handler_calls: list[str] = []
 
         def _counting_handler(_request):

@@ -14,6 +14,7 @@ import unittest
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from yoke_core.domain import yoke_function_dispatch as dispatch_module
 from yoke_core.domain import yoke_function_dispatch_claims as claims_module
 from yoke_core.domain import yoke_function_dispatch_events as events_module
@@ -49,6 +50,7 @@ class TestWidenPlannedPaths(unittest.TestCase):
         from yoke_core.domain import yoke_function_actor_identity as actor_id
         self._patchers = [
             patch.object(events_module, "emit_event"),
+            authorize_every_dispatch(),
             patch.object(
                 dispatch_module, "_idempotency_lookup", lambda *_a, **_k: None,
             ),

@@ -18,6 +18,17 @@ import io
 import json
 import sys
 
+import pytest
+
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
+
+
+@pytest.fixture(autouse=True)
+def _authorize_dispatch():
+    """The handler's write and read are stubbed; authorization is not under test."""
+    with authorize_every_dispatch():
+        yield
+
 
 def _resolve_test_item(request):
     assert request.target.public_ref == "YOK-1"

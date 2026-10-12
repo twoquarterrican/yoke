@@ -28,6 +28,8 @@ from runtime.api.domain.test_run_success_member_settlement import (
 from runtime.api.domain.test_status_transition_preflight import (
     _isolate_status_effects,
 )
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+from runtime.api.fixtures.runtime import DEFAULT_TEST_SESSION_ID
 from yoke_core.domain import delivery_member_close_steps as close_out
 from yoke_core.domain import terminal_lane_cleanup
 from yoke_core.domain.db_helpers import iso8601_now
@@ -189,6 +191,7 @@ def test_a_run_whose_members_are_partly_closed_still_converges(
     """Members closed before settlement began — by their own close-out, or
     by an earlier pass — are neither closed twice nor a blocker."""
     _isolate_status_effects(monkeypatch)
+    register_session_actor(test_db, DEFAULT_TEST_SESSION_ID)
     _five_ready_members(test_db)
     _executing_run(test_db, "run-partial")
     mark_settling(test_db, "run-partial")

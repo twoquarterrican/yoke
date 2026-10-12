@@ -10,6 +10,8 @@ from runtime.api.domain.test_post_deploy_original_pass_needs_admission import (
     _record_evidence,
 )
 from runtime.api.fixtures.backlog import insert_qa_run
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+from runtime.api.fixtures.runtime import DEFAULT_TEST_SESSION_ID
 from yoke_core.domain.deployment_run_collective_finalization import mark_settling
 from yoke_core.domain.deployment_qa_source_obligation import source_obligation_consumed
 from yoke_core.domain.deployment_qa_stage_materialization import (
@@ -141,6 +143,7 @@ def test_accepted_source_closes_the_member_before_run_success(test_db, monkeypat
     from yoke_core.domain.deployment_runs_crud_mutate import cmd_update
 
     _isolate_status_effects(monkeypatch)
+    register_session_actor(test_db, DEFAULT_TEST_SESSION_ID)
     item_id = 9892
     run_id = "run-source-closes"
     source_id = _deliver_intake(test_db, item_id=item_id, run_id=run_id)

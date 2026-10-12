@@ -24,18 +24,22 @@ import pytest
 
 from yoke_core.domain import epic
 from runtime.api.fixtures.backlog_inserts import insert_epic_task, insert_item
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.pg_testdb import test_database
 from runtime.api.test_constants import TEST_ITEM_ID, TEST_ITEM_REF
 
 
 @pytest.fixture
-def db():
+def db(monkeypatch):
     """Fresh Postgres fixture seeded with one epic row.
 
     Mirrors the fixture in ``test_epic_cli`` so the two test files share
-    behavior expectations.
+    behavior expectations. The CLI runs under a registered harness session
+    bound to the operating actor, as production's dispatch does.
     """
     with test_database() as conn:
+        register_session_actor(conn, "epic-cli-test")
+        monkeypatch.setenv("YOKE_SESSION_ID", "epic-cli-test")
         insert_item(
             conn,
             id=TEST_ITEM_ID,

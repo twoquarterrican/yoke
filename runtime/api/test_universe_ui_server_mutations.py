@@ -303,11 +303,11 @@ class TestProxyMutations:
         assert refused.status_code == 403
         assert refused.json()["error"]["code"] == "operator_actor_unresolved"
 
-        activation = _call(ui_client, {"function": "overview.activation.get"})
-        assert activation.status_code == 200
-        envelope = activation.json()
-        assert envelope["success"] is True
-        assert envelope["result"]["dismiss_available"] is False
+        latch = _call(ui_client, {"function": "overview.activation.get"})  # a write
+        assert latch.status_code == 403
+        assert latch.json()["error"]["code"] == "operator_actor_unresolved"
+        vitals = _call(ui_client, {"function": "overview.vitals.get"})
+        assert vitals.status_code == 200 and vitals.json()["success"] is True
 
     def test_run_list_names_the_reader_but_serves_without_one(
         self, ui_client, test_db, monkeypatch,

@@ -28,7 +28,9 @@ import pytest
 
 from yoke_core.domain import schema
 from yoke_core.domain.db_helpers import connect, iso8601_now
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.file_test_db import init_test_db
+from yoke_core.domain.project_seed_test_helpers import seed_project_identities
 from yoke_core.domain.handlers import ouroboros_field_note as _ofn
 from yoke_core.domain.handlers.__init_register__ import register_all_handlers
 from yoke_core.domain.ouroboros_entries import cmd_insert_entry, cmd_list_entries
@@ -66,6 +68,9 @@ def isolated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """
     with init_test_db(tmp_path, apply_schema=schema.cmd_init) as db_path:
         monkeypatch.setenv("YOKE_DB", db_path)
+        with connect(db_path) as conn:
+            seed_project_identities(conn)
+            register_session_actor(conn, SESSION_ID)
         yield db_path
 
 

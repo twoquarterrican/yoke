@@ -246,11 +246,17 @@ def test_field_note_append_dispatches_against_project_id_schema(
     from yoke_core.domain.events import EmitResult
     from yoke_core.domain.handlers import ouroboros_field_note as _ofn
     from runtime.api.fixtures.file_test_db import init_test_db
+    from runtime.api.fixtures.backlog import seed_fixture_operating_actor
 
     evidence = "observation: field-note command uses project_id schema"
     with init_test_db(tmp_path) as db_path:
         monkeypatch.setenv("YOKE_DB", db_path)
         monkeypatch.setenv("YOKE_SESSION_ID", "test-session")
+        # The session stays unregistered (so the note carries no project
+        # scope) and is written as the universe's recorded operating actor.
+        with connect(db_path) as conn:
+            seed_fixture_operating_actor(conn)
+            conn.commit()
         # Keep the unmapped/no-checkout path: a live machine-config map
         # would otherwise send a project hint the bare test schema lacks.
         with (

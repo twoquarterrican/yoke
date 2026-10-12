@@ -19,6 +19,7 @@ from yoke_core.domain.yoke_function_registry import (
     register,
     reset_registry_for_tests,
 )
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from runtime.api.fixtures.file_test_db import init_test_db
 
 
@@ -79,7 +80,7 @@ def test_concurrent_duplicate_dispatch_replays_one_handler_result(
         return dispatch(request, ambient_session_id="")
 
     try:
-        with init_test_db(tmp_path):
+        with init_test_db(tmp_path), authorize_every_dispatch():
             with ThreadPoolExecutor(max_workers=2) as executor:
                 futures = [executor.submit(call_dispatcher) for _ in range(2)]
                 callers_ready.wait(timeout=5)

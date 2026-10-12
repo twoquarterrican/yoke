@@ -12,6 +12,7 @@ import unittest
 from typing import Any, Dict, Optional
 from unittest.mock import MagicMock, patch
 
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from yoke_core.domain import yoke_function_dispatch as dispatch_module
 from yoke_core.domain import yoke_function_dispatch_claims as claims_module
 from yoke_core.domain import yoke_function_dispatch_events as events_module
@@ -43,6 +44,7 @@ class _ClaimsHandlerSuite(unittest.TestCase):
                 return_value={42: "ITEM-81", 1665: "EXT-19"},
             ),
             patch.object(events_module, "emit_event"),
+            authorize_every_dispatch(),
             patch.object(
                 dispatch_module,
                 "_idempotency_lookup",

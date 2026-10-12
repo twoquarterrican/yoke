@@ -35,6 +35,7 @@ from runtime.api.merge_worktree_test_mocks import (
 )
 from runtime.api.merge_worktree_test_entrypoint import merge_subprocess_env
 from runtime.api.merge_worktree_test_db import (
+    MERGE_SESSION_ID,
     _create_epic_tasks_db as _create_epic_tasks_db,
     _insert_canonical_integration_simulation as _insert_canonical_integration_simulation,
     _insert_plain_text_integration_simulation as _insert_plain_text_integration_simulation,
@@ -87,8 +88,7 @@ class MergeEnv:
             "YOKE_ROOT": str(self.yoke_root),
             "YOKE_REST_FAKE_DIR": str(self.rest_fake_dir),
             "YOKE_EVENTS_REGISTRY_VALIDATE": "0",
-            # Model production's inherited session for QA materialization.
-            "YOKE_SESSION_ID": "merge-worktree-test",
+            "YOKE_SESSION_ID": MERGE_SESSION_ID,  # production's inherited session
             "HOME": os.environ.get("HOME", "/tmp"),
             "TMPDIR": os.environ.get("TMPDIR", "/tmp"),
             # git needs these

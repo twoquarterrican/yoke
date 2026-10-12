@@ -54,10 +54,29 @@ def local_dispatch(monkeypatch):
     return call
 
 
+def _apply_permission_schema(conn):
+    """Add the tables that let a mutating call bind the operating actor.
+
+    The holder session carries no actor, so the binder attributes each
+    side-effecting call to the universe's operating actor and the real
+    permission gate authorizes it against these registry and role tables.
+    """
+    create_project_registry_tables(conn)
+    create_universe_settings_table(conn)
+    apply_canonical_schema(conn)
+    ensure_workflow_execution_instructions_schema(conn)
+
+
 def test_public_boundary_context_observe_prove_round_trip(
     project_repo, real_db, monkeypatch, local_dispatch
 ):
+    with closing(connect_test_db(real_db)) as conn:
+        _apply_permission_schema(conn)
     _claim, lane, _context, _proof = _seed_proof_case(project_repo, real_db)
+    with closing(connect_test_db(real_db)) as conn:
+        grant_actor_project_role(
+            conn, actor_id=local_human(conn), project_id=1, role_name=ROLE_OWNER
+        )
     context = local_dispatch("claims.path.boundary_context")["context"]
     assert context["public_ref"] == ITEM_REF
     assert context["lane"]["public_ref"] == ITEM_REF
@@ -85,10 +104,7 @@ def test_in_process_detail_then_path_claimed_lifecycle_transition(
     project_repo, real_db, monkeypatch, local_dispatch, source_precondition
 ):
     with closing(connect_test_db(real_db)) as conn:
-        create_project_registry_tables(conn)
-        create_universe_settings_table(conn)
-        apply_canonical_schema(conn)
-        ensure_workflow_execution_instructions_schema(conn)
+        _apply_permission_schema(conn)
         grant_actor_project_role(
             conn, actor_id=local_human(conn), project_id=1, role_name=ROLE_OWNER
         )

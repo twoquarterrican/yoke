@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.machine_config_test import register_machine_checkout
 from runtime.api.merge_worktree_simulation_test_db import (
     _insert_canonical_integration_simulation as _insert_canonical_integration_simulation,
@@ -32,6 +33,8 @@ from yoke_core.domain.project_github_binding import cmd_bind_project_repo
 
 TEST_ITEM_ID = 42
 TEST_BRANCH = f"YOK-{TEST_ITEM_ID}"
+# Harness session every merge subprocess inherits, as production's does.
+MERGE_SESSION_ID = "merge-worktree-test"
 
 # Verdict seeded into ``items.test_results`` for merge-mechanics tests. The
 # freshness-bound merge gate accepts a local PASS substitute only when its
@@ -56,6 +59,8 @@ def _seed_yoke_project_with_github_app(
 
     The merge subprocess binds a transient App user token through its test
     entrypoint; no long-lived project credential is stored in the database.
+    Its inherited session is registered to the operating actor so the
+    engine's side-effecting dispatch carries the actor production's does.
     """
     # The generic test-DB seed declares a ci_workflow_file capability
     # (mirroring prod). These merge-engine subprocess fixtures are no-CI
@@ -80,6 +85,7 @@ def _seed_yoke_project_with_github_app(
             "created_at = EXCLUDED.created_at",
         ),
     )
+    register_session_actor(conn, MERGE_SESSION_ID)
     register_machine_checkout(
         Path(repo_path) / f".yoke-test-config-{os.getpid()}-{item_id}",
         Path(repo_path),

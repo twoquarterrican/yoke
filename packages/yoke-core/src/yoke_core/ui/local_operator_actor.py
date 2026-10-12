@@ -8,9 +8,10 @@ question session registration asks, so both read one resolver —
 one human actor in the universe wins; among several, the one labeled
 with the server process's OS login; anything else resolves to nobody.
 
-The UI treats "nobody" as a missing capability rather than an error: it
-hides the dismissal controls (``dismiss_available`` false) while module
-facts keep rendering.
+With "nobody", the proxy refuses every write and actor-bound read as
+``operator_actor_unresolved`` — including the Overview activation read,
+whose latch is a write — while pure reads keep serving. ``yoke setup``
+records the operator that resolves it.
 """
 
 from __future__ import annotations
