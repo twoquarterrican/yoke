@@ -230,3 +230,20 @@ def test_remote_tip_is_recorded_when_main_advanced_after_the_landing(
     )
     assert result.merge_sha == tip and records[-1].merge_sha == tip
     assert result.receipt_commit_sha == candidate
+
+
+def test_prior_receipt_cannot_close_a_new_candidate(checkout, monkeypatch):
+    from yoke_core.domain import standalone_item_merge_converge as convergence
+    from yoke_core.domain.standalone_item_merge_landed import LandedLane
+
+    repo, _, old_candidate, records, stamps, _ = checkout
+    git(repo, "push", "origin", "main")
+    git(repo, "checkout", "-b", "new-candidate")
+    (repo / "additional.txt").write_text("additional\n")
+    git(repo, "add", "additional.txt")
+    git(repo, "commit", "-m", "additional candidate work")
+    new_candidate = git(repo, "rev-parse", "HEAD")
+    monkeypatch.setattr(convergence, "stale_unlanded_work", lambda **_kw: "")
+    result = convergence.converge(item_id=7, project="sample", repo_root=str(repo), lane=LandedLane(branch="new-candidate", target="main", commit_sha=old_candidate, candidate_sha=new_candidate))
+    assert not result.ok and new_candidate in result.error
+    assert not records and not stamps

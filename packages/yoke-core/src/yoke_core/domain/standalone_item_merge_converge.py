@@ -126,14 +126,15 @@ def converge(
         f"({lane.source}); close-out converged without re-merging"
     ]
     pushed = False
+    candidate = lane.candidate_sha or lane.commit_sha
     try:
         try:
-            merge_sha = verified_target_sha(repo_root, lane.target, lane.commit_sha)
+            merge_sha = verified_target_sha(repo_root, lane.target, candidate)
         except LandingUnverified:
             pushed, push_warning = git.publish(repo_root, lane.target)
             if push_warning:
                 warnings.append(push_warning)
-            merge_sha = verified_target_sha(repo_root, lane.target, lane.commit_sha)
+            merge_sha = verified_target_sha(repo_root, lane.target, candidate)
     except LandingUnverified as exc:
         note = receipts.record_failure(
             item_id,
