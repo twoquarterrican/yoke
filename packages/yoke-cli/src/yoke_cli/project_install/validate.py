@@ -52,12 +52,6 @@ def _validate_bundle(bundle: Dict[str, Any]) -> None:
         raise ProjectInstallError(
             "bundle 'files' must be a list of {path, content} objects"
         )
-    obsolete = (".claude/skills/yoke/", ".codex/skills/yoke/", ".cursor/skills/yoke/")
-    if any(e["path"].startswith(obsolete) for e in files):
-        raise ProjectInstallError(
-            "skill_discovery_contract_unsupported: regular skill copies are "
-            "unsupported; rebuild the bundle from the canonical source"
-        )
     markdown = bundle.get("managed_markdown")
     targets = (markdown.get("targets") or []) if isinstance(markdown, dict) else []
     if isinstance(targets, list) and any(

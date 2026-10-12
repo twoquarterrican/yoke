@@ -10,15 +10,9 @@ from typing import Any
 from yoke_cli.project_install.files import (
     ProjectInstallError,
     assert_resolved_targets_within,
-    sha256_text,
     remove_empty_parents,
 )
 from yoke_contracts.project_contract.install_bundle import SKILL_DISCOVERY_LINKS
-from yoke_contracts.project_contract.installed_layer import (
-    CLAUDE_SKILLS_DEST,
-    CODEX_SKILLS_DEST,
-    CURSOR_SKILLS_DEST,
-)
 
 
 def validate_links(value: Any) -> dict[str, str]:
@@ -30,94 +24,36 @@ def validate_links(value: Any) -> dict[str, str]:
     return dict(SKILL_DISCOVERY_LINKS)
 
 
-def preflight(
-    root: Path, prior: dict[str, Any], bundle: dict[str, Any] | None = None
-) -> dict[str, str]:
-    """Refuse unowned/edited obsolete copies before any install mutation."""
-    from yoke_cli.project_install.install_recovery import GitOwnership
-
-    hashes = prior.get("files") or {}
-    released = {
-        e["path"]: sha256_text(e["content"]) for e in (bundle or {}).get("files", [])
-    }
-    adopted = {}
-    proof = None
-    from yoke_cli.project_install.released_bundle_files import ReleasedBundleFiles
-
-    archives = ReleasedBundleFiles()
-    # Probe the native primitive before pruning a baseline-owned tree. No
-    # project file is changed by this temporary capability check.
+def preflight(root: Path) -> None:
+    """Validate the one native discovery link before any project mutation."""
     try:
         with tempfile.TemporaryDirectory(prefix="yoke-skill-link-") as scratch:
             (Path(scratch) / "entry").symlink_to("source", target_is_directory=True)
     except OSError as exc:
         raise _link_refusal() from exc
-    for rel in (CLAUDE_SKILLS_DEST, CODEX_SKILLS_DEST, CURSOR_SKILLS_DEST):
-        target = root / rel
+    for rel, destination in SKILL_DISCOVERY_LINKS.items():
         assert_resolved_targets_within(root, [rel], context="skill discovery")
-        if target.is_symlink():
-            if (
-                rel in SKILL_DISCOVERY_LINKS
-                and os.readlink(target) == SKILL_DISCOVERY_LINKS[rel]
-            ):
-                continue
-            _refuse(rel, "an unowned or unexpected symlink")
-        if not target.exists():
+        target = root / rel
+        if target.is_symlink() and os.readlink(target) == destination:
             continue
-        if not target.is_dir():
-            _refuse(rel, "an unexpected non-directory")
-        for path in target.rglob("*"):
-            if path.is_symlink():
-                _refuse(str(path.relative_to(root)), "a symlink inside a legacy copy")
-            if path.is_dir():
-                continue
-            path_rel = path.relative_to(root).as_posix()
-            try:
-                digest = sha256_text(path.read_text(encoding="utf-8"))
-            except (OSError, UnicodeError):
-                _refuse(path_rel, "an unreadable legacy copy")
-            if hashes.get(path_rel) != digest:
-                canonical = ".agents/skills/yoke/" + path.relative_to(target).as_posix()
-                if released.get(canonical) != digest:
-                    if proof is None:
-                        proof = GitOwnership(root)
-                    if not proof.proves(path_rel, digest) and not archives.proves(
-                        path_rel, path.read_text(encoding="utf-8")
-                    ):
-                        _refuse(
-                            path_rel, "a modified copy or missing ownership baseline"
-                        )
-            adopted[path_rel] = digest
-    return adopted
+        if target.exists() or target.is_symlink():
+            _refuse(rel, "an unexpected discovery entry")
 
 
 def _refuse(rel: str, detail: str) -> None:
     raise ProjectInstallError(
-        f"skill_discovery_ownership_ambiguous: {rel} contains {detail}. "
-        "Preserved all files. Compare with the prior install manifest, move "
-        "your edits into the canonical .agents/skills/yoke tree, and move the "
-        "obsolete discovery entry outside skill directories before refresh. "
-        "For a clone, supply the original manifest with --manifest-from on "
-        "the source-dev refresh surface. A matching released bundle or committed "
-        "installer history can prove ownership; equal local copies alone cannot."
+        f"skill_discovery_entry_conflict: {rel} contains {detail}. "
+        "Preserve its contents outside the discovery path, then rerun refresh."
     )
 
 
 def apply(root: Path) -> list[str]:
-    """Create the required native entry after baseline-owned copies prune."""
+    """Create the native entry after preflight validates its destination."""
     changed = []
     for rel, destination in SKILL_DISCOVERY_LINKS.items():
         target = root / rel
         if target.is_symlink():
             continue  # preflight already established its exact target
-        if target.is_dir():
-            # Only empty directories remain after the checked prune pass.
-            for directory in sorted(
-                target.rglob("*"), key=lambda p: len(p.parts), reverse=True
-            ):
-                if directory.is_dir():
-                    directory.rmdir()
-            target.rmdir()
         target.parent.mkdir(parents=True, exist_ok=True)
         try:
             target.symlink_to(destination, target_is_directory=True)
@@ -134,16 +70,6 @@ def _link_refusal() -> ProjectInstallError:
         "or administrator permission), then rerun refresh; duplicate skill "
         "copies are unsupported."
     )
-
-
-def prune_records(root: Path, prior: dict[str, str]) -> dict[str, str]:
-    """Stale alias records must never prune through a link into canonical files."""
-    linked = [rel + "/" for rel in SKILL_DISCOVERY_LINKS if (root / rel).is_symlink()]
-    return {
-        rel: digest
-        for rel, digest in prior.items()
-        if not any(rel.startswith(prefix) for prefix in linked)
-    }
 
 
 def remove(root: Path, records: Any) -> list[str]:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from yoke_contracts.session_model_facts import SessionModelFacts
@@ -31,7 +32,9 @@ def test_target_service_client_path_falls_back_to_yoke_code_root(
 
 def _write_machine_config(root: Path) -> Path:
     dsn = root / ".secret.dsn"
-    dsn.write_text("postgresql://user:pass@127.0.0.1:6547/yoke_prod\n", encoding="utf-8")
+    dsn.write_text(
+        "postgresql://user:pass@127.0.0.1:6547/yoke_prod\n", encoding="utf-8"
+    )
     binding_dir = root / ".yoke"
     binding_dir.mkdir(parents=True, exist_ok=True)
     binding = binding_dir / "config.json"
@@ -71,7 +74,11 @@ def test_register_session_child_inherits_target_cwd_and_connected_env(
         calls.append({"cmd": cmd, **kwargs})
         return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
 
-    monkeypatch.setattr(service_client.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        service_client,
+        "subprocess",
+        SimpleNamespace(run=fake_run, TimeoutExpired=subprocess.TimeoutExpired),
+    )
 
     err = service_client.register_session(
         str(service_path),
@@ -115,7 +122,11 @@ def test_register_session_child_imports_yoke_code_for_external_target(
         calls.append({"cmd": cmd, **kwargs})
         return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
 
-    monkeypatch.setattr(service_client.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        service_client,
+        "subprocess",
+        SimpleNamespace(run=fake_run, TimeoutExpired=subprocess.TimeoutExpired),
+    )
 
     err = service_client.register_session(
         str(service_path),
@@ -153,7 +164,11 @@ def test_touch_session_uses_same_target_authority(
         captured.update({"cmd": cmd, **kwargs})
         return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
 
-    monkeypatch.setattr(service_client.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        service_client,
+        "subprocess",
+        SimpleNamespace(run=fake_run, TimeoutExpired=subprocess.TimeoutExpired),
+    )
 
     assert service_client.touch_session(str(service_path), str(root), "sid") == 0
     assert captured["cwd"] == str(root)

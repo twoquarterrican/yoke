@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
 
+from yoke_contracts.machine_config.checkout import main_checkout
+
 from yoke_contracts.machine_config.schema_connections import (
     MachineConfigContractError,
     selected_env,
@@ -171,8 +173,8 @@ def reassign_ambient_session_refusal(session_id: str) -> str:
     """Refusal text for a ``--reassign`` call bound to a harness session.
 
     ``register_project``'s ``reassign`` gate exists for a deliberate
-    setup/operator-authorized checkout move (``yoke setup``, ``yoke
-    project install``/``create``/``import``). A call carrying a resolvable
+    operator-authorized checkout move (``yoke project register --reassign``).
+    A call carrying a resolvable
     session id is a routine agent invocation instead — every Dash/Engineer/
     Conduct/Tester worker always has one by construction — so it is refused
     before it ever reaches the writer.
@@ -181,9 +183,8 @@ def reassign_ambient_session_refusal(session_id: str) -> str:
         f"--reassign refused for session {session_id!r}: an ambient session "
         "id means a harness is driving this call, not a bare operator "
         "terminal. Moving an already-registered project's checkout out from "
-        "under every other reader is reserved for a deliberate setup/"
-        "operator-authorized action (yoke setup, yoke project install/"
-        "create/import) run with no harness session bound to the process."
+        "under every other reader requires yoke project register --reassign "
+        "from a plain operator terminal with no harness session bound."
     )
 
 
@@ -286,13 +287,7 @@ def checkout_path_candidates(repo_root: str | Path) -> list[Path]:
         candidates.extend(root.resolve().parents)
     except OSError:
         pass
-    stripped = _strip_worktree_path(root)
-    if stripped != root:
-        candidates.append(stripped)
-        try:
-            candidates.append(stripped.resolve())
-        except OSError:
-            pass
+    candidates.append(main_checkout(root))
     seen: set[str] = set()
     out: list[Path] = []
     for candidate in candidates:
@@ -311,16 +306,6 @@ def normalize_project_id(value: Any) -> Optional[int]:
     except (TypeError, ValueError):
         return None
     return project_id if project_id > 0 else None
-
-
-def _strip_worktree_path(path: Path) -> Path:
-    parts = list(path.parts)
-    if ".worktrees" in parts:
-        return Path(*parts[: parts.index(".worktrees")])
-    for i in range(len(parts) - 1):
-        if parts[i] == ".claude" and parts[i + 1] == "worktrees":
-            return Path(*parts[:i])
-    return path
 
 
 def _path_key(path: Path) -> str:

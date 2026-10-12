@@ -51,10 +51,6 @@ def plan(
         add(entry["path"], entry["content"])
     for rel in preflight["install_recovery"]["removed_paths"]:
         add(rel, None)
-    for rel in preflight["legacy_files"]:
-        add(rel, None)
-    for rel, content in preflight["instruction_retirement"].items():
-        add(rel, content)
     for rel, destination in SKILL_DISCOVERY_LINKS.items():
         expected.setdefault(
             rel,

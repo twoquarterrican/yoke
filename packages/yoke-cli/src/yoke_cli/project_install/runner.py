@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 from yoke_contracts.machine_config import checkout_env_mismatch
+from yoke_contracts.machine_config.checkout import main_checkout
 
 from yoke_cli.config import github_project_setup
 from yoke_cli.config import machine_config
@@ -320,12 +321,10 @@ def _register_in_machine_config(
         return False
     if machine_config.project_id(repo_root, config_path) is not None:
         return False
-    # explicit_given means the operator typed --project-id themselves: a
-    # deliberate reconfiguration, not routine unattended execution.
     machine_config_writer.register_project(
-        repo_root,
+        main_checkout(repo_root),
         project_id,
-        reassign=True,
+        reassign=False,
         path=config_path,
     )
     return True

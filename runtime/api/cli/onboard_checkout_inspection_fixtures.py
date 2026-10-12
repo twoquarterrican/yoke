@@ -38,7 +38,9 @@ def repo_with_layer(tmp_path: Path, *, release: str = "0.1.1") -> Path:
     write(root, ".yoke/project.config", "file_line_limit=350\n")
     write(root, ".yoke/docs/index.md", "# Docs\n")
     write(root, ".agents/skills/yoke/dash/SKILL.md", "# dash\n")
-    write(root, ".claude/skills/yoke/dash/SKILL.md", "# dash\n")
+    native = root / ".claude/skills/yoke"
+    native.parent.mkdir(parents=True, exist_ok=True)
+    native.symlink_to("../../.agents/skills/yoke", target_is_directory=True)
     write(root, ".claude/agents/yoke-engineer.md", "# engineer\n")
     write(root, ".claude/agents/team-reviewer.md", "# not yoke\n")
     write(root, ".claude/rules/session.md", "# rules\n")
@@ -73,9 +75,17 @@ def git_repo(root: Path) -> None:
     subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
     subprocess.run(
         [
-            "git", "-C", str(root),
-            "-c", "user.email=t@example.com", "-c", "user.name=T",
-            "commit", "-q", "-m", "initial",
+            "git",
+            "-C",
+            str(root),
+            "-c",
+            "user.email=t@example.com",
+            "-c",
+            "user.name=T",
+            "commit",
+            "-q",
+            "-m",
+            "initial",
         ],
         check=True,
     )

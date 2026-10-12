@@ -43,9 +43,12 @@ permit the same native loading. Bare/safe mode or strict plugin-only policy
 that disables project skills is outside this supported configuration.
 
 Yoke does not install a CLAUDE import or duplicate doctrine as a fallback.
-An existing user-owned link/import may remain; Claude deduplicates an AGENTS
+An existing user-owned link/import is accepted; Claude deduplicates an AGENTS
 file it has already loaded. Ordinary prose saying “See AGENTS.md” is not an
-import and does not guarantee loading.
+import and does not guarantee loading. A parent CLAUDE.md link to the main
+checkout’s AGENTS.md is accepted from that checkout’s Git worktree, wherever
+the worktree lives. An explicit `@AGENTS.md` import resolves relative to its
+instruction file; code examples do not count as imports.
 
 ## Refresh and ownership
 
@@ -54,17 +57,10 @@ and names the public-installer upgrade. Source previews, local/self-hosted
 servers, and hosted servers render the same canonical tree and discovery
 contract; wheels carry the same authored inputs.
 
-Refresh deletes legacy skill copies only when every file has positive ownership
-proof: its recorded install digest, bytes from the resolved released bundle,
-identical bytes in its last installer-authored git commit, or bytes in an
-annotated release tree. Packaged CLIs carry a catalogue of released file hashes;
-source-dev CLIs can also read fetched annotated release trees. A copy without a
-manifest baseline can therefore retire automatically when its complete tree
-is proved. Equal local copies alone do not prove ownership. Modified files,
-unexpected links, unreadable history, and unknown files still cause
-`skill_discovery_ownership_ambiguous` before project mutation. Save local edits
-outside installer-owned skill paths, then retry. For a cloned source-dev test
-checkout, transfer the original manifest through `--manifest-from`.
+Refresh writes only the canonical skill tree and Claude discovery link. An
+unexpected entry at `.claude/skills/yoke` refuses as
+`skill_discovery_entry_conflict`; preserve its contents outside that path and
+rerun refresh. Codex and Cursor discover the canonical tree directly.
 
 Install and refresh report `install_drift.missing`, `changed`, and `interrupted`.
 Missing recorded files are restored. Changed files require the recorded digest,
@@ -77,14 +73,9 @@ The record also stores exact planned intermediate settings and instruction
 bytes, so a dirty interrupted checkout can resume without admitting new edits.
 Bundle files and the final manifest use atomic replacement. Completion verifies
 every recorded whole-file digest and retains the recovery record through the
-installer-owned local commit. Retired paths remain provable during publication.
+installer-owned local commit. Publication proves current installer-owned paths.
 
 Yoke source repo only: regenerate packaged release hashes from fetched annotated tags with `yoke dev run -- python3 -m runtime.api.tools.released_install_hashes --source-checkout /absolute/claimed/checkout` and commit the catalogue.
-
-Legacy CODEX/CURSOR/CLAUDE managed blocks retire with a matching recorded
-block digest or positively proven installer-committed whole-file bytes. Text outside their markers is preserved byte for byte.
-`instruction_ownership_ambiguous` preserves all files and asks for the prior
-baseline. Installer-created empty shells are removed; user-created files stay.
 
 Native symlink support is required for the Claude skill entry. On Windows,
 enable Developer Mode or administrator symlink permission and ensure Git

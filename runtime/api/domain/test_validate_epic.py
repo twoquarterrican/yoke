@@ -142,8 +142,8 @@ def test_validation_uses_postgres_authority_without_file_marker(
             _no_capability,
         )
         monkeypatch.setattr(
-            "yoke_core.domain.validate_epic.subprocess.run",
-            lambda cmd, cwd, text, capture_output, env=None: CompletedProcess(
+            "yoke_core.domain.validate_epic._run",
+            lambda cmd, *, cwd, env=None: CompletedProcess(
                 cmd, 0, stdout="", stderr=""
             ),
         )
@@ -182,8 +182,8 @@ def test_numeric_epic_validation_passes_with_github_auth_missing(
             _no_capability,
         )
         monkeypatch.setattr(
-            "yoke_core.domain.validate_epic.subprocess.run",
-            lambda cmd, cwd, text, capture_output, env=None: CompletedProcess(
+            "yoke_core.domain.validate_epic._run",
+            lambda cmd, *, cwd, env=None: CompletedProcess(
                 cmd, 0, stdout="", stderr=""
             ),
         )
@@ -259,8 +259,8 @@ def test_reports_missing_worktree_and_stale_heartbeat(tmp_path, monkeypatch, cap
             _no_capability,
         )
         monkeypatch.setattr(
-            "yoke_core.domain.validate_epic.subprocess.run",
-            lambda cmd, cwd, text, capture_output, env=None: CompletedProcess(
+            "yoke_core.domain.validate_epic._run",
+            lambda cmd, *, cwd, env=None: CompletedProcess(
                 cmd, 0, stdout="", stderr=""
             ),
         )
@@ -282,7 +282,7 @@ def test_cross_project_github_checks_use_rest(tmp_path, monkeypatch):
         rest_calls.append((repo, issue_num, token))
         return True
 
-    def fake_run(cmd, cwd, text, capture_output, env=None):
+    def fake_run(cmd, *, cwd, env=None):
         if cmd[:3] == ["git", "worktree", "list"]:
             return CompletedProcess(cmd, 0, stdout="", stderr="")
         raise AssertionError(f"unexpected subprocess: {cmd}")
@@ -326,7 +326,7 @@ def test_cross_project_github_checks_use_rest(tmp_path, monkeypatch):
             "yoke_core.domain.validate_epic._issue_accessible_via_rest",
             fake_accessible,
         )
-        monkeypatch.setattr("yoke_core.domain.validate_epic.subprocess.run", fake_run)
+        monkeypatch.setattr("yoke_core.domain.validate_epic._run", fake_run)
 
         rc = run_validation(tmp_path, TEST_EPIC_ID, out=_Writer(), err=_Writer())
     assert rc == 0

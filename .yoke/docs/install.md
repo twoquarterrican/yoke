@@ -251,3 +251,8 @@ shell configuration that overrides PATH, and open a new terminal. If uv cannot
 determine your shell, use the installer's printed `export PATH=...` command.
 `yoke path verify` probes your actual login shell; `yoke path fix` delegates
 configuration to uv. Yoke does not write its own shell startup blocks.
+
+Project install and refresh never move an existing machine project mapping.
+Git resolves linked worktrees to their main checkout, including lanes outside
+that checkout. To deliberately move routing, run `yoke project register
+/absolute/checkout --project-id N --reassign` from a plain operator terminal.

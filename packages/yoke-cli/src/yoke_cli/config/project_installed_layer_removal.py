@@ -74,9 +74,12 @@ def remove(root: str | Path) -> dict[str, Any]:
 
 
 def _remove_tree(target: Path, rel: str, report: LayerRemovalReport) -> None:
-    if not target.is_dir():
+    if target.is_symlink():
+        target.unlink()
+    elif target.is_dir():
+        shutil.rmtree(target)
+    else:
         return
-    shutil.rmtree(target)
     report.removed_paths.append(rel)
 
 
@@ -128,9 +131,7 @@ def _strip_hook_entries(target: Path, rel: str, report: LayerRemovalReport) -> N
     if payload:
         # Key order is the project's, not ours: this file is theirs and only
         # the entries Yoke merged in are being taken back out.
-        target.write_text(
-            json.dumps(payload, indent=2) + "\n", encoding="utf-8"
-        )
+        target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     else:
         target.unlink()
     report.removed_paths.append(rel)

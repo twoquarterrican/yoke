@@ -40,7 +40,6 @@ def owned_paths(report: Mapping[str, Any] | None) -> list[str]:
         "strategy_files_written",
         "managed_markdown_written",
         "skill_discovery_written",
-        "retired_instruction_paths",
         "created_settings_files",
     ):
         paths.extend(_string_list(report.get(key)))
@@ -165,7 +164,6 @@ def managed_region_paths(
     if isinstance(section, Mapping):
         paths.extend(str(path) for path in section if path)
     paths.extend(_string_list(report.get("managed_markdown_written")))
-    paths.extend(_string_list(report.get("retired_instruction_paths")))
     return normalized(paths)
 
 

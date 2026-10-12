@@ -217,12 +217,6 @@ def _unproven_reason(
         if path in territory.whole_files:
             continue
         if path not in territory.managed_regions:
-            from yoke_cli.project_install.retired_file_ownership import (
-                proves_retirement,
-            )
-
-            if proves_retirement(repo_root, commit.sha, path):
-                continue
             foreign.append(path)
             continue
         if _changed_outside_block(repo_root, commit.sha, path):
