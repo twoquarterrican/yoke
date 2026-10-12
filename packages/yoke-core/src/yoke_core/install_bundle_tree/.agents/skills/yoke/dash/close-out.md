@@ -92,7 +92,11 @@ Resume converges only when the current lane is the recorded landing, a
 fast-forward/squash-contained candidate, or adds no tree change to base.
 The no-change containment check accounts for foreign SHAs, lane merges and
 deletions. PR/landed_at alone is not current-candidate proof.
-Unverifiable containment refuses. Later uncontained commits take a new
+Content comparison selects recovery; it is not landing proof. Before writing
+a receipt or advancing, freshly fetched remote ancestry must contain the
+exact candidate that receipt names. Fetch failure or missing ancestry refuses
+without recording a landing. A local-only project proves its local default
+branch instead. Later uncontained commits take a new
 candidate landing, preserving receipts, even after a false release close-out.
 A genuine same-item correction stays on this lane/item through a declared
 release wait: reverify, independent candidate review where selected, remerge
