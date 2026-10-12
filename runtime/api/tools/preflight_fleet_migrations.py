@@ -37,6 +37,7 @@ Usage::
     yoke watch preflight -- --project P [--model M] [--checkout PATH]
         <environment> [db ...]
         [--record-receipt [--product-sha SHA] [--receipt-env NAME]]
+        [--release-run RUN]
         [--engine-wheel PATH]
 
 ``--project`` names the project whose model is rehearsed; ``--model``
@@ -59,6 +60,10 @@ the boot-converge sources in the selected engine, and whether that engine
 was the source tree or a wheel. It is stored on that project environment's own
 settings document under ``release.fleet_rehearsal.<model>``, so coverage outlives
 telemetry retention and cannot be read for the wrong environment.
+``--release-run`` names the run being released, read on that control plane;
+an engine tenant fleet's receipt requires it. Only the database holding that
+run (the release control plane) replays the release driver.
+
 Receipts write to the control plane ``--receipt-env`` (or ``YOKE_ENV``)
 names; one that does not answer the Yoke settings read for the rehearsed
 project environment is refused before anything is copied. The selected
@@ -109,6 +114,7 @@ def _parse(args: List[str]) -> argparse.Namespace:
     parser.add_argument("--record-receipt", action="store_true")
     parser.add_argument("--product-sha", default="")
     parser.add_argument("--receipt-env", default="")
+    parser.add_argument("--release-run", default="")
     parser.add_argument("--engine-wheel", default="")
     parser.add_argument("--instant-census-output", default="")
     parser.add_argument("--copy-budget-gib", type=int, default=0)
@@ -162,16 +168,27 @@ def main(argv: Optional[List[str]] = None) -> int:
         read_declared_admin_connection,
     )
     from runtime.api.tools import fleet_rehearsal_receipt_write as receipt_write
+    from runtime.api.tools import fleet_rehearsal_release_run as release_runs
     from runtime.api.tools import migration_fleet_selection
 
     covered_env = receipt.target_environment_for_admin_env(positional[0])
+    # Bound to the caller's control plane rather than the admin cluster.
+    receipt_env = parsed.receipt_env or os.environ.get("YOKE_ENV", "")
+    release_run, unreadable = release_runs.read_release_run(
+        parsed.release_run, receipt_env
+    )
     target, unavailable = migration_fleet_selection.resolve(
         project,
         parsed.model.strip() or None,
         checkout=Path(parsed.checkout).expanduser() if parsed.checkout else None,
+        release_run=release_run,
     )
-    if target is None:
-        print(unavailable, file=sys.stderr)
+    if record and target and target.replays_release_driver and not release_run:
+        unreadable = unreadable or release_runs.unnamed_release_run_refusal(
+            project, covered_env
+        )
+    if unreadable or target is None:
+        print(unreadable or unavailable, file=sys.stderr)
         return 2
     admin_env, admin_error = read_declared_admin_connection(
         project=project, environment=covered_env
@@ -179,9 +196,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     if admin_error:
         print(admin_error, file=sys.stderr)
         return 2
-    # Read before selecting admin readiness so the receipt remains explicitly
-    # bound to the caller's control plane rather than the admin cluster.
-    receipt_env = parsed.receipt_env or os.environ.get("YOKE_ENV", "")
     if record and not receipt_env:
         print(
             "--record-receipt needs a control-plane connection to write to, and "

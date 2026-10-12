@@ -70,7 +70,7 @@ def receipt_plane_refusal(*, receipt_env: str, project: str, environment: str) -
         f"there ({last_line}). Name the control plane the release gate reads "
         "(`yoke env list`) and retry: yoke watch preflight -- --project "
         f"{project} {environment} --record-receipt --product-sha <sha> "
-        "--receipt-env <control-plane>"
+        "--receipt-env <control-plane> [--release-run <run-id>]"
     )
 
 

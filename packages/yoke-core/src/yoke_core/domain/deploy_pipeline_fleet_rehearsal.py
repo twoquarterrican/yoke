@@ -23,6 +23,9 @@ history entry name, or the schema-shape digest. It is not stale because the
 shape moved, and it does not age out — coverage is the union the store
 accumulates, so entries the fleet rehearsed on an earlier release stay covered
 and are not rehearsed again.
+
+The rehearsal names the dispatching run, so only the tenant database holding
+it — the release control plane — replays the release driver.
 """
 
 from __future__ import annotations
@@ -47,6 +50,7 @@ def ensure_before_dispatch(
     environment: str,
     repository: str,
     release_lineage: str,
+    run_id: str,
 ) -> tuple[int, str]:
     """Run and record fleet rehearsal for whatever this release is missing."""
     due, refusal = _declared_fleets(project)
@@ -71,6 +75,7 @@ def ensure_before_dispatch(
             environment=environment,
             repository=repository,
             release_sha=release_sha,
+            run_id=run_id,
         )
         if rc != 0:
             return rc, diagnostic
@@ -106,6 +111,7 @@ def _ensure_model(
     environment: str,
     repository: str,
     release_sha: str,
+    run_id: str,
 ) -> tuple[int, str]:
     modules_dir = str(
         ((model.get("runner") or {}).get("config") or {}).get("modules_dir") or ""
@@ -153,6 +159,7 @@ def _ensure_model(
         history=history,
         schema_digest=schema_digest,
         receipt_environment=receipt_environment,
+        run_id=run_id,
     )
     if refusal:
         return 1, refusal
@@ -193,6 +200,7 @@ def _rehearse_release_source(
     history: Sequence[str],
     schema_digest: str,
     receipt_environment: str,
+    run_id: str,
 ) -> tuple[int, str]:
     """Run the preflight on exactly the release commit's code.
 
@@ -210,6 +218,8 @@ def _rehearse_release_source(
         release_sha,
         "--receipt-env",
         receipt_environment,
+        "--release-run",
+        run_id,
     ]
     try:
         if fleet["kind"] == fleets.FLEET_ENGINE_TENANTS:

@@ -1,4 +1,8 @@
-"""The pre-boot gate must reach start and receipt allocation with real members."""
+"""The pre-boot gate must reach start and receipt allocation with real members.
+
+Only the release control plane's database, the one holding the run being
+released, replays the driver; every other database records it not applicable.
+"""
 
 from runtime.api.fixtures.bound_source_release import (
     CARRIER_FLOW,
@@ -21,6 +25,7 @@ from yoke_core.domain.deployment_run_ci_tested_source import (
 from yoke_core.domain.migration_fleet_preflight import NotApplicable
 from yoke_core.domain.deployment_runs_crud_mutate import cmd_add_item
 from yoke_core.domain.domain_refusal import DomainRefusal
+from runtime.api.tools.fleet_rehearsal_release_run import ReleaseRun
 from runtime.api.tools.yoke_migration_fleet import rehearsal_plan
 
 
@@ -52,10 +57,31 @@ def setup_release(conn, tmp_path, monkeypatch):
     return fixture
 
 
-def test_plan_checks_driver_before_converging():
-    assert (
-        rehearsal_plan().pre_converge_validator is preboot.verify_preboot_release_driver
+def held_run(conn, run_id="run-candidate"):
+    """The run being released, exactly as this database records it."""
+    created_at = conn.execute(
+        "SELECT created_at FROM deployment_runs WHERE id=%s", (run_id,)
+    ).fetchone()[0]
+    return ReleaseRun(run_id, created_at.isoformat(), "prod")
+
+
+def replay(conn, release_run=None):
+    return preboot.verify_preboot_release_driver(
+        conn, db_backend.resolve_pg_dsn(), release_run or held_run(conn)
     )
+
+
+def replayed_runs(conn):
+    return conn.execute(
+        "SELECT count(*) FROM deployment_runs WHERE created_by='migration-rehearsal'"
+    ).fetchone()[0]
+
+
+def test_plan_checks_driver_for_the_named_release_before_converging():
+    release_run = ReleaseRun("run-1", "2026-10-12T00:00:00+00:00", "prod")
+    validator = rehearsal_plan(release_run).pre_converge_validator
+    assert validator.func is preboot.verify_preboot_release_driver
+    assert validator.keywords == {"release_run": release_run}
 
 
 def test_real_member_context_start_and_receipt_on_text_schema(
@@ -76,9 +102,7 @@ def test_real_member_context_start_and_receipt_on_text_schema(
     test_db.commit()
     preboot_instant_parameters.clear_storage_types()
     try:
-        detail = preboot.verify_preboot_release_driver(
-            test_db, db_backend.resolve_pg_dsn()
-        )
+        detail = replay(test_db)
         assert detail is None, detail
         row = test_db.execute(
             "SELECT dr.status,count(m.item_id) FROM deployment_runs dr "
@@ -105,7 +129,7 @@ def test_refused_create_cannot_silently_pass_rest_of_driver(
         raise DomainRefusal("invalid_instant: copied driver failed")
 
     monkeypatch.setattr(preboot, "create_run", refuse)
-    detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
+    detail = replay(test_db)
     assert "run create" in detail and "invalid_instant" in detail
     assert (
         test_db.execute("SELECT count(*) FROM deployment_stage_receipts").fetchone()[0]
@@ -125,7 +149,7 @@ def test_replay_never_asks_ci_provider_about_recorded_source(
 
     monkeypatch.setattr(ci_tested_source, "require_tested_lineage", no_credentials)
     monkeypatch.setattr(ci_tested_source, "bind_tested_release_source", no_credentials)
-    detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
+    detail = replay(test_db)
     assert detail is None, detail
 
 
@@ -156,7 +180,7 @@ def test_each_target_replays_only_its_newest_release(test_db, tmp_path, monkeypa
         "UPDATE deployment_runs SET status='succeeded' WHERE id='run-superseded'"
     )
     test_db.commit()
-    detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
+    detail = replay(test_db)
     assert detail is None, detail
     flows = test_db.execute(
         "SELECT flow FROM deployment_runs WHERE created_by='migration-rehearsal'"
@@ -164,22 +188,46 @@ def test_each_target_replays_only_its_newest_release(test_db, tmp_path, monkeypa
     assert flows == [(CARRIER_FLOW,)]
 
 
-def test_universe_that_never_ran_a_release_is_not_applicable(test_db):
-    assert test_db.execute("SELECT count(*) FROM deployment_runs").fetchone()[0] == 0
-    outcome = preboot.verify_preboot_release_driver(
-        test_db, db_backend.resolve_pg_dsn()
-    )
-    assert isinstance(outcome, NotApplicable)
-    assert outcome.check == preboot.PREBOOT_RELEASE_DRIVER
-    assert "preboot_release_never_run" in outcome.reason
-
-
-def test_runs_without_member_bearing_release_cannot_earn_driver_proof(
+def test_tenant_with_member_less_runs_is_not_the_release_control_plane(
     test_db, tmp_path, monkeypatch
 ):
     setup_release(test_db, tmp_path, monkeypatch)
     test_db.execute("DELETE FROM deployment_run_items")
     test_db.commit()
-    detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
+    elsewhere = ReleaseRun("run-20261012-013", "2026-10-12T23:08:55.380656Z", "prod")
+    outcome = replay(test_db, elsewhere)
+    assert isinstance(outcome, NotApplicable)
+    assert outcome.check == preboot.PREBOOT_RELEASE_DRIVER
+    assert outcome.reason.startswith("not the release control plane")
+    assert "run-20261012-013" in outcome.reason and "prod" in outcome.reason
+    assert replayed_runs(test_db) == 0
+
+
+def test_same_run_id_from_another_universe_is_not_the_control_plane(
+    test_db, tmp_path, monkeypatch
+):
+    setup_release(test_db, tmp_path, monkeypatch)
+    other = ReleaseRun("run-candidate", "2001-01-01T00:00:00+00:00", "prod")
+    outcome = replay(test_db, other)
+    assert isinstance(outcome, NotApplicable)
+    assert "not the release control plane" in outcome.reason
+    assert replayed_runs(test_db) == 0
+
+
+def test_no_named_release_run_identifies_no_control_plane(test_db):
+    outcome = preboot.verify_preboot_release_driver(
+        test_db, db_backend.resolve_pg_dsn(), None
+    )
+    assert isinstance(outcome, NotApplicable)
+    assert "--release-run" in outcome.reason
+
+
+def test_control_plane_without_member_bearing_release_cannot_earn_driver_proof(
+    test_db, tmp_path, monkeypatch
+):
+    setup_release(test_db, tmp_path, monkeypatch)
+    test_db.execute("DELETE FROM deployment_run_items")
+    test_db.commit()
+    detail = replay(test_db)
     assert "preboot_release_subject_missing" in detail
     assert "supply a real release declaration" in detail
