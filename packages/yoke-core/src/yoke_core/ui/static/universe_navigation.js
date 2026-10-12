@@ -35,7 +35,7 @@ export function defaultTabFor(view) {
 
 // The browser title names the screen a route opens, most specific part
 // first, so tabs, history, bookmarks and page-view analytics tell screens
-// apart: `YOK-3892 · Items · Yoke`, `Runs · Deployments · Yoke`. A drill-in
+// apart: `PREFIX-12 · Items · Yoke`, `Runs · Deployments · Yoke`. A drill-in
 // beneath a sensitive parent (a machine-approval code) stays out of the title,
 // as the events Pack keeps it out of every recorded path.
 export function routeDocumentTitle(route) {

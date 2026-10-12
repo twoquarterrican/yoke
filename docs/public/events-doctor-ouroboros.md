@@ -10,7 +10,7 @@ that load and each client navigation that changes the path emit `PageViewed`
 with `event_type=page_view`. Query-only, fragment-only, and state-only
 navigation (filters, `?selection=all` rewrites) emits no view. The workbench
 names each screen in the browser title before the URL changes, most specific
-part first (`YOK-3892 · Items · Yoke`, `Runs · Deployments · Yoke`), so each
+part first (`PREFIX-12 · Items · Yoke`, `Runs · Deployments · Yoke`), so each
 view's `page_title` tells screens apart; a machine-approval code never enters
 the title. The installed
 Structured Events Pack removes `?token=`, `?user_code=`, other sensitive query
