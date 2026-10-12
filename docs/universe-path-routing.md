@@ -9,7 +9,9 @@ or `selection`; replay uses that screen's saved scope. A deep link or history
 entry applies scope in the current tab only. Project preferences change on
 explicit picker choices or removal of inaccessible project IDs, never on
 navigation or a default focus. Returning to a tab re-reads the actor's saved
-selections; a picker choice made during that read wins.
+selections; only a change to saved selections or focus re-renders the route and
+replaces its query scope. An unchanged read preserves the current deep link and
+page contents. A picker choice made during that read wins.
 
 `yoke_core/ui/contracts/dashboard-routes.json` ships in the product wheel.
 Hosts read `views`, `tabs`, `localBasePath`, and `hostedBasePathTemplate` from

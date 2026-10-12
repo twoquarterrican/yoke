@@ -5,6 +5,7 @@ import { createProjectSelection, resolveProjectSelection } from "../../packages/
 import { scopeForEntry, navEntry } from "../../packages/yoke-core/src/yoke_core/ui/static/universe_navigation.js";
 import { FakeDocument, response, settle } from "./universe_ui_dom_test_support.mjs";
 import { twoProjectClient, scopeChips } from "./universe_ui_read_views_test_support.mjs";
+import { mountSelectionRefresh } from "../../packages/yoke-core/src/yoke_core/ui/static/universe_app_shell_support.js";
 const projects = [{ id: 1 }, { id: 2 }];
 const ok = (result) => ({ status: 200, envelope: { success: true, result } });
 async function mount(t, href, state) {
@@ -91,6 +92,55 @@ test("returning tab refreshes saved scope and stops listening on unmount", async
   windowNode.dispatchEvent(new Event("focus"));
   await settle();
   assert.equal(windowNode.location.href, href);
+});
+test("unchanged focus and visibility reads preserve transient scope without navigation or render", async (t) => {
+  const selections = createProjectSelection();
+  selections.seed("items", ["1"], null);
+  selections.markReady();
+  selections.setSelectionFor("items", ["2"]);
+  const windowNode = new EventTarget();
+  const documentNode = new EventTarget();
+  documentNode.visibilityState = "visible";
+  const href = "/items?project=2&selection=2";
+  const navigation = { current: () => href, replace() {} };
+  const replace = t.mock.method(navigation, "replace");
+  const render = t.mock.fn();
+  const client = { call: t.mock.fn(async () => ok({ views: { items: { selection: ["1"], focus: null } } })) };
+  t.after(mountSelectionRefresh(client, selections, windowNode, documentNode, navigation, render, () => true));
+  windowNode.dispatchEvent(new Event("focus"));
+  await settle();
+  documentNode.dispatchEvent(new Event("visibilitychange"));
+  await settle();
+  assert.equal(client.call.mock.callCount(), 2);
+  assert.equal(replace.mock.callCount(), 0);
+  assert.equal(render.mock.callCount(), 0);
+  assert.equal(navigation.current(), href);
+  assert.deepEqual(selections.selectionFor("items"), ["2"]);
+});
+test("refresh compares every remembered view, its selection and focus, and additions and removals", async () => {
+  const state = createProjectSelection();
+  state.seed("items", ["1"], null);
+  state.seed("sessions", "all", "1");
+  state.markReady();
+  const read = (views) => state.refreshSelections(async () => ({ views }));
+  assert.equal(await read({ sessions: { selection: "all", focus: "1" }, items: { selection: ["1"] } }), false);
+  assert.equal(await read({ sessions: { selection: "all", focus: "2" }, items: { selection: ["1"] } }), true);
+  assert.equal(state.focusFor("sessions"), "2");
+  assert.equal(await read({ sessions: { selection: "all", focus: "2" }, items: { selection: ["2"] } }), true);
+  assert.deepEqual(state.selectionFor("items"), ["2"]);
+  assert.equal(await read({ items: { selection: ["2"] } }), true);
+  assert.equal(state.focusFor("sessions"), null);
+  assert.equal(await read({ items: { selection: ["2"] }, inbox: { selection: "all" } }), true);
+  assert.equal(await read({ inbox: { selection: "all" }, items: { selection: ["2"] } }), false);
+});
+test("refresh read failures retain the selection and report the existing recovery notice", async () => {
+  const notice = [];
+  const state = createProjectSelection(undefined, () => notice.push(state.notice));
+  state.seed("items", ["1"]);
+  state.markReady();
+  assert.equal(await state.refreshSelections(async () => { throw new Error("offline"); }), false);
+  assert.deepEqual(state.selectionFor("items"), ["1"]);
+  assert.deepEqual(notice, ["Saved projects could not be loaded. Showing the last known selection; return to this tab or reload to retry."]);
 });
 test("a choice during refresh wins and writes capture each clicked value", async () => {
   const writes = [];
