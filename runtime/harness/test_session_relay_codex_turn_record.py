@@ -11,7 +11,7 @@ import pytest
 
 from yoke_contracts.timestamps import parse_instant
 from yoke_contracts.session_control.function_ids import RELAY_TURN_END_FUNCTION_ID
-from yoke_harness.session_relay_codex_turn_record import error_terminal_turn
+from yoke_harness.session_relay_codex_turn_record import terminal_turn
 from yoke_harness.session_relay_native_turn_end import (
     observed_turn_ends,
     report_native_turn_ends,
@@ -58,7 +58,7 @@ def _rollout(root: Path, *events: dict, session_id: str = SESSION_ID) -> Path:
 
 
 def _read(root: Path, session_id: str = SESSION_ID):
-    return error_terminal_turn(session_id, transcript_roots=[root])
+    return terminal_turn(session_id, transcript_roots=[root])
 
 
 def test_a_turn_that_ended_on_a_vendor_error_is_reported(tmp_path):
@@ -82,9 +82,16 @@ def test_a_turn_that_ended_on_a_vendor_error_is_reported(tmp_path):
     assert observed.evidence["turn_id"] == TURN_ID
 
 
-def test_a_turn_that_ended_cleanly_is_not_reported(tmp_path):
+def test_a_turn_that_ended_cleanly_is_reported(tmp_path):
     _rollout(tmp_path, _tool_call(), _task_complete(None))
-    assert _read(tmp_path) is None
+    observed = _read(tmp_path)
+    assert observed.observed_at == parse_instant(OBSERVED_AT)
+    assert observed.evidence == {
+        "record": "codex_rollout_tail",
+        "turn_id": TURN_ID,
+        "codex_error_info": "",
+        "error_message": "",
+    }
 
 
 def test_a_turn_still_in_flight_is_not_reported(tmp_path):
@@ -226,7 +233,9 @@ def test_a_new_clean_turn_supersedes_an_older_vendor_error(tmp_path):
         _task_complete(None),
         _settled_item(),
     )
-    assert _read(tmp_path) is None
+    observed = _read(tmp_path)
+    assert observed is not None
+    assert observed.evidence["error_message"] == ""
 
 
 @pytest.mark.parametrize(

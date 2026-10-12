@@ -33,7 +33,7 @@ from yoke_contracts.session_control.native_turn_end import RelayTurnEndProbe
 from yoke_contracts.timestamps import format_instant
 from yoke_harness.session_relay_codex_turn_record import (
     ObservedTurnEnd,
-    error_terminal_turn,
+    terminal_turn,
 )
 from yoke_harness.session_relay_report_delivery import RELAY_REPORT_TIMEOUT_SECONDS
 
@@ -46,7 +46,7 @@ TurnRecordReader = Callable[[str], ObservedTurnEnd | None]
 #: Keyed by harness family rather than by surface, because the surface the
 #: reader is verified against is the capability's fact to state.
 _READERS_BY_HARNESS: dict[str, TurnRecordReader] = {
-    "codex": error_terminal_turn,
+    "codex": terminal_turn,
 }
 
 

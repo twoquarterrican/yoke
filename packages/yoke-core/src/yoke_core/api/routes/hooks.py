@@ -13,6 +13,8 @@ row at relayed ensure-register. The wire contract is frozen: see
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import json
 from typing import Any
 
 from fastapi import Request
@@ -73,8 +75,24 @@ def post_hooks_evaluate(
         else resolve_total_timeout_ms()
     )
     auth = require_auth_context(http_request)
+    observed_at = datetime.now(timezone.utc)
     auth_error = _authorize_project(auth.actor_id, request)
     if auth_error is not None:
+        from yoke_core.hooks.session_turn_posture_tail import (
+            persist_authorization_denied_turn_end,
+        )
+
+        posture_error = persist_authorization_denied_turn_end(
+            event_name=request.event_name,
+            session_id=str(_stdin_payload(request).get("session_id") or ""),
+            actor_id=auth.actor_id,
+            observed_at=observed_at,
+        )
+        if posture_error:
+            content = json.loads(auth_error.body)
+            content["stdout"] += f"{posture_error}\n"
+            content["degraded"].append(posture_error)
+            return JSONResponse(content=content, status_code=auth_error.status_code)
         return auth_error
     result = evaluate_remote(
         event_name=request.event_name,

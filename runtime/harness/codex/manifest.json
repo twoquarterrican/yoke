@@ -148,9 +148,9 @@
   "turn_record": {
     "source": "yoke_contracts.harness_turn_record_capability.HARNESS_TURN_RECORD_CAPABILITIES",
     "turn_record": "readable",
-    "turn_record_mechanism": "rollout tail: the last JSON line of ~/.codex/sessions/YYYY/MM/DD/rollout-<started>-<session_id>.jsonl is a task_complete event, carrying an error payload when the turn ended on a vendor failure",
+    "turn_record_mechanism": "rollout tail: the newest terminal event in ~/.codex/sessions/YYYY/MM/DD/rollout-<started>-<session_id>.jsonl is a task_complete event, carrying an error payload when the turn ended on a vendor failure; clean completions also prove the turn ended, unless a later prompt or tool call follows",
     "verified_on_surface": "codex-cli",
-    "evidence": "Observed live twice. A turn ending on 'Selected model is at capacity' left the CLI process at its prompt and fired no Stop hook, and on 2026-09-03 five workers ended on an upstream 404 from the responses endpoint the same way. In both cases the session's last hook event predated the ending and the rollout tail was the only record that the turn was over."
+    "evidence": "Observed live twice. A turn ending on 'Selected model is at capacity' left the CLI process at its prompt and fired no Stop hook, and on 2026-09-03 five workers ended on an upstream 404 from the responses endpoint the same way. In both cases the session's last hook event predated the ending and the rollout tail was the only record that the turn was over. A clean task_complete also proved a parked worker's turn ended when project authorization denied its Stop hook."
   },
   "worktree_hook_enablement": {
     "config_path": ".codex/hooks.json",

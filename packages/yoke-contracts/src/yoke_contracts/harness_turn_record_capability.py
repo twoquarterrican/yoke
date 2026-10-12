@@ -70,10 +70,11 @@ HARNESS_TURN_RECORD_CAPABILITIES: dict[str, HarnessTurnRecordCapability] = {
     "codex": HarnessTurnRecordCapability(
         turn_record="readable",
         turn_record_mechanism=(
-            "rollout tail: the last JSON line of "
+            "rollout tail: the newest terminal event in "
             "~/.codex/sessions/YYYY/MM/DD/rollout-<started>-<session_id>"
             ".jsonl is a task_complete event, carrying an error payload "
-            "when the turn ended on a vendor failure"
+            "when the turn ended on a vendor failure; clean completions also "
+            "prove the turn ended, unless a later prompt or tool call follows"
         ),
         verified_on_surface="codex-cli",
         evidence=(
@@ -82,7 +83,9 @@ HARNESS_TURN_RECORD_CAPABILITIES: dict[str, HarnessTurnRecordCapability] = {
             "hook, and on 2026-09-03 five workers ended on an upstream 404 "
             "from the responses endpoint the same way. In both cases the "
             "session's last hook event predated the ending and the rollout "
-            "tail was the only record that the turn was over."
+            "tail was the only record that the turn was over. A clean "
+            "task_complete also proved a parked worker's turn ended when "
+            "project authorization denied its Stop hook."
         ),
     ),
     "cursor": HarnessTurnRecordCapability(
