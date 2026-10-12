@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from yoke_cli import resilient_fetch
+from yoke_contracts.designed_wait import designed_wait_line
 
 
 URL = "https://artifacts.example.test/release.tar.gz"
@@ -32,6 +33,18 @@ def test_gateway_imports_before_project_dependencies_are_installed() -> None:
     )
 
     assert completed.returncode == 0, completed.stderr
+
+
+@pytest.mark.parametrize("attempt", range(1, resilient_fetch.MAX_ATTEMPTS))
+def test_backoff_announcement_matches_the_designed_wait_contract(attempt) -> None:
+    backoff = resilient_fetch.BACKOFF_SECONDS[attempt - 1]
+    expected = designed_wait_line(
+        f"backoff before retrying {URL} "
+        f"(attempt {attempt + 1} of {resilient_fetch.MAX_ATTEMPTS})",
+        max_wait_seconds=backoff,
+    )
+
+    assert resilient_fetch._backoff_announcement(URL, attempt + 1, backoff) == expected
 
 
 class _Response:
