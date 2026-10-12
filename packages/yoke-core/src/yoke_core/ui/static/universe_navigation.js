@@ -9,6 +9,7 @@ import {
   canonicalSelection, knownProjectId, projectSelection, resolveProjectSelection,
   selectionParam,
 } from "./universe_project_selection.js";
+import attributionRules from "./attribution_rules.js";
 export { knownProjectId } from "./universe_project_selection.js";
 
 export { NAV, NAV_GROUPS, SCOPE_MULTI, SCOPE_NONE, SCOPE_SINGLE };
@@ -30,6 +31,18 @@ export function navTabs(view) {
 
 export function defaultTabFor(view) {
   return navTabs(view)[0]?.id || null;
+}
+
+// The browser title names the screen a route opens, most specific part
+// first, so tabs, history, bookmarks and page-view analytics tell screens
+// apart: `YOK-3892 · Items · Yoke`, `Runs · Deployments · Yoke`. A drill-in
+// beneath a sensitive parent (a machine-approval code) stays out of the title,
+// as the events Pack keeps it out of every recorded path.
+export function routeDocumentTitle(route) {
+  const tab = navTabs(route.view).find((candidate) => candidate.id === route.tab);
+  const detail = attributionRules.sensitive_path_parents.includes(route.view) ? null : route.detail;
+  return [detail, tab?.label, navEntry(route.view).label, "Yoke"]
+    .filter(Boolean).join(" · ");
 }
 
 // Project carries list selection or resource focus; selection separates the

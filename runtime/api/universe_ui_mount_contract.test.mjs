@@ -75,14 +75,15 @@ test("one-argument mount preserves the local client and DOM shape", async (t) =>
   const assetFetch = fetches.find((entry) => !entry.init);
   assert.match(assetFetch.url, /\/static\/yoke-wordmark\.svg$/);
   assert.doesNotMatch(assetFetch.url, /\/assets\//);
-  // One routing listener plus one dismissal set per transient surface the
-  // frame opens over its content — actor menu, footer panels — and nothing
+  // Two routing listeners (the history owner names the screen in the
+  // document title, the app renders it) plus one dismissal set per transient
+  // surface the frame opens over its content — actor menu, footer panels — and nothing
   // may outlive the mount that attached it. Search is a modal rather than a
   // menu, so it needs no outside-click dismissal: its backdrop is part of it
   // and its two keyboard contracts are its own. It does take the route
   // change, though, because a modal that outlives the screen it opened over
   // keeps swallowing clicks on the next one.
-  assert.equal(documentNode.defaultView.listenerCounts.get("popstate"), 4);
+  assert.equal(documentNode.defaultView.listenerCounts.get("popstate"), 5);
   assert.equal(documentNode.defaultView.listenerCounts.get("keydown"), 4);
   assert.equal(documentNode.defaultView.listenerCounts.get("click"), 2);
   mounted.unmount();
@@ -173,7 +174,7 @@ test("injected clients, generic actions, slots, and mounts stay isolated", async
   // two sets against the plain mount's three. Every mount adds one more:
   // the search dialog closes itself on a route change, so a dialog left
   // open cannot go on swallowing clicks over the next screen.
-  assert.equal(documentNode.defaultView.listenerCounts.get("popstate"), 7);
+  assert.equal(documentNode.defaultView.listenerCounts.get("popstate"), 9);
   // Host actions are not chrome: a mount carrying them draws nothing until
   // the Organization view asks for them, and the topbar never does.
   assert.equal(byClass(firstRoot, "capability-actions").length, 0);
@@ -290,7 +291,7 @@ test("injected clients, generic actions, slots, and mounts stay isolated", async
     [topbarStartSlot, topbarEndSlot, navigationStartSlot,
       navigationEndSlot, contentBeforeSlot, contentAfterSlot]
   )) assert.equal(slot.parentNode, null);
-  assert.equal(documentNode.defaultView.listenerCounts.get("popstate"), 4);
+  assert.equal(documentNode.defaultView.listenerCounts.get("popstate"), 5);
   documentNode.defaultView.dispatchEvent(new Event("popstate"));
   await settle();
   assert.equal(firstClient.requests.length, firstCallsBeforeUnmount);
