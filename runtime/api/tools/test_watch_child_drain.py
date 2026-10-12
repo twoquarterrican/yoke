@@ -181,3 +181,34 @@ class TestOrdinaryOutputIsUnchanged:
         assert "line 19" in raw
         assert last_summary is not None
         assert "SUMMARY done" in last_summary
+
+
+class TestDesignedWaitAnnouncementsReachTheReader:
+    """The line that explains a coming silence is never left in raw only."""
+
+    _LINE = "Waiting by design: CI checks; gives up after 15m.\n"
+
+    def _route(self, tmp_path: Path, *, outcome_only: bool) -> list[str]:
+        emitted: list[str] = []
+        with (tmp_path / "raw.log").open("w", encoding="utf-8") as raw_f:
+            watch_child_drain._route_line(
+                self._LINE,
+                now=0.0,
+                classifier=lambda _line: Classification(LineClass.NOISE),
+                gate=ProgressGate(ThrottlePolicy()),
+                digest=ProgressDigest(kind="probe", flush_seconds=0.0),
+                raw_f=raw_f,
+                progress_watch=watch_progress_stall.ProgressEmitWatch.start(
+                    "probe", now=0.0
+                ),
+                emit_immediate=emitted.append,
+                outcome_only=outcome_only,
+            )
+        assert self._LINE in (tmp_path / "raw.log").read_text(encoding="utf-8")
+        return emitted
+
+    def test_a_standard_watcher_emits_it_immediately(self, tmp_path) -> None:
+        assert self._route(tmp_path, outcome_only=False) == [self._LINE]
+
+    def test_an_outcome_only_watcher_still_emits_it(self, tmp_path) -> None:
+        assert self._route(tmp_path, outcome_only=True) == [self._LINE]
