@@ -1,14 +1,17 @@
 """Drive copied release declarations through receipt allocation, without dispatch.
 
-Stored runs supply real flows, source revisions and member snapshots. The
-recorded source revision passed its CI gate when its run was created, so the
-replay writes the run without re-asking GitHub: a live provider read proves
-nothing about migrated rows and the rehearsal host holds no provider
-credentials. Driver attachments and target occupancy are cleared only on the
-disposable copy.
-Every refusal fails proof rather than silently skipping the remaining path.
-A universe that has never run a release (zero deployment runs, as in an org
-tenant whose releases live on the release control plane) has no driver
+Stored runs supply real flows, source revisions and member snapshots. Each
+release target (a project environment, or a preview flow) replays its newest
+member-bearing run: that lineage is the frontier the next real release composes
+against, while an older flow's run on the same environment is superseded and
+any real release binding it would be refused as diverged too. The recorded
+source revision passed its CI gate when its run was created, so the replay
+writes the run without re-asking GitHub: a live provider read proves nothing
+about migrated rows and the rehearsal host holds no provider credentials.
+Driver attachments and target occupancy are cleared only on the disposable
+copy. Every refusal fails proof rather than silently skipping the remaining
+path. A universe that has never run a release (zero deployment runs, as in an
+org tenant whose releases live on the release control plane) has no driver
 subject: the check is named not applicable and the rest of rehearsal runs.
 Stored runs with no member-bearing release still refuse.
 """
@@ -48,14 +51,17 @@ def verify_preboot_release_driver(
                 "release is rehearsed once it has stored runs",
             )
         runs = conn.execute(
-            "SELECT DISTINCT ON (dr.flow,dr.target_environment_id) "
+            "SELECT DISTINCT ON (dr.project_id,dr.target_environment_id,"
+            "CASE WHEN dr.target_environment_id IS NULL THEN dr.flow END) "
             "dr.id,p.slug,dr.flow,dr.release_lineage,e.name "
             "FROM deployment_runs dr JOIN deployment_flows df ON df.id=dr.flow "
             "JOIN projects p ON p.id=dr.project_id "
             "LEFT JOIN environments e ON e.id=dr.target_environment_id "
             "WHERE df.status='active' AND dr.release_lineage IS NOT NULL "
             "AND EXISTS (SELECT 1 FROM deployment_run_items m WHERE m.run_id=dr.id) "
-            "ORDER BY dr.flow,dr.target_environment_id,dr.created_at DESC,dr.id DESC"
+            "ORDER BY dr.project_id,dr.target_environment_id,"
+            "CASE WHEN dr.target_environment_id IS NULL THEN dr.flow END,"
+            "dr.created_at DESC,dr.id DESC"
         ).fetchall()
         if not runs:
             conn.rollback()

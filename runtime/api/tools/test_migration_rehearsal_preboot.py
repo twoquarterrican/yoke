@@ -3,8 +3,11 @@
 from runtime.api.fixtures.bound_source_release import (
     CARRIER_FLOW,
     CARRIER_ITEM_ID,
+    bound_stages,
     two_project_release,
 )
+from runtime.api.fixtures.carried_release_candidate import insert_run
+from yoke_core.domain.flow_create import cmd_create
 from runtime.api.tools import migration_rehearsal_preboot as preboot
 from yoke_core.domain import (
     db_backend,
@@ -124,6 +127,41 @@ def test_replay_never_asks_ci_provider_about_recorded_source(
     monkeypatch.setattr(ci_tested_source, "bind_tested_release_source", no_credentials)
     detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
     assert detail is None, detail
+
+
+def test_each_target_replays_only_its_newest_release(test_db, tmp_path, monkeypatch):
+    setup_release(test_db, tmp_path, monkeypatch)
+    cmd_create(test_db, "superseded-flow", "yoke", "Old", "", bound_stages())
+    stage = "(SELECT id FROM environments WHERE project_id=1 AND name='stage')"
+    test_db.execute(
+        "UPDATE deployment_flows SET status='active',target_tier='persistent',"
+        f"target_environment_id={stage} "
+        "WHERE id='superseded-flow'"
+    )
+    insert_run(
+        test_db,
+        "run-superseded",
+        lineage="f" * 40,
+        status="created",
+        flow="superseded-flow",
+    )
+    test_db.execute(
+        "UPDATE deployment_runs SET target_tier='persistent',"
+        f"target_environment_id={stage},"
+        "created_at='2026-09-01T00:00:00Z' WHERE id='run-superseded'"
+    )
+    test_db.commit()
+    cmd_add_item("run-superseded", CARRIER_ITEM_ID)
+    test_db.execute(
+        "UPDATE deployment_runs SET status='succeeded' WHERE id='run-superseded'"
+    )
+    test_db.commit()
+    detail = preboot.verify_preboot_release_driver(test_db, db_backend.resolve_pg_dsn())
+    assert detail is None, detail
+    flows = test_db.execute(
+        "SELECT flow FROM deployment_runs WHERE created_by='migration-rehearsal'"
+    ).fetchall()
+    assert flows == [(CARRIER_FLOW,)]
 
 
 def test_universe_that_never_ran_a_release_is_not_applicable(test_db):
