@@ -264,3 +264,26 @@ class TestRegisterSessionLevelHealing:
         )
         assert result["execution_level"] == "UNIVERSE_ONLY"
         assert _stored_level(conn, "level-reactivate") == "UNIVERSE_ONLY"
+
+
+@pytest.mark.parametrize("reactivated", [False, True])
+def test_started_event_uses_observed_level_instead_of_launch_stamp(
+    conn,  # noqa: F811
+    monkeypatch,
+    reactivated,
+):
+    captured = []
+    monkeypatch.setattr(
+        "yoke_core.domain.sessions_lifecycle_registry._sa._emit_session_event",
+        lambda *a, **kw: captured.append(kw),
+    )
+    if reactivated:
+        _register(conn, session_id="level-event")
+        end_session(conn, "level-event")
+        captured.clear()
+    _register(conn, session_id="level-event", execution_level="PRINCIPAL")
+    assert (
+        captured[-1]["context"]["execution_level"]
+        == _stored_level(conn, "level-event")
+        == "SENIOR"
+    )

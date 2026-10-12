@@ -2,8 +2,8 @@
 
 A roster row's level glyph comes from its project's effective levels: the
 project's ``session-routing`` override, else the stored universe ``levels``
-setting, else the shipped scheme. A stamped level none of those declare
-renders its name with no glyph.
+setting, else the shipped scheme. Observed model/effort facts determine its
+level; a requested stamp cannot override them.
 """
 
 import json
@@ -33,8 +33,7 @@ def _levels(name: str, glyph: str) -> list[dict]:
             "options": [
                 {
                     "model": "gpt-6.1-sol",
-                    "reasoning_effort": "medium",
-                    "context_window_tokens": None,
+                    "min_effort": "medium",
                 }
             ],
         }

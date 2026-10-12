@@ -149,10 +149,12 @@ def _write_counts(conn) -> tuple[int, int, int]:
 
 
 def _create_conn(monkeypatch, *, status: str, definition: dict | None = None):
-    conn = launch_connection()
-    from runtime.api.fixtures.level_store import create_level_store_tables
+    from runtime.api.domain.session_launch_level_test_support import (
+        CODEX_SOL,
+        level_connection,
+    )
 
-    create_level_store_tables(conn)
+    conn = level_connection(CODEX_SOL)
     add_relay(conn, connected_until="2026-08-24T12:00:00Z")
     item = _seed_pinned_item(conn, status=status, definition=definition)
     _wire_create(monkeypatch, conn)

@@ -114,7 +114,13 @@ def test_the_public_record_names_a_level_selection_and_its_evidence() -> None:
 def test_an_exact_surface_launch_is_recorded_as_an_override() -> None:
     conn = _two_options(claude=20.0, codex=40.0)
 
-    launch = assigned_launch(conn, surface="codex-cli", machine_id="m-codex")
+    launch = assigned_launch(
+        conn,
+        surface="codex-cli",
+        machine_id="m-codex",
+        model="gpt-6.1-sol",
+        reasoning_effort="medium",
+    )
     record = public_launch_record(launch)
 
     assert launch.requested_level is None
