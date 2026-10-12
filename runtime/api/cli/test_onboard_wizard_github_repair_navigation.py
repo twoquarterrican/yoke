@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import partial
 import asyncio
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,6 +21,7 @@ from runtime.api.cli.test_onboard_wizard_github_navigation_safety import (  # no
     _row_values,
     _stored_revoked_config,
 )
+from yoke_cli.config import hosted_machine_browser
 from yoke_cli.config import onboard_wizard_flow_clone  # noqa: E402
 from yoke_cli.config import onboard_wizard_flow_clone_source  # noqa: E402
 from yoke_cli.config import onboard_wizard_flow_github as github_flow  # noqa: E402
@@ -253,9 +255,9 @@ def test_project_access_browser_failure_renders_copyable_settings_url(
         return bool(failure)
 
     monkeypatch.setattr(
-        onboard_wizard_project_github.webbrowser,
-        "open",
-        open_browser,
+        onboard_wizard_project_github,
+        "open_url",
+        partial(hosted_machine_browser.open_url, browser_open=open_browser),
     )
     captured = {"body": ""}
 

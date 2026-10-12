@@ -76,6 +76,11 @@ def open_url(
     Other platforms try ``webbrowser.open`` first. macOS then tries ``open``; WSL tries
     ``wslview`` and ``explorer.exe`` to reach the Windows browser. Every
     failed attempt is retained for the caller's diagnostics.
+
+    An injected *browser_open* replaces the whole real chain: its failure is
+    the answer, and no native command runs after it. Only an injected
+    *macos_open* still runs as the macOS second route, so a caller that fakes
+    one opener can never reach the operator's real browser through another.
     """
     env = os.environ if environ is None else environ
     is_wsl = platform == "linux" and (
@@ -92,7 +97,8 @@ def open_url(
         attempts.append("webbrowser.open returned False")
     except Exception as exc:  # noqa: BLE001 - every failure is recorded, not raised
         attempts.append(f"webbrowser.open raised {type(exc).__name__}: {exc}")
-    if is_wsl:
+    native_fallback = browser_open is None
+    if is_wsl and native_fallback:
         for executable in ("wslview", "explorer.exe"):
             path = shutil.which(executable)
             if path is None:
@@ -119,9 +125,10 @@ def open_url(
                 f"{executable} exited {completed.returncode}: "
                 + ((completed.stderr or "").strip() or "no output")
             )
-    if platform == MACOS_PLATFORM:
+    macos_launch = macos_open or (_run_macos_open if native_fallback else None)
+    if platform == MACOS_PLATFORM and macos_launch is not None:
         try:
-            completed = (macos_open or _run_macos_open)(url)
+            completed = macos_launch(url)
         except (OSError, subprocess.SubprocessError) as exc:
             attempts.append(f"open command failed: {type(exc).__name__}: {exc}")
         else:

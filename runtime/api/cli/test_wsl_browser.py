@@ -24,12 +24,12 @@ def test_wslview_then_explorer_reach_the_windows_browser(monkeypatch, first_stat
         return subprocess.CompletedProcess(argv, status, "", "failed" if status else "")
 
     monkeypatch.setattr(browser.subprocess, "run", run)
+    monkeypatch.setattr(browser.webbrowser, "open", lambda _: False)
     url = "http://localhost:8060/?token=a&other=b"
     result = browser.open_url(
         url,
         platform="linux",
         environ={"WSL_DISTRO_NAME": "Ubuntu"},
-        browser_open=lambda _: False,
     )
     assert result.opened
     assert result.method == ("wslview" if first_status == 0 else "explorer.exe")
@@ -39,12 +39,27 @@ def test_wslview_then_explorer_reach_the_windows_browser(monkeypatch, first_stat
 
 def test_wsl_missing_openers_report_recovery_evidence(monkeypatch):
     monkeypatch.setattr(browser.shutil, "which", lambda _: None)
+    monkeypatch.setattr(browser.webbrowser, "open", lambda _: False)
     result = browser.open_url(
         "https://example.invalid",
         platform="linux",
         environ={"WSL_INTEROP": "/run/interop"},
-        browser_open=lambda _: False,
     )
     assert not result.opened
     assert "wslview unavailable" in result.reason
     assert "explorer.exe unavailable" in result.reason
+
+
+def test_an_injected_opener_never_reaches_the_windows_browser(monkeypatch):
+    monkeypatch.setattr(
+        browser.shutil, "which", lambda name: pytest.fail(f"probed {name}")
+    )
+    result = browser.open_url(
+        "https://example.invalid",
+        platform="linux",
+        environ={"WSL_DISTRO_NAME": "Ubuntu"},
+        browser_open=lambda _: False,
+    )
+    assert result == browser.BrowserOpenResult(
+        opened=False, reason="webbrowser.open returned False"
+    )

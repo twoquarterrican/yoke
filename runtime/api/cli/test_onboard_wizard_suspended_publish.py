@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import partial
 import asyncio
 
 import pytest
@@ -13,7 +14,9 @@ from runtime.api.cli.test_yoke_operations_cli_onboard_wizard_publish_capability 
     _body_text,
     _github_config,
     _mark_connected,
+    _stubs,  # noqa: F401 - autouse: keep the wizard off the real machine
 )
+from yoke_cli.config import hosted_machine_browser
 from yoke_cli.config import machine_config  # noqa: E402
 from yoke_cli.config import onboard_wizard_flow_publish as publish_flow  # noqa: E402
 from yoke_cli.config import onboard_wizard_project_screens as screens  # noqa: E402
@@ -32,7 +35,11 @@ def test_suspended_administration_installation_never_opens_empty_owner_picker(
             suspended=True,
         ),
     )
-    monkeypatch.setattr(publish_flow.webbrowser, "open", opened.append)
+    monkeypatch.setattr(
+        publish_flow,
+        "open_url",
+        partial(hosted_machine_browser.open_url, browser_open=opened.append),
+    )
     app, _spy = make_app()
 
     async def scenario() -> None:

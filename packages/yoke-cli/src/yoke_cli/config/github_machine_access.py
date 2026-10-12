@@ -107,7 +107,6 @@ def open_install_page(
     error_type: type[Exception] = RuntimeError,
 ) -> None:
     """Open the profile-derived App installation page, if available."""
-    import webbrowser
     from yoke_cli.config.hosted_machine_browser import open_url
 
     install_url = str(report.get("install_url") or "").strip()
@@ -118,9 +117,7 @@ def open_install_page(
         )
     opened = False
     try:
-        opened = open_url(
-            install_url, browser_open=browser_open or webbrowser.open
-        ).opened
+        opened = open_url(install_url, browser_open=browser_open).opened
     except Exception:
         pass
     report.update({"install_url": install_url, "install_browser_opened": opened})

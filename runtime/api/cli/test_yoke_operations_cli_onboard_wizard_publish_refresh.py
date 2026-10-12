@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import partial
 import asyncio
 
 import pytest
@@ -21,6 +22,7 @@ from runtime.api.cli.test_yoke_operations_cli_onboard_wizard_publish_capability 
     screens,
     skip_hosting,
 )
+from yoke_cli.config import hosted_machine_browser
 from yoke_cli.config import onboard_wizard_flow_publish_manual as manual_flow
 from yoke_cli.config import onboard_destinations
 
@@ -66,7 +68,11 @@ def test_manual_create_refresh_selects_exact_repo_and_continues_in_run(
         }
     )
     monkeypatch.setattr(machine_config, "github_config", lambda _path: github)
-    monkeypatch.setattr(publish_flow.webbrowser, "open", opened.append)
+    monkeypatch.setattr(
+        publish_flow,
+        "open_url",
+        partial(hosted_machine_browser.open_url, browser_open=opened.append),
+    )
     report = {
         "ok": True,
         "ready": True,

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from functools import partial
 import json
 from types import SimpleNamespace
 
 import pytest
 
+from yoke_cli.config import hosted_machine_browser
 from yoke_cli.commands import universe_ui as commands, universe_ui_remote as remote
 from yoke_contracts.browser_sign_in import (
     BROWSER_SIGN_IN_MAX_LENGTH,
@@ -58,7 +60,12 @@ def test_up_opens_server_door_with_active_credential(
 
     monkeypatch.setattr(remote, "request_json", exchange)
     monkeypatch.setattr(
-        commands.webbrowser, "open", lambda url: seen.append(url) or True
+        commands,
+        "open_url",
+        partial(
+            hosted_machine_browser.open_url,
+            browser_open=lambda url: seen.append(url) or True,
+        ),
     )
     assert commands.ui_up(["--json"]) == 0
     report = json.loads(capsys.readouterr().out)

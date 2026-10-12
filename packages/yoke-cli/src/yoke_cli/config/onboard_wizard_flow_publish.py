@@ -17,7 +17,6 @@ clone re-home paths.
 from __future__ import annotations
 
 import asyncio
-import webbrowser
 
 from yoke_cli.config.hosted_machine_browser import open_url
 from pathlib import Path
@@ -142,7 +141,7 @@ class PublishFlow:
     def _open_repository_creation_page(self: _Shell) -> tuple[str, bool]:
         url = endpoint_pair(self.result).new_repository_url()
         try:
-            opened = open_url(url, browser_open=webbrowser.open).opened
+            opened = open_url(url).opened
         except Exception:
             opened = False
         self._manual_repository_url = url

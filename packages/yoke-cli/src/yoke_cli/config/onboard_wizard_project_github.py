@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from typing import Any
-import webbrowser
 
 from yoke_cli.config.hosted_machine_browser import open_url
 
@@ -102,7 +101,7 @@ class ProjectGithubAccessFlow:
             else self._project_github_access_url()
         )
         try:
-            opened = open_url(url, browser_open=webbrowser.open).opened
+            opened = open_url(url).opened
         except Exception:
             opened = False
         self._project_github_access_opened = opened

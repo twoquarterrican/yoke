@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import partial
 import asyncio
 
 import pytest
@@ -9,6 +10,7 @@ import pytest
 pytest.importorskip("textual")
 
 from yoke_contracts import github_origin  # noqa: E402
+from yoke_cli.config import hosted_machine_browser
 from yoke_cli.config import github_publish  # noqa: E402
 from yoke_cli.config import machine_config  # noqa: E402
 from yoke_cli.config import onboard_machine_github  # noqa: E402
@@ -92,7 +94,11 @@ def test_unavailable_app_publish_opens_github_and_keeps_project_local(
             "issues": [{"message": "GitHub App configuration is unavailable."}],
         },
     )
-    monkeypatch.setattr(publish_flow.webbrowser, "open", opened.append)
+    monkeypatch.setattr(
+        publish_flow,
+        "open_url",
+        partial(hosted_machine_browser.open_url, browser_open=opened.append),
+    )
     app, spy = make_app()
 
     async def scenario() -> None:
@@ -144,7 +150,11 @@ def test_default_app_grant_opens_github_and_keeps_project_local(monkeypatch) -> 
             administration=False,
         ),
     )
-    monkeypatch.setattr(publish_flow.webbrowser, "open", opened.append)
+    monkeypatch.setattr(
+        publish_flow,
+        "open_url",
+        partial(hosted_machine_browser.open_url, browser_open=opened.append),
+    )
     app, _spy = make_app()
     captured = {"body": ""}
 
@@ -183,7 +193,11 @@ def test_manual_create_browser_failure_renders_copyable_repository_url(
             raise failure
         return bool(failure)
 
-    monkeypatch.setattr(publish_flow.webbrowser, "open", open_browser)
+    monkeypatch.setattr(
+        publish_flow,
+        "open_url",
+        partial(hosted_machine_browser.open_url, browser_open=open_browser),
+    )
     app, _spy = make_app()
     captured = {"body": ""}
 
@@ -240,7 +254,11 @@ def test_selected_installation_never_attempts_one_step_repository_creation(
             repository_selection="selected",
         ),
     )
-    monkeypatch.setattr(publish_flow.webbrowser, "open", opened.append)
+    monkeypatch.setattr(
+        publish_flow,
+        "open_url",
+        partial(hosted_machine_browser.open_url, browser_open=opened.append),
+    )
     monkeypatch.setattr(
         onboard_wizard_flow,
         "fetch_repo_owners",
