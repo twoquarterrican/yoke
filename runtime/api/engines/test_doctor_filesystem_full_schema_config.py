@@ -144,7 +144,8 @@ class TestSchemaAndConfigChecks:
         assert rec.results[0].result == "WARN"
         assert "checkout missing or not a git checkout" in rec.results[0].detail
         assert str(gone) in rec.results[0].detail
-        assert "env=prod-db-admin" in rec.results[0].detail
+        assert "project_id=3" in rec.results[0].detail
+        assert "env=" not in rec.results[0].detail
 
     def test_config_validation_passes_when_checkout_mappings_exist(self, tmp_path):
         checkout = tmp_path / "checkout"

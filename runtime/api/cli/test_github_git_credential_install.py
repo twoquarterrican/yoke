@@ -257,30 +257,32 @@ def test_disconnect_removes_helpers_from_checkouts_in_every_env(
         )
 
 
-def test_all_registered_checkouts_ignores_malformed_and_missing_rows(
-    tmp_path: Path,
-) -> None:
+def test_all_registered_checkouts_filters_missing_paths(tmp_path: Path) -> None:
     checkout = tmp_path / "repo"
     checkout.mkdir()
     config = tmp_path / "config.json"
     config.write_text(
         json.dumps(
             {
-                "schema_version": 1,
                 "projects": [
                     {"checkout": str(checkout), "project_id": 1},
-                    {"checkout": str(checkout / ".." / "repo"), "project_id": 2},
-                    {"checkout": str(tmp_path / "missing"), "project_id": 3},
-                    {"checkout": "", "project_id": 4},
-                    {"checkout": str(tmp_path / "bad-id"), "project_id": "nope"},
-                    "not-an-object",
-                ],
+                    {"checkout": str(tmp_path / "missing"), "project_id": 2},
+                ]
             }
-        ),
-        encoding="utf-8",
+        )
     )
+    assert machine_config.all_registered_checkouts(config, existing_only=True) == [
+        checkout.resolve()
+    ]
 
-    assert machine_config.all_registered_checkouts(
-        config,
-        existing_only=True,
-    ) == [checkout.resolve()]
+
+def test_all_registered_checkouts_refuses_invalid_config(tmp_path: Path) -> None:
+    import pytest
+
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"projects": [{"checkout": "", "project_id": 1}]}))
+    with pytest.raises(
+        contract.MachineConfigContractError,
+        match="project_checkout_invalid.*repair projects",
+    ):
+        machine_config.all_registered_checkouts(config)

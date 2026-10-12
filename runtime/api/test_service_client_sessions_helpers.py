@@ -17,6 +17,7 @@ from runtime.api.test_dependency_schema import (
 from runtime.api.test_service_client import _run_client
 from runtime.api.test_constants import TEST_MODEL_ID
 from yoke_core.domain.work_claim_target_sql import TARGET_KIND_CHECK_SQL
+from yoke_contracts.machine_config.schema import upsert_project_entry
 
 # Session/claim/event/actor tables the session lifecycle reads. ``actors``
 # is required on Postgres: register_session's validate_actor_id probe queries it
@@ -242,9 +243,11 @@ def _map_session_workspace_home(
         payload = {}
         if config_file.is_file():
             payload = json.loads(config_file.read_text(encoding="utf-8"))
-        projects = dict(payload.get("projects") or {})
-        projects[home] = {"project_id": project_id}
-        payload["projects"] = projects
+        payload["projects"] = upsert_project_entry(
+            payload.get("projects"),
+            checkout=home,
+            project_id=project_id,
+        )
         config_file.write_text(json.dumps(payload), encoding="utf-8")
 
     def _project_id(repo_root, path=None):
