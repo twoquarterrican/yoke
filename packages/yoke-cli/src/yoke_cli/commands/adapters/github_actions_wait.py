@@ -120,9 +120,7 @@ def _next_read_delay(elapsed_seconds: int) -> float:
     import importlib
 
     module = importlib.import_module("yoke_core.domain.github_poll_schedule")
-    return float(
-        module.next_read_delay(elapsed_seconds, module.CI_SUITE_SCHEDULE)
-    )
+    return float(module.next_read_delay(elapsed_seconds, module.CI_SUITE_SCHEDULE))
 
 
 __all__ = ["wait_for_ci_completion"]

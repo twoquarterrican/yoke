@@ -65,8 +65,7 @@ class PollSchedule:
             previous = offset
         if (
             self.quiet_until_seconds
-            and self.quiet_until_seconds - previous
-            < MINIMUM_POLL_INTERVAL_SECONDS
+            and self.quiet_until_seconds - previous < MINIMUM_POLL_INTERVAL_SECONDS
         ):
             raise ValueError(
                 f"quiet window ending at {self.quiet_until_seconds}s follows "
@@ -105,7 +104,8 @@ STEADY_SCHEDULE = PollSchedule()
 
 
 def next_read_delay(
-    elapsed_seconds: float, schedule: PollSchedule = STEADY_SCHEDULE,
+    elapsed_seconds: float,
+    schedule: PollSchedule = STEADY_SCHEDULE,
 ) -> float:
     """Seconds to wait before the next read, from a read just taken.
 

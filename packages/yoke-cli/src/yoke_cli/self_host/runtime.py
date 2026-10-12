@@ -26,6 +26,7 @@ from yoke_contracts.self_host_handoff import (
 #: How long ``docker compose up --wait`` may take for one service to be healthy.
 HEALTH_WAIT_SECONDS = 120
 
+
 class SelfHostRuntimeError(RuntimeError):
     """The bootstrap refused without exposing credentials."""
 

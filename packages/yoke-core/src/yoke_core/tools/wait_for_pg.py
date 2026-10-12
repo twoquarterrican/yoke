@@ -71,9 +71,7 @@ def wait_for_postgres(
     ``db_backend.resolve_pg_dsn(MAINTENANCE_DBNAME)`` — the same maintenance
     target ``conftest.setup_ambient_test_db``'s admin connection uses.
     """
-    target = (
-        dsn if dsn is not None else db_backend.resolve_pg_dsn(MAINTENANCE_DBNAME)
-    )
+    target = dsn if dsn is not None else db_backend.resolve_pg_dsn(MAINTENANCE_DBNAME)
     redacted = _redact_dsn(target)
     last_error: Optional[Exception] = None
     for attempt in range(1, attempts + 1):

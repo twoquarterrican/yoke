@@ -33,7 +33,7 @@ _QUIET_THEN_OUTCOME = (
     "import sys, time\n"
     "time.sleep(0.2)\n"
     "sys.stdout.write('SUMMARY verdict=pass\\n')\n"
-    "sys.stdout.write('{\"verdict\": \"pass\"}\\n')\n"
+    'sys.stdout.write(\'{"verdict": "pass"}\\n\')\n'
     "sys.stdout.flush()\n"
 )
 
@@ -163,9 +163,7 @@ class TestOrdinaryOutputIsUnchanged:
         assert '{"verdict": "pass"}' in raw
         assert last_summary is not None
 
-    def test_a_chatty_child_is_captured_in_order(
-        self, monkeypatch, tmp_path
-    ) -> None:
+    def test_a_chatty_child_is_captured_in_order(self, monkeypatch, tmp_path) -> None:
         monkeypatch.setenv("YOKE_WATCH_QUIET_HEARTBEAT_SECONDS", "5")
         proc = _spawn(
             "import sys\n"

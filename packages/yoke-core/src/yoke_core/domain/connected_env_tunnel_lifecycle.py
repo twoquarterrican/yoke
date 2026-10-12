@@ -66,7 +66,9 @@ def _find_tunnel_pids(spec: TunnelSpec) -> List[int]:
     try:
         result = subprocess.run(
             ["pgrep", "-f", "--", pattern],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
     except (OSError, subprocess.SubprocessError):
         return []
@@ -98,7 +100,9 @@ def _listening_pids(port: int) -> List[int]:
     try:
         result = subprocess.run(
             ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-t"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
     except (OSError, subprocess.SubprocessError):
         return []
@@ -109,7 +113,9 @@ def _process_command(pid: int) -> str:
     try:
         result = subprocess.run(
             ["ps", "-p", str(pid), "-o", "command="],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
     except (OSError, subprocess.SubprocessError):
         return ""
@@ -120,11 +126,7 @@ def _pid_matches_tunnel(pid: int, spec: TunnelSpec) -> bool:
     command = _process_command(pid)
     if not command:
         return False
-    return (
-        "ssh" in command
-        and spec.forward_spec in command
-        and spec.bastion in command
-    )
+    return "ssh" in command and spec.forward_spec in command and spec.bastion in command
 
 
 def _port_blocker_detail(spec: TunnelSpec) -> str:
@@ -158,7 +160,9 @@ def _start_tunnel(spec: TunnelSpec) -> None:
     argv = _build_ssh_argv(spec)
     try:
         result = subprocess.run(
-            argv, capture_output=True, text=True,
+            argv,
+            capture_output=True,
+            text=True,
             timeout=TUNNEL_START_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as exc:
@@ -168,8 +172,7 @@ def _start_tunnel(spec: TunnelSpec) -> None:
         ) from exc
     except (OSError, subprocess.SubprocessError) as exc:
         raise ConnectedEnvUnavailable(
-            f"ssh tunnel start could not run [{spec.redacted}]: "
-            f"{redact(str(exc))}"
+            f"ssh tunnel start could not run [{spec.redacted}]: {redact(str(exc))}"
         ) from exc
     if result.returncode != 0:
         detail = redact((result.stderr or result.stdout or "").strip())

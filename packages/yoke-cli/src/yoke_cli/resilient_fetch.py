@@ -176,7 +176,9 @@ def _verified_result(
                 f"Content-Length {declared_size} does not match {len(body)} bytes",
             )
     if len(body) < min_bytes:
-        _verification_error(url, attempts, f"received {len(body)} bytes; minimum is {min_bytes}")
+        _verification_error(
+            url, attempts, f"received {len(body)} bytes; minimum is {min_bytes}"
+        )
     if max_bytes is not None and len(body) > max_bytes:
         _verification_error(url, attempts, f"received more than {max_bytes} bytes")
     if expected_size is not None and len(body) != expected_size:

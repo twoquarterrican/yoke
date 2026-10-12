@@ -54,6 +54,7 @@ FAILED = CIOutcome("failed")
 
 def _parent():
     from yoke_core.engines import merge_worktree as _mw
+
     return _mw
 
 
@@ -80,9 +81,8 @@ def _project_declares_ci_workflow(ctx: MergeContext) -> bool:
         from yoke_core.domain.projects_seed_ci_workflow import (
             CI_WORKFLOW_CAPABILITY_TYPE,
         )
-        settings = cmd_capability_get_settings(
-            project, CI_WORKFLOW_CAPABILITY_TYPE
-        )
+
+        settings = cmd_capability_get_settings(project, CI_WORKFLOW_CAPABILITY_TYPE)
         if not settings:
             return False
         data = json.loads(settings)
@@ -166,9 +166,7 @@ def _wait_for_ci(pr_num: str, ctx: MergeContext) -> CIOutcome:
         if not _project_declares_ci_workflow(ctx):
             _print("(No CI checks configured — skipping)")
             return SKIPPED_NO_CHECKS
-        reg_timeout = runtime_settings.get_seconds(
-            "ci_registration_timeout", 120
-        )
+        reg_timeout = runtime_settings.get_seconds("ci_registration_timeout", 120)
         announce_designed_wait(
             f"declared CI checks to register on PR #{pr_num}",
             max_wait_seconds=reg_timeout,
@@ -198,10 +196,7 @@ def _wait_for_ci(pr_num: str, ctx: MergeContext) -> CIOutcome:
                 initial_state = reg_state
                 break
         else:
-            _print(
-                "(CI workflow declared but no checks registered in time "
-                "— skipping)"
-            )
+            _print("(CI workflow declared but no checks registered in time — skipping)")
             return SKIPPED_UNREGISTERED
 
     elapsed = 0
