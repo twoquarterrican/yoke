@@ -166,13 +166,13 @@ def run_pipeline(
         environment_name,
         project_repo_path,
     )
-
     ok, first_item, branch = timed_call(
         "branch_verification",
         _resolve_and_verify_branch,
         member_items,
         project_repo_path,
         target_branch=gate_branch,
+        source_sha=release_lineage,
         first_branch=str(first_member.get("branch") or ""),
         first_item_label=str(first_member.get("public_ref") or ""),
         sd=sd,

@@ -196,6 +196,7 @@ class TestResolveAndVerifyBranch:
                 [],
                 "/repo",
                 target_branch="main",
+                source_sha="a" * 40,
                 sd=None,
             )
         assert (ok, first_item, branch) == (True, "", "")
@@ -212,12 +213,13 @@ class TestResolveAndVerifyBranch:
                 ["42", "43"],
                 str(tmp_path),
                 target_branch="main",
+                source_sha="a" * 40,
                 first_branch="feature-x",
                 sd=None,
             )
         assert (ok, first_item, branch) == (True, "42", "feature-x")
         verify.assert_called_once_with(
-            "feature-x", "42", str(tmp_path), "main", public_ref=""
+            "feature-x", "42", str(tmp_path), "a" * 40, public_ref=""
         )
 
     def test_failed_verification_propagates_not_ok(self, tmp_path, capsys):
@@ -231,6 +233,7 @@ class TestResolveAndVerifyBranch:
                 ["42"],
                 str(tmp_path),
                 target_branch="main",
+                source_sha="a" * 40,
                 first_branch="feature-x",
                 sd=None,
             )
