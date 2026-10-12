@@ -42,6 +42,7 @@ class Model:
     plan_files: list = field(default_factory=list)
     plan_rows: dict = field(default_factory=dict)
     evidence_files: list = field(default_factory=list)
+    evidence: dict = field(default_factory=dict)
     boundaries: dict = field(default_factory=dict)
     gaps: dict = field(default_factory=dict)
     docs_graph: dict = field(default_factory=dict)
@@ -122,6 +123,9 @@ def load() -> Model:
         if data is not None:
             data["stem"] = path.stem
             model.evidence_files.append(data)
+            for record in data.get("records", []):
+                _register(model, model.evidence, f"{path.stem}/{record['id']}",
+                          record, relative(path))
     for name, table in (("boundaries", model.boundaries), ("gaps", model.gaps)):
         data = _read(model, MODEL_ROOT / f"{name}.json")
         for record in (data or {}).get("records", []):
@@ -183,13 +187,10 @@ def all_records(model: Model):
         ("teaching", model.teaching), ("scenario", model.scenarios),
         ("lesson", model.lessons), ("plan", model.plan_rows),
         ("boundary", model.boundaries), ("gap", model.gaps),
+        ("evidence", model.evidence),
     ):
         for record_id, record in table.items():
             yield kind, record_id, record
-    for group in model.evidence_files:
-        for record in group.get("records", []):
-            record.setdefault("file", f"docs/teaching/model/evidence/{group['stem']}.json")
-            yield "evidence", f"{group['stem']}/{record['id']}", record
 
 
 def validate(model: Model, live: dict, repo_files: set) -> None:

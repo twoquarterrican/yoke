@@ -264,9 +264,13 @@ class Pages:
                   ("Lessons", "scenarios.html", self.m.lessons),
                   ("Plan rows", "plan-coverage.html", self.m.plan_rows),
                   ("Boundaries", "boundaries.html", self.m.boundaries),
-                  ("Gaps", "gaps.html", self.m.gaps))
+                  ("Gaps", "gaps.html", self.m.gaps),
+                  ("Evidence records", "evidence.html", self.m.evidence))
         unmapped = sum(1 for ids in self.cov.values() if not ids)
-        body = wrap(f"<p>{esc(intro)}</p>") + ["<ul>"]
+        recipe = link("index.html", "../README.md", "README")
+        body = wrap(f"<p>{esc(intro)}</p>") + wrap(
+            f"<p>The {recipe} holds the edit, rebuild and check recipe, the "
+            "Platform route and the live command and docs-graph pages.</p>") + ["<ul>"]
         body += [f"<li>{link('index.html', target, label)}: {len(table)}</li>"
                  for label, target, table in counts]
         body.append(f"<li>Concepts with no direct plan or teaching mapping: {unmapped}</li>")

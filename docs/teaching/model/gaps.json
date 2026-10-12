@@ -105,8 +105,7 @@
    "title": "Root help omits resolvable commands",
    "status": "observed",
    "text": "FIRST-USER entry 35 records that root help omits `yoke dash` and `yoke task` although both resolve (field-note 68159). The live command crosswalk lists the registry view; root-help completeness stays unverified until entry 35 lands.",
-   "plan_refs": ["FIRST-USER.35"],
-   "work_items": []
+   "plan_refs": ["FIRST-USER.35"]
   }
  ]
 }

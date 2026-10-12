@@ -100,7 +100,7 @@ def check_links(model, views: dict[str, str], repo_files: set[str]) -> None:
             target = target.replace("&amp;", "&")
             file_part, _, anchor = target.partition("#")
             resolved = _resolve(PurePosixPath(path).parent, file_part) if file_part else path
-            if resolved in views or resolved == "style.css":
+            if resolved in views:
                 if anchor and anchor not in anchors.get(resolved, set()):
                     model.problem("DANGLING_ANCHOR", f"docs/teaching/views/{path}",
                                   f"{target} names a missing anchor")
