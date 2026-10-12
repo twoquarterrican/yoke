@@ -43,7 +43,7 @@ import {
   createProjectControls,
   loadOrganizationName,
   loadProjectRoster,
-  loadScreenSelections,
+  loadScreenSelections, mountSelectionRefresh,
   loadWordmark,
   saveScreenSelection,
 } from "./universe_app_shell_support.js";
@@ -322,6 +322,7 @@ export function mountUniverseApp(rootNode, options = {}) {
   });
 
   const preferencesFetched = loadScreenSelections(client, scopeSelections);
+  const disposeSelectionRefresh = mountSelectionRefresh(client, scopeSelections, windowNode, documentNode, navigation, renderRoute, () => mounted && projectsLoaded);
 
   steeringColors.refresh();
 
@@ -334,7 +335,7 @@ export function mountUniverseApp(rootNode, options = {}) {
   return createUnmountHandle(UNIVERSE_APP_CONTRACT_VERSION, () => {
     mounted = false;
     disposeHostSection();
-    disposeTelemetry();
+    disposeTelemetry(); disposeSelectionRefresh();
     disposeBuildUpdate();
     if (typeof context.abortView === "function") context.abortView();
     navigation.dispose();

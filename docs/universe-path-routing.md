@@ -4,6 +4,12 @@ The workbench uses document paths. Its local base is empty; hosted shells pass
 `basePath: "/orgs/<encoded-slug>"` to `mountUniverseApp`. A page address is
 `BASE/view[/detail]`, or `BASE/deployments/tab[/detail]`, plus its query string.
 The root base opens Strategy, subject to the existing last-page preference.
+The last-page preference saves the destination and its query without `project`
+or `selection`; replay uses that screen's saved scope. A deep link or history
+entry applies scope in the current tab only. Project preferences change on
+explicit picker choices or removal of inaccessible project IDs, never on
+navigation or a default focus. Returning to a tab re-reads the actor's saved
+selections; a picker choice made during that read wins.
 
 `yoke_core/ui/contracts/dashboard-routes.json` ships in the product wheel.
 Hosts read `views`, `tabs`, `localBasePath`, and `hostedBasePathTemplate` from

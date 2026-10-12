@@ -1,6 +1,6 @@
 import { callFunction } from "./universe_view_support.js";
 import { savedSortViews } from "./universe_project_selection.js";
-import { createScopePicker, SCOPE_MULTI, SCOPE_NONE, SCOPE_SINGLE } from "./universe_navigation.js";
+import { parseUniverseRoute, createScopePicker, SCOPE_MULTI, SCOPE_NONE, SCOPE_SINGLE } from "./universe_navigation.js";
 import { selectionRoute } from "./universe_selection_routes.js";
 import { scopeForRoute } from "./universe_destinations.js";
 
@@ -40,6 +40,29 @@ function readScreenSelections(client) {
 
 export function refreshScreenSort(client, scopeSelections, viewId) {
   return scopeSelections.refreshSortFor(viewId, () => readScreenSelections(client));
+}
+
+export function mountSelectionRefresh(client, selections, windowNode, documentNode, navigation, render, active) {
+  let pending = null;
+  const refresh = () => {
+    if (pending || !active()) return;
+    const href = navigation.current();
+    pending = selections.refreshSelections(() => readScreenSelections(client)).then((updated) => {
+      if (!updated || !active() || navigation.current() !== href) return;
+      const route = new URL(href, "http://workbench.local");
+      route.searchParams.delete("selection");
+      if (!parseUniverseRoute(href, navigation.basePath).detail) route.searchParams.delete("project");
+      navigation.replace(route.pathname + route.search);
+      render();
+    }).finally(() => { pending = null; });
+  };
+  const visible = () => { if (documentNode.visibilityState === "visible") refresh(); };
+  windowNode.addEventListener("focus", refresh);
+  documentNode.addEventListener?.("visibilitychange", visible);
+  return () => {
+    windowNode.removeEventListener("focus", refresh);
+    documentNode.removeEventListener?.("visibilitychange", visible);
+  };
 }
 
 export function loadScreenSelections(client, scopeSelections) {

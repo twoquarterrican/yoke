@@ -61,6 +61,11 @@ export function selectionParam(selection) {
 export function createProjectSelection(saveView, onNotice, saveSort) {
   const views = new Map();
   const sorts = new Map();
+  let selectionWrites = Promise.resolve();
+  let selectionRevision = 0;
+  // Keep the saved choice separate from transient route scope so roster
+  // repair cannot accidentally persist a deep link.
+  const remembered = new Map();
   let sortWrites = Promise.resolve();
   let sortRevision = 0;
   // `ready` gates project-selection writes: until the initial server read has genuinely
@@ -130,6 +135,7 @@ export function createProjectSelection(saveView, onNotice, saveSort) {
   // bootstrap uses this to install what the server already has on record.
   state.seed = (viewId, selection, focus = null) => {
     views.set(viewId, { selection, focus });
+    remembered.set(viewId, { selection, focus });
   };
   // Marks the initial server read as genuinely settled — called only after
   // that read succeeds, whether or not it had anything to seed.
@@ -139,31 +145,52 @@ export function createProjectSelection(saveView, onNotice, saveSort) {
     state.sortReady = sortViews !== null;
     state.sortViews = new Set(sortViews || []);
   };
-  state.saveFor = (viewId) => {
+  state.refreshSelections = async (readPreferences) => {
+    const revision = selectionRevision;
+    await selectionWrites.catch(() => {});
+    try {
+      const result = await readPreferences();
+      if (revision !== selectionRevision) return false;
+      views.clear();
+      remembered.clear();
+      for (const [viewId, view] of Object.entries(result.views || {})) {
+        state.seed(viewId, view.selection, view.focus);
+      }
+      state.ready = true;
+      return true;
+    } catch {
+      if (revision !== selectionRevision) return false;
+      state.setNotice("Saved projects could not be loaded. Showing the last known selection; return to this tab or reload to retry.");
+      return false;
+    }
+  };
+  const save = (viewId, entry) => {
+    selectionRevision += 1;
+    remembered.set(viewId, { ...entry });
     if (!saveView || !state.ready) return;
-    const entry = entryFor(viewId);
-    Promise.resolve()
-      .then(() => saveView(viewId, entry.selection, entry.focus))
-      .catch(() => {
-        state.setNotice("Project selection could not be saved. It may not " +
-          "carry over to another tab, session, or reload.");
-      });
+    selectionWrites = selectionWrites.catch(() => {}).then(() => saveView(viewId, entry.selection, entry.focus));
+    selectionWrites.catch(() => state.setNotice(
+      "Project selection could not be saved. Choose the projects again to retry."));
+  };
+  state.saveFor = (viewId) => save(viewId, { ...entryFor(viewId) });
+  state.purgeFor = (viewId, projects) => {
+    const prior = remembered.get(viewId);
+    if (!prior) return;
+    const selection = projectSelection(projects, prior.selection);
+    const focus = knownProjectId(projects, prior.focus);
+    const ids = Array.isArray(prior.selection) ? prior.selection : [];
+    if (ids.some((id) => !knownProjectId(projects, id)) || focus !== prior.focus) {
+      save(viewId, { selection, focus });
+    }
   };
   return state;
 }
 
-// Normalizes a view's selection/focus against the live project roster,
-// persists only when normalization actually changed something, and
-// returns the resolved selection.
+// Route scope changes only this mount. Only roster removal repairs a saved choice.
 export function resolveProjectSelection(state, viewId, projects, explicitSelection) {
-  const priorSelection = state.selectionFor(viewId);
-  const priorFocus = state.focusFor(viewId);
-  const selection = projectSelection(projects, explicitSelection ?? priorSelection);
-  const focus = knownProjectId(projects, priorFocus);
+  state.purgeFor(viewId, projects);
+  const selection = projectSelection(projects, explicitSelection ?? state.selectionFor(viewId));
   state.setSelectionFor(viewId, selection);
-  state.setFocusFor(viewId, focus);
-  if (selectionParam(selection) !== selectionParam(priorSelection) || focus !== priorFocus) {
-    state.saveFor(viewId);
-  }
+  state.setFocusFor(viewId, knownProjectId(projects, state.focusFor(viewId)));
   return selection;
 }

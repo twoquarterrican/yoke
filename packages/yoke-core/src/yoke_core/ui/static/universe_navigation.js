@@ -166,7 +166,6 @@ export function scopeForEntry(entry, routeProject, projects, selections, routeSe
   const focus = knownProjectId(projects, routeProject) ||
     priorFocus || candidates[0] || null;
   selections.setFocusFor(entry.id, focus);
-  if (focus !== priorFocus) selections.saveFor(entry.id);
   return focus;
 }
 

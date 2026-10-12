@@ -106,6 +106,7 @@ test("a failed persistence write surfaces a notice; the in-memory value stays us
   const state = createProjectSelection(() => Promise.reject(new Error("network down")));
   state.markReady();
   assert.deepEqual(resolveProjectSelection(state, "items", projects, "2"), ["2"]);
+  state.saveFor("items");
   await settle();
   assert.match(state.notice, /could not be saved/);
   assert.deepEqual(state.selectionFor("items"), ["2"]);
@@ -125,7 +126,7 @@ test("before the initial read settles, normalization never persists a default ov
   state.markReady();
   assert.deepEqual(resolveProjectSelection(state, "items", projects, "3"), ["3"]);
   await settle();
-  assert.deepEqual(saved, ["items"]);
+  assert.deepEqual(saved, []);
 });
 
 test("late-rendered and retained host anchors track their own view's selection, including copied detail links", () => {
@@ -202,6 +203,7 @@ async function mountAt(t, hash, client = preferenceClient()) {
     replacements.push(route);
     windowNode.location.href = route;
   } };
+  windowNode.history.pushState = (_state, _title, route) => { windowNode.location.href = route; };
   const root = documentNode.createElement("div");
   const mounted = mountUniverseApp(root, { client });
   t.after(() => mounted.unmount());
@@ -254,7 +256,11 @@ test("history restores explicit All and selection without adding history entries
 test("reload and host remount restore each view's own saved selection; a fresh actor starts independently", async (t) => {
   const client = preferenceClient();
   const first = await mountAt(t, "/items?project=1", client);
-  assert.deepEqual(client.state.views.items?.selection, ["1"]);
+  scopeChips(first.root).find((chip) => chip.textContent === "ALP").dispatchEvent(new Event("click"));
+  await settle();
+  assert.deepEqual(client.state.views.items?.selection, "all");
+  scopeChips(first.root).find((chip) => chip.textContent === "ALP").dispatchEvent(new Event("click"));
+  await settle();
   first.mounted.unmount();
 
   // Same server-backed state (the same actor, a reload or a second tab),
@@ -292,7 +298,8 @@ test("a denied save resolves normally but still surfaces the notice through the 
   // The failed (but resolved, never rejected) save must trigger its own
   // re-render once it settles; if that wiring regresses, this fails instead
   // of a second navigation quietly masking the missing repaint.
-  await navigate("/items?project=2");
+  scopeChips(root).find((chip) => chip.textContent === "BET").dispatchEvent(new Event("click"));
+  await settle();
   assert.match(byClass(root, "scope-context-note")[0].textContent, /could not be saved/);
 });
 
