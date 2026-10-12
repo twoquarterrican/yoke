@@ -168,7 +168,7 @@ def test_selected_admin_authority_does_not_fall_through_to_ambient_dsn(
                         },
                     }
                 },
-                "projects": {},
+                "projects": [],
             }
         ),
         encoding="utf-8",

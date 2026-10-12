@@ -24,8 +24,7 @@ def checkout_for_project_id(
 ) -> Optional[Path]:
     """Return this machine's checkout path for a project id, if configured.
 
-    Env-scoped: matches the checkout whose entry resolves to ``project_id``
-    under the active/requested connection env (ids are per universe).
+    The machine stores one checkout for each project, shared by all connections.
     """
 
     if project_id is None:
@@ -126,8 +125,7 @@ def item_worktree_path(
         active_only=True,
     )
     preferred = [
-        lane for lane in lanes
-        if lane["lane_role"] in {"integration", "implementation"}
+        lane for lane in lanes if lane["lane_role"] in {"integration", "implementation"}
     ]
     lane = (preferred or lanes)[0] if lanes else None
     return Path(str(lane["path"])).expanduser() if lane is not None else None

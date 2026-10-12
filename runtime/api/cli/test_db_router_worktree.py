@@ -91,11 +91,9 @@ class TestWorktreeResolution:
                             },
                         },
                     },
-                    "projects": {
-                        str(repo_root.resolve()): {
-                            "project_id": 1,
-                        },
-                    },
+                    "projects": [
+                        {"checkout": str(repo_root.resolve()), "project_id": 1}
+                    ],
                 }
             ),
             encoding="utf-8",
@@ -104,8 +102,11 @@ class TestWorktreeResolution:
     @staticmethod
     def _clear_authority_env(monkeypatch: pytest.MonkeyPatch) -> None:
         keys = (
-            "YOKE_DB", "YOKE_ROOT", "YOKE_DB_INIT_DONE",
-            "YOKE_DB_INIT_ALLOW", db_backend.PG_DSN_ENV,
+            "YOKE_DB",
+            "YOKE_ROOT",
+            "YOKE_DB_INIT_DONE",
+            "YOKE_DB_INIT_ALLOW",
+            db_backend.PG_DSN_ENV,
             db_backend.PG_DSN_FILE_ENV,
             yoke_connected_env.DISABLE_ENV,
             yoke_connected_env.PYTEST_ENABLE_ENV,

@@ -111,3 +111,13 @@ def test_removal_retains_owned_secret_shared_with_remaining_alias(
     }
     assert _config(machine_home)["active_env"] == "primary"
     assert external.read_text() == "external-token\n"
+
+
+def test_connection_removal_preserves_shared_project_checkouts(machine_home, tmp_path):
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    writer.register_project(checkout, 7)
+    before = _config(machine_home)["projects"]
+    report = writer.remove_connection("retiring")
+    assert report["project_mappings_removed"] == 0
+    assert _config(machine_home)["projects"] == before

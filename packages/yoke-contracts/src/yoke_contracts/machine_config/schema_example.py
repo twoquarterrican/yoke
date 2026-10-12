@@ -92,7 +92,6 @@ def canonical_example_payload() -> dict[str, Any]:
                 {
                     "checkout": "/Users/example/yoke",
                     "project_id": 1,
-                    "env": "prod",
                 },
             ],
             "settings": {},

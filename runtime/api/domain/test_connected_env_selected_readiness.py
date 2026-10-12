@@ -70,7 +70,7 @@ def selected_connections(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dic
                         },
                     },
                 },
-                "projects": {},
+                "projects": [],
             }
         ),
         encoding="utf-8",

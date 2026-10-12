@@ -218,14 +218,7 @@ def test_delivery_uses_freeze_after_recorded_carriage(
             run_fields = {
                 "project": "carrier",
                 "bound_sources": json.dumps(
-                    {
-                        "projects": [
-                            {
-                                "project_id": PROJECT_ID,
-                                "commit_sha": LINEAGE,
-                            }
-                        ]
-                    }
+                    {"projects": [{"project_id": PROJECT_ID, "commit_sha": LINEAGE}]}
                 ),
             }
         insert_deployment_run(

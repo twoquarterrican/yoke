@@ -94,7 +94,7 @@ class TestSchemaAndConfigChecks:
         config_path = tmp_path / ".yoke" / "config.json"
         config_path.parent.mkdir()
         config_path.write_text(
-            json.dumps({"settings": settings, "projects": {}}) + "\n"
+            json.dumps({"settings": settings, "projects": []}) + "\n"
         )
         return config_path
 
@@ -135,13 +135,7 @@ class TestSchemaAndConfigChecks:
             json.dumps(
                 {
                     "settings": {},
-                    "projects": [
-                        {
-                            "checkout": str(gone),
-                            "project_id": 3,
-                            "env": "prod-db-admin",
-                        }
-                    ],
+                    "projects": [{"checkout": str(gone), "project_id": 3}],
                 }
             )
         )
@@ -150,7 +144,8 @@ class TestSchemaAndConfigChecks:
         assert rec.results[0].result == "WARN"
         assert "checkout missing or not a git checkout" in rec.results[0].detail
         assert str(gone) in rec.results[0].detail
-        assert "env=prod-db-admin" in rec.results[0].detail
+        assert "project_id=3" in rec.results[0].detail
+        assert "env=" not in rec.results[0].detail
 
     def test_config_validation_passes_when_checkout_mappings_exist(self, tmp_path):
         checkout = tmp_path / "checkout"
@@ -161,13 +156,7 @@ class TestSchemaAndConfigChecks:
             json.dumps(
                 {
                     "settings": {},
-                    "projects": [
-                        {
-                            "checkout": str(checkout),
-                            "project_id": 1,
-                            "env": "prod",
-                        }
-                    ],
+                    "projects": [{"checkout": str(checkout), "project_id": 1}],
                 }
             )
         )

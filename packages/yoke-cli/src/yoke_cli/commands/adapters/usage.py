@@ -50,7 +50,6 @@ from yoke_cli.commands.adapters.config_write import (
     CONNECTION_SET_USAGE,
     ENV_USE_USAGE,
     PROJECT_REGISTER_USAGE,
-    STAMP_PROJECT_ENV_USAGE,
 )
 from yoke_cli.commands.adapters.config import ENV_LIST_USAGE
 from yoke_cli.commands.adapters.db_claim import (
@@ -305,7 +304,6 @@ ADAPTER_USAGE: Dict[str, str] = {
     "hook.evaluate.run": HOOK_EVALUATE_USAGE,
     "scratch.dispatch_inputs": SCRATCH_DISPATCH_INPUTS_USAGE,
     "config.example.run": CONFIG_EXAMPLE_USAGE,
-    "config.stamp_project_env.run": STAMP_PROJECT_ENV_USAGE,
     "config.status.run": CONFIG_STATUS_USAGE,
     "status.run": STATUS_USAGE,
     "dev.setup.run": DEV_SETUP_USAGE,

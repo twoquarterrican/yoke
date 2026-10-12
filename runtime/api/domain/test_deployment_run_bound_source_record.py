@@ -49,12 +49,11 @@ def test_a_start_records_the_commit_each_bound_branch_names(
             "commit_sha": release["consumer_tip"],
         }
     ]
-    assert run_source_sha(
-        test_db, "run-candidate", release["consumer_id"]
-    ) == release["consumer_tip"]
-    assert carried_project_ids(test_db, "run-candidate") == (
-        1, release["consumer_id"]
+    assert (
+        run_source_sha(test_db, "run-candidate", release["consumer_id"])
+        == release["consumer_tip"]
     )
+    assert carried_project_ids(test_db, "run-candidate") == (1, release["consumer_id"])
 
 
 def test_a_recorded_commit_survives_the_branch_moving_under_it(
@@ -80,12 +79,10 @@ def test_carried_work_answers_once_per_project_the_run_ships(
     bound = payload["bound_projects"]
     assert [entry["project_id"] for entry in bound] == [release["consumer_id"]]
     assert bound[0]["derivation"]["release_lineage"] == release["consumer_tip"]
-    assert bound[0]["derivation"]["previous_release_lineage"] == (
-        release["consumer_base"]
+    assert (
+        bound[0]["derivation"]["previous_release_lineage"] == (release["consumer_base"])
     )
-    assert [entry["ref"] for entry in bound[0]["items"]] == [
-        release["consumer_ref"]
-    ]
+    assert [entry["ref"] for entry in bound[0]["items"]] == [release["consumer_ref"]]
 
 
 def test_one_project_may_not_be_bound_to_two_branches_in_one_run(
@@ -121,7 +118,10 @@ def test_a_retry_ships_the_commit_its_candidate_pinned(
     )
     test_db.commit()
     insert_run(
-        test_db, "run-retry", lineage=release["consumer_tip"], status="created",
+        test_db,
+        "run-retry",
+        lineage=release["consumer_tip"],
+        status="created",
         flow=CARRIER_FLOW,
     )
     git(release["consumer_repo"], "commit", "--allow-empty", "-m", "Later work")

@@ -9,6 +9,7 @@ from typing import List
 from yoke_core.domain.strategy_docs_paths import strategy_view_path
 
 from yoke_core.domain import machine_config
+from yoke_contracts.machine_config.schema_project_validation import validate_projects
 from yoke_core.domain.db_helpers import query_rows
 from yoke_core.domain.scratch_auto_prune import prune_stale_scratch
 
@@ -27,14 +28,19 @@ def hc_path_confabulation(conn, args: DoctorArgs, rec: RecordCollector) -> None:
     if repo_root:
         # Check filesystem for confabulated directories
         if Path(repo_root, "ouraboros").is_dir():
-            issues.append("- Confabulated directory found: ouraboros/ (should be ouroboros/)")
+            issues.append(
+                "- Confabulated directory found: ouraboros/ (should be ouroboros/)"
+            )
         if Path(repo_root, "runtime", "runtime").is_dir():
-            issues.append("- Confabulated directory found: runtime/runtime/ (prefix doubling)")
+            issues.append(
+                "- Confabulated directory found: runtime/runtime/ (prefix doubling)"
+            )
 
     # Scan ouroboros_entries DB
     if _base._table_exists(conn, "ouroboros_entries"):
-        if _base._column_exists(conn, "ouroboros_entries", "reviewed_at") and \
-           _base._column_exists(conn, "ouroboros_entries", "archived_at"):
+        if _base._column_exists(
+            conn, "ouroboros_entries", "reviewed_at"
+        ) and _base._column_exists(conn, "ouroboros_entries", "archived_at"):
             rows = query_rows(
                 conn,
                 "SELECT id, body FROM ouroboros_entries "
@@ -49,7 +55,9 @@ def hc_path_confabulation(conn, args: DoctorArgs, rec: RecordCollector) -> None:
                 continue
             for line in body.splitlines():
                 if confab_re.search(line) and "<!-- not-confabulated -->" not in line:
-                    issues.append(f"- Confabulated path in ouroboros_entries[{row['id']}]")
+                    issues.append(
+                        f"- Confabulated path in ouroboros_entries[{row['id']}]"
+                    )
                     break
 
     # Scan working note files
@@ -67,27 +75,22 @@ def hc_path_confabulation(conn, args: DoctorArgs, rec: RecordCollector) -> None:
             confab_re = re.compile(r"ouraboros|yoke/yoke/|runtime/runtime/")
             for i, line in enumerate(content.splitlines(), 1):
                 if confab_re.search(line) and "<!-- not-confabulated -->" not in line:
-                    issues.append(
-                        f"- Confabulated path in {note_path.name}:{i}"
-                    )
+                    issues.append(f"- Confabulated path in {note_path.name}:{i}")
                     break
 
     if issues:
-        rec.record("HC-path-confabulation", "Path confabulation", "WARN", "\n".join(issues))
+        rec.record(
+            "HC-path-confabulation", "Path confabulation", "WARN", "\n".join(issues)
+        )
     else:
         rec.record("HC-path-confabulation", "Path confabulation", "PASS", "")
-
 
 
 def hc_orphaned_temp_files(conn, args: DoctorArgs, rec: RecordCollector) -> None:
     """Scan global scratch while protecting current and active sessions."""
     outcome = prune_stale_scratch(conn, fix=args.fix)
     result = (
-        "FAIL"
-        if outcome.failure_count
-        else "WARN"
-        if outcome.stale_count
-        else "PASS"
+        "FAIL" if outcome.failure_count else "WARN" if outcome.stale_count else "PASS"
     )
     rec.record(
         "HC-orphaned-temp-files",
@@ -144,8 +147,10 @@ def hc_config_validation(conn, args: DoctorArgs, rec: RecordCollector) -> None:
             elif isinstance(settings, dict):
                 issues.extend(_settings_key_issues(settings))
             projects = payload.get("projects", [])
-            if projects is not None and not isinstance(projects, (list, dict)):
-                issues.append("- machine config projects must be a list of entries")
+            issues.extend(
+                f"- {issue.code}: {issue.message}; repair projects in machine config"
+                for issue in validate_projects(projects)
+            )
             # Deploy preflights resolve project checkouts from these entries,
             # so a dead path (for example a since-removed worktree) silently
             # breaks every run that consults the project repository.
@@ -159,17 +164,21 @@ def hc_config_validation(conn, args: DoctorArgs, rec: RecordCollector) -> None:
                 if not (Path(checkout).expanduser() / ".git").exists():
                     issues.append(
                         "- projects entry (project_id="
-                        f"{entry.get('project_id')} env={entry.get('env')}) "
+                        f"{entry.get('project_id')}) "
                         f"checkout missing or not a git checkout: {checkout} "
                         "— repair or remove this entry; deploy preflights "
                         "resolve project checkouts from it"
                     )
 
     if issues:
-        rec.record("HC-config-validation", "Machine config validation", "WARN", "\n".join(issues))
+        rec.record(
+            "HC-config-validation",
+            "Machine config validation",
+            "WARN",
+            "\n".join(issues),
+        )
     else:
         rec.record("HC-config-validation", "Machine config validation", "PASS", "")
-
 
 
 def hc_size_bloat(conn, args: DoctorArgs, rec: RecordCollector) -> None:
@@ -209,7 +218,6 @@ def hc_size_bloat(conn, args: DoctorArgs, rec: RecordCollector) -> None:
         rec.record("HC-size-bloat", "Size/bloat monitor", "PASS", "")
 
 
-
 def hc_test_command_validity(conn, args: DoctorArgs, rec: RecordCollector) -> None:
     """HC-test-command-validity: Test command validity for projects.
 
@@ -241,7 +249,8 @@ def hc_test_command_validity(conn, args: DoctorArgs, rec: RecordCollector) -> No
         repo_path = str(checkout) if checkout is not None else ""
 
         commands = qa_command_plans.list_registered_commands(
-            project_slug, db_path=args.db_path,
+            project_slug,
+            db_path=args.db_path,
         )
         if not commands:
             # Nothing configured — nothing to validate.

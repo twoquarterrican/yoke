@@ -37,12 +37,17 @@ def _https_active_binding(tmp_path: Path, *, with_local_env: bool = True) -> Pat
         }
     path = tmp_path / ".yoke" / "config.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({
-        "schema_version": 1,
-        "active_env": "prod",
-        "connections": connections,
-        "projects": {str(tmp_path.resolve()): {"project_id": 1}},
-    }), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "active_env": "prod",
+                "connections": connections,
+                "projects": [{"checkout": str(tmp_path.resolve()), "project_id": 1}],
+            }
+        ),
+        encoding="utf-8",
+    )
     return path
 
 
@@ -62,7 +67,8 @@ def test_resolve_postgres_dsn_teaches_env_override(https_active, monkeypatch):
     # pinned example is a genuinely local-postgres-only surface (direct
     # SQL); wrapped `yoke` commands relay over https instead.
     monkeypatch.setattr(
-        schema_connections, "_invocation_recipe",
+        schema_connections,
+        "_invocation_recipe",
         lambda *a, **k: 'python3 -m yoke_core.cli.db_router query "SELECT 1"',
     )
 
@@ -81,7 +87,8 @@ def test_resolve_postgres_dsn_teaches_env_override(https_active, monkeypatch):
 
 
 def test_resolve_postgres_dsn_without_local_env_teaches_config(
-    tmp_path, monkeypatch,
+    tmp_path,
+    monkeypatch,
 ):
     for key in (db_backend.PG_DSN_ENV, db_backend.PG_DSN_FILE_ENV, "YOKE_ENV"):
         monkeypatch.delenv(key, raising=False)
@@ -101,13 +108,15 @@ def test_resolve_postgres_dsn_without_local_env_teaches_config(
 
 
 def test_db_backend_surfaces_teaching_without_dsn_setup_framing(
-    https_active, monkeypatch,
+    https_active,
+    monkeypatch,
 ):
     """resolve_pg_dsn must NOT bury the recipe under the generic
     'YOKE_PG_DSN ... must be set for postgres authority' wrapper."""
     recipe = 'python3 -m yoke_core.cli.db_router query "SELECT 1"'
-    monkeypatch.setattr(schema_connections, "_invocation_recipe",
-                        lambda *a, **k: recipe)
+    monkeypatch.setattr(
+        schema_connections, "_invocation_recipe", lambda *a, **k: recipe
+    )
 
     with pytest.raises(RuntimeError) as e:
         db_backend.resolve_pg_dsn()

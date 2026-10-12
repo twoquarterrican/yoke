@@ -46,9 +46,7 @@ def test_card_completion_matches_cross_project_delivery_despite_cancelled_duplic
             bound_sources=json.dumps(
                 {
                     "schema": 1,
-                    "projects": [
-                        {"project_id": consumer, "commit_sha": "a" * 40},
-                    ],
+                    "projects": [{"project_id": consumer, "commit_sha": "a" * 40}],
                     "inputs": {},
                 }
             ),

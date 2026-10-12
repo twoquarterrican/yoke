@@ -28,13 +28,7 @@ def test_build_machine_config_uses_code_owned_example(tmp_path: Path) -> None:
         "kind": "dsn_file",
         "path": str(dsn),
     }
-    assert payload["projects"] == [
-        {
-            "checkout": str(clone.resolve()),
-            "project_id": 1,
-            "env": "prod",
-        }
-    ]
+    assert payload["projects"] == [{"checkout": str(clone.resolve()), "project_id": 1}]
 
 
 def test_write_machine_files_owner_only(tmp_path: Path) -> None:
@@ -50,7 +44,7 @@ def test_write_machine_files_owner_only(tmp_path: Path) -> None:
         config_path=config_path,
         copied_dsn=copied_dsn,
         source_dsn=source_dsn,
-        payload={"schema_version": 1, "connections": {}, "projects": {}},
+        payload={"schema_version": 1, "connections": {}, "projects": []},
     )
 
     assert json.loads(config_path.read_text(encoding="utf-8"))["schema_version"] == 1

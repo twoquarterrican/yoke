@@ -263,7 +263,6 @@ from yoke_cli.commands.adapters.project_onboard import (
 )
 from yoke_cli.commands.adapters.config_write import (
     auth_set,
-    config_stamp_project_env,
     connection_remove,
     connection_set,
     env_use,

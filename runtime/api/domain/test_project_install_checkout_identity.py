@@ -60,12 +60,9 @@ def test_git_lane_resolves_main_and_accepts_parent_canonical_link(
     nested = lane / "subdirectory"
     nested.mkdir()
     assert main_checkout(nested) == checkout
-    payload = {
-        "projects": [{"checkout": str(checkout), "project_id": 7, "env": "prod"}]
-    }
-    assert project_entry_for_checkout(payload, nested, env="prod") == {
+    payload = {"projects": [{"checkout": str(checkout), "project_id": 7}]}
+    assert project_entry_for_checkout(payload, nested) == {
         "project_id": 7,
-        "env": "prod",
     }
     instructions.assert_claude_loading(lane, settings={})
     # Only the parent's link remains; it targets the main checkout's bytes.
@@ -133,7 +130,7 @@ def test_install_from_external_lane_keeps_existing_routing(
     cfg = _config(
         tmp_path,
         monkeypatch,
-        [{"checkout": str(checkout), "project_id": 7, "env": "prod"}],
+        [{"checkout": str(checkout), "project_id": 7}],
     )
     before = cfg.read_bytes()
     assert runner._register_in_machine_config(lane, 7, cfg, True) is False
@@ -148,7 +145,7 @@ def test_first_install_from_external_lane_registers_main(
     cfg = _config(tmp_path, monkeypatch, [])
     assert runner._register_in_machine_config(lane, 7, cfg, True)
     assert json.loads(cfg.read_text())["projects"] == [
-        {"checkout": str(checkout), "project_id": 7, "env": "prod"}
+        {"checkout": str(checkout), "project_id": 7}
     ]
 
 
@@ -160,7 +157,7 @@ def test_install_refuses_displacing_an_unrelated_checkout(tmp_path, monkeypatch)
     cfg = _config(
         tmp_path,
         monkeypatch,
-        [{"checkout": str(original), "project_id": 7, "env": "prod"}],
+        [{"checkout": str(original), "project_id": 7}],
     )
     before = cfg.read_bytes()
     with pytest.raises(

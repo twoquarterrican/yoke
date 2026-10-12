@@ -119,25 +119,15 @@ def project_entry(
 ) -> dict[str, Any]:
     """Return the machine-config entry for a checkout, or ``{}``.
 
-    Resolution is scoped to the active/requested connection env — a mapping
-    tagged for a different universe does not resolve here.
+    Checkout resolution is independent of connection routing.
     """
 
     cfg = load_config(path)
-    entry = contract.project_entry_for_checkout(cfg, repo_root, env=_resolved_env(cfg))
+    entry = contract.project_entry_for_checkout(cfg, repo_root)
     project_id = contract.normalize_project_id(entry.get("project_id"))
     if project_id is not None:
         entry["project_id"] = project_id
     return entry
-
-
-def _resolved_env(cfg: Mapping[str, Any]) -> str | None:
-    """Resolved connection env for a loaded config, or ``None`` when unset."""
-
-    try:
-        return contract.selected_env(cfg)
-    except contract.MachineConfigContractError:
-        return None
 
 
 def configured_projects(
@@ -147,18 +137,13 @@ def configured_projects(
 ) -> list[ConfiguredProject]:
     """Return project checkout mappings recorded in machine config.
 
-    Scoped to the resolved connection env — mappings tagged for a different
-    universe are omitted, since their per-universe ids do not apply here.
+    Every project has one checkout, shared by all connections.
     """
 
     payload = load_config(path)
-    env = _resolved_env(payload)
-    active = str(payload.get("active_env") or "").strip()
     out: list[ConfiguredProject] = []
     for entry in contract.normalize_projects(payload.get("projects")):
-        project_id = contract.entry_project_id_for_env(
-            entry, env=env, active_env=active
-        )
+        project_id = entry["project_id"]
         if project_id is None:
             continue
         checkout = Path(entry["checkout"]).expanduser()
@@ -179,12 +164,10 @@ def all_registered_checkouts(
     *,
     existing_only: bool = False,
 ) -> list[Path]:
-    """Return deduplicated checkout paths across every configured env.
+    """Return all registered checkout paths.
 
-    GitHub credentials are machine-global, so cleanup callers cannot use the
-    active-env-scoped :func:`configured_projects` inventory. Malformed project
-    rows are ignored by the canonical normalizer, and filesystem errors on one
-    row do not hide the remaining registered checkouts.
+    GitHub credential cleanup uses this machine-local inventory. Filesystem
+    errors on one checkout do not hide the remaining registered checkouts.
     """
 
     payload = load_config(path)

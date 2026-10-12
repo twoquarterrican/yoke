@@ -32,7 +32,6 @@ from yoke_cli.config.writer_connection_remove import (
 )
 from yoke_cli.config.writer_projects import (
     register_project,
-    stamp_untagged_project_envs,
 )
 from yoke_contracts.machine_config import schema as contract
 
@@ -211,7 +210,6 @@ __all__ = [
     "MachineConfigWriteError",
     "clear_github",
     "register_project",
-    "stamp_untagged_project_envs",
     "set_github",
     "remove_connection",
     "remove_connections",

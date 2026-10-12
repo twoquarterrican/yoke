@@ -32,8 +32,9 @@ def _write_https_default_binding(tmp_path: Path) -> Path:
     """Machine config whose active env is https with a tunnel-backed
     local-postgres env beside it (the post-flip operator shape)."""
     dsn_file = tmp_path / "cloud.dsn"
-    dsn_file.write_text("host=127.0.0.1 port=6547 user=u dbname=test_db\n",
-                        encoding="utf-8")
+    dsn_file.write_text(
+        "host=127.0.0.1 port=6547 user=u dbname=test_db\n", encoding="utf-8"
+    )
     token_file = tmp_path / "prod.token"
     token_file.write_text("tok\n", encoding="utf-8")
     binding = {
@@ -43,13 +44,11 @@ def _write_https_default_binding(tmp_path: Path) -> Path:
             "prod": {
                 "transport": "https",
                 "api_url": "https://api.example.test",
-                "credential_source": {"kind": "token_file",
-                                      "path": str(token_file)},
+                "credential_source": {"kind": "token_file", "path": str(token_file)},
             },
             "prod-db-admin": {
                 "transport": "local-postgres",
-                "credential_source": {"kind": "dsn_file",
-                                      "path": str(dsn_file)},
+                "credential_source": {"kind": "dsn_file", "path": str(dsn_file)},
                 "postgres": {
                     "host": "127.0.0.1",
                     "port": 6547,
@@ -63,7 +62,7 @@ def _write_https_default_binding(tmp_path: Path) -> Path:
                 },
             },
         },
-        "projects": {str(tmp_path.resolve()): {"project_id": 1}},
+        "projects": [{"checkout": str(tmp_path.resolve()), "project_id": 1}],
     }
     path = tmp_path / ".yoke" / "config.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -83,7 +82,8 @@ def https_default_env(tmp_path, monkeypatch):
 
 
 def test_yoke_env_override_selects_managed_tunnel_connector(
-        https_default_env, monkeypatch):
+    https_default_env, monkeypatch
+):
     monkeypatch.setenv("YOKE_ENV", "prod-db-admin")
 
     detection = cer_c.detect()
@@ -94,8 +94,7 @@ def test_yoke_env_override_selects_managed_tunnel_connector(
     assert detection.spec.forward_spec == "6547:aurora.example.internal:5432"
 
 
-def test_yoke_env_override_self_heals_dead_tunnel(
-        https_default_env, monkeypatch):
+def test_yoke_env_override_self_heals_dead_tunnel(https_default_env, monkeypatch):
     down_until_restart = ["down (test)"] * (1 + cer_c.PROBE_CONFIRM_ATTEMPTS)
     results = iter(down_until_restart + [None])
     restarts: list = []
@@ -118,14 +117,14 @@ def test_yoke_env_override_self_heals_dead_tunnel(
     assert restarts[0].bastion == "ubuntu@10.0.0.1"
 
 
-def test_https_active_env_without_override_is_unmanaged(
-        https_default_env, monkeypatch):
+def test_https_active_env_without_override_is_unmanaged(https_default_env, monkeypatch):
     monkeypatch.delenv("YOKE_ENV", raising=False)
     probes: list = []
     restarts: list = []
     monkeypatch.setattr(cer_t, "_probe_failure", lambda dsn: probes.append(dsn))
-    monkeypatch.setattr(cer_t, "_replace_forward",
-                        lambda spec, dsn: restarts.append(spec))
+    monkeypatch.setattr(
+        cer_t, "_replace_forward", lambda spec, dsn: restarts.append(spec)
+    )
 
     result = cer.ensure_ready(force=True)
 
@@ -135,15 +134,15 @@ def test_https_active_env_without_override_is_unmanaged(
 
 
 def test_refused_connect_under_override_is_a_tunnel_error(
-        https_default_env, monkeypatch):
+    https_default_env, monkeypatch
+):
     """db_backend's reactive self-heal keys off this classifier; it must
     claim ownership when the override selects the managed tunnel env."""
     import psycopg
 
     monkeypatch.setenv("YOKE_ENV", "prod-db-admin")
     refused = psycopg.OperationalError(
-        'connection to server at "127.0.0.1", port 6547 failed: '
-        "Connection refused"
+        'connection to server at "127.0.0.1", port 6547 failed: Connection refused'
     )
 
     assert cer.is_local_tunnel_connection_error(refused) is True

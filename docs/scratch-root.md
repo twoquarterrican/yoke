@@ -29,9 +29,8 @@ have one location across execution contexts, such as the disposable Postgres
 test cluster.
 
 Project namespacing is resolved from an explicit project argument, a process
-override, or the current checkout's machine-config project entry (the env-scoped
-checkout→project list resolves the row whose env matches the active/requested
-env, since project ids are numbered per universe). Repo config keys do not
+override, or the current checkout's machine-config project entry (the connection-independent
+checkout→project list uses one entry per project). Repo config keys do not
 define project context. Connected references resolve to numeric project ids;
 offline callers retain an explicit safe slug. Missing/unresolvable projects
 refuse rather than choosing an unrelated namespace.

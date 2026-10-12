@@ -88,7 +88,7 @@ def test_onboard_yes_writes_machine_config_and_project_handoff(
     written = json.loads(config.read_text(encoding="utf-8"))
     assert written["active_env"] == "prod"
     assert written["projects"] == [
-        {"checkout": str(checkout.resolve()), "project_id": 44, "env": "prod"},
+        {"checkout": str(checkout.resolve()), "project_id": 44}
     ]
     assert (checkout / ".yoke/install-manifest.json").is_file()
     assert "actor-token" not in out

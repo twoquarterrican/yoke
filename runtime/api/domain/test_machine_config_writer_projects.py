@@ -1,4 +1,4 @@
-"""Project-mapping writer tests (register + stamp-untagged)."""
+"""Project-mapping writer tests."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ import pytest
 
 from yoke_core.domain import machine_config_writer as writer
 from yoke_core.domain.machine_config_writer import MachineConfigWriteError
-from yoke_contracts.machine_config import schema as contract
 
 
 @pytest.fixture()
@@ -29,7 +28,9 @@ def _seed_https(home: Path, tmp_path: Path, env: str = "stage") -> Path:
     token_file = tmp_path / f"{env}.token"
     token_file.write_text("tok\n")
     writer.set_connection(
-        env, transport="https", api_url="https://api.example",
+        env,
+        transport="https",
+        api_url="https://api.example",
         token_file=str(token_file),
     )
     return token_file
@@ -57,7 +58,6 @@ class TestRegisterProject:
 
         entry = _row(_config(home), result["checkout"])
         assert entry["project_id"] == 7
-        assert entry["env"] == "stage"
         assert "board" not in entry
 
     def test_register_refuses_retired_board_flags(self, home, tmp_path):
@@ -67,47 +67,23 @@ class TestRegisterProject:
 
         with pytest.raises(MachineConfigWriteError, match="board is retired"):
             writer.register_project(
-                repo, 7, board_scope="all",
+                repo,
+                7,
+                board_scope="all",
                 board_render_path=".yoke/BOARD-ALL.md",
             )
 
-    def test_register_without_connection_env_is_refused(self, home, tmp_path):
-        repo = tmp_path / "repo"
-        repo.mkdir()
-
-        with pytest.raises(MachineConfigWriteError, match="connection"):
-            writer.register_project(repo, 7)
-
-    def test_register_adds_env_row_and_keeps_other_env(self, home, tmp_path):
-        _seed_https(home, tmp_path, env="prod")
-        _seed_https(home, tmp_path, env="stage")
-        repo = tmp_path / "repo"
-        repo.mkdir()
-        payload = _config(home)
-        payload["active_env"] = "stage"
-        payload["projects"] = [
-            {"checkout": str(repo.resolve()), "project_id": 9, "env": "prod"},
-        ]
-        (home / "config.json").write_text(json.dumps(payload), encoding="utf-8")
-
-        result = writer.register_project(repo, 7)
-
-        rows = sorted((e["env"], e["project_id"])
-                      for e in _rows(_config(home), result["checkout"]))
-        assert rows == [("prod", 9), ("stage", 7)]
-
-    def test_register_normalizes_malformed_projects(self, home, tmp_path):
+    def test_registration_is_independent_of_selected_connection(
+        self, home, tmp_path, monkeypatch
+    ):
         _seed_https(home, tmp_path)
         repo = tmp_path / "repo"
         repo.mkdir()
-        payload = _config(home)
-        payload["projects"] = ["not", "a", "row"]
-        (home / "config.json").write_text(json.dumps(payload), encoding="utf-8")
-
-        result = writer.register_project(repo, 7)
-
+        writer.register_project(repo, 7)
+        monkeypatch.setenv("YOKE_ENV", "prod-db-admin")
+        writer.register_project(repo, 7)
         assert _config(home)["projects"] == [
-            {"checkout": result["checkout"], "project_id": 7, "env": "stage"},
+            {"checkout": str(repo.resolve()), "project_id": 7}
         ]
 
     def test_missing_directory_is_refused(self, home, tmp_path):
@@ -125,7 +101,9 @@ class TestRegisterProject:
             writer.register_project(repo, 0)
 
     def test_reassigning_an_occupied_slot_is_refused_without_reassign(
-        self, home, tmp_path,
+        self,
+        home,
+        tmp_path,
     ):
         _seed_https(home, tmp_path)
         original = tmp_path / "real-checkout"
@@ -142,7 +120,9 @@ class TestRegisterProject:
         assert entry["project_id"] == 7
 
     def test_reassign_true_moves_the_slot_to_the_new_checkout(
-        self, home, tmp_path,
+        self,
+        home,
+        tmp_path,
     ):
         _seed_https(home, tmp_path)
         original = tmp_path / "real-checkout"
@@ -168,7 +148,9 @@ class TestRegisterProject:
         assert _row(_config(home), result["checkout"])["project_id"] == 7
 
     def test_reregistering_the_same_checkout_needs_no_reassign(
-        self, home, tmp_path,
+        self,
+        home,
+        tmp_path,
     ):
         _seed_https(home, tmp_path)
         repo = tmp_path / "repo"
@@ -178,66 +160,3 @@ class TestRegisterProject:
         result = writer.register_project(repo, 7)
 
         assert _row(_config(home), result["checkout"])["project_id"] == 7
-
-
-class TestStampUntaggedProjectEnvs:
-    def _seed_untagged(self, home: Path, tmp_path: Path) -> None:
-        _seed_https(home, tmp_path, env="prod")
-        payload = _config(home)
-        payload["projects"] = {
-            "/checkout/one": {"project_id": 1},
-            "/checkout/two": {"project_id": 2, "board": {"scope": "two"}},
-        }
-        (home / "config.json").write_text(json.dumps(payload), encoding="utf-8")
-
-    def test_stamps_untagged_entries_with_active_env(self, home, tmp_path):
-        self._seed_untagged(home, tmp_path)
-
-        result = writer.stamp_untagged_project_envs()
-
-        assert result["env"] == "prod"
-        assert {row["checkout"] for row in result["stamped"]} == {
-            "/checkout/one", "/checkout/two",
-        }
-        config = _config(home)
-        assert isinstance(config["projects"], list)
-        assert _row(config, "/checkout/one")["env"] == "prod"
-        assert _row(config, "/checkout/two")["env"] == "prod"
-        assert "board" not in _row(config, "/checkout/two")
-        assert contract.validate_payload(config) == []
-
-    def test_leaves_already_tagged_entries_untouched(self, home, tmp_path):
-        _seed_https(home, tmp_path, env="prod")
-        _seed_https(home, tmp_path, env="stage")
-        payload = _config(home)
-        payload["projects"] = {
-            "/checkout/one": {"project_id": 1},
-            "/checkout/two": {"project_id": 2, "env": "stage"},
-        }
-        (home / "config.json").write_text(json.dumps(payload), encoding="utf-8")
-
-        result = writer.stamp_untagged_project_envs()
-
-        assert [row["checkout"] for row in result["stamped"]] == ["/checkout/one"]
-        assert [row["checkout"] for row in result["skipped"]] == ["/checkout/two"]
-        config = _config(home)
-        assert _row(config, "/checkout/one")["env"] == "prod"
-        assert _row(config, "/checkout/two")["env"] == "stage"
-
-    def test_explicit_env_overrides_active(self, home, tmp_path):
-        _seed_https(home, tmp_path, env="prod")
-        _seed_https(home, tmp_path, env="stage")
-        payload = _config(home)
-        payload["projects"] = {"/checkout/one": {"project_id": 1}}
-        (home / "config.json").write_text(json.dumps(payload), encoding="utf-8")
-
-        result = writer.stamp_untagged_project_envs("stage")
-
-        assert result["env"] == "stage"
-        assert _row(_config(home), "/checkout/one")["env"] == "stage"
-
-    def test_unknown_env_is_refused(self, home, tmp_path):
-        self._seed_untagged(home, tmp_path)
-
-        with pytest.raises(MachineConfigWriteError, match="ghost"):
-            writer.stamp_untagged_project_envs("ghost")

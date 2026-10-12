@@ -22,17 +22,11 @@ def test_cli_machine_config_ignores_retired_board_entry(
     checkout.mkdir()
     config = tmp_path / "config.json"
     config.write_text(
-        json.dumps({
-            "projects": {
-                str(checkout): {
-                    "project_id": 7,
-                    "board": {
-                        "scope": "all",
-                        "render_path": ".yoke/BOARD-ALL.md",
-                    },
-                },
-            },
-        }),
+        json.dumps(
+            {
+                "projects": [{"checkout": str(checkout), "project_id": 7}],
+            }
+        ),
         encoding="utf-8",
     )
     monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))
@@ -48,6 +42,7 @@ def test_rebuild_ignores_retired_board_json_when_payload_settings_are_empty(
     monkeypatch,
 ) -> None:
     from yoke_cli.board import code_days_publish
+
     checkout = tmp_path / "checkout"
     retired_file = checkout / ".yoke" / "board.json"
     retired_file.parent.mkdir(parents=True)
@@ -60,7 +55,9 @@ def test_rebuild_ignores_retired_board_json_when_payload_settings_are_empty(
     monkeypatch.setattr(board_rebuild, "parse_art_config", lambda *_a, **_k: object())
     monkeypatch.setattr(board_rebuild, "_zen_extract_vision", lambda *_a, **_k: [])
     monkeypatch.setattr(board_rebuild.machine_config, "project_id", lambda *_a: 7)
-    monkeypatch.setattr(code_days_publish, "code_days_for_checkout", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        code_days_publish, "code_days_for_checkout", lambda *_a, **_k: []
+    )
     monkeypatch.setattr(
         board_rebuild,
         "fetch_board_data",
@@ -84,15 +81,22 @@ def test_board_adapter_defers_omitted_scope_to_project_policy(
     stdout = io.StringIO()
     stderr = io.StringIO()
 
-    with patch.dict("os.environ", {"YOKE_SESSION_ID": "test-session"}), patch(
-        "yoke_cli.board.rebuild.resolve_main_repo_root",
-        return_value=tmp_path,
-    ), patch(
-        "yoke_cli.board.rebuild.rebuild",
-        return_value=board_outcome.rebuilt(board_path),
-    ) as rebuild, patch(
-        "yoke_core.cli.board_rebuild_timing_events.emit_event",
-    ), redirect_stdout(stdout), redirect_stderr(stderr):
+    with (
+        patch.dict("os.environ", {"YOKE_SESSION_ID": "test-session"}),
+        patch(
+            "yoke_cli.board.rebuild.resolve_main_repo_root",
+            return_value=tmp_path,
+        ),
+        patch(
+            "yoke_cli.board.rebuild.rebuild",
+            return_value=board_outcome.rebuilt(board_path),
+        ) as rebuild,
+        patch(
+            "yoke_core.cli.board_rebuild_timing_events.emit_event",
+        ),
+        redirect_stdout(stdout),
+        redirect_stderr(stderr),
+    ):
         rc = cli_main(["board", "rebuild"])
 
     assert rc == 0

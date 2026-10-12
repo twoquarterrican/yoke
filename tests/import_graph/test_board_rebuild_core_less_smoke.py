@@ -95,14 +95,15 @@ def test_board_rebuild_runs_without_yoke_core(tmp_path: Path) -> None:
     # The rebuild subprocess spawns its own interpreter, so it does not inherit
     # the autouse commit-cache isolation fixture. Pin its cache_dir under tmp so
     # any commit-cache touch during the render stays off the real ~/.yoke/cache.
-    machine_config.write_text(json.dumps({
-        "cache_dir": str(tmp_path / "cache"),
-        "projects": {
-            str(checkout): {
-                "project_id": 37,
-            },
-        },
-    }), encoding="utf-8")
+    machine_config.write_text(
+        json.dumps(
+            {
+                "cache_dir": str(tmp_path / "cache"),
+                "projects": [{"checkout": str(checkout), "project_id": 37}],
+            }
+        ),
+        encoding="utf-8",
+    )
 
     code = """
 import importlib.abc
@@ -189,12 +190,14 @@ print(json.dumps({"status": result.status, "board_path": str(board_path)}))
 """
 
     env = _core_less_env(tmp_path)
-    env.update({
-        "BOARD_PAYLOAD_FILE": str(payload_file),
-        "BOARD_REPO_ROOT": repo_root_token,
-        "BOARD_PATH": str(board_path),
-        "YOKE_MACHINE_CONFIG_FILE": str(machine_config),
-    })
+    env.update(
+        {
+            "BOARD_PAYLOAD_FILE": str(payload_file),
+            "BOARD_REPO_ROOT": repo_root_token,
+            "BOARD_PATH": str(board_path),
+            "YOKE_MACHINE_CONFIG_FILE": str(machine_config),
+        }
+    )
     result = subprocess.run(
         [sys.executable, "-c", textwrap.dedent(code)],
         cwd=tmp_path,

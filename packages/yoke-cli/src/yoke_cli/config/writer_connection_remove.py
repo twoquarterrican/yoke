@@ -96,7 +96,6 @@ def remove_connections(
     credential_removed: set[str] = set()
     credential_retained: set[str] = set()
     recovery_tombstones: list[tuple[Path, str]] = []
-    entries = contract.normalize_projects(payload.get("projects"))
     try:
         for env in selected:
             entry = entries_by_env[env]
@@ -145,9 +144,7 @@ def remove_connections(
                 credential_removed.add(env)
         for env in selected:
             connections.pop(env, None)
-        payload["projects"] = [
-            entry for entry in entries if entry.get("env") not in selected
-        ]
+        payload.setdefault("projects", [])
         write_payload(payload, cfg_path, allow_unconfigured=unconfigured)
     except BaseException:
         for secret, (tombstone, _env) in reversed(tuple(staged.items())):
@@ -166,7 +163,7 @@ def remove_connections(
         ],
         "credential_removed_envs": sorted(credential_removed),
         "credential_retained_shared_envs": sorted(credential_retained),
-        "project_mappings_removed": len(entries) - len(payload["projects"]),
+        "project_mappings_removed": 0,
         "active_env": str(payload.get("active_env") or ""),
         "config": str(cfg_path),
     }

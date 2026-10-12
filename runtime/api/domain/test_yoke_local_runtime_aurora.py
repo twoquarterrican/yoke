@@ -50,11 +50,7 @@ def _connected_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                         },
                     },
                 },
-                "projects": {
-                    str(repo.resolve()): {
-                        "project_id": 1,
-                    },
-                },
+                "projects": [{"checkout": str(repo.resolve()), "project_id": 1}],
             }
         ),
         encoding="utf-8",

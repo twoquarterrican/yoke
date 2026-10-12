@@ -17,8 +17,6 @@ from yoke_cli.commands._helpers import (
 )
 from yoke_cli.commands.adapters.config_write_project import (
     PROJECT_REGISTER_USAGE as PROJECT_REGISTER_USAGE,
-    STAMP_PROJECT_ENV_USAGE as STAMP_PROJECT_ENV_USAGE,
-    config_stamp_project_env as config_stamp_project_env,
     project_register as project_register,
 )
 from yoke_cli.commands.adapters.config_write_shared import run as _run
@@ -288,9 +286,7 @@ __all__ = [
     "CONNECTION_SET_USAGE",
     "ENV_USE_USAGE",
     "PROJECT_REGISTER_USAGE",
-    "STAMP_PROJECT_ENV_USAGE",
     "auth_set",
-    "config_stamp_project_env",
     "connection_set",
     "connection_remove",
     "env_use",

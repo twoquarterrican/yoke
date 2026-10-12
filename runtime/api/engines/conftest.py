@@ -35,7 +35,7 @@ def _engines_isolated_repo_root():
         root = Path(tmp)
         cfg = root / ".yoke" / "config.json"
         cfg.parent.mkdir(parents=True)
-        cfg.write_text('{"settings": {}, "projects": {}}\n')
+        cfg.write_text('{"settings": {}, "projects": []}\n')
         yield str(root), str(cfg)
 
 
@@ -47,10 +47,13 @@ def _isolate_engines_from_live_config(_engines_isolated_repo_root):
     ``unittest.mock.patch`` uses a stack.
     """
     repo_root, config_path = _engines_isolated_repo_root
-    with patch(
-        "yoke_core.engines.doctor_report._resolve_repo_root",
-        return_value=repo_root,
-    ), patch.dict(os.environ, {"YOKE_MACHINE_CONFIG_FILE": config_path}):
+    with (
+        patch(
+            "yoke_core.engines.doctor_report._resolve_repo_root",
+            return_value=repo_root,
+        ),
+        patch.dict(os.environ, {"YOKE_MACHINE_CONFIG_FILE": config_path}),
+    ):
         yield
 
 

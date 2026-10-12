@@ -17,7 +17,6 @@ import json
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from yoke_core.domain import advance_path_claim_activation as _module
 from yoke_core.domain import db_backend
 from yoke_core.domain.advance_path_claim_activation import (
     ActivationResult,
@@ -40,14 +39,12 @@ def conn(tmp_path, monkeypatch):
     repo_root.mkdir()
     config_path = tmp_path / "config.json"
     config_path.write_text(
-        json.dumps({"projects": {str(repo_root): {"project_id": 1}}}),
+        json.dumps({"projects": [{"checkout": str(repo_root), "project_id": 1}]}),
         encoding="utf-8",
     )
     monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
     name = pg_testdb.create_test_database()
-    monkeypatch.setenv(
-        db_backend.PG_DSN_ENV, pg_testdb.dsn_for_test_database(name)
-    )
+    monkeypatch.setenv(db_backend.PG_DSN_ENV, pg_testdb.dsn_for_test_database(name))
     c = pg_testdb.connect_test_database(name)
     create_core_tables(c)
     converge_builtin_workflows(c)
@@ -125,8 +122,7 @@ def _set_state(conn, claim_id: int, state: str, blocked_reason=None):
         )
     else:
         conn.execute(
-            "UPDATE path_claims SET state = %s, blocked_reason = %s "
-            "WHERE id = %s",
+            "UPDATE path_claims SET state = %s, blocked_reason = %s WHERE id = %s",
             (state, blocked_reason, claim_id),
         )
     conn.commit()
@@ -141,6 +137,7 @@ def stub_resolver(monkeypatch):
         return "snap-base"
 
     from yoke_core.domain import advance_path_claim_activation_retry as _retry
+
     monkeypatch.setattr(
         _retry,
         "resolve_integration_head_with_divergence_check",
@@ -155,16 +152,21 @@ class TestHappyPath:
         item_id = _seed_item(conn)
         target_id = _seed_target(conn)
         claim_id = _seed_planned_claim(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
             target_id=target_id,
         )
         result = run_activation_phase(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
         )
         assert result.is_blocked is False
         assert result.activated_claim_ids == [claim_id]
         state = conn.execute(
-            "SELECT state FROM path_claims WHERE id = %s", (claim_id,),
+            "SELECT state FROM path_claims WHERE id = %s",
+            (claim_id,),
         ).fetchone()[0]
         assert state == "active"
 
@@ -173,11 +175,15 @@ class TestHappyPath:
         item_id = _seed_item(conn)
         target_id = _seed_target(conn)
         _seed_planned_claim(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
             target_id=target_id,
         )
         result = run_activation_phase(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
         )
         assert isinstance(result, ActivationResult)
         assert result.item_id == item_id
@@ -190,7 +196,9 @@ class TestNoOps:
         item_id = _seed_item(conn)
         target_id = _seed_target(conn)
         claim_id = _seed_planned_claim(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
             target_id=target_id,
         )
         # Hand-flip to active without touching the activation phase.
@@ -203,13 +211,16 @@ class TestNoOps:
         )
         conn.commit()
         result = run_activation_phase(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
         )
         assert result.is_blocked is False
         assert result.activated_claim_ids == []  # nothing flipped
         # Still active.
         state = conn.execute(
-            "SELECT state FROM path_claims WHERE id = %s", (claim_id,),
+            "SELECT state FROM path_claims WHERE id = %s",
+            (claim_id,),
         ).fetchone()[0]
         assert state == "active"
 
@@ -217,7 +228,9 @@ class TestNoOps:
         actor = seed_human_actor(conn)
         item_id = _seed_item(conn)
         result = run_activation_phase(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
         )
         assert result.is_blocked is False
         assert result.outcomes == []
@@ -230,14 +243,14 @@ class TestDivergence:
             IntegrationTargetDiverged,
         )
 
-        def _raise_diverged(conn, *, project_id, repo_path,
-                            integration_target):
+        def _raise_diverged(conn, *, project_id, repo_path, integration_target):
             raise IntegrationTargetDiverged(
                 f"origin/{integration_target} and "
                 f"refs/heads/{integration_target} have diverged"
             )
 
         from yoke_core.domain import advance_path_claim_activation_retry as _retry
+
         monkeypatch.setattr(
             _retry,
             "resolve_integration_head_with_divergence_check",
@@ -248,11 +261,15 @@ class TestDivergence:
         item_id = _seed_item(conn)
         target_id = _seed_target(conn)
         _seed_planned_claim(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
             target_id=target_id,
         )
         result = run_activation_phase(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
         )
         assert result.is_blocked is True
         assert result.diverged_error is not None
@@ -267,11 +284,11 @@ class TestActivationErrors:
             BoundaryCheckError,
         )
 
-        def _raise_boundary(conn, *, project_id, repo_path,
-                            integration_target):
+        def _raise_boundary(conn, *, project_id, repo_path, integration_target):
             raise BoundaryCheckError("cannot resolve integration target")
 
         from yoke_core.domain import advance_path_claim_activation_retry as _retry
+
         monkeypatch.setattr(
             _retry,
             "resolve_integration_head_with_divergence_check",
@@ -282,12 +299,16 @@ class TestActivationErrors:
         item_id = _seed_item(conn)
         target_id = _seed_target(conn)
         _seed_planned_claim(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
             target_id=target_id,
         )
 
         result = run_activation_phase(
-            conn, item_id=item_id, actor_id=actor,
+            conn,
+            item_id=item_id,
+            actor_id=actor,
         )
 
         assert result.is_blocked is True

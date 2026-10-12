@@ -301,9 +301,7 @@ class TestClientProjectContext:
                             "credential_source": {"kind": "env", "name": "YOKE_TOKEN"},
                         },
                     },
-                    "projects": {
-                        str(repo.resolve()): {"project_id": 2, "project": "beta"},
-                    },
+                    "projects": [{"checkout": str(repo.resolve()), "project_id": 2}],
                 }
             ),
             encoding="utf-8",

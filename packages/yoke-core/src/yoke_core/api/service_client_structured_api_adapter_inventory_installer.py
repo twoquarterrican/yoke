@@ -49,12 +49,7 @@ INSTALLER_ADAPTERS: List[AdapterEntry] = [
     AdapterEntry(
         function_id="project.register.run",
         cli_invocation="yoke project register REPO_ROOT --project-id N",
-        notes="Machine-local checkout -> (env, project id) mapping.",
-    ),
-    AdapterEntry(
-        function_id="config.stamp_project_env.run",
-        cli_invocation="yoke config stamp-project-env",
-        notes="Machine-local: stamps untagged projects entries with the selected connection env (default active_env).",
+        notes="Machine-local checkout -> project id mapping, independent of connection.",
     ),
     AdapterEntry(
         function_id="project.install.run",

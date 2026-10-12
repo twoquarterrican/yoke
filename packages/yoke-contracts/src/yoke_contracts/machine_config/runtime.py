@@ -222,53 +222,42 @@ def effective_temp_root(path: str | Path | None = None) -> str:
     return str(_machine_path(override)) if override else temp_root(path)
 
 
-def project_entry(repo_root: str | Path, path: str | Path | None = None) -> dict[str, Any]:
+def project_entry(
+    repo_root: str | Path, path: str | Path | None = None
+) -> dict[str, Any]:
     """Return the machine-config entry for a checkout, or ``{}``.
 
-    Resolution is scoped to the active/requested connection env — a mapping
-    tagged for a different universe does not resolve here.
+    Checkout resolution is independent of connection routing.
     """
 
     cfg = load_config(path)
-    entry = contract.project_entry_for_checkout(
-        cfg, repo_root, env=_resolved_env(cfg))
+    entry = contract.project_entry_for_checkout(cfg, repo_root)
     project_id = contract.normalize_project_id(entry.get("project_id"))
     if project_id is not None:
         entry["project_id"] = project_id
     return entry
 
 
-def _resolved_env(cfg: Mapping[str, Any]) -> str | None:
-    """Resolved connection env for a loaded config, or ``None`` when unset."""
-
-    try:
-        return contract.selected_env(cfg)
-    except contract.MachineConfigContractError:
-        return None
-
-
 def project_id(repo_root: str | Path, path: str | Path | None = None) -> int | None:
     """Resolve the numeric project id for a checkout."""
 
-    return contract.normalize_project_id(project_entry(repo_root, path).get("project_id"))
+    return contract.normalize_project_id(
+        project_entry(repo_root, path).get("project_id")
+    )
 
 
 def installed_project_ids(path: str | Path | None = None) -> set[int]:
     """Return the distinct project ids installed on this machine.
 
-    Sourced from the ``projects`` map in machine config (checkout path -> entry).
+    Sourced from the machine-local ``projects`` checkout list.
     Used to disambiguate a bare item number when there is no explicit/cwd
-    project context. Scoped to the resolved connection env, since project ids
-    are per universe — an entry tagged for a different env is not installed
-    under the current one.
+    project context. Every connection uses the same project checkout entries.
     """
 
     cfg = load_config(path)
-    env = _resolved_env(cfg)
-    active = str(cfg.get("active_env") or "").strip()
     ids: set[int] = set()
     for entry in contract.normalize_projects(cfg.get("projects")):
-        pid = contract.entry_project_id_for_env(entry, env=env, active_env=active)
+        pid = entry["project_id"]
         if pid is not None:
             ids.add(pid)
     return ids

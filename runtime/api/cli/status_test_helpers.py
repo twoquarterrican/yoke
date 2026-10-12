@@ -36,30 +36,26 @@ def status_config(tmp_path: Path, repo: Path) -> Path:
     token_file.chmod(0o600)
     path = tmp_path / "config.json"
     path.write_text(
-        json.dumps({
-            "schema_version": 1,
-            "active_env": "prod",
-            "connections": {
-                "prod": {
-                    "transport": "https",
-                    "prod": True,
-                    "api_url": "https://app.upyoke.com/api/orgs/acme",
-                    "credential_source": {
-                        "kind": "token_file",
-                        "path": str(token_file),
+        json.dumps(
+            {
+                "schema_version": 1,
+                "active_env": "prod",
+                "connections": {
+                    "prod": {
+                        "transport": "https",
+                        "prod": True,
+                        "api_url": "https://app.upyoke.com/api/orgs/acme",
+                        "credential_source": {
+                            "kind": "token_file",
+                            "path": str(token_file),
+                        },
                     },
                 },
-            },
-            "temp_root": str(temp_root),
-            "cache_dir": str(cache_dir),
-            "projects": [
-                {
-                    "checkout": str(repo.resolve()),
-                    "project_id": 1,
-                    "env": "prod",
-                },
-            ],
-        }),
+                "temp_root": str(temp_root),
+                "cache_dir": str(cache_dir),
+                "projects": [{"checkout": str(repo.resolve()), "project_id": 1}],
+            }
+        ),
         encoding="utf-8",
     )
     path.chmod(0o600)

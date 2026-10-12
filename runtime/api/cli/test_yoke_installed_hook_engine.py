@@ -192,13 +192,7 @@ def _installed_env(
                         },
                     },
                 },
-                "projects": [
-                    {
-                        "checkout": str(repo.resolve()),
-                        "project_id": 1,
-                        "env": "local",
-                    }
-                ],
+                "projects": [{"checkout": str(repo.resolve()), "project_id": 1}],
             }
         )
         + "\n",
