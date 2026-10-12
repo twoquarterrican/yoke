@@ -55,6 +55,7 @@ def filter_by_machine_access(
             rejection_codes=codes,
             machine_capacity=snapshot.machine_capacity,
             rejection_details=details,
+            machine_rejections=snapshot.machine_rejections,
         ),
         reasons,
     )

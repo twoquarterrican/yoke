@@ -15,6 +15,10 @@ from yoke_contracts.executor_labels import (
 from yoke_contracts.session_control.capabilities import capability_for_surface
 from yoke_core.domain.machine_launch_access import filter_by_machine_access
 from yoke_core.domain.session_launch_eligibility import derive_launch_eligibility
+from yoke_core.domain.session_launch_machine_rejections import (
+    MachineRejection,
+    merge_machine_rejections,
+)
 from yoke_core.domain.session_launch_machine_pin import (
     MACHINE_UNRESOLVED,
     resolve_launch_machine_pin,
@@ -63,6 +67,7 @@ def _fallback_snapshot(
     considered: set[str] = set()
     rejected: set[str] = set()
     capacities: dict[str, Any] = {}
+    machine_rejections: list[tuple[MachineRejection, ...]] = []
     for surface in _fallback_surfaces(requested_surface):
         snapshot = eligibility(
             conn,
@@ -73,6 +78,7 @@ def _fallback_snapshot(
         )
         considered.update(snapshot.considered_machine_ids)
         rejected.update(snapshot.rejection_codes)
+        machine_rejections.append(snapshot.machine_rejections)
         for entry in snapshot.machine_capacity:
             capacities.setdefault(entry.machine_id, entry)
         for relay in snapshot.relays:
@@ -87,6 +93,9 @@ def _fallback_snapshot(
         considered_machine_ids=tuple(sorted(considered)),
         rejection_codes=tuple(sorted(rejected)),
         machine_capacity=tuple(capacities[machine] for machine in sorted(capacities)),
+        machine_rejections=merge_machine_rejections(
+            machine_rejections, exclude=selected_by_machine
+        ),
     )
 
 
