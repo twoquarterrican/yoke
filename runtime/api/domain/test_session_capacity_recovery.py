@@ -114,10 +114,8 @@ def test_published_model_alias_excludes_the_same_capacity_overloaded_model(monke
                 "options": [
                     CODEX_SOL,
                     {
-                        "surface": "claude-cli",
                         "model": "claude-fable-5-1",
-                        "reasoning_effort": "medium",
-                        "context_window_tokens": None,
+                        "min_effort": "medium",
                     },
                 ],
             }
