@@ -86,7 +86,6 @@ class TestShippedSchemeMatch:
         "executor,model",
         [
             ("claude-code", "claude-unlisted-model"),
-            ("some-other-harness", "claude-opus-5-5"),
             ("claude-code", None),
         ],
     )

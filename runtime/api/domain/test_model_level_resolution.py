@@ -38,7 +38,14 @@ from runtime.api.fixtures.model_catalog import RECORDS
     ],
 )
 def test_resolution_is_independent_of_harness(model, effort, expected):
-    for executor in ("claude-code", "codex", "cursor", "cursor-desktop"):
+    for executor in (
+        "claude-code",
+        "codex",
+        "cursor",
+        "cursor-desktop",
+        "another-harness",
+        "",
+    ):
         assert (
             level_for_session(
                 default_levels(),

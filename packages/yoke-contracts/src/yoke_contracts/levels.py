@@ -3,7 +3,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional, Sequence
-from yoke_contracts.executor_labels import canonical_harness_id
 from yoke_contracts.level_defaults import DEFAULT_LEVELS
 from yoke_contracts.glyph_contract import GlyphContractError, validate_glyph
 from yoke_contracts.model_level_resolution import (
@@ -165,12 +164,7 @@ def levels_payload(levels):
 
 
 def level_for_session(levels, *, executor, model, reasoning_effort=None, records=()):
-    if not executor or not model:
-        return None
-    try:
-        canonical_harness_id(executor)
-    except ValueError:
-        return None
+    """Registration executor metadata never changes model-level membership."""
     return resolve_model_level(
         levels, model=model, effort=reasoning_effort, records=records
     ).level
