@@ -13,7 +13,7 @@ def main_checkout(root: str | Path) -> Path:
         return root
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), "worktree", "list", "--porcelain"],
+            ["git", "-C", str(root), "worktree", "list", "--porcelain", "-z"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -22,7 +22,7 @@ def main_checkout(root: str | Path) -> Path:
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise _identity_refusal(root) from exc
     if result.returncode == 0:
-        first = result.stdout.split("\n\n", 1)[0].splitlines()
+        first = result.stdout.split("\0\0", 1)[0].split("\0")
         if first and first[0].startswith("worktree ") and "bare" not in first:
             return Path(first[0][9:]).resolve()
     raise _identity_refusal(root)

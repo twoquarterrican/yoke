@@ -31,7 +31,7 @@ def external_lane():
 
 @pytest.fixture
 def checkout(tmp_path):
-    root = tmp_path / "main"
+    root = tmp_path / "main café"
     root.mkdir()
     _git(root, "init")
     (root / "AGENTS.md").write_text("canonical instructions\n")
@@ -54,11 +54,7 @@ def checkout(tmp_path):
 def test_git_lane_resolves_main_and_accepts_parent_canonical_link(
     checkout, tmp_path, external_lane, placement
 ):
-    lane = (
-        tmp_path / "external-lane"
-        if placement == "external"
-        else checkout / ".worktrees/lane"
-    )
+    lane = external_lane if placement == "external" else checkout / ".worktrees/lane"
     _git(checkout, "worktree", "add", "-b", "lane", str(lane))
     assert main_checkout(lane) == checkout
     nested = lane / "subdirectory"
@@ -125,7 +121,7 @@ def _config(tmp_path, monkeypatch, entries):
 
 
 def test_install_from_external_lane_keeps_existing_routing(
-    checkout, tmp_path, monkeypatch
+    checkout, tmp_path, external_lane, monkeypatch
 ):
     lane = external_lane
     _git(checkout, "worktree", "add", "-b", "lane", str(lane))
@@ -140,7 +136,7 @@ def test_install_from_external_lane_keeps_existing_routing(
 
 
 def test_first_install_from_external_lane_registers_main(
-    checkout, tmp_path, monkeypatch
+    checkout, tmp_path, external_lane, monkeypatch
 ):
     lane = external_lane
     _git(checkout, "worktree", "add", "-b", "lane", str(lane))
