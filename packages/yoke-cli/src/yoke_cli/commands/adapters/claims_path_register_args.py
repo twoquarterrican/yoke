@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import sys
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -13,6 +15,7 @@ from yoke_cli.commands._helpers import (
     split_comma,
     usage_error,
 )
+from yoke_contracts.claim_path_syntax import claim_path_refusal
 from yoke_cli.commands.adapters.claims_path_unmaterialized import (
     UNMATERIALIZED_PATH_REFUSAL,
     unmaterialized_paths,
@@ -110,6 +113,14 @@ def parse_path_register_args(args: List[str]) -> PathRegisterArguments | int:
         return usage_error("--tentative-paths must be a subset of --paths")
     # Refuse here rather than after a whole-tree snapshot scan and a relay
     # round trip that can spend minutes retrying without printing anything.
+    refusal = claim_path_refusal(paths)
+    if refusal is not None:
+        code, message = refusal
+        print(
+            json.dumps({"success": False, "code": code, "message": message}),
+            file=sys.stderr,
+        )
+        return 2
     if parsed.mode == "exclusive" and not parsed.allow_planned:
         unmaterialized = unmaterialized_paths(paths)
         if unmaterialized:

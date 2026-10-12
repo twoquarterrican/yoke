@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import io
+import json
 import subprocess
 from contextlib import redirect_stderr, redirect_stdout
 from typing import List
 from unittest.mock import patch
+
+import pytest
 
 from yoke_cli.commands.adapters.claims_path_unmaterialized import (
     unmaterialized_paths,
@@ -170,3 +173,30 @@ def test_an_untracked_file_on_disk_is_not_called_unmaterialized(tmp_path) -> Non
 
 def test_a_probe_that_cannot_run_refuses_nothing(tmp_path) -> None:
     assert unmaterialized_paths(["anything.py"], repo_root=tmp_path / "absent") == []
+
+
+@pytest.mark.parametrize("allow_planned", [True, False], ids=["planned", "observed"])
+@pytest.mark.parametrize(
+    "path,code",
+    [
+        ("/etc/passwd", "path_not_project_relative"),
+        ("../outside.py", "path_not_project_relative"),
+        ("docs/../a.py", "path_not_project_relative"),
+        ("docs/*.py", "path_malformed"),
+        ("'docs/a.py'", "path_malformed"),
+        ('"docs/a.py', "path_malformed"),
+        ("docs\\a.py", "path_malformed"),
+    ],
+)
+def test_register_refuses_a_malformed_path_before_dispatch(
+    path: str, code: str, allow_planned: bool
+) -> None:
+    argv = ["claims", "path", "register", "--item", "YOK-1819", "--paths", path]
+    rc, _out, err = _run(*argv, *(["--allow-planned"] if allow_planned else []))
+
+    refusal = json.loads(err.strip().splitlines()[-1])
+    assert rc == 2
+    assert refusal["code"] == code
+    assert "Re-run" in refusal["message"]
+    assert "Traceback" not in err
+    assert _CAPTURED == []
