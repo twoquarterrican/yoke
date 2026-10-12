@@ -26,7 +26,13 @@ from yoke_cli.config import (
     github_response_safety,
     github_service_profile_proof,
 )
-from yoke_contracts import api_urls, github_app_tokens, github_origin, timestamps
+from yoke_contracts import (
+    api_urls,
+    designed_wait,
+    github_app_tokens,
+    github_origin,
+    timestamps,
+)
 
 
 STABLE_HELPER_FILE_NAME = github_git_credential_launcher.BUNDLE_HELPER_NAME
@@ -82,6 +88,10 @@ def _bundle_sources() -> tuple[tuple[Path, str], ...]:
         (
             Path(directories.__file__),
             github_git_credential_launcher.BUNDLE_PRIVATE_DIRECTORIES_NAME,
+        ),
+        (
+            Path(designed_wait.__file__),
+            github_git_credential_launcher.BUNDLE_DESIGNED_WAIT_NAME,
         ),
         (Path(github_git_credential_file.__file__), STABLE_FILE_IO_NAME),
         (Path(github_git_credential_document.__file__), STABLE_DOCUMENT_NAME),

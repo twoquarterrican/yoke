@@ -31,6 +31,7 @@ from yoke_cli.commands._helpers import (
     usage_error,
 )
 from yoke_contracts.api.function_call import TargetRef
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 
 
 __all__ = [
@@ -237,25 +238,19 @@ def github_status(args: List[str]) -> int:
 
 def _render_connect_progress(event: Mapping[str, Any]) -> None:
     phase = event.get("phase")
-    if phase == "device_authorization":
-        uri = github_response_safety.safe_error_text(
-            event.get("verification_uri"),
-        )
+    if phase in ("device_authorization", "device_browser"):
+        uri = github_response_safety.safe_error_text(event.get("verification_uri"))
         code = github_response_safety.safe_error_text(event.get("user_code"))
-        print(
-            f"Open {uri} and enter code {code}",
-            file=sys.stderr,
-            flush=True,
-        )
-    elif phase == "device_browser" and not event.get("browser_opened"):
-        uri = github_response_safety.safe_error_text(
-            event.get("verification_uri"),
-        )
-        code = github_response_safety.safe_error_text(event.get("user_code"))
-        print(
-            f"Browser did not open; use {uri} with code {code}",
-            file=sys.stderr,
-            flush=True,
+        if phase == "device_authorization":
+            print(f"Open {uri} and enter code {code}", file=sys.stderr, flush=True)
+            return
+        if not event.get("browser_opened"):
+            message = f"Browser did not open; use {uri} with code {code}"
+            print(message, file=sys.stderr, flush=True)
+        announce_designed_wait(
+            f"GitHub to report code {code} approved in the browser",
+            max_wait_seconds=float(event.get("expires_in") or 0),
+            cadence=poll_every(float(event.get("interval") or 0)),
         )
     elif phase == "github_access_propagation_retry":
         print(

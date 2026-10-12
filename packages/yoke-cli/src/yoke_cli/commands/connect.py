@@ -18,6 +18,7 @@ from yoke_cli.config import secrets as machine_secrets
 from yoke_cli.config import hosted_machine_authorization
 from yoke_cli.config import server_connect, team_server_authorization
 from yoke_contracts.api_urls import HOSTED_PLATFORM_URL, HOSTED_STAGE_PLATFORM_URL
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 
 AdapterFn = Callable[[List[str]], int]
 
@@ -178,7 +179,12 @@ def _connect_hosted(parsed: argparse.Namespace) -> int:
                 "yourself.",
                 file=stream,
             )
-        print("Waiting for approval…", file=stream)
+        announce_designed_wait(
+            f"browser approval of code {pending.user_code}",
+            max_wait_seconds=pending.expires_in,
+            cadence=poll_every(pending.interval),
+            write=lambda line: print(line, file=stream, flush=True),
+        )
 
     try:
         credential = hosted_machine_authorization.authorize(

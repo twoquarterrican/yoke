@@ -27,6 +27,7 @@ from yoke_cli.config.session_relay_instance import (
     LAUNCHD_USER_DOMAIN,
     PROD_RELAY_LABEL,
 )
+from yoke_contracts.designed_wait import announce_designed_wait
 
 
 CANONICAL_RELAY_LABEL = PROD_RELAY_LABEL
@@ -159,17 +160,15 @@ def run_launchctl(
 ) -> subprocess.CompletedProcess[str]:
     """Run one launchctl command, or refuse it by name from a test process."""
     resolved = [str(part) for part in command]
-    if not under_test(environ):
-        return subprocess.run(
-            resolved,
-            check=check,
-            capture_output=capture_output,
-            text=text,
-        )
-    sandbox = sandbox_root(environ)
-    if sandbox is not None:
-        return _record_and_simulate(sandbox, resolved)
-    if real_launchd_opted_in(environ):
+    if under_test(environ):
+        sandbox = sandbox_root(environ)
+        if sandbox is not None:
+            return _record_and_simulate(sandbox, resolved)
+        if not real_launchd_opted_in(environ):
+            raise LaunchdBoundaryError(
+                f"a test process may not run launchctl: {' '.join(resolved)}. "
+                + _RECOVERY
+            )
         if names_canonical_relay(resolved):
             raise LaunchdBoundaryError(
                 f"the canonical machine relay ({CANONICAL_RELAY_LABEL}) serves "
@@ -178,14 +177,8 @@ def run_launchctl(
                 "per-environment label instead. If an earlier run already "
                 "unloaded it, `yoke relay install` reloads it."
             )
-        return subprocess.run(
-            resolved,
-            check=check,
-            capture_output=capture_output,
-            text=text,
-        )
-    raise LaunchdBoundaryError(
-        f"a test process may not run launchctl: {' '.join(resolved)}. " + _RECOVERY
+    return subprocess.run(
+        resolved, check=check, capture_output=capture_output, text=text
     )
 
 
@@ -204,11 +197,15 @@ def wait_for_launchd_unload(
     with the job still loaded, not that launchd is stuck.
     """
     deadline = now() + UNLOAD_WAIT_SECONDS
+    announcement = f"launchd to unload {target}"
     while True:
         if run(["launchctl", "print", target]).returncode != 0:
             return True
         if now() >= deadline:
             return False
+        if announcement:
+            announce_designed_wait(announcement, max_wait_seconds=UNLOAD_WAIT_SECONDS)
+            announcement = ""
         pause(UNLOAD_POLL_INTERVAL_SECONDS)
 
 

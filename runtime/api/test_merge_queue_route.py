@@ -11,6 +11,7 @@ from runtime.api.merge_queue_landing_test_helpers import (
     wire_happy_path,
 )
 
+from yoke_contracts.designed_wait import DESIGNED_WAIT_PREFIX
 from yoke_core.domain import merge_queue_landing_pull_request as landing_pr_mod
 from yoke_core.domain import merge_queue_failed_train as failed_train_mod
 from yoke_core.domain import merge_queue_landing_timeout as timeout_mod
@@ -141,13 +142,17 @@ def test_every_changed_server_observation_is_announced(monkeypatch):
         ],
     )
     assert outcome.ok
-    assert all(line.startswith(route_mod.POLL_LINE_PREFIX) for line in announced)
-    assert "queue-entry=AWAITING_CHECKS" in announced[0]
-    assert "elapsed:" in announced[0]
-    assert "merged=true" in announced[-1]
+    # The wait names itself and its bound before the first observation.
+    announcement, *observations = announced
+    assert announcement.startswith(DESIGNED_WAIT_PREFIX)
+    assert "gives up after" in announcement
+    assert all(line.startswith(route_mod.POLL_LINE_PREFIX) for line in observations)
+    assert "queue-entry=AWAITING_CHECKS" in observations[0]
+    assert "elapsed:" in observations[0]
+    assert "merged=true" in observations[-1]
     # The second armed observation is the same set; repeating it hid a
     # stalled check behind elapsed time.
-    assert len(announced) == 2
+    assert len(observations) == 2
 
 
 def test_wait_announces_only_when_the_recorded_check_set_changes(monkeypatch):

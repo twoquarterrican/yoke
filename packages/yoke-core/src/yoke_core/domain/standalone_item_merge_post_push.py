@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Callable, Optional, Sequence
 
 from yoke_contracts.github_app_installation_permissions import (
     GITHUB_CHECKS_READ_PERMISSION_LEVELS as CHECKS_READ,
 )
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_contracts.machine_config.settings_keys import machine_setting_default
 from yoke_core.domain import gh_rest_transport, runtime_settings
 from yoke_core.domain import standalone_item_merge_git as git
@@ -49,12 +50,7 @@ class CheckRun:
     url: str = ""
 
     def evidence(self) -> dict[str, str]:
-        return {
-            "name": self.name,
-            "status": self.status,
-            "conclusion": self.conclusion,
-            "url": self.url,
-        }
+        return asdict(self)
 
     def describe(self) -> str:
         state = self.conclusion or self.status or "unreported"
@@ -186,6 +182,11 @@ def await_post_push_checks(
     conclusion_timeout = float(_setting_seconds(CONCLUSION_TIMEOUT_KEY))
     started = monotonic()
     discovery_deadline = min(discovery_timeout, conclusion_timeout)
+    announce_designed_wait(
+        f"post-push CI checks on {merge_sha}",
+        max_wait_seconds=conclusion_timeout,
+        cadence=poll_every(MINIMUM_POLL_INTERVAL_SECONDS),
+    )
 
     while True:
         runs, error = read(project, merge_sha, authority)

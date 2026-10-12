@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import pytest
 
+from yoke_contracts.designed_wait import DESIGNED_WAIT_PREFIX
 from yoke_core.tools import wait_for_pg
 
 
@@ -89,11 +90,14 @@ def test_wait_exhausts_attempts_and_reports_last_error():
     assert ready is False
     # One sleep between each attempt, none after the final failure.
     assert sleeps == [0.5, 0.5, 0.5]
-    assert len(messages) == 1
-    # Failure message names the last error and redacts the password.
-    assert "boom-547" in messages[0]
-    assert "topsecret" not in messages[0]
-    assert "password=***" in messages[0]
+    # The first failure announces the bounded wait; the last reports giving up.
+    assert len(messages) == 2
+    assert messages[0].startswith(DESIGNED_WAIT_PREFIX)
+    assert "gives up after 2s" in messages[0]
+    # Neither line leaks the password; the failure names the last error.
+    assert all("topsecret" not in message for message in messages)
+    assert "boom-547" in messages[1]
+    assert "password=***" in messages[1]
 
 
 def test_wait_resolves_dsn_from_db_backend_when_not_supplied(monkeypatch):

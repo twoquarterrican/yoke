@@ -13,6 +13,7 @@ import threading
 import uuid
 
 from yoke_cli.self_host import bundle, first_boot_token, protection
+from yoke_contracts.designed_wait import announce_designed_wait
 from yoke_contracts.self_host_bootstrap_output import is_api_token
 from yoke_contracts.self_host_handoff import (
     CORE_SECRETS,
@@ -21,6 +22,9 @@ from yoke_contracts.self_host_handoff import (
     HANDOFF_CLIENT_MODULE,
     HANDOFF_TIMEOUT_SECONDS,
 )
+
+#: How long ``docker compose up --wait`` may take for one service to be healthy.
+HEALTH_WAIT_SECONDS = 120
 
 
 class SelfHostRuntimeError(RuntimeError):
@@ -142,9 +146,17 @@ def start_database(directory: Path, executable: str, password: bytes) -> None:
         ("exec", "-T", "--user", "0", "db", "sh", "-c", DB_PASSWORD_INGRESS),
         input=password,
     )
-    compose(
-        directory, executable, ("up", "-d", "--wait", "--wait-timeout", "120", "db")
+    wait_healthy(directory, executable, "db")
+
+
+def wait_healthy(directory: Path, executable: str, service: str) -> None:
+    """Block on Docker reporting *service* healthy, saying so before going quiet."""
+    announce_designed_wait(
+        f"docker compose to report the self-host {service} service healthy",
+        max_wait_seconds=HEALTH_WAIT_SECONDS,
     )
+    wait = ("--wait", "--wait-timeout", str(HEALTH_WAIT_SECONDS))
+    compose(directory, executable, ("up", "-d", *wait, service))
 
 
 def start_bundle(*, directory: str | Path, executable: str = "docker") -> dict:
@@ -154,7 +166,7 @@ def start_bundle(*, directory: str | Path, executable: str = "docker") -> dict:
     start_database(target, executable, password)
     compose(target, executable, ("up", "--no-deps", "-d", "--force-recreate", "core"))
     _receive_token(target, executable, header)
-    compose(target, executable, ("up", "-d", "--wait", "--wait-timeout", "120", "core"))
+    wait_healthy(target, executable, "core")
     return {"ok": True, "directory": str(target), "healthy": True}
 
 

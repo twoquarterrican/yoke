@@ -11,6 +11,7 @@ import selectors
 from pathlib import Path
 from typing import Callable, Mapping, Optional, TextIO
 
+from yoke_contracts.designed_wait import DESIGNED_WAIT_PREFIX
 from yoke_core.domain import process_group_reaping
 from yoke_core.tools._watch_digest import ProgressDigest
 from yoke_core.tools._watch_throttle import (
@@ -127,10 +128,15 @@ def _route_line(
         partial=False,
     )
     cls = classification.cls
+    # A designed-wait announcement is what makes the silence after it legible,
+    # so it reaches the reader in every mode rather than only the raw capture.
+    designed_wait = cls is not LineClass.URGENT and DESIGNED_WAIT_PREFIX in line
     if outcome_only:
-        if cls is LineClass.URGENT:
+        if cls is LineClass.URGENT or designed_wait:
             emit_immediate(line)
         return line if cls is LineClass.SUMMARY else None
+    if designed_wait:
+        cls = LineClass.METADATA
     if cls is LineClass.NOISE:
         return None
     if cls in (LineClass.URGENT, LineClass.SUMMARY, LineClass.METADATA):

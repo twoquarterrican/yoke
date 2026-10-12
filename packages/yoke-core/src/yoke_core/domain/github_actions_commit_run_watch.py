@@ -38,6 +38,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
+from yoke_contracts.designed_wait import announce_designed_wait
 from yoke_contracts.project_defaults import MissingProjectError
 from yoke_core.domain.project_selection import required_local_project
 from yoke_core.domain.gh_rest_transport import RestTransportError
@@ -130,6 +131,12 @@ def watch_commit_runs(
     """
     selector = workflow_name or "(any)"
     emit(f"CI run target: repo={repo} sha={head_sha} ref={ref} workflow={selector}")
+    announce_designed_wait(
+        f"every CI run on {head_sha} to conclude (lines only on state changes)",
+        max_wait_seconds=timeout_seconds,
+        cadence=CI_SUITE_SCHEDULE.describe(),
+        write=emit,
+    )
 
     start = now()
     last_status: Dict[Any, str] = {}

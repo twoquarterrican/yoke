@@ -31,6 +31,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from yoke_contracts.designed_wait import format_duration, poll_every
+
 #: No question about a run is worth asking more often than this. Twenty
 #: concurrent sessions polling faster than this consume most of an hourly
 #: GitHub budget between them before any other call is counted.
@@ -63,8 +65,7 @@ class PollSchedule:
             previous = offset
         if (
             self.quiet_until_seconds
-            and self.quiet_until_seconds - previous
-            < MINIMUM_POLL_INTERVAL_SECONDS
+            and self.quiet_until_seconds - previous < MINIMUM_POLL_INTERVAL_SECONDS
         ):
             raise ValueError(
                 f"quiet window ending at {self.quiet_until_seconds}s follows "
@@ -76,6 +77,15 @@ class PollSchedule:
                 f"poll interval {self.interval_seconds}s is below the "
                 f"{MINIMUM_POLL_INTERVAL_SECONDS}s minimum interval"
             )
+
+    def describe(self) -> str:
+        """The cadence phrase a designed-wait announcement carries."""
+        tail = poll_every(self.interval_seconds)
+        if not self.probe_offsets and not self.quiet_until_seconds:
+            return tail
+        probes = ", ".join(format_duration(offset) for offset in self.probe_offsets)
+        quiet = format_duration(self.quiet_until_seconds)
+        return f"checks at {probes}, then quiet until {quiet}, then {tail}"
 
 
 #: For a run of the project's full CI suite. The probes cover the fast
@@ -94,7 +104,8 @@ STEADY_SCHEDULE = PollSchedule()
 
 
 def next_read_delay(
-    elapsed_seconds: float, schedule: PollSchedule = STEADY_SCHEDULE,
+    elapsed_seconds: float,
+    schedule: PollSchedule = STEADY_SCHEDULE,
 ) -> float:
     """Seconds to wait before the next read, from a read just taken.
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import http.client
 import os
+import sys
 import tempfile
 import time
 import urllib.error
@@ -110,8 +111,24 @@ def fetch_bytes(
                 raise _transport_error(
                     url, attempt, str(exc) or type(exc).__name__, True, None
                 ) from exc
-        sleep(BACKOFF_SECONDS[attempt - 1])
+        backoff = BACKOFF_SECONDS[attempt - 1]
+        sys.stderr.write(_backoff_announcement(url, attempt + 1, backoff) + "\n")
+        sys.stderr.flush()
+        sleep(backoff)
     raise AssertionError("bounded fetch loop exhausted without a result")
+
+
+def _backoff_announcement(url: str, next_attempt: int, backoff: float) -> str:
+    """The designed-wait line before a retry backoff.
+
+    This gateway runs before Yoke's packages are installed, so it renders the
+    ``yoke_contracts.designed_wait`` line itself; a test pins the two equal.
+    """
+    return (
+        f"Waiting by design: backoff before retrying {url} "
+        f"(attempt {next_attempt} of {MAX_ATTEMPTS}); gives up after "
+        f"{int(backoff)}s. Silence until then is expected."
+    )
 
 
 def fetch_file(
@@ -169,7 +186,9 @@ def _verified_result(
                 f"Content-Length {declared_size} does not match {len(body)} bytes",
             )
     if len(body) < min_bytes:
-        _verification_error(url, attempts, f"received {len(body)} bytes; minimum is {min_bytes}")
+        _verification_error(
+            url, attempts, f"received {len(body)} bytes; minimum is {min_bytes}"
+        )
     if max_bytes is not None and len(body) > max_bytes:
         _verification_error(url, attempts, f"received more than {max_bytes} bytes")
     if expected_size is not None and len(body) != expected_size:

@@ -18,6 +18,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
+
 
 #: The daemon's combined stdout and stderr, in the browser runtime home. Its
 #: stdout carries the startup phase lines (``Launching Chromium``, ``Browser
@@ -110,6 +112,11 @@ def wait_for_daemon_ready(
             lambda state: client._probe_daemon_health(state, timeout=1)
         )
         sleep = sleep or client.time.sleep
+    announce_designed_wait(
+        f"browser daemon (pid {proc.pid}) to report healthy",
+        max_wait_seconds=READINESS_TIMEOUT_SECONDS,
+        cadence=poll_every(READINESS_POLL_SECONDS),
+    )
     deadline = clock() + READINESS_TIMEOUT_SECONDS
     last_readiness_error = "state file not written yet"
     while True:

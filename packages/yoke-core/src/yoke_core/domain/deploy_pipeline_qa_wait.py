@@ -6,6 +6,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 
 AWAITING_SCOPED_QA = -4
 DEFAULT_POLL_INTERVAL_SECONDS = 15.0
@@ -33,6 +34,13 @@ def dispatch_until_qa_resolves(
     timeout = max(0.0, float(timeout_seconds))
     deadline = monotonic() + timeout
     interval = max(0.001, float(poll_interval_seconds))
+    if timeout > 0:
+        announce_designed_wait(
+            "scoped QA obligations on this deployment run to settle",
+            max_wait_seconds=timeout,
+            cadence=poll_every(interval),
+            write=print,
+        )
     while monotonic() < deadline:
         sleep(min(interval, max(0.0, deadline - monotonic())))
         result = dispatch(*args, **kwargs)

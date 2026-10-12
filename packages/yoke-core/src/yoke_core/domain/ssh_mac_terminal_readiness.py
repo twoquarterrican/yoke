@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 import time
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_core.domain.ssh_mac_terminal_capture import RunRemote
 from yoke_core.domain.ssh_mac_terminal_recipe_support import (
     capture_recipe_transcript,
@@ -44,12 +45,20 @@ def wait_for_ready_text_with_reader(
     """Wait until one terminal reader contains every required source marker."""
     deadline = time.monotonic() + timeout_seconds
     transcript = ""
+    announced = False
     while True:
         transcript = read_transcript()
         if all(marker in transcript for marker in expected):
             return True, transcript
         if time.monotonic() >= deadline:
             return False, transcript
+        if not announced:
+            announced = True
+            announce_designed_wait(
+                "the remote terminal to show its ready markers",
+                max_wait_seconds=timeout_seconds,
+                cadence=poll_every(READY_POLL_SECONDS),
+            )
         time.sleep(READY_POLL_SECONDS)
 
 

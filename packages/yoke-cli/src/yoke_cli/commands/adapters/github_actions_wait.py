@@ -18,6 +18,7 @@ from yoke_cli.commands._helpers import ensure_handlers_loaded
 from yoke_cli.transport.dispatcher import build_actor, call_dispatcher, emit_response
 from yoke_cli.transport.session_liveness import ClientSessionLiveness
 from yoke_contracts.api.function_call import TargetRef
+from yoke_contracts.designed_wait import announce_designed_wait
 
 # Module-level aliases so tests monkeypatch the wait loop's clock without
 # rebinding ``time.*`` globally (same idiom as gh_rest_transport).
@@ -42,6 +43,12 @@ def wait_for_ci_completion(
     actor = build_actor(session_id=session_id)
     start = now()
     appearance_budget = min(_appearance_timeout_seconds(), timeout_sec)
+    target = payload.get("head_sha") or f"branch {payload.get('branch') or 'main'}"
+    announce_designed_wait(
+        f"CI workflow {payload.get('workflow')} on {payload.get('repo')} {target}",
+        max_wait_seconds=timeout_sec,
+        cadence=_ci_cadence(),
+    )
     liveness = ClientSessionLiveness(
         actor,
         interval_seconds=_next_read_delay(0),
@@ -101,14 +108,19 @@ def _appearance_timeout_seconds() -> int:
     return int(module.CHECK_CI_APPEARANCE_TIMEOUT_SEC)
 
 
+def _ci_cadence() -> str:
+    import importlib
+
+    module = importlib.import_module("yoke_core.domain.github_poll_schedule")
+    return str(module.CI_SUITE_SCHEDULE.describe())
+
+
 def _next_read_delay(elapsed_seconds: int) -> float:
     """Seconds until this wait's next read of the CI run's status."""
     import importlib
 
     module = importlib.import_module("yoke_core.domain.github_poll_schedule")
-    return float(
-        module.next_read_delay(elapsed_seconds, module.CI_SUITE_SCHEDULE)
-    )
+    return float(module.next_read_delay(elapsed_seconds, module.CI_SUITE_SCHEDULE))
 
 
 __all__ = ["wait_for_ci_completion"]

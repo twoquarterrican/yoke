@@ -6,6 +6,7 @@ import sys
 import time
 from typing import Any, Callable, Dict, Optional
 
+from yoke_contracts.designed_wait import announce_designed_wait
 from yoke_contracts.github_app_installation_permissions import (
     GITHUB_ACTIONS_READ_PERMISSION_LEVELS,
 )
@@ -62,6 +63,12 @@ def check_ci_command(
     """Check CI status on a branch and exit with the legacy CLI code."""
     check_auth()
     start = now()
+    if wait:
+        announce_designed_wait(
+            f"CI workflow {workflow} on {repo} branch {branch}",
+            max_wait_seconds=timeout_sec,
+            cadence=CI_SUITE_SCHEDULE.describe(),
+        )
 
     while True:
         run = get_latest_run()

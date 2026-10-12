@@ -34,6 +34,7 @@ import sys
 import uuid
 from typing import Any, Dict, Optional, Sequence, Tuple
 
+from runtime.api.tools.platform_consumer_run_wait import wait_run
 from yoke_contracts.api_urls import HOSTED_PROD_API_URL
 from yoke_contracts.github_workflow_dispatch import (
     WORKFLOW_DISPATCH_CORRELATION_INPUT,
@@ -193,19 +194,14 @@ def dispatch(
 
 def await_verdict(run_id: str, *, timeout_sec: int) -> Tuple[Dict[str, Any], str]:
     """The consumer run's terminal verdict, or why it could not be read."""
-    code, stdout, stderr = _yoke(
-        [
-            "github-actions",
-            "wait-run",
-            CONSUMER_REPO,
-            run_id,
-            "--project",
-            CONSUMER_PROJECT,
-            "--timeout",
-            str(timeout_sec),
-            "--json",
-        ],
-        timeout=timeout_sec + _COMMAND_TIMEOUT_SECONDS,
+    code, stdout, stderr = wait_run(
+        _yoke,
+        repo=CONSUMER_REPO,
+        project=CONSUMER_PROJECT,
+        run_id=run_id,
+        timeout_sec=timeout_sec,
+        grace_sec=_COMMAND_TIMEOUT_SECONDS,
+        purpose="the platform consumer compatibility check",
     )
     if code == -1:
         return {}, stderr

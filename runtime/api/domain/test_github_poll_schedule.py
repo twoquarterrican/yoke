@@ -95,3 +95,10 @@ class TestScheduleRefusesToBreakTheFloor:
     def test_a_tail_interval_below_the_minimum_is_refused(self):
         with pytest.raises(ValueError, match="minimum interval"):
             PollSchedule(interval_seconds=30.0)
+
+
+def test_a_schedule_describes_its_cadence_for_a_designed_wait() -> None:
+    assert STEADY_SCHEDULE.describe() == "checks every 60s"
+    assert CI_SUITE_SCHEDULE.describe() == (
+        "checks at 60s, 2m, 3m, then quiet until 8m, then checks every 60s"
+    )

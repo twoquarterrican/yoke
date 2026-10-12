@@ -17,6 +17,7 @@ import os
 import sys
 from typing import List, Optional, Tuple
 
+from yoke_contracts.designed_wait import announce_designed_wait
 from yoke_core.domain import json_helper
 from yoke_core.domain.deploy_pipeline_reporting import (
     _github_actions,
@@ -227,7 +228,11 @@ def _check_ci_gate(
         )
 
     subject = ci_recovery.ci_gate_subject(branch, head_sha)
-    print(f"  CI gate: checking {ci_workflow} on {subject} for {github_repo}...")
+    announce_designed_wait(
+        f"CI gate {ci_workflow} on {subject} for {github_repo}",
+        max_wait_seconds=timeout_sec,
+        write=print,
+    )
 
     # --branch is always sent, empty included: the adapter defaults an
     # absent flag to main, which would filter a branchless candidate

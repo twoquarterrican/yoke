@@ -22,6 +22,7 @@ import sys
 import time
 from typing import Callable, Optional
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_core.domain.deploy_environment_settings import (
     DeployEnvironment,
     DeployEnvironmentError,
@@ -63,21 +64,23 @@ def _describe_origin_instance(
     """Return (instance_id, state) for the env origin instance."""
     result = runner.run(
         [
-            "aws", "ec2", "describe-instances",
+            "aws",
+            "ec2",
+            "describe-instances",
             "--filters",
             f"Name=tag:Name,Values={_instance_name_tag(env)}",
             "Name=instance-state-name,Values=pending,running,stopping,stopped",
             "--query",
             "Reservations[].Instances[].[InstanceId,State.Name]",
-            "--output", "json",
+            "--output",
+            "json",
         ],
         env=aws_env,
         timeout=60,
     )
     if not result.ok:
         raise EnvironmentActivateError(
-            "[env-activate] describe-instances failed: "
-            + result.stderr.strip()
+            "[env-activate] describe-instances failed: " + result.stderr.strip()
         )
     try:
         rows = json.loads(result.stdout or "[]")
@@ -122,13 +125,22 @@ def ensure_instance_running(
         )
         if not started.ok:
             raise EnvironmentActivateError(
-                "[env-activate] start-instances failed: "
-                + started.stderr.strip()
+                "[env-activate] start-instances failed: " + started.stderr.strip()
             )
+    announce_designed_wait(
+        f"origin instance {instance_id} to reach running (aws ec2 wait)",
+        max_wait_seconds=600,
+        cadence=poll_every(15),
+        write=emit,
+    )
     waited = runner.run(
         [
-            "aws", "ec2", "wait", "instance-running",
-            "--instance-ids", instance_id,
+            "aws",
+            "ec2",
+            "wait",
+            "instance-running",
+            "--instance-ids",
+            instance_id,
         ],
         env=aws_env,
         timeout=600,

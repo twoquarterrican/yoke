@@ -23,6 +23,7 @@ BUNDLE_RESPONSE_SAFETY_NAME = "_yoke_github_response_safety.py"
 BUNDLE_OAUTH_TRANSPORT_NAME = "_yoke_github_oauth_transport.py"
 BUNDLE_SERVICE_PROFILE_PROOF_NAME = "_yoke_github_service_profile_proof.py"
 BUNDLE_PRIVATE_DIRECTORIES_NAME = "_yoke_private_directories.py"
+BUNDLE_DESIGNED_WAIT_NAME = "_yoke_designed_wait.py"
 BUNDLE_FILE_IO_NAME = "_yoke_github_git_credential_file.py"
 BUNDLE_DOCUMENT_NAME = "_yoke_github_git_credential_document.py"
 BUNDLE_ACCESS_CACHE_NAME = "_yoke_github_git_credential_access_cache.py"
@@ -36,6 +37,7 @@ BUNDLE_MODULE_NAMES = (
     BUNDLE_OAUTH_TRANSPORT_NAME,
     BUNDLE_SERVICE_PROFILE_PROOF_NAME,
     BUNDLE_PRIVATE_DIRECTORIES_NAME,
+    BUNDLE_DESIGNED_WAIT_NAME,
     BUNDLE_FILE_IO_NAME,
     BUNDLE_DOCUMENT_NAME,
     BUNDLE_ACCESS_CACHE_NAME,
@@ -237,6 +239,7 @@ if __name__ == "__main__":  # pragma: no cover - installed entrypoint
 __all__ = [
     "BUNDLE_HELPER_NAME",
     "BUNDLE_API_URLS_NAME",
+    "BUNDLE_DESIGNED_WAIT_NAME",
     "BUNDLE_FILE_IO_NAME",
     "BUNDLE_DOCUMENT_NAME",
     "BUNDLE_MODULE_MAX_BYTES",
