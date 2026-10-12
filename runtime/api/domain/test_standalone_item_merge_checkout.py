@@ -15,6 +15,7 @@ import pytest
 
 from yoke_core.domain import standalone_item_merge_cli as merge_cli
 from yoke_core.domain import standalone_item_merge_checkout as checkout
+from runtime.api.domain.standalone_merge_simulation_support import git
 
 
 def _refuse_cwd(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -24,13 +25,15 @@ def _refuse_cwd(monkeypatch: pytest.MonkeyPatch) -> None:
         raise AssertionError("mapped project must not fall back to cwd")
 
     monkeypatch.setattr(
-        "yoke_core.domain.worktree_paths._resolve_repo_root_from_cwd", refuse,
+        "yoke_core.domain.worktree_paths._resolve_repo_root_from_cwd",
+        refuse,
     )
 
 
-def _map_checkouts(
-    monkeypatch: pytest.MonkeyPatch, mapping: dict[str, Path]
-) -> None:
+def _map_checkouts(monkeypatch: pytest.MonkeyPatch, mapping: dict[str, Path]) -> None:
+    for root in mapping.values():
+        if root.exists():
+            git(root, "init", "-b", "main")
     monkeypatch.setattr(
         "yoke_core.domain.project_checkout_locations.checkout_for_project_slug",
         lambda slug: mapping.get(slug),
@@ -51,7 +54,8 @@ def test_external_project_uses_its_own_checkout(
     _map_checkouts(monkeypatch, {"external": external, "yoke": tmp_path / "yoke"})
 
     assert merge_cli._resolve_checkout(
-        {"id": 7, "project": {"slug": "external"}}, "",
+        {"id": 7, "project": {"slug": "external"}},
+        "",
     ) == (external, "main")
 
 
@@ -66,7 +70,8 @@ def test_external_project_resolves_from_its_own_workspace(
     _map_checkouts(monkeypatch, {"external": external})
 
     assert merge_cli._resolve_checkout(
-        {"id": 7, "project": {"slug": "external"}}, "",
+        {"id": 7, "project": {"slug": "external"}},
+        "",
     ) == (external, "main")
 
 
@@ -80,7 +85,8 @@ def test_self_project_uses_its_mapping_not_the_session_repo(
     _map_checkouts(monkeypatch, {"yoke": yoke, "external": tmp_path / "external"})
 
     assert merge_cli._resolve_checkout(
-        {"id": 7, "project": {"slug": "yoke"}}, "",
+        {"id": 7, "project": {"slug": "yoke"}},
+        "",
     ) == (yoke, "main")
 
 
@@ -91,7 +97,8 @@ def test_missing_checkout_mapping_fails_closed(
 
     with pytest.raises(RuntimeError, match="no machine-local checkout mapping"):
         merge_cli._resolve_checkout(
-            {"id": 7, "project": {"slug": "external"}}, "",
+            {"id": 7, "project": {"slug": "external"}},
+            "",
         )
 
 
@@ -104,7 +111,8 @@ def test_target_override_wins_over_the_project_default(
     _map_checkouts(monkeypatch, {"external": external})
 
     assert merge_cli._resolve_checkout(
-        {"id": 7, "project": {"slug": "external"}}, "release",
+        {"id": 7, "project": {"slug": "external"}},
+        "release",
     ) == (external, "release")
 
 

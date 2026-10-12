@@ -76,7 +76,8 @@ class TestResolveContextRelays:
 
         monkeypatch.setattr(prep, "call_dispatcher", fake)
         monkeypatch.setattr(
-            "yoke_core.domain.worktree.resolve_main_root", lambda: str(tmp_path)
+            "yoke_core.domain.worktree.resolve_main_root",
+            lambda **kwargs: kwargs.get("cwd") or str(tmp_path),
         )
         monkeypatch.setattr(prep, "_find_worktree", lambda b, r: str(tmp_path))
         _no_bare_db(monkeypatch)
@@ -123,7 +124,8 @@ class TestResolveContextRelays:
 
         monkeypatch.setattr(prep, "call_dispatcher", fake)
         monkeypatch.setattr(
-            "yoke_core.domain.worktree.resolve_main_root", lambda: str(tmp_path)
+            "yoke_core.domain.worktree.resolve_main_root",
+            lambda **kwargs: kwargs.get("cwd") or str(tmp_path),
         )
         monkeypatch.setattr(prep, "_find_worktree", lambda b, r: str(tmp_path))
         monkeypatch.setattr(
@@ -162,7 +164,8 @@ class TestResolveContextRelays:
 
         monkeypatch.setattr(prep, "call_dispatcher", fake)
         monkeypatch.setattr(
-            "yoke_core.domain.worktree.resolve_main_root", lambda: str(tmp_path)
+            "yoke_core.domain.worktree.resolve_main_root",
+            lambda **kwargs: kwargs.get("cwd") or str(tmp_path),
         )
         monkeypatch.setattr(prep, "_find_worktree", lambda b, r: str(tmp_path))
         _no_bare_db(monkeypatch)

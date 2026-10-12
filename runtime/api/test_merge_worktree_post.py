@@ -163,24 +163,22 @@ class TestPostMergeOps:
 class TestRemoteCleanup:
     """Remote branch deletion."""
 
-    def test_yok541_remote_branch_delete_unconditional(
+    def test_standalone_engine_preserves_remote_branch_for_close_out(
         self, merge_env: MergeEnv
     ) -> None:
-        """Remote branch deleted after merge."""
+        """The outer boundary retires the branch after its durable writes."""
         result = run_merge(merge_env)
         assert result.exit_code == 0
-
-        # Either the delete message appears, or the branch is already gone
-        if "Deleted remote branch" not in result.stdout:
-            ls_remote = _git(
-                merge_env.repo,
-                "ls-remote",
-                "--heads",
-                str(merge_env.origin),
-                TEST_BRANCH,
-                check=False,
-            )
-            assert TEST_BRANCH not in ls_remote.stdout
+        ls_remote = _git(
+            merge_env.repo,
+            "ls-remote",
+            "--heads",
+            str(merge_env.origin),
+            TEST_BRANCH,
+            check=False,
+        )
+        assert TEST_BRANCH in ls_remote.stdout
+        assert "Deleted remote branch" not in result.stdout
 
     def test_yok541_remote_delete_warning_on_failure(self, merge_env: MergeEnv) -> None:
         """Remote delete failure is warning, not crash."""

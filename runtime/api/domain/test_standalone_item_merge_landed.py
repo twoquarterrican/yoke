@@ -24,6 +24,7 @@ from runtime.api.domain.landed_lane_test_support import (
     probe as _probe,
 )
 
+
 @pytest.fixture(autouse=True)
 def _enter_release_wait_on_close_out(monkeypatch):
     monkeypatch.setattr(
@@ -140,9 +141,7 @@ def test_an_item_that_has_not_reached_release_gets_its_own_mismatch_through(
         contains=(LANE_SHA, MERGE_SHA),
     )
     monkeypatch.setattr(landed.receipts, "load", lambda *_a, **_k: RECEIPT)
-    assert stale_lane.stale_unlanded_work(
-        **LOOK, stale_mismatch_is_foreign=False
-    ) == ""
+    assert stale_lane.stale_unlanded_work(**LOOK, stale_mismatch_is_foreign=False) == ""
 
 
 def test_a_squashed_head_matching_the_receipt_has_landed(monkeypatch):
@@ -196,6 +195,7 @@ def test_a_landed_lane_never_reaches_the_verification_gate_or_the_queue(
         lambda **_k: pytest.fail("a landed lane must not re-enter the queue"),
     )
     monkeypatch.setattr(converging, "fast_forward_main_checkout", lambda *_a: "")
+    monkeypatch.setattr(converging, "verified_target_sha", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(landed.git, "has_remote", lambda *_a: False)
     monkeypatch.setattr(landed.receipts, "record", lambda *_a, **_k: "")
     monkeypatch.setattr(

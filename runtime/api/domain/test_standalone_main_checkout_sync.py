@@ -14,6 +14,7 @@ from yoke_core.domain.project_github_auth_models import (
 @pytest.fixture(autouse=True)
 def _connected_project(monkeypatch):
     monkeypatch.setattr(post_push, "github_merge_enabled", lambda _p: True)
+    monkeypatch.setattr(post_push, "verified_target_sha", lambda *_a: "m" * 40)
 
 
 def test_completed_standalone_landing_fast_forwards_main(monkeypatch):

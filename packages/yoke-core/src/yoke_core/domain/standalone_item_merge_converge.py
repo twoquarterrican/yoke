@@ -18,6 +18,7 @@ from __future__ import annotations
 from yoke_core.domain import item_merge_contributed_commits as contributed
 from yoke_core.domain import standalone_item_merge_git as git
 from yoke_core.domain import item_merge_receipts as receipts
+from yoke_core.domain.merge_landing_proof import LandingUnverified, verified_target_sha
 from yoke_core.domain.standalone_item_merge_landed import LandedLane
 from yoke_core.domain.standalone_item_merge_stale_lane import stale_unlanded_work
 from yoke_core.engines.main_checkout_sync import fast_forward_main_checkout
@@ -124,8 +125,38 @@ def converge(
         f"branch {lane.branch!r} already landed on {lane.target!r} "
         f"({lane.source}); close-out converged without re-merging"
     ]
-    merge_sha = lane.merge_sha or lane.commit_sha
-    stamp_error = stamp_merged_at(item_id)
+    pushed = False
+    try:
+        try:
+            merge_sha = verified_target_sha(repo_root, lane.target, lane.commit_sha)
+        except LandingUnverified:
+            pushed, push_warning = git.publish(repo_root, lane.target)
+            if push_warning:
+                warnings.append(push_warning)
+            merge_sha = verified_target_sha(repo_root, lane.target, lane.commit_sha)
+    except LandingUnverified as exc:
+        note = receipts.record_failure(
+            item_id,
+            branch=lane.branch,
+            target=lane.target,
+            label="merge_landing_unverified",
+            phase="convergence",
+            reason=str(exc),
+        )
+        if note:
+            warnings.append(note)
+        return StandaloneMergeOutcome(
+            ok=False,
+            exit_code=1,
+            already_merged=False,
+            commit_sha=lane.commit_sha,
+            error=str(exc),
+            pushed=pushed,
+            warnings=tuple(warnings),
+        )
+    stamp_error = stamp_merged_at(
+        item_id, repo_root=repo_root, merge_sha=lane.merge_sha or lane.commit_sha
+    )
     if stamp_error:
         warnings.append(f"merged_at not recorded: {stamp_error}")
     receipt_note = receipts.record(
@@ -146,13 +177,7 @@ def converge(
     if receipt_note:
         warnings.append(receipt_note)
 
-    pushed = False
     if git.has_remote(repo_root):
-        git.fetch_target(repo_root, lane.target)
-        if not git.is_ancestor(repo_root, lane.commit_sha, f"origin/{lane.target}"):
-            pushed, push_warning = git.publish(repo_root, lane.target)
-            if push_warning:
-                warnings.append(push_warning)
         sync_warning = fast_forward_main_checkout(repo_root, lane.target)
         if sync_warning:
             warnings.append(sync_warning)

@@ -197,7 +197,7 @@ def test_merge_preparation_keeps_branch_ref_with_either_detail_shape(
         ),
     )
     monkeypatch.setattr(
-        "yoke_core.domain.worktree.resolve_main_root", lambda: str(tmp_path)
+        "yoke_core.domain.worktree.resolve_main_root", lambda **_kw: str(tmp_path)
     )
     monkeypatch.setattr(prepare, "_find_worktree", lambda *args: str(tmp_path))
     monkeypatch.setattr(

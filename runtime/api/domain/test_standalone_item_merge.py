@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from runtime.api.domain.standalone_merge_simulation_support import integrate_candidate
+
 from pathlib import Path
 
 import pytest
@@ -120,7 +122,7 @@ class TestMergeBoundary:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(sim, "stamp_merged_at", lambda item_id, **_kwargs: None)
-        monkeypatch.setattr(sim, "_run_merge_engine", lambda **_k: (0, ""))
+        monkeypatch.setattr(sim, "_run_merge_engine", integrate_candidate)
         outcome = _merge(repo)
         assert outcome.touched_files == ("feature.txt",)
         assert outcome.commit_sha
@@ -132,7 +134,7 @@ class TestMergeBoundary:
     ) -> None:
         """External projects without a remote still complete the merge."""
         monkeypatch.setattr(sim, "stamp_merged_at", lambda item_id, **_kwargs: None)
-        monkeypatch.setattr(sim, "_run_merge_engine", lambda **_k: (0, ""))
+        monkeypatch.setattr(sim, "_run_merge_engine", integrate_candidate)
         outcome = _merge(repo)
         assert outcome.ok
         assert not outcome.pushed
@@ -148,7 +150,7 @@ class TestMergeBoundary:
             "stamp_merged_at",
             lambda item_id, **_kwargs: "control plane refused",
         )
-        monkeypatch.setattr(sim, "_run_merge_engine", lambda **_k: (0, ""))
+        monkeypatch.setattr(sim, "_run_merge_engine", integrate_candidate)
         outcome = _merge(repo)
         assert outcome.ok
         assert any("merged_at" in warning for warning in outcome.warnings)
@@ -228,7 +230,7 @@ class TestCloseOutOrdering:
             lambda item_id: calls.append("sync"),
         )
         monkeypatch.setattr(sim, "stamp_merged_at", lambda item_id, **_kwargs: None)
-        monkeypatch.setattr(sim, "_run_merge_engine", lambda **_k: (0, ""))
+        monkeypatch.setattr(sim, "_run_merge_engine", integrate_candidate)
 
         assert sim_cli.run(["ITEM-1", "--skip-status"]) == 0
         assert calls == ["sync"]
@@ -273,7 +275,7 @@ class TestCloseOutOrdering:
         )
         monkeypatch.setattr(sim, "sync_item_to_github", lambda item_id: None)
         monkeypatch.setattr(sim, "stamp_merged_at", lambda item_id, **_kwargs: None)
-        monkeypatch.setattr(sim, "_run_merge_engine", lambda **_k: (0, ""))
+        monkeypatch.setattr(sim, "_run_merge_engine", integrate_candidate)
 
         exit_code = sim_cli.run(
             ["ITEM-1", "--result", "landed", "--verification", "suite green"],

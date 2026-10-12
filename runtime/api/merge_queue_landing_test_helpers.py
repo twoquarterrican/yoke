@@ -221,6 +221,9 @@ def wire_happy_path(
 ) -> BatchReceipt:
     """Wire every collaborator a landing touches; return the batch receipt."""
     monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_target_sha", lambda *_a: "m" * 40
+    )
+    monkeypatch.setattr(
         route_mod,
         "read_queue_members",
         lambda _ctx, base_branch="main": (list(members), None),

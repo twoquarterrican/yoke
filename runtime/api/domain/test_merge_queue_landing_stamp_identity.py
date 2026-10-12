@@ -33,6 +33,10 @@ def _ctx(repo_root: str = REPO_ROOT) -> MergeContext:
 
 def _wire(monkeypatch, *, batch: Any, failure: Any = None) -> dict:
     stamped: dict = {}
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_target_sha",
+        lambda *_a: MERGE_SHA,
+    )
 
     def stamp(item_id, **kwargs):
         stamped.update(item_id=item_id, **kwargs)
@@ -45,8 +49,10 @@ def _wire(monkeypatch, *, batch: Any, failure: Any = None) -> dict:
     monkeypatch.setattr(
         close_out_mod,
         "observe_batch",
-        lambda ctx, *, pr_num, member_snapshot, drift_check=None,
-        landed_merge_sha="": (batch, failure),
+        lambda ctx, *, pr_num, member_snapshot, drift_check=None, landed_merge_sha="": (
+            batch,
+            failure,
+        ),
     )
     monkeypatch.setattr(
         close_out_mod, "record_batch_evidence", lambda item_id, receipt, **_kw: None
@@ -72,7 +78,10 @@ def test_the_stamp_names_the_merge_this_landing_resolved(monkeypatch) -> None:
     stamped = _wire(monkeypatch, batch=batch)
 
     close_out_mod.record_landing(
-        _ctx(), item_id=7, commit_sha=LANE_SHA, pr_num="42",
+        _ctx(),
+        item_id=7,
+        commit_sha=LANE_SHA,
+        pr_num="42",
     )
 
     assert stamped == {
@@ -82,10 +91,10 @@ def test_the_stamp_names_the_merge_this_landing_resolved(monkeypatch) -> None:
     }
 
 
-def test_an_unresolved_merge_stamps_without_one_rather_than_a_wrong_sha(
+def test_unresolved_ci_still_stamps_the_verified_remote_tip(
     monkeypatch,
 ) -> None:
-    """No resolved merge leaves the stamp its fallback, and it keeps coalescing."""
+    """CI discovery cannot change the independently proven remote identity."""
     stamped = _wire(
         monkeypatch,
         batch=None,
@@ -95,13 +104,16 @@ def test_an_unresolved_merge_stamps_without_one_rather_than_a_wrong_sha(
     )
 
     close_out_mod.record_landing(
-        _ctx(), item_id=7, commit_sha=LANE_SHA, pr_num="42",
+        _ctx(),
+        item_id=7,
+        commit_sha=LANE_SHA,
+        pr_num="42",
     )
 
-    assert stamped == {"item_id": 7, "repo_root": REPO_ROOT, "merge_sha": ""}
+    assert stamped == {"item_id": 7, "repo_root": REPO_ROOT, "merge_sha": LANE_SHA}
 
 
-def test_a_checkout_less_context_still_stamps(monkeypatch) -> None:
+def test_a_checkout_less_context_refuses_without_stamping(monkeypatch) -> None:
     """An empty repo_root is a fallback, never a crash mid-close-out."""
     batch = BatchReceipt(
         pr_num="42",
@@ -112,8 +124,19 @@ def test_a_checkout_less_context_still_stamps(monkeypatch) -> None:
     )
     stamped = _wire(monkeypatch, batch=batch)
 
-    close_out_mod.record_landing(
-        _ctx(""), item_id=7, commit_sha=LANE_SHA, pr_num="42",
+    monkeypatch.undo()
+    monkeypatch.setattr(
+        close_out_mod,
+        "stamp_merged_at",
+        lambda *_a, **_kw: stamped.update(unexpected=True),
+    )
+    monkeypatch.setattr(close_out_mod.receipts, "record_failure", lambda *_a, **_kw: "")
+    result = close_out_mod.record_landing(
+        _ctx(""),
+        item_id=7,
+        commit_sha=LANE_SHA,
+        pr_num="42",
     )
 
-    assert stamped == {"item_id": 7, "repo_root": "", "merge_sha": MERGE_SHA}
+    assert not stamped
+    assert "merge_landing_identity_missing" in result.receipt_error

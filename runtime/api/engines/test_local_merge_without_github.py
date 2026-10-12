@@ -19,7 +19,7 @@ from yoke_core.domain import merge_github_authority as authority
 
 @pytest.mark.parametrize("layout", ["tracking-ref", "unfetched-remote", "no-remote"])
 @pytest.mark.parametrize("standalone", [False, True])
-def test_disconnected_merge_lands_both_sides_without_publication(
+def test_disconnected_merge_requires_remote_proof_for_standalone_close_out(
     monkeypatch,
     tmp_path,
     layout,
@@ -27,6 +27,7 @@ def test_disconnected_merge_lands_both_sides_without_publication(
 ):
     repo, lane, ctx = make_local_checkout(monkeypatch, tmp_path, layout)
     source = git(lane, "rev-parse", "HEAD")
+    monkeypatch.setattr(boundary.receipts, "record_failure", lambda *_a, **_kw: "")
     monkeypatch.setattr(
         runner,
         "validate_github_auth_for_merge",
@@ -50,7 +51,13 @@ def test_disconnected_merge_lands_both_sides_without_publication(
             project="local-project",
             local_merge=True,
         )
+        if layout != "no-remote":
+            assert not outcome.ok and not outcome.merge_sha
+            assert "merge_landing_fetch_failed" in outcome.error
+            assert lane.is_dir()
+            return
         assert outcome.ok, outcome.error
+        source = outcome.commit_sha
         assert not outcome.pushed
         assert outcome.touched_files == ("feature.txt",)
         assert "local" in outcome.output.lower()

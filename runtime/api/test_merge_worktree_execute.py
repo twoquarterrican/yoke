@@ -11,14 +11,13 @@ Shared fixtures and helpers live in ``test_merge_worktree_full.py``.
 """
 
 import json
-from pathlib import Path
 
 from runtime.api.test_merge_worktree_full import (
     TEST_BRANCH,
     MergeEnv,
     _git,
     _write_file,
-    merge_env,  # re-export so pytest recognises this fixture
+    merge_env as merge_env,
     run_merge,
 )
 
@@ -47,18 +46,28 @@ class TestBasicMerge:
         # Successful merge surfaces the verification + success lines.
         assert "Successfully merged" in result.stdout
 
-    def test_bug_a4_worktree_before_branch(self, merge_env: MergeEnv) -> None:
-        """Worktree removed before branch deletion."""
+    def test_standalone_engine_retains_lane_until_outer_close_out(
+        self, merge_env: MergeEnv
+    ) -> None:
+        """Receipt, evidence and lifecycle close-out still need the lane."""
         result = run_merge(merge_env)
         assert result.exit_code == 0
-
-        # Verify worktree no longer exists as a git worktree
         wt_list = _git(merge_env.repo, "worktree", "list", "--porcelain", check=False)
-        assert str(merge_env.worktree) not in wt_list.stdout
-
-        # Verify local branch is deleted
+        assert str(merge_env.worktree) in wt_list.stdout
         branch_list = _git(merge_env.repo, "branch", "--list", TEST_BRANCH, check=False)
-        assert TEST_BRANCH not in branch_list.stdout.strip()
+        assert TEST_BRANCH in branch_list.stdout.strip()
+        candidate = _git(merge_env.worktree, "rev-parse", "HEAD").stdout.strip()
+        assert (
+            _git(
+                merge_env.repo,
+                "merge-base",
+                "--is-ancestor",
+                candidate,
+                "origin/main",
+                check=False,
+            ).returncode
+            == 0
+        )
 
 
 # ===========================================================================
@@ -105,7 +114,9 @@ class TestRebaseStrategy:
 
         machine_config = merge_env.tmpdir / "machine-config.json"
         machine_config.write_text(
-            json.dumps({"schema_version": 1, "settings": {"merge_conflict_threshold": "1"}}),
+            json.dumps(
+                {"schema_version": 1, "settings": {"merge_conflict_threshold": "1"}}
+            ),
             encoding="utf-8",
         )
 
@@ -135,7 +146,9 @@ class TestRebaseStrategy:
 
         machine_config = merge_env.tmpdir / "machine-config.json"
         machine_config.write_text(
-            json.dumps({"schema_version": 1, "settings": {"merge_conflict_threshold": "1"}}),
+            json.dumps(
+                {"schema_version": 1, "settings": {"merge_conflict_threshold": "1"}}
+            ),
             encoding="utf-8",
         )
 
@@ -265,9 +278,13 @@ class TestMergeCommitDetection:
         # Verify content preserved
         _git(repo, "checkout", "main", check=False)
         _git(repo, "pull", "origin", "main", check=False)
-        feat_content = _git(repo, "show", "HEAD:feature.txt", check=False).stdout.strip()
+        feat_content = _git(
+            repo, "show", "HEAD:feature.txt", check=False
+        ).stdout.strip()
         assert feat_content == "feature change"
-        script_content = _git(repo, "show", "HEAD:script.sh", check=False).stdout.strip()
+        script_content = _git(
+            repo, "show", "HEAD:script.sh", check=False
+        ).stdout.strip()
         assert script_content == "main change v2"
 
     def test_yok616_no_merge_commits_uses_rebase(self, merge_env: MergeEnv) -> None:

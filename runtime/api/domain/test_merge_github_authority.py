@@ -137,7 +137,10 @@ class TestPostPushProofUsesTheMergesAuthority:
         seen: list[str] = []
         monkeypatch.setattr(post_push.git, "git_out", lambda *_a: "m" * 40)
         monkeypatch.setattr(post_push.git, "publish", lambda *_a: (True, ""))
-        monkeypatch.setattr(post_push.git, "has_remote", lambda *_a: False)
+        monkeypatch.setattr(post_push.git, "has_remote", lambda *_a: True)
+        monkeypatch.setattr(post_push, "verified_target_sha", lambda *_a: "m" * 40)
+        monkeypatch.setattr(post_push, "github_merge_enabled", lambda *_a: True)
+        monkeypatch.setattr(post_push, "fast_forward_main_checkout", lambda *_a: "")
         monkeypatch.setattr(merge_boundary.git, "branch_exists", lambda *_a: True)
         monkeypatch.setattr(merge_boundary.git, "head_of", lambda *_a: "c" * 40)
         monkeypatch.setattr(merge_boundary.git, "changed_files", lambda *_a: ("f.py",))
@@ -145,8 +148,7 @@ class TestPostPushProofUsesTheMergesAuthority:
         monkeypatch.setattr(
             merge_boundary, "stamp_merged_at", lambda _item, **_kwargs: None
         )
-        # An already-contained branch proves the merge its receipt recorded,
-        # not whatever commit the target has since moved to.
+        # The candidate and its prior receipt share the proved remote tip.
         monkeypatch.setattr(
             merge_boundary.receipts,
             "load",

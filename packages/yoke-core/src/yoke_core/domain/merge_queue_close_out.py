@@ -200,27 +200,46 @@ def record_landing(
     for a lane that landed twice: both are on the base, and only the
     candidate's own merge belongs to the landing in hand.
     """
+    from yoke_core.domain.merge_landing_proof import (
+        LandingUnverified,
+        verified_target_sha,
+    )
+
+    receipt_commit = commit_sha
+    receipt_error = ""
+    if resolve_landed_head is not None:
+        receipt_commit, gap = resolve_landed_head(item_id)
+        if not receipt_commit:
+            return QueueCloseOut(
+                receipt_error=(
+                    "merge receipt not recorded: "
+                    + (gap or "the landing record named no candidate head")
+                    + ". The cached lane head is not recorded in its place."
+                )
+            )
+        candidate_sha = receipt_commit
+    try:
+        remote_sha = verified_target_sha(
+            ctx.repo_root, ctx.args.target, candidate_sha or commit_sha
+        )
+    except LandingUnverified as exc:
+        note = receipts.record_failure(
+            item_id,
+            branch=ctx.args.branch,
+            target=ctx.args.target,
+            label="merge_landing_unverified",
+            phase="queue_close_out",
+            reason=str(exc),
+        )
+        return QueueCloseOut(receipt_error=str(exc), warnings=(note,) if note else ())
     warnings: list[str] = []
     fetch_state: dict = {}
     batch = read_recorded_batch(item_id, pr_num=pr_num)
-    # The merge the base actually holds this landing's candidate under.
-    # Resolved before the receipt because both the receipt and the marker
-    # repoint below ask about that merge rather than about the pull request
-    # the item last armed, which a re-arm can move to one that never lands.
-    # Asked of the candidate rather than of ``commit_sha``: a lane that
-    # landed twice carries an older recorded commit whose merge is an
-    # ancestor of this one, and answering with it repoints a corrected item
-    # back at the landing it superseded.
     landing_sha = _landing_merge(ctx, candidate_sha or commit_sha, fetch_state)
     ci_evidence_error = ""
     ci_evidence_retryable = True
     ci_evidence_recovery = ""
-    if batch is not None:
-        # The proof is already where the terminal gate reads it. Recording it
-        # again would only add a duplicate row, and re-deriving it could only
-        # disagree with the item's own landing.
-        merge_sha = batch.merge_sha
-    else:
+    if batch is None:
         batch, batch_failure = observe_batch(
             ctx,
             pr_num=pr_num,
@@ -235,7 +254,6 @@ def record_landing(
             warnings.append(batch_failure.reason)
             ci_evidence_retryable = batch_failure.retryable
             ci_evidence_recovery = batch_failure.recovery
-        merge_sha = batch.merge_sha if batch is not None else ""
         if batch is None:
             ci_evidence_error = (
                 batch_failure.reason
@@ -258,10 +276,6 @@ def record_landing(
                 ci_evidence_recovery = ""
                 warnings.append(f"batch evidence not recorded: {evidence_error}")
 
-    # Repointed before the stamp, because every landing fact belongs to one
-    # pull request: a marker naming a pull request that never merged would
-    # otherwise date this landing from its predecessor's stamps and send the
-    # next close-out back to the same open pull request.
     repoint_note = repoint_to_landing_carrier(
         ctx,
         item_id=item_id,
@@ -271,13 +285,10 @@ def record_landing(
     if repoint_note:
         warnings.append(repoint_note)
 
-    # Stamped here rather than on entry, because the landing's own merge
-    # commit is what dates it and that is only known now. Stamping first
-    # recorded the moment close-out ran, which for a re-entered close-out is
-    # hours after the merge and for an item landing a second time is a date
-    # belonging to the landing it just replaced.
     stamp_error = stamp_merged_at(
-        item_id, repo_root=ctx.repo_root or "", merge_sha=merge_sha
+        item_id,
+        repo_root=ctx.repo_root or "",
+        merge_sha=landing_sha or (batch.merge_sha if batch else receipt_commit),
     )
     if stamp_error:
         warnings.append(f"merged_at not recorded: {stamp_error}")
@@ -296,20 +307,6 @@ def record_landing(
                 f"rather than from pull request {pr_num}"
             )
 
-    receipt_commit = commit_sha
-    receipt_error = ""
-    if resolve_landed_head is not None:
-        landed_head, head_gap = resolve_landed_head(item_id)
-        if landed_head:
-            receipt_commit = landed_head
-        else:
-            receipt_commit = ""
-            receipt_error = (
-                "merge receipt not recorded: "
-                + (head_gap or "the landing record named no candidate head")
-                + " The cached lane head is not recorded in its place."
-            )
-            warnings.append(receipt_error)
     if receipt_commit:
         receipt_note = receipts.record(
             item_id,
@@ -317,7 +314,7 @@ def record_landing(
                 branch=ctx.args.branch,
                 target=ctx.args.target,
                 commit_sha=receipt_commit,
-                merge_sha=merge_sha,
+                merge_sha=remote_sha,
                 touched_files=touched_files,
                 contributed_commits=contributed.after_landing(
                     ctx.repo_root or "",
@@ -334,7 +331,7 @@ def record_landing(
         if sync_warning:
             warnings.append(sync_warning)
     return QueueCloseOut(
-        merge_sha=merge_sha,
+        merge_sha=remote_sha,
         touched_files=touched_files,
         batch=batch,
         ci_evidence_error=ci_evidence_error,

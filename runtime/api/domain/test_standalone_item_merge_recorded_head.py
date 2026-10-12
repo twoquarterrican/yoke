@@ -179,7 +179,10 @@ def test_merge_keeps_the_resolved_commit_sha_as_the_tested_identity(
 
     def merge_folds_target_in(**kwargs):
         assert kwargs["source_sha"] == stale
-        _git(repo, "merge", "-q", "--no-edit", "main")  # the engine's own merge commit
+        _git(repo, "merge", "-q", "--no-edit", "main")
+        _git(repo, "checkout", "-q", "main")
+        _git(repo, "merge", "-q", "--no-edit", kwargs["source_sha"])
+        _git(repo, "checkout", "-q", "lane")
         return 0, ""
 
     monkeypatch.setattr(merge_boundary, "_run_merge_engine", merge_folds_target_in)

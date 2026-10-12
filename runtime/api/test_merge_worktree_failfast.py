@@ -146,7 +146,7 @@ class TestYOK1362MergeFailFast:
         ).stdout
         assert "local main ahead of origin" in origin_log
 
-    def test_yok1362_success_line_only_after_verification(self, rest_env) -> None:
+    def test_success_follows_verified_remote_ancestry(self, rest_env) -> None:
         """Success line appears only after the in-origin verification block."""
         env, fake_dir = rest_env
         rest_fakes.write_happy_path(
@@ -156,7 +156,7 @@ class TestYOK1362MergeFailFast:
         assert result.exit_code == 0, result.stderr
         stdout = result.stdout
         success_idx = stdout.find("Successfully merged")
-        verify_idx = stdout.find("Verified: branch commits present in origin/")
+        verify_idx = stdout.find("Verified: candidate")
         assert success_idx >= 0, "success line missing on happy path"
         assert verify_idx >= 0, "verification line missing on happy path"
         assert verify_idx < success_idx

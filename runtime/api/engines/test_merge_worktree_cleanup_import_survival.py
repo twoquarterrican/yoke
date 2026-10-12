@@ -18,7 +18,10 @@ from yoke_core.engines.merge_worktree import MergeArgs, MergeContext
 from yoke_core.engines.remote_branch_cleanup import RemoteBranchDeleteResult
 
 
-def _cleanup_ctx(tmp_path):
+def _cleanup_ctx(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_target_sha", lambda *_a: "a" * 40
+    )
     ctx = MergeContext(args=MergeArgs(branch="YOK-9999", target="main"))
     ctx.repo_root = str(tmp_path)
     ctx.yoke_repo_root = str(tmp_path)
@@ -36,9 +39,11 @@ class TestImportsSurviveLaneRemoval:
     """
 
     def test_packages_are_repointed_before_the_worktree_is_removed(
-        self, tmp_path, monkeypatch,
+        self,
+        tmp_path,
+        monkeypatch,
     ):
-        ctx = _cleanup_ctx(tmp_path)
+        ctx = _cleanup_ctx(tmp_path, monkeypatch)
         worktree = tmp_path / ".worktrees" / "YOK-9999"
         worktree.mkdir(parents=True)
         ctx.worktree_path = str(worktree)

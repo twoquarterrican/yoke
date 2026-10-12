@@ -40,6 +40,14 @@ def merge(repo: Path, *, item_id: int = 7, branch: str = "ITEM-1"):
     )
 
 
+def integrate_candidate(**kwargs) -> tuple[int, str]:
+    """Stub the engine's integrations while retaining real landing ancestry."""
+    repo = Path(kwargs["repo_root"])
+    git(repo, "checkout", kwargs["target"])
+    git(repo, "merge", "--no-edit", kwargs["source_sha"])
+    return 0, ""
+
+
 def make_checkout(tmp_path: Path) -> Path:
     """A checkout with a base branch and one item branch ahead of it."""
     root = tmp_path / "checkout"
@@ -68,6 +76,7 @@ def stub_receipts(monkeypatch: Any) -> None:
     """
     monkeypatch.setattr(receipts, "record", lambda *_a, **_k: "")
     monkeypatch.setattr(receipts, "load", lambda *_a, **_k: None)
+    monkeypatch.setattr(receipts, "record_failure", lambda *_a, **_k: "")
 
 
 def stub_candidate_review(monkeypatch: Any) -> None:
@@ -85,6 +94,7 @@ def stub_candidate_review(monkeypatch: Any) -> None:
 __all__ = [
     "git",
     "make_checkout",
+    "integrate_candidate",
     "merge",
     "stub_candidate_review",
     "stub_receipts",

@@ -54,57 +54,60 @@ def _post_merge_cleanup(
 
     _print("")
 
-    if not no_changes:
-        _print(f"Verifying merge commit in origin/{ctx.args.target}...")
-        _run_git(["fetch", "origin", ctx.args.target], cwd=ctx.repo_root, capture=True)
+    from yoke_core.domain.merge_landing_proof import (
+        LandingUnverified,
+        verified_target_sha,
+    )
 
-        branch_tip = _run_git(
-            ["rev-parse", ctx.args.branch], cwd=ctx.repo_root, capture=True
+    candidate = mw._run_git(
+        ["rev-parse", ctx.args.branch], cwd=ctx.repo_root, capture=True
+    )
+    candidate_sha = (
+        candidate.stdout.strip() if candidate.returncode == 0 else ctx.args.source_sha
+    )
+    try:
+        remote_sha = verified_target_sha(ctx.repo_root, ctx.args.target, candidate_sha)
+    except LandingUnverified as exc:
+        _print(str(exc), err=True)
+        _emit_merge_event(
+            "MergeVerificationFailed",
+            severity="ERROR",
+            outcome="failure",
+            item_id=ctx.item_id,
+            context={
+                "branch": ctx.args.branch,
+                "target": ctx.args.target,
+                "error": str(exc),
+            },
         )
-        if branch_tip.returncode == 0 and branch_tip.stdout.strip():
-            verify = _run_git(
-                [
-                    "merge-base",
-                    "--is-ancestor",
-                    branch_tip.stdout.strip(),
-                    f"origin/{ctx.args.target}",
-                ],
-                cwd=ctx.repo_root,
-                capture=True,
+        return 1
+    _print(
+        f"Verified: candidate {candidate_sha} is present in remote target {remote_sha}."
+    )
+    _emit_merge_event(
+        "MergeVerificationPassed",
+        outcome="success",
+        item_id=ctx.item_id,
+        context={
+            "branch": ctx.args.branch,
+            "target": ctx.args.target,
+            "branch_tip": candidate_sha,
+            "remote_sha": remote_sha,
+            "pr_num": pr_num,
+        },
+    )
+    _print(f"Successfully merged {ctx.args.branch} → {ctx.args.target}")
+    if ctx.args.standalone:
+        if not _sync_local_target(ctx):
+            _print(
+                "merge_target_sync_failed: landing is proven; preserve the lane and retry the governed merge command after repairing local target synchronization.",
+                err=True,
             )
-            if verify.returncode != 0:
-                _print(
-                    f"Error: Branch {ctx.args.branch} tip is not in origin/{ctx.args.target} history.",
-                    err=True,
-                )
-                _print("Worktree preserved for safety.", err=True)
-                _emit_merge_event(
-                    "MergeVerificationFailed",
-                    severity="ERROR",
-                    outcome="failure",
-                    item_id=ctx.item_id,
-                    context={
-                        "branch": ctx.args.branch,
-                        "target": ctx.args.target,
-                        "branch_tip": branch_tip.stdout.strip(),
-                        "pr_num": pr_num,
-                    },
-                )
-                return 1
-            _print(f"Verified: branch commits present in origin/{ctx.args.target}.")
-            _emit_merge_event(
-                "MergeVerificationPassed",
-                outcome="success",
-                item_id=ctx.item_id,
-                context={
-                    "branch": ctx.args.branch,
-                    "target": ctx.args.target,
-                    "branch_tip": branch_tip.stdout.strip(),
-                    "pr_num": pr_num,
-                },
-            )
-            # Truthful success output -- only after verification passes.
-            _print(f"Successfully merged {ctx.args.branch} \u2192 {ctx.args.target}")
+            return 5
+        _schema_refresh(ctx)
+        _ensure_target_branch(ctx)
+        _print(f"YOKE_REPO_ROOT={ctx.yoke_repo_root}")
+        return 0
 
     # Prove and delete the remote branch before discarding the local retry
     # lane. An ambiguous, concurrently updated, unmerged, or refused remote

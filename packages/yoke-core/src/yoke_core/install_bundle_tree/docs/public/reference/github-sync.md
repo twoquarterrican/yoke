@@ -57,7 +57,8 @@ projections. It normalizes the affected modes to `disabled`. Use `--project
 keep the binding for explicitly selected CI, PR/queue, or deployment operations
 while never mirroring backlog content to that repo's issue tracker. A direct
 standalone merge uses the active App binding to decide whether it needs App
-admission, publication, and post-push checks. Disabled issue mirroring does
+admission and post-push checks. Publication and freshly fetched remote
+candidate ancestry are required whenever the checkout has a remote. Disabled issue mirroring does
 not turn those merge gates off.
 See [GitHub](../github.md#merge-connectivity-and-issue-mirroring).
 

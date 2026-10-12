@@ -56,9 +56,7 @@ def _wire_carrier(
         return RestResponse(status=200, headers={}, body=list(listing))
 
     monkeypatch.setattr(carrier_mod, "request_with_retry", fake_request)
-    monkeypatch.setattr(
-        carrier_mod.git, "git_out", lambda _root, *_args: subject
-    )
+    monkeypatch.setattr(carrier_mod.git, "git_out", lambda _root, *_args: subject)
     written: list[tuple[int, str]] = []
 
     def record(item_id, pr_number):
@@ -196,6 +194,10 @@ def _wire_close_out(monkeypatch, *, landing_sha: str, merges=None):
     ``merges`` maps a commit to the merge that carried it, so a test can
     say which commit the resolver was asked about.
     """
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_target_sha",
+        lambda *_a: landing_sha,
+    )
     batch = BatchReceipt(
         pr_num=OWN_PR,
         merge_sha=landing_sha,
@@ -214,16 +216,12 @@ def _wire_close_out(monkeypatch, *, landing_sha: str, merges=None):
             carried[commit_sha] if carried else landing_sha
         ),
     )
-    monkeypatch.setattr(
-        close_out_mod, "stamp_merged_at", lambda item_id, **_kw: None
-    )
+    monkeypatch.setattr(close_out_mod, "stamp_merged_at", lambda item_id, **_kw: None)
     monkeypatch.setattr(
         close_out_mod, "read_pr_changed_files", lambda ctx, pr_num: (("a.py",), None)
     )
     monkeypatch.setattr(close_out_mod.receipts, "record", lambda *_a, **_kw: "")
-    monkeypatch.setattr(
-        close_out_mod, "fast_forward_main_checkout", lambda *_a: ""
-    )
+    monkeypatch.setattr(close_out_mod, "fast_forward_main_checkout", lambda *_a: "")
 
 
 def test_close_out_records_the_pull_request_that_landed(monkeypatch):
@@ -232,7 +230,10 @@ def test_close_out_records_the_pull_request_that_landed(monkeypatch):
     written = _wire_carrier(monkeypatch, listing=_sibling_listing())
 
     outcome = close_out_mod.record_landing(
-        _ctx(), item_id=7, commit_sha=LANE_SHA, pr_num=OWN_PR,
+        _ctx(),
+        item_id=7,
+        commit_sha=LANE_SHA,
+        pr_num=OWN_PR,
     )
 
     assert written == [(7, CARRIER_PR)]
@@ -250,7 +251,10 @@ def test_close_out_leaves_a_marker_that_already_names_the_landing(monkeypatch):
     )
 
     outcome = close_out_mod.record_landing(
-        _ctx(), item_id=7, commit_sha=LANE_SHA, pr_num=OWN_PR,
+        _ctx(),
+        item_id=7,
+        commit_sha=LANE_SHA,
+        pr_num=OWN_PR,
     )
 
     assert written == []
@@ -291,11 +295,16 @@ def test_a_lane_that_landed_twice_repoints_at_the_landing_in_hand(monkeypatch):
 
 def test_the_candidate_defaults_to_the_recorded_identity(monkeypatch):
     """One landing has one commit, and the caller need not say it twice."""
-    _wire_close_out(monkeypatch, landing_sha=LANDING_SHA, merges={LANE_SHA: LANDING_SHA})
+    _wire_close_out(
+        monkeypatch, landing_sha=LANDING_SHA, merges={LANE_SHA: LANDING_SHA}
+    )
     written = _wire_carrier(monkeypatch, listing=_sibling_listing())
 
     close_out_mod.record_landing(
-        _ctx(), item_id=7, commit_sha=LANE_SHA, pr_num=OWN_PR,
+        _ctx(),
+        item_id=7,
+        commit_sha=LANE_SHA,
+        pr_num=OWN_PR,
     )
 
     assert written == [(7, CARRIER_PR)]

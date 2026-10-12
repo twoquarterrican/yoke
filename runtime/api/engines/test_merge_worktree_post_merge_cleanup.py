@@ -13,7 +13,10 @@ from yoke_core.engines.merge_worktree import MergeArgs, MergeContext
 from yoke_core.engines.remote_branch_cleanup import RemoteBranchDeleteResult
 
 
-def _cleanup_ctx(tmp_path):
+def _cleanup_ctx(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_target_sha", lambda *_a: "a" * 40
+    )
     ctx = MergeContext(args=MergeArgs(branch="YOK-9999", target="main"))
     ctx.repo_root = str(tmp_path)
     ctx.yoke_repo_root = str(tmp_path)
@@ -28,7 +31,7 @@ class TestPostMergeCleanupLocalSyncFailure:
     def test_sync_failure_returns_exit_5_with_precise_event(
         self, tmp_path, monkeypatch
     ):
-        ctx = _cleanup_ctx(tmp_path)
+        ctx = _cleanup_ctx(tmp_path, monkeypatch)
         emitted = []
         printed = []
 
@@ -98,7 +101,7 @@ class TestPostMergeRemoteCleanupSafety:
     def test_remote_cleanup_refusal_preserves_local_retry_lane(
         self, tmp_path, monkeypatch
     ):
-        ctx = _cleanup_ctx(tmp_path)
+        ctx = _cleanup_ctx(tmp_path, monkeypatch)
         worktree = tmp_path / ".worktrees" / "YOK-9999"
         worktree.mkdir(parents=True)
         ctx.worktree_path = str(worktree)
@@ -137,7 +140,7 @@ class TestPostMergeRemoteCleanupSafety:
         assert not any(command[:2] == ["branch", "-d"] for command in commands)
 
     def test_local_branch_delete_waits_for_target_sync(self, tmp_path, monkeypatch):
-        ctx = _cleanup_ctx(tmp_path)
+        ctx = _cleanup_ctx(tmp_path, monkeypatch)
         worktree = tmp_path / ".worktrees" / "YOK-9999"
         worktree.mkdir(parents=True)
         ctx.worktree_path = str(worktree)

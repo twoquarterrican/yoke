@@ -22,8 +22,8 @@ remote reads, the deploy pipeline's tag resolution — authenticate with the
 authorization `yoke github connect` stores. You do not need an SSH key or a
 `gh` login for them, and an `https` or `ssh` origin works the same way. When
 no authorization is stored, Git may try your existing credential helper or SSH
-key without prompting. This is optional: onboarding and disconnected standalone
-merges still finish locally when it fails. Successful pushes name “pushed with
+key without prompting. Onboarding may finish locally when publication fails. A standalone merge
+with a remote refuses close-out until the candidate reaches that remote. Successful pushes name “pushed with
 your own git credentials” or “pushed with Yoke GitHub access”. A broken stored
 authorization never falls back to your own credentials; GitHub API features
 still require the App connection.
@@ -42,12 +42,13 @@ standalone merge needs App admission, publication, and post-push checks.
 `github_sync_mode=disabled` only disables issue mirroring; it does not disable
 these merge gates for a connected repository.
 
-A project without an active App binding can merge locally. The outcome
-says the merge was not pushed because GitHub is not connected when publication
-is unavailable; item evidence and lifecycle close-out still run. Standalone
-completion attempts an optional push, while engine-local completion stays local.
-Post-push App checks stay off for disconnected repositories, even if your
-credentials push the commit. Issue mirroring follows its own sync mode.
+A project without an active App binding can integrate locally and publish
+with its own Git credentials. Post-push App checks stay off for these
+repositories. Every standalone close-out with a remote still fetches its
+default branch and proves exact candidate ancestry before recording a landing.
+Failed publication or an unreadable remote preserves the lane and refuses
+evidence and lifecycle close-out. A checkout with no remote proves its local
+default branch instead. Issue mirroring follows its own sync mode.
 
 The trial and real integration use `origin/<default-branch>` when that ref
 exists, otherwise the local default branch. A checkout with no remote does

@@ -50,6 +50,10 @@ def populated_yoke_db(tmp_path_factory: pytest.TempPathFactory):
     tmp_path = tmp_path_factory.mktemp("path-snapshots-yoke")
     with path_snapshot_db(tmp_path, root, project_id="yoke") as conn:
         build_head_snapshot(conn, "yoke")
+        # The freshly bulk-populated fixture has no planner statistics yet.
+        # Measure indexed traversal with current cardinalities, rather than
+        # waiting for background auto-analyze on a shared CI database.
+        conn.execute("ANALYZE path_targets")
         yield conn, root
 
 
