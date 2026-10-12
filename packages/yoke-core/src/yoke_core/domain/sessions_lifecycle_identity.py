@@ -5,10 +5,12 @@ from __future__ import annotations
 from typing import Any, Optional
 import uuid
 
-from yoke_contracts.session_level import level_is_unresolved
 from yoke_contracts.session_model_facts import SessionModelFacts
 
 from yoke_core.domain.session_model_columns import MODEL_COLUMNS, changed_columns
+from yoke_core.domain.session_execution_level_write import (
+    refresh_session_execution_level,
+)
 
 
 def resolve_session_actor_id(
@@ -154,23 +156,6 @@ def _stored_value(row: Any, key: str, default: str = "") -> str:
     return value or default
 
 
-def level_should_upgrade(stored_level: str, incoming_level: str) -> bool:
-    """True when an opt-out stored level can heal to a real incoming level."""
-    return level_is_unresolved(stored_level) and not level_is_unresolved(incoming_level)
-
-
-def resolve_reactivation_level(existing: Any, *, execution_level: str) -> str:
-    """Return the level a reactivating session should carry.
-
-    An opt-out incoming level yields to a real stored one; anything else
-    the caller resolved wins.
-    """
-    stored_level = _stored_value(existing, "execution_level")
-    if level_is_unresolved(execution_level) and not level_is_unresolved(stored_level):
-        return stored_level
-    return execution_level
-
-
 def existing_registration_row(
     conn: Any,
     *,
@@ -226,7 +211,7 @@ def refresh_active_duplicate_identity(
     """Upgrade mutable identity fields on an active duplicate registration.
 
     Duplicate registration still raises ``SESSION_EXISTS`` to preserve
-    caller semantics; this helper only performs upgrade-only healing first.
+    caller semantics; this helper only performs observed-fact healing first.
     """
     if existing is None:
         return
@@ -240,14 +225,8 @@ def refresh_active_duplicate_identity(
         )
         conn.commit()
 
-    stored_level = _stored_value(existing, "execution_level")
-    if level_should_upgrade(stored_level, execution_level):
-        conn.execute(
-            f"UPDATE harness_sessions SET execution_level = {placeholder} "
-            f"WHERE session_id = {placeholder}",
-            (execution_level, session_id),
-        )
-        conn.commit()
+    refresh_session_execution_level(conn, session_id)
+    conn.commit()
 
     # A row registered before actor binding existed (or by a path that
     # could not resolve one) heals on its next registration probe.
@@ -292,11 +271,9 @@ def refresh_active_duplicate_identity(
 
 __all__ = [
     "existing_registration_row",
-    "level_should_upgrade",
     "normalize_observed_identity",
     "refresh_active_duplicate_identity",
     "resolve_session_actor_id",
     "resolve_session_project_id",
     "resolve_reactivation_executor_version",
-    "resolve_reactivation_level",
 ]

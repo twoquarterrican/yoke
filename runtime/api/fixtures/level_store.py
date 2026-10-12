@@ -10,10 +10,14 @@ helpers below.
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping
 
 from yoke_contracts.project_contract.project_keys import SESSION_ROUTING_CAPABILITY
 from yoke_core.domain import db_backend, json_helper
+from yoke_core.domain.model_reference_store import (
+    create_model_reference_table,
+    seed_initial_catalog,
+)
 from yoke_core.domain.schema_init_apply import execute_schema_script
 from yoke_core.domain.universe_levels import (
     create_universe_settings_table,
@@ -40,22 +44,17 @@ def create_level_store_tables(conn: Any) -> None:
     """Add both level stores to a fixture schema."""
     execute_schema_script(conn, PROJECT_CAPABILITIES_DDL)
     create_universe_settings_table(conn)
+    create_model_reference_table(conn)
+    seed_initial_catalog(conn)
     conn.commit()
 
 
 def option(
-    surface: str,
     model: str,
     effort: str,
-    context: Optional[int] = None,
 ) -> dict[str, Any]:
-    """One launchable option in a levels document."""
-    return {
-        "surface": surface,
-        "model": model,
-        "reasoning_effort": effort,
-        "context_window_tokens": context,
-    }
+    """One model/minimum-effort row in a Levels document."""
+    return {"model": model, "min_effort": effort}
 
 
 def levels_doc(*levels: tuple[str, list[Mapping[str, Any]]]) -> list[dict]:

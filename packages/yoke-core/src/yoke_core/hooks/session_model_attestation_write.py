@@ -123,6 +123,11 @@ def attest_served_model_facts(
             f"UPDATE harness_sessions SET {assignments} WHERE session_id = %s",
             (*values, session_id),
         )
+        from yoke_core.domain.session_execution_level_write import (
+            refresh_session_execution_level,
+        )
+
+        refresh_session_execution_level(conn, session_id)
         conn.commit()
     except Exception:
         return False

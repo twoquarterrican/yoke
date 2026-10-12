@@ -100,6 +100,7 @@ def _connect_rw() -> Any:
 #: Blitz and its claim, so the caller can tell it from an item already
 #: claimed by another session.
 _ACQUIRE_ERROR_CODES = {
+    "SESSION_BELOW_INTERN": "session_below_intern",
     "ALREADY_CLAIMED": "already_claimed",
     "DOCUMENT_LOCKED": "document_locked",
 }

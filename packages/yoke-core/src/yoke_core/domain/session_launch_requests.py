@@ -13,18 +13,14 @@ from yoke_core.domain.session_launch_idempotency import deduplicated_outcome
 from yoke_core.domain.session_launch_item_level import pin_item_level
 from yoke_core.domain.session_launch_level_placement import LEVEL_NO_CAPACITY
 from yoke_core.domain.session_launch_level_selection import (
-    level_source,
     preview_level_launch,
-)
-from yoke_core.domain.session_launch_machine_models import (
-    EXPLICIT_SOURCE,
-    resolve_machine_selection,
 )
 from yoke_core.domain import session_launch_native_progress as native_progress
 from yoke_core.domain.session_launch_request_storage import (
     insert_launch_request,
     retry_request,
     stored_level_placement,
+    resolve_work_launch_selection,
 )
 from yoke_core.domain.session_launch_surface_selection import preview_launch
 from yoke_core.domain.session_launch_validation import (
@@ -301,15 +297,7 @@ def retry_launch(
         )
         relay = preview.selected_relay
         assert relay is not None
-        resolved = resolve_machine_selection(
-            conn,
-            requested_model=ask.model,
-            requested_reasoning_effort=ask.reasoning_effort,
-            requested_context_window_tokens=ask.context_window_tokens,
-            machine_id=relay.machine_id,
-            surface=relay.surface,
-            explicit_source=(level_source(ask.level) if ask.level else EXPLICIT_SOURCE),
-        )
+        resolved = resolve_work_launch_selection(conn, request=ask, relay=relay)
         result = update_launch(
             conn,
             launch_id,
@@ -321,7 +309,9 @@ def retry_launch(
             assigned_relay_id=relay.relay_id,
             assigned_machine_id=relay.machine_id,
             placement_reason=preview.placement_reason,
-            level_placement=stored_level_placement(preview),
+            level_placement=stored_level_placement(
+                preview, work_required=bool(ask.level or ask.work_required)
+            ),
             native_session_id=None,
             attestation_hash=None,
             attestation_consumed_at=None,

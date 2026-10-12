@@ -16,7 +16,7 @@ cases.
 from __future__ import annotations
 
 
-TEST_MODEL_ID: str = "claude-opus-4-7"
+TEST_MODEL_ID: str = "claude-opus-5-5"
 """Canonical opaque model id for fixture data."""
 
 TEST_ITEM_ID: int = 42

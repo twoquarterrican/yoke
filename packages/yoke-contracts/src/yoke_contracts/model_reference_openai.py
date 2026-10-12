@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoke_contracts.model_reference import validate_model_record
+
 from yoke_contracts.model_reference_records import ApiPrice, ModelRecord
 from yoke_contracts.model_reference_sources import (
     CHATGPT_PRICING,
@@ -21,8 +23,70 @@ _SOL_DOCS = f"{OPENAI_MODEL_DOCS}/gpt-6-sol"
 _LUNA_DOCS = f"{OPENAI_MODEL_DOCS}/gpt-6-luna"
 
 OPENAI_RECORDS: tuple[ModelRecord, ...] = (
+    validate_model_record(
+        {
+            "aliases": [],
+            "api_price": {
+                "cache_read_per_million_usd": 0.1,
+                "cache_write_long_per_million_usd": None,
+                "cache_write_per_million_usd": 2.5,
+                "checked_at": "2026-09-29",
+                "conditions": "Standard rate. Cached input bills at 5% of the uncached input rate. Prompts over 272K input bill at 2x input and cache rates and 1.5x output. Batch and Flex are 50%; Fast is 2x. Regional processing adds a 10% premium where available.",
+                "effective_at": None,
+                "estimate_basis": None,
+                "estimated_fields": [],
+                "input_per_million_usd": 2,
+                "output_per_million_usd": 10,
+                "source_url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+            },
+            "benchmarks": [],
+            "checked_at": "2026-10-12",
+            "context_window_tokens": [],
+            "display_name": "GPT-6.1 Sol",
+            "model_id": "gpt-6.1-sol",
+            "operator_notes": None,
+            "provider": "openai",
+            "reasoning_efforts": ["low", "medium", "high", "xhigh", "max", "ultra"],
+            "replacement_model_id": None,
+            "source_urls": [
+                "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+                "https://learn.chatgpt.com/docs/pricing",
+                "https://developers.openai.com/api/docs/guides/latest-model",
+            ],
+            "subscription_rules": [
+                {
+                    "checked_at": "2026-09-29",
+                    "consumption_weight": {
+                        "cached_input_per_million": 2.5,
+                        "checked_at": "2026-09-29",
+                        "estimate_basis": None,
+                        "input_per_million": 50,
+                        "is_estimate": False,
+                        "output_per_million": 250,
+                        "source_url": "https://learn.chatgpt.com/docs/pricing",
+                        "unit": "credits",
+                    },
+                    "estimate_basis": None,
+                    "harness": "codex",
+                    "is_estimate": False,
+                    "plan": "pro",
+                    "pool": "included",
+                    "rule": "ChatGPT meters plan usage in credits at a published per-model rate; local CLI messages and cloud chats share one plan allowance. Reaching the limit allows purchasing further credits. No credit-to-included-percent conversion is published, and message ranges vary with task size.",
+                    "source_url": "https://learn.chatgpt.com/docs/pricing",
+                }
+            ],
+        }
+    ),
     ModelRecord(
         model_id="gpt-6-astra",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "ultra",
+        ),
         provider="openai",
         display_name="GPT-6 Astra",
         api_price=ApiPrice(
@@ -48,10 +112,20 @@ OPENAI_RECORDS: tuple[ModelRecord, ...] = (
             ),
         ),
         source_urls=(_ASTRA_DOCS, CHATGPT_PRICING),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="gpt-6-sol",
+        reasoning_efforts=(
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "ultra",
+        ),
+        replacement_model_id="gpt-6.1-sol",
         provider="openai",
         display_name="GPT-6 Sol",
         api_price=ApiPrice(
@@ -78,10 +152,18 @@ OPENAI_RECORDS: tuple[ModelRecord, ...] = (
             ),
         ),
         source_urls=(_SOL_DOCS, CHATGPT_PRICING),
-        checked_at=REFRESHED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="gpt-6-luna",
+        reasoning_efforts=(
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ),
         provider="openai",
         display_name="GPT-6 Luna",
         api_price=ApiPrice(
@@ -108,10 +190,20 @@ OPENAI_RECORDS: tuple[ModelRecord, ...] = (
             ),
         ),
         source_urls=(_LUNA_DOCS, CHATGPT_PRICING),
-        checked_at=REFRESHED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="gpt-5.6-sol",
+        reasoning_efforts=(
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "ultra",
+        ),
+        replacement_model_id="gpt-6.1-sol",
         provider="openai",
         display_name="GPT-5.6 Sol",
         api_price=cursor_other_price(
@@ -135,10 +227,19 @@ OPENAI_RECORDS: tuple[ModelRecord, ...] = (
             CURSOR_OTHER_RULE,
         ),
         source_urls=(CURSOR_PRICING, CHATGPT_PRICING, CODEX_PRO_PLAN),
-        checked_at=REFRESHED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="gpt-5.6-terra",
+        reasoning_efforts=(
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "ultra",
+        ),
         provider="openai",
         display_name="GPT-5.6 Terra",
         api_price=cursor_other_price(
@@ -159,10 +260,19 @@ OPENAI_RECORDS: tuple[ModelRecord, ...] = (
             CURSOR_OTHER_RULE,
         ),
         source_urls=(CURSOR_PRICING, CHATGPT_PRICING, CODEX_PRO_PLAN),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="gpt-5.6-luna",
+        reasoning_efforts=(
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ),
+        replacement_model_id="gpt-6-luna",
         provider="openai",
         display_name="GPT-5.6 Luna",
         api_price=cursor_other_price(
@@ -183,10 +293,17 @@ OPENAI_RECORDS: tuple[ModelRecord, ...] = (
             CURSOR_OTHER_RULE,
         ),
         source_urls=(CURSOR_PRICING, CHATGPT_PRICING, CODEX_PRO_PLAN),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="gpt-5.5",
+        reasoning_efforts=(
+            "none",
+            "low",
+            "medium",
+            "high",
+            "extra-high",
+        ),
         provider="openai",
         display_name="GPT-5.5",
         api_price=cursor_other_price(
@@ -197,10 +314,16 @@ OPENAI_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(codex_pro_rule(), CURSOR_OTHER_RULE),
         source_urls=(CURSOR_PRICING, CHATGPT_PRICING, CODEX_PRO_PLAN),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="gpt-5.4",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+        ),
         provider="openai",
         display_name="GPT-5.4",
         api_price=cursor_other_price(
@@ -211,6 +334,6 @@ OPENAI_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(codex_pro_rule(), CURSOR_OTHER_RULE),
         source_urls=(CURSOR_PRICING, CHATGPT_PRICING, CODEX_PRO_PLAN),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
 )

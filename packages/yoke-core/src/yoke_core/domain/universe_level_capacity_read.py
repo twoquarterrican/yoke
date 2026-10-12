@@ -28,7 +28,10 @@ from yoke_core.domain.steering_fleet_report_capacity import (
 )
 from yoke_core.domain.steering_fleet_report_limits import load_plan_limits
 from yoke_core.domain.universe_level_capacity import Meter, evaluate_level_capacity
-from yoke_core.domain.universe_level_next_launch import Authorize, next_launches
+from yoke_core.domain.universe_level_next_launch import Authorize
+from yoke_core.domain.session_launch_machine_models import machine_native_models
+from yoke_core.domain.session_model_catalog import current_model_records
+from yoke_core.domain.quota_pool_order import read_pool_order
 from yoke_core.domain.universe_levels import effective_levels
 
 
@@ -122,16 +125,12 @@ def read_level_capacity(conn: Any, *, authorize: Authorize) -> dict[str, Any]:
         meters=tuple(meters.values()),
         offered=tuple(offered),
         display=display,
+        records=current_model_records(conn),
+        native_models={
+            machine: machine_native_models(conn, machine_id=machine)
+            for machine in {machine for machine, _ in offered}
+        },
     )
-    placed = next_launches(
-        conn,
-        universe,
-        [(project_id, slug) for project_id, slug, _ in projects],
-        authorize=authorize,
-        display=display,
-    )
-    for level in levels:
-        level["next_launches"] = placed[level["name"]]
     return {
         "read_at": format_instant(now),
         "source": source,
@@ -139,6 +138,7 @@ def read_level_capacity(conn: Any, *, authorize: Authorize) -> dict[str, Any]:
         "live_workers": live_workers,
         "levels": levels,
         "projects": overrides,
+        "cursor_quota_order": list(read_pool_order(conn)),
     }
 
 

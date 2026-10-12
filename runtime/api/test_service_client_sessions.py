@@ -30,8 +30,8 @@ from runtime.api.test_constants import TEST_MODEL_ID
 
 _PROJECT_ID = 1
 _OPUS = "claude-opus-5-5"
-_UNIVERSE_DOC = levels_doc(("UNIVERSE_ONLY", [option("claude-cli", _OPUS, "medium")]))
-_PROJECT_DOC = levels_doc(("PROJECT_ONLY", [option("claude-cli", _OPUS, "medium")]))
+_UNIVERSE_DOC = levels_doc(("UNIVERSE_ONLY", [option(_OPUS, "medium")]))
+_PROJECT_DOC = levels_doc(("PROJECT_ONLY", [option(_OPUS, "medium")]))
 
 
 def _begin(db: dict, executor: str, *extra: str) -> str:

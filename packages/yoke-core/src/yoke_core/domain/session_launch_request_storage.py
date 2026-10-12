@@ -20,14 +20,22 @@ from yoke_core.domain.session_launch_types import (
     LaunchPreview,
     LaunchRecord,
     LaunchRequest,
+    SessionLaunchError,
 )
+from yoke_core.domain.session_work_eligibility import require_work_selection
+from yoke_core.domain.sessions_analytics import SessionError
 
 
-def stored_level_placement(preview: LaunchPreview) -> str | None:
+def stored_level_placement(
+    preview: LaunchPreview, *, work_required=False
+) -> str | None:
     """The preview's level placement evidence as stored JSON, if any."""
-    if preview.level_placement is None:
+    if preview.level_placement is None and not work_required:
         return None
-    return json_helper.dumps_compact(preview.level_placement)
+    document = dict(preview.level_placement or {})
+    if work_required:
+        document["work_required"] = True
+    return json_helper.dumps_compact(document)
 
 
 def retry_request(launch: LaunchRecord, *, conn: Any) -> LaunchRequest:
@@ -37,7 +45,15 @@ def retry_request(launch: LaunchRecord, *, conn: Any) -> LaunchRequest:
     machine that fit at create time may not fit now; an explicit launch
     repeats its exact selection.
     """
-    placement = json_helper.loads_text(launch.level_placement or "{}")
+    try:
+        placement = json_helper.loads_text(launch.level_placement or "{}")
+        if not isinstance(placement, dict):
+            raise ValueError("launch placement must be an object")
+    except (TypeError, ValueError) as exc:
+        raise SessionLaunchError(
+            "launch_placement_unreadable",
+            "Stored launch placement cannot be read. Recovery: create a new launch with an explicit work item or level.",
+        ) from exc
     recovery = placement.get("capacity_recovery") or {}
     from yoke_core.domain.project_identity import render_item_ref
 
@@ -58,7 +74,35 @@ def retry_request(launch: LaunchRecord, *, conn: Any) -> LaunchRequest:
         else None,
         excluded_models=tuple(recovery.get("excluded_models") or ()),
         capacity_predecessor_session_id=recovery.get("predecessor_session_id"),
+        work_required=bool(placement.get("work_required")),
     )
+
+
+def resolve_work_launch_selection(conn, *, request, relay):
+    """Resolve actual native knobs before work admission, including retries."""
+    resolved = resolve_machine_selection(
+        conn,
+        requested_model=request.model,
+        requested_reasoning_effort=request.reasoning_effort,
+        requested_context_window_tokens=request.context_window_tokens,
+        machine_id=relay.machine_id,
+        surface=relay.surface,
+        explicit_source=level_source(request.level)
+        if request.level
+        else EXPLICIT_SOURCE,
+    )
+    if request.item or request.level or request.work_required:
+        try:
+            require_work_selection(
+                conn,
+                project_id=request.project_id,
+                executor=relay.surface,
+                model=resolved.model,
+                reasoning_effort=resolved.reasoning_effort,
+            )
+        except SessionError as exc:
+            raise SessionLaunchError(exc.code.lower(), str(exc)) from exc
+    return resolved
 
 
 def insert_launch_request(
@@ -74,17 +118,7 @@ def insert_launch_request(
 ) -> bool:
     relay = preview.selected_relay
     assert relay is not None
-    resolved = resolve_machine_selection(
-        conn,
-        requested_model=request.model,
-        requested_reasoning_effort=request.reasoning_effort,
-        requested_context_window_tokens=request.context_window_tokens,
-        machine_id=relay.machine_id,
-        surface=relay.surface,
-        explicit_source=level_source(request.level)
-        if request.level
-        else EXPLICIT_SOURCE,
-    )
+    resolved = resolve_work_launch_selection(conn, request=request, relay=relay)
     # A level launch asked for a level, not for the option placement chose:
     # the option is the resolved selection, and the ask stays the level.
     asked = (
@@ -137,7 +171,10 @@ def insert_launch_request(
         resolved.reasoning_effort,
         resolved.context_window_tokens,
         request.level,
-        stored_level_placement(preview),
+        stored_level_placement(
+            preview,
+            work_required=bool(request.item or request.level or request.work_required),
+        ),
     )
     row = conn.execute(
         f"INSERT INTO session_launches ({columns}) "

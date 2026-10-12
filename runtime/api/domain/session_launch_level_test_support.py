@@ -3,6 +3,13 @@
 from __future__ import annotations
 
 from typing import Any
+import json
+from yoke_core.domain.model_reference_store import (
+    create_model_reference_table,
+    seed_initial_catalog,
+)
+from yoke_contracts.session_control.native_models import models_reading, native_model
+from runtime.api.domain.session_launch_test_support import NOW
 
 from yoke_contracts.session_control.plan_limits import (
     ALL_MODELS_SCOPE,
@@ -34,35 +41,29 @@ SURFACE_VERSIONS = {
     "cursor-cli": "2026.08.25",
 }
 
-CLAUDE_OPUS = {
-    "surface": "claude-cli",
-    "model": "claude-opus-5-5",
-    "reasoning_effort": "high",
-    "context_window_tokens": None,
-}
-CODEX_SOL = {
-    "surface": "codex-cli",
-    "model": "gpt-6.1-sol",
-    "reasoning_effort": "medium",
-    "context_window_tokens": None,
-}
-CURSOR_GROK = {
-    "surface": "cursor-cli",
-    "model": "grok-4.7-high",
-    "reasoning_effort": "high",
-    "context_window_tokens": None,
-    "fallback": {
-        "surface": "cursor-cli",
-        "model": "claude-opus-5-5-medium",
-        "reasoning_effort": "medium",
-        "context_window_tokens": None,
-    },
+CLAUDE_OPUS = {"model": "claude-opus-5-5", "min_effort": "high"}
+CODEX_SOL = {"model": "gpt-6.1-sol", "min_effort": "medium"}
+CURSOR_GROK = {"model": "grok-4.7", "min_effort": "high"}
+CURSOR_OPUS = {"model": "claude-opus-5-5", "min_effort": "medium"}
+NATIVE_MODELS = {
+    "claude-cli": [
+        native_model("claude-opus-5-5", reasoning_efforts=["low", "medium", "high"])
+    ],
+    "codex-cli": [
+        native_model("gpt-6.1-sol", reasoning_efforts=["low", "medium", "high"])
+    ],
+    "cursor-cli": [
+        native_model("grok-4.7-high", reasoning_efforts=["high"]),
+        native_model("claude-opus-5-5-medium", reasoning_efforts=["medium"]),
+    ],
 }
 
 
 def level_connection(*options: dict[str, Any]):
     """A launch universe whose one stored level, SENIOR, has ``options``."""
     conn = launch_connection()
+    create_model_reference_table(conn)
+    seed_initial_catalog(conn)
     create_universe_settings_table(conn)
     conn.execute(
         "CREATE TABLE project_capabilities "
@@ -119,6 +120,14 @@ def add_surface(
         ),
         access=SHARED_ACCESS,
     )
+    reading = models_reading(
+        surface, NATIVE_MODELS[surface], source="native fixture", observed_at=NOW
+    )
+    conn.execute(
+        "UPDATE session_relays SET surface_native_models = ? WHERE relay_id = ?",
+        (json.dumps({surface: reading}), f"relay-{machine_id}-{surface}"),
+    )
+    conn.commit()
 
 
 def pin_live_workers(monkeypatch, workers: dict[str, int]) -> None:
@@ -134,6 +143,7 @@ __all__ = [
     "CLAUDE_OPUS",
     "CODEX_SOL",
     "CURSOR_GROK",
+    "CURSOR_OPUS",
     "FIVE_HOUR_RESET",
     "HALF_WEEK_RESET",
     "LEVEL",

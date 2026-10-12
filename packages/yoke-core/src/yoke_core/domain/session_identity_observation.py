@@ -57,6 +57,9 @@ from yoke_contracts.session_model_facts import (
 )
 from yoke_core.domain import db_backend
 from yoke_core.domain.session_model_columns import MODEL_COLUMNS, changed_columns
+from yoke_core.domain.session_execution_level_write import (
+    refresh_session_execution_level,
+)
 from yoke_core.domain.sessions_lifecycle_canonicalize import canonicalize_executor
 
 
@@ -181,17 +184,11 @@ def observed_identity(
     """
     payload = _payload(payload_json)
     facts = carried_served_facts(payload)
-    if (
-        local_evaluation
-        and not facts.attested()
-        and not _stored(row, "model")
-    ):
+    if local_evaluation and not facts.attested() and not _stored(row, "model"):
         facts = local_served_facts(payload, executor)
     surface = None
     if not _stored(row, SURFACE_COLUMN):
-        surface = observed_surface(
-            payload, executor, local_evaluation=local_evaluation
-        )
+        surface = observed_surface(payload, executor, local_evaluation=local_evaluation)
     return facts, surface
 
 
@@ -236,6 +233,7 @@ def record_session_identity(
         f"UPDATE harness_sessions SET {assignments} WHERE session_id={marker}",
         (*values, session_id),
     )
+    refresh_session_execution_level(conn, session_id)
     conn.commit()
     return True
 

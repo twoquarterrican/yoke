@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from yoke_core.domain.session_model_catalog import current_model_records
+
 import json
 from typing import Any, Optional
-
-from yoke_contracts.session_level import level_is_unresolved
 
 
 def project_level_for_session(
@@ -22,34 +22,24 @@ def project_level_for_session(
     The levels are shared authority (the project's ``session-routing``
     override, else the universe definition), so the level is resolved here
     — at stamp time, against the connection about to write the row — rather
-    than trusted from whatever the caller carried in. Returns ``None`` only
-    without a project.
+    than trusted from whatever the caller carried in. Sessions without a project read the universe definition.
 
     ``model`` and ``reasoning_effort`` are what the session serves, matched
     against each level's options.
     """
-    if project_id is None:
-        return None
-    from yoke_core.api.routing_config import resolve_execution_level, session_levels
+    from yoke_core.domain.session_level_resolution import (
+        resolve_execution_level,
+        session_levels,
+    )
 
     return resolve_execution_level(
         executor=executor,
         explicit_level=explicit_level,
         levels=session_levels(conn, project_id),
+        records=current_model_records(conn),
         model=model,
         reasoning_effort=reasoning_effort,
     )
-
-
-def _wire_level(payload_json: str) -> str:
-    """Return the level the hook payload carried, or ``""``."""
-    if not payload_json:
-        return ""
-    payload = json.loads(payload_json)
-    if not isinstance(payload, dict):
-        return ""
-    level = payload.get("execution_level", "")
-    return level.strip() if isinstance(level, str) else ""
 
 
 _LABEL_FACT_COLUMNS = (
@@ -60,24 +50,13 @@ _LABEL_FACT_COLUMNS = (
 )
 
 
-def _level_can_upgrade(
+def _level_should_refresh(
     conn: Any,
     payload_json: str,
     session_id: str,
     project_id: Any,
 ) -> bool:
-    """True when a stored level left unresolved can heal to a real one.
-
-    The stored level is the authority the offer gate reads, so a row holding
-    the unresolved sentinel is unroutable until something re-resolves it.
-    Registration is idempotent and already upgrades an unresolved stored level
-    in place, so reporting True lets any hook event repair the row. Two
-    sources can supply the replacement: a level the payload carried, and the
-    levels the project reads matched against the row's executor and model —
-    the authority that outlives whatever the caller knew. Once the row carries a
-    real level this returns False, which keeps a healed session from
-    re-registering on every event.
-    """
+    """True when current model facts and Levels differ from the stored stamp."""
     try:
         from yoke_core.domain import db_backend
 
@@ -95,28 +74,26 @@ def _level_can_upgrade(
             stored, executor = row.get("execution_level"), row.get("executor")
         else:
             stored, executor = row[0], row[1]
-        if not level_is_unresolved(stored):
-            return False
-        if not level_is_unresolved(_wire_level(payload_json)):
-            return True
         if not executor:
             return False
-        from yoke_core.api.routing_config import routing_effort_of, routing_model_of
+        from yoke_core.domain.session_level_resolution import (
+            routing_effort_of,
+            routing_model_of,
+        )
 
         values = (
             [row.get(key) for key in _LABEL_FACT_COLUMNS]
             if hasattr(row, "get")
             else list(row[2:6])
         )
-        return not level_is_unresolved(
-            project_level_for_session(
-                conn,
-                project_id,
-                executor,
-                model=routing_model_of(values[0], values[1]),
-                reasoning_effort=routing_effort_of(values[2], values[3]),
-            )
+        resolved = project_level_for_session(
+            conn,
+            project_id,
+            executor,
+            model=routing_model_of(values[0], values[1]),
+            reasoning_effort=routing_effort_of(values[2], values[3], values[0]),
         )
+        return resolved != stored
     except Exception:  # noqa: BLE001 - probe must never break dispatch
         return False
 
@@ -269,7 +246,7 @@ def placeholder_identity_can_upgrade(
             payload_json,
             session_id,
         )
-        or _level_can_upgrade(conn, payload_json, session_id, project_id)
+        or _level_should_refresh(conn, payload_json, session_id, project_id)
     )
 
 

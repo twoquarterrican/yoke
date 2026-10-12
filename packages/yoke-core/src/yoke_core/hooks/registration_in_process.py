@@ -14,7 +14,10 @@ from typing import Optional
 
 from yoke_contracts.session_model_facts import SessionModelFacts
 
-from yoke_core.api.routing_config import routing_effort_of, routing_model_of
+from yoke_core.domain.session_level_resolution import (
+    routing_effort_of,
+    routing_model_of,
+)
 from yoke_core.hooks.registration_identity import project_level_for_session
 
 
@@ -69,6 +72,7 @@ def _register_in_process(
                 reasoning_effort=routing_effort_of(
                     model_facts.reasoning_effort,
                     model_facts.requested_reasoning_effort,
+                    model_facts.model,
                 ),
             )
             level_kwargs = {"execution_level": resolved_level} if resolved_level else {}

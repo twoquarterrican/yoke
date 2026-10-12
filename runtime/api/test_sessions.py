@@ -1,10 +1,6 @@
 # ruff: noqa: E402, F401
 """Tests for yoke_core.domain.sessions -- session tracking and work claims.
 
-Covers the five canonical claim lifecycle operations (claim, heartbeat,
-release, reclaim, handoff), session registration, stale detection, and
-query surface.  Uses an in-memory SQLite DB for isolation.
-
 This is the shared-helpers parent module. Test classes live in:
   - test_sessions_lifecycle.py  (register, heartbeat, claim, release, handoff, chain, guards)
   - test_sessions_queries.py    (list, get, query surface, offer/ownership)
@@ -182,7 +178,9 @@ def _register(conn, session_id="sess-1", **kwargs):
     defaults = dict(
         executor="claude-code",
         provider="anthropic",
-        model_facts=SessionModelFacts(requested_model=TEST_MODEL_ID),
+        model_facts=SessionModelFacts(
+            requested_model=TEST_MODEL_ID, requested_reasoning_effort="medium"
+        ),
         workspace="/tmp/work",
         project_id=1,
         execution_level="primary",
@@ -343,7 +341,9 @@ def _ensure_active_session(
         session_id=session_id,
         executor=executor,
         provider=provider,
-        model_facts=SessionModelFacts(requested_model=model),
+        model_facts=SessionModelFacts(
+            requested_model=model, requested_reasoning_effort="medium"
+        ),
         workspace=workspace,
         project_id=1,
         execution_level=execution_level,

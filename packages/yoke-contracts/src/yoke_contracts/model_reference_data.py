@@ -12,12 +12,13 @@ Benchmarks stay empty until a named public result is attached.
 
 from __future__ import annotations
 
+from yoke_contracts.model_reference import validate_model_record
+
 from yoke_contracts.model_reference_cursor import CURSOR_RECORDS
 from yoke_contracts.model_reference_openai import OPENAI_RECORDS
 from yoke_contracts.model_reference_records import ModelRecord
 from yoke_contracts.model_reference_sources import (
     ANTHROPIC_PRICING,
-    CHECKED_AT,
     CLAUDE_MAX_RULE,
     CURSOR_OTHER_RULE,
     CURSOR_PRICING,
@@ -27,8 +28,79 @@ from yoke_contracts.model_reference_sources import (
 )
 
 ANTHROPIC_RECORDS: tuple[ModelRecord, ...] = (
+    validate_model_record(
+        {
+            "aliases": [],
+            "api_price": {
+                "cache_read_per_million_usd": 0.01,
+                "cache_write_long_per_million_usd": 0.2,
+                "cache_write_per_million_usd": 0.125,
+                "checked_at": "2026-10-08",
+                "conditions": "Prompts up to 100,000 tokens. Above 100,000: input $0.50, output $2.50, cache read $0.05, 5m write $0.625, 1h write $1 per MTok.",
+                "effective_at": None,
+                "estimate_basis": None,
+                "estimated_fields": [],
+                "input_per_million_usd": 0.1,
+                "output_per_million_usd": 0.5,
+                "source_url": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
+            },
+            "benchmarks": [],
+            "checked_at": "2026-10-12",
+            "context_window_tokens": [1000000],
+            "display_name": "Claude Haiku 5.5",
+            "model_id": "claude-haiku-5-5",
+            "operator_notes": None,
+            "provider": "anthropic",
+            "reasoning_efforts": ["low", "medium", "high", "xhigh", "max"],
+            "replacement_model_id": None,
+            "source_urls": [
+                "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
+                "https://platform.claude.com/docs/en/build-with-claude/effort",
+            ],
+            "subscription_rules": [],
+        }
+    ),
+    validate_model_record(
+        {
+            "aliases": [],
+            "api_price": {
+                "cache_read_per_million_usd": 0.1,
+                "cache_write_long_per_million_usd": 4,
+                "cache_write_per_million_usd": 2.5,
+                "checked_at": "2026-10-08",
+                "conditions": "Standard API pricing; batch input/output 50% discount.",
+                "effective_at": None,
+                "estimate_basis": None,
+                "estimated_fields": [],
+                "input_per_million_usd": 2,
+                "output_per_million_usd": 10,
+                "source_url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
+            },
+            "benchmarks": [],
+            "checked_at": "2026-10-12",
+            "context_window_tokens": [1000000],
+            "display_name": "Claude Sonnet 5.5",
+            "model_id": "claude-sonnet-5-5",
+            "operator_notes": None,
+            "provider": "anthropic",
+            "reasoning_efforts": ["low", "medium", "high", "xhigh", "max"],
+            "replacement_model_id": None,
+            "source_urls": [
+                "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
+                "https://platform.claude.com/docs/en/build-with-claude/effort",
+            ],
+            "subscription_rules": [],
+        }
+    ),
     ModelRecord(
         model_id="claude-opus-5-5",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ),
         provider="anthropic",
         display_name="Claude Opus 5.5",
         api_price=claude_price(
@@ -42,10 +114,18 @@ ANTHROPIC_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CLAUDE_MAX_RULE, CURSOR_OTHER_RULE),
         source_urls=(OPUS_55_DOCS, ANTHROPIC_PRICING, CURSOR_PRICING),
-        checked_at=REFRESHED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="claude-opus-5",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ),
+        replacement_model_id="claude-opus-5-5",
         provider="anthropic",
         display_name="Claude Opus 5",
         api_price=claude_price(
@@ -58,10 +138,18 @@ ANTHROPIC_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CLAUDE_MAX_RULE, CURSOR_OTHER_RULE),
         source_urls=(ANTHROPIC_PRICING, CURSOR_PRICING),
-        checked_at=REFRESHED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="claude-sonnet-5",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ),
+        replacement_model_id="claude-sonnet-5-5",
         provider="anthropic",
         display_name="Claude Sonnet 5",
         api_price=claude_price(
@@ -74,10 +162,18 @@ ANTHROPIC_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CLAUDE_MAX_RULE, CURSOR_OTHER_RULE),
         source_urls=(ANTHROPIC_PRICING, CURSOR_PRICING),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="claude-opus-4-8",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ),
+        replacement_model_id="claude-opus-5-5",
         provider="anthropic",
         display_name="Claude Opus 4.8",
         api_price=claude_price(
@@ -90,10 +186,17 @@ ANTHROPIC_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CLAUDE_MAX_RULE, CURSOR_OTHER_RULE),
         source_urls=(ANTHROPIC_PRICING, CURSOR_PRICING),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="claude-fable-5-1",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ),
         provider="anthropic",
         display_name="Claude Fable 5.1",
         aliases=("claude-fable-5.1",),
@@ -107,10 +210,17 @@ ANTHROPIC_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CLAUDE_MAX_RULE,),
         source_urls=(ANTHROPIC_PRICING,),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="claude-fable-5",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ),
         provider="anthropic",
         display_name="Claude Fable 5",
         replacement_model_id="claude-fable-5-1",
@@ -124,7 +234,7 @@ ANTHROPIC_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CLAUDE_MAX_RULE,),
         source_urls=(ANTHROPIC_PRICING,),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
 )
 

@@ -7,6 +7,7 @@ import json
 from yoke_contracts.timestamps import format_instant, utc_now
 
 from yoke_core.domain import db_backend
+from yoke_core.domain.session_work_eligibility import require_session_work_eligibility
 from yoke_core.domain import workflow_item_binding_lock as binding_lock
 from yoke_core.domain.db_helpers import instant_parameter, query_rows, query_scalar
 from yoke_core.domain.schema_common import _get_columns as _schema_get_columns
@@ -123,6 +124,7 @@ def _claim_typed(
 ) -> str:
     now = utc_now()
     _require_active_session(conn, session_id)
+    require_session_work_eligibility(conn, session_id, target)
     target_label = target.render()
 
     self_where, self_params = _self_clause(conn, target)
@@ -188,6 +190,7 @@ def _claim_typed(
     lock_session_rows_for_claim_lifecycle(conn, (session_id,))
     _require_active_session(conn, session_id)
     binding_lock.lock_work_claim_target_workflow_binding(conn, target)
+    require_session_work_eligibility(conn, session_id, target)
     try:
         validate_work_claim_target(conn, target)
     except WorkflowItemBindingError as exc:

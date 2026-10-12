@@ -39,6 +39,7 @@ class UniverseLevelsResponse(BaseModel):
 
 
 class UniverseLevelsCapacityResponse(BaseModel):
+    cursor_quota_order: List[str]
     read_at: str
     source: str
     usable_machines: int
@@ -81,8 +82,7 @@ def handle_universe_levels_get(request: FunctionCallRequest) -> HandlerOutcome:
 
 
 def handle_universe_levels_capacity_get(request: FunctionCallRequest) -> HandlerOutcome:
-    """Return what each level can launch now, where the caller's next launch
-    at each level goes per project, and which projects override."""
+    """Return current model-row capacity and Cursor monthly pool order."""
     try:
         UniverseLevelsGetRequest(**(request.payload or {}))
     except ValidationError as exc:
@@ -116,8 +116,7 @@ def handle_universe_levels_capacity_get(request: FunctionCallRequest) -> Handler
 def handle_universe_levels_set(request: FunctionCallRequest) -> HandlerOutcome:
     """Validate and store the universe levels, replacing the prior definition.
 
-    An option whose effort or context window its model's published catalog
-    values contradict is refused before anything is stored.
+    A minimum effort that its model's published catalog values contradict is refused before anything is stored.
     """
     try:
         parsed = UniverseLevelsSetRequest(**(request.payload or {}))

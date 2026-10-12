@@ -1,68 +1,42 @@
 # Execution levels
 
-An execution level is a named, ordered capability band. Each level holds an
-ordered list of **options**, and each option is one exact launchable
-selection. The same options label sessions: a session is stamped with the
-highest level whose option it dominates on model rank, speed, and effort. Levels carry
-identity, presentation, and launch selections; workflow bindings select stage
-skills, and steering or explicit operator staffing assigns work.
+Each execution level holds ordered model/minimum-effort rows.
+Sessions take the highest matching threshold; native listings decide launch selectors.
+Levels carry presentation and placement; workflow bindings select skills,
+and steering or explicit operator staffing assigns work.
 
 Execution levels are distinct from the claimed worktree lanes that isolate
 code changes. See [worktree lanes and claims](agent-rules/lanes-and-claims.md).
 
 ## The shipped scheme
 
-Every universe reads this scheme until an operator stores its own, lowest
-level first:
+Each level contains ordered base-model rows at their minimum effort:
 
-| Level | Surface | Model or selector | Effort | Context |
-|---|---|---|---|---|
-| INTERN 🐣 | claude-cli | `claude-haiku-5-5` | max | default |
-| | codex-cli | `gpt-6-luna` | max | default |
-| JUNIOR 🐥 | cursor-cli | `grok-4.7-high`; when its pool is exhausted, `claude-opus-5-5-medium` | high / medium | default |
-| | codex-cli | `gpt-5.6-terra` | xhigh | default |
-| | claude-cli | `claude-sonnet-5-5` | xhigh | 1,000,000 |
-| SENIOR 🦉 | claude-cli | `claude-opus-5-5` | medium | 1,000,000 |
-| | codex-cli | `gpt-6.1-sol` | medium | default |
-| PRINCIPAL 🦅 | claude-cli | `claude-fable-5-1` | xhigh | 1,000,000 |
-| | codex-cli | `gpt-6-astra` | xhigh | default |
+| Level | Model | Minimum effort |
+|---|---|---|
+| INTERN 🐣 | claude-haiku-5-5, gpt-6-luna, claude-sonnet-5-5, gpt-5.6-terra, grok-4.7 | low |
+| JUNIOR 🐥 | grok-4.7, gpt-5.6-terra, claude-sonnet-5-5 | high |
+| | claude-opus-5-5, gpt-6.1-sol, claude-fable-5-1, gpt-6-astra | low |
+| SENIOR 🦉 | claude-opus-5-5, gpt-6.1-sol, claude-fable-5-1, gpt-6-astra | medium |
+| PRINCIPAL 🦅 | claude-fable-5-1, gpt-6-astra | xhigh |
 
 ## Document shape
 
-Levels are a JSON list, lowest first:
+Levels are a JSON list, lowest first. Names and glyphs follow their existing
+contracts; each option is exactly a base model and minimum effort:
 
 ```json
-[
-  {
-    "name": "SENIOR",
-    "glyph": "🦉",
-    "options": [
-      {"surface": "claude-cli", "model": "claude-opus-5-5",
-       "reasoning_effort": "medium", "context_window_tokens": 1000000},
-      {"surface": "codex-cli", "model": "gpt-6.1-sol",
-       "reasoning_effort": "medium", "context_window_tokens": null}
-    ]
-  }
-]
+[{"name":"SENIOR","glyph":"🦉","options":[
+  {"model":"claude-opus-5-5","min_effort":"medium"},
+  {"model":"gpt-6.1-sol","min_effort":"medium"}
+]}]
 ```
 
-- `name` is uppercase letters, digits, and underscores, unique, and never the
-  reserved unresolved name `primary`.
-- `glyph` satisfies the [glyph contract](#glyph-contract).
-- An option names a launch `surface` (`claude-cli`, `codex-cli`,
-  `cursor-cli`), one exact `model` or native selector (no wildcard), the
-  `reasoning_effort`, and `context_window_tokens` (`null` for the model's
-  default window). Effort and context are validated against what that
-  surface's CLI accepts — claude-cli takes `low`, `medium`, `high`, `xhigh`,
-  `max` and a 1,000,000-token window; a Cursor selector that encodes an effort
-  must name the same effort.
-- A Cursor option may carry a `fallback` on the same surface, used only when
-  the option's own pool is exhausted.
-- One surface, model, and effort belongs to at most one level.
-
-A refusal names its code (for example `claude_reasoning_effort_unsupported`,
-`level_option_model_not_launchable`, `level_glyph_unsafe`) and the document
-path to correct.
+There is no stored surface, context, speed or exhausted-pool fallback.
+Within a model, thresholds must strictly increase with level; duplicate or
+decreasing thresholds refuse `level_min_effort_order_invalid`. Base IDs carry
+no native effort/speed suffix. Invalid rows name their field and correction.
+`primary` is reserved and cannot name a level.
 
 ## Where levels live
 
@@ -75,10 +49,8 @@ path to correct.
   ```
 
   `universe.levels.set` replaces the whole definition and requires an org
-  admin. It also refuses an option whose effort or context window its
-  model's published catalog values contradict
-  (`level_option_reasoning_effort_unpublished`,
-  `level_option_context_window_tokens_unpublished`). Model refresh proposes
+  admin. It also refuses a threshold whose effort its
+  model's published catalog values contradict (`level_min_effort_unpublished`). Model refresh proposes
   level changes with `yoke models level-proposal`; the operator approves
   before the proposed document is stored here.
 - **Project override** — a project may carry its own levels in its
@@ -99,43 +71,21 @@ result names its `source` (`project`, `universe`, or `default`).
 
 ## Launch capacity per level
 
-Read what each universe level can launch right now with
-`yoke universe level-capacity get [--json]` (`universe.level_capacity.get`).
-For every option it names the quota pools that option's model draws on
-(Claude rolling 5h, weekly all-models and weekly model-specific; Cursor Models
-or Cursor Other Models; Codex weekly), each pool's quota left and headroom,
-and the option's standing:
+`yoke universe level-capacity get [--json]` (`universe.level_capacity.get`)
+reports each model row's native launch surfaces and current standing.
+Native model listings supply the selectors and supported efforts, per machine.
+An unknown listing requires `yoke relay probe-models --surface S`. An unsupported
+listing names the missing adapter; ask the control-plane operator to provide it
+or choose a surface with observed models. Neither invents availability.
 
-- **Can launch** — every readable pool it draws on has quota left on a usable
-  machine. A Cursor option whose own pool is exhausted launches its fallback,
-  shown as `via` the fallback model.
-- **Blocked** — a pool it draws on reads 0% left, or no usable machine offers
-  its surface. Each blocker is named. An unreadable or unpublished meter never
-  blocks; it leaves the headroom unknown.
+Every candidate reads only the quota windows its model draws on. A readable
+zero blocks; missing or unreadable quota is unknown capacity. Claude's 5-hour
+window remains a separate cap beside its weekly limits. Cursor's two monthly
+pools follow the order below. No level borrows another level's models.
 
-A level with no launchable option has **no capacity**. Usable machines, meters
-and live workers are the union across the universe's live projects.
-
-Per level and per live project it names where your next launch at that level
-goes and why (`next_launches`). The read does not predict placement: it runs
-the same preview `launch preview --level` runs, as you, in that project — the
-placement described under [Launching by level](#launching-by-level) — so its
-answer is the answer a launch would get. A preview that would refuse (no
-option with capacity, the level not defined by the project's override, or you
-not an operator there) is listed with its code and reason. The read also lists
-every project and what its override, if any, changes.
-
-A steering seat reads the same standing from its own fleet report: the
-**levels** block dry-runs a launch at every level the project reads, under the
-seat's own launch authorization, and names each option's machine, pools
-(left, headroom, reset), blocker, and where the next launch goes and why,
-beside the fleet-wide live workers per launch surface
-([steering fleet report](db-reference/steering-fleet-report.md)).
-
-The dashboard's **Settings → Levels** page, directly under Universe, shows
-this read: levels, options, capacity, each project's next launch per level,
-and project overrides with the override command. It is view only; edit levels
-with the commands above.
+Settings → Levels shows #, MODEL (ID and display name), MIN EFFORT and NOW,
+plus Launchable on harness chips. The Cursor quota order appears below it as
+two editable rows. Level configuration is edited through the registered CLI.
 
 ## Item level override
 
@@ -241,30 +191,20 @@ yoke session-control launch preview --project P --level SENIOR [--machine M] --j
 yoke session-control launch create --project P --item PREFIX-N --idempotency-key K
 ```
 
-Placement weighs every option of the level on every machine the caller may
-use that offers its surface and has lane capacity. Each option is read
-against **only the quota pools its model draws on**: a Claude model draws on
-the rolling 5-hour window, the weekly all-models window, and the weekly
-window scoped to its own family; a Cursor model draws on Cursor Models or on
-Other Models; Codex meters the whole account weekly. Then:
+Placement expands each model row to observed native selectors at its minimum
+effort. Machine access, lane capacity and quota rules remain authoritative.
+Empty/blocked candidates are skipped. Among available Cursor candidates,
+the earlier monthly pool is preferred before headroom; other vendors have
+no pool order. Then the existing spread rule prefers idle surfaces above
+100% headroom, followed by binding headroom and configuration position.
+Unknown quota never means exhaustion.
 
-1. **Spread.** An option on a surface with no live worker (or
-   launch in flight) and more than 100% headroom wins first, so quota that
-   cannot run out before its reset is put to work.
-2. **Most headroom.** Otherwise the option with the most headroom on its
-   binding pool wins; an option whose pools publish no readable meter ranks
-   below every readable one.
-3. **Order** — the level's option order, then machine id — breaks ties.
-
-An option is blocked on a machine only by a readable pool with no quota
-left; an unreadable or missing meter is unknown, never exhaustion. A Cursor
-option's `fallback` is weighed only where the option's own pool is
-exhausted. When no option can launch anywhere the launch refuses as
-`level_no_capacity`, naming each option and the pool or eligibility rule
-that blocked it. Yoke never moves a launch to another level; relaunch at a
-different `--level` or wait for the named reset. An unknown level refuses as
-`level_unknown` with the levels the project reads. Capacity-stopped workers
-use [same-level recovery](session-capacity-recovery.md), excluding the refused model.
+When no native selection can launch, `level_no_capacity` names each refusal
+and its recovery. Unknown levels refuse `level_unknown`. The retired JUNIOR
+exhausted-to-Cursor-Opus fallback no longer exists: Cursor Opus medium resolves
+as SENIOR, and cannot be inserted into JUNIOR as an exhaustion escape.
+Capacity-stopped workers use [same-level recovery](session-capacity-recovery.md),
+excluding the refused model.
 
 The launch result, `launch preview`, and `launch get` name the level, the
 chosen option, every pool each option read, and why the winner won
@@ -287,13 +227,10 @@ recovery rather than silently launching another level.
 
 ## Glyph contract
 
-Every glyph Yoke stores renders inside fixed-width board columns, so one
-contract (`yoke_contracts.glyph_contract`) governs all of them: exactly one
-`Emoji_Presentation=Yes` code point (Unicode category `So`, East Asian Width
-`W`), with no variation selector, skin-tone modifier, ZWJ, flag, keycap, or
-combining mark. Each writer validates at write time and refuses an unsafe
-glyph by name — quoting the offending code point and offering safe examples
-such as 🐎 or 🚀 — rather than silently stripping it:
+`yoke_contracts.glyph_contract` requires one `Emoji_Presentation=Yes` code point
+(category `So`, East Asian Width `W`), without variation selectors, modifiers,
+ZWJ, flags, keycaps or combining marks. Writers refuse unsafe glyphs by name,
+quoting the code point and offering safe examples such as 🐎 or 🚀:
 
 | Stored glyph | Writer | Correction command |
 |---|---|---|
@@ -305,37 +242,49 @@ such as 🐎 or 🚀 — rather than silently stripping it:
 `HC-stored-glyph-contract` FAILs on every stored value that breaks the
 contract and prints its location with the correction command above.
 
-## Session labeling
+## Session labeling and admission
 
-An explicit operator level wins. Otherwise a session takes the highest level
-whose option (including a fallback) it equals or exceeds on **all three** axes:
-model rank, speed, and reasoning effort. Comparison crosses harness families;
-launch options remain exact surface selections. Context is not a labeling axis.
-
-The contract's `model_capabilities.MODEL_CAPABILITIES` declares operator policy:
-
-| Rank | Models | Speed |
-|---|---|---|
-| 1 | claude-haiku-5-5, gpt-6-luna | 0 |
-| 2 | grok-4.7, gpt-5.6-terra, claude-sonnet-5-5 | 0 |
-| 3 | claude-opus-5-5, gpt-6.1-sol | 0 |
-| 4 | claude-fable-5-1, gpt-6-astra | 0 |
-
-`-fast` adds one speed ordinal without changing model rank. Effort order is
+A session takes the highest level containing its model where its effort meets
+the minimum. Actual observed model/effort wins over launch stamps; requested
+facts fill gaps. Native Cursor selectors supply embedded effort when needed.
+Speed selectors such as `-fast` are stripped and ignored. Effort order is
 none < minimal < low < medium < high < xhigh (extra-high) < max < ultra.
-Cursor effort suffixes are parsed with the shared native selector parser.
-`grok-4.7-high-fast` is rank 2, speed 1, effort high: it reaches JUNIOR,
-but its rank is below SENIOR and PRINCIPAL. These are policy ordinals, not
-benchmark scores or measured latency. Unknown models or efforts establish no
-level; declare a model in the contract or supply the session's missing effort.
+No model ranking table participates.
 
-Provider-attested model/effort wins, else the requested facts; `[1m]` is removed
-from the requested model. An encoded effort can fill a missing effort fact.
-Unresolved stored rows are recomputed by roster reads, without a migration or
-DB write. Missing facts stay visibly **no level**, never `primary`. Existing
-explicit/resolved stamps remain authoritative.
+A known older model with a catalog `replacement_model_id` and no explicit
+entry drops exactly one class at the same effort, regardless of version age:
+Claude Haiku < Sonnet < Opus < Fable; OpenAI Luna < Terra < Sol < Astra.
+The current lower-class model supplies its thresholds. Older bottom-class
+Haiku/Luna and single-class Grok refuse. Opus 4.8 medium resolves as current
+Sonnet medium and INTERN. Grok 4.7 high-fast resolves as JUNIOR; Cursor Opus
+5.5 medium resolves as SENIOR.
+
+Unknown models or unpublished effort (including Composer without published
+efforts) establish no level. Item/epic-task claims and work launches refuse
+`session_below_intern` with recovery when no level resolves. Steering without
+item claims is exempt. Roster and identity reads show **no level**, never
+`primary`. Registration and observed-model updates refresh stored labels.
+
+## Cursor quota order
+
+`universe.cursor_quota_order.get` and `.set` read or replace the universe-wide
+order of exactly two Cursor monthly pools. It is not per machine:
+
+```text
+yoke universe cursor-quota-order get --json
+yoke universe cursor-quota-order set --pool 'Cursor Models' --pool 'Other Models'
+```
+
+Repeat `--pool` exactly twice; reverse them to prefer Other Models. Invalid,
+duplicate or missing scopes refuse `cursor_quota_order_invalid`. The order
+affects consumption preference, never execution-level membership.
 
 ## Stored settings convergence
+
+Serving-build boot converges retired surface-selector rows into model/minimum-effort
+rows and initializes the two Cursor pools, with a serving floor preventing old
+readers. Operator-approved replacement content is set after landing and candidate
+serving through the registered writer.
 
 Levels replaced three older `session-routing` keys — declared level
 metadata, selector rules, and harness defaults. Boot removes them from every
@@ -344,7 +293,5 @@ document left without levels, so every project reads the universe levels
 unless it holds a real override. A write that still uses a retired key is
 refused as `level_routing_keys_retired` with the override recipe above.
 
-Machine config carries no launch routing either. A machine file that still
-holds a retired launch-default key keeps loading; `yoke status` warns
-`machine_config_key_retired` naming each one, and the next config write
-removes it.
+Retired machine launch-default keys keep loading; `yoke status` names them as
+`machine_config_key_retired`, and the next config write removes them.

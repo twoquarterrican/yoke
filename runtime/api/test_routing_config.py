@@ -5,8 +5,9 @@ from pathlib import Path
 import pytest
 
 from yoke_contracts.levels import default_levels
-from yoke_core.api.routing_config import (
-    config_path_from_db_path,
+from runtime.api.fixtures.model_catalog import RECORDS
+from yoke_core.api.routing_config import config_path_from_db_path
+from yoke_core.domain.session_level_resolution import (
     resolve_execution_level,
     routing_effort_of,
     routing_model_of,
@@ -42,6 +43,9 @@ class TestMatchingFacts:
         assert routing_effort_of(None, "max") == "max"
         assert routing_effort_of(None, None) is None
 
+    def test_observed_cursor_effort_wins_over_requested_effort(self):
+        assert routing_effort_of(None, "low", "grok-4.7-high-fast") == "high"
+
 
 class TestResolution:
     @pytest.mark.parametrize("explicit", [None, "", "default", "primary", "PRIMARY"])
@@ -51,22 +55,24 @@ class TestResolution:
                 executor="codex",
                 explicit_level=explicit,
                 levels=default_levels(),
+                records=RECORDS,
                 model="gpt-6-astra",
                 reasoning_effort="xhigh",
             )
             == "PRINCIPAL"
         )
 
-    def test_a_real_explicit_level_wins(self):
+    def test_actual_facts_win_over_a_real_launch_stamp(self):
         assert (
             resolve_execution_level(
                 executor="codex",
                 explicit_level="SENIOR",
                 levels=default_levels(),
+                records=RECORDS,
                 model="gpt-6-astra",
                 reasoning_effort="xhigh",
             )
-            == "SENIOR"
+            == "PRINCIPAL"
         )
 
     def test_no_matching_option_stamps_the_unresolved_sentinel(self):
@@ -75,6 +81,7 @@ class TestResolution:
                 executor="codex",
                 explicit_level=None,
                 levels=default_levels(),
+                records=RECORDS,
                 model=None,
             )
             == "primary"

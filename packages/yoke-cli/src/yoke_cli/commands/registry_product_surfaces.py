@@ -21,6 +21,7 @@ from yoke_cli.commands.adapters import (
     test_machine,
     test_machine_desktop,
     universe_levels,
+    quota_pool_order,
 )
 from yoke_cli.commands.registry_direct_workflows import (
     DIRECT_WORKFLOW_SUBCOMMAND_ALIAS_REGISTRY,
@@ -221,6 +222,14 @@ UNIVERSE_LEVELS_SUBCOMMAND_REGISTRY = {
     ("universe", "level-capacity", "get"): (
         "universe.level_capacity.get",
         universe_levels.universe_levels_capacity,
+    ),
+    ("universe", "cursor-quota-order", "get"): (
+        "universe.cursor_quota_order.get",
+        quota_pool_order.get,
+    ),
+    ("universe", "cursor-quota-order", "set"): (
+        "universe.cursor_quota_order.set",
+        quota_pool_order.set_order,
     ),
     ("universe", "levels", "set"): (
         "universe.levels.set",

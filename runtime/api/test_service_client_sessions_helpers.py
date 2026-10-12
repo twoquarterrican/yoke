@@ -305,6 +305,8 @@ def _pre_register_session(
             provider,
             "--requested-model",
             requested_model,
+            "--requested-reasoning-effort",
+            "medium",
             "--workspace",
             workspace,
             "--project-id",

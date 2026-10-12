@@ -12,8 +12,11 @@ from yoke_contracts.levels import (
     level_presentation,
     resolve_effective_levels,
 )
-from yoke_contracts.session_level import UNRESOLVED_EXECUTION_LEVEL, level_is_unresolved
-from yoke_core.api.routing_config import routing_effort_of, routing_model_of
+from yoke_contracts.session_level import UNRESOLVED_EXECUTION_LEVEL
+from yoke_core.domain.session_level_resolution import (
+    routing_effort_of,
+    routing_model_of,
+)
 from yoke_core.domain.universe_levels import (
     UniverseLevelsError,
     project_routing_settings,
@@ -53,6 +56,7 @@ def session_presentation(
     row: Mapping[str, Any],
     *,
     levels: Mapping[Optional[int], tuple[Level, ...]],
+    records=(),
 ) -> dict[str, Any]:
     """Return execution and observed-presentation metadata for a session.
 
@@ -63,19 +67,18 @@ def session_presentation(
     project_id = row.get("project_id")
     key = int(project_id) if project_id is not None else None
     effective = levels.get(key, levels.get(None, ()))
-    execution_level = row.get("execution_level")
-    if level_is_unresolved(execution_level):
-        execution_level = (
-            level_for_session(
-                effective,
-                executor=display_name,
-                model=routing_model_of(row.get("model"), row.get("requested_model")),
-                reasoning_effort=routing_effort_of(
-                    row.get("reasoning_effort"), row.get("requested_reasoning_effort")
-                ),
-            )
-            or UNRESOLVED_EXECUTION_LEVEL
+    execution_level = (
+        level_for_session(
+            effective,
+            executor=display_name,
+            model=routing_model_of(row.get("model"), row.get("requested_model")),
+            reasoning_effort=routing_effort_of(
+                row.get("reasoning_effort"), row.get("requested_reasoning_effort")
+            ),
+            records=records,
         )
+        or UNRESOLVED_EXECUTION_LEVEL
+    )
     level = level_presentation(effective, execution_level)
     return {
         "execution_level": execution_level,

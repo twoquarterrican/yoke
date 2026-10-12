@@ -1,278 +1,158 @@
-"""Execution levels: ordered capability bands, each a list of launchable options.
-
-A level is a name, a board glyph, and an ordered list of options; the order
-of the levels list is the capability order, lowest first. An option is one
-exact launchable selection — surface, model or native selector, reasoning
-effort, and context window — validated against what that surface's CLI
-accepts, so a wildcard or an effort the harness cannot pass never reaches
-storage. A Cursor option may name a ``fallback`` on the same surface: the
-selection used only when the option's own pool is exhausted.
-
-The same options label sessions: a session takes the highest level whose
-option it equals or exceeds in declared model rank, speed, and effort, across
-harness families. Launch selections remain exact.
-
-One document holds the levels for the whole universe; a project may carry an
-override in its ``session-routing`` capability. Both stores hold the same
-document shape, ``[{"name", "glyph", "options": [...]}, ...]``, and both are
-validated by :func:`parse_levels`.
-"""
+"""Ordered execution bands containing model-specific minimum-effort rows."""
 
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional, Sequence
-
 from yoke_contracts.executor_labels import canonical_harness_id
 from yoke_contracts.level_defaults import DEFAULT_LEVELS
 from yoke_contracts.glyph_contract import GlyphContractError, validate_glyph
-from yoke_contracts.session_control.model_selection import (
-    SURFACE_EFFORT_LEVELS,
-    LaunchModelSelection,
-    LaunchModelSelectionError,
-    validate_launch_model_selection,
+from yoke_contracts.model_level_resolution import (
+    effort_ordinal,
+    normalized_effort,
+    resolve_model_level,
 )
+from yoke_contracts.model_reference import lookup_stem
 from yoke_contracts.session_level import level_is_unresolved
-from yoke_contracts.model_capabilities import selection_capability, selection_dominates
 
 LEVELS_KEY = "levels"
-"""The key holding the levels document in both the universe and project stores."""
-
-_LEVEL_KEYS = frozenset({"name", "glyph", "options"})
-_OPTION_KEYS = frozenset(
-    {"surface", "model", "reasoning_effort", "context_window_tokens", "fallback"}
-)
 
 
 class LevelsError(ValueError):
-    """A levels document cannot be stored as written.
-
-    ``code`` names the refusal; ``field`` is the document path to correct.
-    """
-
-    def __init__(self, code: str, message: str, *, field: str) -> None:
+    def __init__(self, code: str, message: str, *, field: str):
         super().__init__(f"{code}: {field}: {message}")
-        self.code = code
-        self.field = field
-        self.detail = message
+        self.code, self.field, self.detail = code, field, message
 
 
 @dataclass(frozen=True)
-class LevelOption:
-    surface: str
+class LevelEntry:
     model: str
-    reasoning_effort: str
-    context_window_tokens: Optional[int] = None
-    fallback: Optional["LevelOption"] = None
+    min_effort: str
 
-    @property
-    def harness(self) -> str:
-        return canonical_harness_id(self.surface)
-
-    def payload(self) -> dict[str, Any]:
-        out: dict[str, Any] = {
-            "surface": self.surface,
-            "model": self.model,
-            "reasoning_effort": self.reasoning_effort,
-            "context_window_tokens": self.context_window_tokens,
-        }
-        if self.fallback is not None:
-            out["fallback"] = self.fallback.payload()
-        return out
+    def payload(self):
+        return {"model": self.model, "min_effort": self.min_effort}
 
 
 @dataclass(frozen=True)
 class Level:
     name: str
     glyph: str
-    options: tuple[LevelOption, ...]
+    options: tuple[LevelEntry, ...]
 
-    def payload(self) -> dict[str, Any]:
+    def payload(self):
         return {
             "name": self.name,
             "glyph": self.glyph,
-            "options": [option.payload() for option in self.options],
+            "options": [entry.payload() for entry in self.options],
         }
 
 
 def level_name_error(name: object) -> Optional[str]:
-    """Explain why ``name`` cannot identify a level, or ``None`` when it can."""
     if not isinstance(name, str) or not name.strip():
         return "a level name must be a non-empty string"
     if level_is_unresolved(name):
-        return (
-            f"{name.strip()!r} is reserved for a session no level matched; "
-            "choose another name"
-        )
+        return f"{name.strip()!r} is reserved for an unresolved session; choose another name"
     normalized = "".join(c if c.isalnum() else "_" for c in name.strip()).upper()
     if name != normalized:
-        return (
-            f"{name!r} must be written as uppercase letters, digits, and "
-            f"underscores (for example {normalized!r})"
-        )
+        return f"{name!r} must use uppercase letters, digits and underscores (for example {normalized!r})"
     return None
 
 
-def _require_mapping(raw: Any, keys: frozenset[str], field: str, what: str):
-    if not isinstance(raw, Mapping):
+def _mapping(raw, keys, field, what):
+    if not isinstance(raw, Mapping) or set(raw) - keys:
         raise LevelsError(
             "levels_document_invalid",
-            f"{what} must be an object; got {type(raw).__name__}.",
-            field=field,
-        )
-    unknown = sorted(set(raw) - keys)
-    if unknown:
-        raise LevelsError(
-            "levels_document_invalid",
-            f"{what} carries unsupported key(s) {', '.join(unknown)}; "
-            f"allowed keys are {', '.join(sorted(keys))}.",
+            f"{what} must carry only {', '.join(sorted(keys))}. Recovery: read levels get and correct the named row.",
             field=field,
         )
     return raw
 
 
-def _parse_option(raw: Any, field: str, *, allow_fallback: bool) -> LevelOption:
-    mapping = _require_mapping(raw, _OPTION_KEYS, field, "a level option")
-    surface = str(mapping.get("surface") or "").strip()
-    if surface not in SURFACE_EFFORT_LEVELS:
-        raise LevelsError(
-            "level_option_surface_unsupported",
-            f"surface {surface or '(missing)'!r} is not a launch surface; use "
-            f"one of {', '.join(SURFACE_EFFORT_LEVELS)}.",
-            field=f"{field}.surface",
-        )
-    model = str(mapping.get("model") or "").strip()
-    effort = str(mapping.get("reasoning_effort") or "").strip().lower()
-    if not model or "*" in model:
-        raise LevelsError(
-            "level_option_model_not_launchable",
-            "an option names one exact model or native selector; wildcards "
-            "and blanks are not launchable.",
-            field=f"{field}.model",
-        )
-    if not effort:
-        raise LevelsError(
-            "level_option_effort_required",
-            f"name the reasoning effort; {surface} accepts "
-            f"{', '.join(SURFACE_EFFORT_LEVELS[surface])}.",
-            field=f"{field}.reasoning_effort",
-        )
-    context = mapping.get("context_window_tokens")
-    if context is not None and (
-        isinstance(context, bool) or not isinstance(context, int)
-    ):
-        raise LevelsError(
-            "level_option_context_invalid",
-            "context_window_tokens must be a token count or null for the "
-            "model's default window.",
-            field=f"{field}.context_window_tokens",
-        )
-    try:
-        validate_launch_model_selection(
-            surface, LaunchModelSelection(model, effort, context)
-        )
-    except LaunchModelSelectionError as exc:
-        raise LevelsError(exc.code, str(exc), field=field) from exc
-    fallback = None
-    if mapping.get("fallback") is not None:
-        if not allow_fallback:
-            raise LevelsError(
-                "level_option_fallback_nested",
-                "a fallback cannot carry its own fallback.",
-                field=f"{field}.fallback",
-            )
-        fallback = _parse_option(
-            mapping["fallback"], f"{field}.fallback", allow_fallback=False
-        )
-        if fallback.surface != surface:
-            raise LevelsError(
-                "level_option_fallback_surface",
-                f"a fallback launches on the option's own surface ({surface}); "
-                "list another surface as a separate option instead.",
-                field=f"{field}.fallback.surface",
-            )
-    return LevelOption(surface, model, effort, context, fallback)
-
-
 def parse_levels(raw: Any, *, field: str = LEVELS_KEY) -> tuple[Level, ...]:
-    """Validate a levels document and return it, lowest level first."""
+    """Validate the exact schema and strictly increasing thresholds per model."""
     if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)) or not raw:
         raise LevelsError(
             "levels_document_invalid",
-            "levels must be a non-empty list of level objects, lowest first.",
+            "Use a nonempty ordered list of levels.",
             field=field,
         )
-    levels: list[Level] = []
-    selections: dict[tuple[str, str, str], str] = {}
-    for index, entry in enumerate(raw):
-        level_field = f"{field}[{index}]"
-        mapping = _require_mapping(entry, _LEVEL_KEYS, level_field, "a level")
-        name = mapping.get("name")
+    levels, thresholds = [], {}
+    for index, raw_level in enumerate(raw):
+        where = f"{field}[{index}]"
+        document = _mapping(raw_level, {"name", "glyph", "options"}, where, "A level")
+        name = document.get("name")
         error = level_name_error(name)
-        if error is not None:
-            raise LevelsError(
-                "level_name_invalid", error + ".", field=f"{level_field}.name"
-            )
+        if error:
+            raise LevelsError("level_name_invalid", error, field=f"{where}.name")
         if any(level.name == name for level in levels):
             raise LevelsError(
                 "level_name_duplicate",
-                f"{name!r} is declared twice; each level appears once.",
-                field=f"{level_field}.name",
+                "Each level name appears once.",
+                field=f"{where}.name",
             )
         try:
-            glyph = validate_glyph(mapping.get("glyph"), field=f"{level_field}.glyph")
+            glyph = validate_glyph(document.get("glyph"), field=f"{where}.glyph")
         except GlyphContractError as exc:
             raise LevelsError(
-                "level_glyph_unsafe", str(exc), field=f"{level_field}.glyph"
+                "level_glyph_unsafe", str(exc), field=f"{where}.glyph"
             ) from exc
-        raw_options = mapping.get("options")
-        if (
-            not isinstance(raw_options, Sequence)
-            or isinstance(raw_options, (str, bytes))
-            or not raw_options
-        ):
+        rows = document.get("options")
+        if not isinstance(rows, list) or not rows:
             raise LevelsError(
                 "level_options_missing",
-                "a level needs at least one launchable option.",
-                field=f"{level_field}.options",
+                "Each level needs model/min_effort rows.",
+                field=f"{where}.options",
             )
-        options = []
-        for option_index, raw_option in enumerate(raw_options):
-            option_field = f"{level_field}.options[{option_index}]"
-            option = _parse_option(raw_option, option_field, allow_fallback=True)
-            for selection in (option, option.fallback):
-                if selection is None:
-                    continue
-                key = (selection.harness, selection.model, selection.reasoning_effort)
-                if key in selections:
-                    raise LevelsError(
-                        "level_option_duplicate",
-                        f"{selection.surface} {selection.model} at "
-                        f"{selection.reasoning_effort} effort already belongs to "
-                        f"{selections[key]}; one selection labels one level.",
-                        field=option_field,
-                    )
-                selections[key] = str(name)
-            options.append(option)
-        levels.append(Level(str(name), glyph, tuple(options)))
+        options, seen = [], set()
+        for position, raw_entry in enumerate(rows):
+            location = f"{where}.options[{position}]"
+            entry = _mapping(
+                raw_entry, {"model", "min_effort"}, location, "A level row"
+            )
+            model = entry.get("model")
+            if (
+                not isinstance(model, str)
+                or not model.strip()
+                or "*" in model
+                or lookup_stem(model) != model
+                or model.endswith("-thinking")
+            ):
+                raise LevelsError(
+                    "level_model_invalid",
+                    "Use one base model id without effort, speed, wildcard or context selectors.",
+                    field=f"{location}.model",
+                )
+            effort = normalized_effort(entry.get("min_effort"))
+            ordinal = effort_ordinal(effort)
+            if ordinal is None:
+                raise LevelsError(
+                    "level_min_effort_invalid",
+                    "Choose a published effort from none, minimal, low, medium, high, xhigh, max, ultra.",
+                    field=f"{location}.min_effort",
+                )
+            if model in seen:
+                raise LevelsError(
+                    "level_option_duplicate",
+                    "A model appears once within a level.",
+                    field=location,
+                )
+            if model in thresholds and ordinal <= thresholds[model]:
+                raise LevelsError(
+                    "level_min_effort_order_invalid",
+                    "A model's minimum effort must strictly increase with level. Raise this threshold or remove the conflicting row.",
+                    field=location,
+                )
+            seen.add(model)
+            thresholds[model] = ordinal
+            options.append(LevelEntry(model, effort))
+        levels.append(Level(name, glyph, tuple(options)))
     return tuple(levels)
 
 
 def default_levels() -> tuple[Level, ...]:
-    """The shipped scheme, parsed."""
     return parse_levels(list(DEFAULT_LEVELS))
 
 
-def resolve_effective_levels(
-    project_settings: Optional[Mapping[str, Any]],
-    universe_levels: Any,
-) -> tuple[tuple[Level, ...], str]:
-    """Return the levels a project reads and where they came from.
-
-    The project's ``session-routing`` override wins when it carries
-    ``levels``; otherwise the stored universe document; otherwise the
-    shipped scheme. The source is ``project``, ``universe``, or ``default``.
-    """
+def resolve_effective_levels(project_settings, universe_levels):
     if isinstance(project_settings, Mapping) and project_settings.get(LEVELS_KEY):
         return parse_levels(project_settings[LEVELS_KEY]), "project"
     if universe_levels:
@@ -280,57 +160,39 @@ def resolve_effective_levels(
     return default_levels(), "default"
 
 
-def levels_payload(levels: Sequence[Level]) -> list[dict[str, Any]]:
+def levels_payload(levels):
     return [level.payload() for level in levels]
 
 
-def level_for_session(
-    levels: Sequence[Level],
-    *,
-    executor: Optional[str],
-    model: Optional[str],
-    reasoning_effort: Optional[str] = None,
-) -> Optional[str]:
-    """Return the highest level dominated on model rank, speed and effort.
-
-    Harness identity validates the session, but does not restrict comparison
-    to that family's options. Unknown axes cannot establish a level.
-    """
+def level_for_session(levels, *, executor, model, reasoning_effort=None, records=()):
     if not executor or not model:
         return None
     try:
         canonical_harness_id(executor)
     except ValueError:
         return None
-    actual = selection_capability(model, reasoning_effort)
-    if actual is None:
-        return None
-    for level in reversed(levels):
-        for option in level.options:
-            for selection in (option, option.fallback):
-                if selection and selection_dominates(
-                    actual, selection.model, selection.reasoning_effort
-                ):
-                    return level.name
-    return None
+    return resolve_model_level(
+        levels, model=model, effort=reasoning_effort, records=records
+    ).level
 
 
-def level_presentation(levels: Sequence[Level], level: Optional[str]) -> dict[str, str]:
-    """Return the label and glyph a stamped level renders with."""
+def level_presentation(levels, level):
     if level_is_unresolved(level):
         return {"label": "no level", "glyph": ""}
     name = str(level or "")
-    for candidate in levels:
-        if candidate.name == name:
-            return {"label": name, "glyph": candidate.glyph}
-    return {"label": name, "glyph": ""}
+    return {
+        "label": name,
+        "glyph": next(
+            (candidate.glyph for candidate in levels if candidate.name == name), ""
+        ),
+    }
 
 
 __all__ = [
     "DEFAULT_LEVELS",
     "LEVELS_KEY",
     "Level",
-    "LevelOption",
+    "LevelEntry",
     "LevelsError",
     "default_levels",
     "level_for_session",

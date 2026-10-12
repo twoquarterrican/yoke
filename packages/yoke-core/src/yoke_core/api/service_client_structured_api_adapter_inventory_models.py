@@ -11,6 +11,16 @@ from yoke_core.api.service_client_structured_api_adapter_inventory_types import 
 
 MODELS_ADAPTERS: List[AdapterEntry] = [
     _read_entry(
+        function_id="universe.cursor_quota_order.get",
+        cli_invocation="yoke universe cursor-quota-order get",
+        notes="Cursor monthly pool consumption order.",
+    ),
+    _read_entry(
+        function_id="universe.cursor_quota_order.set",
+        cli_invocation="yoke universe cursor-quota-order set --pool P --pool P",
+        notes="Set Cursor Models and Other Models in consumption order. Org admin required.",
+    ),
+    _read_entry(
         function_id="models.lookup.run",
         cli_invocation="yoke models lookup MODEL_ID [--json]",
         notes="Launch --model lookup; researched=false is unknown, never a gate.",

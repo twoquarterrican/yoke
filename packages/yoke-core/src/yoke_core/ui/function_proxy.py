@@ -1,8 +1,6 @@
 """Allowlists and dispatch for the local UI server's function proxy.
 
-Split out of :mod:`yoke_core.ui.server` so the server module keeps only
-routing and session-token security; the server re-exports the roster
-names for its callers. The proxy admits a closed set of function ids:
+The server keeps routing and token security; the proxy admits a closed roster:
 
 * :data:`UI_READ_FUNCTION_ALLOWLIST` — read-only by construction, with
   one documented exception (:data:`UI_ACTIVATION_LATCH_FUNCTIONS`).
@@ -30,6 +28,7 @@ UI_READ_FUNCTION_ALLOWLIST = frozenset(
         "organizations.settings.get",
         "projects.list",
         "universe.level_capacity.get",
+        "universe.cursor_quota_order.get",
         "projects.get",
         "projects.capabilities.list",
         "projects.environment_settings.get",
@@ -167,6 +166,7 @@ UI_OPERATOR_OPTIONAL_READ_FUNCTIONS = frozenset(
 UI_MUTATION_FUNCTION_ALLOWLIST = frozenset(
     {
         "workflow.execution_instruction.create",
+        "universe.cursor_quota_order.set",
         "workflow.execution_instruction.update",
         "workflow.execution_instruction.set_scope",
         "workflow.execution_instruction.delete",

@@ -16,6 +16,12 @@ from yoke_contracts.model_reference_sources import (
 CURSOR_RECORDS: tuple[ModelRecord, ...] = (
     ModelRecord(
         model_id="cursor-grok-4.7",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+        ),
         provider="cursor",
         display_name="Grok 4.7",
         aliases=("grok-4.7",),
@@ -31,10 +37,17 @@ CURSOR_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CURSOR_MODELS_RULE,),
         source_urls=(CURSOR_PRICING, GROK_47_DOCS),
-        checked_at=REFRESHED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="cursor-grok-4.6",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+        ),
+        replacement_model_id="cursor-grok-4.7",
         provider="cursor",
         display_name="Grok 4.6",
         aliases=("grok-4.6",),
@@ -46,10 +59,15 @@ CURSOR_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CURSOR_MODELS_RULE,),
         source_urls=(CURSOR_PRICING, GROK_46_DOCS),
-        checked_at=REFRESHED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="cursor-grok-4.5",
+        reasoning_efforts=(
+            "low",
+            "medium",
+            "high",
+        ),
         provider="cursor",
         display_name="Grok 4.5",
         aliases=("grok-4.5",),
@@ -62,7 +80,7 @@ CURSOR_RECORDS: tuple[ModelRecord, ...] = (
         ),
         subscription_rules=(CURSOR_MODELS_RULE,),
         source_urls=(CURSOR_PRICING,),
-        checked_at=CHECKED_AT,
+        checked_at="2026-10-12",
     ),
     ModelRecord(
         model_id="composer-2.5",
