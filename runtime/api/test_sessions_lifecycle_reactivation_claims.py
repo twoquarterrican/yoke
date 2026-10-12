@@ -147,6 +147,9 @@ def _apply_reactivation_schema() -> None:
         # Registration binds the universe's operating actor; a fixture
         # without one models an install that cannot exist.
         seed_fixture_operating_actor(conn)
+        from runtime.api.fixtures.level_store import create_level_store_tables
+
+        create_level_store_tables(conn)
     finally:
         conn.close()
 

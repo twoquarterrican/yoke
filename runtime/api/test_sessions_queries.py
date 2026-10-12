@@ -29,6 +29,7 @@ from yoke_core.domain.sessions import (
     set_session_mode,
 )
 from runtime.api.test_constants import TEST_MODEL_ID
+from yoke_contracts.session_model_facts import SessionModelFacts
 
 
 @pytest.fixture(autouse=True)
@@ -49,9 +50,13 @@ class TestQuerySurface:
         assert len(harness_sessions) == 2
 
     def test_list_harness_sessions_filter_level(self, conn):
-        _register(conn, session_id="sess-1", execution_level="primary")
-        _register(conn, session_id="sess-2", execution_level="review")
-        harness_sessions = list_harness_sessions(conn, level="review")
+        _register(
+            conn,
+            session_id="sess-1",
+            model_facts=SessionModelFacts(model=TEST_MODEL_ID, reasoning_effort="low"),
+        )
+        _register(conn, session_id="sess-2")
+        harness_sessions = list_harness_sessions(conn, level="SENIOR")
         assert len(harness_sessions) == 1
         assert harness_sessions[0]["session_id"] == "sess-2"
 

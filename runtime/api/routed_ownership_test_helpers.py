@@ -82,6 +82,9 @@ def apply_release_gap_schema() -> None:
 
         ensure_workflow_schema(conn)
         converge_builtin_workflows(conn)
+        from runtime.api.fixtures.level_store import create_level_store_tables
+
+        create_level_store_tables(conn)
         conn.commit()
     finally:
         conn.close()
@@ -134,12 +137,12 @@ def register_live_session(
     p = _p(conn)
     conn.execute(
         "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, execution_level, "
+        "(session_id, executor, provider, model, reasoning_effort, execution_level, "
         " executor_version, machine_id, workspace, mode, offered_at, last_heartbeat, "
         " ended_at, offer_envelope, current_item_id, "
         " current_item_set_at) "
         f"VALUES ({p}, 'claude-code', 'anthropic', '{TEST_MODEL_ID}', "
-        f" 'primary', NULL, NULL, {p}, 'wait', {p}, {p}, NULL, NULL, {p}, {p})",
+        f" 'medium', 'SENIOR', NULL, NULL, {p}, 'wait', {p}, {p}, NULL, NULL, {p}, {p})",
         (
             session_id,
             WORKSPACE,

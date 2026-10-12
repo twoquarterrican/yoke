@@ -11,6 +11,11 @@ from unittest.mock import Mock
 import pytest
 
 from yoke_contracts.session_model_facts import SessionModelFacts
+from yoke_core.domain.model_reference_store import (
+    create_model_reference_table,
+    seed_initial_catalog,
+)
+from yoke_core.domain.universe_levels import create_universe_settings_table
 
 from yoke_core.domain.session_identity_observation import (
     ROW_COLUMNS,
@@ -30,8 +35,12 @@ def conn() -> sqlite3.Connection:
     columns = ", ".join(f"{column} TEXT DEFAULT NULL" for column in ROW_COLUMNS)
     connection.execute(
         "CREATE TABLE harness_sessions ("
-        f"session_id TEXT PRIMARY KEY, ended_at TEXT DEFAULT NULL, {columns})"
+        "session_id TEXT PRIMARY KEY, ended_at TEXT DEFAULT NULL, "
+        f"executor TEXT, project_id INTEGER, execution_level TEXT, {columns})"
     )
+    create_universe_settings_table(connection)
+    create_model_reference_table(connection)
+    seed_initial_catalog(connection)
     connection.execute(
         "INSERT INTO harness_sessions (session_id) VALUES (?)", (SESSION,)
     )
@@ -49,9 +58,7 @@ def _stored(conn: sqlite3.Connection, column: str) -> str | None:
 def _claude_transcript(tmp_path: Path, model: str = "claude-opus-5") -> str:
     path = tmp_path / "transcript.jsonl"
     path.write_text(
-        json.dumps(
-            {"type": "assistant", "effort": "high", "message": {"model": model}}
-        )
+        json.dumps({"type": "assistant", "effort": "high", "message": {"model": model}})
         + "\n",
         encoding="utf-8",
     )
@@ -197,9 +204,7 @@ def test_a_session_with_no_row_is_never_created(conn) -> None:
         payload_json=json.dumps({"session_id": "never-registered", "model": "m"}),
         executor="claude-code",
     )
-    assert (
-        conn.execute("SELECT COUNT(*) FROM harness_sessions").fetchone()[0] == 1
-    )
+    assert conn.execute("SELECT COUNT(*) FROM harness_sessions").fetchone()[0] == 1
 
 
 @pytest.mark.parametrize("token", ["banana", "skill", ""])

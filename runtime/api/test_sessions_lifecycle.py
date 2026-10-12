@@ -51,7 +51,7 @@ class TestRegisterSession:
         # Registration states an ask; nothing has attested a served model.
         assert result["requested_model"] == TEST_MODEL_ID
         assert result["model"] is None
-        assert result["execution_level"] == "primary"
+        assert result["execution_level"] == "SENIOR"
         assert result["workspace"] == "/tmp/work"
         assert result["mode"] == "wait"
         assert result["ended_at"] is None

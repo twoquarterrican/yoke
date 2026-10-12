@@ -6,6 +6,7 @@ import json
 import pytest
 
 from yoke_contracts.timestamps import parse_instant
+from yoke_contracts.session_control.native_models import models_reading, native_model
 
 from yoke_contracts.level_defaults import DEFAULT_LEVELS
 from yoke_core.domain.session_launch_requests import create_launch
@@ -33,6 +34,20 @@ def staged_launch(monkeypatch, *, capacity=50):
     conn = level_connection(CODEX_SOL)
     write_universe_levels(conn, list(DEFAULT_LEVELS), actor_id=1)
     add_surface(conn, "worker-machine", "codex-cli", [weekly(capacity)])
+    reading = models_reading(
+        "codex-cli",
+        [
+            native_model("gpt-6.1-sol", reasoning_efforts=["low", "medium"]),
+            native_model("gpt-5.6-terra", reasoning_efforts=["low", "high"]),
+            native_model("gpt-6-astra", reasoning_efforts=["low", "medium", "xhigh"]),
+        ],
+        source="native fixture",
+        observed_at=NOW,
+    )
+    conn.execute(
+        "UPDATE session_relays SET surface_native_models=?",
+        (json.dumps({"codex-cli": reading}),),
+    )
     definition = _pin_definition()
     for stage in definition["stages"]:
         if stage["id"] == "implementing":
@@ -114,7 +129,7 @@ def test_exact_operator_selection_bypasses_the_stage_and_item_default(monkeypatc
             request,
             executor_surface="codex-cli",
             model=CODEX_SOL["model"],
-            reasoning_effort=CODEX_SOL["reasoning_effort"],
+            reasoning_effort=CODEX_SOL["min_effort"],
         ),
         now=NOW,
     ).launch
