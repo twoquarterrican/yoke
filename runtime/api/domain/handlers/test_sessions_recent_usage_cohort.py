@@ -150,25 +150,27 @@ def test_window_boundary_includes_both_halves_at_the_cutoff(test_db):
     create_session_control_tables(test_db)
     test_db.commit()
     # The cutoff is inclusive on both halves, and one second past it is out.
-    inside = 24
-    outside = 24 + 1 / 3600
-    _insert_session(test_db, "ended-at-cutoff", ended_at=_iso(inside), usage_tokens=1)
+    at_cutoff = 24
+    past_cutoff = 24 + 1 / 3600
+    _insert_session(
+        test_db, "ended-at-cutoff", ended_at=_iso(at_cutoff), usage_tokens=1
+    )
     _insert_session(
         test_db,
         "ended-past-cutoff",
-        ended_at=_iso(outside),
+        ended_at=_iso(past_cutoff),
         usage_tokens=2,
     )
     _insert_session(
         test_db,
         "open-at-cutoff",
-        offered_at=_iso(inside),
+        offered_at=_iso(at_cutoff),
         usage_tokens=4,
     )
     _insert_session(
         test_db,
         "open-past-cutoff",
-        offered_at=_iso(outside),
+        offered_at=_iso(past_cutoff),
         usage_tokens=8,
     )
 
