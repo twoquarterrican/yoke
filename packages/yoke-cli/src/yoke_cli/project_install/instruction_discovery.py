@@ -58,24 +58,38 @@ def assert_claude_loading(
     configs = settings.get("pluginConfigs") or {}
     plugin_ids = ("agents-md@builtin", "cc-plugin-agents-md@builtin")
     if any(plugins.get(key) is False for key in plugin_ids):
-        _loading_refusal("the built-in AGENTS.md plugin is disabled")
+        _loading_refusal(
+            "the built-in AGENTS.md plugin is disabled", "Enable it in /plugin."
+        )
     configured = set()
     for key in plugin_ids:
         value = (configs.get(key) or {}).get("options", {}).get("instructionFiles")
         if value is not None:
             if not isinstance(value, str):
-                _loading_refusal("Project instructions must be a supported string")
+                _loading_refusal(
+                    "Project instructions must be a supported string",
+                    "Set Project instructions to claude-md-and-agents-md in /config.",
+                )
             configured.add(value)
     if len(configured) > 1:
-        _loading_refusal("the built-in plugin has conflicting configuration entries")
+        _loading_refusal(
+            "the built-in plugin has conflicting configuration entries",
+            "Remove the conflicting instructionFiles entry from user or managed settings.",
+        )
     mode = next(iter(configured), "claude-md-or-agents-md")
     if mode not in {"claude-md-or-agents-md", "claude-md-and-agents-md"}:
-        _loading_refusal(f"Project instructions is {mode!r}")
+        _loading_refusal(
+            f"Project instructions is {mode!r}",
+            "Set Project instructions to claude-md-and-agents-md in /config.",
+        )
     for pattern in settings.get("claudeMdExcludes") or []:
         if fnmatch.fnmatch(str(root / "AGENTS.md"), pattern) or fnmatch.fnmatch(
             "AGENTS.md", pattern
         ):
-            _loading_refusal("claudeMdExcludes excludes the canonical AGENTS.md")
+            _loading_refusal(
+                "claudeMdExcludes excludes the canonical AGENTS.md",
+                "Remove the AGENTS.md exclusion from claudeMdExcludes.",
+            )
     if mode == "claude-md-and-agents-md":
         return
     canonical = {
@@ -88,7 +102,10 @@ def assert_claude_loading(
             if path.is_file():
                 if path.resolve() in canonical or _imports_canonical(path, canonical):
                     continue
-                _loading_refusal(f"{path} suppresses native AGENTS.md loading")
+                _loading_refusal(
+                    f"{path} suppresses native AGENTS.md loading",
+                    "Set Project instructions to claude-md-and-agents-md in /config (user or managed settings).",
+                )
 
 
 def _imports_canonical(path: Path, canonical: set[Path]) -> bool:
@@ -106,13 +123,7 @@ def _imports_canonical(path: Path, canonical: set[Path]) -> bool:
     return False
 
 
-def _loading_refusal(detail: str) -> None:
-    if "disabled" in detail:
-        fix = "Enable the built-in AGENTS.md plugin in /plugin."
-    elif "excludes" in detail:
-        fix = "Remove the AGENTS.md exclusion from claudeMdExcludes."
-    else:
-        fix = "Set Project instructions to claude-md-and-agents-md in /config (user or managed settings)."
+def _loading_refusal(detail: str, fix: str) -> None:
     raise ProjectInstallError(
         f"canonical_instructions_not_loaded: {detail}. {fix} "
         "Start a new session and verify AGENTS.md in /memory."

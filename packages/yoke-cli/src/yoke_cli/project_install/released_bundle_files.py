@@ -83,8 +83,8 @@ class ReleasedBundleFiles:
 
 
 def _source_path(rel: str) -> str | None:
-    if "/skills/yoke/" in rel:
-        return ".agents/skills/yoke/" + rel.split("/skills/yoke/", 1)[1]
+    if rel.startswith(".agents/skills/yoke/"):
+        return rel
     if rel.startswith(".yoke/docs/"):
         return "docs/public/" + rel.removeprefix(".yoke/docs/")
     for harness in ("claude", "codex", "cursor"):

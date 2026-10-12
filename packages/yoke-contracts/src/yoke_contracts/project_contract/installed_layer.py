@@ -28,8 +28,6 @@ SOURCE_BUILD_KEY = "source_build"
 # the inspection does not know about is residue nothing can see.
 CANONICAL_SKILLS_DEST = ".agents/skills/yoke"
 CLAUDE_SKILLS_DEST = ".claude/skills/yoke"
-CODEX_SKILLS_DEST = ".codex/skills/yoke"
-CURSOR_SKILLS_DEST = ".cursor/skills/yoke"
 CLAUDE_AGENTS_DEST = ".claude/agents"
 CODEX_AGENTS_DEST = ".codex/agents"
 CURSOR_AGENTS_DEST = ".cursor/agents"
@@ -42,8 +40,6 @@ INSTALLED_LAYER_DIR_RELS: tuple[str, ...] = (
     PROJECT_CONTRACT_DEST,
     CANONICAL_SKILLS_DEST,
     CLAUDE_SKILLS_DEST,
-    CODEX_SKILLS_DEST,
-    CURSOR_SKILLS_DEST,
     CLAUDE_RULES_DEST,
 )
 # Directories the layer shares with the harness: only the ``yoke-`` adapters
@@ -58,12 +54,7 @@ INSTALLED_LAYER_AGENT_PREFIX = "yoke-"
 INSTALLED_LAYER_FILE_RELS: tuple[str, ...] = (INSTALLED_LAYER_RECEIPT_REL,)
 # Files a project co-owns, where the layer occupies a marked region: the
 # managed Markdown block and the merged harness hook entries.
-INSTALLED_LAYER_MARKDOWN_RELS: tuple[str, ...] = (
-    "AGENTS.md",
-    "CLAUDE.md",
-    "CODEX.md",
-    "CURSOR.md",
-)
+INSTALLED_LAYER_MARKDOWN_RELS: tuple[str, ...] = ("AGENTS.md",)
 INSTALLED_LAYER_HOOK_RELS: tuple[str, ...] = (
     ".claude/settings.json",
     ".codex/hooks.json",
@@ -176,10 +167,7 @@ def read_installed_layer_receipt(start: Path) -> Optional[InstalledLayerReceipt]
         manifest = project_root / INSTALL_MANIFEST_REL
         if manifest.exists():
             return _legacy_manifest_receipt(project_root)
-        if (
-            (project_root / ".yoke").is_dir()
-            or (project_root / ".git").exists()
-        ):
+        if (project_root / ".yoke").is_dir() or (project_root / ".git").exists():
             return None
     return None
 
@@ -190,9 +178,7 @@ __all__ = [
     "CLAUDE_RULES_DEST",
     "CLAUDE_SKILLS_DEST",
     "CODEX_AGENTS_DEST",
-    "CODEX_SKILLS_DEST",
     "CURSOR_AGENTS_DEST",
-    "CURSOR_SKILLS_DEST",
     "INSTALLED_LAYER_AGENT_DIR_RELS",
     "INSTALLED_LAYER_AGENT_PREFIX",
     "INSTALLED_LAYER_DIR_RELS",
