@@ -215,44 +215,12 @@ def test_a_change_confined_to_the_managed_block_stays_ours(
     assert unproven == ()
 
 
-def test_retired_installer_files_remain_proven_after_record_moves(tmp_path):
-    from runtime.api.cli.test_project_install_recovery import _commit, _file, _git
-
-    _git(tmp_path, "init")
-    rel = ".codex/skills/yoke/old/SKILL.md"
-    old = _file(tmp_path, rel, "old installed skill\n")
-    _commit(tmp_path, "Install Yoke operating layer 1.0.0")
-    old.unlink()
-    _commit(tmp_path, "Refresh installed Yoke operating layer to 1.0.1")
-    sha = _git(tmp_path, "rev-parse", "HEAD").stdout.strip()
-    commit = ownership.LocalCommit(
-        sha, "Refresh installed Yoke operating layer to 1.0.1", (rel,)
-    )
-    assert (
-        ownership.unproven_commits(
-            (commit,), ownership.InstallerTerritory(), repo_root=tmp_path
-        )
-        == ()
-    )
-    _file(tmp_path, rel, "operator custom skill\n")
-    _commit(tmp_path, "Customize skill")
-    (tmp_path / rel).unlink()
-    _commit(tmp_path, "Refresh installed Yoke operating layer to 1.0.2")
-    sha = _git(tmp_path, "rev-parse", "HEAD").stdout.strip()
-    commit = ownership.LocalCommit(
-        sha, "Refresh installed Yoke operating layer to 1.0.2", (rel,)
-    )
-    assert ownership.unproven_commits(
-        (commit,), ownership.InstallerTerritory(), repo_root=tmp_path
-    )
-
-
-def test_installer_commit_preserves_already_staged_retirement(tmp_path):
+def test_installer_commit_preserves_already_staged_deletion(tmp_path):
     from yoke_cli.project_install import checkout_gate
     from runtime.api.cli.test_project_install_recovery import _commit, _file, _git
 
     _git(tmp_path, "init")
-    rel = ".codex/skills/yoke/SKILL.md"
+    rel = ".agents/skills/yoke/SKILL.md"
     _file(tmp_path, rel, "installed skill\n")
     _commit(tmp_path, "Install Yoke operating layer 1.0.0")
     _git(tmp_path, "rm", "--", rel)
@@ -264,21 +232,19 @@ def test_installer_commit_preserves_already_staged_retirement(tmp_path):
     assert rel in _git(tmp_path, "diff", "--name-only", "HEAD~1", "HEAD").stdout
 
 
-def test_interrupted_retirement_checks_native_link_instead_of_old_children(tmp_path):
+def test_interrupted_native_link_apply_preserves_canonical_edits(tmp_path):
     import json
-    import shutil
     from yoke_cli.project_install import install_recovery as recovery
     from yoke_cli.project_install.files import sha256_text
     from runtime.api.cli.test_project_install_recovery import _commit, _file, _git
 
     _git(tmp_path, "init")
     canonical = ".agents/skills/yoke/SKILL.md"
-    legacy = ".claude/skills/yoke"
+    native = ".claude/skills/yoke"
     _file(tmp_path, canonical, "new installed skill\n")
-    _file(tmp_path, legacy + "/SKILL.md", "old installed skill\n")
     _commit(tmp_path, "Install Yoke operating layer 1.0.0")
-    shutil.rmtree(tmp_path / legacy)
-    (tmp_path / legacy).symlink_to(
+    (tmp_path / native).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / native).symlink_to(
         "../../.agents/skills/yoke", target_is_directory=True
     )
     _file(
@@ -288,12 +254,8 @@ def test_interrupted_retirement_checks_native_link_instead_of_old_children(tmp_p
             {
                 "files": {},
                 "checkout": {
-                    legacy: ["link:../../.agents/skills/yoke"],
+                    native: ["link:../../.agents/skills/yoke"],
                     canonical: [sha256_text("new installed skill\n")],
-                    legacy + "/SKILL.md": [
-                        "absent",
-                        sha256_text("old installed skill\n"),
-                    ],
                 },
             }
         ),

@@ -10,6 +10,7 @@ from yoke_contracts.project_contract.install_bundle import (
 import http.server
 import json
 import threading
+import subprocess
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -111,8 +112,25 @@ def test_project_install_https_external_repo_stays_product_client_only(
 ) -> None:
     checkout = tmp_path / "external-project"
     checkout.mkdir()
-    (checkout / ".git" / "hooks").mkdir(parents=True)
     (checkout / "README.md").write_text("# external\n", encoding="utf-8")
+    subprocess.run(["git", "init", str(checkout)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(checkout), "add", "README.md"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(checkout),
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "-m",
+            "Initial",
+        ],
+        check=True,
+        capture_output=True,
+    )
     token_path = tmp_path / "api.token"
     token_path.write_text(PRODUCT_TOKEN + "\n", encoding="utf-8")
 
@@ -125,12 +143,14 @@ def test_project_install_https_external_repo_stays_product_client_only(
                 str(checkout),
                 "--project-id",
                 str(PROJECT_ID),
+                "--no-commit",
+                "--no-publish",
             ],
             config_payload=_https_only_config(server.url, token_path),
             client_cwd=checkout,
         )
 
-    assert install.returncode == 0
+    assert install.returncode == 0, install.stderr
     payload = json.loads(install.stdout)
     assert payload["operation"] == "install"
     assert payload["mode"] == "copy"

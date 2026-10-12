@@ -162,24 +162,24 @@ def test_packaged_release_hashes_prove_old_bytes_without_source(tmp_path, monkey
         released, "_catalogue", lambda: {"skills/old/SKILL.md": [sha256_text(content)]}
     )
     proof = released.ReleasedBundleFiles()
-    assert proof.proves(".codex/skills/yoke/old/SKILL.md", content)
-    assert not proof.proves(".codex/skills/yoke/old/SKILL.md", "user edit\n")
+    assert proof.proves(".agents/skills/yoke/old/SKILL.md", content)
+    assert not proof.proves(".agents/skills/yoke/old/SKILL.md", "user edit\n")
 
 
-def test_commit_recovers_deleted_installer_output_and_discovery_link(tmp_path):
+def test_commit_recovers_deleted_output_with_native_discovery_link(tmp_path):
     from yoke_cli.project_install import checkout_gate
     from yoke_cli.project_install.files import write_manifest
 
     _git(tmp_path, "init")
     old = _file(tmp_path, ".yoke/docs/retired.md", "old installed doc\n")
-    legacy = _file(tmp_path, ".claude/skills/yoke/SKILL.md", "old installed skill\n")
+    _file(tmp_path, ".agents/skills/yoke/SKILL.md", "old installed skill\n")
+    native = tmp_path / ".claude/skills/yoke"
+    native.parent.mkdir(parents=True, exist_ok=True)
+    native.symlink_to("../../.agents/skills/yoke", target_is_directory=True)
     _file(tmp_path, "AGENTS.md", "old instructions\n")
     _commit(tmp_path, "Install Yoke operating layer 1.0.0")
     old.unlink()
-    legacy.unlink()
-    legacy.parent.rmdir()
     _file(tmp_path, ".agents/skills/yoke/SKILL.md", "new skill\n")
-    legacy.parent.symlink_to("../../.agents/skills/yoke", target_is_directory=True)
     _file(tmp_path, "AGENTS.md", "new instructions\n")
     write_manifest(
         tmp_path,

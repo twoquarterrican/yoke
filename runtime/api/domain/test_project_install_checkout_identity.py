@@ -101,16 +101,21 @@ def test_prose_code_and_unrelated_import_do_not_prove_loading(tmp_path, text):
 
 def _config(tmp_path, monkeypatch, entries):
     monkeypatch.delenv("YOKE_ENV", raising=False)
+    (tmp_path / "api.token").write_text("test-token\n")
     cfg = tmp_path / "config.json"
     cfg.write_text(
         json.dumps(
             {
+                "schema_version": 1,
                 "active_env": "prod",
                 "connections": {
                     "prod": {
                         "transport": "https",
                         "api_url": "https://example.test",
-                        "token_file": "/tmp/token",
+                        "credential_source": {
+                            "kind": "token_file",
+                            "path": str(tmp_path / "api.token"),
+                        },
                     }
                 },
                 "projects": entries,
