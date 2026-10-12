@@ -117,6 +117,7 @@ def cmd_validate_composition(
     connection: Any = None,
     composition_result: dict[str, Any] | None = None,
     require_item_qa_members: bool = True,
+    custody: CustodyResolution | None = None,
 ) -> Tuple[bool, str]:
     """Validate run composition. Returns (ok, message).
 
@@ -149,7 +150,6 @@ def cmd_validate_composition(
         # Unresolved until the bound sources it reads are recorded. A reader
         # handed None walks custody itself, which is the honest fallback when
         # recording those sources is the thing that failed.
-        custody: CustodyResolution | None = None
         carried = None
         try:
             # The run's source commit per project is resolved and recorded
@@ -164,7 +164,7 @@ def cmd_validate_composition(
             # client that hibernated mid-walk pinned the row until a human
             # terminated its backend. Custody excludes this run, so enrolling
             # its own members cannot invalidate the answer.
-            custody = resolve_candidate_custody(conn, run_id)
+            custody = custody or resolve_candidate_custody(conn, run_id)
             # Derived once: enrollment and the skipped notice read one answer.
             if not carried_enrollment_blocked(conn, run_id):
                 carried = carried_work_for_enrollment(conn, run_id)

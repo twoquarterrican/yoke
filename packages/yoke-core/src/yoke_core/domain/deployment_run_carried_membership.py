@@ -190,6 +190,7 @@ def enroll_carried_members(
     *,
     carried_work: Mapping[str, Any] | None = None,
     custody: CustodyResolution | None = None,
+    rebound_project_ids: frozenset[int] = frozenset(),
 ) -> tuple[str, ...]:
     """Attach every delivery-ready carried item the run does not already own.
 
@@ -203,7 +204,7 @@ def enroll_carried_members(
     it here is still done before any lock below is taken, because the walk
     reaches GitHub and the run row must never be held across a network call.
     """
-    if carried_enrollment_blocked(conn, run_id):
+    if not rebound_project_ids and carried_enrollment_blocked(conn, run_id):
         return ()
     row = conn.execute(
         "SELECT COALESCE(release_lineage,'') FROM deployment_runs WHERE id=%s",
@@ -242,14 +243,22 @@ def enroll_carried_members(
     # item this read called terminal could otherwise become deliverable
     # between the decision and the insert.
     lock_item_workflow_bindings(conn, carried + list(member_ids(conn, run_id)))
-    if lock_run(conn, run_id) != "created":
+    allowed_statuses = (
+        {"created", "executing", "failed"} if rebound_project_ids else {"created"}
+    )
+    if lock_run(conn, run_id) not in allowed_statuses:
         # Membership is mutable only while a run is composable, and the run
         # row now says it is not. Nothing was written.
         return ()
-    if carried_enrollment_blocked(conn, run_id):
+    if not rebound_project_ids and carried_enrollment_blocked(conn, run_id):
         return ()
     members = set(member_ids(conn, run_id))
     needed = needed_member_ids(conn, run_id=run_id, item_ids=carried)
+    if rebound_project_ids:
+        rows = conn.execute(
+            "SELECT id,project_id FROM items WHERE id=ANY(%s)", (carried,)
+        ).fetchall()
+        carried = [int(row[0]) for row in rows if int(row[1]) in rebound_project_ids]
     candidates = [
         item_id
         for item_id in carried

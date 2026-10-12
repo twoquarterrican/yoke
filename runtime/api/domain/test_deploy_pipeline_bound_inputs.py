@@ -1,96 +1,86 @@
-"""A bound stage refuses to dispatch once its frozen bound source is stale.
+"""A bound workflow uses the preparation receipt and refuses incomplete proof."""
 
-The control plane compares each recorded bound commit with its branch head;
-these tests drive the driver's reading of that answer: a moved source fails
-the stage with the new-run remedy, an unreadable head refuses by name, a
-current source dispatches, and a plane that predates the check is not a
-reason to stop a release that dispatched before it existed.
-"""
-
-from __future__ import annotations
-
-from typing import Any
 from unittest import mock
-
 import pytest
-
 from yoke_contracts.api.function_call import FunctionCallResponse, FunctionError
-from yoke_core.domain import deploy_pipeline_bound_inputs as freshness
-from yoke_core.domain.deployment_run_stale_bound_sources import (
-    BOUND_SOURCES_CURRENT_FUNCTION_ID,
-    stale_bound_source_reason,
+from yoke_core.domain import deploy_pipeline_bound_inputs as module
+from yoke_core.domain.deployment_run_bound_sources import (
+    BOUND_SOURCES_PREPARE_FUNCTION_ID,
 )
 
-FROZEN = "f" * 40
-CURRENT = "c" * 40
+CONFIG = {"input_bindings": {"consumer_sha": {"project": "consumer", "branch": "main"}}}
+OLD = "a" * 40
+CURRENT = "b" * 40
 
 
-def _answer(*, result: dict[str, Any] | None = None, code: str = "", message: str = ""):
-    if code:
-        return FunctionCallResponse(
-            success=False,
-            function=BOUND_SOURCES_CURRENT_FUNCTION_ID,
-            version="v1",
-            error=FunctionError(code=code, message=message),
-        )
-    return FunctionCallResponse(
-        success=True,
-        function=BOUND_SOURCES_CURRENT_FUNCTION_ID,
+def _prepare(*, result=None, code="", message=""):
+    response = FunctionCallResponse(
+        success=not bool(code),
+        function=BOUND_SOURCES_PREPARE_FUNCTION_ID,
         version="v1",
         result=result or {},
+        error=FunctionError(code=code, message=message) if code else None,
     )
+    members = ["YOK-1"]
+    with mock.patch.object(module, "call_dispatcher", return_value=response) as call:
+        values, reason = module.bound_inputs_for_dispatch(
+            CONFIG,
+            name="hosted-release",
+            run_id="run-test",
+            bound_inputs={"consumer_sha": OLD},
+            member_items=members,
+        )
+    assert call.call_args.kwargs["function_id"] == BOUND_SOURCES_PREPARE_FUNCTION_ID
+    assert call.call_args.kwargs["payload"] == {"stage_name": "hosted-release"}
+    return values, reason, members
 
 
-def _refusal(response: FunctionCallResponse) -> str:
-    with mock.patch.object(freshness, "call_dispatcher", return_value=response) as call:
-        refusal = freshness.stale_bound_source_refusal("run-test", "hosted-release")
-    assert call.call_args.kwargs["function_id"] == BOUND_SOURCES_CURRENT_FUNCTION_ID
-    assert call.call_args.kwargs["target"].workflow_run_id == "run-test"
-    return refusal
-
-
-def test_a_moved_bound_source_fails_the_stage_with_the_new_run_remedy() -> None:
-    reason = stale_bound_source_reason(
-        "run-test", project="platform", frozen_sha=FROZEN, current_sha=CURRENT
+def test_refreshed_inputs_and_members_replace_the_drivers_cached_projection():
+    values, reason, members = _prepare(
+        result={
+            "bound_sources": {"inputs": {"consumer_sha": CURRENT}},
+            "members": [{"public_ref": "YOK-1"}, {"public_ref": "CON-2"}],
+            "rebound": [
+                {"project": "consumer", "frozen_sha": OLD, "current_sha": CURRENT}
+            ],
+        }
     )
+    assert values == {"consumer_sha": CURRENT}
+    assert reason == ""
+    assert members == ["YOK-1", "CON-2"]
 
-    refusal = _refusal(
-        _answer(result={"stale": [{"project": "platform", "reason": reason}]})
+
+@pytest.mark.parametrize(
+    "code", ["forbidden", "function_version_skew", "function_not_registered"]
+)
+def test_unserved_or_refused_preparation_names_authority_recovery(code):
+    values, reason, members = _prepare(
+        code=code, message="required serving floor next-release"
     )
-
-    assert refusal == f"stage 'hosted-release' was not dispatched: {reason}"
-    assert f"bound source platform {FROZEN} is stale (current {CURRENT})" in refusal
-    assert "create a new run" in refusal
-
-
-def test_a_current_bound_source_dispatches() -> None:
-    assert _refusal(_answer(result={"stale": [], "unverified": ""})) == ""
+    assert "was not dispatched" in reason
+    assert "required serving floor next-release" in reason
+    assert "paired source-dev authority" in reason
+    assert values == {"consumer_sha": OLD} and members == ["YOK-1"]
 
 
-def test_an_unreadable_branch_head_refuses_by_name() -> None:
-    unverified = (
-        f"bound source platform {FROZEN}: could not resolve branch 'main' of "
-        "bound project 'platform': ... Register that project's checkout"
-    )
-
-    refusal = _refusal(_answer(result={"stale": [], "unverified": unverified}))
-
-    assert refusal.startswith("stage 'hosted-release' was not dispatched: ")
-    assert "could not confirm run run-test's bound sources are current" in refusal
-    assert unverified in refusal
-
-
-def test_a_refused_check_is_not_a_clear_one() -> None:
-    refusal = _refusal(_answer(code="forbidden", message="permission denied"))
-
-    assert BOUND_SOURCES_CURRENT_FUNCTION_ID in refusal
-    assert "permission denied" in refusal
-    assert "re-drive run-test" in refusal
+@pytest.mark.parametrize(
+    "result",
+    [
+        {},
+        {"bound_sources": {}, "members": []},
+        {"bound_sources": {"inputs": {"consumer_sha": ""}}, "members": []},
+        {"bound_sources": {"inputs": {"consumer_sha": CURRENT}}, "members": [{}]},
+    ],
+)
+def test_incomplete_preparation_receipts_never_authorize_dispatch(result):
+    _values, reason, members = _prepare(result=result)
+    assert reason
+    assert members == ["YOK-1"]
 
 
-@pytest.mark.parametrize("code", ["function_version_skew", "function_not_registered"])
-def test_a_plane_that_predates_the_check_dispatches_and_says_so(
-    code: str, capsys: pytest.CaptureFixture[str]
-) -> None:
-    assert _refusal(_answer(code=code, message="unknown function")) == ""
-    assert "dispatching without it" in capsys.readouterr().err
+def test_unbound_stage_needs_no_preparation():
+    with mock.patch.object(module, "call_dispatcher") as call:
+        assert module.bound_inputs_for_dispatch(
+            {}, name="plain", run_id="run-test", bound_inputs={}, member_items=[]
+        ) == ({}, "")
+    call.assert_not_called()

@@ -41,7 +41,10 @@ DISPATCH_TABLES: dict[str, dict] = {
             "workflow run-name and recovers a lost accepted response. Completed "
             "attempts keep the exact workflow_run_id; a conclusively failed run "
             "advances attempt instead of replaying it. Never infer this state "
-            "by scanning the telemetry journal or a branch/head-SHA search."
+            "by scanning the telemetry journal or a branch/head-SHA search. "
+            "Do not assume the general test_db fixture initializes this table: "
+            "focused dispatch tests initialize it with the canonical "
+            "github_workflow_dispatch_intents.GITHUB_WORKFLOW_DISPATCH_INTENTS_CREATE_SQL."
         ),
     },
 }

@@ -15,14 +15,15 @@ registered project's branch: `{"consumer_sha": {"project": "other", "branch":
 "main"}}`. The build that stage dispatches ships that project's code alongside
 the run's own candidate, so the run delivers two projects, not one.
 
-- **The branch resolves once, during composition.** The run records the exact commit it
-  resolved for each bound project in `deployment_runs.bound_sources`, beside
-  its own `release_lineage`. Every later reader — the stage that substitutes
-  the placeholder, enrollment, composition validation, run detail, the
-  Frontier delivery box — reads that record. Nothing re-resolves a branch
-  afterwards, so a retry cannot ship a commit the first attempt did not. Read
-  it with `yoke deployment-runs get RUN-ID bound_sources`, and read what a
-  flow binds with `yoke deployment-flows stages FLOW-ID`.
+- **Composition records the source; consumption seals it.** The run records
+  each bound project's exact commit in `deployment_runs.bound_sources`, beside
+  its own `release_lineage`. Before a bound stage dispatches, the runner may
+  refresh an unused source to its declared branch's current head. That write
+  records old/new commits and re-derives carried work, membership and containment.
+  Existing member requirement snapshots stay fixed; newly admitted members get
+  their own snapshots. Read the pins and history with
+  `yoke deployment-runs get RUN-ID bound_sources`, and flow bindings with
+  `yoke deployment-flows stages FLOW-ID`.
 - **A release attributes the commits it wrote itself.** A promotion that
   rewrites a version pin pushes a commit no backlog item authored, into the
   range the next release reads. The producing run records it — `yoke
@@ -58,20 +59,20 @@ the run's own candidate, so the run delivers two projects, not one.
   transaction. A refusal rolls back before a run ID is committed; start
   revalidates before stage dispatch. If a stored carried-work record omits a recorded bound
   project, start refuses it by name; cancel that stale run and create a new one.
-  A bound source stays frozen for the run's life and a `--retry-of` copies it,
-  so once its branch moves the run cannot pass on re-drive or retry. A stage
-  that consumes bound sources therefore asks the control plane
-  (`deployment_runs.execution.bound_sources_current`) immediately before it
-  dispatches and fails at once — `stage 'S' was not dispatched: bound source P
-  SHA is stale (current SHA)` — rather than spending the downstream workflow's
-  whole run reaching the same refusal; an unreadable branch head refuses by
-  name with its repair instead of dispatching blind. A head that some run
-  recorded as its release output (a promotion's version pin) whose first
-  parent is the frozen commit is still current, so a sibling run's pin does
-  not refuse the pair it proved; any other move is stale. Nothing rebinds. A failure
-  that surfaces later still shows in `yoke deployment-runs failure-trace RUN-ID`
-  (also printed when the stage fails) as `Stale bound source: ...`. Either way,
-  leave the run failed and create a new run, which binds the current commit.
+  Immediately before dispatch, `deployment_runs.execution.bound_sources_prepare`
+  resolves the stage's bound branches and records consumption on their source
+  entries before returning authoritative inputs and members to the driver.
+  An unused stale source re-binds and proceeds. Once any stage consumed that
+  source, a moved branch still refuses — `stage 'S' was not dispatched: bound
+  source P SHA is stale (current SHA)` — and requires a new run. A retry copies
+  consumption and cannot reopen it. A crash after preparation keeps the source
+  consumed because a provider attempt may be ambiguous. Existing durable
+  dispatch intent and later stage position also protect previously driven runs.
+  Unreadable source or composition evidence refuses with its repair; no inputs
+  dispatch on missing proof. A recorded release-output head whose first parent
+  is the bound commit still counts as current, so a sibling's version pin does
+  not invalidate the pair. The read-only freshness diagnosis remains available
+  through `deployment_runs.execution.bound_sources_current` and failure trace.
   A carried delivery-ready item with no completion flow also refuses: select
   its project workflow default with `yoke workflows delivery-default set
   --project P --workflow W --flow F`, then retry the start. Unreadable source

@@ -97,6 +97,7 @@ def derive_carried_work(
     run_id: str,
     *,
     repo_root: str | Path | None = None,
+    bound_sources: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Derive every project's carried set for one run, own project first."""
     row = conn.execute(
@@ -118,7 +119,11 @@ def derive_carried_work(
         previous=previous,
         repo_root=repo_root,
     )
-    bound = bound_project_shas(parse_bound_sources(_cell(row, BOUND_SOURCES_FIELD, 3)))
+    bound = bound_project_shas(
+        bound_sources
+        if bound_sources is not None
+        else parse_bound_sources(_cell(row, BOUND_SOURCES_FIELD, 3))
+    )
     payload["bound_projects"] = [
         dict(
             derive_project_carried_work(
@@ -137,7 +142,9 @@ def derive_carried_work(
     return payload
 
 
-def derive_carried_work_safely(conn: Any, run_id: str) -> dict[str, Any]:
+def derive_carried_work_safely(
+    conn: Any, run_id: str, *, bound_sources: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     """Derive without writing, and answer in the same shape when it cannot.
 
     Both callers need a payload rather than an exception: the completion
@@ -148,7 +155,11 @@ def derive_carried_work_safely(conn: Any, run_id: str) -> dict[str, Any]:
     """
     conn.execute("SAVEPOINT carried_work_derivation")
     try:
-        payload = derive_carried_work(conn, run_id)
+        payload = (
+            derive_carried_work(conn, run_id)
+            if bound_sources is None
+            else derive_carried_work(conn, run_id, bound_sources=bound_sources)
+        )
     except Exception as exc:  # noqa: BLE001 - callers record named emptiness
         conn.execute("ROLLBACK TO SAVEPOINT carried_work_derivation")
         conn.execute("RELEASE SAVEPOINT carried_work_derivation")

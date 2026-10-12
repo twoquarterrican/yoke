@@ -36,6 +36,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `deployment_runs.driver.for_capture` | `none` |
 | `deployment_runs.execution.attach_driver` | `none` |
 | `deployment_runs.execution.bound_sources_current` | `none` |
+| `deployment_runs.execution.bound_sources_prepare` | `none` |
 | `deployment_runs.execution.containment_basis` | `none` |
 | `deployment_runs.execution.context` | `none` |
 | `deployment_runs.execution.ephemeral_qa_ready` | `none` |

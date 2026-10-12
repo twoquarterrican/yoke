@@ -1,20 +1,7 @@
-"""Name a failed run whose frozen bound source can no longer pass.
+"""Compare bound branches and teach recovery according to durable consumption.
 
-A run resolves each bound branch once and keeps that commit for its whole
-life, and a retry copies the record unchanged (see
-:mod:`deployment_run_bound_sources`). That is what makes a release
-reproducible, and it is also why a failure caused by the frozen commit is
-permanent for that run: when the bound project's branch has moved and the
-failure names the frozen commit — a pair proof refused because the paired
-project's trunk moved past it, say — re-driving the run, or retrying it,
-re-proves exactly the same stale commit and fails the same way.
-
-Nothing in the raw failure says so. The terminal error speaks in the
-downstream project's terms, and the only remedy that works — a new run,
-which resolves the branch afresh — has to be inferred. This module compares
-each recorded commit against the branch it was resolved from and, for every
-one that both moved and is named by the failure, returns a diagnosis whose
-``reason`` says plainly that a new run is required.
+Consumed inputs remain fixed. An unused stale input can be refreshed by the
+runner before dispatch; a consumed stale source requires a new release run.
 """
 
 from __future__ import annotations
@@ -30,7 +17,7 @@ from yoke_core.domain.deployment_run_bound_sources import (
     parse_bound_sources,
 )
 
-#: The control-plane read a deploy driver asks before a bound stage dispatches.
+#: The registered read-only projection of bound-source freshness.
 BOUND_SOURCES_CURRENT_FUNCTION_ID = "deployment_runs.execution.bound_sources_current"
 
 #: The shortest commit prefix a failure may use to name the frozen commit.
@@ -177,16 +164,35 @@ def _recorded_sources(
 def check_bound_sources_current(
     conn: Any, run_id: str
 ) -> tuple[list[dict[str, str]], str]:
-    """Every recorded bound source whose branch has moved, before a dispatch.
-
-    Returns ``(stale, unverified)`` over all of the run's bound sources. A
-    stage that consumes them asks this immediately before dispatching, so a
-    run that can no longer pass fails at once instead of after the downstream
-    workflow spends its whole run discovering the same thing. Nothing is
-    rebound: the recorded commits stay frozen, and the remedy is a new run.
-    """
+    """Compare recorded sources without changing them; name consumption recovery."""
     entries, branches = _recorded_sources(conn, run_id)
-    return _compare_to_branch_heads(conn, run_id, entries, branches)
+    return _recovery_for_consumption(
+        conn,
+        run_id,
+        entries,
+        *_compare_to_branch_heads(conn, run_id, entries, branches),
+    )
+
+
+def _recovery_for_consumption(conn, run_id, entries, stale, unverified):
+    from yoke_core.domain.deployment_run_bound_source_consumption import (
+        source_consumed_by,
+    )
+
+    by_project = {entry["project"]: entry for entry in entries}
+    for change in stale:
+        try:
+            consumed = source_consumed_by(conn, run_id, by_project[change["project"]])
+        except (LookupError, ValueError) as exc:
+            unverified = "; ".join(filter(None, [unverified, str(exc)]))
+            continue
+        if not consumed:
+            change["reason"] = (
+                f"bound source {change['project']} {change['frozen_sha']} is stale "
+                f"(current {change['current_sha']}) and unused; re-drive {run_id}: "
+                "the runner re-binds it and re-derives members before first consumption"
+            )
+    return stale, unverified
 
 
 def diagnose_stale_bound_sources(
@@ -209,7 +215,9 @@ def diagnose_stale_bound_sources(
         for entry in entries
         if _names_commit(failure_text, str(entry.get("commit_sha") or ""))
     ]
-    return _compare_to_branch_heads(conn, run_id, named, branches)
+    return _recovery_for_consumption(
+        conn, run_id, named, *_compare_to_branch_heads(conn, run_id, named, branches)
+    )
 
 
 __all__ = [

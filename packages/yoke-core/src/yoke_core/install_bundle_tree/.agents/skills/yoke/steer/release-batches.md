@@ -40,10 +40,10 @@ refuses independently detectable blockers before run id; start validates again.
 Skipped held/rework/removed members are named. Production holds prod; exact same
 SHA stage still enrolls owed stage QA, other SHA skips with pinned commit named.
 
-Input_bindings resolves another registered project's branch once at composition
-and freezes its commit. Membership follows actual carried code: merged after
-binding resolution needs another run, project with no bound source refuses.
-Read stages before planning either project's delivery.
+Input_bindings records another registered project's source at composition.
+Before first consumption, the runner re-binds a moved branch and re-derives
+members and source evidence. A consumed source stays fixed; a later consumer
+merge needs another run. Read stages before planning either project's delivery.
 
 ```text
 yoke --env CONTROL_PLANE deployment-runs add-item {RUN_ID} PREFIX-N
@@ -60,8 +60,8 @@ candidate is outside the frozen lineage, through its recorded authority.
 
 Yielded create still runs: continue its handle. Only exited-without-id retries
 verbatim SAME key to recover original; new key deliberately means new run.
-Retry copies frozen sources: bound-source stale failure requires new composition,
-neither re-drive nor retry-of changes its commit. Preserve run history.
+Retry copies source history and consumption. Re-drive refreshes a stale unused
+source; a consumed stale source requires a new run. Preserve run history.
 
 ## Member and run QA are distinct ownership
 
