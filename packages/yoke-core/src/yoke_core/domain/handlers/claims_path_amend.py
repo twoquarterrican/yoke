@@ -77,7 +77,7 @@ def _narrow(
             )
         except PathResolveError as exc:
             conn.rollback()
-            return _err("path_resolve_failed", str(exc))
+            return _err(exc.code, str(exc))
         except (PathClaimError, ValueError) as exc:
             conn.rollback()
             return _err("amend_failed", f"{type(exc).__name__}: {exc}")

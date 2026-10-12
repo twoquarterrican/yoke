@@ -26,6 +26,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Iterable, List, Optional, Sequence
 
+from yoke_contracts.claim_path_syntax import (
+    PATH_MALFORMED,
+    PATH_NOT_PROJECT_RELATIVE,
+    malformed_claim_paths,
+    malformed_paths_message,
+    non_project_relative_paths_message,
+)
 from yoke_core.domain import db_backend
 from yoke_core.domain.path_project_relative import invalid_project_relative_paths
 from yoke_core.domain.path_registry import (
@@ -51,11 +58,27 @@ from yoke_core.domain.path_targets_states import (
 
 
 class PathResolveError(Exception):
-    """Base class for project-relative path resolution failures."""
+    """Base class for project-relative path resolution failures.
+
+    ``code`` names the refusal on the function-call surface; every message
+    ends in the recovery step.
+    """
+
+    code = "path_resolve_failed"
 
 
 class EmptyPathSet(PathResolveError):
     """The caller passed no paths."""
+
+    code = "path_set_empty"
+
+    def __init__(self) -> None:
+        super().__init__(
+            "at least one project-relative path is required. Re-run with "
+            "--paths naming repo-relative files (comma-separated), or with "
+            "--mode exception --exception-reason TEXT to record a no-claim "
+            "justification."
+        )
 
 
 class UnknownPathTargets(PathResolveError):
@@ -65,6 +88,8 @@ class UnknownPathTargets(PathResolveError):
     paste them into a snapshot refresh or diff against the working
     tree without having to re-run the command to discover the rest.
     """
+
+    code = "path_target_unknown"
 
     def __init__(self, project_id: int, missing: Sequence[str]) -> None:
         self.project_id = project_id
@@ -83,12 +108,21 @@ class UnknownPathTargets(PathResolveError):
 class NonProjectRelativePaths(PathResolveError):
     """At least one path is absolute or escapes the project tree."""
 
+    code = PATH_NOT_PROJECT_RELATIVE
+
     def __init__(self, paths: Sequence[str]) -> None:
         self.paths = list(paths)
-        super().__init__(
-            "path claim targets must be project-relative repo paths; "
-            f"outside-repo paths are not claimable: {', '.join(self.paths)}"
-        )
+        super().__init__(non_project_relative_paths_message(self.paths))
+
+
+class MalformedPaths(PathResolveError):
+    """At least one path carries shell quoting, a wildcard or a control byte."""
+
+    code = PATH_MALFORMED
+
+    def __init__(self, paths: Sequence[str]) -> None:
+        self.paths = list(paths)
+        super().__init__(malformed_paths_message(self.paths))
 
 
 def _normalize_paths(raw_paths: Iterable[str]) -> List[str]:
@@ -103,6 +137,14 @@ def _normalize_paths(raw_paths: Iterable[str]) -> List[str]:
 
 def _p(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
+
+
+def _reject_invalid_paths(paths: Sequence[str]) -> None:
+    """Refuse the operator's whole set before any path is resolved or planned."""
+    malformed = malformed_claim_paths(paths)
+    if malformed:
+        raise MalformedPaths(malformed)
+    _reject_non_project_relative(paths)
 
 
 def _reject_non_project_relative(paths: Sequence[str]) -> None:
@@ -129,11 +171,13 @@ def resolve_paths_to_target_ids(
     """
     paths = _normalize_paths(raw_paths)
     if not paths:
-        raise EmptyPathSet("at least one project-relative path is required")
-    _reject_non_project_relative(paths)
+        raise EmptyPathSet()
+    _reject_invalid_paths(paths)
     resolved_project_id = resolve_project_id(conn, project_id)
     paths, _ = expand_symlinks_from_snapshot_facts(
-        conn, resolved_project_id, paths,
+        conn,
+        resolved_project_id,
+        paths,
     )
     _reject_non_project_relative(paths)
     resolved: List[int] = []
@@ -194,23 +238,24 @@ def resolve_or_plan_paths_to_target_ids(
 
     paths = _normalize_paths(raw_paths)
     if not paths:
-        raise EmptyPathSet("at least one project-relative path is required")
-    _reject_non_project_relative(paths)
+        raise EmptyPathSet()
+    _reject_invalid_paths(paths)
     resolved_project_id = resolve_project_id(conn, project_id)
     paths, _ = expand_symlinks_from_snapshot_facts(
-        conn, resolved_project_id, paths,
+        conn,
+        resolved_project_id,
+        paths,
     )
     _reject_non_project_relative(paths)
     dir_set = {p.strip() for p in (directory_paths or []) if (p or "").strip()}
-    tentative_set = {
-        p.strip() for p in (tentative_paths or []) if (p or "").strip()
-    }
+    tentative_set = {p.strip() for p in (tentative_paths or []) if (p or "").strip()}
     resolved: List[int] = []
     for path_string in paths:
         target_id = target_at(conn, resolved_project_id, path_string)
-        if target_id is not None and _materialization_state(
-            conn, target_id
-        ) == _OBSERVED:
+        if (
+            target_id is not None
+            and _materialization_state(conn, target_id) == _OBSERVED
+        ):
             resolved.append(target_id)
             continue
         kind = KIND_DIRECTORY if path_string in dir_set else KIND_FILE
@@ -245,6 +290,7 @@ def _materialization_state(conn: Any, target_id: int) -> str:
 
 __all__ = [
     "EmptyPathSet",
+    "MalformedPaths",
     "NonProjectRelativePaths",
     "PathResolveError",
     "SymlinkDecision",

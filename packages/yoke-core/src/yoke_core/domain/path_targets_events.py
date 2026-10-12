@@ -52,6 +52,7 @@ def _emit(
     project: Optional[str],
     session_id: Optional[str],
     context: Dict[str, Any],
+    transactional: bool = False,
 ) -> Optional[str]:
     """Best-effort emit; return event id or ``None`` on failure."""
     try:
@@ -71,6 +72,7 @@ def _emit(
             item_id=item_id,
             context=context,
             conn=conn,
+            transactional=transactional,
         )
     except Exception:  # noqa: BLE001 — emit is best-effort
         return None
@@ -127,7 +129,9 @@ def emit_pre_observation(
 
     Single dispatcher for the two pre-observation states so callers in
     :mod:`yoke_core.domain.path_targets_planning` do not branch on
-    the state literal at every emit site.
+    the state literal at every emit site. The event rides the caller's
+    transaction: planning never commits on its own, so a refused claim
+    rolls its planned rows back with it.
     """
     event_name = _PRE_OBSERVATION_EVENT_NAMES.get(new_state)
     if event_name is None:
@@ -156,6 +160,7 @@ def emit_pre_observation(
         project=project_id,
         session_id=session_id,
         context=context,
+        transactional=True,
     )
 
 

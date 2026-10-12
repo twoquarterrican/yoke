@@ -216,8 +216,10 @@ def register_for_item(
             )
     except PathClaimError as exc:
         if emit_events:
+            # Emitter-owned transaction: emitting through ``conn`` would
+            # commit the refused registration's planned rows with it.
             _events.emit_registration_blocked(
-                conn=conn,
+                conn=None,
                 item_id=item_id,
                 integration_target=integration_target,
                 reason=str(exc),

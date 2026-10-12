@@ -71,11 +71,28 @@ def handle_register(request: FunctionCallRequest) -> HandlerOutcome:
             jsonpath="$.payload.public_ref",
         )
 
+    # One transaction: a refused or failed registration stores nothing, so
+    # no planned path target or claim row outlives the refusal.
+    with _connect_rw() as conn:
+        outcome = _register_in(conn, body, request)
+        if outcome.primary_success:
+            conn.commit()
+        else:
+            conn.rollback()
+    return outcome
+
+
+def _register_in(
+    conn: Any, body: RegisterRequest, request: FunctionCallRequest
+) -> HandlerOutcome:
     from yoke_core.domain.path_claims import PathClaimError
     from yoke_core.domain.path_claim_task_bindings import (
         PathClaimTaskBindingError,
     )
     from yoke_core.domain.path_claim_task_registration import register_for_task
+    from yoke_core.domain.path_claims_overlap_survey import (
+        describe_claim_survey_overlap,
+    )
     from yoke_core.domain.path_claims_register import (
         DefaultActorUnavailable,
         ItemHasNoProject,
@@ -86,65 +103,61 @@ def handle_register(request: FunctionCallRequest) -> HandlerOutcome:
     from yoke_core.domain.path_claims_register_validate_integration_target import (
         resolve_and_validate_integration_target,
     )
+    from yoke_core.domain.path_claims_resolve import PathResolveError
 
-    with _connect_rw() as conn:
-        try:
-            integration_target = resolve_and_validate_integration_target(
-                conn,
-                item_id=int(body.item_id),
-                supplied_target=body.integration_target,
-            )
-        except PathClaimRegistrationError as exc:
-            return _err("integration_target_invalid", str(exc))
-        try:
-            registrar = (
-                register_for_task if body.task_num is not None else register_for_item
-            )
-            kwargs = dict(
-                conn=conn,
-                item_id=int(body.item_id),
-                integration_target=integration_target,
-                paths=list(body.paths),
-                upstream_claim_id=body.upstream_claim_id,
-                actor_id=body.actor_id,
-                session_id=request.actor.session_id,
-                mode=body.mode,
-                exception_reason=body.exception_reason,
-                allow_planned=body.allow_planned,
-                directory_paths=body.directory_paths,
-                tentative_paths=body.tentative_paths,
-            )
-            if body.task_num is not None:
-                kwargs["task_num"] = int(body.task_num)
-            claim_id = registrar(**kwargs)
-            from yoke_core.domain.path_claims_overlap_survey import (
-                describe_claim_survey_overlap,
-            )
-
-            advisory = describe_claim_survey_overlap(
-                conn,
-                claim_id=int(claim_id),
-                integration_target=integration_target,
-                candidate_item_id=int(body.item_id),
-            )
-        except (ItemNotFound, ItemHasNoProject) as exc:
-            return _err("item_not_found", str(exc))
-        except DefaultActorUnavailable as exc:
-            return _err("actor_unavailable", str(exc))
-        except PathClaimTaskBindingError as exc:
-            return _err("task_binding_invalid", str(exc))
-        except PathClaimError as exc:
-            message = render_overlap_denial_for_register(
-                conn,
-                exc=exc,
-                item_id=int(body.item_id),
-                integration_target=integration_target,
-                paths=list(body.paths),
-                allow_planned=body.allow_planned,
-                session_id=request.actor.session_id,
-            )
-            fallback = f"{type(exc).__name__}: {exc}"
-            return _err("register_failed", message if message is not None else fallback)
+    try:
+        integration_target = resolve_and_validate_integration_target(
+            conn,
+            item_id=int(body.item_id),
+            supplied_target=body.integration_target,
+        )
+    except PathClaimRegistrationError as exc:
+        return _err("integration_target_invalid", str(exc))
+    kwargs = dict(
+        conn=conn,
+        item_id=int(body.item_id),
+        integration_target=integration_target,
+        paths=list(body.paths),
+        upstream_claim_id=body.upstream_claim_id,
+        actor_id=body.actor_id,
+        session_id=request.actor.session_id,
+        mode=body.mode,
+        exception_reason=body.exception_reason,
+        allow_planned=body.allow_planned,
+        directory_paths=body.directory_paths,
+        tentative_paths=body.tentative_paths,
+    )
+    try:
+        if body.task_num is not None:
+            claim_id = register_for_task(task_num=int(body.task_num), **kwargs)
+        else:
+            claim_id = register_for_item(commit=False, **kwargs)
+        advisory = describe_claim_survey_overlap(
+            conn,
+            claim_id=int(claim_id),
+            integration_target=integration_target,
+            candidate_item_id=int(body.item_id),
+        )
+    except PathResolveError as exc:
+        return _err(exc.code, str(exc), jsonpath="$.payload.paths")
+    except (ItemNotFound, ItemHasNoProject) as exc:
+        return _err("item_not_found", str(exc))
+    except DefaultActorUnavailable as exc:
+        return _err("actor_unavailable", str(exc))
+    except PathClaimTaskBindingError as exc:
+        return _err("task_binding_invalid", str(exc))
+    except PathClaimError as exc:
+        message = render_overlap_denial_for_register(
+            conn,
+            exc=exc,
+            item_id=int(body.item_id),
+            integration_target=integration_target,
+            paths=list(body.paths),
+            allow_planned=body.allow_planned,
+            session_id=request.actor.session_id,
+        )
+        fallback = f"{type(exc).__name__}: {exc}"
+        return _err("register_failed", message if message is not None else fallback)
 
     result_payload = {"claim_id": int(claim_id)}
     if advisory:
@@ -209,7 +222,7 @@ def handle_widen(request: FunctionCallRequest) -> HandlerOutcome:
             )
         except PathResolveError as exc:
             conn.rollback()
-            return _err("path_resolve_failed", str(exc))
+            return _err(exc.code, str(exc), jsonpath="$.payload.add_paths")
         except (
             DbClaimAmendmentError,
             CoordinationClaimError,
