@@ -51,17 +51,20 @@ def test_writer_waits_for_stable_lock_then_merges_latest_payload(
             finished.set()
 
     seed = contract.canonical_example_payload()
-    seed.update({
-        "temp_root": str(tmp_path / "tmp"),
-        "cache_dir": str(tmp_path / "cache"),
-    })
+    seed.update(
+        {
+            "temp_root": str(tmp_path / "tmp"),
+            "cache_dir": str(tmp_path / "cache"),
+        }
+    )
     with machine_config_file.exclusive_lock(config):
         worker = threading.Thread(target=register)
         worker.start()
         assert started.wait(1)
         assert not finished.wait(0.1)
         machine_config_file.atomic_write_text(
-            config, json.dumps(seed, indent=2) + "\n",
+            config,
+            json.dumps(seed, indent=2) + "\n",
         )
     assert finished.wait(2)
     worker.join(timeout=2)
@@ -71,7 +74,8 @@ def test_writer_waits_for_stable_lock_then_merges_latest_payload(
     assert payload["temp_root"] == seed["temp_root"]
     assert payload["cache_dir"] == seed["cache_dir"]
     entry = contract.project_entry_for_checkout(
-        payload, repo.resolve(), env=payload["active_env"],
+        payload,
+        repo.resolve(),
     )
     assert entry["project_id"] == 7
     lock_path = config.with_name(config.name + ".lock")
@@ -81,9 +85,13 @@ def test_writer_waits_for_stable_lock_then_merges_latest_payload(
 
 def test_every_public_writer_mutation_is_serialized() -> None:
     for name in (
-        "clear_github", "register_project", "set_active_env",
-        "set_connection", "set_credential", "set_github",
-        "set_runtime_paths", "stamp_untagged_project_envs",
+        "clear_github",
+        "register_project",
+        "set_active_env",
+        "set_connection",
+        "set_credential",
+        "set_github",
+        "set_runtime_paths",
     ):
         assert hasattr(getattr(writer, name), "__wrapped__"), name
 
@@ -95,22 +103,27 @@ def test_github_replace_rejects_stale_credential_and_returns_actual_ref(
     first_ref = str(tmp_path / "first.json")
     second_ref = str(tmp_path / "second.json")
     writer.set_github(
-        _github(first_ref), expected_credential_ref="", path=config,
+        _github(first_ref),
+        expected_credential_ref="",
+        path=config,
     )
 
     with pytest.raises(
-        writer.MachineConfigWriteError, match="changed during this operation",
+        writer.MachineConfigWriteError,
+        match="changed during this operation",
     ):
         writer.set_github(
             _github(second_ref, slug="replacement"),
-            expected_credential_ref="stale-ref", path=config,
+            expected_credential_ref="stale-ref",
+            path=config,
         )
 
     payload = json.loads(config.read_text(encoding="utf-8"))
     assert payload["github"]["app_slug"] == "yoke"
     result = writer.set_github(
         _github(second_ref, slug="replacement"),
-        expected_credential_ref=first_ref, path=config,
+        expected_credential_ref=first_ref,
+        path=config,
     )
     assert result["replaced_credential_ref"] == first_ref
     removed = writer.clear_github(path=config)
@@ -129,10 +142,12 @@ def test_writer_refuses_symlink_config_target(tmp_path: Path) -> None:
     config.symlink_to(target)
 
     with pytest.raises(
-        writer.MachineConfigWriteError, match="regular file",
+        writer.MachineConfigWriteError,
+        match="regular file",
     ):
         writer.set_runtime_paths(
-            temp_root=tmp_path / "tmp", cache_dir=tmp_path / "cache",
+            temp_root=tmp_path / "tmp",
+            cache_dir=tmp_path / "cache",
             path=config,
         )
 
@@ -150,7 +165,8 @@ def test_writer_refuses_symlink_lock(tmp_path: Path) -> None:
 
     with pytest.raises(writer.MachineConfigWriteError, match="lock"):
         writer.set_runtime_paths(
-            temp_root=tmp_path / "tmp", cache_dir=tmp_path / "cache",
+            temp_root=tmp_path / "tmp",
+            cache_dir=tmp_path / "cache",
             path=config,
         )
 

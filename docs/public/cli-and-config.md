@@ -91,6 +91,20 @@ the surface API; which model a launch uses comes from the level options.
 environment is active, API URLs, local paths. Secrets for capabilities live
 under `~/.yoke/secrets/` (not in the repo).
 
+The `projects` list stores one checkout per project on this machine:
+
+```json
+{"projects": [{"checkout": "/work/my-project", "project_id": 7}]}
+```
+
+Register it once with `yoke project register /work/my-project --project-id 7`.
+Checkout lookup does not depend on `--env`, `YOKE_ENV`, or `active_env`;
+HTTPS, paired DB-admin, stage, and local connections use the same entry.
+Removing a connection keeps project checkouts. Moving an occupied project's
+checkout requires `--reassign` from a plain operator terminal.
+The config supports only this list shape and these two entry fields.
+
+
 The installer records `settings.distribution` as `{"origin": "https://api.upyoke.com",
 "channel": "stable"}` using the actual install selection. `yoke update` requires
 that record and uses it in a fresh shell. Select or repair it explicitly with

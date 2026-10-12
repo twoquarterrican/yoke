@@ -93,53 +93,50 @@ class ProjectRegisterResponse(BaseModel):
     config: str
 
 
-class StampProjectEnvRequest(BaseModel):
-    env: Optional[str] = None
-    config_path: Optional[str] = None
-
-
-class StampProjectEnvResponse(BaseModel):
-    env: str
-    stamped: list
-    skipped: list
-    config: str
-
-
 def handle_env_use(request: FunctionCallRequest) -> HandlerOutcome:
     payload = request.payload or {}
-    return _outcome(lambda: machine_config_writer.set_active_env(
-        str(payload.get("env") or ""),
-        path=payload.get("config_path"),
-    ))
+    return _outcome(
+        lambda: machine_config_writer.set_active_env(
+            str(payload.get("env") or ""),
+            path=payload.get("config_path"),
+        )
+    )
 
 
 def handle_connection_set(request: FunctionCallRequest) -> HandlerOutcome:
     payload = request.payload or {}
-    return _outcome(lambda: machine_config_writer.set_connection(
-        str(payload.get("env") or ""),
-        transport=payload.get("transport"),
-        api_url=payload.get("api_url"),
-        token_file=payload.get("token_file"),
-        dsn_file=payload.get("dsn_file"),
-        path=payload.get("config_path"),
-    ))
+    return _outcome(
+        lambda: machine_config_writer.set_connection(
+            str(payload.get("env") or ""),
+            transport=payload.get("transport"),
+            api_url=payload.get("api_url"),
+            token_file=payload.get("token_file"),
+            dsn_file=payload.get("dsn_file"),
+            path=payload.get("config_path"),
+        )
+    )
 
 
 def handle_connection_remove(request: FunctionCallRequest) -> HandlerOutcome:
     payload = request.payload or {}
-    return _outcome(lambda: machine_config_writer.remove_connection(
-        str(payload.get("env") or ""), path=payload.get("config_path"),
-    ))
+    return _outcome(
+        lambda: machine_config_writer.remove_connection(
+            str(payload.get("env") or ""),
+            path=payload.get("config_path"),
+        )
+    )
 
 
 def handle_auth_set(request: FunctionCallRequest) -> HandlerOutcome:
     payload = request.payload or {}
-    return _outcome(lambda: machine_config_writer.set_credential(
-        str(payload.get("env") or ""),
-        token_file=payload.get("token_file"),
-        dsn_file=payload.get("dsn_file"),
-        path=payload.get("config_path"),
-    ))
+    return _outcome(
+        lambda: machine_config_writer.set_credential(
+            str(payload.get("env") or ""),
+            token_file=payload.get("token_file"),
+            dsn_file=payload.get("dsn_file"),
+            path=payload.get("config_path"),
+        )
+    )
 
 
 def handle_project_register(request: FunctionCallRequest) -> HandlerOutcome:
@@ -153,22 +150,16 @@ def handle_project_register(request: FunctionCallRequest) -> HandlerOutcome:
                 message=reassign_ambient_session_refusal(request.actor.session_id),
             ),
         )
-    return _outcome(lambda: machine_config_writer.register_project(
-        str(payload.get("repo_root") or ""),
-        payload.get("project_id"),
-        board_scope=payload.get("board_scope"),
-        board_render_path=payload.get("board_render_path"),
-        reassign=reassign,
-        path=payload.get("config_path"),
-    ))
-
-
-def handle_stamp_project_env(request: FunctionCallRequest) -> HandlerOutcome:
-    payload = request.payload or {}
-    return _outcome(lambda: machine_config_writer.stamp_untagged_project_envs(
-        payload.get("env"),
-        path=payload.get("config_path"),
-    ))
+    return _outcome(
+        lambda: machine_config_writer.register_project(
+            str(payload.get("repo_root") or ""),
+            payload.get("project_id"),
+            board_scope=payload.get("board_scope"),
+            board_render_path=payload.get("board_render_path"),
+            reassign=reassign,
+            path=payload.get("config_path"),
+        )
+    )
 
 
 def _outcome(operation) -> HandlerOutcome:
@@ -196,12 +187,9 @@ __all__ = [
     "EnvUseResponse",
     "ProjectRegisterRequest",
     "ProjectRegisterResponse",
-    "StampProjectEnvRequest",
-    "StampProjectEnvResponse",
     "handle_auth_set",
     "handle_connection_set",
     "handle_connection_remove",
     "handle_env_use",
     "handle_project_register",
-    "handle_stamp_project_env",
 ]

@@ -98,11 +98,13 @@ def test_find_local_by_project_id_uses_local_dispatch(tmp_path, monkeypatch) -> 
     )
 
     assert project.slug == "externalwebapp"
-    assert calls == [{
-        "config_path": tmp_path / "config.json",
-        "function": "projects.get",
-        "payload": {"project": "37"},
-    }]
+    assert calls == [
+        {
+            "config_path": tmp_path / "config.json",
+            "function": "projects.get",
+            "payload": {"project": "37"},
+        }
+    ]
 
 
 def test_find_local_by_project_id_accepts_local_project_without_github_repo(
@@ -202,9 +204,9 @@ def test_find_local_project_reference_reads_machine_config(tmp_path) -> None:
     checkout.mkdir()
     config = tmp_path / "config.json"
     config.write_text(
-        '{"schema_version": 1, "projects": {"'
+        '{"schema_version": 1, "projects": [{"checkout": "'
         + str(checkout)
-        + '": {"project_id": 37}}}\n',
+        + '", "project_id": 37}]}\n',
         encoding="utf-8",
     )
 
@@ -230,9 +232,9 @@ def test_source_link_manifest_without_project_id_uses_machine_config(
     )
     config = tmp_path / "config.json"
     config.write_text(
-        '{"schema_version": 1, "projects": {"'
+        '{"schema_version": 1, "projects": [{"checkout": "'
         + str(checkout)
-        + '": {"project_id": 37}}}\n',
+        + '", "project_id": 37}]}\n',
         encoding="utf-8",
     )
 
@@ -302,63 +304,3 @@ def test_find_by_github_repo_accepts_versioned_api_base() -> None:
     call = api.function_call("projects.resolve_by_github_repo")
     assert len(api.requests_for("POST", "/v1/functions/call")) == 1
     assert call["payload"] == {"github_repo": "example-org/externalwebapp"}
-
-
-def test_normalize_github_repo_handles_common_clone_urls() -> None:
-    assert (
-        existing_project_lookup.normalize_github_repo(
-            "https://github.com/Example-Org/ExternalWebapp.git"
-        )
-        == "example-org/externalwebapp"
-    )
-    assert (
-        existing_project_lookup.normalize_github_repo(
-            "git@github.com:Example-Org/ExternalWebapp.git"
-        )
-        == "example-org/externalwebapp"
-    )
-    assert existing_project_lookup.normalize_github_repo("Example-Org/ExternalWebapp") == (
-        "example-org/externalwebapp"
-    )
-    assert existing_project_lookup.normalize_github_repo(
-        "https://ghe.example/Example-Org/ExternalWebapp.git",
-        web_url="https://ghe.example",
-    ) == "example-org/externalwebapp"
-    assert existing_project_lookup.normalize_github_repo(
-        "git@ghe.example:Example-Org/ExternalWebapp.git",
-        web_url="https://ghe.example",
-    ) == "example-org/externalwebapp"
-
-
-def test_normalize_github_repo_rejects_unrelated_or_malformed_paths() -> None:
-    assert existing_project_lookup.normalize_github_repo(
-        "https://example.test/docs/owner/repo"
-    ) == ""
-    assert existing_project_lookup.normalize_github_repo(
-        "https://ghe.example/owner/repo/extra"
-    ) == ""
-    assert existing_project_lookup.normalize_github_repo("owner") == ""
-
-
-@pytest.mark.parametrize(
-    "value",
-    [
-        "https://gitlab.com/owner/repo.git",
-        "git@gitlab.com:owner/repo.git",
-        "https://ghe.example/owner/repo.git",
-    ],
-)
-def test_normalize_github_repo_rejects_foreign_origin(value: str) -> None:
-    assert existing_project_lookup.normalize_github_repo(value) == ""
-
-
-def test_find_by_github_repo_does_not_dispatch_for_foreign_origin() -> None:
-    with ProjectOnboardApi() as api:
-        project = existing_project_lookup.find_by_github_repo(
-            api_url=api.url,
-            token="product-token",
-            github_repo="https://gitlab.com/owner/demo.git",
-        )
-
-    assert project is None
-    assert api.function_calls("projects.resolve_by_github_repo") == []

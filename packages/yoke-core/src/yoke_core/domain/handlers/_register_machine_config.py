@@ -57,25 +57,36 @@ def register(registry) -> None:
 
 def _register_writers(registry) -> None:
     writers = (
-        ("env.use.run", machine_config_write.handle_env_use,
-         machine_config_write.EnvUseRequest,
-         machine_config_write.EnvUseResponse),
-        ("connection.set.run", machine_config_write.handle_connection_set,
-         machine_config_write.ConnectionSetRequest,
-         machine_config_write.ConnectionSetResponse),
-        ("connection.remove.run", machine_config_write.handle_connection_remove,
-         machine_config_write.ConnectionRemoveRequest,
-         machine_config_write.ConnectionRemoveResponse),
-        ("auth.set.run", machine_config_write.handle_auth_set,
-         machine_config_write.AuthSetRequest,
-         machine_config_write.AuthSetResponse),
-        ("project.register.run", machine_config_write.handle_project_register,
-         machine_config_write.ProjectRegisterRequest,
-         machine_config_write.ProjectRegisterResponse),
-        ("config.stamp_project_env.run",
-         machine_config_write.handle_stamp_project_env,
-         machine_config_write.StampProjectEnvRequest,
-         machine_config_write.StampProjectEnvResponse),
+        (
+            "env.use.run",
+            machine_config_write.handle_env_use,
+            machine_config_write.EnvUseRequest,
+            machine_config_write.EnvUseResponse,
+        ),
+        (
+            "connection.set.run",
+            machine_config_write.handle_connection_set,
+            machine_config_write.ConnectionSetRequest,
+            machine_config_write.ConnectionSetResponse,
+        ),
+        (
+            "connection.remove.run",
+            machine_config_write.handle_connection_remove,
+            machine_config_write.ConnectionRemoveRequest,
+            machine_config_write.ConnectionRemoveResponse,
+        ),
+        (
+            "auth.set.run",
+            machine_config_write.handle_auth_set,
+            machine_config_write.AuthSetRequest,
+            machine_config_write.AuthSetResponse,
+        ),
+        (
+            "project.register.run",
+            machine_config_write.handle_project_register,
+            machine_config_write.ProjectRegisterRequest,
+            machine_config_write.ProjectRegisterResponse,
+        ),
     )
     for function_id, handler, request_model, response_model in writers:
         registry.register(

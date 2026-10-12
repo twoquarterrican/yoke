@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from yoke_contracts.machine_config import checkout_env_mismatch
 from yoke_contracts.machine_config.checkout import main_checkout
 
 from yoke_cli.config import github_project_setup
@@ -274,33 +273,22 @@ def _resolve_project_id(
     explicit: Optional[int],
     config_path: str | Path | None,
 ) -> Tuple[int, bool]:
-    """Resolve project id against the active-env machine-config mapping.
+    """Resolve the machine's project checkout mapping.
 
-    Authority is the checkout→project_id row for the selected env
-    (``YOKE_ENV`` / ``--env`` / ``active_env``). An explicit ``--project-id``
-    may introduce the first mapping for this checkout, but it cannot disagree
-    with an existing active-env mapping, and it cannot invent a mapping when
-    the checkout is already registered only under another env.
+    An explicit project id may introduce a mapping but cannot disagree with
+    the registered checkout. All connections share the same entry.
     """
     mapped = machine_config.project_id(repo_root, config_path)
     if mapped is not None:
         if explicit is not None and int(explicit) != mapped:
             raise ProjectInstallError(
                 f"checkout {repo_root} is mapped to project_id {mapped} for "
-                f"the active env; refusing requested project_id {int(explicit)}"
+                f"this machine; refusing requested project_id {int(explicit)}"
             )
         if explicit is not None:
             return mapped, True
         return mapped, False
 
-    other_env = checkout_env_mismatch.mismatch_note(
-        repo_root,
-        config_path=config_path,
-    )
-    if other_env:
-        raise ProjectInstallError(
-            f"refusing install/refresh on the selected env. {other_env}"
-        )
     if explicit is not None:
         return int(explicit), True
     raise ProjectInstallError(

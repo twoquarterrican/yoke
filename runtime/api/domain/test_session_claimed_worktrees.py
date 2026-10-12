@@ -54,7 +54,8 @@ def conn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     repo_root.mkdir(parents=True)
     config_path = tmp_path / "config.json"
     config_path.write_text(
-        json.dumps({"projects": {str(repo_root): {"project_id": 1}}}), encoding="utf-8"
+        json.dumps({"projects": [{"checkout": str(repo_root), "project_id": 1}]}),
+        encoding="utf-8",
     )
     monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
     monkeypatch.setenv(_TEST_REPO_ROOT_ENV, str(repo_root))

@@ -107,18 +107,16 @@ def _pin_consumer(conn: Any, release: dict[str, Any], commit_sha: str) -> None:
 
 
 def _bound_set(carried: dict[str, Any]) -> dict[str, Any]:
-    return {
-        entry["project"]: entry for entry in carried["bound_projects"]
-    }[CONSUMER_PROJECT]
+    return {entry["project"]: entry for entry in carried["bound_projects"]}[
+        CONSUMER_PROJECT
+    ]
 
 
 def test_a_pin_the_checkout_has_not_fetched_resolves_after_the_source_refreshes(
     test_db: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The commit is published; only this checkout had not heard of it yet."""
-    release, stale, published = _stale_consumer_checkout(
-        test_db, tmp_path, monkeypatch
-    )
+    release, stale, published = _stale_consumer_checkout(test_db, tmp_path, monkeypatch)
     recorded = record_bound_sources(test_db, "run-candidate")
     test_db.commit()
     assert recorded["inputs"]["consumer_sha"] == published
@@ -200,9 +198,7 @@ def test_several_remotes_still_refresh_from_the_branch_that_records_one(
     test_db: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A second remote is not 'no remote'; the branch already named origin."""
-    release, stale, published = _stale_consumer_checkout(
-        test_db, tmp_path, monkeypatch
-    )
+    release, stale, published = _stale_consumer_checkout(test_db, tmp_path, monkeypatch)
     _second_remote(stale, tmp_path)
     recorded = record_bound_sources(test_db, "run-candidate")
     test_db.commit()

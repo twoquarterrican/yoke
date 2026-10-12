@@ -300,8 +300,8 @@ commands, lane, changed files, size-gated diff, ephemeral URL and durable receip
 Implement loads project context before text audit/discovery. Conduct adds the
 project context and test/ephemeral facts to each role dispatch. Use declared
 context routing and topic matches; report missing files and only then broaden
-exploration. Project ids are universe-local; checkout resolution is environment
-scoped. One item targets one project; installed behavior stays project-owned.
+exploration. Checkout resolution uses one machine-local entry per project, independent
+of the selected connection. One item targets one project; installed behavior stays project-owned.
 
 ## Key Patterns
 

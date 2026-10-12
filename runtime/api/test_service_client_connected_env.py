@@ -31,9 +31,7 @@ def _write_binding(root: Path) -> Path:
       "credential_source": {"kind": "dsn_file", "path": "../.secret.dsn"}
     }
   },
-  "projects": {
-    "__ROOT__": {"project_id": 1}
-  }
+  "projects": [{"checkout": "__ROOT__", "project_id": 1}]
 }
 """.strip().replace("__ROOT__", str(root.resolve())),
         encoding="utf-8",

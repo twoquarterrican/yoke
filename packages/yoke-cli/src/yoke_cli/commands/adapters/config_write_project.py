@@ -1,5 +1,4 @@
-"""Project-mapping CLI adapters: ``yoke project register`` / ``yoke config
-stamp-project-env``.
+"""Project checkout registration CLI adapter.
 
 Split from :mod:`yoke_cli.commands.adapters.config_write` under the
 authored-file line cap; re-exported there so existing imports are unaffected.
@@ -23,7 +22,6 @@ PROJECT_REGISTER_USAGE = (
     "[--board-scope SCOPE] [--board-render-path PATH] [--reassign] "
     "[--config PATH]"
 )
-STAMP_PROJECT_ENV_USAGE = "yoke config stamp-project-env [--config PATH]"
 
 
 def project_register(args: List[str]) -> int:
@@ -31,10 +29,7 @@ def project_register(args: List[str]) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         prog="yoke project register",
         description=(
-            "Map a checkout to a project id for ONE connection env. Project\n"
-            "ids are per universe, so the row is recorded against the\n"
-            "selected env (--env / YOKE_ENV / active_env) and resolves\n"
-            "under no other; register once per env, other rows intact.\n"
+            "Map one machine-local checkout to a project id, shared by all connections.\n"
             "Moving a project id already routed elsewhere needs --reassign."
         ),
     )
@@ -72,33 +67,4 @@ def project_register(args: List[str]) -> int:
     return run(_register)
 
 
-def config_stamp_project_env(args: List[str]) -> int:
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        prog="yoke config stamp-project-env",
-        description=(
-            "Stamp every untagged projects entry with the connection env its "
-            "project_id belongs to. Defaults to the active env; select another "
-            "with the global env flag (e.g. `yoke --env prod config "
-            "stamp-project-env`). Already-tagged entries are left untouched."
-        ),
-    )
-    parser.add_argument("--config", dest="config_path", default=None)
-    parsed = parse_or_usage_error(parser, args, STAMP_PROJECT_ENV_USAGE)
-    if parsed is None:
-        return 2
-    # env is None here so the writer resolves it from the connection env the
-    # invocation selected (global --env / YOKE_ENV, else active_env).
-    return run(
-        lambda: writer.stamp_untagged_project_envs(
-            path=parsed.config_path,
-        )
-    )
-
-
-__all__ = [
-    "PROJECT_REGISTER_USAGE",
-    "STAMP_PROJECT_ENV_USAGE",
-    "config_stamp_project_env",
-    "project_register",
-]
+__all__ = ["PROJECT_REGISTER_USAGE", "project_register"]

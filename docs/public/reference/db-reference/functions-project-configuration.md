@@ -7,7 +7,6 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | Function id | Claim policy |
 |---|---|
 | `config.example.run` | `none` |
-| `config.stamp_project_env.run` | `none` |
 | `config.status.run` | `none` |
 | `connection.remove.run` | `none` |
 | `connection.set.run` | `none` |

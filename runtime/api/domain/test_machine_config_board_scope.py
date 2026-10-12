@@ -38,11 +38,7 @@ def test_board_scope_defaults_to_checkout_project_id(
         tmp_path,
         {
             "schema_version": 1,
-            "projects": {
-                str(repo_root.resolve()): {
-                    "project_id": 2,
-                }
-            },
+            "projects": [{"checkout": str(repo_root.resolve()), "project_id": 2}],
         },
     )
     monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))
@@ -60,7 +56,7 @@ def test_board_scope_can_use_numeric_project_when_slug_omitted(
         tmp_path,
         {
             "schema_version": 1,
-            "projects": {str(repo_root.resolve()): {"project_id": 2}},
+            "projects": [{"checkout": str(repo_root.resolve()), "project_id": 2}],
         },
     )
     monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))
@@ -78,45 +74,12 @@ def test_project_entry_matches_worktree_to_main_checkout(
         tmp_path,
         {
             "schema_version": 1,
-            "projects": {
-                str(repo_root.resolve()): {
-                    "project_id": 1,
-                }
-            },
+            "projects": [{"checkout": str(repo_root.resolve()), "project_id": 1}],
         },
     )
     monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))
 
     assert machine_config.project_id(worktree) == 1
-
-
-def test_machine_project_board_override_is_ignored(
-    tmp_path: Path, monkeypatch
-) -> None:
-    """Retired machine ``projects[].board`` must not change local fallbacks."""
-    repo_root = tmp_path / "repo"
-    repo_root.mkdir()
-    config = _write_config(
-        tmp_path,
-        {
-            "schema_version": 1,
-            "projects": {
-                str(repo_root.resolve()): {
-                    "project_id": 1,
-                    "board": {
-                        "scope": "all",
-                        "render_path": ".yoke/BOARD-ALL.md",
-                    },
-                }
-            },
-        },
-    )
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))
-
-    assert machine_config.board_scope(repo_root) == "1"
-    assert machine_config.board_render_path(repo_root) == (
-        repo_root / ".yoke" / "BOARD.md"
-    )
 
 
 def test_board_art_path_is_project_local_and_not_configurable(
@@ -128,15 +91,7 @@ def test_board_art_path_is_project_local_and_not_configurable(
         tmp_path,
         {
             "schema_version": 1,
-            "projects": {
-                str(repo_root.resolve()): {
-                    "project_id": 1,
-                    "board": {
-                        "render_path": ".yoke/BOARD.md",
-                        "scope": "all",
-                    },
-                }
-            },
+            "projects": [{"checkout": str(repo_root.resolve()), "project_id": 1}],
         },
     )
     monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))

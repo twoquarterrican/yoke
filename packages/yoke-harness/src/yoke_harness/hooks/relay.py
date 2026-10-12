@@ -40,9 +40,6 @@ from yoke_harness.hooks.identity import (
 )
 from yoke_harness.hooks.launch_context import settle_projection, stamp_hook_input
 from yoke_harness.hooks.guard_version_skew import annotate_guard_version_skew
-from yoke_harness.hooks.checkout_env_relay_notice import (
-    annotate_checkout_env_mismatch,
-)
 from yoke_harness.hooks.denial_relay import relay_denial_audit
 from yoke_harness.hooks.local_subset import (
     evaluate_local_subset,
@@ -288,11 +285,6 @@ def relay_hook_event(
             stdout,
             client=body["execution_provenance"],
             server=server_fp,
-        )
-        stdout = annotate_checkout_env_mismatch(
-            stdout,
-            payload,
-            identity["project_id"],
         )
         write_hook_output(stdout, exit_code, executor)
         return exit_code

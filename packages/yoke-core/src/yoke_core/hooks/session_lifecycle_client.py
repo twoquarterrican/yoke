@@ -59,14 +59,9 @@ def register_harness_session(
         native_thread_id = detect_native_thread_id(executor, session_id)
     project_id = _project_id_for_root(root)
     if project_id is None:
-        from yoke_contracts.machine_config.checkout_env_mismatch import (
-            with_mismatch_note,
-        )
-
-        return with_mismatch_note(
+        return (
             "session registration requires a configured project_id for "
-            "this checkout.",
-            root,
+            "this checkout; run yoke project register CHECKOUT --project-id N and retry."
         )
     if _local_authority_active():
         from yoke_core.hooks.registration import _register_in_process
@@ -84,20 +79,23 @@ def register_harness_session(
             native_thread_id=native_thread_id,
             launch_id=launch_id,
         )
-    return service_client.register_session(
-        service_client_path(root),
-        session_id,
-        executor,
-        provider,
-        model_facts,
-        root,
-        entrypoint,
-        project_id,
-        executor_version,
-        machine_id,
-        native_thread_id,
-        launch_id=launch_id,
-    ) or ""
+    return (
+        service_client.register_session(
+            service_client_path(root),
+            session_id,
+            executor,
+            provider,
+            model_facts,
+            root,
+            entrypoint,
+            project_id,
+            executor_version,
+            machine_id,
+            native_thread_id,
+            launch_id=launch_id,
+        )
+        or ""
+    )
 
 
 def _relay_owns_registration() -> bool:
@@ -126,10 +124,7 @@ def _local_authority_active() -> bool:
 
         connection = active_connection()
         transport = str(connection.get("transport") or "")
-        return (
-            transport in POSTGRES_TRANSPORTS
-            and not connection_is_prod(connection)
-        )
+        return transport in POSTGRES_TRANSPORTS and not connection_is_prod(connection)
     except Exception:
         return False
 

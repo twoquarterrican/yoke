@@ -31,7 +31,7 @@ def deployment_runs_execute(args: List[str]) -> int:
             "same-run --from-stage resume re-enters executing at that stage "
             "and does not replay skipped completed stages. The project "
             "checkout is resolved from the machine-config projects mapping "
-            "for the active env; a stale mapping fails the lineage preflight "
+            "independent of connection; a stale mapping fails the lineage preflight "
             "with the resolved path named.\n\n"
             "--product-repo-path applies only to an ITEMLESS environment "
             "deploy and requires --image-tag, which is why the two are shown "

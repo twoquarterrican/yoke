@@ -145,7 +145,7 @@ def test_stored_checkout_project_id_shows_confirmation_picker(
     _configure_origin(checkout, "example-org/externalwebapp")
     config = tmp_path / "config.json"
     config.write_text(
-        json.dumps({"projects": {str(checkout): {"project_id": 37}}}),
+        json.dumps({"projects": [{"checkout": str(checkout), "project_id": 37}]}),
         encoding="utf-8",
     )
     monkeypatch.setattr(

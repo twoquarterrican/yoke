@@ -36,7 +36,7 @@ def _make_conn(repo_path: str):
     repo.mkdir(parents=True, exist_ok=True)
     config_path = repo / ".test-yoke-config.json"
     config_path.write_text(
-        json.dumps({"projects": {str(repo): {"project_id": 1}}}),
+        json.dumps({"projects": [{"checkout": str(repo), "project_id": 1}]}),
         encoding="utf-8",
     )
     os.environ["YOKE_MACHINE_CONFIG_FILE"] = str(config_path)

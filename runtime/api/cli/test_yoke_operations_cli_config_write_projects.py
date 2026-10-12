@@ -1,4 +1,4 @@
-"""CLI project-mapping writer tests (register + stamp-project-env)."""
+"""CLI project-mapping writer tests."""
 
 from __future__ import annotations
 
@@ -23,13 +23,21 @@ def cfg(tmp_path, monkeypatch):
 def _seed(cfg: Path, tmp_path: Path, env: str) -> None:
     token = tmp_path / f"{env}.token"
     token.write_text("tok\n")
-    rc = yoke_operations_cli.main([
-        "connection", "set", env,
-        "--transport", "https",
-        "--api-url", f"https://api.{env}.example",
-        "--token-file", str(token),
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            env,
+            "--transport",
+            "https",
+            "--api-url",
+            f"https://api.{env}.example",
+            "--token-file",
+            str(token),
+            "--config",
+            str(cfg),
+        ]
+    )
     assert rc == 0
 
 
@@ -39,18 +47,22 @@ def test_project_register_maps_checkout(cfg, tmp_path, capsys) -> None:
     repo.mkdir()
     capsys.readouterr()
 
-    rc = yoke_operations_cli.main([
-        "project", "register", str(repo),
-        "--project-id", "7",
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "project",
+            "register",
+            str(repo),
+            "--project-id",
+            "7",
+            "--config",
+            str(cfg),
+        ]
+    )
 
     assert rc == 0
     payload = json.loads(cfg.read_text())
     checkout = json.loads(capsys.readouterr().out)["checkout"]
-    assert payload["projects"] == [
-        {"checkout": checkout, "project_id": 7, "env": "prod"},
-    ]
+    assert payload["projects"] == [{"checkout": checkout, "project_id": 7}]
 
 
 def test_project_register_refuses_board_scope(cfg, tmp_path, capsys) -> None:
@@ -59,19 +71,28 @@ def test_project_register_refuses_board_scope(cfg, tmp_path, capsys) -> None:
     repo.mkdir()
     capsys.readouterr()
 
-    rc = yoke_operations_cli.main([
-        "project", "register", str(repo),
-        "--project-id", "7",
-        "--board-scope", "all",
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "project",
+            "register",
+            str(repo),
+            "--project-id",
+            "7",
+            "--board-scope",
+            "all",
+            "--config",
+            str(cfg),
+        ]
+    )
 
     assert rc == 1
     assert "board is retired" in capsys.readouterr().err
 
 
 def test_project_register_reassign_refused_with_ambient_session(
-    cfg, tmp_path, capsys,
+    cfg,
+    tmp_path,
+    capsys,
 ) -> None:
     _seed(cfg, tmp_path, "prod")
     repo = tmp_path / "repo"
@@ -79,13 +100,22 @@ def test_project_register_reassign_refused_with_ambient_session(
     capsys.readouterr()
 
     with patch.object(
-        config_write_project, "resolve_ambient", return_value="sess-worker-1",
+        config_write_project,
+        "resolve_ambient",
+        return_value="sess-worker-1",
     ):
-        rc = yoke_operations_cli.main([
-            "project", "register", str(repo),
-            "--project-id", "7", "--reassign",
-            "--config", str(cfg),
-        ])
+        rc = yoke_operations_cli.main(
+            [
+                "project",
+                "register",
+                str(repo),
+                "--project-id",
+                "7",
+                "--reassign",
+                "--config",
+                str(cfg),
+            ]
+        )
 
     assert rc == 1
     err = capsys.readouterr().err
@@ -95,7 +125,9 @@ def test_project_register_reassign_refused_with_ambient_session(
 
 
 def test_project_register_reassign_allowed_without_ambient_session(
-    cfg, tmp_path, capsys,
+    cfg,
+    tmp_path,
+    capsys,
 ) -> None:
     _seed(cfg, tmp_path, "prod")
     repo = tmp_path / "repo"
@@ -103,34 +135,21 @@ def test_project_register_reassign_allowed_without_ambient_session(
     capsys.readouterr()
 
     with patch.object(config_write_project, "resolve_ambient", return_value=None):
-        rc = yoke_operations_cli.main([
-            "project", "register", str(repo),
-            "--project-id", "7", "--reassign",
-            "--config", str(cfg),
-        ])
+        rc = yoke_operations_cli.main(
+            [
+                "project",
+                "register",
+                str(repo),
+                "--project-id",
+                "7",
+                "--reassign",
+                "--config",
+                str(cfg),
+            ]
+        )
 
     assert rc == 0
     checkout = json.loads(capsys.readouterr().out)["checkout"]
     assert json.loads(cfg.read_text())["projects"] == [
-        {"checkout": checkout, "project_id": 7, "env": "prod"},
-    ]
-
-
-def test_stamp_project_env_stamps_untagged_entries(cfg, tmp_path, capsys) -> None:
-    _seed(cfg, tmp_path, "prod")
-    payload = json.loads(cfg.read_text())
-    payload["projects"] = {"/checkout/legacy": {"project_id": 3}}
-    cfg.write_text(json.dumps(payload), encoding="utf-8")
-    capsys.readouterr()
-
-    rc = yoke_operations_cli.main([
-        "config", "stamp-project-env", "--config", str(cfg),
-    ])
-
-    assert rc == 0
-    result = json.loads(capsys.readouterr().out)
-    assert result["env"] == "prod"
-    assert [row["checkout"] for row in result["stamped"]] == ["/checkout/legacy"]
-    assert json.loads(cfg.read_text())["projects"] == [
-        {"checkout": "/checkout/legacy", "project_id": 3, "env": "prod"},
+        {"checkout": checkout, "project_id": 7}
     ]

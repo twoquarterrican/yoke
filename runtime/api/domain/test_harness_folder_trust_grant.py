@@ -55,7 +55,7 @@ def test_cursor_slug_matches_the_shape_cursor_writes():
 
 
 def test_every_present_harness_is_granted(tmp_path: Path):
-    claude = _claude(tmp_path, {"projects": {}})
+    claude = _claude(tmp_path, {"projects": []})
     codex = _codex(tmp_path)
     cursor = _cursor(tmp_path)
     granted = grant_folder_trust(
@@ -71,7 +71,7 @@ def test_every_present_harness_is_granted(tmp_path: Path):
 
 
 def test_granting_twice_changes_nothing(tmp_path: Path):
-    claude = _claude(tmp_path, {"projects": {}})
+    claude = _claude(tmp_path, {"projects": []})
     codex = _codex(tmp_path)
     cursor = _cursor(tmp_path)
     grant_folder_trust(
@@ -109,7 +109,7 @@ def test_claude_keeps_every_unrelated_project_and_key(tmp_path: Path):
     claude = _claude(
         tmp_path,
         {
-            "projects": {"/other": {"allowedTools": ["x"]}},
+            "projects": [{"checkout": "/other"}],
             "someTopLevelSetting": 7,
         },
     )

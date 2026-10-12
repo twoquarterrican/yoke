@@ -42,14 +42,12 @@ class TestResolveCanonicalYokeDb:
         assert path is None
 
     def test_returns_none_when_resolver_raises(self, monkeypatch):
-        helper = _import_helper(monkeypatch)
+        _import_helper(monkeypatch)
 
         def _boom(_mode):
             raise RuntimeError("resolver intentionally failed")
 
-        monkeypatch.setattr(
-            "yoke_core.domain.worktree.resolve_named_path", _boom
-        )
+        monkeypatch.setattr("yoke_core.domain.worktree.resolve_named_path", _boom)
         # Re-import so the helper picks up the patched attribute through its
         # imported reference.
         import importlib
@@ -79,30 +77,30 @@ class TestExportCanonicalYokeDb:
         dsn_file = tmp_path / "target.dsn"
         dsn_file.write_text("host=aurora dbname=yoke_prod\n", encoding="utf-8")
         binding.write_text(
-            json.dumps({
-                "schema_version": 1,
-                "active_env": "prod-db-admin",
-                "connections": {
-                    "prod-db-admin": {
-                        "transport": "local-postgres",
-                        "authority": {
-                            "kind": "aws_aurora_postgres",
-                            "infra_dir": "projects/yoke/infra",
-                            "location": {
-                                "stack": "yoke-prod",
-                                "database_name": "yoke_prod",
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "active_env": "prod-db-admin",
+                    "connections": {
+                        "prod-db-admin": {
+                            "transport": "local-postgres",
+                            "authority": {
+                                "kind": "aws_aurora_postgres",
+                                "infra_dir": "projects/yoke/infra",
+                                "location": {
+                                    "stack": "yoke-prod",
+                                    "database_name": "yoke_prod",
+                                },
+                            },
+                            "credential_source": {
+                                "kind": "dsn_file",
+                                "path": str(dsn_file),
                             },
                         },
-                        "credential_source": {
-                            "kind": "dsn_file",
-                            "path": str(dsn_file),
-                        },
                     },
-                },
-                "projects": {
-                    str(repo.resolve()): {"project_id": 1, "project": "yoke"}
-                },
-            }),
+                    "projects": [{"checkout": str(repo.resolve()), "project_id": 1}],
+                }
+            ),
             encoding="utf-8",
         )
         monkeypatch.chdir(repo)
@@ -135,22 +133,22 @@ class TestExportCanonicalYokeDb:
         dsn_file = tmp_path / "target.dsn"
         dsn_file.write_text("host=aurora dbname=yoke_prod\n", encoding="utf-8")
         binding.write_text(
-            json.dumps({
-                "schema_version": 1,
-                "active_env": "prod-db-admin",
-                "connections": {
-                    "prod-db-admin": {
-                        "transport": "local-postgres",
-                        "credential_source": {
-                            "kind": "dsn_file",
-                            "path": str(dsn_file),
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "active_env": "prod-db-admin",
+                    "connections": {
+                        "prod-db-admin": {
+                            "transport": "local-postgres",
+                            "credential_source": {
+                                "kind": "dsn_file",
+                                "path": str(dsn_file),
+                            },
                         },
                     },
-                },
-                "projects": {
-                    str(repo.resolve()): {"project_id": 1, "project": "yoke"}
-                },
-            }),
+                    "projects": [{"checkout": str(repo.resolve()), "project_id": 1}],
+                }
+            ),
             encoding="utf-8",
         )
         monkeypatch.delenv("YOKE_DB", raising=False)
@@ -173,9 +171,7 @@ class TestExportCanonicalYokeDb:
         def _boom(_mode):
             raise RuntimeError("resolver intentionally failed")
 
-        monkeypatch.setattr(
-            "yoke_core.domain.worktree.resolve_named_path", _boom
-        )
+        monkeypatch.setattr("yoke_core.domain.worktree.resolve_named_path", _boom)
         import importlib
         import runtime.api.fixtures.canonical_db as mod
 
@@ -210,9 +206,7 @@ class TestAssertCanonicalYokeDb:
         def _boom(_mode):
             raise RuntimeError("resolver intentionally failed")
 
-        monkeypatch.setattr(
-            "yoke_core.domain.worktree.resolve_named_path", _boom
-        )
+        monkeypatch.setattr("yoke_core.domain.worktree.resolve_named_path", _boom)
         import importlib
         import runtime.api.fixtures.canonical_db as mod
 
@@ -251,9 +245,7 @@ class TestHarnessUniversalConsumption:
     def test_no_dot_sh_companion(self):
         """Helper must be Python-owned. No ``.sh`` companion may
         exist alongside the resolver."""
-        helper_dir = (
-            Path(__file__).resolve().parent / "fixtures"
-        )
+        helper_dir = Path(__file__).resolve().parent / "fixtures"
         sh_files = list(helper_dir.glob("canonical_db*.sh"))
         assert sh_files == [], (
             "canonical_db helper must remain Python-owned; no shell "
@@ -261,9 +253,9 @@ class TestHarnessUniversalConsumption:
         )
 
     def test_conftest_no_longer_imports_the_helper(self):
-        conftest = (
-            Path(__file__).resolve().parent / "conftest.py"
-        ).read_text(encoding="utf-8")
+        conftest = (Path(__file__).resolve().parent / "conftest.py").read_text(
+            encoding="utf-8"
+        )
         assert "from runtime.api.fixtures.canonical_db import" not in conftest
         assert "export_canonical_yoke_db()" not in conftest
 

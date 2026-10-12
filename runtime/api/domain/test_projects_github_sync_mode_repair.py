@@ -284,9 +284,7 @@ def test_repair_clears_stranded_compact_pending_on_disabled_projects(project_db)
                 github_body_compact_pending=pending,
             )
 
-        preview = cmd_repair_unbound_enabled_sync_modes(
-            project="sync-off", conn=conn
-        )
+        preview = cmd_repair_unbound_enabled_sync_modes(project="sync-off", conn=conn)
 
         assert preview["matched"] == 1
         assert preview["projects"][0]["actions"] == [
@@ -319,12 +317,12 @@ def test_repair_clears_stranded_compact_pending_on_disabled_projects(project_db)
 
 
 def test_repair_keeps_compact_pending_on_enabled_project(project_db):
-    _bind("yoke", replace(_verified(), repository_id="7702", github_repo="Example/Yoke"))
+    _bind(
+        "yoke", replace(_verified(), repository_id="7702", github_repo="Example/Yoke")
+    )
     conn = pg_testdb.connect_test_database(project_db)
     try:
-        conn.execute(
-            "UPDATE projects SET github_sync_mode='enabled' WHERE slug='yoke'"
-        )
+        conn.execute("UPDATE projects SET github_sync_mode='enabled' WHERE slug='yoke'")
         conn.commit()
         insert_item(
             conn,

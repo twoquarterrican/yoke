@@ -94,7 +94,7 @@ class TestSchemaAndConfigChecks:
         config_path = tmp_path / ".yoke" / "config.json"
         config_path.parent.mkdir()
         config_path.write_text(
-            json.dumps({"settings": settings, "projects": {}}) + "\n"
+            json.dumps({"settings": settings, "projects": []}) + "\n"
         )
         return config_path
 
@@ -135,13 +135,7 @@ class TestSchemaAndConfigChecks:
             json.dumps(
                 {
                     "settings": {},
-                    "projects": [
-                        {
-                            "checkout": str(gone),
-                            "project_id": 3,
-                            "env": "prod-db-admin",
-                        }
-                    ],
+                    "projects": [{"checkout": str(gone), "project_id": 3}],
                 }
             )
         )
@@ -161,13 +155,7 @@ class TestSchemaAndConfigChecks:
             json.dumps(
                 {
                     "settings": {},
-                    "projects": [
-                        {
-                            "checkout": str(checkout),
-                            "project_id": 1,
-                            "env": "prod",
-                        }
-                    ],
+                    "projects": [{"checkout": str(checkout), "project_id": 1}],
                 }
             )
         )

@@ -77,7 +77,7 @@ def test_restore_missing_bundle_is_a_legitimate_no_op_when_unconfigured(
         json.dumps(
             {
                 "schema_version": 1,
-                "projects": [{"checkout": str(repo), "project_id": 1, "env": "stage"}],
+                "projects": [{"checkout": str(repo), "project_id": 1}],
             }
         ),
         encoding="utf-8",
@@ -138,7 +138,7 @@ def test_restore_missing_bundle_refuses_an_unverifiable_moved_runtime_reference(
         json.dumps(
             {
                 "schema_version": 1,
-                "projects": [{"checkout": str(repo), "project_id": 1, "env": "stage"}],
+                "projects": [{"checkout": str(repo), "project_id": 1}],
             }
         ),
         encoding="utf-8",
@@ -187,7 +187,7 @@ def test_restore_missing_bundle_reports_unreadable_git_config_distinctly(
         json.dumps(
             {
                 "schema_version": 1,
-                "projects": [{"checkout": str(repo), "project_id": 1, "env": "stage"}],
+                "projects": [{"checkout": str(repo), "project_id": 1}],
             }
         ),
         encoding="utf-8",
@@ -239,8 +239,8 @@ def _register_checkouts(config: Path, repos: list[Path], tmp_path: Path) -> None
                 }
             },
             "projects": [
-                {"checkout": str(repo), "project_id": 1, "env": "stage"}
-                for repo in repos
+                {"checkout": str(repo), "project_id": project_id}
+                for project_id, repo in enumerate(repos, start=1)
             ],
         }
     )

@@ -57,8 +57,8 @@ def test_only_registered_installed_checkouts_are_listed(machine, tmp_path):
         json.dumps(
             {
                 "projects": [
-                    {"checkout": str(project), "project_id": 1, "env": "one"},
-                    {"checkout": str(project), "project_id": 1, "env": "two"},
+                    {"checkout": str(project), "project_id": 1},
+                    {"checkout": str(project), "project_id": 1},
                     {"checkout": str(other), "project_id": 2},
                 ],
                 "connections": {

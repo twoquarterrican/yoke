@@ -46,19 +46,15 @@ def test_claude_approval_copies_only_the_directory_flag(tmp_path: Path) -> None:
     target = (tmp_path / ".worktrees" / "lane").resolve()
     config = tmp_path / "claude.json"
     state = {
-        "projects": {
-            str(source): {
-                APPROVAL_FIELD: True,
-                "hasCompletedOnboarding": True,
-            },
-            "/unrelated": {"keep": "value"},
-        },
+        "projects": [{"checkout": str(source)}, {"checkout": "/unrelated"}],
         "globalSetting": "preserved",
     }
     config.write_text(json.dumps(state), encoding="utf-8")
 
     result = seed_directory_approval(
-        str(source), str(target), config_path=config,
+        str(source),
+        str(target),
+        config_path=config,
     )
 
     assert result.seeded is True
@@ -76,7 +72,11 @@ def test_lane_preparation_runs_declared_operations(tmp_path: Path, monkeypatch) 
         (
             "claude-code",
             ".claude/settings.json",
-            ["verify_hook_config", "seed_directory_approval", "verify_environment_export"],
+            [
+                "verify_hook_config",
+                "seed_directory_approval",
+                "verify_environment_export",
+            ],
         ),
         (
             "codex",
@@ -118,13 +118,15 @@ def test_lane_preparation_runs_declared_operations(tmp_path: Path, monkeypatch) 
 
     approval_state = tmp_path / "claude.json"
     approval_state.write_text(
-        json.dumps({"projects": {str(source.resolve()): {APPROVAL_FIELD: True}}}),
+        json.dumps({"projects": [{"checkout": str(source.resolve())}]}),
         encoding="utf-8",
     )
     monkeypatch.setenv("CLAUDE_CONFIG_PATH", str(approval_state))
 
     reports = prepare_worktree_harnesses(
-        str(source), str(target), adapter_root=str(adapter_root),
+        str(source),
+        str(target),
+        adapter_root=str(adapter_root),
     )
     report_map = {report.harness_id: report for report in reports}
 

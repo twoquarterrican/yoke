@@ -325,11 +325,7 @@ def _assert_https_only_machine_config(config_path: Path, *, checkout: Path) -> N
     assert "postgres" not in config["connections"]["product"]
     assert "github" not in config
     assert config["projects"] == [
-        {
-            "checkout": str(checkout.resolve()),
-            "project_id": PROJECT_ID,
-            "env": "product",
-        },
+        {"checkout": str(checkout.resolve()), "project_id": PROJECT_ID}
     ]
 
 

@@ -30,7 +30,7 @@ def repo(tmp_path, monkeypatch):
     (repo_path / ".worktrees").mkdir(parents=True)
     config_path = tmp_path / "config.json"
     config_path.write_text(
-        json.dumps({"projects": {str(repo_path): {"project_id": 1}}}),
+        json.dumps({"projects": [{"checkout": str(repo_path), "project_id": 1}]}),
         encoding="utf-8",
     )
     monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))

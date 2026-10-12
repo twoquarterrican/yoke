@@ -13,8 +13,6 @@ from typing import Any, Mapping
 from yoke_contracts.machine_config.schema_projects import (
     ValidationIssue,
     checkout_path_candidates as checkout_path_candidates,
-    entry_project_id_for_env as entry_project_id_for_env,
-    entry_resolves_under_env as entry_resolves_under_env,
     existing_checkout_for_slot as existing_checkout_for_slot,
     mapped_checkouts as mapped_checkouts,
     normalize_project_id as normalize_project_id,
@@ -203,14 +201,7 @@ def validate_payload(
             issues.append(
                 _error(f"{key}_invalid", f"{key} must be a non-empty string", path=key)
             )
-    connection_labels = (
-        {str(label) for label in connections}
-        if isinstance(connections, Mapping)
-        else set()
-    )
-    issues.extend(
-        validate_projects(raw.get("projects"), connection_labels=connection_labels)
-    )
+    issues.extend(validate_projects(raw.get("projects")))
     machine_id = raw.get(MACHINE_ID_KEY)
     if machine_id is not None:
         try:
