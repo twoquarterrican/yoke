@@ -25,7 +25,6 @@ from yoke_core.domain.path_claims_boundary import (
 )
 from yoke_core.domain.path_claims_narrow_boundary import check_narrow_boundary
 from yoke_core.domain.project_snapshot_chunk_uploads import sync_chunk
-from yoke_core.domain.schema_init_path_tables import create_path_registry_tables
 from yoke_core.domain.workflow_behavior import LANE_IMPLEMENTATION
 
 _ITEM_ID = 9631
@@ -36,7 +35,6 @@ _KEPT = "src/kept.py"
 
 @pytest.fixture
 def lane(test_db, monkeypatch):
-    create_path_registry_tables(test_db)
     insert_item(test_db, id=_ITEM_ID, workflow_id="dash")
     record_item_worktree(
         test_db,
