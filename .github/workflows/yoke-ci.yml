@@ -208,7 +208,7 @@ jobs:
           git config --global init.defaultBranch main
 
       - name: Start Postgres (durability off, dynamic host port)
-        # Not services: those cannot pass -c. Pull retries: public ECR throttles per IP.
+        # Not services: those cannot pass -c. Retry transient GHCR transport failures.
         run: |
           socket_dir="$(mktemp -d /tmp/yoke-ci-pg.XXXXXX)"
           echo "YOKE_PG_SOCKET_DIR=${socket_dir}" >> "$GITHUB_ENV"
