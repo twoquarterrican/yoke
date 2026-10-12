@@ -73,7 +73,18 @@ def fresh_db(tmp_path):
             conn.close()
 
 
-def _snapshot(conn, sha: str, *, project_id: int = 4, present: tuple = ()) -> int:
+def _snapshot(
+    conn, sha: str, *, project_id: int = 4, present: tuple = (), contents=True
+) -> int:
+    """Store a snapshot holding ``present``; ``contents`` adds one own file.
+
+    Only a snapshot carrying file contents can show a path as absent.
+    """
+    if contents:
+        own_file = path_registry._mint_target(
+            conn, project_id, f"own-{sha}.py", KIND_FILE, None, 1, NOW
+        )
+        present = (*present, own_file)
     cur = conn.execute(
         "INSERT INTO path_snapshots (project_id, commit_sha, built_at) "
         f"VALUES ({_p(conn)}, {_p(conn)}, {_p(conn)}) RETURNING id",
@@ -127,7 +138,7 @@ class TestBulkDisappearanceQuery:
 
     The set-form of ``path_registry._disappearance_observed`` (the C4
     trajectory): disappeared iff the target was present in some snapshot
-    and a later snapshot of the same project lacks it.
+    and a later content-bearing snapshot of the same project lacks it.
     """
 
     def _mint(self, conn, path_string: str) -> int:
@@ -144,6 +155,13 @@ class TestBulkDisappearanceQuery:
         _snapshot(fresh_db, "s2")
 
         assert self._disappeared(fresh_db, [tid]) == {tid}
+
+    def test_contentless_later_snapshot_does_not_count(self, fresh_db):
+        tid = self._mint(fresh_db, "kept.py")
+        _snapshot(fresh_db, "s1", present=(tid,))
+        _snapshot(fresh_db, "s2", contents=False)
+
+        assert self._disappeared(fresh_db, [tid]) == set()
 
     def test_present_in_latest_snapshot_is_not_disappeared(self, fresh_db):
         tid = self._mint(fresh_db, "alive.py")

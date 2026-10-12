@@ -65,6 +65,7 @@ from yoke_contracts.path_snapshot import (
     parent_path_string as _contract_parent_path_string,
 )
 from yoke_core.domain import db_backend
+from yoke_core.domain.path_snapshot_content_rows import newest_content_snapshot_id
 from yoke_core.domain.project_identity import resolve_project_id
 
 
@@ -193,9 +194,13 @@ def _disappearance_observed(
     project_id: int,
     target_id: int,
 ) -> bool:
-    """Per C4: a generation bump is warranted only when the latest
-    target was *present* in some snapshot and then *absent* from a
-    later snapshot.  Returns True iff that trajectory has been recorded.
+    """A generation bump is warranted only when the latest target was
+    *present* in some snapshot and then *absent* from a later snapshot that
+    carries contents. Returns True iff that trajectory has been recorded.
+
+    Every snapshot newer than the target's last sighting lacks it, so the
+    question is whether a content-bearing snapshot is newer; a content-less
+    one says nothing about which paths exist.
     """
     p = _p(conn)
     last_present = conn.execute(
@@ -206,16 +211,8 @@ def _disappearance_observed(
     ).fetchone()[0]
     if last_present is None:
         return False
-    later_absent = conn.execute(
-        "SELECT 1 FROM path_snapshots s "
-        f"WHERE s.project_id = {p} AND s.id > {p} "
-        "  AND NOT EXISTS ("
-        "    SELECT 1 FROM path_snapshot_entries e "
-        f"    WHERE e.snapshot_id = s.id AND e.target_id = {p}"
-        "  ) LIMIT 1",
-        (project_id, last_present, target_id),
-    ).fetchone()
-    return later_absent is not None
+    newest_content = newest_content_snapshot_id(conn, project_id)
+    return newest_content is not None and newest_content > int(last_present)
 
 
 def _mint_target(

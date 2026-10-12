@@ -43,8 +43,14 @@ def test_https_payload_too_large_uses_chunked_dispatch(tmp_path: Path) -> None:
     # target this repository does not have keeps the payload to HEAD alone.
     with _force_https_chunking(), _https_connection():
         rc, out, err = run_cli(
-            "project", "snapshot", "sync", str(repo), "--project", "demo",
-            "--integration-target", "no-such-branch",
+            "project",
+            "snapshot",
+            "sync",
+            str(repo),
+            "--project",
+            "demo",
+            "--integration-target",
+            "no-such-branch",
         )
     assert rc == 0
     assert "created: HEAD abc snapshot=1" in out
@@ -69,21 +75,29 @@ def test_chunked_dispatch_skips_upload_when_begin_reuses_snapshot(
             "project_id": 3,
             "status": "reused",
             "snapshot_id": 44,
-            "snapshots": [{
-                "status": "reused",
-                "ref": "HEAD",
-                "commit_sha": commit_sha,
-                "snapshot_id": 44,
-                "entry_count": 0,
-                "symlink_count": 0,
-            }],
+            "snapshots": [
+                {
+                    "status": "reused",
+                    "ref": "HEAD",
+                    "commit_sha": commit_sha,
+                    "snapshot_id": 44,
+                    "entry_count": 0,
+                    "symlink_count": 0,
+                }
+            ],
             "warnings": [],
         },
     )
     with _force_https_chunking(), _https_connection():
         rc, out, err = run_cli(
-            "project", "snapshot", "sync", str(repo), "--project", "demo",
-            "--integration-target", "no-such-branch",
+            "project",
+            "snapshot",
+            "sync",
+            str(repo),
+            "--project",
+            "demo",
+            "--integration-target",
+            "no-such-branch",
             responses=[begin_reused],
         )
 
@@ -110,20 +124,27 @@ def test_chunked_dispatch_deduplicates_same_commit_refs(
         version="v1",
         result={
             "project_id": 3,
-            "snapshots": [{
-                "status": "created",
-                "ref": "HEAD",
-                "commit_sha": commit_sha,
-                "snapshot_id": 45,
-                "entry_count": 3,
-                "symlink_count": 0,
-            }],
+            "snapshots": [
+                {
+                    "status": "created",
+                    "ref": "HEAD",
+                    "commit_sha": commit_sha,
+                    "snapshot_id": 45,
+                    "entry_count": 3,
+                    "symlink_count": 0,
+                }
+            ],
             "warnings": [],
         },
     )
     with _force_https_chunking(), _https_connection():
         rc, out, err = run_cli(
-            "project", "snapshot", "sync", str(repo), "--project", "demo",
+            "project",
+            "snapshot",
+            "sync",
+            str(repo),
+            "--project",
+            "demo",
             responses=[success, success, finalized],
         )
 
@@ -154,8 +175,14 @@ def test_chunked_dispatch_aborts_after_append_failure(tmp_path: Path) -> None:
     )
     with _force_https_chunking(), _https_connection():
         rc, out, err = run_cli(
-            "project", "snapshot", "sync", str(repo), "--project", "demo",
-            "--integration-target", "no-such-branch",
+            "project",
+            "snapshot",
+            "sync",
+            str(repo),
+            "--project",
+            "demo",
+            "--integration-target",
+            "no-such-branch",
             responses=[success, failure, success],
         )
 
@@ -169,65 +196,6 @@ def test_chunked_dispatch_aborts_after_append_failure(tmp_path: Path) -> None:
     ]
     assert CALLS[0]["payload"]["snapshot"]["chunk_count"] == 1
     assert len(CALLS[1]["payload"]["files"]) >= 2
-
-
-def test_hook_mode_payload_too_large_reuses_at_begin(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path)
-    commit_sha = head_sha(repo)
-    begin_reused = FunctionCallResponse(
-        success=True,
-        function="project.snapshot.sync",
-        version="v1",
-        result={
-            "project_id": 3,
-            "status": "reused",
-            "snapshot_id": 46,
-            "snapshots": [{
-                "status": "reused",
-                "ref": "HEAD",
-                "commit_sha": commit_sha,
-                "snapshot_id": 46,
-            }],
-            "warnings": [],
-        },
-    )
-    with _force_https_chunking(), _https_connection():
-        rc, out, err = run_cli(
-            "project", "snapshot", "sync", str(repo), "--project", "demo",
-            "--head-only", "--hook",
-            responses=[begin_reused],
-        )
-    assert rc == 0
-    assert out == ""
-    assert non_progress_err(err) == ""
-    assert [call["payload"]["operation"] for call in CALLS] == ["begin"]
-
-
-def test_hook_mode_payload_too_large_defers_cold_upload(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path)
-    success = FunctionCallResponse(
-        success=True,
-        function="project.snapshot.sync",
-        version="v1",
-        result={},
-    )
-    with _force_https_chunking(), _https_connection():
-        rc, out, err = run_cli(
-            "project", "snapshot", "sync", str(repo), "--project", "demo",
-            "--head-only", "--hook",
-            responses=[success, success],
-        )
-    assert rc == 0
-    assert out == ""
-    # A deferral now reads as a calm note, not a scary "FAILED ... repair".
-    assert "note:" in err
-    assert "deferred" in err
-    assert "snapshot sync failed" not in err
-    assert "yoke project snapshot sync" in err
-    assert [call["payload"]["operation"] for call in CALLS] == [
-        "begin",
-        "abort",
-    ]
 
 
 def test_chunked_dispatch_restarts_once_when_staging_went_missing(
@@ -256,23 +224,36 @@ def test_chunked_dispatch_restarts_once_when_staging_went_missing(
         version="v1",
         result={
             "project_id": 3,
-            "snapshots": [{
-                "status": "created",
-                "ref": "HEAD",
-                "commit_sha": commit_sha,
-                "snapshot_id": 47,
-                "entry_count": 3,
-                "symlink_count": 0,
-            }],
+            "snapshots": [
+                {
+                    "status": "created",
+                    "ref": "HEAD",
+                    "commit_sha": commit_sha,
+                    "snapshot_id": 47,
+                    "entry_count": 3,
+                    "symlink_count": 0,
+                }
+            ],
             "warnings": [],
         },
     )
     with _force_https_chunking(), _https_connection():
         rc, out, err = run_cli(
-            "project", "snapshot", "sync", str(repo), "--project", "demo",
-            "--integration-target", "no-such-branch",
+            "project",
+            "snapshot",
+            "sync",
+            str(repo),
+            "--project",
+            "demo",
+            "--integration-target",
+            "no-such-branch",
             responses=[
-                success, missing, success, success, success, finalized,
+                success,
+                missing,
+                success,
+                success,
+                success,
+                finalized,
             ],
         )
 
@@ -309,8 +290,14 @@ def test_chunked_dispatch_restarts_only_once(tmp_path: Path) -> None:
     )
     with _force_https_chunking(), _https_connection():
         rc, out, err = run_cli(
-            "project", "snapshot", "sync", str(repo), "--project", "demo",
-            "--integration-target", "no-such-branch",
+            "project",
+            "snapshot",
+            "sync",
+            str(repo),
+            "--project",
+            "demo",
+            "--integration-target",
+            "no-such-branch",
             responses=[success, missing, success, success, missing, success],
         )
 

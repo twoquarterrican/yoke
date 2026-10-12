@@ -10,6 +10,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.path_registry import _mint_target, _parent_path_string
+from yoke_core.domain.path_snapshot_content_rows import newest_content_snapshot_id
 from yoke_core.domain.path_targets_states import PRE_OBSERVATION_STATES
 
 
@@ -89,34 +90,27 @@ def _targets_with_observed_disappearance(
     project_id: int,
     target_ids: Sequence[int],
 ) -> Set[int]:
+    """Targets absent from a content-bearing snapshot newer than their last.
+
+    A target's last sighting is the newest snapshot holding it, so every
+    newer snapshot lacks it; it disappeared once a newer snapshot carries
+    contents. A content-less snapshot says nothing about which paths exist.
+    """
     ids = list(dict.fromkeys(int(tid) for tid in target_ids))
-    if not ids:
+    newest_content = newest_content_snapshot_id(conn, project_id)
+    if not ids or newest_content is None:
         return set()
     p = _p(conn)
     disappeared: Set[int] = set()
     for chunk in _chunks(ids):
         placeholders = ",".join(p for _ in chunk)
         rows = conn.execute(
-            "SELECT lp.target_id "
-            "FROM ("
-            "  SELECT e.target_id, MAX(s.id) AS last_present "
-            "  FROM path_snapshots s "
-            "  JOIN path_snapshot_entries e ON e.snapshot_id = s.id "
-            f"  WHERE s.project_id = {p} "
-            f"    AND e.target_id IN ({placeholders}) "
-            "  GROUP BY e.target_id"
-            ") lp "
-            "WHERE EXISTS ("
-            "  SELECT 1 FROM path_snapshots s2 "
-            f"  WHERE s2.project_id = {p} "
-            "    AND s2.id > lp.last_present "
-            "    AND NOT EXISTS ("
-            "      SELECT 1 FROM path_snapshot_entries e2 "
-            "      WHERE e2.snapshot_id = s2.id "
-            "        AND e2.target_id = lp.target_id"
-            "    )"
-            ")",
-            (project_id, *chunk, project_id),
+            "SELECT e.target_id "
+            "FROM path_snapshot_entries e "
+            "JOIN path_snapshots s ON s.id = e.snapshot_id "
+            f"WHERE s.project_id = {p} AND e.target_id IN ({placeholders}) "
+            f"GROUP BY e.target_id HAVING MAX(s.id) < {p}",
+            (project_id, *chunk, newest_content),
         ).fetchall()
         disappeared.update(int(row[0]) for row in rows)
     return disappeared

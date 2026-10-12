@@ -118,3 +118,129 @@ def test_materializer_reuses_existing_commit_snapshot(tmp_path: Path) -> None:
         assert second.snapshot_id == first.snapshot_id
         count = conn.execute("SELECT COUNT(*) FROM path_snapshots").fetchone()[0]
         assert count == 1
+
+
+def _commit_change(repo: Path) -> None:
+    (repo / "src" / "extra.py").write_text("x = 1\n")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "more"], cwd=repo, check=True)
+
+
+def _snapshot_file_count(conn, snapshot_id) -> int:
+    p = _p(conn)
+    return conn.execute(
+        "SELECT COUNT(*) FROM path_snapshot_entries e "
+        "JOIN path_targets t ON t.id = e.target_id "
+        f"WHERE e.snapshot_id = {p} AND t.kind = 'file'",
+        (snapshot_id,),
+    ).fetchone()[0]
+
+
+def test_identity_only_payload_stores_no_snapshot(tmp_path: Path) -> None:
+    repo = _make_repo(tmp_path)
+    payload = scan_ref(repo, "HEAD", include_contents=False)
+    assert payload.contents_included is False
+    with path_snapshot_db(tmp_path, repo) as conn:
+        result = materialize_snapshot_payload(conn, project_id="demo", payload=payload)
+        assert result.status == "identity_only"
+        assert result.snapshot_id is None
+        assert conn.execute("SELECT COUNT(*) FROM path_snapshots").fetchone()[0] == 0
+
+
+def test_full_sync_after_identity_only_sync_uploads_contents(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    with path_snapshot_db(tmp_path, repo) as conn:
+        materialize_snapshot_payload(
+            conn,
+            project_id="demo",
+            payload=scan_ref(repo, "HEAD", include_contents=False),
+        )
+        full = materialize_snapshot_payload(
+            conn, project_id="demo", payload=scan_ref(repo, "HEAD")
+        )
+        assert full.status == "created"
+        assert _snapshot_file_count(conn, full.snapshot_id) >= 3
+
+
+def test_reuse_refuses_a_contentless_snapshot_and_keeps_path_versions(
+    tmp_path: Path,
+) -> None:
+    """A content-less row for the commit is replaced, not reused.
+
+    The row stands in for one an earlier client stored from an empty file
+    list. Kept, it hides the commit's inventory and makes every path look
+    disappeared, so the replacing build would mint a new version of each.
+    """
+    repo = _make_repo(tmp_path)
+    with path_snapshot_db(tmp_path, repo) as conn:
+        materialize_snapshot_payload(
+            conn, project_id="demo", payload=scan_ref(repo, "HEAD")
+        )
+        _commit_change(repo)
+        contentless = scan_ref(repo, "HEAD").model_copy(
+            update={"files": [], "symlinks": []}
+        )
+        stored = materialize_snapshot_payload(
+            conn, project_id="demo", payload=contentless
+        )
+        assert _snapshot_file_count(conn, stored.snapshot_id) == 0
+
+        full = materialize_snapshot_payload(
+            conn, project_id="demo", payload=scan_ref(repo, "HEAD")
+        )
+
+        assert full.status == "created"
+        assert _snapshot_file_count(conn, full.snapshot_id) >= 4
+        assert conn.execute("SELECT COUNT(*) FROM path_snapshots").fetchone()[0] == 2
+        generations = conn.execute(
+            "SELECT MAX(generation) FROM path_targets"
+        ).fetchone()[0]
+        assert generations == 1
+
+
+def test_server_build_replaces_a_contentless_snapshot(tmp_path: Path) -> None:
+    from yoke_core.domain.path_snapshots import ensure_snapshot_at
+
+    repo = _make_repo(tmp_path)
+    contentless = scan_ref(repo, "HEAD").model_copy(
+        update={"files": [], "symlinks": []}
+    )
+    with path_snapshot_db(tmp_path, repo) as conn:
+        stored = materialize_snapshot_payload(
+            conn, project_id="demo", payload=contentless
+        )
+        rebuilt = ensure_snapshot_at(conn, "demo", contentless.commit_sha)
+        assert rebuilt != stored.snapshot_id
+        assert _snapshot_file_count(conn, rebuilt) >= 3
+        assert ensure_snapshot_at(conn, "demo", contentless.commit_sha) == rebuilt
+
+
+def test_a_newer_contentless_snapshot_does_not_mark_paths_disappeared(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    with path_snapshot_db(tmp_path, repo) as conn:
+        materialize_snapshot_payload(
+            conn, project_id="demo", payload=scan_ref(repo, "HEAD")
+        )
+        _commit_change(repo)
+        materialize_snapshot_payload(
+            conn,
+            project_id="demo",
+            payload=scan_ref(repo, "HEAD").model_copy(
+                update={"files": [], "symlinks": []}
+            ),
+        )
+        (repo / "README.md").write_text("changed\n")
+        subprocess.run(["git", "commit", "-qam", "edit"], cwd=repo, check=True)
+
+        materialize_snapshot_payload(
+            conn, project_id="demo", payload=scan_ref(repo, "HEAD")
+        )
+
+        generations = conn.execute(
+            "SELECT MAX(generation) FROM path_targets"
+        ).fetchone()[0]
+        assert generations == 1

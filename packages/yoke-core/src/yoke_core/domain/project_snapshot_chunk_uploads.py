@@ -62,8 +62,8 @@ def _begin_chunk_upload(
     project_id: int,
     payload: PathSnapshotChunkSyncPayload,
 ) -> Dict[str, Any]:
-    from yoke_core.domain.path_snapshot_payload_materializer import (
-        find_existing_snapshot_id,
+    from yoke_core.domain.path_snapshot_content_rows import (
+        find_content_snapshot_id,
     )
 
     if payload.snapshot is None:
@@ -71,32 +71,19 @@ def _begin_chunk_upload(
     p = _p(conn)
     lane_head_recorded = _record_lane_head(conn, project_id, payload)
     _delete_chunk_upload_rows(conn, payload.upload_id)
-    existing_snapshot_id = find_existing_snapshot_id(
+    if not payload.snapshot.contents_included:
+        conn.commit()
+        return _settled_at_begin(payload, "identity_only", None, lane_head_recorded)
+    existing_snapshot_id = find_content_snapshot_id(
         conn,
         project_id=project_id,
         commit_sha=payload.snapshot.commit_sha,
     )
     if existing_snapshot_id is not None:
         conn.commit()
-        return {
-            "status": "reused",
-            "upload_id": payload.upload_id,
-            "snapshot_id": existing_snapshot_id,
-            "snapshots": [
-                {
-                    "status": "reused",
-                    "snapshot_id": existing_snapshot_id,
-                    "ref": payload.snapshot.ref,
-                    "commit_sha": payload.snapshot.commit_sha,
-                    "entry_count": 0,
-                    "symlink_count": 0,
-                }
-            ],
-            "warnings": list(payload.snapshot.warnings),
-            "expected_file_count": payload.snapshot.file_count,
-            "expected_chunk_count": payload.snapshot.chunk_count,
-            "lane_head_recorded": lane_head_recorded,
-        }
+        return _settled_at_begin(
+            payload, "reused", existing_snapshot_id, lane_head_recorded
+        )
     conn.execute(
         "INSERT INTO path_snapshot_sync_uploads "
         "(upload_id, project_ref, repo_root, ref, commit_sha, "
@@ -122,6 +109,35 @@ def _begin_chunk_upload(
     return {
         "status": "chunk_upload_started",
         "upload_id": payload.upload_id,
+        "expected_file_count": payload.snapshot.file_count,
+        "expected_chunk_count": payload.snapshot.chunk_count,
+        "lane_head_recorded": lane_head_recorded,
+    }
+
+
+def _settled_at_begin(
+    payload: PathSnapshotChunkSyncPayload,
+    status: str,
+    snapshot_id: Optional[int],
+    lane_head_recorded: bool,
+) -> Dict[str, Any]:
+    """Answer a begin that needs no chunks: identity-only, or reused."""
+    assert payload.snapshot is not None
+    return {
+        "status": status,
+        "upload_id": payload.upload_id,
+        "snapshot_id": snapshot_id,
+        "snapshots": [
+            {
+                "status": status,
+                "snapshot_id": snapshot_id,
+                "ref": payload.snapshot.ref,
+                "commit_sha": payload.snapshot.commit_sha,
+                "entry_count": 0,
+                "symlink_count": 0,
+            }
+        ],
+        "warnings": list(payload.snapshot.warnings),
         "expected_file_count": payload.snapshot.file_count,
         "expected_chunk_count": payload.snapshot.chunk_count,
         "lane_head_recorded": lane_head_recorded,

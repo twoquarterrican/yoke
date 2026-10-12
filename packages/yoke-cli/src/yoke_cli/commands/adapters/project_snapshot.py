@@ -59,9 +59,9 @@ def project_snapshot_sync(args: List[str]) -> int:
         "--head-only",
         action="store_true",
         help=(
-            "Record this checkout's HEAD identity only: no integration "
-            "target, no file-content scan. The fast re-stamp for a lane "
-            "whose recorded head went stale."
+            "Record this checkout's HEAD as its lane head only: no "
+            "integration target, no file-content scan, no stored snapshot. "
+            "The fast re-stamp for a lane whose recorded head went stale."
         ),
     )
     parser.add_argument(
@@ -85,9 +85,9 @@ def project_snapshot_sync(args: List[str]) -> int:
             head_only=parsed.head_only,
             hook_mode=parsed.hook_mode,
             # --head-only asks for HEAD's identity, which is the whole of
-            # what the stale-lane-head recovery needs. Scanning every blob
-            # anyway made the fast recovery a full upload that outran the
-            # relay's time limit and reported the recorded head as failed.
+            # what the stale-lane-head recovery needs. The payload says it
+            # carries no contents, so the server records the lane head and
+            # stores no snapshot; a full sync uploads the inventory.
             include_contents=not (parsed.hook_mode or parsed.head_only),
         )
     except ProjectSnapshotScanError as exc:
@@ -165,7 +165,7 @@ def sync_local_snapshot_for_write(
             head_only=head_only,
             hook_mode=True,
             # Identity-only callers match the git post-commit shim: skip
-            # a full blob scan of the tree.
+            # the blob scan; the server stores no snapshot for them.
             include_contents=not head_only,
         )
     except ProjectSnapshotScanError as exc:

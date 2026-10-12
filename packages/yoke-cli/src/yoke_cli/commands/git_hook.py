@@ -55,9 +55,10 @@ usage: yoke git post-commit
 
 Sync committed git tree state for the current checkout through
 `yoke project snapshot sync --hook --head-only`. The hook records HEAD
-identity, reuses a snapshot already on the server, and otherwise defers
-the file-content scan so a routine commit stays inside common tool
-timeouts. Progress lines go to stderr. Exits 0 even when sync needs
+identity only and stores no path snapshot, so a routine commit stays
+inside common tool timeouts; file contents reach the path registry through
+a full `yoke project snapshot sync`, which path-claim registration also
+runs. Progress lines go to stderr. Exits 0 even when sync needs
 manual repair; a completed commit is never blocked.
 Gate-owned rebase replay skips this per-commit sync because the gate binds
 the final lane head after the replay completes.

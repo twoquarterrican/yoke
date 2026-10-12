@@ -39,7 +39,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from yoke_contracts.path_snapshot import (
+from yoke_contracts.path_source_scan import (
     compute_line_count as _contract_line_count,
     compute_module_name as _contract_module_name,
     extract_edges as _extract_edges,

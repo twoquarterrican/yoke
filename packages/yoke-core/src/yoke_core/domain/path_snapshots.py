@@ -25,6 +25,10 @@ from yoke_core.domain.path_registry import (
     ROOT_PATH_SENTINEL,
     _all_paths_with_kinds,
 )
+from yoke_core.domain.path_snapshot_content_rows import (
+    discard_contentless_snapshot,
+    find_content_snapshot_id,
+)
 from yoke_core.domain.path_snapshot_enrichment import compute_entries, write_entries
 from yoke_core.domain.path_snapshot_context_cache import read_snapshot_context_values
 from yoke_core.domain.path_snapshot_targets import resolve_snapshot_target_ids
@@ -90,17 +94,6 @@ def _walk_head_files(repo_path: Path) -> List[str]:
     return _walk_files_at(repo_path, "HEAD")
 
 
-def _existing_snapshot_id(conn: Any, project_id: int, commit_sha: str) -> Optional[int]:
-    p = _p(conn)
-    row = conn.execute(
-        f"SELECT id FROM path_snapshots WHERE project_id = {p} AND commit_sha = {p}",
-        (project_id, commit_sha),
-    ).fetchone()
-    if row is None:
-        return None
-    return int(row[0])
-
-
 def _materialize_snapshot(
     conn: Any,
     project_id: int,
@@ -110,9 +103,9 @@ def _materialize_snapshot(
 ) -> int:
     """Inner snapshot builder shared by HEAD and arbitrary-SHA paths.
 
-    Caller must have already verified that no row exists for
-    ``(project_id, commit_sha)`` and that the file list reflects that
-    commit's tree. Loads context and computes file entries before wrapping
+    Caller must have already verified that no content-bearing row exists
+    for ``(project_id, commit_sha)`` and that the file list reflects that
+    commit's tree; a content-less row for the commit is replaced. Loads context and computes file entries before wrapping
     mint+entries+materialize in one transaction; rolls back any write failure.
     """
     targets = _all_paths_with_kinds(files)
@@ -136,10 +129,11 @@ def _materialize_snapshot(
         conn.execute("BEGIN")
         # Re-check inside the transaction in case a concurrent scan
         # raced ahead of us.
-        existing = _existing_snapshot_id(conn, project_id, commit_sha)
+        existing = find_content_snapshot_id(conn, project_id, commit_sha)
         if existing is not None:
             conn.execute("ROLLBACK")
             return existing
+        discard_contentless_snapshot(conn, project_id, commit_sha)
 
         resolution = resolve_snapshot_target_ids(
             conn,
@@ -180,13 +174,13 @@ def build_head_snapshot(conn: Any, project_id: int | str) -> int:
 
     Returns the ``path_snapshots.id`` of the snapshot for HEAD.
     Idempotent: rerunning against the same HEAD commit returns the
-    existing snapshot id without further mutation.
+    existing content-bearing snapshot id without further mutation.
     """
     project_id = resolve_project_id(conn, project_id)
     repo_path = _resolve_repo_path(conn, project_id)
     commit_sha = _resolve_head_sha(repo_path)
 
-    existing = _existing_snapshot_id(conn, project_id, commit_sha)
+    existing = find_content_snapshot_id(conn, project_id, commit_sha)
     if existing is not None:
         return existing
 
@@ -202,7 +196,7 @@ def build_snapshot_at_sha(conn: Any, project_id: int | str, commit_sha: str) -> 
     SHAs that have already moved past HEAD on the working branch.
 
     Idempotent against ``(project_id, commit_sha)``: returns the existing
-    snapshot id without mutation when one already exists. Prefer
+    snapshot id without mutation when one with file contents exists. Prefer
     :func:`ensure_snapshot_at` for the lazy lookup-then-build pattern;
     callers reach for this directly only when they want to force a build
     regardless of cache state.
@@ -214,7 +208,7 @@ def build_snapshot_at_sha(conn: Any, project_id: int | str, commit_sha: str) -> 
             f"commit_sha is required for build_snapshot_at_sha (project '{project_id}')"
         )
 
-    existing = _existing_snapshot_id(conn, project_id, commit_sha)
+    existing = find_content_snapshot_id(conn, project_id, commit_sha)
     if existing is not None:
         return existing
 
@@ -224,7 +218,7 @@ def build_snapshot_at_sha(conn: Any, project_id: int | str, commit_sha: str) -> 
 
 def ensure_snapshot_at(conn: Any, project_id: int | str, commit_sha: str) -> int:
     """Return the snapshot id for ``(project_id, commit_sha)``, building it
-    if absent.
+    if absent or content-less.
 
     Lazy: callers that only need *a* snapshot at a SHA — activate flows,
     boundary checks, post-commit hooks — go through this helper rather
@@ -233,7 +227,7 @@ def ensure_snapshot_at(conn: Any, project_id: int | str, commit_sha: str) -> int
     until ``path_snapshots <project>`` is run by hand.
     """
     project_id = resolve_project_id(conn, project_id)
-    existing = _existing_snapshot_id(conn, project_id, commit_sha)
+    existing = find_content_snapshot_id(conn, project_id, commit_sha)
     if existing is not None:
         return existing
     return build_snapshot_at_sha(conn, project_id, commit_sha)

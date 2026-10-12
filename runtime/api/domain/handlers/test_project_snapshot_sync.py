@@ -11,9 +11,13 @@ from yoke_contracts.api.function_call import (
     FunctionCallRequest,
     TargetRef,
 )
+from yoke_contracts.path_snapshot import PathSnapshotPayload, SnapshotFileEntry
 from yoke_core.domain import db_backend
 from runtime.api.domain._path_snapshots_test_helpers import path_snapshot_db
 from yoke_core.domain.handlers import project_snapshot_sync as handler
+from yoke_core.domain.path_snapshot_payload_materializer import (
+    materialize_snapshot_payload,
+)
 
 
 def _request(payload: dict) -> FunctionCallRequest:
@@ -72,9 +76,7 @@ def test_rejects_payload_above_api_limit(monkeypatch: pytest.MonkeyPatch) -> Non
     assert outcome.error is not None
     assert outcome.error.code == "payload_too_large"
     assert outcome.error.jsonpath == "$.payload"
-    assert "yoke project snapshot sync --head-only" in (
-        outcome.error.recovery_hint or ""
-    )
+    assert "uploads the snapshot in chunks" in (outcome.error.recovery_hint or "")
 
 
 def test_rejects_duplicate_symlink_facts() -> None:
@@ -136,7 +138,7 @@ def test_head_snapshot_refreshes_yoke_render_relationships(
     result = handler._refresh_render_relationship_context(
         conn,
         1,
-        [{"ref": "HEAD"}],
+        [{"ref": "HEAD", "snapshot_id": 7}],
         warnings,
     )
 
@@ -161,7 +163,7 @@ def test_snapshot_refreshes_render_relationships_for_any_project(
     assert handler._refresh_render_relationship_context(
         object(),
         3,
-        [{"ref": "HEAD"}],
+        [{"ref": "HEAD", "snapshot_id": 7}],
         [],
     ) == {"status": "ok", "written": 0}
     assert recorded == ["demo"]
@@ -290,14 +292,16 @@ def test_chunk_begin_reuses_existing_snapshot_without_staging(tmp_path) -> None:
     commit_sha = "d" * 40
     upload_id = "warm-upload"
     with path_snapshot_db(tmp_path, repo) as conn:
-        p = _p(conn)
-        inserted = conn.execute(
-            "INSERT INTO path_snapshots (project_id, commit_sha, built_at) "
-            f"VALUES ({p}, {p}, {p}) RETURNING id",
-            (3, commit_sha, "2026-06-20T00:00:00Z"),
-        ).fetchone()
-        snapshot_id = int(tuple(inserted)[0])
-        conn.commit()
+        # Reuse needs a snapshot with file contents, not just a row.
+        snapshot_id = materialize_snapshot_payload(
+            conn,
+            project_id="demo",
+            payload=PathSnapshotPayload(
+                ref="HEAD",
+                commit_sha=commit_sha,
+                files=[SnapshotFileEntry(path="a.py", line_count=1)],
+            ),
+        ).snapshot_id
 
         begin = handler.handle_project_snapshot_sync(
             _request(

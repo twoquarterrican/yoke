@@ -23,13 +23,13 @@ class PathSnapshotChunkMetadata(BaseModel):
     chunk_count: int = Field(ge=0)
     symlinks: List[SnapshotSymlinkFact] = Field(default_factory=list)
     warnings: List[str] = Field(default_factory=list)
+    # False: identity-only; begin records the lane head and stages nothing.
+    contents_included: bool = True
 
     @model_validator(mode="after")
     def _valid_metadata(self) -> "PathSnapshotChunkMetadata":
         if self.schema_version != SNAPSHOT_PAYLOAD_VERSION:
-            raise ValueError(
-                f"schema_version must be {SNAPSHOT_PAYLOAD_VERSION}"
-            )
+            raise ValueError(f"schema_version must be {SNAPSHOT_PAYLOAD_VERSION}")
         if not self.commit_sha.strip():
             raise ValueError("commit_sha is required")
         return self
