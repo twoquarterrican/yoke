@@ -43,7 +43,7 @@ class TestEngineArguments:
 
         monkeypatch.setattr(
             "yoke_core.domain.worktree.resolve_main_root",
-            lambda: str(tmp_path),
+            lambda **_kwargs: str(tmp_path),
         )
         monkeypatch.setattr(prep, "_find_worktree", lambda *_a: str(tmp_path))
         monkeypatch.setattr(

@@ -105,6 +105,8 @@ def _post_merge_cleanup(
             )
             return 5
         _schema_refresh(ctx)
+        _ensure_target_branch(ctx)
+        _print(f"YOKE_REPO_ROOT={ctx.yoke_repo_root}")
         return 0
 
     # Prove and delete the remote branch before discarding the local retry

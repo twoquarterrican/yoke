@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from yoke_core.tools import _impacted_ci_only_contract_floor as _ci_only
 from yoke_core.tools._impacted_ci_workflow_contracts import CI_WORKFLOW_CONTRACTS
+from yoke_core.tools._impacted_merge_contracts import MERGE_PREFIX_CONTRACTS
 from yoke_core.tools._impacted_contract_tests_hosted_release import (
     HOSTED_RELEASE_WORKFLOW_CONTRACT_TESTS,
     HOSTED_RELEASE_WORKFLOW_PATHS,
@@ -288,6 +289,7 @@ def contract_selection_for(changed: Sequence[str]) -> ContractSelection:
         widening_triggers.extend(f"{rule}:{path}" for path in hits)
     for rule, prefixes, contract_tests in (
         *PREFIX_CONTRACT_TESTS,
+        *MERGE_PREFIX_CONTRACTS,
         *WORKFLOW_DEFINITION_PREFIX_CONTRACTS,
     ):
         hits = tuple(path for path in changed_paths if path.startswith(prefixes))
