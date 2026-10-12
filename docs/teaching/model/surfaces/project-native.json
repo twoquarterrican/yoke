@@ -1,0 +1,110 @@
+{
+ "surface": {
+  "id": "project-native",
+  "title": "Project session rules",
+  "status": "observed",
+  "scope": "Project addition",
+  "audience": "Agent",
+  "encounter": "Native session load",
+  "location": "AGENTS.md managed block + project-owned rules; harness-specific native adapters",
+  "basis": "Existing mechanism · revised outline",
+  "note": "Project-owned additions carry local policy. Yoke’s own production rules and Platform runbooks stay in their owning projects.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "Keep existing project rules; concise complete obligations with exact operation homes. Add no second project startup block.",
+  "plan_notes": ["JOURNEYS static-guidance principle", "Project-context routing proposal"],
+  "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"],
+  "sources": ["AGENTS.md:75", "packages/yoke-core/src/yoke_core/domain/install_bundle_managed.py:25", "runtime/harness/claude/rules/session.md:1", "docs/public/reference/harness-discovery.md:9"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "Work belongs to this project. Resolve authority, item scope, worktree and claims before changing it.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["basics/boundaries", "coordination/lanes", "coordination/work-claims"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "02",
+   "title": "Preserve required scope; resolve overlap and dependencies. Verify results, protect secrets and retain durable evidence.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["coordination/path-claims", "planning/dependencies", "verification", "security/credentials"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "03",
+   "title": "Read the relevant operation home before acting: code/CLI, item writes, coordination, verification, delivery, databases or architecture.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["context/startup", "context/docs"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "04",
+   "title": "Use the installed Yoke manual for product rules; use context_routing for this project’s own guidance.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["context/packets", "architecture/structure"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "05",
+   "title": "After compaction or resume, reload the current skill and live work state before continuing.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["sessions/continuity", "agents/skills"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Apply current authority, security, scope and commit rules before work.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["universes/authority", "security/boundaries", "projects/identity"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Read the operation home before its action; use registered Yoke reads and writes.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["reference/commands", "context/docs"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-03",
+   "title": "Use the item’s workflow, policies, claim and lane; coordinate required overlapping paths.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["workflows/bindings", "posture/resolution", "coordination/path-claims", "coordination/lanes"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-04",
+   "title": "Load the project’s routed guidance, verification and applicable database/architecture rules.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["context/instructions", "verification/configuration", "databases/model", "architecture/model"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-05",
+   "title": "Give the user concise action and evidence; preserve continuity and update affected teaching.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["context/disclosure", "sessions/continuity", "documentation/ownership"],
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"]
+  }
+ ]
+}

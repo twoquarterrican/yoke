@@ -1,0 +1,61 @@
+{
+ "scenario": {
+  "id": "approval-types",
+  "title": "Approval and decision types",
+  "status": "draft-copy",
+  "situations": ["The user asks to approve a change before it finishes.", "A QA reviewer cannot determine the result from captured evidence.", "A release reaches a configured sign-off stage.", "A team wants any one approver or every named approver to decide."],
+  "coverage": "traced",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Inspected policy/docs and lifecycle review code; no live approval, authority check or Inbox card was exercised.", "Harness tool permission and machine-connection approval are separate security/access concepts owned by other map families.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+  "related_scenarios": ["environment_flows", "qa-execution-review", "people-access"],
+  "plan_refs": ["JOURNEYS.situation-12"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Identify what this yes changes",
+   "status": "draft-copy",
+   "audience": "human",
+   "when": "When the first work-approval, evidence-review or release-approval request appears.",
+   "need": "Work approval, QA evidence review and release approval settle different obligations. Each card should name its subject, evidence, decision and consequence. A delivery notice asks for nothing.",
+   "disclosure": "current cue",
+   "surface": "Inbox, item QA and run pages; workflow approval defaults",
+   "gap": "Current cards carry these distinctions; catalog has no explicit approval-learning situation. Review question: should JOURNEYS add a first-decision explanation that links its exact evidence?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke inbox list --help"],
+   "plan_notes": ["JOURNEYS row 12", "outside both"],
+   "sources": ["docs/public/items-and-sessions.md", "docs/public/workflows.md"]
+  },
+  {
+   "id": "02",
+   "title": "Persist the approval the user actually requested",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "At intake when the user asks for screenshots, visual proof, conditional review or explicit personal approval.",
+   "need": "A screenshot alone does not add approval. Unconditional human review differs from human-if-unsure; use the correct item-scoped policy and named reviewer, without modifying shared defaults for one request.",
+   "disclosure": "current cue",
+   "surface": "Idea/Dash delivery evidence intake; QA verdict-mode contract",
+   "gap": "Review question: should FIRST-USER D include explicit approve-it versus show-evidence scenarios so successful QA cannot silently skip requested review?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke workflows item get --help"],
+   "plan_notes": ["FIRST-USER D", "JOURNEYS row 12"],
+   "sources": [".agents/skills/yoke/idea/delivery-requirements.md", "packages/yoke-core/src/yoke_core/domain/qa_review_verdict_modes.py"]
+  },
+  {
+   "id": "03",
+   "title": "Apply the actual decision policy",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Before presenting or recording a decision, especially when multiple people or roles must approve.",
+   "need": "Any-one and all-required policies differ. An agent must inspect the typed request and current policy; one generic approve command cannot settle all decision kinds.",
+   "disclosure": "current cue",
+   "surface": "Workflow approval explanation; lifecycle gate; run-only Approve skill",
+   "gap": "Review question: should Help route approve this from the actual pending request instead of leaving the user to guess the command?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke inbox list --help", "yoke workflows version get --help"],
+   "plan_notes": ["FIRST-USER 35", "outside both"],
+   "sources": ["docs/public/workflows.md", "packages/yoke-core/src/yoke_core/domain/approval_gate.py", ".agents/skills/yoke/approve/SKILL.md"]
+  }
+ ]
+}

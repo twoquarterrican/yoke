@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Global orientation · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Global orientation</h1>
+<h2 id="global-orientation">Global orientation
+<i class="s approved">approved</i></h2>
+  <div><b>Scope:</b> Global</div>
+  <div><b>Audience:</b> Agent → human when useful</div>
+  <div><b>Encounter:</b> First supported context event</div>
+  <div><b>Location:</b> Global hooks + planned yoke-global guidance</div>
+  <div><b>Basis:</b> FIRST-USER planned</div>
+  <div><b>Note:</b> No compulsory GitHub connection or repeated onboarding
+  pitch. The same global baseline remains applicable inside a project, without
+  duplicate delivery.</div>
+  <div><b>Current:</b> Existing source references; delivered content is not yet
+  proved.</div>
+  <div><b>Desired:</b> One bounded orientation plus yoke-global; select/add a
+  project, then open a session in its folder.</div>
+  <div><b>Plan notes:</b> FIRST-USER P1–P4 · JOURNEYS 4–8/14</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-core/src/yoke_core/domain/session_orientation.py:268</code>,
+  <code>packages/yoke-harness/src/yoke_harness/hooks/cursor_lifecycle_hooks.py:34</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/main_agent_packet.py</code>,
+  <code>packages/yoke-contracts/src/yoke_contracts/connection_authority_teaching.py</code>,
+  <code>packages/yoke-contracts/src/yoke_contracts/session_control/teaching.py</code></div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+<h3 id="global-orientation/01">Which person, machine, universe and connection
+this session uses; readiness or an honest unknown.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/identity.html#identity/actors">identity/actors</a>,
+  <a href="../concepts/machines.html#machines/registration">machines/registration</a>,
+  <a href="../concepts/universes.html#universes/connections">universes/connections</a></div>
+<h3 id="global-orientation/02">Whether a Yoke project is selected; a relevant
+project or cross-project status only when useful.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/identity">projects/identity</a>,
+  <a href="../concepts/sessions.html#sessions/identity">sessions/identity</a>,
+  <a href="../concepts/frontier.html#frontier/frontier">frontier/frontier</a></div>
+<h3 id="global-orientation/03">Choose an existing project, add an existing
+folder, create a project, or continue globally.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Link</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/adoption">projects/adoption</a>,
+  <a href="../concepts/projects.html#projects/onboarding">projects/onboarding</a></div>
+<h3 id="global-orientation/04">Local mode has reachability limits. Explain those
+only when another computer or remote work makes them relevant.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Teach</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/modes.html#modes/local">modes/local</a>,
+  <a href="../concepts/modes.html#modes/cloud">modes/cloud</a>,
+  <a href="../concepts/modes.html#modes/self-hosted">modes/self-hosted</a></div>
+<h3 id="global-orientation/05">One useful next action, plus machine-reachable
+help. Carry the user’s intent into a session bound to the selected project.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Link</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/context-guidance.html#context/disclosure">context/disclosure</a>,
+  <a href="../concepts/agents.html#agents/skills">agents/skills</a>,
+  <a href="../concepts/sessions.html#sessions/identity">sessions/identity</a></div>
+<h3 id="global-orientation/06">Deliver the shared connection-authority and
+message-trust core before action or message handling; do not rely on an optional
+deeper read. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Rule</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/universes.html#universes/authority">universes/authority</a>,
+  <a href="../concepts/security.html#security/boundaries">security/boundaries</a>,
+  <a href="../concepts/messaging.html#messaging/messages">messaging/messages</a></div>
+<h3 id="global-orientation/desired-01">Yoke is installed. State this session’s
+scope and one useful next action. <i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/basics.html#basics/model">basics/model</a>,
+  <a href="../concepts/sessions.html#sessions/identity">sessions/identity</a>,
+  <a href="../concepts/context.html#context/startup">context/startup</a></div>
+<h3 id="global-orientation/desired-02">Use yoke-global to choose or add a
+project; open a session in its actual folder for item work.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/adoption">projects/adoption</a>,
+  <a href="../concepts/agents.html#agents/skills">agents/skills</a></div>
+<h3 id="global-orientation/desired-03">Coordinate across accessible projects
+when useful; preserve message trust and connection authority.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/identity">projects/identity</a>,
+  <a href="../concepts/messaging.html#messaging/messages">messaging/messages</a>,
+  <a href="../concepts/universes.html#universes/authority">universes/authority</a></div>
+<h3 id="global-orientation/desired-04">Report relevant machine readiness or
+recovery and an accessible deeper help route.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/readiness">installation/readiness</a>,
+  <a href="../concepts/machines.html#machines/inspection">machines/inspection</a>,
+  <a href="../concepts/reference.html#reference/commands">reference/commands</a></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

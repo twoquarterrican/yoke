@@ -1,0 +1,225 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "frontier",
+   "title": "Frontier and staffing",
+   "status": "draft-copy",
+   "sources": ["docs/public/frontier.md", "docs/public/reference/charge-frontier.md", "docs/public/reference/db-reference/steering-fleet-report.md"],
+   "children": [
+    {
+     "id": "frontier",
+     "title": "Reading the frontier",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.28"],
+     "commands": ["yoke board", "yoke board data get", "yoke board rebuild", "yoke frontier list", "yoke overview activation get"],
+     "functions": ["board.data.get", "board.rebuild.run", "frontier.list", "overview.activation.get", "overview.module.dismiss", "overview.module.restore", "overview.vitals.get"],
+     "children": [
+      {
+       "id": "waiting",
+       "title": "Waiting",
+       "status": "draft-copy"
+      },
+      {
+       "id": "ready",
+       "title": "Ready",
+       "status": "draft-copy"
+      },
+      {
+       "id": "active",
+       "title": "Active",
+       "status": "draft-copy"
+      },
+      {
+       "id": "done",
+       "title": "Done",
+       "status": "draft-copy"
+      },
+      {
+       "id": "why-an-item-is-blocked",
+       "title": "Why an item is blocked",
+       "status": "draft-copy"
+      },
+      {
+       "id": "on-hold",
+       "title": "On hold",
+       "status": "draft-copy"
+      },
+      {
+       "id": "release-merged-and-waiting-to-ship",
+       "title": "Release: merged and waiting to ship",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "ranking",
+     "title": "Selection and ranking",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "dependencies",
+       "title": "Dependencies",
+       "status": "draft-copy"
+      },
+      {
+       "id": "unblocking-value-and-depth",
+       "title": "Unblocking value and depth",
+       "status": "draft-copy"
+      },
+      {
+       "id": "priority",
+       "title": "Priority",
+       "status": "draft-copy"
+      },
+      {
+       "id": "work-in-progress-cap",
+       "title": "Work in progress cap",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-and-document-scope",
+       "title": "Project and document scope",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "entrypoints",
+     "title": "Staffing entry points",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.24", "JOURNEYS.situation-11"],
+     "surface_refs": ["project-orientation", "setup-agent", "skills-roles"],
+     "commands": ["yoke charge schedule"],
+     "functions": ["charge.schedule"],
+     "skills": ["charge"],
+     "children": [
+      {
+       "id": "charge",
+       "title": "Charge",
+       "status": "draft-copy"
+      },
+      {
+       "id": "feed",
+       "title": "Feed",
+       "status": "draft-copy"
+      },
+      {
+       "id": "steer",
+       "title": "Steer",
+       "status": "draft-copy"
+      },
+      {
+       "id": "explicit-item-selection",
+       "title": "Explicit item selection",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "launch",
+     "title": "Worker launch",
+     "status": "draft-copy",
+     "commands": ["yoke session-control launch create", "yoke session-control launch get", "yoke session-control launch list", "yoke session-control launch preview"],
+     "functions": ["session_control.launch.create", "session_control.launch.get", "session_control.launch.list", "session_control.launch.preview"],
+     "children": [
+      {
+       "id": "launch-preview",
+       "title": "Launch preview",
+       "status": "draft-copy"
+      },
+      {
+       "id": "placement",
+       "title": "Placement",
+       "status": "draft-copy"
+      },
+      {
+       "id": "assigned-level",
+       "title": "Assigned level",
+       "status": "draft-copy"
+      },
+      {
+       "id": "launch-mandate",
+       "title": "Launch mandate",
+       "status": "draft-copy"
+      },
+      {
+       "id": "launch-ticket-and-history",
+       "title": "Launch ticket and history",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "fleet",
+     "title": "Steering fleet",
+     "status": "draft-copy",
+     "commands": ["yoke claims steering acquire", "yoke claims steering list", "yoke claims steering release", "yoke sessions steering-groups list", "yoke steering report get"],
+     "functions": ["claims.steering.acquire", "claims.steering.list", "claims.steering.release", "sessions.steering_groups.list", "steering.report.get"],
+     "skills": ["steer"],
+     "children": [
+      {
+       "id": "steering-seat-and-lease",
+       "title": "Steering seat and lease",
+       "status": "draft-copy"
+      },
+      {
+       "id": "available-work",
+       "title": "Available work",
+       "status": "draft-copy"
+      },
+      {
+       "id": "live-workers",
+       "title": "Live workers",
+       "status": "draft-copy"
+      },
+      {
+       "id": "capacity-and-quota",
+       "title": "Capacity and quota",
+       "status": "draft-copy"
+      },
+      {
+       "id": "restaffing-and-continuation",
+       "title": "Restaffing and continuation",
+       "status": "draft-copy"
+      },
+      {
+       "id": "operator-attention",
+       "title": "Operator attention",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "launch-recovery",
+     "title": "Launch recovery",
+     "status": "draft-copy",
+     "commands": ["yoke session-control launch cancel", "yoke session-control launch reconcile", "yoke session-control launch retry"],
+     "functions": ["session_control.launch.cancel", "session_control.launch.reconcile", "session_control.launch.retry"],
+     "children": [
+      {
+       "id": "unfinished-launch",
+       "title": "Unfinished launch",
+       "status": "draft-copy"
+      },
+      {
+       "id": "timeline-and-handoff",
+       "title": "Timeline and handoff",
+       "status": "draft-copy"
+      },
+      {
+       "id": "retry-and-reconcile",
+       "title": "Retry and reconcile",
+       "status": "draft-copy"
+      },
+      {
+       "id": "cancel-a-launch",
+       "title": "Cancel a launch",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

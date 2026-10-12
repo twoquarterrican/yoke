@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capabilities, settings and secrets · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Capabilities, settings and secrets</h1>
+<h2 id="capabilities">Capabilities, settings and secrets
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> A feature refuses because its project capability is
+  absent. · An operator needs to change one setting or add a credential. · A
+  dashboard inventory appears configured but the underlying service is not
+  ready.</div>
+  <div><b>Coverage:</b> partial</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> Which capability refusals already point to their exact
+  setup guide and which only name a capability type? · How are credential
+  materialization and credential readiness verified for each capability outside
+  Onboard?</div>
+<h3 id="capabilities/01">Inventory is not setup or verification
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Choosing a capability or investigating a capability
+  refusal</div>
+  <div><b>Need:</b> Read the live project capability roster, then its typed
+  settings and feature-specific setup/probe. The Capabilities page is a
+  readiness inventory, not a setup wizard.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Docs sidebar -&gt; Capabilities -&gt; capability-settings
+  help; project capability roster.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke projects capabilities list --project P
+  --json</code>, <code>yoke projects capability-settings get --help</code></div>
+  <div><b>Plan notes:</b> JOURNEYS rows 12-13</div>
+  <div><b>Sources:</b> <code>docs/public/nav.yaml</code>,
+  <code>docs/public/capabilities.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/projects_capabilities_read.py</code></div>
+<h3 id="capabilities/02">Choose non-secret settings or secret storage
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> agent</div>
+  <div><b>When:</b> Before adding or changing provider configuration</div>
+  <div><b>Need:</b> Non-sensitive capability settings are a JSON document;
+  secrets use the capability-owned secret surface. Read before CAS replacement;
+  use merge for one path; never print secret values.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Capabilities guide -&gt; setting help; mistaken scalar
+  settings flags return the correct merge/read/secret recipes.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke projects capability-settings get --project P
+  --cap-type TYPE</code>, <code>yoke projects capability-settings set
+  --help</code>, <code>yoke projects capability-settings merge --help</code>,
+  <code>yoke projects capability secret set --help</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b> <code>docs/public/capabilities.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/projects_capability_settings.py</code>,
+  <code>docs/public/reference/agent-rules/delivery.md</code></div>
+<h3 id="capabilities/03">Find the right configuration owner
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> A value could belong to a Pack, project, environment,
+  machine or universe</div>
+  <div><b>Need:</b> Separate install-time Pack specialization, live project
+  capability settings, environment settings, machine connections and universe
+  settings. Use the owning registered read/help, not raw config
+  inspection.</div>
+  <div><b>Disclosure:</b> audit needed</div>
+  <div><b>Surface:</b> Projects and Capabilities guides explain parts; CLI and
+  config covers the machine/universe boundary.</div>
+  <div><b>Gap:</b> No complete scenario-to-owner path was traced for arbitrary
+  feature settings. Do not claim a generic settings UI or validator exists for
+  every capability.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke projects capability-settings get
+  --help</code>, <code>yoke project-structure get --help</code>, <code>yoke
+  status</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b> <code>docs/public/projects.md</code>,
+  <code>docs/public/capabilities.md</code>,
+  <code>docs/public/cli-and-config.md</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/project_structure.py</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

@@ -1,0 +1,148 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "messaging",
+   "title": "Inbox, messages and notifications",
+   "status": "draft-copy",
+   "sources": ["docs/public/items-and-sessions.md", "docs/public/reference/db-reference/steering-fleet-report.md", "docs/public/reference/db-reference/machine-local-evidence.md"],
+   "children": [
+    {
+     "id": "inbox",
+     "title": "Personal Inbox",
+     "status": "draft-copy",
+     "commands": ["yoke inbox list"],
+     "functions": ["inbox.list"],
+     "children": [
+      {
+       "id": "unread-attention",
+       "title": "Unread attention",
+       "status": "draft-copy"
+      },
+      {
+       "id": "decision-requests",
+       "title": "Decision requests",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-filtering",
+       "title": "Project filtering",
+       "status": "draft-copy"
+      },
+      {
+       "id": "evidence-links",
+       "title": "Evidence links",
+       "status": "draft-copy"
+      },
+      {
+       "id": "resolution",
+       "title": "Resolution",
+       "status": "draft-copy"
+      },
+      {
+       "id": "inbox-sections",
+       "title": "Inbox sections",
+       "status": "draft-copy",
+       "children": [
+        {
+         "id": "waiting-on-you",
+         "title": "Waiting on you",
+         "status": "draft-copy"
+        },
+        {
+         "id": "notices",
+         "title": "Notices",
+         "status": "draft-copy"
+        },
+        {
+         "id": "messages",
+         "title": "Messages",
+         "status": "draft-copy"
+        },
+        {
+         "id": "decided",
+         "title": "Decided",
+         "status": "draft-copy"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "messages",
+     "title": "Fleet messages",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.P1"],
+     "surface_refs": ["global-hooks", "global-orientation", "project-hooks"],
+     "commands": ["yoke messages ack", "yoke messages acknowledge", "yoke messages cancel", "yoke messages get", "yoke messages list", "yoke messages send", "yoke messages status", "yoke session-control message acknowledge", "yoke session-control message cancel", "yoke session-control message get", "yoke session-control message list", "yoke session-control message preview", "yoke session-control message send"],
+     "functions": ["session_control.message.acknowledge", "session_control.message.cancel", "session_control.message.get", "session_control.message.lease", "session_control.message.list", "session_control.message.preview", "session_control.message.send"],
+     "children": [
+      {
+       "id": "recipient-discovery",
+       "title": "Recipient discovery",
+       "status": "draft-copy"
+      },
+      {
+       "id": "message-preview",
+       "title": "Message preview",
+       "status": "draft-copy"
+      },
+      {
+       "id": "dispatch",
+       "title": "Dispatch",
+       "status": "draft-copy"
+      },
+      {
+       "id": "delivery-receipt",
+       "title": "Delivery receipt",
+       "status": "draft-copy"
+      },
+      {
+       "id": "acceptance-and-response",
+       "title": "Acceptance and response",
+       "status": "draft-copy"
+      },
+      {
+       "id": "failures-and-retry",
+       "title": "Failures and retry",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "signals",
+     "title": "Notifications and handoffs",
+     "status": "draft-copy",
+     "commands": ["yoke say"],
+     "children": [
+      {
+       "id": "worker-hand-back",
+       "title": "Worker hand-back",
+       "status": "draft-copy"
+      },
+      {
+       "id": "qa-completion",
+       "title": "QA completion",
+       "status": "draft-copy"
+      },
+      {
+       "id": "deployment-progress",
+       "title": "Deployment progress",
+       "status": "draft-copy"
+      },
+      {
+       "id": "done-announcement",
+       "title": "Done announcement",
+       "status": "draft-copy"
+      },
+      {
+       "id": "wake-up-and-continuation",
+       "title": "Wake-up and continuation",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

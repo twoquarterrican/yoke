@@ -1,0 +1,101 @@
+{
+ "surface": {
+  "id": "setup-tui",
+  "title": "Interactive setup",
+  "status": "approved",
+  "scope": "Machine first; project optional",
+  "audience": "Human",
+  "encounter": "First install or requested reconfiguration",
+  "location": "yoke setup TUI and its completion summary",
+  "basis": "FIRST-USER design + accepted corrections",
+  "note": "Skipped GitHub checks are not applicable. Teach deeper project configuration when it becomes relevant; a completion summary does not imply the whole project is configured.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "Fewer steps; issue sync silently off. Show real progress, one-screen Back and truthful repair instructions.",
+  "plan_notes": ["FIRST-USER 3/8/9/10/19/24/25/26/37–39", "FIRST-USER C/E/P4"],
+  "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"],
+  "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py", "packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py", "packages/yoke-cli/src/yoke_cli/config/onboard_destination_rows.py"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "At the mode choice: this computer only, your server or Yoke Cloud; explain practical reachability.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["modes/local", "modes/self-hosted", "modes/cloud"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  },
+  {
+   "id": "02",
+   "title": "At sign-in or machine approval: why it is needed, what to do and how to return.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["identity/auth", "machines/registration"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  },
+  {
+   "id": "03",
+   "title": "Choose a new/existing project now, or finish machine setup and add one later.",
+   "status": "draft-copy",
+   "form": "Do",
+   "verification": "No delivery proof attached.",
+   "topics": ["projects/adoption", "installation/choices"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  },
+  {
+   "id": "04",
+   "title": "GitHub stays optional. Item-to-issue sync silently defaults off; no sync-choice screen.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["repositories/github", "repositories/sync"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  },
+  {
+   "id": "05",
+   "title": "Finish with mode/universe, actual project or no project, active-harness readiness and one next action.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["installation/readiness", "universes/universe", "agents/harnesses"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Choose local, self-hosted or hosted with clear reachability; support stale setup and backup recovery.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["modes", "installation/choices", "maintenance/portability"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Keep GitHub optional and issue sync silently off; reuse authorization and settled choices.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["repositories/github", "repositories/sync"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  },
+  {
+   "id": "desired-03",
+   "title": "Open supported browser steps with notice; show real Apply progress, wrapping and one-screen Back.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["identity/auth", "installation/entry"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  },
+  {
+   "id": "desired-04",
+   "title": "Verify active-harness readiness, then reach the right project session for minimal onboarding.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["installation/readiness", "projects/onboarding"],
+   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  }
+ ]
+}

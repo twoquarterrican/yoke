@@ -1,0 +1,75 @@
+{
+ "surface": {
+  "id": "manual-contents",
+  "title": "Full contents and breadcrumbs",
+  "status": "approved",
+  "scope": "Public + authorized private projections",
+  "audience": "Human + agent",
+  "encounter": "Browse or locate an unfamiliar subject",
+  "location": "Generated from the concept tree and canonical page metadata",
+  "basis": "New documentation structure",
+  "note": "This is a generated navigation surface, not evidence that each linked topic has an adequate article. The public projection must omit private material.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "One maintained topic hierarchy; every topic has a home or explicit gap. A parent link does not cover its children.",
+  "plan_notes": ["New documentation organization proposal"],
+  "plan_refs": ["FIRST-USER.40"],
+  "sources": ["docs/public/nav.yaml", "docs/public/index.md"],
+  "private_sources": ["platform"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "Every agreed topic and subtopic, each with one primary home and intentional cross-links.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["documentation/cascade"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "02",
+   "title": "The same parent/child structure powers site navigation, installed indexes and page breadcrumbs.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["documentation/ownership", "context/docs"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "03",
+   "title": "Audience and publication boundaries; current, proposed and historical material are distinguishable.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["security/privacy", "documentation/current-decisions-versus-historical-records"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "04",
+   "title": "Public administration/contribution topics remain findable. Private operations appear only in authorized project maps.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["server-admin", "contributing", "cloud-operations"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Expose the complete hierarchy and stable topic links, including explicit unfilled homes.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["documentation/cascade", "reference/docs"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Distinguish public product, private operations and project-owned guidance.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["documentation/ownership"],
+   "plan_refs": ["FIRST-USER.40"]
+  }
+ ]
+}

@@ -1,0 +1,230 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "contributing",
+   "title": "Developing and extending Yoke",
+   "status": "draft-copy",
+   "audience": "Maintainers",
+   "sources": ["docs/source-dev-doctrine.md", "runtime/harness/manifest-schema.md", "docs/public/operator-data-repair.md", "packages/yoke-core/src/yoke_core/tools/atlas_render_docs.py"],
+   "children": [
+    {
+     "id": "source",
+     "title": "Source development",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "commands": ["yoke dev db-admin exec", "yoke dev db-admin setup", "yoke dev import-check", "yoke dev path-snapshot-prewarm", "yoke dev run", "yoke dev setup", "yoke scratch dispatch-inputs", "yoke source-authority export", "yoke source-authority quiesce"],
+     "functions": ["scratch.dispatch_inputs"],
+     "children": [
+      {
+       "id": "repository-boundaries",
+       "title": "Repository boundaries",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "development-launcher",
+       "title": "Development launcher",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "worktree-source-authority",
+       "title": "Worktree source authority",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "dependency-and-build-setup",
+       "title": "Dependency and build setup",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "source-versus-deployed-runtime",
+       "title": "Source versus deployed runtime",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    },
+    {
+     "id": "extensions",
+     "title": "Extension contracts",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "children": [
+      {
+       "id": "new-registered-function-and-cli-adapter",
+       "title": "New registered function and CLI adapter",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "new-workflow-and-gates",
+       "title": "New workflow and gates",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "new-harness-adapter",
+       "title": "New harness adapter",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "new-qa-runner",
+       "title": "New QA runner",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "new-capability-or-pack",
+       "title": "New capability or Pack",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "new-health-check",
+       "title": "New health check",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "new-event",
+       "title": "New event",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    },
+    {
+     "id": "generated",
+     "title": "Generated surfaces",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "commands": ["yoke agents render", "yoke agents render check", "yoke git post-commit", "yoke git pre-commit"],
+     "functions": ["agents.render.check", "agents.render.run", "agents.render_relationships.record"],
+     "children": [
+      {
+       "id": "install-bundle-sync",
+       "title": "Install-bundle sync",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "harness-and-agent-rendering",
+       "title": "Harness and agent rendering",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "public-docs-publishing",
+       "title": "Public docs publishing",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "atlas-generation",
+       "title": "Atlas generation",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "schema-and-command-references",
+       "title": "Schema and command references",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    },
+    {
+     "id": "release",
+     "title": "Maintainer verification and release",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "commands": ["yoke core build", "yoke github release create-next-tag", "yoke release-pin record", "yoke release-pin verify"],
+     "functions": ["github.release.create_next_tag", "release_pin.record"],
+     "children": [
+      {
+       "id": "targeted-tests",
+       "title": "Targeted tests",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "contract-and-bundle-checks",
+       "title": "Contract and bundle checks",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "migration-fleet-rehearsal",
+       "title": "Migration fleet rehearsal",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "candidate-build",
+       "title": "Candidate build",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "release-lineage",
+       "title": "Release lineage",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "serving-verification",
+       "title": "Serving verification",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    },
+    {
+     "id": "repair",
+     "title": "Exceptional repair",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "commands": ["yoke lifecycle repair-status", "yoke operator data-repair"],
+     "functions": ["lifecycle.repair_status.execute", "operator.data_repair.run"],
+     "children": [
+      {
+       "id": "registered-recovery-first",
+       "title": "Registered recovery first",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "reviewed-data-repair-document",
+       "title": "Reviewed data-repair document",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "dry-run-and-digest-approval",
+       "title": "Dry-run and digest approval",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "execution-audit",
+       "title": "Execution audit",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "operator-only-cleanup",
+       "title": "Operator-only cleanup",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

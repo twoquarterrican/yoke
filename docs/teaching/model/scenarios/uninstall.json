@@ -1,0 +1,44 @@
+{
+ "scenario": {
+  "id": "uninstall",
+  "title": "Uninstall and removing the operating layer",
+  "status": "draft-copy",
+  "situations": ["Stop using Yoke on one machine.", "Remove Yoke from selected repositories.", "Cleanup encounters unreachable old state."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Verify preservation/cleanup across modified managed files, inaccessible old servers and later-installed harnesses."],
+  "related_scenarios": ["portability", "project-lifecycle", "machine-access"],
+  "plan_refs": ["FIRST-USER.1"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Choose data and project removal separately",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Before confirming uninstall",
+   "need": "Local/self-host data may be the only copy. Backup choice and which project layers to remove are distinct; there is no automatic backup. Explicit unattended choices are required.",
+   "disclosure": "current cue",
+   "surface": "Install -> Uninstall -> command help and first prompts.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke uninstall --help", "yoke project uninstall --help"],
+   "plan_notes": ["FIRST-USER item 1", "FIRST-USER item 9"],
+   "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/machine_uninstall.py", "packages/yoke-cli/src/yoke_cli/config/machine_uninstall.py"]
+  },
+  {
+   "id": "02",
+   "title": "Recover leftovers without deleting unknown files",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Uninstall or reinstall reports stale foreign-install state or partial failure",
+   "need": "Retain named recovery evidence, distinguish machine/global hooks from project-owned files, and finish cleanup through the supported operation. Global hook/skill cleanup will expand with P2/P4.",
+   "disclosure": "planned cue",
+   "surface": "Current uninstall reports independent failures; FIRST-USER item 1 expands stale-link recovery and machine-wide cleanup.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke uninstall --help"],
+   "plan_notes": ["FIRST-USER item 1", "FIRST-USER P2/P4", "FIRST-USER D"],
+   "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/config/machine_uninstall_inventory.py", "packages/yoke-cli/src/yoke_cli/config/machine_uninstall_steps.py"]
+  }
+ ]
+}

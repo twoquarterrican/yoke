@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worktrees and conflicting work · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Worktrees and conflicting work</h1>
+<ul>
+<li id="coordination"><b>Worktrees and conflicting work</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Sources:</b>
+  <code>docs/public/reference/agent-rules/lanes-and-claims.md</code>,
+  <code>docs/public/reference/db-reference/path-claims.md</code>,
+  <code>docs/public/reference/db-reference/functions-claims.md</code>,
+  <code>docs/public/reference/db-reference/functions-worktrees.md</code></div>
+<ul>
+<li id="coordination/lanes"><b>Worktree lanes</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/project-hooks.html">project-hooks
+  ×1</a>, <a href="../surfaces/project-native.html">project-native ×2</a>,
+  <a href="../surfaces/project-orientation.html">project-orientation ×1</a>,
+  <a href="../surfaces/skills-roles.html">skills-roles ×1</a></div>
+  <div><b>Commands:</b> <code>yoke direct-workflow worktree prepare</code>,
+  <code>yoke item-worktrees create</code>, <code>yoke item-worktrees get</code>,
+  <code>yoke item-worktrees inventory</code>, <code>yoke item-worktrees
+  list</code>, <code>yoke item-worktrees path-record</code>, <code>yoke
+  item-worktrees release</code></div>
+  <div><b>Functions:</b> <code>item_worktrees.create</code>,
+  <code>item_worktrees.get</code>, <code>item_worktrees.inventory</code>,
+  <code>item_worktrees.list</code>, <code>item_worktrees.path_record</code>,
+  <code>item_worktrees.release</code>,
+  <code>item_worktrees.release_merged_lane</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/project-hooks.html">project-hooks</a>,
+  <a href="../surfaces/project-native.html">project-native</a></div>
+<ul>
+<li id="coordination/lanes/prepare-from-verified-upstream"><b>Prepare from
+verified upstream</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="coordination/lanes/item-implementation-lane"><b>Item implementation
+lane</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="coordination/lanes/task-lanes"><b>Task lanes</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/lanes/integration-lane"><b>Integration lane</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/lanes/reuse-and-cleanup"><b>Reuse and cleanup</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/lanes/write-authority"><b>Write authority</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="coordination/work-claims"><b>Work claims</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Taught on:</b> <a href="../surfaces/packets-help.html">packets-help
+  ×1</a>, <a href="../surfaces/project-hooks.html">project-hooks ×1</a>,
+  <a href="../surfaces/project-native.html">project-native ×1</a>,
+  <a href="../surfaces/resume-context.html">resume-context ×1</a>,
+  <a href="../surfaces/workbench-cues.html">workbench-cues ×1</a></div>
+  <div><b>Commands:</b> <code>yoke claims work acquire</code>, <code>yoke claims
+  work current</code>, <code>yoke claims work holder-get</code>, <code>yoke
+  claims work holder-list</code>, <code>yoke claims work list</code>, <code>yoke
+  claims work release</code>, <code>yoke claims work status</code>, <code>yoke
+  claims work-claim acquire</code>, <code>yoke claims work-claim get</code>,
+  <code>yoke claims work-claim list</code>, <code>yoke claims work-claim
+  release</code></div>
+  <div><b>Functions:</b> <code>claims.work.acquire</code>,
+  <code>claims.work.holder_get</code>, <code>claims.work.holder_list</code>,
+  <code>claims.work.release</code>,
+  <code>claims.work.release_session_scoped</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/resume-context.html">resume-context</a></div>
+<ul>
+<li id="coordination/work-claims/acquire"><b>Acquire</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/work-claims/inspect-owner"><b>Inspect owner</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/work-claims/release"><b>Release</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/work-claims/stale-holder"><b>Stale holder</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/work-claims/session-to-work-ownership"><b>Session-to-work
+ownership</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="coordination/survey"><b>Path survey</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke direct-workflow blitz survey</code>,
+  <code>yoke direct-workflow conflict-survey status</code>, <code>yoke
+  direct-workflow dash survey</code></div>
+  <div><b>Functions:</b> <code>direct_workflow.blitz.survey</code>,
+  <code>direct_workflow.conflict_survey.status</code>,
+  <code>direct_workflow.dash.survey</code></div>
+<ul>
+<li id="coordination/survey/find-affected-files"><b>Find affected files</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/survey/existing-structure"><b>Existing structure</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/survey/required-scope"><b>Required scope</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/survey/survey-evidence"><b>Survey evidence</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="coordination/file-budget"><b>File budget</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<ul>
+<li id="coordination/file-budget/declared-files"><b>Declared files</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/file-budget/planned-operations"><b>Planned operations</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/file-budget/per-task-scope"><b>Per-task scope</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/file-budget/amendments"><b>Amendments</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/file-budget/authored-file-line-limit"><b>Authored-file line
+limit</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="coordination/path-claims"><b>Path claims</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Taught on:</b>
+  <a href="../surfaces/command-feedback.html">command-feedback ×1</a>,
+  <a href="../surfaces/project-hooks.html">project-hooks ×1</a>,
+  <a href="../surfaces/project-native.html">project-native ×2</a>,
+  <a href="../surfaces/skills-roles.html">skills-roles ×1</a></div>
+  <div><b>Commands:</b> <code>yoke claims path activation-run</code>, <code>yoke
+  claims path amend</code>, <code>yoke claims path boundary-prove</code>,
+  <code>yoke claims path coordination-decision-build</code>, <code>yoke claims
+  path get</code>, <code>yoke claims path list</code>, <code>yoke claims path
+  override</code>, <code>yoke claims path register</code>, <code>yoke claims
+  path required-gate</code>, <code>yoke claims path widen</code>, <code>yoke
+  path-claims conflicts list</code>, <code>yoke readiness
+  repair-claim-coverage</code></div>
+  <div><b>Functions:</b> <code>claims.path.activation_run</code>,
+  <code>claims.path.amend</code>, <code>claims.path.boundary_context</code>,
+  <code>claims.path.boundary_observe</code>,
+  <code>claims.path.boundary_prove</code>,
+  <code>claims.path.coordination_decision_build</code>,
+  <code>claims.path.get</code>, <code>claims.path.list</code>,
+  <code>claims.path.override</code>, <code>claims.path.register</code>,
+  <code>claims.path.release</code>, <code>claims.path.required_gate</code>,
+  <code>claims.path.survey_ensure</code>, <code>claims.path.widen</code>,
+  <code>path_claims.conflicts.list</code>,
+  <code>readiness.repair_claim_coverage</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/project-native.html">project-native</a>,
+  <a href="../surfaces/skills-roles.html">skills-roles</a></div>
+<ul>
+<li id="coordination/path-claims/physical-file-identity"><b>Physical file
+identity</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="coordination/path-claims/claim-owners"><b>Claim owners</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/path-claims/overlap-classification"><b>Overlap
+classification</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="coordination/path-claims/attested-coordination"><b>Attested
+coordination</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="coordination/path-claims/directional-dependencies"><b>Directional
+dependencies</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="coordination/path-claims/collision-recovery"><b>Collision recovery</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/path-claims/operator-override"><b>Operator override</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="coordination/resources"><b>Shared resource coordination</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke claims coordination-claim acquire</code>,
+  <code>yoke claims coordination-claim list</code>, <code>yoke claims
+  coordination-claim operator-release</code>, <code>yoke claims
+  coordination-claim release</code>, <code>yoke coordination-claim list</code>,
+  <code>yoke coordination-claim release</code></div>
+  <div><b>Functions:</b> <code>claims.coordination_claim.acquire</code>,
+  <code>claims.coordination_claim.heartbeat</code>,
+  <code>claims.coordination_claim.list</code>,
+  <code>claims.coordination_claim.operator_release</code>,
+  <code>claims.coordination_claim.release</code></div>
+<ul>
+<li id="coordination/resources/coordination-keys"><b>Coordination keys</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/resources/target-occupancy"><b>Target occupancy</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Related:</b>
+  <a href="deployments.html#deployments/recovery/target-occupancy">deployments/recovery/target-occupancy</a></div>
+</li>
+<li id="coordination/resources/acquire-and-release"><b>Acquire and release</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="coordination/resources/stranded-hold-recovery"><b>Stranded hold
+recovery</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database change rehearsal and release-fleet evidence · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Database change rehearsal and release-fleet evidence</h1>
+<h2 id="database_change_and_release">Database change rehearsal and release-fleet
+evidence <i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> First governed schema/data change · Hosted user has
+  only HTTPS control-plane access · Release ships migration or uncovered schema
+  · Fleet copy busy or validation fails</div>
+  <div><b>Coverage:</b> partial</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> No hosted-to-operator rehearsal handoff was
+  live-tested. · Determine the external-project provisioning recipe for
+  validation bindings; current help explicitly leaves other projects to hydrate
+  their own binding.</div>
+  <div><b>JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-17">situation-17</a></div>
+  <div><b>Related:</b>
+  <a href="governed-database-setup.html">governed_database_setup</a>,
+  <a href="environment-flows.html">environment_flows</a>,
+  <a href="operator-repair.html">operator-repair</a></div>
+<h3 id="database_change_and_release/01">A migration claim is item evidence
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> agent</div>
+  <div><b>When:</b> Idea/refinement/implementation finds a governed
+  data-transforming change</div>
+  <div><b>Need:</b> Read databases operation home and amend the unified DB
+  claim. Author permanent ordered history, compatibility evidence and rehearsal;
+  boot applies merged history. Ordinary additive behavior depends on the project
+  boot contract, not arbitrary manual SQL.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Standing databases pointer; idea DB classification;
+  databases deep home.</div>
+  <div><b>Gap:</b> First database-change teaching should route to both model
+  setup and item claim, not assume a preconfigured model. Preserve the
+  external-owner path.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke migration rehearse --help</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b>
+  <code>docs/public/reference/agent-rules/databases.md</code>,
+  <code>.agents/skills/yoke/idea/db-claim-classification.md</code>,
+  <code>.agents/skills/yoke/implement/implementing/implementation.md</code></div>
+<h3 id="database_change_and_release/02">Rehearsal requires two different
+authorities <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Before first rehearsal, especially on Yoke Cloud</div>
+  <div><b>Need:</b> The item/lease/receipt belongs to its control plane;
+  migration code runs on a separate validation DB. Current rehearse command
+  requires local-Postgres/db-admin access to the item universe and refuses
+  HTTPS. If unavailable, it directs the user to the control-plane
+  operator.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> migration rehearse help; databases lines 15 and
+  capability validation-binding reference.</div>
+  <div><b>Gap:</b> Major adoption boundary: hosted users cannot self-serve this
+  with application DB credentials. Proposed discovery must disclose the limit
+  before governance is accepted; the end-to-end external-user provisioning path
+  remains to be designed/verified.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke migration rehearse --help</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b>
+  <code>docs/public/reference/agent-rules/databases.md</code>,
+  <code>docs/public/reference/db-reference/migration-model-capabilities.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/migration_rehearse.py</code></div>
+<h3 id="database_change_and_release/03">Model declaration does not complete
+release setup <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> A governed project approaches its first release</div>
+  <div><b>Need:</b> Each model also needs migration_fleet: named databases with
+  project boot/verification commands, engine tenants only for that topology, or
+  none with a reason. Project-admin declares it; release uses target-specific
+  coverage. Item rehearsal and fleet receipts prove different things.</div>
+  <div><b>Disclosure:</b> missing cue</div>
+  <div><b>Surface:</b> Fleet reference lines 14–56 and 133–154; release refusal
+  names declaration recipe.</div>
+  <div><b>Gap:</b> Verified gap: onboard declares migration_model but never
+  migration_fleet; later release refuses missing fleet. Proposed
+  release-readiness lesson must collect the real fleet/boot facts or explicit
+  none before dispatch.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke projects capability-settings get --project P
+  --cap-type migration_fleet --json</code></div>
+  <div><b>Plan notes:</b> JOURNEYS row 12 · JOURNEYS slimming onboard · outside
+  both</div>
+  <div><b>Sources:</b>
+  <code>.agents/skills/yoke/onboard/governed-database.md</code>,
+  <code>docs/public/reference/db-reference/migration-model-fleet.md</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/migration_model_fleet.py</code></div>
+<h3 id="database_change_and_release/04">Recover without damaging live or
+validation state <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> agent</div>
+  <div><b>When:</b> Rehearsal, fleet copy or boot refuses</div>
+  <div><b>Need:</b> Follow named authority/identity/restore-point/ledger/fleet
+  failures. Busy fleet copy is a wait with holder details; failed proof earns no
+  receipt. Applied history is immutable, and item receipt cannot substitute for
+  release fleet proof.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Database and migration fleet references.</div>
+  <div><b>Gap:</b> A human troubleshooting front door should route failures by
+  missing authority, missing declaration and failed proof; do not hide all
+  behind generic database setup.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke migration rehearse --help</code></div>
+  <div><b>Plan notes:</b> JOURNEYS row 12 · outside both</div>
+  <div><b>Sources:</b>
+  <code>docs/public/reference/agent-rules/databases.md</code>,
+  <code>docs/public/reference/db-reference/migration-model-fleet.md</code>,
+  <code>docs/public/reference/db-reference/migration-model-capabilities.md</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

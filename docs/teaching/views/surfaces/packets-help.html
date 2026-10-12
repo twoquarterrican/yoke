@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topic packets and exact command help · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Topic packets and exact command help</h1>
+<h2 id="packets-help">Topic packets and exact command help
+<i class="s observed">observed</i></h2>
+  <div><b>Scope:</b> Global release knowledge + explicit project context</div>
+  <div><b>Audience:</b> Agent; command help also human</div>
+  <div><b>Encounter:</b> Unfamiliar operation or deeper pointer</div>
+  <div><b>Location:</b> yoke packets render --role main_agent --topic
+  &lt;topic&gt;; yoke &lt;command&gt; --help</div>
+  <div><b>Basis:</b> Existing mechanism · discovery repairs proposed</div>
+  <div><b>Note:</b> A schema packet is not a live status report.
+  Source-tree-only paths need installed-release equivalents; outside-project
+  help must remain reachable.</div>
+  <div><b>Current:</b> Existing source references; delivered content is not yet
+  proved.</div>
+  <div><b>Desired:</b> Fetch narrow schema, policy, setup facts and operation
+  recipe through installed and registered access.</div>
+  <div><b>Plan notes:</b> Accepted installed help/manifest repair</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-core/src/yoke_core/domain/main_agent_packet.py:74</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/schema_api_context.py:1</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/packets.py:1</code>,
+  <code>runtime/harness/codex/manifest.json:1</code></div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.35">35</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+<h3 id="packets-help/01">Exact operation grammar, required fields, examples and
+refusal recovery. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.35">35</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/reference.html#reference/commands">reference/commands</a>,
+  <a href="../concepts/reference.html#reference/schemas">reference/schemas</a></div>
+<h3 id="packets-help/02">Relevant schema, supported kinds and relationships for
+the installed release. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Teach</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.35">35</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/context.html#context/packets">context/packets</a>,
+  <a href="../concepts/reference.html#reference/schemas">reference/schemas</a></div>
+<h3 id="packets-help/03">The registered read that supplies live project, item,
+claim, run or capability state. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Link</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.35">35</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/items.html#items/authoring">items/authoring</a>,
+  <a href="../concepts/coordination.html#coordination/work-claims">coordination/work-claims</a>,
+  <a href="../concepts/deployments.html#deployments/runs">deployments/runs</a>,
+  <a href="../concepts/capabilities.html#capabilities/capabilities">capabilities/capabilities</a></div>
+<h3 id="packets-help/04">Declared harness capabilities and applicable limits;
+keep actual readiness and QA proof separate.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.35">35</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/agents.html#agents/harnesses">agents/harnesses</a>,
+  <a href="../concepts/installation.html#installation/readiness">installation/readiness</a>,
+  <a href="../concepts/qa-evidence.html#qa-evidence/artifacts">qa-evidence/artifacts</a></div>
+<h3 id="packets-help/desired-01">Fetch the relevant role, schema and operation
+depth; read live state through its authoritative owner.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.35">35</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/context.html#context/packets">context/packets</a>,
+  <a href="../concepts/reference.html#reference/schemas">reference/schemas</a>,
+  <a href="../concepts/reference.html#reference/commands">reference/commands</a></div>
+<h3 id="packets-help/desired-02">Present relevant scoped setup facts and the
+next complete action, not the whole catalog.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.35">35</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/onboarding">projects/onboarding</a>,
+  <a href="../concepts/context-guidance.html#context/disclosure">context/disclosure</a></div>
+<h3 id="packets-help/desired-03">Use release-matched installed manifests and
+registered context_routing access. <i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.35">35</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/agents.html#agents/harnesses">agents/harnesses</a>,
+  <a href="../concepts/context-guidance.html#context/docs">context/docs</a>,
+  <a href="../concepts/architecture.html#architecture/structure">architecture/structure</a></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

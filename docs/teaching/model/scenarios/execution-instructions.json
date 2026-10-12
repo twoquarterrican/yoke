@@ -1,0 +1,46 @@
+{
+ "scenario": {
+  "id": "execution-instructions",
+  "title": "Reusable working rules",
+  "status": "draft-copy",
+  "situations": ["The user repeats the same instruction for every item.", "A team rule should apply only to one project, workflow or part of the work."],
+  "coverage": "traced",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Inspected documented delivery events and intake instruction; no UI interaction or live resolver call performed.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution.", "What exact supported preference record, if any, will JOURNEYS use for a remembered user dismissal?", "Do edited execution instructions reach every intended custom workflow/launch consumer in deployed builds?"],
+  "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "JOURNEYS.situation-18"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Put repeated rules in their scoped home",
+   "status": "draft-copy",
+   "audience": "human",
+   "when": "When the user repeats a standing rule or asks that it apply to future work.",
+   "need": "Execution instructions can apply before creation, on item reads or when entering selected stage buckets. Scope and delivery are separate choices.",
+   "disclosure": "missing cue",
+   "surface": "Workflows execution-instructions editor; CLI resolver/help",
+   "gap": "The editor and delivery mechanism exist, but no repetition-to-reusable-rule cue was found in the reviewed onboarding guidance. Review question: should JOURNEYS add this situation?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke workflow execution-instruction resolve --help"],
+   "plan_notes": ["outside both"],
+   "sources": ["docs/public/reference/execution-instructions.md"]
+  },
+  {
+   "id": "02",
+   "title": "Fetch applicable rules before authoring",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "Before proposing a new item, and again at the existing item-read, claim, launch and stage-entry delivery points.",
+   "need": "Resolve before-creation instructions before title/spec proposals; item reads, claims, launches and transitions deliver their applicable instructions later. Do not copy instructions into the item body.",
+   "disclosure": "current cue",
+   "surface": "Intake resolver; item/claim/launch/transition output",
+   "gap": "Review question: should the agent-context map show these outputs as separate context sources so moving docs cannot leave discovery dependent on startup text?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke workflow execution-instruction resolve --help"],
+   "plan_notes": ["FIRST-USER 13", "outside both"],
+   "surface_notes": ["Execution instructions → scoped command results: Before-creation resolver, item reads, claims, launches and stage transitions deliver applicable instructions or their exact full-read command. Do not duplicate that authority in item bodies."],
+   "sources": ["docs/public/reference/execution-instructions.md", ".agents/skills/yoke/idea/infer-and-create.md"]
+  }
+ ]
+}

@@ -1,0 +1,129 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "approvals",
+   "title": "Approvals and human decisions",
+   "status": "draft-copy",
+   "sources": ["docs/public/reference/lifecycle-gates.md", "docs/public/reference/exploratory-qa.md", "docs/public/reference/db-reference/release-delivery.md", "docs/public/reference/execution-instructions.md"],
+   "skills": ["approve"],
+   "children": [
+    {
+     "id": "policy",
+     "title": "Approval policy",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.situation-12"],
+     "surface_refs": ["skills-roles"],
+     "commands": ["yoke workflows approval-defaults publish"],
+     "functions": ["workflows.approval_defaults.publish"],
+     "children": [
+      {
+       "id": "named-gate",
+       "title": "Named gate",
+       "status": "draft-copy"
+      },
+      {
+       "id": "authorized-decider",
+       "title": "Authorized decider",
+       "status": "draft-copy"
+      },
+      {
+       "id": "per-item-posture",
+       "title": "Per-item posture",
+       "status": "draft-copy"
+      },
+      {
+       "id": "workflow-defaults",
+       "title": "Workflow defaults",
+       "status": "draft-copy"
+      },
+      {
+       "id": "standing-instructions-versus-a-recorded-decision",
+       "title": "Standing instructions versus a recorded decision",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "types",
+     "title": "Decision types",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "work-lifecycle-approval",
+       "title": "Work / lifecycle approval",
+       "status": "draft-copy"
+      },
+      {
+       "id": "merge-candidate-clearance",
+       "title": "Merge-candidate clearance",
+       "status": "draft-copy"
+      },
+      {
+       "id": "qa-verdict-review",
+       "title": "QA verdict review",
+       "status": "draft-copy",
+       "related": "qa-evidence/verdicts"
+      },
+      {
+       "id": "deployment-stage-acceptance",
+       "title": "Deployment-stage acceptance",
+       "status": "draft-copy",
+       "related": "deployments/runs"
+      },
+      {
+       "id": "per-member-release-approval",
+       "title": "Per-member release approval",
+       "status": "draft-copy"
+      },
+      {
+       "id": "machine-admission",
+       "title": "Machine admission",
+       "status": "draft-copy",
+       "related": "machines/registration"
+      }
+     ]
+    },
+    {
+     "id": "requests",
+     "title": "Decision requests",
+     "status": "draft-copy",
+     "commands": ["yoke decision-requests dispose-ended", "yoke decision-requests get", "yoke decision-requests resolve"],
+     "functions": ["decision_requests.create", "decision_requests.dispose_ended", "decision_requests.get", "decision_requests.resolve", "decision_requests.withdraw"],
+     "children": [
+      {
+       "id": "create-and-route",
+       "title": "Create and route",
+       "status": "draft-copy"
+      },
+      {
+       "id": "inbox-attention",
+       "title": "Inbox attention",
+       "status": "draft-copy"
+      },
+      {
+       "id": "evidence-shown",
+       "title": "Evidence shown",
+       "status": "draft-copy"
+      },
+      {
+       "id": "approve-reject-or-request-changes",
+       "title": "Approve, reject or request changes",
+       "status": "draft-copy"
+      },
+      {
+       "id": "resolution-and-wake-up",
+       "title": "Resolution and wake-up",
+       "status": "draft-copy"
+      },
+      {
+       "id": "expired-or-superseded-request",
+       "title": "Expired or superseded request",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

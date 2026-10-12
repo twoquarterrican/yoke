@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIRST-USER setup and install fixes · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>FIRST-USER setup and install fixes</h1>
+<h2 id="FIRST-USER.1">1. Setup and uninstall get stuck on leftovers from a
+previous install <i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/maintenance.html#maintenance/uninstall">maintenance/uninstall</a>,
+<a href="../concepts/installation.html#installation/choices">installation/choices</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/setup-agent.html">setup-agent</a>,
+<a href="../surfaces/command-feedback.html">command-feedback</a></div>
+<div><b>Scenarios:</b> <a href="../scenarios/uninstall.html">uninstall</a>,
+<a href="../scenarios/install-entry.html">install-entry</a></div>
+<h2 id="FIRST-USER.5">5. Setup gets repo access wrong for existing repos
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/repositories.html#repositories/github">repositories/github</a>,
+<a href="../concepts/installation.html#installation/choices">installation/choices</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/setup-agent.html">setup-agent</a>,
+<a href="../surfaces/command-feedback.html">command-feedback</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/github-choices.html">github-choices</a></div>
+<h2 id="FIRST-USER.6">6. The first hook call after install or upgrade is slow
+and prints red noise <i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/context.html#context/hooks">context/hooks</a>,
+<a href="../concepts/maintenance.html#maintenance/updates">maintenance/updates</a></div>
+<div><b>Surfaces:</b>
+<a href="../surfaces/command-feedback.html">command-feedback</a>,
+<a href="../surfaces/global-hooks.html">global-hooks</a>,
+<a href="../surfaces/project-hooks.html">project-hooks</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/harness-readiness.html">harness-readiness</a>,
+<a href="../scenarios/updates.html">updates</a></div>
+<h2 id="FIRST-USER.7">7. The setup screen draws everything twice
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/installation.html#installation/entry">installation/entry</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/install-entry.html">install-entry</a>,
+<a href="../scenarios/crossplatform-runtime.html">crossplatform-runtime</a></div>
+<h2 id="FIRST-USER.9">9. Start a new install from a backup
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/maintenance.html#maintenance/portability">maintenance/portability</a>,
+<a href="../concepts/modes.html#modes/switching">modes/switching</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/setup-agent.html">setup-agent</a>,
+<a href="../surfaces/detail-home.html">detail-home</a></div>
+<div><b>Scenarios:</b> <a href="../scenarios/portability.html">portability</a>,
+<a href="../scenarios/universe-choice.html">universe-choice</a></div>
+<h2 id="FIRST-USER.14">14. Confirm the terminal-garbage fix covers the `curl |
+sh` install <i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/installation.html#installation/entry">installation/entry</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/detail-home.html">detail-home</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/crossplatform-runtime.html">crossplatform-runtime</a>,
+<a href="../scenarios/install-entry.html">install-entry</a></div>
+<h2 id="FIRST-USER.15">15. The dashboard keeps running the old version after an
+upgrade <i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/maintenance.html#maintenance/updates">maintenance/updates</a>,
+<a href="../concepts/universes.html#universes/services">universes/services</a></div>
+<div><b>Surfaces:</b>
+<a href="../surfaces/command-feedback.html">command-feedback</a>,
+<a href="../surfaces/workbench-cues.html">workbench-cues</a></div>
+<div><b>Scenarios:</b> <a href="../scenarios/updates.html">updates</a>,
+<a href="../scenarios/connection-runtime.html">connection-runtime</a></div>
+<h2 id="FIRST-USER.17">17. Setup&#x27;s Apply screen looks frozen
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/installation.html#installation/entry">installation/entry</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/setup-agent.html">setup-agent</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/install-entry.html">install-entry</a></div>
+<h2 id="FIRST-USER.18">18. Make harnesses installed after Yoke just work
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/agents.html#agents/harnesses">agents/harnesses</a>,
+<a href="../concepts/installation.html#installation/readiness">installation/readiness</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/global-hooks.html">global-hooks</a>,
+<a href="../surfaces/project-hooks.html">project-hooks</a>,
+<a href="../surfaces/command-feedback.html">command-feedback</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/harness-readiness.html">harness-readiness</a></div>
+<h2 id="FIRST-USER.19">19. Setup says &quot;see the summary above&quot;, and
+there is no summary <i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/installation.html#installation/entry">installation/entry</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/setup-agent.html">setup-agent</a>,
+<a href="../surfaces/command-feedback.html">command-feedback</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/install-entry.html">install-entry</a></div>
+<h2 id="FIRST-USER.22">22. Recommend &quot;All repositories&quot; for the Yoke
+GitHub app <i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/repositories.html#repositories/github">repositories/github</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/setup-agent.html">setup-agent</a>,
+<a href="../surfaces/detail-home.html">detail-home</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/github-choices.html">github-choices</a></div>
+<h2 id="FIRST-USER.25">25. Skip the board-art design step in setup
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/workbench.html#workbench/onboarding">workbench/onboarding</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/ui-navigation.html">ui-navigation</a></div>
+<h2 id="FIRST-USER.26">26. Every browser step in setup works well in both modes
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/identity.html#identity/auth">identity/auth</a>,
+<a href="../concepts/repositories.html#repositories/github">repositories/github</a>,
+<a href="../concepts/machines.html#machines/registration">machines/registration</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/setup-agent.html">setup-agent</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/install-entry.html">install-entry</a>,
+<a href="../scenarios/people-access.html">people-access</a></div>
+<h2 id="FIRST-USER.37">37. Setup cuts off text at the window edge
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/installation.html#installation/entry">installation/entry</a>,
+<a href="../concepts/context-guidance.html#context/disclosure">context/disclosure</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/crossplatform-runtime.html">crossplatform-runtime</a>,
+<a href="../scenarios/install-entry.html">install-entry</a></div>
+<h2 id="FIRST-USER.38">38. Setup&#x27;s &quot;Back&quot; jumps too far
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/installation.html#installation/entry">installation/entry</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/install-entry.html">install-entry</a></div>
+<h2 id="FIRST-USER.39">39. The Install step runs by itself
+<i class="s approved">approved</i></h2>
+<div><b>Scope:</b> Yoke</div>
+<div><b>Concepts:</b>
+<a href="../concepts/installation.html#installation/prerequisites">installation/prerequisites</a>,
+<a href="../concepts/installation.html#installation/installed">installation/installed</a></div>
+<div><b>Surfaces:</b> <a href="../surfaces/setup-tui.html">setup-tui</a>,
+<a href="../surfaces/setup-agent.html">setup-agent</a></div>
+<div><b>Scenarios:</b>
+<a href="../scenarios/install-entry.html">install-entry</a>,
+<a href="../scenarios/crossplatform-runtime.html">crossplatform-runtime</a></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

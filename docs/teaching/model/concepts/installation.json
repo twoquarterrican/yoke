@@ -1,0 +1,212 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "installation",
+   "title": "Installation and setup",
+   "status": "draft-copy",
+   "sources": ["docs/public/install.md", "docs/public/guides/terminal-onboarding.md", "docs/public/windows-wsl.md", "runtime/harness/manifest-schema.md"],
+   "children": [
+    {
+     "id": "entry",
+     "title": "Setup entry points",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.14", "FIRST-USER.17", "FIRST-USER.19", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.7", "FIRST-USER.A", "FIRST-USER.B", "JOURNEYS.situation-1"],
+     "surface_refs": ["docs-landing", "setup-agent", "setup-tui"],
+     "commands": ["yoke init", "yoke setup"],
+     "children": [
+      {
+       "id": "interactive-terminal-setup",
+       "title": "Interactive terminal setup",
+       "status": "draft-copy"
+      },
+      {
+       "id": "agent-assisted-setup",
+       "title": "Agent-assisted setup",
+       "status": "draft-copy"
+      },
+      {
+       "id": "noninteractive-options",
+       "title": "Noninteractive options",
+       "status": "draft-copy"
+      },
+      {
+       "id": "interrupted-setup-and-continuation",
+       "title": "Interrupted setup and continuation",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "prerequisites",
+     "title": "Prerequisites",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.39"],
+     "children": [
+      {
+       "id": "macos",
+       "title": "macOS",
+       "status": "draft-copy"
+      },
+      {
+       "id": "linux",
+       "title": "Linux",
+       "status": "draft-copy"
+      },
+      {
+       "id": "windows-and-wsl",
+       "title": "Windows and WSL",
+       "status": "draft-copy",
+       "commands": ["yoke wsl setup"]
+      },
+      {
+       "id": "terminal-and-runtime-dependencies",
+       "title": "Terminal and runtime dependencies",
+       "status": "draft-copy"
+      },
+      {
+       "id": "supported-harness-availability",
+       "title": "Supported harness availability",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "installed",
+     "title": "What Yoke installs",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.39"],
+     "children": [
+      {
+       "id": "machine",
+       "title": "On the machine",
+       "status": "draft-copy",
+       "children": [
+        {
+         "id": "cli-and-runtime",
+         "title": "CLI and runtime",
+         "status": "draft-copy"
+        },
+        {
+         "id": "machine-config-and-connections",
+         "title": "Machine config and connections",
+         "status": "draft-copy"
+        },
+        {
+         "id": "background-relay-local-services",
+         "title": "Background relay / local services",
+         "status": "draft-copy"
+        },
+        {
+         "id": "distribution-metadata",
+         "title": "Distribution metadata",
+         "status": "draft-copy"
+        }
+       ]
+      },
+      {
+       "id": "project",
+       "title": "In a project",
+       "status": "draft-copy",
+       "commands": ["yoke project install"],
+       "functions": ["project.install.run"],
+       "children": [
+        {
+         "id": "managed-rules",
+         "title": "Managed rules",
+         "status": "draft-copy"
+        },
+        {
+         "id": "harness-hooks-and-adapters",
+         "title": "Harness hooks and adapters",
+         "status": "draft-copy"
+        },
+        {
+         "id": "skills-and-agent-definitions",
+         "title": "Skills and agent definitions",
+         "status": "draft-copy"
+        },
+        {
+         "id": "installed-docs",
+         "title": "Installed docs",
+         "status": "draft-copy"
+        },
+        {
+         "id": "pack-files-and-baseline-records",
+         "title": "Pack files and baseline records",
+         "status": "draft-copy"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "choices",
+     "title": "First setup choices",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.1", "FIRST-USER.10", "FIRST-USER.5", "FIRST-USER.A"],
+     "surface_refs": ["setup-tui"],
+     "children": [
+      {
+       "id": "mode-and-universe",
+       "title": "Mode and universe",
+       "status": "draft-copy",
+       "related": "modes"
+      },
+      {
+       "id": "identity-and-machine-connection",
+       "title": "Identity and machine connection",
+       "status": "draft-copy"
+      },
+      {
+       "id": "configure-a-project-now-or-later",
+       "title": "Configure a project now or later",
+       "status": "draft-copy"
+      },
+      {
+       "id": "existing-checkout-or-new-project",
+       "title": "Existing checkout or new project",
+       "status": "draft-copy"
+      },
+      {
+       "id": "github-optionality",
+       "title": "GitHub optionality",
+       "status": "draft-copy",
+       "related": "repositories/github"
+      }
+     ]
+    },
+    {
+     "id": "readiness",
+     "title": "Readiness and repair",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.18", "FIRST-USER.C", "FIRST-USER.D", "FIRST-USER.E", "JOURNEYS.situation-3"],
+     "surface_refs": ["global-orientation", "setup-agent", "setup-tui"],
+     "commands": ["yoke local demo seed", "yoke path check", "yoke path fix", "yoke path verify"],
+     "children": [
+      {
+       "id": "installation-health",
+       "title": "Installation health",
+       "status": "draft-copy"
+      },
+      {
+       "id": "active-harness-readiness",
+       "title": "Active harness readiness",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-wiring-versus-execution-readiness",
+       "title": "Project wiring versus execution readiness",
+       "status": "draft-copy"
+      },
+      {
+       "id": "resume-and-reinstall",
+       "title": "Resume and reinstall",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

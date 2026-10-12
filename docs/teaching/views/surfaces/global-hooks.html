@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recurring global hooks · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Recurring global hooks</h1>
+<h2 id="global-hooks">Recurring global hooks
+<i class="s approved">approved</i></h2>
+  <div><b>Scope:</b> Global</div>
+  <div><b>Audience:</b> Agent</div>
+  <div><b>Encounter:</b> Frequent checks · conditional text</div>
+  <div><b>Location:</b> User-level hook adapter → common hook runner</div>
+  <div><b>Basis:</b> FIRST-USER expansion planned</div>
+  <div><b>Note:</b> A hook running is not a lesson delivered. Normal checks stay
+  quiet; useful context is bounded, deduplicated and attributable to its
+  trigger.</div>
+  <div><b>Current:</b> Existing source references; delivered content is not yet
+  proved.</div>
+  <div><b>Desired:</b> Use machine guards outside projects; defer to
+  project-owned events and preserve required bounded teaching.</div>
+  <div><b>Plan notes:</b> FIRST-USER P2/P3 · JOURNEYS suppression design</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-contracts/src/yoke_contracts/hook_runner/hook_ordering.py:264</code>,
+  <code>packages/yoke-core/src/yoke_core/hooks/registration.py:1</code>,
+  <code>packages/yoke-contracts/src/yoke_contracts/hook_context_compose.py:114</code>,
+  <code>packages/yoke-core/src/yoke_core/hooks/hook_context_compose.py:14</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139</code></div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.29">29</a></div>
+<h3 id="global-hooks/01">Recover missing session registration and report
+meaningful machine or connection changes.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.29">29</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/sessions.html#sessions/identity">sessions/identity</a>,
+  <a href="../concepts/machines.html#machines/registration">machines/registration</a>,
+  <a href="../concepts/universes.html#universes/diagnostics">universes/diagnostics</a></div>
+<h3 id="global-hooks/02">Deliver an addressed message, launch instruction or
+required decision when one arrives. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.29">29</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/messaging.html#messaging/messages">messaging/messages</a>,
+  <a href="../concepts/messaging.html#messaging/inbox">messaging/inbox</a>,
+  <a href="../concepts/approvals.html#approvals/requests">approvals/requests</a></div>
+<h3 id="global-hooks/03">If an action requires a project, name the missing
+context and the exact select/open route.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Link</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.29">29</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/identity">projects/identity</a>,
+  <a href="../concepts/context-guidance.html#context/disclosure">context/disclosure</a></div>
+<h3 id="global-hooks/04">Apply only machine/global rules here; project policy
+requires the relevant project context.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Rule</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.29">29</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/context.html#context/hooks">context/hooks</a>,
+  <a href="../concepts/security.html#security/boundaries">security/boundaries</a></div>
+<h3 id="global-hooks/desired-01">Apply machine-scoped rules; inside a project,
+honor the event’s single owner. <i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.29">29</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/context.html#context/hooks">context/hooks</a>,
+  <a href="../concepts/security.html#security/boundaries">security/boundaries</a></div>
+<h3 id="global-hooks/desired-02">Deliver required orientation, messages and
+recovery within the combined harness budget.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.29">29</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/context-guidance.html#context/disclosure">context/disclosure</a>,
+  <a href="../concepts/messaging.html#messaging/messages">messaging/messages</a></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

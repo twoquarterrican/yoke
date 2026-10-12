@@ -1,0 +1,29 @@
+{
+ "scenario": {
+  "id": "crossplatform-runtime",
+  "title": "Operating system and terminal differences",
+  "status": "draft-copy",
+  "situations": ["A Windows user needs the supported Linux/WSL entry path.", "A Linux desktop/browser needs system packages or sandbox setup.", "A shell cannot find the installed launcher, or terminal/browser handoff fails."],
+  "coverage": "catalogued",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Do not treat WSLg expected-to-work notes as verified compatibility.", "Verify cross-platform examples against the installed release and preserve OS-specific recovery rather than making them mandatory branches."],
+  "plan_refs": ["FIRST-USER.7", "FIRST-USER.11", "FIRST-USER.14", "FIRST-USER.34", "FIRST-USER.37", "FIRST-USER.39"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Teach the active platform path only",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "At platform detection, a named prerequisite refusal, or a move to a different operating system.",
+   "need": "Use the verified OS/harness combination and its filesystem, restart, permissions and login-lifetime rules; do not promise unverified desktop support from CLI support.",
+   "disclosure": "audit needed",
+   "surface": "WSL setup, launcher PATH helpers, terminal onboarding and Linux reference",
+   "gap": "Coverage exists in several references but is not a complete tested scenario matrix. Review question: should FIRST-USER D/E expose per-platform evidence and offer only the active-platform recovery?",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 11", "FIRST-USER 14", "FIRST-USER 26", "FIRST-USER D", "FIRST-USER E"],
+   "sources": ["docs/public/windows-wsl.md", "docs/public/guides/terminal-onboarding.md", "docs/public/reference/linux-desktop-apps.md", "docs/public/reference/linux-relay.md"]
+  }
+ ]
+}

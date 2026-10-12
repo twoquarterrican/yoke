@@ -1,0 +1,202 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "identity",
+   "title": "People, authentication and permissions",
+   "status": "draft-copy",
+   "sources": ["docs/public/actors-members-billing.md", "docs/public/reference/hosted-org-admin.md", "docs/public/reference/machine-authorization.md", "docs/self-host-browser-sign-in.md"],
+   "children": [
+    {
+     "id": "actors",
+     "title": "Actors and identities",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.33"],
+     "commands": ["yoke actors state set", "yoke config bind-actor", "yoke identity link set"],
+     "functions": ["actors.roster", "actors.state.set", "identity.link.set"],
+     "children": [
+      {
+       "id": "human-actors",
+       "title": "Human actors",
+       "status": "draft-copy"
+      },
+      {
+       "id": "agent-system-identities",
+       "title": "Agent / system identities",
+       "status": "draft-copy"
+      },
+      {
+       "id": "enabled-and-retired-actors",
+       "title": "Enabled and retired actors",
+       "status": "draft-copy"
+      },
+      {
+       "id": "profile-and-personal-settings",
+       "title": "Profile and personal settings",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "accounts",
+     "title": "Accounts and organizations",
+     "status": "draft-copy",
+     "commands": ["yoke identity invite create", "yoke identity invite list", "yoke identity invite revoke", "yoke organizations create", "yoke organizations domain set", "yoke organizations get"],
+     "functions": ["identity.invite.create", "identity.invite.list", "identity.invite.revoke", "organizations.create", "organizations.domain.set", "organizations.get"],
+     "children": [
+      {
+       "id": "sign-in",
+       "title": "Sign-in",
+       "status": "draft-copy"
+      },
+      {
+       "id": "beta-access-and-organization-creation",
+       "title": "Beta access and organization creation",
+       "status": "draft-copy"
+      },
+      {
+       "id": "invitations-and-membership",
+       "title": "Invitations and membership",
+       "status": "draft-copy"
+      },
+      {
+       "id": "seats-and-billing",
+       "title": "Seats and billing",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "auth",
+     "title": "Authentication",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.12", "FIRST-USER.26", "FIRST-USER.27", "FIRST-USER.33"],
+     "surface_refs": ["setup-agent", "setup-tui", "workbench-cues"],
+     "commands": ["yoke auth set"],
+     "functions": ["auth.set.run", "profile.token.create", "profile.token.revoke"],
+     "children": [
+      {
+       "id": "browser-session",
+       "title": "Browser session",
+       "status": "draft-copy"
+      },
+      {
+       "id": "company-sign-in-oidc",
+       "title": "Company sign-in / OIDC",
+       "status": "draft-copy"
+      },
+      {
+       "id": "cli-credentials",
+       "title": "CLI credentials",
+       "status": "draft-copy"
+      },
+      {
+       "id": "api-tokens",
+       "title": "API tokens",
+       "status": "draft-copy"
+      },
+      {
+       "id": "device-authorization-codes",
+       "title": "Device authorization codes",
+       "status": "draft-copy"
+      },
+      {
+       "id": "sign-out-and-credential-revocation",
+       "title": "Sign-out and credential revocation",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "roles",
+     "title": "Roles and permissions",
+     "status": "draft-copy",
+     "commands": ["yoke actors role set"],
+     "functions": ["actors.role.set"],
+     "children": [
+      {
+       "id": "organization-administrator",
+       "title": "Organization administrator",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-operator-authority",
+       "title": "Project operator authority",
+       "status": "draft-copy"
+      },
+      {
+       "id": "machine-access-authority",
+       "title": "Machine access authority",
+       "status": "draft-copy"
+      },
+      {
+       "id": "service-and-runtime-authority",
+       "title": "Service and runtime authority",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "recovery",
+     "title": "Access recovery",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "expired-authorization",
+       "title": "Expired authorization",
+       "status": "draft-copy"
+      },
+      {
+       "id": "revoked-membership",
+       "title": "Revoked membership",
+       "status": "draft-copy"
+      },
+      {
+       "id": "wrong-identity",
+       "title": "Wrong identity",
+       "status": "draft-copy"
+      },
+      {
+       "id": "token-replacement",
+       "title": "Token replacement",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "billing",
+     "title": "Cloud subscription and billing",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.P7"],
+     "children": [
+      {
+       "id": "plan-and-status",
+       "title": "Plan and status",
+       "status": "draft-copy"
+      },
+      {
+       "id": "seat-count",
+       "title": "Seat count",
+       "status": "draft-copy"
+      },
+      {
+       "id": "projects-and-remaining-usage-credits",
+       "title": "Projects and remaining usage credits",
+       "status": "draft-copy"
+      },
+      {
+       "id": "control-plane-usage",
+       "title": "Control-plane usage",
+       "status": "draft-copy"
+      },
+      {
+       "id": "payment-method-policy",
+       "title": "Payment-method policy",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

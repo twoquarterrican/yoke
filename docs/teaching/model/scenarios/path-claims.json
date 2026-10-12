@@ -1,0 +1,46 @@
+{
+ "scenario": {
+  "id": "path-claims",
+  "title": "Path claims, work lanes and collisions",
+  "status": "draft-copy",
+  "situations": ["Two items need the same file.", "Implementation discovers an additional required file.", "A claim/boundary refusal stops an otherwise necessary change."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Overlap procedure and current override source were inspected, but collision/authorization scenarios were not executed.", "Verify each scope expansion/refusal routes to current registered commands and never recommends dropping required work.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+  "related_scenarios": ["dependencies", "shared-coordination", "task-graph-planning"],
+  "plan_refs": ["FIRST-USER.P3"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Explain coordination, preserve scope",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When a survey, declaration or implementation change reveals overlapping physical edit paths.",
+   "need": "A path claim records coordination over physical files; it does not justify omitting a necessary file. Independent edits can be attested; ordered edits wait directionally.",
+   "disclosure": "current cue",
+   "surface": "Agent operation home; Idea/Refine overlap classification; Frontier blockers",
+   "gap": "Human discovery is mainly a failure/blocker. Review question: should the first concurrent-work proposal explain only the actual overlap and chosen coordination, with depth linked?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke claims path coordination-decision-build --help"],
+   "plan_notes": ["JOURNEYS row 11", "JOURNEYS row 14", "FIRST-USER 35"],
+   "sources": ["docs/public/reference/agent-rules/lanes-and-claims.md", ".agents/skills/yoke/idea/path-claim-blocking.md", "docs/public/frontier.md"]
+  },
+  {
+   "id": "02",
+   "title": "Route repair to its owner",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "At a claim registration/widening/boundary refusal or an irreducible overlap requiring escalation.",
+   "need": "Read both specs and overlap evidence; use authoring classification and sanctioned scope amendment. Resolve the current override authority before teaching or taking a last-resort collision override.",
+   "disclosure": "current cue",
+   "surface": "Claim conflict procedure; override implementation; older internal operator guide",
+   "gap": "Internal guide labels override human-only and includes old direct-client recipes; current override implementation describes a covering live steering seat. Review question: which current authority governs, and which public/private producers must be reconciled before promoting this guide?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke claims path coordination-decision-build --help"],
+   "plan_notes": ["FIRST-USER 35", "outside both"],
+   "sources": [".agents/skills/yoke/idea/path-claim-blocking.md", ".agents/skills/yoke/idea/path-closure.md", "packages/yoke-core/src/yoke_core/domain/path_claims_override.py", "docs/path-claims.md"]
+  }
+ ]
+}

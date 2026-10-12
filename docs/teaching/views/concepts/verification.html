@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests, CI and verification · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Tests, CI and verification</h1>
+<ul>
+<li id="verification"><b>Tests, CI and verification</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Taught on:</b>
+  <a href="../surfaces/execution-instructions.html">execution-instructions
+  ×1</a>, <a href="../surfaces/project-native.html">project-native ×1</a></div>
+  <div><b>Sources:</b> <code>docs/public/qa.md</code>,
+  <code>docs/public/reference/agent-rules/verification.md</code>,
+  <code>docs/source-dev-doctrine.md</code></div>
+  <div><b>Skills:</b> <code>polish</code></div>
+<ul>
+<li id="verification/configuration"><b>Project test contract</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-owned-work.html#JOURNEYS.also-owned-here">also-owned-here</a>,
+  <a href="../plan-coverage/journeys-owned-work.html#JOURNEYS.owned-1">owned-1</a>,
+  <a href="../plan-coverage/journeys-owned-work.html#JOURNEYS.owned-2">owned-2</a>,
+  <a href="../plan-coverage/journeys-owned-work.html#JOURNEYS.owned-3">owned-3</a>,
+  <a href="../plan-coverage/journeys-owned-work.html#JOURNEYS.owned-4">owned-4</a>,
+  <a href="../plan-coverage/journeys-owned-work.html#JOURNEYS.owned-5">owned-5</a>,
+  <a href="../plan-coverage/journeys-owned-work.html#JOURNEYS.owned-6">owned-6</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/project-hub.html">project-hub
+  ×2</a>, <a href="../surfaces/project-native.html">project-native ×1</a>,
+  <a href="../surfaces/setup-agent.html">setup-agent ×1</a></div>
+  <div><b>Commands:</b> <code>yoke qa registered-command set</code></div>
+  <div><b>Functions:</b> <code>qa.registered_command.set</code></div>
+  <div><b>Surfaces:</b> <a href="../surfaces/project-hub.html">project-hub</a>,
+  <a href="../surfaces/project-native.html">project-native</a></div>
+<ul>
+<li id="verification/configuration/registered-command"><b>Registered command</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/configuration/ci-equivalent"><b>CI equivalent</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/configuration/no-test-suite"><b>No test suite</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke qa no-tests attest</code>, <code>yoke qa
+  no-tests clear</code></div>
+  <div><b>Functions:</b> <code>qa.no_tests.attest</code>,
+  <code>qa.no_tests.clear</code></div>
+</li>
+<li id="verification/configuration/known-red-or-flaky-suite"><b>Known-red or
+flaky suite</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="verification/configuration/acceptance-criterion-proof"><b>Acceptance-criterion
+proof</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="verification/iteration"><b>Local iteration</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<ul>
+<li id="verification/iteration/impacted-tests"><b>Impacted tests</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/iteration/bounded-selection"><b>Bounded selection</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/iteration/failing-test-rerun"><b>Failing-test rerun</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/iteration/local-admission-slot"><b>Local admission slot</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/iteration/capture-output"><b>Capture output</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="verification/ci"><b>CI execution</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke github-actions check-ci</code>, <code>yoke
+  github-actions commit-runs list</code>, <code>yoke github-actions dispatch-tag
+  ensure</code>, <code>yoke github-actions failed-log</code>, <code>yoke
+  github-actions find-run</code>, <code>yoke github-actions jobs-count</code>,
+  <code>yoke github-actions poll</code>, <code>yoke github-actions run
+  jobs-count</code>, <code>yoke github-actions trigger</code>, <code>yoke
+  github-actions trigger-once</code>, <code>yoke github-actions wait-run</code>,
+  <code>yoke github-actions workflow dispatch</code>, <code>yoke github-actions
+  workflow dispatch-once</code>, <code>yoke github-actions workflow
+  find-run</code></div>
+  <div><b>Functions:</b> <code>github_actions.check_ci</code>,
+  <code>github_actions.commit_runs.list</code>,
+  <code>github_actions.dispatch_tag.ensure</code>,
+  <code>github_actions.failed_log</code>,
+  <code>github_actions.run.jobs_count</code>,
+  <code>github_actions.wait_run</code>,
+  <code>github_actions.workflow.dispatch</code>,
+  <code>github_actions.workflow.dispatch_once</code>,
+  <code>github_actions.workflow.find_run</code>,
+  <code>session_ci_wait.record</code>,
+  <code>session_ci_wait.resolve</code></div>
+<ul>
+<li id="verification/ci/exact-commit"><b>Exact commit</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/ci/workflow-run-identity"><b>Workflow run identity</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/ci/queue-gate"><b>Queue gate</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/ci/wait-and-rejoin"><b>Wait and rejoin</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/ci/failure-ownership"><b>Failure ownership</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="verification/watchers"><b>Long-command watchers</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke watch ci-run</code>, <code>yoke watch
+  deploy</code>, <code>yoke watch doctor</code>, <code>yoke watch fleet</code>,
+  <code>yoke watch merge</code>, <code>yoke watch preflight</code>, <code>yoke
+  watch pytest</code>, <code>yoke watch qa-case</code>, <code>yoke watch
+  qa-plan</code>, <code>yoke watch tail</code></div>
+<ul>
+<li id="verification/watchers/progress-stream"><b>Progress stream</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/watchers/raw-capture"><b>Raw capture</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/watchers/exit-status"><b>Exit status</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/watchers/interrupted-check"><b>Interrupted check</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/watchers/continuation-without-duplicate-work"><b>Continuation
+without duplicate work</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="verification/checks"><b>Other checks</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.11">11</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/skills-roles.html">skills-roles
+  ×1</a></div>
+  <div><b>Commands:</b> <code>yoke check file-line</code>, <code>yoke dev
+  ruff-changed</code>, <code>yoke lint config show</code>, <code>yoke
+  session-control acceptance run</code></div>
+  <div><b>Functions:</b> <code>lint.config.show</code></div>
+  <div><b>Skills:</b> <code>simulate</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/skills-roles.html">skills-roles</a></div>
+<ul>
+<li id="verification/checks/lint"><b>Lint</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/checks/authored-file-limits"><b>Authored-file limits</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/checks/architecture-checks"><b>Architecture checks</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="verification/checks/integration-simulation"><b>Integration
+simulation</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="verification/checks/product-smoke-and-real-harness-proof"><b>Product
+smoke and real-harness proof</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

@@ -1,0 +1,128 @@
+{
+ "surface": {
+  "id": "setup-agent",
+  "title": "Agent-led install and project adoption",
+  "status": "approved",
+  "scope": "Global → actual project folder",
+  "audience": "Human + agent",
+  "encounter": "“Install upyoke.com” or adopt a project",
+  "location": "Public install entry → non-interactive setup → yoke-global → /yoke onboard",
+  "basis": "FIRST-USER planned continuation",
+  "note": "Existing and mature projects need intake and preservation, not a forced blank-slate scaffold. Full project onboarding remains a project operation.",
+  "current": "Observed 2026-10-12: setup --help has noninteractive support but no --agent or --answer flags.",
+  "desired": "Same setup engine with structured resumable answers; relevant GitHub explanation; readiness then project-bound minimal onboard.",
+  "plan_notes": ["FIRST-USER A/B/C/D/24/P1–P4", "JOURNEYS 1–14"],
+  "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"],
+  "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py", ".agents/skills/yoke/onboard/SKILL.md", ".agents/skills/yoke/onboard/strategy-conversation.md", "packages/yoke-core/src/yoke_core/domain/session_orientation.py:268", "packages/yoke-harness/src/yoke_harness/hooks/cursor_lifecycle_hooks.py:34", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "Before install, the public entry supplies the install and help route; Yoke hooks cannot supply context yet.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["installation/entry", "context/docs"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "02",
+   "title": "Ask the minimum practical constraint, recommend a mode and explain only decisions the person must make.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["modes", "identity/auth", "machines/registration"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "03",
+   "title": "Reuse existing setup. GitHub and issue sync remain optional; sync stays off unless intentionally enabled.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["installation/choices", "repositories/github", "repositories/sync"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "04",
+   "title": "During agent-led GitHub adoption, briefly explain optional issue sync, offer opt-in and identify the later configuration route.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["repositories/github", "repositories/sync"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "05",
+   "title": "Verify the active harness, registration and context delivery; name any action needed for a new session.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["installation/readiness", "agents/harnesses", "context/hooks"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "06",
+   "title": "Choose/add the project globally, then open or use a session bound to its folder, carrying the user’s intent and existing-work scope.",
+   "status": "draft-copy",
+   "form": "Do",
+   "verification": "No delivery proof attached.",
+   "topics": ["projects/adoption", "projects/onboarding", "strategy/corpus", "sessions/identity"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "07",
+   "title": "Adopt existing docs, tests and delivery. Offer database governance, QA machines or richer deploy flows when the work needs them.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["architecture/structure", "verification/configuration", "databases/setup", "test-machines/setup", "deployments/flows"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Emit the step’s question, allowed answers, guidance and human authorization link/code as structured data.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["installation/entry", "identity/auth"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Resume the same setup engine with the planned --agent/--answer contract; do not treat it as shipped.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["installation/entry", "sessions/continuity"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "desired-03",
+   "title": "Teach the supported no-GitHub path; explain and offer issue-sync opt-in only when relevant.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["repositories/github", "repositories/sync"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "desired-04",
+   "title": "Verify this harness is ready; carry intent to a session in the real project folder, then onboard.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["installation/readiness", "projects/adoption"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  },
+  {
+   "id": "desired-05",
+   "title": "Reuse existing work and docs, confirm strategy decisions one at a time, then hand off to steering.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["projects/onboarding", "strategy/corpus", "frontier/entrypoints"],
+   "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"]
+  }
+ ]
+}

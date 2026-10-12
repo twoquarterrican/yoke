@@ -1,0 +1,101 @@
+{
+ "surface": {
+  "id": "skills-roles",
+  "title": "Skill and role instructions",
+  "status": "observed",
+  "scope": "Selected operation / project / assignment",
+  "audience": "Agent",
+  "encounter": "Skill entry, phase change or dispatch",
+  "location": "Read installed skill/role publications for the active harness; authoring sources: .agents/skills/yoke and runtime/agents",
+  "basis": "Existing mechanism · access repairs proposed",
+  "note": "Read the phase when reached. A child cannot be assumed to inherit the parent’s conversation; skill catalog metadata is not the skill body.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "Load the bound skill/role and relevant project context; activation ends at first item done under its real obligations.",
+  "plan_notes": ["Accepted installed role/help repair", "FIRST-USER P4 boundary"],
+  "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"],
+  "sources": [".agents/skills/yoke/SKILL.md:9", ".agents/skills/yoke/conduct/dispatch-context.md:25", "runtime/agents/engineer.md:1", "packages/yoke-core/src/yoke_core/domain/install_bundle.py:14"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "The selected procedure: purpose, entry conditions, steps, authority and completion/handoff evidence.",
+   "status": "draft-copy",
+   "form": "Do",
+   "verification": "No delivery proof attached.",
+   "topics": ["agents/skills", "workflows/bindings"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "02",
+   "title": "An assigned worker gets the exact project/item/task, lane, dependencies and interfaces.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["agents/roles", "planning/tasks", "coordination/lanes", "planning/dependencies"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "03",
+   "title": "Applicable project docs, operation rules, scoped instructions, command help and topic packets.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["context/docs", "context/instructions", "context/packets"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "04",
+   "title": "Specialist responsibilities and limits: authoring, implementation, testing, simulation or review.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["agents/roles", "agents/boundaries"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "05",
+   "title": "Re-entry and handoff: what to reload, where the durable checkpoint is and which next binding owns work.",
+   "status": "draft-copy",
+   "form": "Do",
+   "verification": "No delivery proof attached.",
+   "topics": ["sessions/continuity", "workflows/bindings"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Read the bound workflow and current stage; load the relevant skill and role mandate.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["workflows/bindings", "agents/skills", "agents/roles"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Before work, load routed project context and scoped execution instructions through supported installed access.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["context/instructions", "context/docs"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-03",
+   "title": "Onboard only as far as selected work needs: strategy → steering → first meaningful item done.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["projects/onboarding", "strategy/corpus", "frontier/entrypoints", "deployments/outcomes"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-04",
+   "title": "Apply required verification, approvals, path coordination and governance at the relevant action.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["verification/checks", "approvals/policy", "coordination/path-claims", "databases/model"],
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"]
+  }
+ ]
+}

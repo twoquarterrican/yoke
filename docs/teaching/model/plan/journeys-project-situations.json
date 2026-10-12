@@ -1,0 +1,117 @@
+{
+ "plan": "JOURNEYS",
+ "title": "JOURNEYS project situations",
+ "reconciled_at": "2026-10-12T18:29:44.121119Z",
+ "rows": [
+  {
+   "id": "JOURNEYS.situation-9",
+   "title": "Project installed but not onboarded (strategy docs still templates)",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "Session start",
+   "concepts": ["projects/onboarding", "strategy/corpus"],
+   "surfaces": ["project-orientation", "skills-roles"],
+   "scenarios": ["project-adoption", "strategy"]
+  },
+  {
+   "id": "JOURNEYS.situation-10",
+   "title": "No real CURRENT-PLAN, or a big effort with no doc",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "Session start; when the user describes a big effort",
+   "concepts": ["strategy/corpus", "strategy/authoring"],
+   "surfaces": ["project-orientation", "project-hub", "skills-roles"],
+   "scenarios": ["strategy"]
+  },
+  {
+   "id": "JOURNEYS.situation-11",
+   "title": "Locked plan or doc that nobody is staffing",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "Session start",
+   "concepts": ["frontier/entrypoints", "strategy/operation"],
+   "surfaces": ["project-orientation", "skills-roles"],
+   "scenarios": ["staffing", "strategy"]
+  },
+  {
+   "id": "JOURNEYS.situation-12",
+   "title": "Selecting first work, or delivery needs change",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "Before the selected work needs landing, approval or QA",
+   "concepts": ["deployments/outcomes", "merging/landing", "approvals/policy", "qa-plans/requirements"],
+   "surfaces": ["skills-roles", "packets-help", "command-feedback"],
+   "scenarios": ["delivery_outcome", "merge-integration", "approval-types"]
+  },
+  {
+   "id": "JOURNEYS.situation-13",
+   "title": "Required QA lacks a usable target or machine",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "Initial QA choice; before the requirement must run",
+   "concepts": ["qa-methods/model", "qa-plans/bindings", "qa-evidence/runs", "test-machines/setup"],
+   "surfaces": ["skills-roles", "packets-help", "detail-home"],
+   "scenarios": ["qa-subjects-targets", "qa_machine_setup", "qa-methods"]
+  },
+  {
+   "id": "JOURNEYS.situation-14",
+   "title": "A second related project",
+   "status": "deferred",
+   "context": "Global, plus project",
+   "moment": "When the project is added; session start in either",
+   "concepts": ["planning/dependencies", "projects/identity"],
+   "surfaces": ["global-orientation", "project-orientation", "detail-home"],
+   "scenarios": ["dependencies", "linked_project_delivery"]
+  },
+  {
+   "id": "JOURNEYS.situation-15",
+   "title": "A strategy doc nearing completion (all or most linked items done)",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "When steering sees the doc's items nearly done; session start",
+   "concepts": ["strategy/operation", "strategy/relationships"],
+   "surfaces": ["skills-roles", "project-orientation", "project-hub"],
+   "scenarios": ["strategy"]
+  },
+  {
+   "id": "JOURNEYS.situation-16",
+   "title": "Work needs a preview environment",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "Onboarding when useful; before preview-dependent QA",
+   "concepts": ["environments/previews", "qa-plans/bindings"],
+   "surfaces": ["skills-roles", "detail-home", "packets-help"],
+   "scenarios": ["preview_environments"]
+  },
+  {
+   "id": "JOURNEYS.situation-17",
+   "title": "Database setup becomes useful, or work changes its schema",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "When relevant; before schema-changing work",
+   "concepts": ["databases/setup", "databases/model", "databases/changes"],
+   "surfaces": ["skills-roles", "detail-home", "packets-help"],
+   "scenarios": ["governed_database_setup", "database_change_and_release"]
+  },
+  {
+   "id": "JOURNEYS.situation-18",
+   "title": "Project instructions must reach the agents doing its work",
+   "status": "deferred",
+   "context": "Project",
+   "moment": "Before the selected work needs the guidance",
+   "concepts": ["context/docs", "context/instructions", "architecture/structure"],
+   "surfaces": ["execution-instructions", "project-hub", "skills-roles"],
+   "scenarios": ["execution-instructions", "architecture-project-structure"]
+  },
+  {
+   "id": "JOURNEYS.situation-19",
+   "title": "A project is adopted, resumed or gains a setup need",
+   "status": "deferred",
+   "context": "Project plus this machine",
+   "moment": "Activation; when a capability becomes useful; before required use",
+   "concepts": ["projects/onboarding", "projects/settings", "machines/inspection"],
+   "surfaces": ["global-orientation", "project-orientation", "skills-roles", "packets-help"],
+   "scenarios": ["project-adoption", "work-progress-continuity"]
+  }
+ ]
+}

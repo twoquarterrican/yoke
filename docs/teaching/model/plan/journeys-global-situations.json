@@ -1,0 +1,96 @@
+{
+ "plan": "JOURNEYS",
+ "title": "JOURNEYS installer and global situations",
+ "reconciled_at": "2026-10-12T18:29:44.121119Z",
+ "rows": [
+  {
+   "id": "JOURNEYS.situation-1",
+   "title": "User says \"install upyoke.com\"",
+   "status": "deferred",
+   "context": "Installer (agent mode)",
+   "moment": "Each setup step",
+   "concepts": ["installation/entry"],
+   "surfaces": ["setup-agent"],
+   "scenarios": ["install-entry"]
+  },
+  {
+   "id": "JOURNEYS.situation-2",
+   "title": "No GitHub account, or another provider",
+   "status": "deferred",
+   "context": "Installer, then global",
+   "moment": "Relevant GitHub choice",
+   "concepts": ["repositories/github"],
+   "surfaces": ["setup-tui", "setup-agent", "global-orientation"],
+   "scenarios": ["github-choices"]
+  },
+  {
+   "id": "JOURNEYS.situation-3",
+   "title": "Install done; is Yoke live in this session?",
+   "status": "deferred",
+   "context": "Installer, then global",
+   "moment": "End of install",
+   "concepts": ["installation/readiness", "sessions/identity"],
+   "surfaces": ["setup-agent", "global-orientation", "command-feedback"],
+   "scenarios": ["harness-readiness"]
+  },
+  {
+   "id": "JOURNEYS.situation-4",
+   "title": "No project folder",
+   "status": "deferred",
+   "context": "Global",
+   "moment": "First useful orientation",
+   "concepts": ["projects/adoption", "repositories/git"],
+   "surfaces": ["global-orientation", "agent-help"],
+   "scenarios": ["project-adoption"]
+  },
+  {
+   "id": "JOURNEYS.situation-5",
+   "title": "Folder is not a git repo",
+   "status": "deferred",
+   "context": "Global",
+   "moment": "Adding this folder",
+   "concepts": ["repositories/git", "projects/adoption"],
+   "surfaces": ["global-orientation", "command-feedback"],
+   "scenarios": ["project-adoption"]
+  },
+  {
+   "id": "JOURNEYS.situation-6",
+   "title": "Git repo not in Yoke",
+   "status": "deferred",
+   "context": "Global",
+   "moment": "Session start",
+   "concepts": ["projects/adoption"],
+   "surfaces": ["global-orientation", "agent-help"],
+   "scenarios": ["project-adoption"]
+  },
+  {
+   "id": "JOURNEYS.situation-7",
+   "title": "Cross-project question",
+   "status": "deferred",
+   "context": "Global",
+   "moment": "When useful; orientation only if available",
+   "concepts": ["projects/identity", "sessions/ownership"],
+   "surfaces": ["global-orientation", "agent-help"],
+   "scenarios": ["shared-coordination", "work-intent"]
+  },
+  {
+   "id": "JOURNEYS.situation-8",
+   "title": "Local install, user mentions another computer",
+   "status": "deferred",
+   "context": "Global, plus `yoke status`",
+   "moment": "Session start, `yoke status`",
+   "concepts": ["modes/local", "modes/self-hosted"],
+   "surfaces": ["global-orientation", "command-feedback", "detail-home"],
+   "scenarios": ["universe-choice"]
+  },
+  {
+   "id": "JOURNEYS.situations-catalog",
+   "title": "Situations catalog",
+   "status": "deferred",
+   "scope": "Yoke",
+   "concepts": ["documentation/planning"],
+   "surfaces": ["detail-home"],
+   "scenarios": ["help-cascade"]
+  }
+ ]
+}

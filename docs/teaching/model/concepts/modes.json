@@ -1,0 +1,153 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "modes",
+   "title": "Running modes",
+   "status": "draft-copy",
+   "sources": ["docs/public/modes.md", "docs/self-host.md", "docs/public/private-forks.md"],
+   "surface_refs": ["manual-overview", "setup-tui", "workbench-cues"],
+   "children": [
+    {
+     "id": "local",
+     "title": "Local",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.3", "JOURNEYS.situation-8"],
+     "children": [
+      {
+       "id": "no-account-required",
+       "title": "No account required",
+       "status": "draft-copy"
+      },
+      {
+       "id": "local-core-and-postgres",
+       "title": "Local core and Postgres",
+       "status": "draft-copy"
+      },
+      {
+       "id": "local-workbench-and-relay",
+       "title": "Local workbench and relay",
+       "status": "draft-copy"
+      },
+      {
+       "id": "single-machine-boundaries",
+       "title": "Single-machine boundaries",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "cloud",
+     "title": "Yoke Cloud",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "hosted-universe",
+       "title": "Hosted universe",
+       "status": "draft-copy"
+      },
+      {
+       "id": "organization-and-membership",
+       "title": "Organization and membership",
+       "status": "draft-copy"
+      },
+      {
+       "id": "bring-your-own-machines-and-model-access",
+       "title": "Bring your own machines and model access",
+       "status": "draft-copy"
+      },
+      {
+       "id": "platform-managed-account-and-billing",
+       "title": "Platform-managed account and billing",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "self-hosted",
+     "title": "Self-hosted",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.3", "FIRST-USER.31", "JOURNEYS.situation-8"],
+     "commands": ["yoke self-host init"],
+     "children": [
+      {
+       "id": "server-and-postgres",
+       "title": "Server and Postgres",
+       "status": "draft-copy"
+      },
+      {
+       "id": "compose-bundle",
+       "title": "Compose bundle",
+       "status": "draft-copy"
+      },
+      {
+       "id": "first-administrator",
+       "title": "First administrator",
+       "status": "draft-copy"
+      },
+      {
+       "id": "remote-clients",
+       "title": "Remote clients",
+       "status": "draft-copy"
+      },
+      {
+       "id": "oidc-or-token-sign-in",
+       "title": "OIDC or token sign-in",
+       "status": "draft-copy"
+      },
+      {
+       "id": "networking-tls-and-trusted-proxies",
+       "title": "Networking, TLS and trusted proxies",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "switching",
+     "title": "Changing mode",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.9"],
+     "children": [
+      {
+       "id": "export-and-import",
+       "title": "Export and import",
+       "status": "draft-copy"
+      },
+      {
+       "id": "reconnect-clients",
+       "title": "Reconnect clients",
+       "status": "draft-copy"
+      },
+      {
+       "id": "credentials-after-a-move",
+       "title": "Credentials after a move",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "source",
+     "title": "Running from source",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "local-client-versus-server-build",
+       "title": "Local client versus server build",
+       "status": "draft-copy"
+      },
+      {
+       "id": "public-and-private-forks",
+       "title": "Public and private forks",
+       "status": "draft-copy"
+      },
+      {
+       "id": "distribution-origins",
+       "title": "Distribution origins",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

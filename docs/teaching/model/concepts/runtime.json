@@ -1,0 +1,236 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "runtime",
+   "title": "Control-plane internals",
+   "status": "draft-copy",
+   "audience": "Maintainers",
+   "sources": ["docs/OVERVIEW.md", "docs/public/reference/db-reference/functions.md", "docs/public/reference/db-reference.md", "docs/source-dev-doctrine.md"],
+   "children": [
+    {
+     "id": "architecture",
+     "title": "Runtime architecture",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "children": [
+      {
+       "id": "domain-engine",
+       "title": "Domain engine",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "api-transport",
+       "title": "API transport",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "cli-adapter",
+       "title": "CLI adapter",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "harness-adapter",
+       "title": "Harness adapter",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "machine-relay",
+       "title": "Machine relay",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "shared-contracts",
+       "title": "Shared contracts",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "ui-projections",
+       "title": "UI projections",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    },
+    {
+     "id": "functions",
+     "title": "Registered functions",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "children": [
+      {
+       "id": "function-identity",
+       "title": "Function identity",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "payload-schema",
+       "title": "Payload schema",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "handler-and-result",
+       "title": "Handler and result",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "claim-verification",
+       "title": "Claim verification",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "serving-floor",
+       "title": "Serving floor",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "errors-and-receipts",
+       "title": "Errors and receipts",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "idempotency-and-replay",
+       "title": "Idempotency and replay",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    },
+    {
+     "id": "storage",
+     "title": "Persistence",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "commands": ["yoke db read", "yoke schema converge"],
+     "functions": ["db.read.run"],
+     "children": [
+      {
+       "id": "postgres-authority",
+       "title": "Postgres authority",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "schema-convergence",
+       "title": "Schema convergence",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "governed-history",
+       "title": "Governed history",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "timestamp-owners",
+       "title": "Timestamp owners",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "transactions-and-concurrency",
+       "title": "Transactions and concurrency",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "rendered-views",
+       "title": "Rendered views",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    },
+    {
+     "id": "authorization",
+     "title": "Runtime authority",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "children": [
+      {
+       "id": "actor-identity",
+       "title": "Actor identity",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "session-binding",
+       "title": "Session binding",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "project-scope",
+       "title": "Project scope",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "worktree-path-authority",
+       "title": "Worktree path authority",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "operator-only-surfaces",
+       "title": "Operator-only surfaces",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    },
+    {
+     "id": "transport",
+     "title": "Transport",
+     "status": "draft-copy",
+     "audience": "Maintainers",
+     "children": [
+      {
+       "id": "https-function-calls",
+       "title": "HTTPS function calls",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "in-process-local-universe",
+       "title": "In-process local universe",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "version-compatibility",
+       "title": "Version compatibility",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "remote-source-binding",
+       "title": "Remote source binding",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      },
+      {
+       "id": "machine-jobs-and-evidence",
+       "title": "Machine jobs and evidence",
+       "status": "draft-copy",
+       "audience": "Maintainers"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

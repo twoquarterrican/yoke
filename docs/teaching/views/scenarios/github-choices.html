@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub access, repository publication and issue sync · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>GitHub access, repository publication and issue sync</h1>
+<h2 id="github-choices">GitHub access, repository publication and issue sync
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> No GitHub account or another Git provider · Existing
+  repository needs access · New repository may stay local · User later asks
+  about issue mirroring or CI</div>
+  <div><b>Coverage:</b> traced</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> Can users distinguish all three choices without extra
+  setup questions? · Does general GitHub/relay teaching have one public source,
+  with private operations only linking to it?</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.2">2</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.4">4</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.5">5</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.22">22</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.32">32</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a></div>
+  <div><b>JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-2">situation-2</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.moved-from-first-user-former-dash-g">moved-from-first-user-former-dash-g</a></div>
+<h3 id="github-choices/01">Connecting GitHub is optional
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> GitHub step, access refusal or later integration
+  request</div>
+  <div><b>Need:</b> Skip the integration when it is not wanted or available.
+  Authorization and repository access need their own checks; skipped GitHub is
+  not a failed readiness check.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Connect/skip setup and GitHub help</div>
+  <div><b>Gap:</b> Accepted correction: skipped GitHub makes the token check
+  N/A. Audit exactly which later operations require GitHub and provide
+  alternatives only where supported.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER 4 · FIRST-USER 5 · FIRST-USER 22 ·
+  FIRST-USER E · JOURNEYS 2</div>
+  <div><b>Sources:</b> <code>docs/public/github.md</code>,
+  <code>docs/public/reference/github-sync.md</code></div>
+<h3 id="github-choices/02">Publishing a repository is a separate choice
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> New project creation or later publication</div>
+  <div><b>Need:</b> A prepared Git repository can stay local. Connecting a
+  GitHub account does not mean every project must be published there.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Project source / publish-or-keep-local step</div>
+  <div><b>Gap:</b> JOURNEYS 4–5 currently makes pushing to GitHub sound
+  mandatory. That edge should be reviewed against the supported keep-local
+  path.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> JOURNEYS 4 · JOURNEYS 5</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-cli/src/yoke_cli/config/onboard_wizard_project_screens.py</code></div>
+<h3 id="github-choices/03">Issue mirroring stays quietly off in the TUI
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> No TUI question; agent-led explanation only when
+  relevant</div>
+  <div><b>Need:</b> GitHub issue synchronization is another independent setting.
+  The interactive installer silently leaves it off; it can be changed later. In
+  agent-led setup, explain the effect and ask before enabling issue sync.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Accepted review amendment to FIRST-USER 10</div>
+  <div><b>Gap:</b> The saved plan still contains the older TUI question. This
+  map applies the accepted conversation correction; stronger dedup work remains
+  deliberately deferred.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER 10 · FIRST-USER 2</div>
+  <div><b>Sources:</b> <code>docs/public/reference/github-sync.md</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

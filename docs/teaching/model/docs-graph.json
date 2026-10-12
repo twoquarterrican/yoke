@@ -1,0 +1,92 @@
+{
+ "areas": [
+  {
+   "id": "docs-public",
+   "title": "Public documentation",
+   "include": ["docs/public/*"],
+   "publication": "Public: ships in the install bundle and the website",
+   "concepts": ["documentation/ownership", "reference/docs"]
+  },
+  {
+   "id": "docs-archive",
+   "title": "Archived documentation",
+   "include": ["docs/archive/*"],
+   "publication": "Internal history: retained decisions, never current teaching",
+   "concepts": ["documentation/current-decisions-versus-historical-records"]
+  },
+  {
+   "id": "docs-contributor-topics",
+   "title": "Contributor topic documentation",
+   "include": ["docs/*/*"],
+   "publication": "Internal: Yoke source checkout only",
+   "concepts": ["contributing/source"]
+  },
+  {
+   "id": "docs-contributor",
+   "title": "Contributor documentation",
+   "include": ["docs/*.md"],
+   "publication": "Internal: Yoke source checkout only",
+   "concepts": ["contributing/source"]
+  },
+  {
+   "id": "agent-skills-delivery",
+   "title": "Agent skills: delivery",
+   "include": [".agents/skills/yoke/amend/*", ".agents/skills/yoke/approve/*", ".agents/skills/yoke/blitz/*", ".agents/skills/yoke/charge/*", ".agents/skills/yoke/conduct/*", ".agents/skills/yoke/dash/*", ".agents/skills/yoke/implement/*", ".agents/skills/yoke/polish/*", ".agents/skills/yoke/usher/*", ".agents/skills/yoke/wrapup/*"],
+   "publication": "Installed: copied into every project's harness skills",
+   "concepts": ["agents/skills"]
+  },
+  {
+   "id": "agent-skills-planning",
+   "title": "Agent skills: planning, routing and upkeep",
+   "include": [".agents/*"],
+   "publication": "Installed: copied into every project's harness skills",
+   "concepts": ["agents/skills"]
+  },
+  {
+   "id": "agent-reference",
+   "title": "Agent reference and runbooks",
+   "include": [".yoke/*"],
+   "publication": "Installed: project reference docs agents read on demand",
+   "concepts": ["context/docs", "reference/docs"]
+  },
+  {
+   "id": "harness-and-root",
+   "title": "Harness rules, agent roles and repository entry files",
+   "include": ["runtime/*", "AGENTS.md", "CLA.md", "CONTRIBUTING.md", "LICENSE.md", "README.md"],
+   "publication": "Mixed: harness rules install; root files serve repository readers",
+   "concepts": ["agents/harnesses", "context/startup"]
+  }
+ ],
+ "ungraphed": [
+  {
+   "include": "packages/*",
+   "reason": "Package-internal Markdown and shipped mirrors of graphed sources.",
+   "gap": "ungraphed-documentation"
+  },
+  {
+   "include": "packs/*",
+   "reason": "Pack guidance; each Pack owns its documents.",
+   "gap": "ungraphed-documentation"
+  },
+  {
+   "include": "ouroboros/*",
+   "reason": "Learning-channel patterns, not teaching surfaces.",
+   "gap": "ungraphed-documentation"
+  },
+  {
+   "include": "brand/*",
+   "reason": "Brand assets.",
+   "gap": "ungraphed-documentation"
+  },
+  {
+   "include": "events/*",
+   "reason": "Event catalog notes.",
+   "gap": "ungraphed-documentation"
+  },
+  {
+   "include": "packaging/*",
+   "reason": "Release packaging notes.",
+   "gap": "ungraphed-documentation"
+  }
+ ]
+}

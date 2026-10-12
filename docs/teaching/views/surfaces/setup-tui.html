@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive setup · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Interactive setup</h1>
+<h2 id="setup-tui">Interactive setup <i class="s approved">approved</i></h2>
+  <div><b>Scope:</b> Machine first; project optional</div>
+  <div><b>Audience:</b> Human</div>
+  <div><b>Encounter:</b> First install or requested reconfiguration</div>
+  <div><b>Location:</b> yoke setup TUI and its completion summary</div>
+  <div><b>Basis:</b> FIRST-USER design + accepted corrections</div>
+  <div><b>Note:</b> Skipped GitHub checks are not applicable. Teach deeper
+  project configuration when it becomes relevant; a completion summary does not
+  imply the whole project is configured.</div>
+  <div><b>Current:</b> Existing source references; delivered content is not yet
+  proved.</div>
+  <div><b>Desired:</b> Fewer steps; issue sync silently off. Show real progress,
+  one-screen Back and truthful repair instructions.</div>
+  <div><b>Plan notes:</b> FIRST-USER 3/8/9/10/19/24/25/26/37–39 · FIRST-USER
+  C/E/P4</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py</code>,
+  <code>packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py</code>,
+  <code>packages/yoke-cli/src/yoke_cli/config/onboard_destination_rows.py</code></div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+<h3 id="setup-tui/01">At the mode choice: this computer only, your server or
+Yoke Cloud; explain practical reachability.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Teach</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/modes.html#modes/local">modes/local</a>,
+  <a href="../concepts/modes.html#modes/self-hosted">modes/self-hosted</a>,
+  <a href="../concepts/modes.html#modes/cloud">modes/cloud</a></div>
+<h3 id="setup-tui/02">At sign-in or machine approval: why it is needed, what to
+do and how to return. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Teach</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/identity.html#identity/auth">identity/auth</a>,
+  <a href="../concepts/machines.html#machines/registration">machines/registration</a></div>
+<h3 id="setup-tui/03">Choose a new/existing project now, or finish machine setup
+and add one later. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/adoption">projects/adoption</a>,
+  <a href="../concepts/installation.html#installation/choices">installation/choices</a></div>
+<h3 id="setup-tui/04">GitHub stays optional. Item-to-issue sync silently
+defaults off; no sync-choice screen. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Rule</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/repositories.html#repositories/github">repositories/github</a>,
+  <a href="../concepts/repositories.html#repositories/sync">repositories/sync</a></div>
+<h3 id="setup-tui/05">Finish with mode/universe, actual project or no project,
+active-harness readiness and one next action.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/readiness">installation/readiness</a>,
+  <a href="../concepts/universes.html#universes/universe">universes/universe</a>,
+  <a href="../concepts/agents.html#agents/harnesses">agents/harnesses</a></div>
+<h3 id="setup-tui/desired-01">Choose local, self-hosted or hosted with clear
+reachability; support stale setup and backup recovery.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b> <a href="../concepts/modes.html#modes">modes</a>,
+  <a href="../concepts/installation.html#installation/choices">installation/choices</a>,
+  <a href="../concepts/maintenance.html#maintenance/portability">maintenance/portability</a></div>
+<h3 id="setup-tui/desired-02">Keep GitHub optional and issue sync silently off;
+reuse authorization and settled choices.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/repositories.html#repositories/github">repositories/github</a>,
+  <a href="../concepts/repositories.html#repositories/sync">repositories/sync</a></div>
+<h3 id="setup-tui/desired-03">Open supported browser steps with notice; show
+real Apply progress, wrapping and one-screen Back.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/identity.html#identity/auth">identity/auth</a>,
+  <a href="../concepts/installation.html#installation/entry">installation/entry</a></div>
+<h3 id="setup-tui/desired-04">Verify active-harness readiness, then reach the
+right project session for minimal onboarding.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.10">10</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/readiness">installation/readiness</a>,
+  <a href="../concepts/projects.html#projects/onboarding">projects/onboarding</a></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

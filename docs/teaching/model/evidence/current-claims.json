@@ -1,0 +1,111 @@
+{
+ "title": "Current claims that need verification",
+ "scope": "Research evidence read from source on 2026-10-12; each record states what it checked. Revalidate before relying on it as live behavior.",
+ "records": [
+  {
+   "id": "01",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Call observations and code paths are dated evidence, not live product certification; retain recording/token privacy."
+  },
+  {
+   "id": "02",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Every github_sync_mode enable path and permission; old question wording must not reintroduce TUI prompt."
+  },
+  {
+   "id": "03",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "CI or merge gate reruns checks skipped on a machine without Yoke."
+  },
+  {
+   "id": "04",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Fresh local Profile failure/root cause and launch.595+ terminal interrupt/suspend behavior."
+  },
+  {
+   "id": "05",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "GitHub current All repositories default and device-code prefill support."
+  },
+  {
+   "id": "06",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "False already-registered warning root cause; investigate only."
+  },
+  {
+   "id": "07",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Current mode-specific webhooks, relay wake-ups and Linux lingering before correcting docs."
+  },
+  {
+   "id": "08",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Claude/Codex/Cursor permission modes, curl-pipe allowance, mid-session hook pickup, once-only orientation and real user/project hook merge/dedup."
+  },
+  {
+   "id": "09",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Focused Doctor command spelling is exemplary, not a shipped flag; identity output unregistered, actual delivered context and matching installed pointers need proof."
+  },
+  {
+   "id": "10",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Historical P1/P2/P3 implementation claims and supported/cloud native discovery must be checked before relying on them."
+  },
+  {
+   "id": "11",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Real default-config recipes without GitHub/remote, actual tenant project counts, exact candidate web/install routes and installed context/manifests."
+  },
+  {
+   "id": "12",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Master shared access and worker/steering instruction receipt are required completion evidence; iCloud presence or this audit alone is not proof."
+  },
+  {
+   "id": "13",
+   "title": "current_claims_requiring_verification",
+   "status": "observed",
+   "claim": "Preview/QA/DB supported models and recipes, closeout home, cheap facts, event owners, deep zero-to-use docs and Setup-pill/modal remain explicitly researched/open until evidenced."
+  },
+  {
+   "id": "context-help",
+   "title": "Installed CLI capture: context-help",
+   "status": "observed",
+   "observed_at": "2026-10-12",
+   "evidence_scope": "Local installed CLI output, captured once.",
+   "lines": 32,
+   "characters": 1328
+  },
+  {
+   "id": "root-help",
+   "title": "Installed CLI capture: root-help",
+   "status": "observed",
+   "observed_at": "2026-10-12",
+   "evidence_scope": "Local installed CLI output, captured once.",
+   "lines": 1859,
+   "characters": 102636
+  },
+  {
+   "id": "setup-help",
+   "title": "Installed CLI capture: setup-help",
+   "status": "observed",
+   "observed_at": "2026-10-12",
+   "evidence_scope": "Local installed CLI output, captured once.",
+   "lines": 76,
+   "characters": 3755
+  }
+ ]
+}

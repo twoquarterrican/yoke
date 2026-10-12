@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Machines, approval and capacity · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Machines, approval and capacity</h1>
+<ul>
+<li id="machines"><b>Machines, approval and capacity</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Taught on:</b>
+  <a href="../surfaces/manual-overview.html">manual-overview ×1</a></div>
+  <div><b>Sources:</b>
+  <code>docs/public/reference/machine-authorization.md</code>,
+  <code>docs/public/reference/session-level-routing.md</code>,
+  <code>docs/public/reference/linux-relay.md</code></div>
+  <div><b>Commands:</b> <code>yoke machine detail</code>, <code>yoke machine
+  list</code>, <code>yoke machine show</code></div>
+  <div><b>Functions:</b> <code>machine.detail</code>, <code>machine.list</code>,
+  <code>machine.show</code></div>
+<ul>
+<li id="machines/registration"><b>Registration and approval</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.27">27</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.33">33</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/global-hooks.html">global-hooks
+  ×1</a>, <a href="../surfaces/global-orientation.html">global-orientation
+  ×1</a>, <a href="../surfaces/setup-agent.html">setup-agent ×1</a>,
+  <a href="../surfaces/setup-tui.html">setup-tui ×1</a>,
+  <a href="../surfaces/workbench-cues.html">workbench-cues ×1</a></div>
+  <div><b>Commands:</b> <code>yoke connect</code>, <code>yoke machine
+  register</code>, <code>yoke machine retire</code>, <code>yoke
+  machine-authorization get</code>, <code>yoke machine-authorization
+  resolve</code></div>
+  <div><b>Functions:</b> <code>machine.register</code>,
+  <code>machine.retire</code>, <code>machine_approval.lifecycle.apply</code>,
+  <code>machine_authorization.get</code>,
+  <code>machine_authorization.resolve</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/workbench-cues.html">workbench-cues</a></div>
+<ul>
+<li id="machines/registration/machine-identity"><b>Machine identity</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/registration/connect-request"><b>Connect request</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/registration/approve-or-deny"><b>Approve or deny</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/registration/credential-delivery"><b>Credential delivery</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/registration/retire-or-disconnect"><b>Retire or disconnect</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="machines/relay"><b>Machine relay</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.32">32</a></div>
+  <div><b>Commands:</b> <code>yoke relay diagnostic</code>, <code>yoke relay
+  install</code>, <code>yoke relay report quarantine</code>, <code>yoke relay
+  serve</code>, <code>yoke relay serve-once</code>, <code>yoke relay
+  status</code>, <code>yoke relay uninstall</code></div>
+<ul>
+<li id="machines/relay/liveness-and-heartbeat"><b>Liveness and heartbeat</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/relay/start-resume-sessions"><b>Start / resume sessions</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/relay/host-capabilities"><b>Host capabilities</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/relay/macos-supervision"><b>macOS supervision</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/relay/linux-supervision-and-linger"><b>Linux supervision and
+linger</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="machines/relay/windows-wsl-lifecycle"><b>Windows / WSL lifecycle</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="machines/capacity"><b>Available capacity</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke harness machine-report upsert</code>,
+  <code>yoke machine settings get</code>, <code>yoke machine settings
+  set</code></div>
+  <div><b>Functions:</b> <code>harness.machine_report.upsert</code>,
+  <code>machine.settings.get</code>, <code>machine.settings.set</code></div>
+<ul>
+<li id="machines/capacity/installed-launch-surfaces"><b>Installed launch
+surfaces</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="machines/capacity/usable-machines"><b>Usable machines</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/capacity/model-quota-pools"><b>Model quota pools</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/capacity/busy-and-available-workers"><b>Busy and available
+workers</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="machines/capacity/capacity-sharing-and-access"><b>Capacity sharing and
+access</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="machines/operations"><b>Machine operations</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<ul>
+<li id="machines/operations/health"><b>Health</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/operations/diagnostics"><b>Diagnostics</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/operations/installed-versions"><b>Installed versions</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/operations/os-state-and-local-evidence"><b>OS state and local
+evidence</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="machines/roles"><b>Different machine roles</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<ul>
+<li id="machines/roles/operator-workstation"><b>Operator workstation</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/roles/agent-execution-host"><b>Agent execution host</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/roles/dedicated-qa-machine"><b>Dedicated QA machine</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Related:</b>
+  <a href="test-machines.html#test-machines">test-machines</a></div>
+</li>
+<li id="machines/roles/ci-runner"><b>CI runner</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Related:</b>
+  <a href="infrastructure.html#infrastructure/runners">infrastructure/runners</a></div>
+</li>
+</ul>
+</li>
+<li id="machines/inspection"><b>Machine inspection</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Mapped by JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-19">situation-19</a></div>
+  <div><b>Taught on:</b>
+  <a href="../surfaces/global-orientation.html">global-orientation ×1</a>,
+  <a href="../surfaces/project-orientation.html">project-orientation ×1</a>,
+  <a href="../surfaces/resume-context.html">resume-context ×1</a></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/global-orientation.html">global-orientation</a>,
+  <a href="../surfaces/project-orientation.html">project-orientation</a>,
+  <a href="../surfaces/resume-context.html">resume-context</a></div>
+<ul>
+<li id="machines/inspection/credential-presence"><b>Credential presence</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/inspection/project-checkouts"><b>Project checkouts</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/inspection/hook-trust"><b>Hook trust</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/inspection/recent-starts"><b>Recent starts</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/inspection/harness-controls"><b>Harness controls</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

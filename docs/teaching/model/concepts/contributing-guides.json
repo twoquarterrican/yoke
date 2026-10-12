@@ -1,0 +1,250 @@
+{
+ "parent": "contributing",
+ "nodes": [
+  {
+   "id": "adding-or-changing-a-harness-adapter",
+   "title": "Adding or changing a harness adapter",
+   "status": "draft-copy",
+   "audience": "Maintainers",
+   "sources": ["docs/harness-adapter-template.md", "docs/codex-source-reference.md", "docs/cursor-source-reference.md", "docs/harness-cursor-assessment.md", "docs/harness-linux.md", "docs/testing-verification/real-harness.md"],
+   "children": [
+    {
+     "id": "adapter-contract",
+     "title": "Adapter contract",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "native-session-discovery",
+     "title": "Native session discovery",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "hook-parity",
+     "title": "Hook parity",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "runtime-launch-integration",
+     "title": "Runtime launch integration",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "permission-posture",
+     "title": "Permission posture",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "real-harness-evidence",
+     "title": "Real-harness evidence",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    }
+   ]
+  },
+  {
+   "id": "writing-and-proving-schema-changes",
+   "title": "Writing and proving schema changes",
+   "status": "draft-copy",
+   "audience": "Maintainers",
+   "sources": ["docs/source-dev-doctrine.md", "runtime/agents/engineer/migration-protocol.md", "docs/public/databases-and-migrations.md", "docs/public/operator-data-repair.md"],
+   "private_sources": ["platform"],
+   "children": [
+    {
+     "id": "migration-authorship",
+     "title": "Migration authorship",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "canonical-serializers",
+     "title": "Canonical serializers",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "source-derived-schema-catalog",
+     "title": "Source-derived schema catalog",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "restored-copy-rehearsal",
+     "title": "Restored-copy rehearsal",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "every-live-member-evidence",
+     "title": "Every live member evidence",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "boot-convergence-and-release-admission",
+     "title": "Boot convergence and release admission",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "reviewed-data-repair-versus-migration",
+     "title": "Reviewed data repair versus migration",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    }
+   ]
+  },
+  {
+   "id": "test-and-evidence-contracts",
+   "title": "Test and evidence contracts",
+   "status": "draft-copy",
+   "audience": "Maintainers",
+   "sources": ["docs/testing-verification.md", "docs/testing-verification/source-development.md", "docs/testing-verification/full-suite-authority.md", "docs/testing-verification/concurrent-local-runs.md", "docs/testing-verification/machine-shared-resources.md", "docs/testing-verification/evidence-portability.md", "docs/testing-verification/installer-campaign.md", "docs/testing-verification/product-smoke.md", "docs/testing-verification/real-harness.md", "docs/testing-verification/test-machine-golden-baseline.md"],
+   "children": [
+    {
+     "id": "source-versus-installed-product-testing",
+     "title": "Source versus installed-product testing",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "exact-verified-tree",
+     "title": "Exact verified tree",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "full-suite-authority",
+     "title": "Full-suite authority",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "concurrent-machine-resources",
+     "title": "Concurrent machine resources",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "evidence-portability",
+     "title": "Evidence portability",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "installer-campaigns",
+     "title": "Installer campaigns",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "product-smoke-and-real-harness-checks",
+     "title": "Product smoke and real harness checks",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "qa-machine-baselines",
+     "title": "QA machine baselines",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    }
+   ]
+  },
+  {
+   "id": "building-and-publishing-yoke-releases",
+   "title": "Building and publishing Yoke releases",
+   "status": "draft-copy",
+   "audience": "Maintainers",
+   "sources": ["docs/releases/README.md", "docs/release-pin-recording.md"],
+   "private_sources": ["platform"],
+   "children": [
+    {
+     "id": "immutable-product-package-set",
+     "title": "Immutable product package set",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "runtime-and-image-publication",
+     "title": "Runtime and image publication",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "release-provenance-and-pins",
+     "title": "Release provenance and pins",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "first-publication-prerequisites",
+     "title": "First-publication prerequisites",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "consumer-compatibility",
+     "title": "Consumer compatibility",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "distribution-availability-and-repair",
+     "title": "Distribution availability and repair",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    }
+   ]
+  },
+  {
+   "id": "writing-guidance-and-maintaining-documentation",
+   "title": "Writing guidance and maintaining documentation",
+   "status": "draft-copy",
+   "audience": "Maintainers",
+   "sources": ["docs/prompt-philosophy.md", "docs/README.md", "docs/harness-bootstrap.md", "docs/agents.md"],
+   "children": [
+    {
+     "id": "audience-and-authority",
+     "title": "Audience and authority",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "progressive-context-and-deep-operation-homes",
+     "title": "Progressive context and deep operation homes",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "prompt-and-role-authoring",
+     "title": "Prompt and role authoring",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "public-versus-private-ownership",
+     "title": "Public versus private ownership",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "generated-versus-historical-text",
+     "title": "Generated versus historical text",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    },
+    {
+     "id": "doc-and-runtime-change-evidence",
+     "title": "Doc and runtime change evidence",
+     "status": "draft-copy",
+     "audience": "Maintainers"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,61 @@
+{
+ "scenario": {
+  "id": "qa-execution-review",
+  "title": "Executions, attempts, artifacts and verdicts",
+  "status": "draft-copy",
+  "situations": ["A plan has started but is awaiting review.", "A user sees screenshots or green historical attempts and assumes completion.", "A plan execution is interrupted and must resume."],
+  "coverage": "traced",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Method/policy validation and documented continuations inspected; no case execution or review performed.", "Verify UI labels separate deployment run, plan execution and QA attempt without forcing humans to learn database terms.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+  "related_scenarios": ["approval-types", "qa-correction", "work-progress-continuity"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Keep the two run meanings clear",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When a QA execution starts or the user first inspects Activity alongside a deployment run.",
+   "need": "A deployment run ships a candidate. A QA plan execution coordinates cases; individual QA runs are attempts on their requirements, producing artifacts and verdicts. A screenshot or completed capture may still await review.",
+   "disclosure": "current cue",
+   "surface": "QA Activity/case page; plan execution output; reference records",
+   "gap": "Review question: should JOURNEYS give the first QA activity view this short vocabulary instead of calling every layer a run?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke qa plan get --help", "yoke qa requirement list --help"],
+   "plan_notes": ["JOURNEYS row 13", "outside both"],
+   "surface_notes": ["QA execution / attempt output → evidence and verdict: Continuation state names what happens next. The saved attempt/artifacts/verdict establish only the declared subject, target and candidate; a capture may still await review."],
+   "sources": ["docs/public/qa.md", "docs/testing-verification.md", "docs/public/reference/qa-platform.md", "docs/public/reference/qa-platform/standalone-plans.md"]
+  },
+  {
+   "id": "02",
+   "title": "Read the typed continuation",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "When case/plan execution returns review-pending, awaiting-agent-review or a mission continuation.",
+   "need": "Run the case through QA once; follow the returned reviewer/mission continuation. An awaiting-agent-review result is not automatically a human decision; actual undetermined evidence may escalate under the stage policy.",
+   "disclosure": "current cue",
+   "surface": "QA plan dispatch and exploratory review continuation; verdict-mode source",
+   "gap": "Review question: should FIRST-USER 35 preserve the exact next action while rendering the review state in plain language?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke qa plan get --help"],
+   "plan_notes": ["FIRST-USER 35", "JOURNEYS row 13"],
+   "sources": ["docs/testing-verification.md", "docs/public/reference/exploratory-qa.md", "packages/yoke-core/src/yoke_core/domain/qa_review_verdict_modes.py"]
+  },
+  {
+   "id": "03",
+   "title": "Judge current evidence and preserve history",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When reading a result after retries, edits or a newer attempt, especially when an older attempt passed.",
+   "need": "Current actual attempts and their identity determine satisfaction; old greens remain history. All-pass aggregation does not let historical votes rescue a current failure.",
+   "disclosure": "current cue",
+   "surface": "Requirement state reference; success-policy validation/refusal",
+   "gap": "QA overview still mentions five policy shapes although validation allows all-pass only. Review question: should the first-use documentation repair remove that contradiction before wider discovery links ship?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke qa gate-summary --help"],
+   "plan_notes": ["FIRST-USER 32", "JOURNEYS row 13"],
+   "sources": ["docs/public/reference/qa-platform/requirement-state-model.md", "docs/public/reference/qa-platform/success-policy-schema.md", "packages/yoke-core/src/yoke_core/domain/qa_requirement_policy_validation.py", "docs/public/reference/qa-platform.md"]
+  }
+ ]
+}

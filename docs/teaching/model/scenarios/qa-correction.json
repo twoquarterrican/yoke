@@ -1,0 +1,44 @@
+{
+ "scenario": {
+  "id": "qa-correction",
+  "title": "Correct, retry, waive or replace QA",
+  "status": "draft-copy",
+  "situations": ["A test failed because its definition was wrong.", "A required case cannot be performed.", "A retry or plan edit leaves the item blocked."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Recovery reference reviewed; authorization and edge-case mutation semantics require targeted implementation validation, not this map.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Choose the honest recovery",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When QA fails, its definition is wrong, a case cannot be performed, or a current gate remains unsatisfied.",
+   "need": "Retry collects new evidence; correction changes the definition through supported currency rules; waiver records a justified exception; supersession requires a replacement obligation. None rewrites a failure as a pass.",
+   "disclosure": "current cue",
+   "surface": "Named QA refusals; requirement state and correction reference",
+   "gap": "Recovery depth exists but is scattered. Review question: should JOURNEYS add failed-or-stale-QA as a situation with a short agent diagnosis and one exact next step?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke qa requirement list --help", "yoke qa gate-summary --help"],
+   "plan_notes": ["FIRST-USER 35", "JOURNEYS row 13", "outside both"],
+   "sources": ["docs/public/reference/qa-platform.md", "docs/public/reference/qa-platform/requirement-state-model.md", "docs/qa-platform/plan-case-currency.md"]
+  },
+  {
+   "id": "02",
+   "title": "Settle before terminal closeout",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "Before closing an item or release while an execution, verdict or review may remain unsettled.",
+   "need": "An active, verdict-less or pending-review QA execution can still block closing work. Preserve the owning subject and resume/abort/settle through its registered surface.",
+   "disclosure": "current cue",
+   "surface": "QA settlement gate documentation; existing finalization/recovery",
+   "gap": "Review question: should completion output distinguish passed, waived/discharged, no-obligation and still-unanswered checks instead of a single done claim?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke qa gate-summary --help"],
+   "plan_notes": ["FIRST-USER 35", "JOURNEYS row 12", "JOURNEYS row 15"],
+   "sources": ["docs/testing-verification.md", "docs/public/reference/qa-platform/requirement-state-model.md", ".agents/skills/yoke/usher/finalize.md"]
+  }
+ ]
+}

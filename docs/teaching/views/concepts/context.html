@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent context and instructions · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Agent context and instructions</h1>
+<ul>
+<li id="context"><b>Agent context and instructions</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Sources:</b> <code>docs/public/reference/harness-discovery.md</code>,
+  <code>docs/public/reference/execution-instructions.md</code>,
+  <code>docs/public/reference/commands.md</code>,
+  <code>docs/public/reference/agent-rules/code-and-cli.md</code></div>
+<ul>
+<li id="context/startup"><b>Startup context</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a></div>
+  <div><b>Taught on:</b>
+  <a href="../surfaces/global-orientation.html">global-orientation ×1</a>,
+  <a href="../surfaces/project-native.html">project-native ×1</a>,
+  <a href="../surfaces/resume-context.html">resume-context ×1</a></div>
+  <div><b>Commands:</b> <code>yoke packets startup-delivery get</code></div>
+  <div><b>Functions:</b> <code>packets.startup_delivery.get</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/global-orientation.html">global-orientation</a>,
+  <a href="../surfaces/resume-context.html">resume-context</a></div>
+<ul>
+<li id="context/startup/agents-md-and-managed-rules"><b>AGENTS.md and managed
+rules</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="context/startup/harness-native-session-rules"><b>Harness-native session
+rules</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="context/startup/project-local-context"><b>Project-local context</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="context/startup/installed-release-manifest"><b>Installed-release
+manifest</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="context/startup/context-freshness"><b>Context freshness in a long-lived
+session</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="context/hooks"><b>Hooks</b> <i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.23">23</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.29">29</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.34">34</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.6">6</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P3">P3</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/global-hooks.html">global-hooks
+  ×2</a>, <a href="../surfaces/project-hooks.html">project-hooks ×2</a>,
+  <a href="../surfaces/setup-agent.html">setup-agent ×1</a></div>
+  <div><b>Commands:</b> <code>yoke hook evaluate</code>, <code>yoke hook
+  status-line</code></div>
+  <div><b>Functions:</b> <code>hook.evaluate.run</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/global-hooks.html">global-hooks</a>,
+  <a href="../surfaces/project-hooks.html">project-hooks</a></div>
+<ul>
+<li id="context/hooks/session-start-and-end"><b>Session start and end</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="context/hooks/pre-tool-rules"><b>Pre-tool rules</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="context/hooks/post-tool-telemetry"><b>Post-tool telemetry</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="context/hooks/harness-hook-configuration"><b>Harness hook
+configuration</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="context/hooks/global-and-project-installation-scope"><b>Global and
+project installation scope</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="context/packets"><b>Context packets</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/packets-help.html">packets-help
+  ×2</a>, <a href="../surfaces/project-hub.html">project-hub ×1</a>,
+  <a href="../surfaces/project-native.html">project-native ×1</a>,
+  <a href="../surfaces/skills-roles.html">skills-roles ×1</a></div>
+  <div><b>Commands:</b> <code>yoke packets budget get</code>, <code>yoke packets
+  check</code>, <code>yoke packets render</code></div>
+  <div><b>Functions:</b> <code>packets.budget.get</code>,
+  <code>packets.check.run</code>, <code>packets.render.run</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/packets-help.html">packets-help</a></div>
+<ul>
+<li id="context/packets/role-packet"><b>Role packet</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="context/packets/topic-packet"><b>Topic packet</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="context/packets/live-schema-and-command-facts"><b>Live schema and
+command facts</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="context/packets/project-context-loader"><b>Project context loader</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke projects checkout-context</code></div>
+  <div><b>Functions:</b> <code>projects.checkout_context.run</code></div>
+</li>
+<li id="context/packets/project-structure-context-routing"><b>Project Structure
+context routing</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li><a href="context-guidance.html#context/instructions">Execution instructions</a> (own page)</li>
+<li><a href="context-guidance.html#context/docs">Documentation and help</a> (own page)</li>
+<li><a href="context-guidance.html#context/disclosure">Disclosure design</a> (own page)</li>
+</ul>
+</li>
+</ul>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

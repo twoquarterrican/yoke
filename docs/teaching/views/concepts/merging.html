@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git integration and landing · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Git integration and landing</h1>
+<ul>
+<li id="merging"><b>Git integration and landing</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Taught on:</b>
+  <a href="../surfaces/manual-overview.html">manual-overview ×1</a></div>
+  <div><b>Sources:</b>
+  <code>docs/public/reference/merge-queue-landings.md</code>,
+  <code>docs/public/reference/db-reference/item-landings.md</code>,
+  <code>.agents/skills/yoke/usher/SKILL.md</code></div>
+  <div><b>Commands:</b> <code>yoke merge audit</code>, <code>yoke merge
+  item</code></div>
+  <div><b>Functions:</b> <code>merge.lock.acquire</code>,
+  <code>merge.lock.list</code>, <code>merge.lock.release</code>,
+  <code>merge.preflight.blocked_gate</code>,
+  <code>merge.preflight.dependency_gate</code>,
+  <code>merge.preflight.epic_task_statuses</code>,
+  <code>merge.prune.authority_verdict</code>,
+  <code>merge.tests.post_rebase_requirement</code>,
+  <code>merge.tests.record_post_rebase_ci_run</code>,
+  <code>merge.tests.recorded_queue_receipt</code></div>
+<ul>
+<li id="merging/candidate"><b>Merge candidate</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke merge-review candidate evaluate</code></div>
+  <div><b>Functions:</b> <code>merge_review.candidate.evaluate</code></div>
+<ul>
+<li id="merging/candidate/committed-tree"><b>Committed tree</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/candidate/upstream-currency"><b>Upstream currency</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/candidate/combined-changes"><b>Combined changes</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/candidate/candidate-review"><b>Candidate review</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/candidate/conflict-resolution"><b>Conflict resolution</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="merging/landing"><b>Landing routes</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-12">situation-12</a></div>
+  <div><b>Commands:</b> <code>yoke github merge-queue apply</code>, <code>yoke
+  github merge-queue hold</code>, <code>yoke github merge-queue
+  readiness</code>, <code>yoke github pr create</code></div>
+  <div><b>Functions:</b> <code>github.merge_queue.apply</code>,
+  <code>github.merge_queue.hold</code>,
+  <code>github.merge_queue.readiness</code>, <code>github.pr.create</code>,
+  <code>merge_queue.landing.observe</code>,
+  <code>merge_queue.landing_pending.clear</code>,
+  <code>merge_queue.landing_pending.mark</code>,
+  <code>merge_queue.landing_pull_request.record</code></div>
+<ul>
+<li id="merging/landing/pull-request"><b>Pull request</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/landing/merge-queue"><b>Merge queue</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/landing/merge-when-ready"><b>Merge-when-ready</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/landing/merge-group-gate"><b>Merge-group gate</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/landing/branch-protection"><b>Branch protection</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="merging/evidence"><b>Landing evidence</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke item-landings list</code>, <code>yoke items
+  merge-provenance operator-correct</code>, <code>yoke merge-receipt commits
+  attest</code></div>
+  <div><b>Functions:</b> <code>item_landings.list</code>,
+  <code>item_landings.record</code>,
+  <code>items.merge_provenance.operator_correct</code>,
+  <code>merge_receipt.commits.attest</code>, <code>merge_receipt.get</code>,
+  <code>merge_receipt.record</code></div>
+<ul>
+<li id="merging/evidence/exact-commit"><b>Exact commit</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/evidence/merge-receipt"><b>Merge receipt</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/evidence/queue-batch-receipt"><b>Queue batch receipt</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/evidence/item-landing-record"><b>Item landing record</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/evidence/post-merge-stage"><b>Post-merge stage</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="merging/recovery"><b>Landing recovery</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke usher reconcile-github</code></div>
+<ul>
+<li id="merging/recovery/stale-candidate"><b>Stale candidate</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/recovery/failed-check"><b>Failed check</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/recovery/stopped-queue-entry"><b>Stopped queue entry</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="merging/recovery/resume-with-preserved-history"><b>Resume with preserved
+history</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

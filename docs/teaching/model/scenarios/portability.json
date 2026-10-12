@@ -1,0 +1,57 @@
+{
+ "scenario": {
+  "id": "portability",
+  "title": "Backup, import and moving a universe",
+  "status": "draft-copy",
+  "situations": ["Move local work to hosted or self-hosted.", "Keep a backup before uninstalling.", "Restore onto a fresh machine or replace a local universe."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["What exact checklist teaches which external repositories, services and machine-local secrets are outside the universe move?", "Can a user reach the export/restore route before deciding to uninstall in each mode?"],
+  "plan_refs": ["FIRST-USER.9"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Choose the mode-specific export route",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Before moving or deleting the universe containing strategy and work",
+   "need": "Export is a self-contained universe archive. Local, self-host HTTPS and hosted coordinated download have distinct authority paths. Use the active mode; do not obtain a remote DSN as a shortcut.",
+   "disclosure": "current cue",
+   "surface": "Universe settings documentation; uninstall backup choice; universe export help routes by mode.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke universe export --help", "yoke status"],
+   "plan_notes": ["FIRST-USER item 9", "FIRST-USER P6"],
+   "sources": ["docs/public/actors-members-billing.md", "docs/public/install.md", "packages/yoke-cli/src/yoke_cli/commands/local_universe.py", "packages/yoke-core/src/yoke_core/domain/universe_export.py"]
+  },
+  {
+   "id": "02",
+   "title": "Import replaces state and changes credential binding",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Before restoring an archive into a local destination",
+   "need": "Import replaces the active local universe and requires explicit consent. Imported remote credentials are revoked; local owner authority is established. A binding warning supplies the exact recovery before session registration.",
+   "disclosure": "current cue",
+   "surface": "universe import help/refusal/result; FIRST-USER proposes the earlier setup entry.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke universe import --help"],
+   "plan_notes": ["FIRST-USER item 9"],
+   "sources": ["packages/yoke-cli/src/yoke_cli/commands/local_universe_import_command.py", "docs/public/install.md"]
+  },
+  {
+   "id": "03",
+   "title": "Discover restore before destructive reinstall",
+   "status": "draft-copy",
+   "audience": "human",
+   "when": "Switching deployment mode or reinstalling over old state",
+   "need": "Offer a supported start-from-backup path before the user discards their only work. Distinguish the Yoke universe archive from project repository files, external services and machine-local secrets.",
+   "disclosure": "planned cue",
+   "surface": "FIRST-USER item 9 adds backup adoption to setup; current install documentation teaches uninstall/export.",
+   "gap": "Full archive content coverage, restore qualification and hosted/self-host UI paths were not inspected here; do not claim external project resources are backed up.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER item 9", "FIRST-USER item 1", "FIRST-USER D"],
+   "sources": ["docs/public/install.md", "packages/yoke-core/src/yoke_core/domain/universe_export.py"]
+  }
+ ]
+}

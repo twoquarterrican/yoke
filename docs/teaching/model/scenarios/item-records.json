@@ -1,0 +1,43 @@
+{
+ "scenario": {
+  "id": "item-records",
+  "title": "Find, read, author and preserve work records",
+  "status": "draft-copy",
+  "situations": ["The user cannot find an item or wants the history/spec/evidence behind its card.", "Existing external tasks or documents should become useful Yoke work.", "A draft is incomplete, its spec changes, or its current checkpoint must be preserved."],
+  "coverage": "catalogued",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Trace item artifacts separately from QA artifacts, strategy renders and universe backups; similar names are not interchangeable.", "Audit what first-draft readiness failures explain to the human versus fetch for the agent."],
+  "plan_refs": ["FIRST-USER.2", "FIRST-USER.13", "FIRST-USER.28"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Find the authoritative record and ask for the needed part",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When locating old/current work or moving from a summary card to its specification or evidence.",
+   "need": "Search/list/detail/section reads answer different questions; item fields and Progress Logs are authoritative records, while board and rendered bodies are views.",
+   "disclosure": "audit needed",
+   "surface": "Items search/list/get/detail/section and Progress Log surfaces",
+   "gap": "Existing operation references do not prove first-use discovery. Review question: should the human Work guide teach search-to-record-to-evidence with one real example?",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 35", "outside both"],
+   "sources": ["docs/public/items-and-sessions.md", "docs/public/reference/db-reference/functions-items.md", "docs/public/reference/agent-rules/item-writes.md"]
+  },
+  {
+   "id": "02",
+   "title": "Import intent without assuming a generic importer",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "When adopting external issues/documents or changing an item specification after intake.",
+   "need": "Identify supported intake and typed artifact writes; preserve source provenance and existing IDs, duplicate checks, readiness and current evidence. Do not infer bulk-item import support from universe import.",
+   "disclosure": "audit needed",
+   "surface": "Idea intake/refine; typed structured fields; readiness adapters",
+   "gap": "Help advertises item writes/search, but this pass did not verify a general item import or arbitrary attachment facility. Review question: what adoption formats and evidence links are actually supported, and which need instructions rather than new import code?",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 13", "FIRST-USER 24", "FIRST-USER 28"],
+   "sources": [".agents/skills/yoke/idea/infer-and-create.md", ".agents/skills/yoke/refine/SKILL.md", "docs/public/reference/db-reference/functions-items.md"]
+  }
+ ]
+}

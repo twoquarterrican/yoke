@@ -1,0 +1,226 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "packs",
+   "title": "Packs",
+   "status": "draft-copy",
+   "sources": ["docs/public/projects.md", "docs/public/reference/agent-rules/delivery.md", "packs/machine-qa/pack.json"],
+   "children": [
+    {
+     "id": "model",
+     "title": "Pack model",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "reusable-capability-bundle",
+       "title": "Reusable capability bundle",
+       "status": "draft-copy"
+      },
+      {
+       "id": "immutable-versions",
+       "title": "Immutable versions",
+       "status": "draft-copy"
+      },
+      {
+       "id": "explicit-files",
+       "title": "Explicit files",
+       "status": "draft-copy"
+      },
+      {
+       "id": "settings-and-dependencies",
+       "title": "Settings and dependencies",
+       "status": "draft-copy"
+      },
+      {
+       "id": "documentation",
+       "title": "Documentation",
+       "status": "draft-copy"
+      },
+      {
+       "id": "verification",
+       "title": "Verification",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "adoption",
+     "title": "Adopt a Pack",
+     "status": "draft-copy",
+     "commands": ["yoke packs get", "yoke packs list"],
+     "functions": ["packs.bundle.get", "packs.bundle.render", "packs.get.run", "packs.list", "packs.project.report"],
+     "children": [
+      {
+       "id": "catalog-and-fit",
+       "title": "Catalog and fit",
+       "status": "draft-copy"
+      },
+      {
+       "id": "preview",
+       "title": "Preview",
+       "status": "draft-copy"
+      },
+      {
+       "id": "apply",
+       "title": "Apply",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-owned-installed-files",
+       "title": "Project-owned installed files",
+       "status": "draft-copy"
+      },
+      {
+       "id": "baseline-record",
+       "title": "Baseline record",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-specific-configuration",
+       "title": "Project-specific configuration",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "updates",
+     "title": "Pack maintenance",
+     "status": "draft-copy",
+     "commands": ["yoke packs relink", "yoke packs update"],
+     "functions": ["packs.relink.run", "packs.update.run"],
+     "children": [
+      {
+       "id": "local-customizations",
+       "title": "Local customizations",
+       "status": "draft-copy"
+      },
+      {
+       "id": "three-way-update-preview",
+       "title": "Three-way update preview",
+       "status": "draft-copy"
+      },
+      {
+       "id": "conflict-resolution",
+       "title": "Conflict resolution",
+       "status": "draft-copy"
+      },
+      {
+       "id": "relink-moved-files",
+       "title": "Relink moved files",
+       "status": "draft-copy"
+      },
+      {
+       "id": "publish-a-new-version",
+       "title": "Publish a new version",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "catalog",
+     "title": "Pack catalog",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "branch-preview-hosting",
+       "title": "Branch Preview Hosting",
+       "status": "draft-copy",
+       "sources": ["packs/branch-preview-hosting/pack.json"]
+      },
+      {
+       "id": "container-runtime",
+       "title": "Container Runtime",
+       "status": "draft-copy",
+       "sources": ["packs/container-runtime/pack.json"]
+      },
+      {
+       "id": "domain-cdn-edge",
+       "title": "Domain and CDN Edge",
+       "status": "draft-copy",
+       "sources": ["packs/domain-cdn-edge/pack.json"]
+      },
+      {
+       "id": "ephemeral-environments",
+       "title": "Ephemeral Environments",
+       "status": "draft-copy",
+       "sources": ["packs/ephemeral-environments/pack.json"]
+      },
+      {
+       "id": "host-maintenance",
+       "title": "Host Maintenance",
+       "status": "draft-copy",
+       "sources": ["packs/host-maintenance/pack.json"]
+      },
+      {
+       "id": "machine-qa",
+       "title": "Machine QA",
+       "status": "draft-copy",
+       "sources": ["packs/machine-qa/pack.json"]
+      },
+      {
+       "id": "managed-database",
+       "title": "Managed Database",
+       "status": "draft-copy",
+       "sources": ["packs/managed-database/pack.json"]
+      },
+      {
+       "id": "production-deploy",
+       "title": "Production Deploy",
+       "status": "draft-copy",
+       "sources": ["packs/production-deploy/pack.json"]
+      },
+      {
+       "id": "pulumi-foundation",
+       "title": "Pulumi Foundation",
+       "status": "draft-copy",
+       "sources": ["packs/pulumi-foundation/pack.json"]
+      },
+      {
+       "id": "registry-oidc",
+       "title": "Registry and OIDC",
+       "status": "draft-copy",
+       "sources": ["packs/registry-oidc/pack.json"]
+      },
+      {
+       "id": "self-hosted-runners",
+       "title": "Self-hosted Runners",
+       "status": "draft-copy",
+       "sources": ["packs/self-hosted-runners/pack.json"]
+      },
+      {
+       "id": "smoke-testing",
+       "title": "Smoke Testing",
+       "status": "draft-copy",
+       "sources": ["packs/smoke-testing/pack.json"]
+      },
+      {
+       "id": "structured-events",
+       "title": "Structured Events",
+       "status": "draft-copy",
+       "sources": ["packs/structured-events/pack.json"]
+      },
+      {
+       "id": "vps-hosting",
+       "title": "AWS EC2 Hosting",
+       "status": "draft-copy",
+       "sources": ["packs/vps-hosting/pack.json"]
+      },
+      {
+       "id": "webapp-environment-infrastructure",
+       "title": "Web Application Environment Infrastructure",
+       "status": "draft-copy",
+       "sources": ["packs/webapp-environment-infrastructure/pack.json"]
+      },
+      {
+       "id": "webapp-scaffold",
+       "title": "Webapp Scaffold",
+       "status": "draft-copy",
+       "sources": ["packs/webapp-scaffold/pack.json"]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hosting, providers and infrastructure · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Hosting, providers and infrastructure</h1>
+<ul>
+<li id="infrastructure"><b>Hosting, providers and infrastructure</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Sources:</b> <code>docs/public/projects.md</code>,
+  <code>docs/public/capabilities.md</code>,
+  <code>packs/webapp-environment-infrastructure/pack.json</code>,
+  <code>packs/self-hosted-runners/pack.json</code></div>
+  <div><b>Commands:</b> <code>yoke projects infrastructure list</code></div>
+  <div><b>Functions:</b> <code>projects.infrastructure.list</code></div>
+<ul>
+<li id="infrastructure/ownership"><b>Infrastructure ownership</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<ul>
+<li id="infrastructure/ownership/existing-hosting"><b>Existing hosting</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/ownership/yoke-provisioned-hosting"><b>Yoke-provisioned
+hosting</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/ownership/external-delivery-pipeline"><b>External
+delivery pipeline</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/ownership/supported-provider-boundary"><b>Supported
+provider boundary</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="infrastructure/components"><b>Hosting components</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke aws admin-link</code>, <code>yoke aws
+  admin-status</code>, <code>yoke aws exec</code>, <code>yoke aws
+  preflight</code></div>
+<ul>
+<li id="infrastructure/components/server-vps"><b>Server / VPS</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/components/container-runtime"><b>Container runtime</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/components/domain-dns-and-tls"><b>Domain, DNS and TLS</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/components/cdn-and-edge-routing"><b>CDN and edge
+routing</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/components/container-registry"><b>Container registry</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/components/managed-database"><b>Managed database</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/components/logs-and-artifact-storage"><b>Logs and
+artifact storage</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="infrastructure/pulumi"><b>Pulumi infrastructure</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke projects pulumi-stack-config get</code>,
+  <code>yoke projects pulumi-state checkpoint-import</code>, <code>yoke projects
+  pulumi-state migrate</code>, <code>yoke pulumi exec</code></div>
+  <div><b>Functions:</b> <code>projects.pulumi_stack_config.get</code>,
+  <code>projects.pulumi_state.checkpoint_import</code>,
+  <code>projects.pulumi_state.migrate</code></div>
+<ul>
+<li id="infrastructure/pulumi/project-and-stack"><b>Project and stack</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/pulumi/provider-access"><b>Provider access</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/pulumi/preview-and-apply"><b>Preview and apply</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/pulumi/stack-outputs"><b>Stack outputs</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/pulumi/state-and-secrets"><b>State and secrets</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="infrastructure/runners"><b>CI runner fleet</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke github-actions runners status</code>,
+  <code>yoke runner-fleet exec</code></div>
+  <div><b>Functions:</b> <code>github_actions.runners.status</code></div>
+<ul>
+<li id="infrastructure/runners/self-hosted-runners"><b>Self-hosted runners</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/runners/registration"><b>Registration</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/runners/scaling-and-capacity"><b>Scaling and capacity</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/runners/lifecycle-and-cleanup"><b>Lifecycle and
+cleanup</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/runners/health-and-permissions"><b>Health and
+permissions</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="infrastructure/maintenance"><b>Host maintenance</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<ul>
+<li id="infrastructure/maintenance/runtime-cleanup"><b>Runtime cleanup</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/maintenance/deployment-scripts"><b>Deployment scripts</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/maintenance/smoke-health-checks"><b>Smoke health
+checks</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="infrastructure/maintenance/hotfix-route"><b>Hotfix route</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

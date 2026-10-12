@@ -1,0 +1,152 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "capabilities",
+   "title": "Capabilities, settings and secrets",
+   "status": "draft-copy",
+   "sources": ["docs/public/capabilities.md", "docs/public/reference/db-reference/projects-and-flows.md", "docs/public/reference/agent-rules/delivery.md"],
+   "children": [
+    {
+     "id": "capabilities",
+     "title": "Capability declarations",
+     "status": "draft-copy",
+     "commands": ["yoke projects capabilities list", "yoke projects capability has"],
+     "functions": ["projects.capabilities.list", "projects.capability.has"],
+     "children": [
+      {
+       "id": "capability-kind",
+       "title": "Capability kind",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-capability-instance",
+       "title": "Project capability instance",
+       "status": "draft-copy"
+      },
+      {
+       "id": "templates-and-schema",
+       "title": "Templates and schema",
+       "status": "draft-copy"
+      },
+      {
+       "id": "requirements-and-applicability",
+       "title": "Requirements and applicability",
+       "status": "draft-copy"
+      },
+      {
+       "id": "configured-versus-verified",
+       "title": "Configured versus verified",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "settings",
+     "title": "Settings ownership",
+     "status": "draft-copy",
+     "commands": ["yoke config example", "yoke config status", "yoke github-actions variable delete", "yoke github-actions variable get", "yoke github-actions variable set", "yoke projects capability-settings get", "yoke projects capability-settings merge", "yoke projects capability-settings remove", "yoke projects capability-settings set", "yoke projects environment-settings get", "yoke projects environment-settings merge"],
+     "functions": ["config.example.run", "config.status.run", "github_actions.variable.delete", "github_actions.variable.get", "github_actions.variable.set", "projects.capability_settings.get", "projects.capability_settings.merge", "projects.capability_settings.remove", "projects.capability_settings.set", "projects.environment_settings.get", "projects.environment_settings.merge"],
+     "children": [
+      {
+       "id": "universe-settings",
+       "title": "Universe settings",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-settings",
+       "title": "Project settings",
+       "status": "draft-copy"
+      },
+      {
+       "id": "environment-settings",
+       "title": "Environment settings",
+       "status": "draft-copy"
+      },
+      {
+       "id": "capability-settings",
+       "title": "Capability settings",
+       "status": "draft-copy"
+      },
+      {
+       "id": "machine-local-config",
+       "title": "Machine-local config",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-local-policy-documents",
+       "title": "Project-local policy documents",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "secrets",
+     "title": "Secrets",
+     "status": "draft-copy",
+     "commands": ["yoke github-actions secret delete", "yoke github-actions secret set", "yoke projects capability secret set", "yoke projects capability-secret set"],
+     "functions": ["github_actions.secret.delete", "github_actions.secret.set", "projects.capability_secret.set"],
+     "children": [
+      {
+       "id": "capability-owned-credentials",
+       "title": "Capability-owned credentials",
+       "status": "draft-copy"
+      },
+      {
+       "id": "secret-storage",
+       "title": "Secret storage",
+       "status": "draft-copy"
+      },
+      {
+       "id": "reference-and-resolution",
+       "title": "Reference and resolution",
+       "status": "draft-copy"
+      },
+      {
+       "id": "redacted-inspection",
+       "title": "Redacted inspection",
+       "status": "draft-copy"
+      },
+      {
+       "id": "credential-replacement",
+       "title": "Credential replacement",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "lifecycle",
+     "title": "Capability lifecycle",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "add-and-configure",
+       "title": "Add and configure",
+       "status": "draft-copy"
+      },
+      {
+       "id": "validate",
+       "title": "Validate",
+       "status": "draft-copy"
+      },
+      {
+       "id": "inspect-readiness",
+       "title": "Inspect readiness",
+       "status": "draft-copy"
+      },
+      {
+       "id": "update-schema-and-stored-settings",
+       "title": "Update schema and stored settings",
+       "status": "draft-copy"
+      },
+      {
+       "id": "remove-or-replace",
+       "title": "Remove or replace",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,57 @@
+{
+ "scenario": {
+  "id": "health-events",
+  "title": "Events, health checks and diagnostic evidence",
+  "status": "draft-copy",
+  "situations": ["A user asks what happened or why something stopped.", "A project needs a health scan.", "Doctor is incomplete or a machine differs from the server."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Trace live CLI/workbench failure outputs to the precise help/doc targets for each family.", "The large public health article mixes operator use with source implementation detail; audience reorganization is already under review."],
+  "plan_refs": ["FIRST-USER.E"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Use the audit stream with an honest search scope",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Investigating a past action or unexpected state",
+   "need": "Events holds operational evidence; filter by name/time and understand loaded search versus server filters. An event is evidence of its recorded fact, not a replacement for current domain state.",
+   "disclosure": "current cue",
+   "surface": "Docs index/sidebar -> Events/Doctor/Ouroboros -> documented Events page; Doctor skill points to recent anomalies.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke events anomalies --since \"24 hours ago\""],
+   "plan_notes": ["outside both"],
+   "sources": ["docs/public/index.md", "docs/public/nav.yaml", "docs/public/events-doctor-ouroboros.md", ".agents/skills/yoke/doctor/SKILL.md"]
+  },
+  {
+   "id": "02",
+   "title": "Choose a bounded applicable health scan",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "A feature seems broken or the user asks for a health report",
+   "need": "Read scope first: quick, full or named checks; source/capability/runtime applicability is explicit. N/A is not pass; timeout is incomplete evidence. Deterministic fix is an intentional separate choice.",
+   "disclosure": "current cue",
+   "surface": "Doctor skill -> run/notes; public health page -> run help.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke doctor run --help", "yoke doctor last-run get --help"],
+   "plan_notes": ["outside both"],
+   "sources": [".agents/skills/yoke/doctor/SKILL.md", "docs/public/events-doctor-ouroboros.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/doctor.py", "packages/yoke-core/src/yoke_core/engines/doctor_applicability.py"]
+  },
+  {
+   "id": "03",
+   "title": "Turn a failure into one focused recovery",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "A check times out, source is absent remotely, or install just completed",
+   "need": "Preserve exact failure/partial result, use the named check recovery and scoped rerun. Remote and local source halves have different authority. The focused install check in E is planned, not the current general Doctor.",
+   "disclosure": "planned cue",
+   "surface": "Existing Doctor contract supports named recovery; FIRST-USER E adds install selection and plain next steps.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke doctor run --help", "yoke doctor last-run get --help"],
+   "plan_notes": ["FIRST-USER E", "FIRST-USER D", "FIRST-USER item 29"],
+   "sources": [".agents/skills/yoke/doctor/SKILL.md", "docs/public/events-doctor-ouroboros.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/doctor.py"]
+  }
+ ]
+}

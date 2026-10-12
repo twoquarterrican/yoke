@@ -1,0 +1,179 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "qa-plans",
+   "title": "QA plans, cases and requirements",
+   "status": "draft-copy",
+   "sources": ["docs/public/reference/qa-platform.md", "docs/public/reference/qa-platform/case-attachment.md", "docs/public/reference/qa-platform/standalone-plans.md"],
+   "children": [
+    {
+     "id": "plans",
+     "title": "Reusable QA plans",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.also-owned-here"],
+     "commands": ["yoke qa item-plan attach", "yoke qa item-plan retract", "yoke qa plan create", "yoke qa plan edit", "yoke qa plan get", "yoke qa plan list", "yoke qa plan materialize", "yoke qa plan rematerialize"],
+     "functions": ["qa.item_plan.attach", "qa.item_plan.retract", "qa.plan.create", "qa.plan.edit", "qa.plan.get", "qa.plan.list", "qa.plan.materialize", "qa.plan.rematerialize"],
+     "children": [
+      {
+       "id": "plan-identity",
+       "title": "Plan identity",
+       "status": "draft-copy"
+      },
+      {
+       "id": "ordered-cases",
+       "title": "Ordered cases",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-plan-defaults",
+       "title": "Project plan defaults",
+       "status": "draft-copy"
+      },
+      {
+       "id": "revision-and-snapshots",
+       "title": "Revision and snapshots",
+       "status": "draft-copy"
+      },
+      {
+       "id": "attach-or-detach",
+       "title": "Attach or detach",
+       "status": "draft-copy"
+      },
+      {
+       "id": "standalone-plan-execution",
+       "title": "Standalone plan execution",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "cases",
+     "title": "Case definitions",
+     "status": "draft-copy",
+     "commands": ["yoke qa plan-cases replace"],
+     "functions": ["qa.plan_cases.replace"],
+     "children": [
+      {
+       "id": "expected-result",
+       "title": "Expected result",
+       "status": "draft-copy"
+      },
+      {
+       "id": "selected-method",
+       "title": "Selected method",
+       "status": "draft-copy"
+      },
+      {
+       "id": "method-config",
+       "title": "Method config",
+       "status": "draft-copy"
+      },
+      {
+       "id": "target-environment",
+       "title": "Target environment",
+       "status": "draft-copy"
+      },
+      {
+       "id": "starting-state",
+       "title": "Starting state",
+       "status": "draft-copy"
+      },
+      {
+       "id": "case-order",
+       "title": "Case order",
+       "status": "draft-copy"
+      },
+      {
+       "id": "add-edit-and-remove",
+       "title": "Add, edit and remove",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "requirements",
+     "title": "Materialized requirements",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.situation-12"],
+     "commands": ["yoke qa requirement add", "yoke qa requirement add-batch", "yoke qa requirement get", "yoke qa requirement list", "yoke qa requirement rebind-target", "yoke qa requirement update"],
+     "functions": ["qa.requirement.add", "qa.requirement.add_batch", "qa.requirement.get", "qa.requirement.list", "qa.requirement.rebind_target", "qa.requirement.update"],
+     "children": [
+      {
+       "id": "obligation-and-subject",
+       "title": "Obligation and subject",
+       "status": "draft-copy"
+      },
+      {
+       "id": "item-level-qa",
+       "title": "Item-level QA",
+       "status": "draft-copy"
+      },
+      {
+       "id": "task-level-qa",
+       "title": "Task-level QA",
+       "status": "draft-copy"
+      },
+      {
+       "id": "deployment-run-qa",
+       "title": "Deployment-run QA",
+       "status": "draft-copy"
+      },
+      {
+       "id": "stage-and-member-binding",
+       "title": "Stage and member binding",
+       "status": "draft-copy"
+      },
+      {
+       "id": "direct-one-off-requirement",
+       "title": "Direct one-off requirement",
+       "status": "draft-copy"
+      },
+      {
+       "id": "blocking-versus-informational",
+       "title": "Blocking versus informational",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "bindings",
+     "title": "When QA applies",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.situation-13", "JOURNEYS.situation-16"],
+     "commands": ["yoke workflows testing-default set"],
+     "functions": ["workflows.testing_default.set"],
+     "children": [
+      {
+       "id": "workflow-transition",
+       "title": "Workflow transition",
+       "status": "draft-copy"
+      },
+      {
+       "id": "item-posture-selection",
+       "title": "Item posture selection",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-defaults",
+       "title": "Project defaults",
+       "status": "draft-copy",
+       "commands": ["yoke qa project-default set", "yoke qa project-default unset"],
+       "functions": ["qa.project_default.set", "qa.project_default.unset"]
+      },
+      {
+       "id": "deployment-flow-stage",
+       "title": "Deployment flow stage",
+       "status": "draft-copy"
+      },
+      {
+       "id": "acceptance-criterion-derived-proof",
+       "title": "Acceptance-criterion-derived proof",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

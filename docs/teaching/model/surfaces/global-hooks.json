@@ -1,0 +1,74 @@
+{
+ "surface": {
+  "id": "global-hooks",
+  "title": "Recurring global hooks",
+  "status": "approved",
+  "scope": "Global",
+  "audience": "Agent",
+  "encounter": "Frequent checks · conditional text",
+  "location": "User-level hook adapter → common hook runner",
+  "basis": "FIRST-USER expansion planned",
+  "note": "A hook running is not a lesson delivered. Normal checks stay quiet; useful context is bounded, deduplicated and attributable to its trigger.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "Use machine guards outside projects; defer to project-owned events and preserve required bounded teaching.",
+  "plan_notes": ["FIRST-USER P2/P3", "JOURNEYS suppression design"],
+  "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"],
+  "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/hook_ordering.py:264", "packages/yoke-core/src/yoke_core/hooks/registration.py:1", "packages/yoke-contracts/src/yoke_contracts/hook_context_compose.py:114", "packages/yoke-core/src/yoke_core/hooks/hook_context_compose.py:14", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "Recover missing session registration and report meaningful machine or connection changes.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["sessions/identity", "machines/registration", "universes/diagnostics"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "02",
+   "title": "Deliver an addressed message, launch instruction or required decision when one arrives.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["messaging/messages", "messaging/inbox", "approvals/requests"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "03",
+   "title": "If an action requires a project, name the missing context and the exact select/open route.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["projects/identity", "context/disclosure"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "04",
+   "title": "Apply only machine/global rules here; project policy requires the relevant project context.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["context/hooks", "security/boundaries"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Apply machine-scoped rules; inside a project, honor the event’s single owner.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["context/hooks", "security/boundaries"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Deliver required orientation, messages and recovery within the combined harness budget.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["context/disclosure", "messaging/messages"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  }
+ ]
+}

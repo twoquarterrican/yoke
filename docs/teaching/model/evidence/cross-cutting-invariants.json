@@ -1,0 +1,120 @@
+{
+ "title": "Cross-cutting invariants",
+ "scope": "Research evidence read from source on 2026-10-12; each record states what it checked. Revalidate before relying on it as live behavior.",
+ "records": [
+  {
+   "id": "01",
+   "title": "prerequisite",
+   "status": "observed",
+   "check": "Entry 0 BOTH project halves precedes every other entry, including D baseline and frozen prototypes; ordinary dependency edges encode it."
+  },
+  {
+   "id": "02",
+   "title": "upkeep",
+   "status": "observed",
+   "check": "Workers inspect affected topics at planning AND finish; steering receives itemless guidance. Shared access/instruction delivery must be verified; failed update records exact pending change, not false completion."
+  },
+  {
+   "id": "03",
+   "title": "approval-is-not-current",
+   "status": "observed",
+   "check": "Record current evidence, candidate changes, approved intent and unapproved ideas separately. JOURNEYS is desired direction with execution deferred; research retention is not approval."
+  },
+  {
+   "id": "04",
+   "title": "tree-coverage",
+   "status": "observed",
+   "check": "Every topic/command has a home or explicit gap and metadata: audience/scope, moment, teaching/recipe, deeper pointer, owner, proof. Parent coverage never implies child coverage."
+  },
+  {
+   "id": "05",
+   "title": "required-teaching",
+   "status": "observed",
+   "check": "Shortest complete action includes needed prerequisites/results before action. Pointers supplement necessary instruction; optional suggestions use judgment."
+  },
+  {
+   "id": "06",
+   "title": "single-authority",
+   "status": "observed",
+   "check": "One rule/recipe/definition source; preserve live facts and project policy owners. Reuse public release-matched views; never export private topology/state/secrets."
+  },
+  {
+   "id": "07",
+   "title": "hard-versus-advisory",
+   "status": "observed",
+   "check": "350 hard lines per teaching file/displayed response, display counted at 80-column wrapping. 20k file chars; root 40/2400, category 80/4800, command 120/7200, reply 40/2400 are advisory, not failure gates. Preserve structured/essential content."
+  },
+  {
+   "id": "08",
+   "title": "combined-delivery",
+   "status": "observed",
+   "check": "Existing stricter byte ceilings govern complete context including messages/recovery. Optional text yields first. Native installed files and registration alone do not prove model receipt; observed QA stays separate from manifest support."
+  },
+  {
+   "id": "09",
+   "title": "narration",
+   "status": "observed",
+   "check": "One/two sentences applies to user narration; necessary recipes retain complete teaching. Explain names/IDs and ask one recommended decision at a time."
+  },
+  {
+   "id": "10",
+   "title": "project-bound-execution",
+   "status": "observed",
+   "check": "Global coordination may remain global; item work uses project-started session. Never switch session project or auto-launch interactive sessions. Only yoke-global is user-level; agent owns project addition."
+  },
+  {
+   "id": "11",
+   "title": "first-item-done",
+   "status": "observed",
+   "check": "Activation extends through meaningful strategy/initiative docs, steering-created work and actual DONE. Merge is enough only under the selected completion obligations; preserve approvals/checks/project rules."
+  },
+  {
+   "id": "12",
+   "title": "optional-setup",
+   "status": "observed",
+   "check": "Environments/previews/QA machines/plans/governance/test registration/Doctor/architecture are not universal startup gates. Unexamined remains unknown; selected work and existing rules create requirements."
+  },
+  {
+   "id": "13",
+   "title": "delivery-obligations",
+   "status": "observed",
+   "check": "Before affected work establish landing, approval, done and QA target; configure/read back required flow. Merge-only does not remove review/QA or create post-deploy proof; preserve no-default/deferred choices and external automation."
+  },
+  {
+   "id": "14",
+   "title": "scoped-facts",
+   "status": "observed",
+   "check": "Project/universe choices survive new machines; local prerequisites are rechecked. Do not reuse another project latest run. Settings remain authoritative; checklist/profile are views."
+  },
+  {
+   "id": "15",
+   "title": "github-optional",
+   "status": "observed",
+   "check": "No compulsory GitHub or remote. TUI sync silently off; agent offer only relevant; later setting and deliberate permissioned opt-in. Skipped checks N/A, not fail."
+  },
+  {
+   "id": "16",
+   "title": "permission-refusals",
+   "status": "observed",
+   "check": "Missing selection alone is project_required. Preserve permission/ambiguity/gate/capability causes, required facts and supported recovery; never reveal inaccessible projects."
+  },
+  {
+   "id": "17",
+   "title": "installed-context",
+   "status": "observed",
+   "check": "External/global users need release-matched accessible instructions without Yoke source checkout; preserve Markdown fragments/relative links/old URLs and actual recipient context."
+  },
+  {
+   "id": "18",
+   "title": "no-new-systems",
+   "status": "observed",
+   "check": "No artifact records/revisions, upkeep enforcement system, parallel capability registry, context subsystem, suggestion engine or imposed external doc reorganization."
+  },
+  {
+   "id": "19",
+   "title": "filing-boundaries",
+   "status": "observed",
+   "check": "Per-project linked items, governed permanent migrations/rehearsal, prescribed workflows, frozen operator launches, investigate-only/no-code and live-code naming rules still apply."
+  }
+ ]
+}

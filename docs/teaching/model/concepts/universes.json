@@ -1,0 +1,179 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "universes",
+   "title": "Universes and connections",
+   "status": "draft-copy",
+   "sources": ["docs/public/cli-and-config.md", "docs/public/modes.md", "docs/public/reference/https-connection-diagnostics.md"],
+   "children": [
+    {
+     "id": "universe",
+     "title": "Universe identity",
+     "status": "draft-copy",
+     "commands": ["yoke organizations settings get", "yoke organizations settings merge"],
+     "functions": ["organizations.settings.catalog", "organizations.settings.get", "organizations.settings.merge"],
+     "children": [
+      {
+       "id": "universe-settings",
+       "title": "Universe settings",
+       "status": "draft-copy"
+      },
+      {
+       "id": "projects-and-shared-records",
+       "title": "Projects and shared records",
+       "status": "draft-copy"
+      },
+      {
+       "id": "organization-relationship",
+       "title": "Organization relationship",
+       "status": "draft-copy"
+      },
+      {
+       "id": "membership-admission-policy",
+       "title": "Membership admission policy",
+       "status": "draft-copy",
+       "sources": ["packages/yoke-contracts/src/yoke_contracts/organization_contract/fleet_keys.py"],
+       "children": [
+        {
+         "id": "verified-identity-domain-auto-join",
+         "title": "Verified identity-domain auto-join",
+         "status": "draft-copy"
+        },
+        {
+         "id": "default-off",
+         "title": "Default off",
+         "status": "draft-copy"
+        },
+        {
+         "id": "invitations-remain-separate",
+         "title": "Invitations remain separate",
+         "status": "draft-copy"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "connections",
+     "title": "Named connections",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.3"],
+     "commands": ["yoke connection remove", "yoke connection set", "yoke env list", "yoke env use"],
+     "functions": ["connection.remove.run", "connection.set.run", "env.list.run", "env.use.run"],
+     "children": [
+      {
+       "id": "active-connection",
+       "title": "Active connection",
+       "status": "draft-copy"
+      },
+      {
+       "id": "connection-url-and-type",
+       "title": "Connection URL and type",
+       "status": "draft-copy"
+      },
+      {
+       "id": "authentication-binding",
+       "title": "Authentication binding",
+       "status": "draft-copy"
+      },
+      {
+       "id": "selecting-an-environment",
+       "title": "Selecting an environment",
+       "status": "draft-copy"
+      },
+      {
+       "id": "multiple-universes",
+       "title": "Multiple universes",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "authority",
+     "title": "Connection authority",
+     "status": "draft-copy",
+     "surface_refs": ["global-orientation", "project-native"],
+     "children": [
+      {
+       "id": "https-relay",
+       "title": "HTTPS relay",
+       "status": "draft-copy"
+      },
+      {
+       "id": "local-postgres-authority",
+       "title": "Local Postgres authority",
+       "status": "draft-copy"
+      },
+      {
+       "id": "production-administrator-authority",
+       "title": "Production administrator authority",
+       "status": "draft-copy"
+      },
+      {
+       "id": "connection-versus-project-environment",
+       "title": "Connection versus project environment",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "services",
+     "title": "Local runtime services",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.15"],
+     "commands": ["yoke core logs", "yoke core start", "yoke core status", "yoke core stop", "yoke local-postgres start", "yoke local-postgres status", "yoke local-postgres stop"],
+     "children": [
+      {
+       "id": "core-lifecycle",
+       "title": "Core lifecycle",
+       "status": "draft-copy"
+      },
+      {
+       "id": "postgres-lifecycle",
+       "title": "Postgres lifecycle",
+       "status": "draft-copy"
+      },
+      {
+       "id": "workbench-lifecycle",
+       "title": "Workbench lifecycle",
+       "status": "draft-copy"
+      },
+      {
+       "id": "relay-lifecycle",
+       "title": "Relay lifecycle",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "diagnostics",
+     "title": "Connection diagnostics",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "health-and-version",
+       "title": "Health and version",
+       "status": "draft-copy"
+      },
+      {
+       "id": "transport-and-serving-floor",
+       "title": "Transport and serving floor",
+       "status": "draft-copy"
+      },
+      {
+       "id": "wrong-universe-or-stale-connection",
+       "title": "Wrong universe or stale connection",
+       "status": "draft-copy"
+      },
+      {
+       "id": "reconnect-and-recover",
+       "title": "Reconnect and recover",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
