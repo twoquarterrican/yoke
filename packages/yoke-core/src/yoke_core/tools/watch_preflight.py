@@ -89,7 +89,10 @@ project's registered checkout). The positional
 names the project's registered environment whose fleet to rehearse.
 The paired admin connection is that environment's
 ``release.admin_connection`` setting, not a name suffix. ``--receipt-env``
-names the control plane that records the receipt. ``--record-receipt``
+names the control plane that records the receipt. ``--release-run`` names
+the run being released, read on that control plane: an engine tenant fleet
+replays the release driver only on the database holding it (the release
+control plane), and its receipt requires it. ``--record-receipt``
 writes the receipt the release gate reads for that environment.
 one environment's receipt never satisfies another, so rehearse each
 environment a release targets. The receipt lands on that environment's
@@ -109,17 +112,18 @@ free-space refusal stops its transfer and cleans up the disposable copy.
 
 examples:
   yoke watch preflight -- --project yoke stage --record-receipt \\
-      --product-sha SHA --receipt-env <control-plane>
+      --product-sha SHA --receipt-env <control-plane> --release-run RUN
 
   yoke watch preflight -- --project platform --model registry prod \\
       --record-receipt --product-sha SHA --receipt-env <control-plane>
 
   yoke watch preflight -- --project yoke stage \\
       --engine-wheel /path/to/yoke_core-release.whl --record-receipt \\
-      --product-sha SHA --receipt-env <control-plane>
+      --product-sha SHA --receipt-env <control-plane> --release-run RUN
 
   yoke watch preflight --print-streaming-pair -- --project yoke \\
-      stage --record-receipt --product-sha SHA --receipt-env <control-plane>
+      stage --record-receipt --product-sha SHA --receipt-env <control-plane> \\
+      --release-run RUN
 
 Copy admission is automatic for each physical local cluster/copy name through
 cleanup. rehearsal_copy_busy refuses without touching the copy; retry after the

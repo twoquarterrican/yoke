@@ -89,7 +89,7 @@ def test_refusal_recipe_records_on_the_gate_connection(monkeypatch, capsys) -> N
     assert "yoke watch preflight -- --project yoke --model primary prod" in refusal
     assert "--engine-wheel <yoke_core-wheel-from-yoke-build-artifacts>" not in refusal
     assert "--record-receipt --product-sha <sha>" in refusal
-    assert "--receipt-env prod" in refusal
+    assert "--receipt-env prod --release-run <run-id>" in refusal
     assert "source tree" in refusal
 
 

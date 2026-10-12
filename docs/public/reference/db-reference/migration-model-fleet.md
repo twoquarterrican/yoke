@@ -74,7 +74,8 @@ migration-territory claim remain reusable and unchanged.
 ```bash
 yoke watch preflight -- --project P [--model M] [--checkout PATH] \
     <environment> [db ...] \
-    --record-receipt --product-sha SHA --receipt-env <control-plane>
+    --record-receipt --product-sha SHA --receipt-env <control-plane> \
+    [--release-run RUN]
 ```
 
 `--model` defaults to the capability's `default_model`. `--checkout` names the
@@ -88,7 +89,10 @@ on the prod release-gate control plane. Coverage is the union of passing runs
 and never ages out; one environment's receipt never satisfies another, and one
 model's never covers a sibling model that shares an entry name. A receipt
 claims the whole declared fleet, so naming databases is a diagnostic run and
-`--record-receipt` refuses it.
+`--record-receipt` refuses it. `--release-run` names the run being released,
+read on the `--receipt-env` control plane; an `engine_tenants` receipt refuses
+without it (`release_run_required`), and a run that control plane cannot read
+refuses with `release_run_unreadable`. A release dispatch names its own run.
 
 For a read-only census of the restored source, reuse that same copy path:
 
@@ -112,7 +116,17 @@ or authoring a repair; this mode supplies no timezone or nullability decisions.
 
 ## Release gate
 
-For the engine tenant fleet, each restored copy first exercises the candidate's
+Only the release control plane records and drives releases, so for the engine
+tenant fleet only the copy holding the run being released (that run id with its
+recorded creation instant) replays the release driver. Every other copy records
+`preboot_release_driver not applicable -- not the release control plane` on its
+verdict line, in the fleet summary and under the receipt run's
+`not_applicable.<database>` leaf, and the rest of its rehearsal still runs; a
+diagnostic run naming no release run records the same check not applicable for
+every copy. A stage release recorded on the prod control plane therefore replays
+on no stage tenant, and a prod release replays on the prod tenant that holds it.
+
+The control-plane copy first exercises the candidate's
 real member-bearing release driver operations against the pre-boot schema:
 run creation with inherited membership, execution context, containment, QA
 seeding, start, stage entry and receipt allocation. It never dispatches an
@@ -123,12 +137,7 @@ source revision; an older flow's run on the same environment is superseded and
 would be refused as diverged by any real release. A recorded source revision passed its CI gate
 when its run was created, so the replay writes the run without reading CI
 providers such as GitHub; the rehearsal host needs no provider credentials.
-A universe with no deployment runs at all (such as an org tenant whose
-releases are stored on the release control plane) has nothing to replay: the
-copy records `preboot_release_driver not applicable -- preboot_release_never_run`
-on its verdict line, in the fleet summary and under the receipt run's
-`not_applicable.<database>` leaf, and the rest of the copy's rehearsal still
-runs. A universe whose deployment runs include no member-bearing release
+A control plane whose deployment runs include no member-bearing release
 refuses with `preboot_release_subject_missing` and cannot earn driver proof.
 Supply a real release declaration before retrying. After real boot
 convergence and history invariants, product sessions, frontier, board, launch

@@ -159,6 +159,7 @@ def _dispatch_step_runner(
                 environment=environment_name,
                 repository=project_repo_path,
                 release_lineage=release_lineage,
+                run_id=run_id,
             )
         )
         if rehearsal_rc != 0:

@@ -8,6 +8,7 @@ Yoke database names or module paths.
 
 from __future__ import annotations
 
+from functools import partial
 from typing import Any, Sequence, Tuple
 
 from yoke_core.domain.migration_fleet_preflight import RehearsalPlan
@@ -19,6 +20,7 @@ from yoke_core.tools.yoke_migration_fleet import (
 from runtime.api.tools.migration_rehearsal_release_surfaces import (
     verify_migrated_release_surfaces,
 )
+from runtime.api.tools.fleet_rehearsal_release_run import ReleaseRun
 from runtime.api.tools.migration_rehearsal_preboot import verify_preboot_release_driver
 
 
@@ -106,15 +108,21 @@ def verify_migrated_copy(conn: Any, copy_dsn: str) -> str | None:
     )
 
 
-def rehearsal_plan() -> RehearsalPlan:
-    """Bind the generic rehearsal kernel to Yoke project authority."""
+def rehearsal_plan(release_run: ReleaseRun | None = None) -> RehearsalPlan:
+    """Bind the generic rehearsal kernel to Yoke project authority.
+
+    *release_run* is the run being released; only the database holding it
+    replays the release driver before convergence.
+    """
     return RehearsalPlan(
         history=history_names(),
         pending_names=pending_names,
         converge=converge,
         live_ownership_validator=migration_content_ownership_detail,
         load_module=load_module,
-        pre_converge_validator=verify_preboot_release_driver,
+        pre_converge_validator=partial(
+            verify_preboot_release_driver, release_run=release_run
+        ),
         post_converge_validator=verify_migrated_copy,
     )
 

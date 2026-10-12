@@ -47,18 +47,19 @@ _QUERY_TIMEOUT_SECONDS = 120
 _BUILD_ARTIFACTS_WORKFLOW = "yoke-build-artifacts.yml"
 
 
-def _fleet_rehearse_command(
-    project: str, model: str, environment: str, receipt_connection: str = ""
-) -> str:
-    """The fleet preflight recipe for the refusal unblock line."""
-    receipt_env = receipt_connection.strip()
+def _fleet_rehearse_command(project: str, model: str, environment: str, fleet) -> str:
+    """The fleet preflight recipe; an engine tenant fleet names its release run."""
+    from yoke_core.domain.migration_model_fleet import FLEET_ENGINE_TENANTS
+
+    receipt_env = os.environ.get("YOKE_ENV", "").strip()
     receipt_env_arg = (
         shlex.quote(receipt_env) if receipt_env else "<control-plane-connection>"
     )
+    engine = fleet["kind"] == FLEET_ENGINE_TENANTS
     return (
         f"yoke watch preflight -- --project {project} --model {model} "
         f"{environment} --record-receipt --product-sha <sha> "
-        f"--receipt-env {receipt_env_arg}"
+        f"--receipt-env {receipt_env_arg}{' --release-run <run-id>' * engine}"
     )
 
 
@@ -270,8 +271,7 @@ def _verify_model(
             file=sys.stderr,
         )
         return 2
-    receipt_env = os.environ.get("YOKE_ENV", "")
-    rehearse = _fleet_rehearse_command(project, model_name, environment, receipt_env)
+    rehearse = _fleet_rehearse_command(project, model_name, environment, fleet)
     missing = receipt.uncovered(model_name, history, coverage[environment])
     print(
         f"covered by a passing fleet preflight: {len(history) - len(missing)} of {len(history)}"

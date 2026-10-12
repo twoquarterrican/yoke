@@ -44,6 +44,8 @@ def test_uncovered_release_rehearses_records_then_dispatches(monkeypatch) -> Non
             _RELEASE_SHA,
             "--receipt-env",
             "prod",
+            "--release-run",
+            "run-1",
         ]
         return 0
 

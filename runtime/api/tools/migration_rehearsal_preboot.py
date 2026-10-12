@@ -1,5 +1,11 @@
 """Drive copied release declarations through receipt allocation, without dispatch.
 
+Only the release control plane records and drives releases, so the replay runs
+only on the database holding the run being released (see
+:mod:`runtime.api.tools.fleet_rehearsal_release_run`). Every other database is
+rehearsed without it and records the check as not applicable because it is not
+the release control plane.
+
 Stored runs supply real flows, source revisions and member snapshots. Each
 release target (a project environment, or a preview flow) replays its newest
 member-bearing run: that lineage is the frontier the next real release composes
@@ -10,10 +16,7 @@ writes the run without re-asking GitHub: a live provider read proves nothing
 about migrated rows and the rehearsal host holds no provider credentials.
 Driver attachments and target occupancy are cleared only on the disposable
 copy. Every refusal fails proof rather than silently skipping the remaining
-path. A universe that has never run a release (zero deployment runs, as in an
-org tenant whose releases live on the release control plane) has no driver
-subject: the check is named not applicable and the rest of rehearsal runs.
-Stored runs with no member-bearing release still refuse.
+path, and a control plane holding no member-bearing release refuses.
 """
 
 from __future__ import annotations
@@ -28,6 +31,7 @@ from yoke_core.domain.handlers import deployment_run_execution_receipt as receip
 from yoke_core.domain.migration_fleet_preflight import NotApplicable
 from yoke_core.domain.project_checkout_locations import checkout_for_project_id
 from yoke_core.domain.project_identity import resolve_project_id
+from runtime.api.tools.fleet_rehearsal_release_run import ReleaseRun
 from runtime.api.tools.migration_rehearsal_readers import checked
 
 
@@ -35,21 +39,35 @@ PREBOOT_RELEASE_DRIVER = "preboot_release_driver"
 
 
 def verify_preboot_release_driver(
-    conn: Any, copy_dsn: str
+    conn: Any, copy_dsn: str, release_run: ReleaseRun | None
 ) -> str | NotApplicable | None:
+    """Replay the release driver on the release control plane's database only."""
+    if release_run is None:
+        return NotApplicable(
+            PREBOOT_RELEASE_DRIVER,
+            "no release run named (--release-run), so no database is "
+            "identified as the release control plane",
+        )
+    holds_run = conn.execute(
+        "SELECT EXISTS (SELECT 1 FROM deployment_runs "
+        "WHERE id=%s AND created_at::timestamptz=%s::timestamptz)",
+        (release_run.run_id, release_run.created_at),
+    ).fetchone()[0]
+    conn.rollback()
+    if not holds_run:
+        return NotApplicable(
+            PREBOOT_RELEASE_DRIVER,
+            f"not the release control plane: release run {release_run.run_id} "
+            f"is recorded on the {release_run.control_plane} control plane, "
+            "not in this database",
+        )
+    return _replay_release_driver(conn, copy_dsn)
+
+
+def _replay_release_driver(conn: Any, copy_dsn: str) -> str | None:
     """Run candidate driver code against restored pre-migration rows."""
     operation = "release driver roster"
     try:
-        if conn.execute("SELECT NOT EXISTS (SELECT 1 FROM deployment_runs)").fetchone()[
-            0
-        ]:
-            conn.rollback()
-            return NotApplicable(
-                PREBOOT_RELEASE_DRIVER,
-                "preboot_release_never_run: this universe has no deployment "
-                "runs, so there is no stored release to replay; its first "
-                "release is rehearsed once it has stored runs",
-            )
         runs = conn.execute(
             "SELECT DISTINCT ON (dr.project_id,dr.target_environment_id,"
             "CASE WHEN dr.target_environment_id IS NULL THEN dr.flow END) "
@@ -66,9 +84,9 @@ def verify_preboot_release_driver(
         if not runs:
             conn.rollback()
             return (
-                "preboot_release_subject_missing: this universe has deployment "
-                "runs but no stored member-bearing release to replay; supply a "
-                "real release declaration before earning migration rehearsal proof"
+                "preboot_release_subject_missing: this release control plane "
+                "stores no member-bearing release to replay; supply a real "
+                "release declaration before earning migration rehearsal proof"
             )
         conn.execute("UPDATE deployment_runs SET driver_attachment=NULL")
         conn.execute(
