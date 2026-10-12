@@ -1,0 +1,67 @@
+name: ci-image-mirror
+
+# Publish before changing consumers; public visibility is a one-time operator
+# setting documented in docs/ci-image-mirror.md and verified without credentials.
+'on':
+  schedule:
+    - cron: '37 4 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ci-image-mirror.yml'
+
+permissions: {}
+concurrency:
+  group: ci-image-mirror
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    if: github.repository == 'upyoke/yoke'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ghcr.io/upyoke/postgres:16', 'ghcr.io/upyoke/registry:2', 'ghcr.io/upyoke/python:3.13-slim']
+    steps:
+      - name: Install the registry copy tool
+        run: |
+          if ! sudo apt-get update || ! sudo apt-get install -y skopeo; then
+            echo '::error title=CI-MIRROR-TOOL-INSTALL::Could not install skopeo. Rerun this workflow after checking Ubuntu package availability.'
+            exit 1
+          fi
+      - name: Copy every platform and verify public access
+        env:
+          IMAGE: ${{ matrix.image }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          trap 'echo "::error title=CI-MIRROR-REFRESH::Refresh failed for $IMAGE. Check this step log, fix registry access or upstream availability, then rerun ci-image-mirror. Existing consumer tags remain available; see docs/ci-image-mirror.md."' ERR
+          authfile="$RUNNER_TEMP/registry-auth.json"
+          printf '%s' "$REGISTRY_TOKEN" | skopeo login --authfile "$authfile" \
+            --username "$REGISTRY_USER" --password-stdin ghcr.io
+          source="docker://docker.io/library/${IMAGE#ghcr.io/upyoke/}"
+          destination="docker://$IMAGE"
+          skopeo copy --all --preserve-digests --retry-times 3 \
+            --src-no-creds --dest-authfile "$authfile" \
+            --digestfile "$RUNNER_TEMP/copied-digest" "$source" "$destination"
+          if ! skopeo inspect --no-creds --raw "$destination" > "$RUNNER_TEMP/public-manifest"; then
+            echo "::error title=CI-MIRROR-NOT-PUBLIC::$IMAGE is not anonymously readable. An upyoke package admin must set this package visibility to Public, then rerun ci-image-mirror. See docs/ci-image-mirror.md."
+            exit 1
+          fi
+          expected="$(cat "$RUNNER_TEMP/copied-digest")"
+          actual="sha256:$(sha256sum "$RUNNER_TEMP/public-manifest" | cut -d ' ' -f 1)"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "::error title=CI-MIRROR-DIGEST-MISMATCH::Public digest $actual differs from copied digest $expected. Rerun ci-image-mirror; do not switch consumers until it passes."
+            exit 1
+          fi
+          for arch in amd64 arm64; do
+            skopeo --override-os linux --override-arch "$arch" inspect \
+              --no-creds --config "$destination" > /dev/null
+          done
+          echo "### $IMAGE" >> "$GITHUB_STEP_SUMMARY"
+          echo "Public manifest: $actual; all upstream platforms copied, linux/amd64 and linux/arm64 verified." >> "$GITHUB_STEP_SUMMARY"
