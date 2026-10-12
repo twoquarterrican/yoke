@@ -244,6 +244,16 @@ def test_prior_receipt_cannot_close_a_new_candidate(checkout, monkeypatch):
     git(repo, "commit", "-m", "additional candidate work")
     new_candidate = git(repo, "rev-parse", "HEAD")
     monkeypatch.setattr(convergence, "stale_unlanded_work", lambda **_kw: "")
-    result = convergence.converge(item_id=7, project="sample", repo_root=str(repo), lane=LandedLane(branch="new-candidate", target="main", commit_sha=old_candidate, candidate_sha=new_candidate))
+    result = convergence.converge(
+        item_id=7,
+        project="sample",
+        repo_root=str(repo),
+        lane=LandedLane(
+            branch="new-candidate",
+            target="main",
+            commit_sha=old_candidate,
+            candidate_sha=new_candidate,
+        ),
+    )
     assert not result.ok and new_candidate in result.error
     assert not records and not stamps
