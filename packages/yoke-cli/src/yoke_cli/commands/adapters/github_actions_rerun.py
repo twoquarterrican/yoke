@@ -13,6 +13,11 @@ from yoke_cli.commands._helpers import (
 from yoke_contracts.api.function_call import TargetRef
 
 
+GITHUB_ACTIONS_RERUN_FAILED_USAGE = (
+    "yoke github-actions run rerun-failed ITEM RUN-ID [--session-id S] [--json]"
+)
+
+
 def github_actions_rerun_failed(args: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="yoke github-actions run rerun-failed",
@@ -22,9 +27,7 @@ def github_actions_rerun_failed(args: list[str]) -> int:
     parser.add_argument("run_id", help="Failed GitHub Actions run id.")
     add_session_arg(parser)
     add_json_arg(parser)
-    parsed = parse_or_usage_error(
-        parser, args, "yoke github-actions run rerun-failed ITEM RUN-ID [--json]"
-    )
+    parsed = parse_or_usage_error(parser, args, GITHUB_ACTIONS_RERUN_FAILED_USAGE)
     if parsed is None:
         return 2
     return dispatch_and_emit(
