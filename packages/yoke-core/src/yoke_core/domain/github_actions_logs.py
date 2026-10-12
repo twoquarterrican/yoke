@@ -28,6 +28,8 @@ import urllib.parse
 import urllib.request
 from typing import Dict, Optional
 
+from yoke_contracts.designed_wait import announce_designed_wait
+
 from yoke_cli.transport.response_deadline_open import (
     ResponseOpenDeadlineError,
     open_replay_safe,
@@ -168,6 +170,11 @@ def _fetch_with_retry(url: str, *, token: str, limit_bytes: int | None = None) -
         wait = gh_retry.BACKOFF_SECONDS[
             min(attempt - 1, len(gh_retry.BACKOFF_SECONDS) - 1)
         ]
+        announce_designed_wait(
+            f"backoff before log fetch retry {attempt}/{gh_retry.MAX_RETRIES} "
+            f"after a retryable GitHub error",
+            max_wait_seconds=wait,
+        )
         try:
             wait_before_retry(
                 operation_deadline,

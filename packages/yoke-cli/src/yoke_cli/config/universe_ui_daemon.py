@@ -18,6 +18,7 @@ in :mod:`yoke_cli.config.universe_ui_launchd`.
 
 from __future__ import annotations
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_contracts.timestamps import format_instant
 
 import os
@@ -204,6 +205,11 @@ def _spawn_detached(*, host: str, port: int, env: str) -> None:
 
 
 def _await_ready(*, host: str, port: int) -> Optional[UiDaemonRecord]:
+    announce_designed_wait(
+        f"the UI daemon to accept connections on {host}:{port}",
+        max_wait_seconds=READY_TIMEOUT_S,
+        cadence=poll_every(READY_POLL_INTERVAL_S),
+    )
     deadline = time.monotonic() + READY_TIMEOUT_S
     while time.monotonic() < deadline:
         record = read_record()

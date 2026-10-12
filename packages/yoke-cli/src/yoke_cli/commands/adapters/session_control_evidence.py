@@ -13,6 +13,7 @@ from yoke_cli.commands._helpers import (
 )
 from yoke_cli.commands.adapters.session_control_human_output import write_summary
 from yoke_contracts.api.function_call import TargetRef
+from yoke_contracts.designed_wait import announce_designed_wait
 from yoke_contracts.session_control.evidence_fetch import (
     EVIDENCE_KINDS,
     EVIDENCE_TAIL_DEFAULT_LINES,
@@ -121,6 +122,13 @@ def session_evidence_get(args: List[str]) -> int:
     ):
         if value:
             payload[name] = value
+    wait_seconds = min(max(parsed.wait_seconds, 0), EVIDENCE_WAIT_MAX_SECONDS)
+    if wait_seconds:
+        # The server holds this call open while the owning relay answers.
+        announce_designed_wait(
+            f"the relay owning session {parsed.target_session_id} to return evidence",
+            max_wait_seconds=wait_seconds,
+        )
     return dispatch_and_emit(
         function_id=EVIDENCE_GET_FUNCTION_ID,
         target=TargetRef(kind="global"),

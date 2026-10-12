@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from yoke_contracts.designed_wait import announce_designed_wait
 from yoke_core.domain.public_item_target import public_item_target
 
 from dataclasses import dataclass
@@ -165,6 +166,13 @@ def wait_for_queue_landing(
     emit: Callable[[str], None],
 ) -> Optional[WaitRefusal]:
     """Consume server observations until the pull request lands."""
+    announce_designed_wait(
+        f"PR #{pr_num} to land on {target} through the merge queue "
+        "(new lines only when its state changes)",
+        max_wait_seconds=deadline_seconds,
+        cadence=schedule.describe(),
+        write=emit,
+    )
     started = monotonic()
     deadline = started + deadline_seconds
     pump = liveness if liveness is not None else SessionLivenessPump()
