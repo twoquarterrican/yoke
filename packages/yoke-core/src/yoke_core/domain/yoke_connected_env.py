@@ -186,11 +186,9 @@ def resolve_postgres_dsn(
             process_env={dsn_env: dsn},
         )
     if kind == "aws_secrets_manager":
-        if (
-            isinstance(source.get("secret_arn"), str)
-            and str(source.get("secret_arn")).strip()
-        ):
+        if str(source.get("secret_arn") or "").strip():
             return _resolve_direct_managed_secret(env, source, dsn_env=dsn_env)
+        from yoke_core.domain.deploy_remote import aws_machine_capability_env
         from yoke_core.domain.yoke_cloud_db_authority import (
             PostgresAuthorityLocation,
             resolve_declared_dsn,
@@ -200,11 +198,14 @@ def resolve_postgres_dsn(
         location = PostgresAuthorityLocation.from_mapping(
             _required_mapping(authority, "location")
         )
-        infra_dir = env.repo_root / _required_str(authority, "infra_dir")
         connection = env.connection
         dsn, evidence = resolve_declared_dsn(
-            infra_dir=infra_dir,
+            infra_dir=env.repo_root / _required_str(authority, "infra_dir"),
             location=location,
+            aws_env=aws_machine_capability_env(
+                _required_str(source, "project"),
+                location.region or _required_str(source, "region"),
+            ),
             host_override=_optional_str(connection, "host"),
             port_override=_optional_int(connection, "port"),
         )
@@ -234,10 +235,8 @@ def managed_secret_selected(start: Optional[Path] = None) -> bool:
     if env is None or env.backend != "postgres":
         return False
     source = env.credential_source
-    return (
-        source.get("kind") == contract.CREDENTIAL_KIND_AWS_SECRETS_MANAGER
-        and isinstance(source.get("secret_arn"), str)
-        and bool(str(source.get("secret_arn")).strip())
+    return source.get("kind") == contract.CREDENTIAL_KIND_AWS_SECRETS_MANAGER and bool(
+        str(source.get("secret_arn") or "").strip()
     )
 
 

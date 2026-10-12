@@ -130,11 +130,9 @@ def aws_capability_env(
     Returns a copy of ``os.environ`` extended with the capability-owned
     access key pair and default region so ``aws``/``pulumi``/``docker``
     subprocesses authenticate without exporting anything into the
-    operator shell. When the capability store has no creds for this project
-    (e.g. an ephemeral CI runner with no ~/.yoke/secrets), falls back to the
-    ambient AWS credentials if a real authenticated set is present (the CI
-    OIDC role); otherwise raises — a naked unauthenticated ``aws`` call is
-    never the fallback.
+    operator shell. Outside GitHub Actions (whose OIDC role is the declared
+    authority) missing capability creds refuse; the operator's ambient AWS
+    login is never a fallback.
     """
     if os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true":
         return _materialize_aws_env(
@@ -213,10 +211,10 @@ def _materialize_aws_env(
     secret_key: str | None,
     session_token: str | None,
 ) -> dict[str, str]:
-    ambient_access = os.environ.get("AWS_ACCESS_KEY_ID", "").strip()
-    ambient_secret = os.environ.get("AWS_SECRET_ACCESS_KEY", "").strip()
     if os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true":
-        if not ambient_access or not ambient_secret:
+        if not os.environ.get("AWS_ACCESS_KEY_ID", "").strip() or not (
+            os.environ.get("AWS_SECRET_ACCESS_KEY", "").strip()
+        ):
             raise RuntimeError(
                 "GitHub Actions selected ambient OIDC authority, but "
                 "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are absent; "
@@ -229,24 +227,11 @@ def _materialize_aws_env(
         return env
 
     if not access_key or not secret_key:
-        # No capability-store creds for this project on this machine — e.g. an
-        # ephemeral CI runner with no ~/.yoke/secrets. Fall back to ambient
-        # AWS credentials ONLY when a real authenticated set is present (the CI
-        # job's GitHub-OIDC role exports AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
-        # [+ AWS_SESSION_TOKEN]); keep that set intact and only pin the region.
-        # A naked unauthenticated aws call is still never the fallback.
-        if ambient_access and ambient_secret:
-            env = dict(os.environ)
-            env["AWS_DEFAULT_REGION"] = region
-            env["AWS_REGION"] = region
-            env["AWS_PAGER"] = ""
-            return env
         raise RuntimeError(
             f"project '{project}' {capability_type} capability secrets are "
-            "missing "
-            "(need access_key_id + secret_access_key) and no ambient AWS "
-            "credentials are present; store them locally via "
-            "`yoke projects capability secret set --project "
+            "missing (need access_key_id + secret_access_key); Yoke never "
+            "falls back to the ambient AWS login. Store them on this machine "
+            "via `yoke projects capability secret set --project "
             f"{project} --cap-type {capability_type} "
             "--key access_key_id VALUE` "
             "and `--key secret_access_key VALUE`"
@@ -254,6 +239,9 @@ def _materialize_aws_env(
     env = dict(os.environ)
     for name in AWS_AMBIENT_AUTH_ENV_VARS:
         env.pop(name, None)
+    # Detach the shared ~/.aws files the CLI and SDKs read by default.
+    env["AWS_CONFIG_FILE"] = os.devnull
+    env["AWS_SHARED_CREDENTIALS_FILE"] = os.devnull
     env["AWS_ACCESS_KEY_ID"] = access_key.strip()
     env["AWS_SECRET_ACCESS_KEY"] = secret_key.strip()
     env["AWS_DEFAULT_REGION"] = region

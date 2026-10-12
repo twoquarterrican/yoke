@@ -194,6 +194,35 @@ def test_sensitive_phase_failures_are_redacted(
         assert "could not be minted" in message
 
 
+def test_aws_refusal_cause_reaches_key_load_failure(tmp_path, monkeypatch):
+    from yoke_core.domain.yoke_cloud_db_authority import CloudAuthorityCommandError
+
+    snapshot = _write_snapshot(tmp_path / "stack-config.json")
+    monkeypatch.setattr(
+        runner_fleet_exec,
+        "runner_fleet_values",
+        lambda *args, **kwargs: _runner_values(),
+    )
+
+    def secret_loader(*args, **kwargs):
+        raise CloudAuthorityCommandError(
+            "aws secretsmanager get-secret-value",
+            "exit 255: Could not connect to the endpoint URL",
+            "rerun once AWS is reachable",
+        )
+
+    with pytest.raises(runner_fleet_exec.RunnerFleetExecError) as raised:
+        runner_fleet_exec.execute_runner_fleet_command(
+            "externalwebapp",
+            snapshot,
+            ["pulumi", "up"],
+            aws_env_loader=lambda project, region, **kwargs: {"AWS_REGION": region},
+            secret_loader=secret_loader,
+        )
+
+    assert "Could not connect to the endpoint URL" in str(raised.value)
+
+
 def test_missing_child_executable_propagates_for_cli_mapping(
     tmp_path,
     monkeypatch,
