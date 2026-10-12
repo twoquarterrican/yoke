@@ -116,7 +116,13 @@ def test_invite_create_rejects_a_role_a_person_cannot_hold(unique, role, reason)
     assert reason in outcome.error.message
 
 
-def test_link_set_identity_shape_binds_issuer_subject(unique):
+@pytest.mark.parametrize("hosted", [False, True])
+def test_link_set_identity_shape_binds_issuer_subject(unique, monkeypatch, hosted):
+    from yoke_core.domain.handlers import identity_invites
+
+    monkeypatch.setattr(
+        identity_invites, "hosted_tenant_container_process", lambda: hosted
+    )
     conn = connect()
     try:
         actor_id = seed_human_actor(conn)
@@ -279,6 +285,11 @@ def test_organization_settings_catalog_projects_closed_membership_contract():
             "identity.invite.create",
             {"email": "pat@example.com"},
         ),
+        (
+            handle_identity_link_set,
+            "identity.link.set",
+            {"actor": "1", "email": "pat@example.com"},
+        ),
         (handle_identity_invite_list, "identity.invite.list", {}),
         (handle_identity_invite_revoke, "identity.invite.revoke", {"invite_id": 1}),
     ],
@@ -296,7 +307,14 @@ def test_hosted_tenant_refuses_invites_platform_owns(
         "hosted_tenant_container_process",
         lambda: True,
     )
-    outcome = handler(_request(function_id, payload))
+    conn = connect()
+    try:
+        before = conn.execute("SELECT COUNT(*) FROM actor_invites").fetchone()[0]
+        outcome = handler(_request(function_id, payload))
+        after = conn.execute("SELECT COUNT(*) FROM actor_invites").fetchone()[0]
+    finally:
+        conn.close()
+    assert after == before
     assert outcome.primary_success is False
     assert outcome.error.code == identity_invites.HOSTED_INVITES_PLATFORM_OWNED
     assert "yoke setup --connect" in outcome.error.message

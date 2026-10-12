@@ -54,7 +54,10 @@ it; the connecting machine then finishes its own poll. Refusals:
 An org whose plan is not active refuses every call as `org_not_operable`. On a
 local or self-hosted universe, `organizations.create` refuses as
 `organization_create_hosted_only`: that universe has exactly one org. A hosted
-universe's own engine refuses `identity.invite.*` as
-`hosted_invites_platform_owned`, because Platform holds hosted invites. On a
+universe's own engine refuses `identity.invite.*` and the email-only
+`identity.link.set` pre-link as
+`hosted_invites_platform_owned`, because Platform holds hosted invites. Use the
+hosted invite commands above or the org's Members page. Direct issuer/subject
+identity links still work on hosted universes. On a
 self-hosted universe the same `yoke identity invite` commands manage the
 server's own sign-in admission.
