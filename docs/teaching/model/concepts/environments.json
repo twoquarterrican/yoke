@@ -1,0 +1,122 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "environments",
+   "title": "Environments and previews",
+   "status": "draft-copy",
+   "sources": ["docs/public/reference/db-reference/projects-and-flows.md", "docs/public/reference/db-reference/events-and-deployments.md", "docs/public/reference/agent-rules/delivery.md"],
+   "children": [
+    {
+     "id": "topology",
+     "title": "Environment topology",
+     "status": "draft-copy",
+     "commands": ["yoke projects environment create", "yoke projects environment list", "yoke projects environment update"],
+     "functions": ["projects.environment.create", "projects.environment.list", "projects.environment.update"],
+     "children": [
+      {
+       "id": "local",
+       "title": "Local",
+       "status": "draft-copy"
+      },
+      {
+       "id": "named-non-production-environments",
+       "title": "Named non-production environments",
+       "status": "draft-copy"
+      },
+      {
+       "id": "production",
+       "title": "Production",
+       "status": "draft-copy"
+      },
+      {
+       "id": "environment-settings",
+       "title": "Environment settings",
+       "status": "draft-copy",
+       "related": "capabilities/settings"
+      },
+      {
+       "id": "deployment-target-and-audience",
+       "title": "Deployment target and audience",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "identity",
+     "title": "Environment identity",
+     "status": "draft-copy",
+     "commands": ["yoke projects site create"],
+     "functions": ["projects.site.create"],
+     "children": [
+      {
+       "id": "served-revision",
+       "title": "Served revision",
+       "status": "draft-copy"
+      },
+      {
+       "id": "immutable-artifact",
+       "title": "Immutable artifact",
+       "status": "draft-copy"
+      },
+      {
+       "id": "health-endpoint",
+       "title": "Health endpoint",
+       "status": "draft-copy"
+      },
+      {
+       "id": "site-urls-and-routing",
+       "title": "Site URLs and routing",
+       "status": "draft-copy"
+      },
+      {
+       "id": "release-proof",
+       "title": "Release proof",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "previews",
+     "title": "Preview environments",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.also-owned-here", "JOURNEYS.situation-16"],
+     "commands": ["yoke ephemeral-env create", "yoke ephemeral-env get", "yoke ephemeral-env update"],
+     "functions": ["ephemeral_env.create", "ephemeral_env.get", "ephemeral_env.update"],
+     "children": [
+      {
+       "id": "branch-preview",
+       "title": "Branch preview",
+       "status": "draft-copy"
+      },
+      {
+       "id": "release-candidate-preview",
+       "title": "Release-candidate preview",
+       "status": "draft-copy"
+      },
+      {
+       "id": "ephemeral-environment",
+       "title": "Ephemeral environment",
+       "status": "draft-copy"
+      },
+      {
+       "id": "provision-update-and-tear-down",
+       "title": "Provision, update and tear down",
+       "status": "draft-copy"
+      },
+      {
+       "id": "expiry-and-cleanup",
+       "title": "Expiry and cleanup",
+       "status": "draft-copy"
+      },
+      {
+       "id": "prerequisites-and-serving-validation",
+       "title": "Prerequisites and serving validation",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

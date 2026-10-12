@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>When the agent actually gains Yoke context · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>When the agent actually gains Yoke context</h1>
+<h2 id="harness-readiness">When the agent actually gains Yoke context
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> Yoke is installed during a live agent conversation ·
+  Human opens a harness after terminal setup · Another supported harness is
+  installed later · Hooks, permissions or sign-in are incomplete</div>
+  <div><b>Coverage:</b> traced</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> Which native files load at startup, on first tool use
+  and after installation for each harness? · Are installation success, session
+  registration and usable agent context separately proved? · Does each real
+  supported surface load instructions and skill metadata mid-session versus only
+  on restart? · Which otherwise supported feature refusals include the
+  installed-release capability pointer?</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.6">6</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.18">18</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.23">23</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.E">E</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P2">P2</a></div>
+  <div><b>JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-3">situation-3</a></div>
+  <div><b>Related:</b> <a href="agent-context.html">agent-context</a>,
+  <a href="crossplatform-runtime.html">crossplatform-runtime</a>,
+  <a href="updates.html">updates</a></div>
+<h3 id="harness-readiness/01">Written files are not proof of context pickup
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> agent</div>
+  <div><b>When:</b> Install finish and first native Yoke interaction</div>
+  <div><b>Need:</b> Check native instructions, skills, hooks, session identity
+  and usable permissions in the active harness. Restart/open-folder recovery
+  must preserve the original intent.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Readiness check, identity read and orientation
+  delivery</div>
+  <div><b>Gap:</b> FIRST-USER C/D/E must prove live pickup, not file presence.
+  Accepted scope is the active harness only; GitHub checks are N/A when
+  skipped.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke sessions identity</code></div>
+  <div><b>Plan notes:</b> FIRST-USER C · FIRST-USER D · FIRST-USER E ·
+  FIRST-USER 6 · FIRST-USER 23 · JOURNEYS 3</div>
+  <div><b>Sources:</b> <code>docs/public/reference/harness-discovery.md</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/session_orientation_delivery.py</code></div>
+<h3 id="harness-readiness/02">New harnesses and different substrates
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Later harness install, upgrade or unsupported
+  operation</div>
+  <div><b>Need:</b> Install/repair only relevant native integration. Capability
+  truth is the manifest for the installed release; do not assume every harness
+  supports the same loading or wake behavior.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Harness reconcile and release-matched manifest</div>
+  <div><b>Gap:</b> Accepted access repair would ship manifests to
+  .yoke/harness/&lt;harness&gt;/manifest.json. Current teaching still names the
+  source-only runtime/harness path.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER 18 · FIRST-USER D</div>
+  <div><b>Sources:</b> <code>docs/public/reference/harness-discovery.md</code>,
+  <code>runtime/harness/manifest-schema.md</code></div>
+<h3 id="harness-readiness/03">Recover unsupported or suppressed native discovery
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Instructions or a skill are absent in a supposedly wired
+  project</div>
+  <div><b>Need:</b> Use the exact discovery refusal/recovery and native
+  verification. Claude instruction suppression, ambiguous old copies,
+  unsupported engines and symlink failures have different fixes. Do not create a
+  duplicate native tree as fallback.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> harness-discovery recovery sections -&gt; native
+  settings/new session and installed-layer refresh.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke project install --help</code></div>
+  <div><b>Plan notes:</b> FIRST-USER D/E · FIRST-USER accepted installed context
+  access repair</div>
+  <div><b>Sources:</b> <code>docs/public/reference/harness-discovery.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/project_install/instruction_discovery.py</code>,
+  <code>packages/yoke-cli/src/yoke_cli/project_install/skill_discovery.py</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

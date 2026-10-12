@@ -1,0 +1,146 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "merging",
+   "title": "Git integration and landing",
+   "status": "draft-copy",
+   "sources": ["docs/public/reference/merge-queue-landings.md", "docs/public/reference/db-reference/item-landings.md", ".agents/skills/yoke/usher/SKILL.md"],
+   "commands": ["yoke merge audit", "yoke merge item"],
+   "functions": ["merge.lock.acquire", "merge.lock.list", "merge.lock.release", "merge.preflight.blocked_gate", "merge.preflight.dependency_gate", "merge.preflight.epic_task_statuses", "merge.prune.authority_verdict", "merge.tests.post_rebase_requirement", "merge.tests.record_post_rebase_ci_run", "merge.tests.recorded_queue_receipt"],
+   "children": [
+    {
+     "id": "candidate",
+     "title": "Merge candidate",
+     "status": "draft-copy",
+     "commands": ["yoke merge-review candidate evaluate"],
+     "functions": ["merge_review.candidate.evaluate"],
+     "children": [
+      {
+       "id": "committed-tree",
+       "title": "Committed tree",
+       "status": "draft-copy"
+      },
+      {
+       "id": "upstream-currency",
+       "title": "Upstream currency",
+       "status": "draft-copy"
+      },
+      {
+       "id": "combined-changes",
+       "title": "Combined changes",
+       "status": "draft-copy"
+      },
+      {
+       "id": "candidate-review",
+       "title": "Candidate review",
+       "status": "draft-copy"
+      },
+      {
+       "id": "conflict-resolution",
+       "title": "Conflict resolution",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "landing",
+     "title": "Landing routes",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.situation-12"],
+     "commands": ["yoke github merge-queue apply", "yoke github merge-queue hold", "yoke github merge-queue readiness", "yoke github pr create"],
+     "functions": ["github.merge_queue.apply", "github.merge_queue.hold", "github.merge_queue.readiness", "github.pr.create", "merge_queue.landing.observe", "merge_queue.landing_pending.clear", "merge_queue.landing_pending.mark", "merge_queue.landing_pull_request.record"],
+     "children": [
+      {
+       "id": "pull-request",
+       "title": "Pull request",
+       "status": "draft-copy"
+      },
+      {
+       "id": "merge-queue",
+       "title": "Merge queue",
+       "status": "draft-copy"
+      },
+      {
+       "id": "merge-when-ready",
+       "title": "Merge-when-ready",
+       "status": "draft-copy"
+      },
+      {
+       "id": "merge-group-gate",
+       "title": "Merge-group gate",
+       "status": "draft-copy"
+      },
+      {
+       "id": "branch-protection",
+       "title": "Branch protection",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "evidence",
+     "title": "Landing evidence",
+     "status": "draft-copy",
+     "commands": ["yoke item-landings list", "yoke items merge-provenance operator-correct", "yoke merge-receipt commits attest"],
+     "functions": ["item_landings.list", "item_landings.record", "items.merge_provenance.operator_correct", "merge_receipt.commits.attest", "merge_receipt.get", "merge_receipt.record"],
+     "children": [
+      {
+       "id": "exact-commit",
+       "title": "Exact commit",
+       "status": "draft-copy"
+      },
+      {
+       "id": "merge-receipt",
+       "title": "Merge receipt",
+       "status": "draft-copy"
+      },
+      {
+       "id": "queue-batch-receipt",
+       "title": "Queue batch receipt",
+       "status": "draft-copy"
+      },
+      {
+       "id": "item-landing-record",
+       "title": "Item landing record",
+       "status": "draft-copy"
+      },
+      {
+       "id": "post-merge-stage",
+       "title": "Post-merge stage",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "recovery",
+     "title": "Landing recovery",
+     "status": "draft-copy",
+     "commands": ["yoke usher reconcile-github"],
+     "children": [
+      {
+       "id": "stale-candidate",
+       "title": "Stale candidate",
+       "status": "draft-copy"
+      },
+      {
+       "id": "failed-check",
+       "title": "Failed check",
+       "status": "draft-copy"
+      },
+      {
+       "id": "stopped-queue-entry",
+       "title": "Stopped queue entry",
+       "status": "draft-copy"
+      },
+      {
+       "id": "resume-with-preserved-history",
+       "title": "Resume with preserved history",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

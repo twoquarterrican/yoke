@@ -1,0 +1,74 @@
+{
+ "records": [
+  {
+   "id": "activation",
+   "title": "Activation means first item done",
+   "status": "approved",
+   "text": "Project → concise strategy and initiatives → steering → meaningful item done under its actual completion obligations.",
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.D", "FIRST-USER.42", "FIRST-USER.43"]
+  },
+  {
+   "id": "authority",
+   "title": "One teaching authority",
+   "status": "approved",
+   "text": "Public product source feeds installed and web copies. Project policies and private operating choices retain their own owners.",
+   "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "brevity",
+   "title": "Complete and extremely concise",
+   "status": "approved",
+   "text": "Recipe first. Every teaching file and response: hard 350 lines. Character and smaller line targets prompt review, not arbitrary compression.",
+   "plan_refs": ["FIRST-USER.8", "FIRST-USER.35", "FIRST-USER.40"]
+  },
+  {
+   "id": "global-context",
+   "title": "One existing context chain",
+   "status": "approved",
+   "text": "No unconditional native global publisher or second project context block. Global orientation and yoke-global lead to a new project-bound session.",
+   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
+  },
+  {
+   "id": "journals",
+   "title": "Keep candidate, desired and live apart",
+   "status": "approved",
+   "text": "Source presence is not live delivery. A gap record is not completed teaching. Verify the receiving release and context.",
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.D", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "optional-adoption",
+   "title": "Adopt optional capabilities when useful",
+   "status": "approved",
+   "text": "Environments, preview, test machines, QA plans, migrations, test registration, Doctor and architecture are not a universal onboarding checklist. Existing rules and selected work still govern.",
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.42", "FIRST-USER.43"]
+  },
+  {
+   "id": "prerequisite",
+   "title": "Prototype and upkeep come first",
+   "status": "approved",
+   "text": "FIRST-USER 0 is linked Issues YOK-3914 and PLAT-220. Check the master into Yoke internal docs, then install and verify both projects’ upkeep rules during blocking post-deploy item QA. Yoke items edit their own source; Platform items file linked Yoke updates. Both Issues precede all remaining work under either plan.",
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.D", "FIRST-USER.B", "FIRST-USER.27"]
+  },
+  {
+   "id": "qa",
+   "title": "QA follows its subject and target",
+   "status": "approved",
+   "text": "Local tests/review can satisfy suitable item QA. Preview or post-deploy environments are needed only by QA that requires them. Merge-only preserves required reviews and approvals.",
+   "plan_refs": ["FIRST-USER.24", "FIRST-USER.D"]
+  },
+  {
+   "id": "state",
+   "title": "Facts belong to the right scope",
+   "status": "approved",
+   "text": "Shared project/universe choices persist; readiness is checked on each machine. Configured, deferred, not needed and unknown remain distinct.",
+   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43"]
+  },
+  {
+   "id": "sync",
+   "title": "TUI issue sync silently off",
+   "status": "approved",
+   "text": "Agent setup may explain and offer relevant opt-in. Keep the default off and verify deliberate enable paths. Broader dedup remains deferred; entry 2 stays as written.",
+   "plan_refs": ["FIRST-USER.2", "FIRST-USER.10", "FIRST-USER.A"]
+  }
+ ]
+}

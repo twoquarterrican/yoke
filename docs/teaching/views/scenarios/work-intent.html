@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choose the next useful action · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Choose the next useful action</h1>
+<h2 id="work-intent">Choose the next useful action
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> Installation has finished and the user does not know
+  what to ask next. · The user has one concrete change, existing work to resume,
+  or a plan they want staffed. · A mature project has open PRs and work already
+  underway.</div>
+  <div><b>Coverage:</b> partial</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> No live install or first-work execution was performed;
+  current cue judgments come from inspected skill text. · Does projectless
+  coordination preserve intent when the user opens the named project folder? ·
+  Command nodes, when present, were checked with installed CLI --help only; this
+  proves parser/help availability, not serving-control-plane capability or
+  successful execution.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-7">situation-7</a></div>
+  <div><b>Related:</b> <a href="workflow-kinds.html">workflow-kinds</a>,
+  <a href="strategy.html">strategy</a>,
+  <a href="item-records.html">item-records</a>,
+  <a href="work-progress-continuity.html">work-progress-continuity</a></div>
+<h3 id="work-intent/01">Route intent, not a command catalog
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> After project readiness, when the user first asks what to do
+  next or states a concrete work intent.</div>
+  <div><b>Need:</b> One known instruction can enter Dash; Charge selects
+  existing runnable work; Steer staffs work from a strategy document. The human
+  names the outcome; the agent reads the selected skill.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Onboard handoff; router; Help; Dash, Charge and Steer
+  entry skills</div>
+  <div><b>Gap:</b> The handoff names Steer/Charge but explains little; Help
+  prints the full registry. Review question: should FIRST-USER C add a
+  two-sentence intent handoff, with JOURNEYS supplying later depth?</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke workflows item get --help</code></div>
+  <div><b>Plan notes:</b> FIRST-USER C · FIRST-USER 8 · JOURNEYS row 11</div>
+  <div><b>Sources:</b> <code>.agents/skills/yoke/onboard/seed-work.md</code>,
+  <code>.agents/skills/yoke/SKILL.md</code>,
+  <code>.agents/skills/yoke/help/SKILL.md</code>,
+  <code>.agents/skills/yoke/dash/SKILL.md</code>,
+  <code>.agents/skills/yoke/charge/SKILL.md</code>,
+  <code>.agents/skills/yoke/steer/SKILL.md</code></div>
+<h3 id="work-intent/02">Adopt existing work deliberately
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> During mature-project intake, before proposing new items or
+  taking over an open PR or in-flight change.</div>
+  <div><b>Need:</b> Survey accepted docs, repository, open work and permitted
+  external context; identify what Yoke should own now and preserve work it
+  should only observe.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> FIRST-USER inherited-work intake; existing Onboard survey
+  and duplicate check</div>
+  <div><b>Gap:</b> FIRST-USER 24 adds scanning but not an explicit takeover
+  boundary. Review question: should it record reuse, leave-running and
+  first-owned-outcome choices before seeding?</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER 24 · FIRST-USER 13 · FIRST-USER 28</div>
+  <div><b>Sources:</b>
+  <code>.agents/skills/yoke/onboard/strategy-conversation.md</code>,
+  <code>.agents/skills/yoke/onboard/seed-work.md</code>,
+  <code>.agents/skills/yoke/onboard/run-and-rows.md</code></div>
+<h3 id="work-intent/03">Prove first work, not just registration
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> human</div>
+  <div><b>When:</b> At the installer-to-project handoff, including when a new
+  session or folder must be opened.</div>
+  <div><b>Need:</b> A usable handoff names the correct folder, one next action
+  and how to inspect the resulting work.</div>
+  <div><b>Disclosure:</b> missing cue</div>
+  <div><b>Surface:</b> TUI/agent handoff into the project; proposed first-work
+  guide</div>
+  <div><b>Gap:</b> Review question: should FIRST-USER D include a scenario from
+  successful handoff through one verified real outcome, beyond its current
+  install checks?</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER C · FIRST-USER D</div>
+  <div><b>Sources:</b> <code>.agents/skills/yoke/onboard/SKILL.md</code>,
+  <code>docs/public/operating-with-agents.md</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>No project, a new project or an established project · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>No project, a new project or an established project</h1>
+<h2 id="project-adoption">No project, a new project or an established project
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> Finish machine setup without a project · Start an
+  empty project or a folder without Git · Clone a remote repository · Adopt a
+  mature app or reconnect an existing Yoke project</div>
+  <div><b>Coverage:</b> traced</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Review:</b> Older research may describe heavier onboarding. Apply
+  minimum activation and optional-adoption boundaries first.</div>
+  <div><b>Questions:</b> Can already-onboarded projects enter current work
+  without restarting Onboard? · Does the handoff reach one useful outcome,
+  including mature-project and no-project branches?</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P4">P4</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P5">P5</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P6">P6</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a></div>
+  <div><b>JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.execution-boundary">execution-boundary</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.locked-principles">locked-principles</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-1">principle-1</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-2">principle-2</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-3">principle-3</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-4">principle-4</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-5">principle-5</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-6">principle-6</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-7">principle-7</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-8">principle-8</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.principle-9">principle-9</a>,
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-4">situation-4</a>,
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-5">situation-5</a>,
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-6">situation-6</a>,
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-9">situation-9</a>,
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-19">situation-19</a>,
+  <a href="../plan-coverage/journeys-principles.html#JOURNEYS.moved-from-first-user-former-dash-g">moved-from-first-user-former-dash-g</a></div>
+  <div><b>Related:</b> <a href="agent-context.html">agent-context</a>,
+  <a href="work-intent.html">work-intent</a>,
+  <a href="architecture-project-structure.html">architecture-project-structure</a>,
+  <a href="packs.html">packs</a></div>
+<h3 id="project-adoption/01">Prepare the right folder and project identity
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Adding/opening a project</div>
+  <div><b>Need:</b> Distinguish no folder, missing Git, a non-Git folder, an
+  unregistered repository and an already registered project. Preserve existing
+  content and identity.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Setup preparation, existing-project detection and project
+  install</div>
+  <div><b>Gap:</b> Direct project install and setup preparation have different
+  boundaries. The guide’s create/import recipes also need the previously audited
+  required-config correction.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER 1 · FIRST-USER P6 · JOURNEYS 4 · JOURNEYS 5
+  · JOURNEYS 6</div>
+  <div><b>Sources:</b> <code>docs/public/projects.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/config/onboard_wizard_existing_project_detected.py</code></div>
+<h3 id="project-adoption/02">Hand off to an agent in the actual project
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Setup finish or project selection</div>
+  <div><b>Need:</b> TUI completion has no agent yet. Open a session in the
+  chosen checkout. A projectless agent selects/adds the project and carries
+  intent into a project session.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Machine/project finish → global guide or project
+  Onboard</div>
+  <div><b>Gap:</b> Accepted correction: never invoke project Onboard from
+  outside that project. A session does not change project identity just because
+  its directory changes.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER 24 · FIRST-USER P1 · FIRST-USER P4 ·
+  FIRST-USER P5 · FIRST-USER P6 · FIRST-USER P7 · JOURNEYS 6 · JOURNEYS 9</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-cli/src/yoke_cli/config/onboard_wizard_machine_finish.py</code>,
+  <code>packages/yoke-cli/src/yoke_cli/config/project_onboarding_handoff.py</code>,
+  <code>.agents/skills/yoke/onboard/run-and-rows.md</code></div>
+<h3 id="project-adoption/03">Survey, reuse and choose what Yoke takes over
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> First project onboarding or explicit adoption of existing
+  work</div>
+  <div><b>Need:</b> An existing app needs mapping of docs, tests, CI and
+  deployment. Agree on inherited work to adopt versus leave underway; a new
+  project may need scaffolding.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Onboard survey/profile plus FIRST-USER 24 intake</div>
+  <div><b>Gap:</b> Define the adoption boundary for existing PRs/items, avoid
+  duplicate seeding, and preserve accepted strategy. JOURNEYS proposes moving
+  later infrastructure setup to the relevant moment.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER 24 · FIRST-USER 25 · JOURNEYS 9</div>
+  <div><b>Sources:</b>
+  <code>.agents/skills/yoke/onboard/profile-and-scaffold.md</code>,
+  <code>.agents/skills/yoke/onboard/strategy-conversation.md</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

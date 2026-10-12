@@ -1,0 +1,188 @@
+{
+ "plan": "FIRST-USER",
+ "title": "FIRST-USER product fixes",
+ "reconciled_at": "2026-10-12T19:07:13.903317Z",
+ "rows": [
+  {
+   "id": "FIRST-USER.0",
+   "title": "0. Build the master teaching prototype; activate upkeep in post-deploy QA (linked Yoke/Platform Issues; first prerequisite)",
+   "status": "approved",
+   "scope": "Both projects",
+   "concepts": ["documentation/planning", "context/instructions"],
+   "surfaces": ["execution-instructions", "project-hub"],
+   "scenarios": ["execution-instructions", "help-cascade"],
+   "work_items": ["YOK-3914", "PLAT-220"]
+  },
+  {
+   "id": "FIRST-USER.2",
+   "title": "2. New items get attached to the wrong GitHub issues",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["repositories/sync", "items/creation"],
+   "surfaces": ["command-feedback", "detail-home"],
+   "scenarios": ["github-choices", "item-records"]
+  },
+  {
+   "id": "FIRST-USER.3",
+   "title": "3. Nothing tells users that a local install works on one machine only",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["modes/local", "modes/self-hosted", "universes/connections"],
+   "surfaces": ["setup-tui", "global-orientation", "command-feedback", "docs-landing"],
+   "scenarios": ["universe-choice"]
+  },
+  {
+   "id": "FIRST-USER.4",
+   "title": "4. One GitHub dashboard page in every mode",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["repositories/github", "workbench/navigation"],
+   "surfaces": ["workbench-cues", "command-feedback"],
+   "scenarios": ["github-choices", "ui-navigation"]
+  },
+  {
+   "id": "FIRST-USER.8",
+   "title": "8. Agents talk to users in long, dense text by default",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["context/disclosure", "agents/boundaries"],
+   "surfaces": ["project-native", "skills-roles", "global-orientation"],
+   "scenarios": ["agent-context"]
+  },
+  {
+   "id": "FIRST-USER.10",
+   "title": "10. Ask before Yoke files GitHub issues",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["repositories/sync", "installation/choices"],
+   "surfaces": ["setup-tui", "setup-agent", "command-feedback", "detail-home"],
+   "scenarios": ["github-choices"]
+  },
+  {
+   "id": "FIRST-USER.11",
+   "title": "11. Yoke's git hooks fail on another computer",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["repositories/git", "verification/checks"],
+   "surfaces": ["command-feedback", "detail-home"],
+   "scenarios": ["crossplatform-runtime", "merge-integration"]
+  },
+  {
+   "id": "FIRST-USER.12",
+   "title": "12. The Profile menu does nothing when clicked",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["workbench/profile", "identity/auth"],
+   "surfaces": ["workbench-cues"],
+   "scenarios": ["ui-navigation", "people-access"]
+  },
+  {
+   "id": "FIRST-USER.13",
+   "title": "13. Make filing items one consistent command",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["items/creation", "items/content"],
+   "surfaces": ["packets-help", "command-feedback", "skills-roles"],
+   "scenarios": ["item-records"]
+  },
+  {
+   "id": "FIRST-USER.16",
+   "title": "16 + F. `yoke ui up`: drop the stale \"read-only\" label and never print sign-in tokens (one dash)",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["security/credentials", "workbench/identity"],
+   "surfaces": ["setup-agent", "command-feedback", "workbench-cues"],
+   "scenarios": ["privacy", "ui-navigation"]
+  },
+  {
+   "id": "FIRST-USER.23",
+   "title": "23. A new session starts with a false \"already-registered\" warning (investigate only)",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["sessions/identity", "context/hooks"],
+   "surfaces": ["project-orientation", "global-orientation", "command-feedback"],
+   "scenarios": ["harness-readiness"]
+  },
+  {
+   "id": "FIRST-USER.24",
+   "title": "24. Pick up existing work and reach first-item activation",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["projects/adoption", "projects/onboarding", "strategy/corpus", "frontier/entrypoints", "deployments/outcomes"],
+   "surfaces": ["setup-agent", "skills-roles", "project-orientation", "project-hub"],
+   "scenarios": ["project-adoption", "work-intent", "delivery_outcome"]
+  },
+  {
+   "id": "FIRST-USER.27",
+   "title": "27. Redesign hosted first-run machine approval, prototype first (**platform**, frozen, operator launches)",
+   "status": "approved",
+   "scope": "Platform",
+   "concepts": ["machines/registration", "identity/auth", "workbench/onboarding"],
+   "surfaces": ["workbench-cues", "setup-agent"],
+   "scenarios": ["machine-access"]
+  },
+  {
+   "id": "FIRST-USER.28",
+   "title": "28. Items can be left title-only, and the Frontier mislabels them",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["items/creation", "frontier/frontier"],
+   "surfaces": ["command-feedback", "skills-roles", "workbench-cues"],
+   "scenarios": ["item-records", "staffing"]
+  },
+  {
+   "id": "FIRST-USER.29",
+   "title": "29. Yoke messages inside other tools don't say they're from Yoke",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["context/hooks", "context/disclosure"],
+   "surfaces": ["global-hooks", "project-hooks", "command-feedback"],
+   "scenarios": ["agent-context"]
+  },
+  {
+   "id": "FIRST-USER.31",
+   "title": "31. Mode-name typo in the dashboard",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["modes/self-hosted", "workbench/identity"],
+   "surfaces": ["workbench-cues"],
+   "scenarios": ["universe-choice"]
+  },
+  {
+   "id": "FIRST-USER.32",
+   "title": "32. The docs misstate GitHub webhooks and CI wake-ups",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["repositories/github", "repositories/actions", "machines/relay"],
+   "surfaces": ["detail-home", "category-summary"],
+   "scenarios": ["github-choices", "connection-runtime"]
+  },
+  {
+   "id": "FIRST-USER.33",
+   "title": "33. One simple way to add people and machines, in every mode (linked pair: yoke + **platform**)",
+   "status": "approved",
+   "scope": "Both projects",
+   "concepts": ["machines/registration", "identity/actors", "identity/auth", "security/credentials"],
+   "surfaces": ["setup-tui", "setup-agent", "workbench-cues", "packets-help", "detail-home"],
+   "scenarios": ["machine-access", "people-access"]
+  },
+  {
+   "id": "FIRST-USER.34",
+   "title": "34. The hook wrongly blocks `~/` paths with wildcards",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["security/boundaries", "context/hooks"],
+   "surfaces": ["global-hooks", "project-hooks", "command-feedback"],
+   "scenarios": ["privacy", "crossplatform-runtime"]
+  },
+  {
+   "id": "FIRST-USER.35",
+   "title": "35. Make every Yoke command's output readable and short",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["reference/commands", "documentation/cascade", "context/disclosure"],
+   "surfaces": ["terminal-help", "agent-help", "packets-help", "command-feedback"],
+   "scenarios": ["help-cascade"]
+  }
+ ]
+}

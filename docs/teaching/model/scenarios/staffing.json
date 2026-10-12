@@ -1,0 +1,58 @@
+{
+ "scenario": {
+  "id": "staffing",
+  "title": "Staffing and worker session control",
+  "status": "draft-copy",
+  "situations": ["A strategy document should turn into staffed work.", "A worker needs to be launched on another machine.", "A worker fails, parks or needs a different level."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Is capacity-sharing setup discoverable from a no-eligible-machine launch refusal?", "Does a global projectless steering session receive all necessary routes after P1-P4?"],
+  "plan_refs": ["FIRST-USER.28", "JOURNEYS.situation-11"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Choose the staffing entrypoint",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "The user wants work staffed from a plan rather than one foreground task",
+   "need": "Steer holds scope and staffs; Charge selects runnable frontier work. A steering session does not implement. Learn the current pinned next skill from the live item rather than a remembered chain.",
+   "disclosure": "current cue",
+   "surface": "Docs index/session loop -> Steer skill -> scope and continuous-pass homes.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke workflows item get PREFIX-N", "yoke steering report get"],
+   "plan_notes": ["JOURNEYS row 11", "JOURNEYS row 7"],
+   "sources": ["docs/public/index.md", "docs/public/operating-with-agents.md", ".agents/skills/yoke/steer/SKILL.md"]
+  },
+  {
+   "id": "02",
+   "title": "Preview the registered launch",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "Immediately before staffing an item or an itemless mandate",
+   "need": "Use registered launch preview/create; the engine composes item mandates. Read the selected level, machine, support/permission/quota blockers and launch identity. A refusal is not permission to bypass the launch plane.",
+   "disclosure": "current cue",
+   "surface": "Steer worker-launch and model-selection -> launch help/preview.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke session-control launch preview --help", "yoke session-control launch preview --project P --level SENIOR", "yoke session-control launch get LAUNCH_ID"],
+   "plan_notes": ["outside both"],
+   "sources": [".agents/skills/yoke/steer/worker-launch.md", ".agents/skills/yoke/steer/model-selection.md", "docs/public/cli-and-config.md"]
+  },
+  {
+   "id": "03",
+   "title": "Understand hand-back, parking and restaffing",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "A launched turn returns or an existing worker needs a different level",
+   "need": "A tool continuation handle is still running; a returned turn is not completion. Preserve the checkpoint and actual wake/park path. Changing a running worker level requires the supported successor/restaff path, not editing its live model.",
+   "disclosure": "current cue",
+   "surface": "Steer worker-launch -> worker-lifecycle/model-selection; session and launch evidence.",
+   "gap": "Only the guidance chain was traced; individual harness wake and physical termination mechanics belong to runtime verification.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke sessions list --liveness active", "yoke session-control launch get LAUNCH_ID"],
+   "plan_notes": ["outside both"],
+   "sources": [".agents/skills/yoke/steer/worker-launch.md", ".agents/skills/yoke/steer/worker-lifecycle.md", ".agents/skills/yoke/steer/model-selection.md"]
+  }
+ ]
+}

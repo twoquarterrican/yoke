@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Events, health checks and diagnostic evidence · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Events, health checks and diagnostic evidence</h1>
+<h2 id="health-events">Events, health checks and diagnostic evidence
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> A user asks what happened or why something stopped. ·
+  A project needs a health scan. · Doctor is incomplete or a machine differs
+  from the server.</div>
+  <div><b>Coverage:</b> partial</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> Trace live CLI/workbench failure outputs to the precise
+  help/doc targets for each family. · The large public health article mixes
+  operator use with source implementation detail; audience reorganization is
+  already under review.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.E">E</a></div>
+<h3 id="health-events/01">Use the audit stream with an honest search scope
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Investigating a past action or unexpected state</div>
+  <div><b>Need:</b> Events holds operational evidence; filter by name/time and
+  understand loaded search versus server filters. An event is evidence of its
+  recorded fact, not a replacement for current domain state.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Docs index/sidebar -&gt; Events/Doctor/Ouroboros -&gt;
+  documented Events page; Doctor skill points to recent anomalies.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke events anomalies --since &quot;24 hours
+  ago&quot;</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b> <code>docs/public/index.md</code>,
+  <code>docs/public/nav.yaml</code>,
+  <code>docs/public/events-doctor-ouroboros.md</code>,
+  <code>.agents/skills/yoke/doctor/SKILL.md</code></div>
+<h3 id="health-events/02">Choose a bounded applicable health scan
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> A feature seems broken or the user asks for a health
+  report</div>
+  <div><b>Need:</b> Read scope first: quick, full or named checks;
+  source/capability/runtime applicability is explicit. N/A is not pass; timeout
+  is incomplete evidence. Deterministic fix is an intentional separate
+  choice.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Doctor skill -&gt; run/notes; public health page -&gt;
+  run help.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke doctor run --help</code>, <code>yoke doctor
+  last-run get --help</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b> <code>.agents/skills/yoke/doctor/SKILL.md</code>,
+  <code>docs/public/events-doctor-ouroboros.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/doctor.py</code>,
+  <code>packages/yoke-core/src/yoke_core/engines/doctor_applicability.py</code></div>
+<h3 id="health-events/03">Turn a failure into one focused recovery
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> A check times out, source is absent remotely, or install
+  just completed</div>
+  <div><b>Need:</b> Preserve exact failure/partial result, use the named check
+  recovery and scoped rerun. Remote and local source halves have different
+  authority. The focused install check in E is planned, not the current general
+  Doctor.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Existing Doctor contract supports named recovery;
+  FIRST-USER E adds install selection and plain next steps.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke doctor run --help</code>, <code>yoke doctor
+  last-run get --help</code></div>
+  <div><b>Plan notes:</b> FIRST-USER E · FIRST-USER D · FIRST-USER item 29</div>
+  <div><b>Sources:</b> <code>.agents/skills/yoke/doctor/SKILL.md</code>,
+  <code>docs/public/events-doctor-ouroboros.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/doctor.py</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

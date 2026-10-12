@@ -1,0 +1,194 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "observability",
+   "title": "Events, health and performance",
+   "status": "draft-copy",
+   "sources": ["docs/public/events-doctor-ouroboros.md", "docs/public/reference/performance-diagnostics.md", "docs/public/reference/db-reference/events-and-deployments.md"],
+   "children": [
+    {
+     "id": "events",
+     "title": "Events",
+     "status": "draft-copy",
+     "commands": ["yoke events count", "yoke events emit", "yoke events query", "yoke events tail"],
+     "functions": ["events.count.run", "events.emit", "events.query.run", "events.tail.run"],
+     "children": [
+      {
+       "id": "event-registry",
+       "title": "Event registry",
+       "status": "draft-copy"
+      },
+      {
+       "id": "severity",
+       "title": "Severity",
+       "status": "draft-copy"
+      },
+      {
+       "id": "actor-and-project-context",
+       "title": "Actor and project context",
+       "status": "draft-copy"
+      },
+      {
+       "id": "audit-history",
+       "title": "Audit history",
+       "status": "draft-copy"
+      },
+      {
+       "id": "visitor-links",
+       "title": "Visitor links",
+       "status": "draft-copy"
+      },
+      {
+       "id": "query-bounds",
+       "title": "Query bounds",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "doctor",
+     "title": "Doctor",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.E", "JOURNEYS.also-owned-here"],
+     "surface_refs": ["project-hub"],
+     "commands": ["yoke doctor last-run get", "yoke doctor run"],
+     "functions": ["doctor.last_run.get", "doctor.run.run"],
+     "skills": ["doctor"],
+     "children": [
+      {
+       "id": "quick-full-selected-checks",
+       "title": "Quick / full / selected checks",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-applicability",
+       "title": "Project applicability",
+       "status": "draft-copy"
+      },
+      {
+       "id": "pass-fail-and-not-applicable",
+       "title": "Pass, fail and not applicable",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-local-checks",
+       "title": "Project-local checks",
+       "status": "draft-copy"
+      },
+      {
+       "id": "import-failures",
+       "title": "Import failures",
+       "status": "draft-copy"
+      },
+      {
+       "id": "recovery-guidance",
+       "title": "Recovery guidance",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "performance",
+     "title": "Performance",
+     "status": "draft-copy",
+     "commands": ["yoke events performance aggregate", "yoke events performance detail", "yoke hook benchmark", "yoke sessions hook-overhead"],
+     "functions": ["events.performance.aggregate", "events.performance.detail", "sessions.hook_overhead"],
+     "children": [
+      {
+       "id": "measured-operations",
+       "title": "Measured operations",
+       "status": "draft-copy"
+      },
+      {
+       "id": "latency-and-timing",
+       "title": "Latency and timing",
+       "status": "draft-copy"
+      },
+      {
+       "id": "function-call-spans",
+       "title": "Function-call spans",
+       "status": "draft-copy"
+      },
+      {
+       "id": "query-bounds-and-limits",
+       "title": "Query bounds and limits",
+       "status": "draft-copy"
+      },
+      {
+       "id": "missing-and-unknown-measurements",
+       "title": "Missing and unknown measurements",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "diagnostics",
+     "title": "Diagnostic evidence",
+     "status": "draft-copy",
+     "commands": ["yoke events anomalies", "yoke status"],
+     "functions": ["events.anomalies.run", "status.run"],
+     "children": [
+      {
+       "id": "cli-status",
+       "title": "CLI status",
+       "status": "draft-copy"
+      },
+      {
+       "id": "logs-and-raw-captures",
+       "title": "Logs and raw captures",
+       "status": "draft-copy"
+      },
+      {
+       "id": "machine-evidence-fetch",
+       "title": "Machine evidence fetch",
+       "status": "draft-copy"
+      },
+      {
+       "id": "serving-versions",
+       "title": "Serving versions",
+       "status": "draft-copy"
+      },
+      {
+       "id": "privacy-and-redaction",
+       "title": "Privacy and redaction",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "private-metrics",
+     "title": "Private hosted diagnostics",
+     "status": "draft-copy",
+     "audience": "Yoke maintainers",
+     "children": [
+      {
+       "id": "infrastructure-metrics",
+       "title": "Infrastructure metrics",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      },
+      {
+       "id": "log-traffic",
+       "title": "Log traffic",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      },
+      {
+       "id": "database-statistics",
+       "title": "Database statistics",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      },
+      {
+       "id": "aws-cost-and-service-breakdown",
+       "title": "AWS cost and service breakdown",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

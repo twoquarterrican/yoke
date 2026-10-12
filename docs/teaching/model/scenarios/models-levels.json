@@ -1,0 +1,56 @@
+{
+ "scenario": {
+  "id": "models-levels",
+  "title": "Model facts, execution levels and capacity",
+  "status": "draft-copy",
+  "situations": ["The user wants cheaper or stronger workers.", "A new model appears or a level cannot launch.", "A model catalog price changes."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Live capacity and native-provider observations were not exercised; freshness and external-account behavior need runtime evidence."]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Separate facts from staffing policy",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Looking up a model or proposing a level change",
+   "need": "Catalog research holds sourced model/pricing facts and effective dates; execution levels select launches. Unknown research does not mean unlaunchable. Changing the catalog does not silently change level preferences.",
+   "disclosure": "current cue",
+   "surface": "Yoke Help -> Models skill; docs sidebar -> CLI/config -> model reference and execution levels.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke models lookup MODEL_ID", "yoke models get", "yoke models revisions", "yoke models level-proposal"],
+   "plan_notes": ["outside both"],
+   "sources": [".agents/skills/yoke/models/SKILL.md", "docs/public/cli-and-config.md", "docs/public/reference/session-level-routing.md"]
+  },
+  {
+   "id": "02",
+   "title": "Read effective levels and real capacity",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Before choosing a worker level or explaining why staffing is blocked",
+   "need": "Project override wins over universe/default levels. Read source and live option/machine/quota blockers; use launch preview instead of predicting capacity. An unreadable meter is unknown, not exhausted.",
+   "disclosure": "current cue",
+   "surface": "Settings Levels documented view -> level-summary/capacity; Steer model-selection -> preview.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke projects level-summary get --project P", "yoke universe levels get", "yoke universe level-capacity get", "yoke session-control launch preview --project P --level SENIOR"],
+   "plan_notes": ["outside both"],
+   "sources": ["docs/public/reference/session-level-routing.md", ".agents/skills/yoke/steer/model-selection.md"]
+  },
+  {
+   "id": "03",
+   "title": "Inspect native availability and support limits",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "A requested model/effort/context is missing or refused",
+   "need": "Observed surface availability and the receiving machine matter. Unknown/stale/unsupported probes are different states. Preserve exact refusal; a provider rejection does not authorize an alternate hidden launch path.",
+   "disclosure": "current cue",
+   "surface": "CLI/config observed-model section -> list-models and probe help; Steer exact-model recipe.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke session-control launch preview --list-models", "yoke relay probe-models --help"],
+   "plan_notes": ["outside both"],
+   "sources": ["docs/public/cli-and-config.md", ".agents/skills/yoke/steer/model-selection.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/session_control_relay_models.py"]
+  }
+ ]
+}

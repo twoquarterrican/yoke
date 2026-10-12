@@ -1,0 +1,46 @@
+{
+ "scenario": {
+  "id": "dependencies",
+  "title": "Dependencies and related projects",
+  "status": "draft-copy",
+  "situations": ["One change must wait for another to merge or become live.", "Two independent edits share files without needing execution order.", "A reusable producer change must be proved against a consuming project."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Traced intake and displayed graph semantics; multi-project runtime and exact candidate verification are not independently revalidated here.", "How should the human discover an existing related project without authorizing unrelated writes?", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+  "related_scenarios": ["linked_project_delivery", "path-claims"],
+  "plan_refs": ["JOURNEYS.situation-14"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Name the real wait",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When a user or agent identifies a prerequisite at start, integration, delivery or closeout.",
+   "need": "Dependencies can gate starting, merging or closing; the condition may be item completion, merge or delivery to a named environment. Coordination-only overlap creates no wait.",
+   "disclosure": "current cue",
+   "surface": "Intake dependency inference; Frontier reason text and dependency detail",
+   "gap": "Review question: should JOURNEYS teach the actual wait when the user states it, rather than expose every edge type up front?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke items dependency list --help"],
+   "plan_notes": ["JOURNEYS row 11", "JOURNEYS row 14"],
+   "sources": [".agents/skills/yoke/idea/infer-and-create.md", ".agents/skills/yoke/idea/path-claim-blocking.md", "docs/public/frontier.md", "docs/public/reference/lifecycle-gates.md"]
+  },
+  {
+   "id": "02",
+   "title": "Keep project ownership separate",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When the requested outcome touches multiple project repositories or changes a reusable producer contract.",
+   "need": "Each project retains its own item and lane; companion items express a real cross-project dependency and exact consumer proof. Related does not automatically mean shared deployment.",
+   "disclosure": "current cue",
+   "surface": "Intake cross-project handling; project/document steering scope",
+   "gap": "JOURNEYS 14 says link them but lacks a beginner procedure. Review question: should its guide distinguish shared context, dependent work and shared delivery as separate needs?",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke items dependency list --help"],
+   "plan_notes": ["JOURNEYS row 7", "JOURNEYS row 14"],
+   "sources": [".agents/skills/yoke/idea/infer-and-create.md", ".agents/skills/yoke/steer/scope-and-authority.md", "docs/public/strategy.md"]
+  }
+ ]
+}

@@ -1,0 +1,57 @@
+{
+ "scenario": {
+  "id": "github-choices",
+  "title": "GitHub access, repository publication and issue sync",
+  "status": "draft-copy",
+  "situations": ["No GitHub account or another Git provider", "Existing repository needs access", "New repository may stay local", "User later asks about issue mirroring or CI"],
+  "coverage": "traced",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Can users distinguish all three choices without extra setup questions?", "Does general GitHub/relay teaching have one public source, with private operations only linking to it?"],
+  "plan_refs": ["FIRST-USER.2", "FIRST-USER.4", "FIRST-USER.5", "FIRST-USER.10", "FIRST-USER.22", "FIRST-USER.32", "FIRST-USER.A", "JOURNEYS.situation-2", "JOURNEYS.moved-from-first-user-former-dash-g"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Connecting GitHub is optional",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "GitHub step, access refusal or later integration request",
+   "need": "Skip the integration when it is not wanted or available. Authorization and repository access need their own checks; skipped GitHub is not a failed readiness check.",
+   "disclosure": "current cue",
+   "surface": "Connect/skip setup and GitHub help",
+   "gap": "Accepted correction: skipped GitHub makes the token check N/A. Audit exactly which later operations require GitHub and provide alternatives only where supported.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 4", "FIRST-USER 5", "FIRST-USER 22", "FIRST-USER E", "JOURNEYS 2"],
+   "sources": ["docs/public/github.md", "docs/public/reference/github-sync.md"]
+  },
+  {
+   "id": "02",
+   "title": "Publishing a repository is a separate choice",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "New project creation or later publication",
+   "need": "A prepared Git repository can stay local. Connecting a GitHub account does not mean every project must be published there.",
+   "disclosure": "current cue",
+   "surface": "Project source / publish-or-keep-local step",
+   "gap": "JOURNEYS 4–5 currently makes pushing to GitHub sound mandatory. That edge should be reviewed against the supported keep-local path.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["JOURNEYS 4", "JOURNEYS 5"],
+   "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_project_screens.py"]
+  },
+  {
+   "id": "03",
+   "title": "Issue mirroring stays quietly off in the TUI",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "No TUI question; agent-led explanation only when relevant",
+   "need": "GitHub issue synchronization is another independent setting. The interactive installer silently leaves it off; it can be changed later. In agent-led setup, explain the effect and ask before enabling issue sync.",
+   "disclosure": "planned cue",
+   "surface": "Accepted review amendment to FIRST-USER 10",
+   "gap": "The saved plan still contains the older TUI question. This map applies the accepted conversation correction; stronger dedup work remains deliberately deferred.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 10", "FIRST-USER 2"],
+   "sources": ["docs/public/reference/github-sync.md"]
+  }
+ ]
+}

@@ -1,0 +1,191 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "agents",
+   "title": "Agents, harnesses and skills",
+   "status": "draft-copy",
+   "sources": [".agents/skills/yoke/SKILL.md", "runtime/harness/manifest-schema.md", "docs/public/operating-with-agents.md", "docs/public/guides/codex-harness.md", "docs/public/guides/cursor-harness.md"],
+   "surface_refs": ["manual-overview"],
+   "children": [
+    {
+     "id": "harnesses",
+     "title": "Harnesses",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.18", "FIRST-USER.41", "FIRST-USER.C", "FIRST-USER.P2"],
+     "surface_refs": ["packets-help", "resume-context"],
+     "commands": ["yoke codex hook-trust sweep", "yoke relay probe-surface", "yoke session-control qualification open", "yoke session-control surface-policy disable", "yoke session-control surface-policy enable", "yoke session-control surface-policy list"],
+     "functions": ["session_control.qualification.open", "session_control.surface_policy.disable", "session_control.surface_policy.enable", "session_control.surface_policy.list"],
+     "children": [
+      {
+       "id": "claude",
+       "title": "Claude",
+       "status": "draft-copy"
+      },
+      {
+       "id": "codex",
+       "title": "Codex",
+       "status": "draft-copy"
+      },
+      {
+       "id": "cursor",
+       "title": "Cursor",
+       "status": "draft-copy"
+      },
+      {
+       "id": "cli-versus-desktop-surfaces",
+       "title": "CLI versus desktop surfaces",
+       "status": "draft-copy"
+      },
+      {
+       "id": "capability-manifest",
+       "title": "Capability manifest",
+       "status": "draft-copy"
+      },
+      {
+       "id": "native-discovery-and-readiness",
+       "title": "Native discovery and readiness",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "roles",
+     "title": "Agent roles",
+     "status": "draft-copy",
+     "surface_refs": ["execution-instructions", "skills-roles"],
+     "children": [
+      {
+       "id": "main-agent-operator-assistant",
+       "title": "Main agent / operator assistant",
+       "status": "draft-copy"
+      },
+      {
+       "id": "product-manager",
+       "title": "Product manager",
+       "status": "draft-copy"
+      },
+      {
+       "id": "product-designer",
+       "title": "Product designer",
+       "status": "draft-copy"
+      },
+      {
+       "id": "architect",
+       "title": "Architect",
+       "status": "draft-copy"
+      },
+      {
+       "id": "engineer",
+       "title": "Engineer",
+       "status": "draft-copy"
+      },
+      {
+       "id": "tester",
+       "title": "Tester",
+       "status": "draft-copy"
+      },
+      {
+       "id": "boss-quality-gate",
+       "title": "Boss quality gate",
+       "status": "draft-copy"
+      },
+      {
+       "id": "simulator",
+       "title": "Simulator",
+       "status": "draft-copy"
+      },
+      {
+       "id": "qa-walker",
+       "title": "QA walker",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "skills",
+     "title": "Skills",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.P4"],
+     "surface_refs": ["agent-help", "global-orientation", "skills-roles"],
+     "skills": ["conduct", "implement", "implementing"],
+     "children": [
+      {
+       "id": "entry-and-routing",
+       "title": "Entry and routing",
+       "status": "draft-copy"
+      },
+      {
+       "id": "idea-and-refine",
+       "title": "Idea and refine",
+       "status": "draft-copy"
+      },
+      {
+       "id": "shepherd-and-amend",
+       "title": "Shepherd and amend",
+       "status": "draft-copy"
+      },
+      {
+       "id": "implement-and-conduct",
+       "title": "Implement and conduct",
+       "status": "draft-copy"
+      },
+      {
+       "id": "dash-and-blitz",
+       "title": "Dash and Blitz",
+       "status": "draft-copy"
+      },
+      {
+       "id": "polish-and-simulate",
+       "title": "Polish and simulate",
+       "status": "draft-copy"
+      },
+      {
+       "id": "usher-and-approve",
+       "title": "Usher and approve",
+       "status": "draft-copy"
+      },
+      {
+       "id": "onboard-and-maintenance",
+       "title": "Onboard and maintenance",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "boundaries",
+     "title": "Agent responsibility",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.8"],
+     "children": [
+      {
+       "id": "system-and-human-authority",
+       "title": "System and human authority",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-and-lane-scope",
+       "title": "Project and lane scope",
+       "status": "draft-copy"
+      },
+      {
+       "id": "autonomous-mandates",
+       "title": "Autonomous mandates",
+       "status": "draft-copy"
+      },
+      {
+       "id": "human-handoff",
+       "title": "Human handoff",
+       "status": "draft-copy"
+      },
+      {
+       "id": "capability-limitations",
+       "title": "Capability limitations",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

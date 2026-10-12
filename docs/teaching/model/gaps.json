@@ -1,0 +1,112 @@
+{
+ "records": [
+  {
+   "id": "dedup-scope",
+   "title": "Clarify the duplicate-detection boundary",
+   "status": "observed",
+   "text": "FIRST-USER 2 retains title/body matching; 10 says stronger duplicate detection is deferred. Preserve both clauses. Clarify the boundary before expanding or removing either scope.",
+   "plan_refs": ["FIRST-USER.2", "FIRST-USER.10"]
+  },
+  {
+   "id": "deep-topic-coverage",
+   "title": "Map the remaining concept leaves",
+   "status": "observed",
+   "text": "A category or command mapping is not proof each child has teaching. Unmapped leaves stay visible as gaps.",
+   "plan_refs": ["FIRST-USER.40", "JOURNEYS.also-owned-here"]
+  },
+  {
+   "id": "docs-navigation",
+   "title": "Implement the public/installed/web cascade",
+   "status": "observed",
+   "text": "Exact folder names in the earlier documentation hierarchy are exploratory. Preserve concepts and implement approved navigation and release contracts.",
+   "plan_refs": ["FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "inventory-currency",
+   "title": "Revalidate changed inventory sources",
+   "status": "observed",
+   "text": "Research inventories retain exact IDs and hashes. Changed source files need a fresh Atlas/registry census; unchanged files still need recipe quality proof.",
+   "plan_refs": ["FIRST-USER.35", "FIRST-USER.40"]
+  },
+  {
+   "id": "portable-guidance",
+   "title": "Extract portable private procedures",
+   "status": "observed",
+   "text": "Compare execution instructions and CURRENT-PLAN rules with public homes; keep private topology and operator state private.",
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "preview-recipe",
+   "title": "Finish preview setup teaching",
+   "status": "observed",
+   "text": "Map supported preview Packs, provisioning/connection, access/data, candidate identity, QA binding, expiry and cleanup to executable recipes.",
+   "plan_refs": ["JOURNEYS.situation-16"]
+  },
+  {
+   "id": "qa-adoption",
+   "title": "Connect QA concepts to their disclosure moments",
+   "status": "observed",
+   "text": "Differentiate method, plan, case, requirement, execution, verdict, item/run subject, target and machine; preserve local tests/review paths.",
+   "plan_refs": ["JOURNEYS.situation-13"]
+  },
+  {
+   "id": "runtime-proof",
+   "title": "Prove delivered context, not file presence",
+   "status": "observed",
+   "text": "D/E/41 must verify external and global paths on real supported harnesses, including mid-session install, resume and required budgets.",
+   "plan_refs": ["FIRST-USER.D", "FIRST-USER.E", "FIRST-USER.41"]
+  },
+  {
+   "id": "setup-state",
+   "title": "Connect each capability to its real state owner",
+   "status": "observed",
+   "text": "Extend existing project/universe facts and machine readiness; do not create a parallel registry or compulsory setup interview.",
+   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "JOURNEYS.situation-19"]
+  },
+  {
+   "id": "shared-access",
+   "title": "Deliver the checked-in master and verify worker access",
+   "status": "observed",
+   "text": "Deliver one maintained source in checked-in Yoke internal docs. Verify both projects’ worker access; Yoke items update the source and Platform items file linked Yoke updates. Install upkeep only in blocking post-deploy QA.",
+   "detail": "The draft is local; relay iCloud access failed in operator evidence. YOK-3914 and PLAT-220 must deliver one checked-in Yoke source, verify both projects’ actual access, and install upkeep only in post-deploy QA.",
+   "plan_refs": ["FIRST-USER.0"],
+   "work_items": ["YOK-3914", "PLAT-220"]
+  },
+  {
+   "id": "strategy-closeout",
+   "title": "Design initiative completion and archive",
+   "status": "observed",
+   "text": "No completed teaching home yet for completion audit, deferred scope, evidence and confirmed archive.",
+   "plan_refs": ["JOURNEYS.situation-15"]
+  },
+  {
+   "id": "tracking-choice",
+   "title": "Keep suggestion tracking undecided",
+   "status": "observed",
+   "text": "Once-per-session and do-not-ask-again tracking remain an open JOURNEYS question; agent judgment is not a shipped tracker.",
+   "plan_refs": ["JOURNEYS.question-1"]
+  },
+  {
+   "id": "visual-review",
+   "title": "Visual verification remains pending",
+   "status": "observed",
+   "text": "Browser automation refused local-file navigation under its URL policy. Static checks pass; no browser-rendering result is claimed.",
+   "plan_refs": ["FIRST-USER.0"]
+  },
+  {
+   "id": "ungraphed-documentation",
+   "title": "Pack, package and other Markdown are not graphed",
+   "status": "observed",
+   "text": "The docs graph covers documentation, agent skills and references, harness rules and root files. Pack guidance, package-internal Markdown and other trees are listed as ungraphed areas with their reasons; their teaching coverage is unknown until they are graphed.",
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "root-help-omissions",
+   "title": "Root help omits resolvable commands",
+   "status": "observed",
+   "text": "FIRST-USER entry 35 records that root help omits `yoke dash` and `yoke task` although both resolve (field-note 68159). The live command crosswalk lists the registry view; root-help completeness stays unverified until entry 35 lands.",
+   "plan_refs": ["FIRST-USER.35"],
+   "work_items": []
+  }
+ ]
+}

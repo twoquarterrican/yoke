@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent-led install and project adoption · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Agent-led install and project adoption</h1>
+<h2 id="setup-agent">Agent-led install and project adoption
+<i class="s approved">approved</i></h2>
+  <div><b>Scope:</b> Global → actual project folder</div>
+  <div><b>Audience:</b> Human + agent</div>
+  <div><b>Encounter:</b> “Install upyoke.com” or adopt a project</div>
+  <div><b>Location:</b> Public install entry → non-interactive setup →
+  yoke-global → /yoke onboard</div>
+  <div><b>Basis:</b> FIRST-USER planned continuation</div>
+  <div><b>Note:</b> Existing and mature projects need intake and preservation,
+  not a forced blank-slate scaffold. Full project onboarding remains a project
+  operation.</div>
+  <div><b>Current:</b> Observed 2026-10-12: setup --help has noninteractive
+  support but no --agent or --answer flags.</div>
+  <div><b>Desired:</b> Same setup engine with structured resumable answers;
+  relevant GitHub explanation; readiness then project-bound minimal
+  onboard.</div>
+  <div><b>Plan notes:</b> FIRST-USER A/B/C/D/24/P1–P4 · JOURNEYS 1–14</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py</code>,
+  <code>.agents/skills/yoke/onboard/SKILL.md</code>,
+  <code>.agents/skills/yoke/onboard/strategy-conversation.md</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/session_orientation.py:268</code>,
+  <code>packages/yoke-harness/src/yoke_harness/hooks/cursor_lifecycle_hooks.py:34</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139</code></div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+<h3 id="setup-agent/01">Before install, the public entry supplies the install
+and help route; Yoke hooks cannot supply context yet.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Link</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/entry">installation/entry</a>,
+  <a href="../concepts/context-guidance.html#context/docs">context/docs</a></div>
+<h3 id="setup-agent/02">Ask the minimum practical constraint, recommend a mode
+and explain only decisions the person must make.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Teach</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b> <a href="../concepts/modes.html#modes">modes</a>,
+  <a href="../concepts/identity.html#identity/auth">identity/auth</a>,
+  <a href="../concepts/machines.html#machines/registration">machines/registration</a></div>
+<h3 id="setup-agent/03">Reuse existing setup. GitHub and issue sync remain
+optional; sync stays off unless intentionally enabled.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Rule</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/choices">installation/choices</a>,
+  <a href="../concepts/repositories.html#repositories/github">repositories/github</a>,
+  <a href="../concepts/repositories.html#repositories/sync">repositories/sync</a></div>
+<h3 id="setup-agent/04">During agent-led GitHub adoption, briefly explain
+optional issue sync, offer opt-in and identify the later configuration route.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Teach</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/repositories.html#repositories/github">repositories/github</a>,
+  <a href="../concepts/repositories.html#repositories/sync">repositories/sync</a></div>
+<h3 id="setup-agent/05">Verify the active harness, registration and context
+delivery; name any action needed for a new session.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/readiness">installation/readiness</a>,
+  <a href="../concepts/agents.html#agents/harnesses">agents/harnesses</a>,
+  <a href="../concepts/context.html#context/hooks">context/hooks</a></div>
+<h3 id="setup-agent/06">Choose/add the project globally, then open or use a
+session bound to its folder, carrying the user’s intent and existing-work scope.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/adoption">projects/adoption</a>,
+  <a href="../concepts/projects.html#projects/onboarding">projects/onboarding</a>,
+  <a href="../concepts/strategy.html#strategy/corpus">strategy/corpus</a>,
+  <a href="../concepts/sessions.html#sessions/identity">sessions/identity</a></div>
+<h3 id="setup-agent/07">Adopt existing docs, tests and delivery. Offer database
+governance, QA machines or richer deploy flows when the work needs them.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Link</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/architecture.html#architecture/structure">architecture/structure</a>,
+  <a href="../concepts/verification.html#verification/configuration">verification/configuration</a>,
+  <a href="../concepts/databases.html#databases/setup">databases/setup</a>,
+  <a href="../concepts/test-machines.html#test-machines/setup">test-machines/setup</a>,
+  <a href="../concepts/deployments.html#deployments/flows">deployments/flows</a></div>
+<h3 id="setup-agent/desired-01">Emit the step’s question, allowed answers,
+guidance and human authorization link/code as structured data.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/entry">installation/entry</a>,
+  <a href="../concepts/identity.html#identity/auth">identity/auth</a></div>
+<h3 id="setup-agent/desired-02">Resume the same setup engine with the planned
+--agent/--answer contract; do not treat it as shipped.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/entry">installation/entry</a>,
+  <a href="../concepts/sessions.html#sessions/continuity">sessions/continuity</a></div>
+<h3 id="setup-agent/desired-03">Teach the supported no-GitHub path; explain and
+offer issue-sync opt-in only when relevant.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/repositories.html#repositories/github">repositories/github</a>,
+  <a href="../concepts/repositories.html#repositories/sync">repositories/sync</a></div>
+<h3 id="setup-agent/desired-04">Verify this harness is ready; carry intent to a
+session in the real project folder, then onboard.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/readiness">installation/readiness</a>,
+  <a href="../concepts/projects.html#projects/adoption">projects/adoption</a></div>
+<h3 id="setup-agent/desired-05">Reuse existing work and docs, confirm strategy
+decisions one at a time, then hand off to steering.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.24">24</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/onboarding">projects/onboarding</a>,
+  <a href="../concepts/strategy.html#strategy/corpus">strategy/corpus</a>,
+  <a href="../concepts/frontier.html#frontier/entrypoints">frontier/entrypoints</a></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

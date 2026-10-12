@@ -1,0 +1,225 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "coordination",
+   "title": "Worktrees and conflicting work",
+   "status": "draft-copy",
+   "sources": ["docs/public/reference/agent-rules/lanes-and-claims.md", "docs/public/reference/db-reference/path-claims.md", "docs/public/reference/db-reference/functions-claims.md", "docs/public/reference/db-reference/functions-worktrees.md"],
+   "children": [
+    {
+     "id": "lanes",
+     "title": "Worktree lanes",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.P3"],
+     "surface_refs": ["project-hooks", "project-native"],
+     "commands": ["yoke direct-workflow worktree prepare", "yoke item-worktrees create", "yoke item-worktrees get", "yoke item-worktrees inventory", "yoke item-worktrees list", "yoke item-worktrees path-record", "yoke item-worktrees release"],
+     "functions": ["item_worktrees.create", "item_worktrees.get", "item_worktrees.inventory", "item_worktrees.list", "item_worktrees.path_record", "item_worktrees.release", "item_worktrees.release_merged_lane"],
+     "children": [
+      {
+       "id": "prepare-from-verified-upstream",
+       "title": "Prepare from verified upstream",
+       "status": "draft-copy"
+      },
+      {
+       "id": "item-implementation-lane",
+       "title": "Item implementation lane",
+       "status": "draft-copy"
+      },
+      {
+       "id": "task-lanes",
+       "title": "Task lanes",
+       "status": "draft-copy"
+      },
+      {
+       "id": "integration-lane",
+       "title": "Integration lane",
+       "status": "draft-copy"
+      },
+      {
+       "id": "reuse-and-cleanup",
+       "title": "Reuse and cleanup",
+       "status": "draft-copy"
+      },
+      {
+       "id": "write-authority",
+       "title": "Write authority",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "work-claims",
+     "title": "Work claims",
+     "status": "draft-copy",
+     "surface_refs": ["resume-context"],
+     "commands": ["yoke claims work acquire", "yoke claims work current", "yoke claims work holder-get", "yoke claims work holder-list", "yoke claims work list", "yoke claims work release", "yoke claims work status", "yoke claims work-claim acquire", "yoke claims work-claim get", "yoke claims work-claim list", "yoke claims work-claim release"],
+     "functions": ["claims.work.acquire", "claims.work.holder_get", "claims.work.holder_list", "claims.work.release", "claims.work.release_session_scoped"],
+     "children": [
+      {
+       "id": "acquire",
+       "title": "Acquire",
+       "status": "draft-copy"
+      },
+      {
+       "id": "inspect-owner",
+       "title": "Inspect owner",
+       "status": "draft-copy"
+      },
+      {
+       "id": "release",
+       "title": "Release",
+       "status": "draft-copy"
+      },
+      {
+       "id": "stale-holder",
+       "title": "Stale holder",
+       "status": "draft-copy"
+      },
+      {
+       "id": "session-to-work-ownership",
+       "title": "Session-to-work ownership",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "survey",
+     "title": "Path survey",
+     "status": "draft-copy",
+     "commands": ["yoke direct-workflow blitz survey", "yoke direct-workflow conflict-survey status", "yoke direct-workflow dash survey"],
+     "functions": ["direct_workflow.blitz.survey", "direct_workflow.conflict_survey.status", "direct_workflow.dash.survey"],
+     "children": [
+      {
+       "id": "find-affected-files",
+       "title": "Find affected files",
+       "status": "draft-copy"
+      },
+      {
+       "id": "existing-structure",
+       "title": "Existing structure",
+       "status": "draft-copy"
+      },
+      {
+       "id": "required-scope",
+       "title": "Required scope",
+       "status": "draft-copy"
+      },
+      {
+       "id": "survey-evidence",
+       "title": "Survey evidence",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "file-budget",
+     "title": "File budget",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "declared-files",
+       "title": "Declared files",
+       "status": "draft-copy"
+      },
+      {
+       "id": "planned-operations",
+       "title": "Planned operations",
+       "status": "draft-copy"
+      },
+      {
+       "id": "per-task-scope",
+       "title": "Per-task scope",
+       "status": "draft-copy"
+      },
+      {
+       "id": "amendments",
+       "title": "Amendments",
+       "status": "draft-copy"
+      },
+      {
+       "id": "authored-file-line-limit",
+       "title": "Authored-file line limit",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "path-claims",
+     "title": "Path claims",
+     "status": "draft-copy",
+     "surface_refs": ["project-native", "skills-roles"],
+     "commands": ["yoke claims path activation-run", "yoke claims path amend", "yoke claims path boundary-prove", "yoke claims path coordination-decision-build", "yoke claims path get", "yoke claims path list", "yoke claims path override", "yoke claims path register", "yoke claims path required-gate", "yoke claims path widen", "yoke path-claims conflicts list", "yoke readiness repair-claim-coverage"],
+     "functions": ["claims.path.activation_run", "claims.path.amend", "claims.path.boundary_context", "claims.path.boundary_observe", "claims.path.boundary_prove", "claims.path.coordination_decision_build", "claims.path.get", "claims.path.list", "claims.path.override", "claims.path.register", "claims.path.release", "claims.path.required_gate", "claims.path.survey_ensure", "claims.path.widen", "path_claims.conflicts.list", "readiness.repair_claim_coverage"],
+     "children": [
+      {
+       "id": "physical-file-identity",
+       "title": "Physical file identity",
+       "status": "draft-copy"
+      },
+      {
+       "id": "claim-owners",
+       "title": "Claim owners",
+       "status": "draft-copy"
+      },
+      {
+       "id": "overlap-classification",
+       "title": "Overlap classification",
+       "status": "draft-copy"
+      },
+      {
+       "id": "attested-coordination",
+       "title": "Attested coordination",
+       "status": "draft-copy"
+      },
+      {
+       "id": "directional-dependencies",
+       "title": "Directional dependencies",
+       "status": "draft-copy"
+      },
+      {
+       "id": "collision-recovery",
+       "title": "Collision recovery",
+       "status": "draft-copy"
+      },
+      {
+       "id": "operator-override",
+       "title": "Operator override",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "resources",
+     "title": "Shared resource coordination",
+     "status": "draft-copy",
+     "commands": ["yoke claims coordination-claim acquire", "yoke claims coordination-claim list", "yoke claims coordination-claim operator-release", "yoke claims coordination-claim release", "yoke coordination-claim list", "yoke coordination-claim release"],
+     "functions": ["claims.coordination_claim.acquire", "claims.coordination_claim.heartbeat", "claims.coordination_claim.list", "claims.coordination_claim.operator_release", "claims.coordination_claim.release"],
+     "children": [
+      {
+       "id": "coordination-keys",
+       "title": "Coordination keys",
+       "status": "draft-copy"
+      },
+      {
+       "id": "target-occupancy",
+       "title": "Target occupancy",
+       "status": "draft-copy",
+       "related": "deployments/recovery/target-occupancy"
+      },
+      {
+       "id": "acquire-and-release",
+       "title": "Acquire and release",
+       "status": "draft-copy"
+      },
+      {
+       "id": "stranded-hold-recovery",
+       "title": "Stranded hold recovery",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

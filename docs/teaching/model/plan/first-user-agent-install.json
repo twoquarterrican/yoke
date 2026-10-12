@@ -1,0 +1,88 @@
+{
+ "plan": "FIRST-USER",
+ "title": "FIRST-USER agent-led install, teaching and setup facts",
+ "reconciled_at": "2026-10-12T19:07:13.903317Z",
+ "rows": [
+  {
+   "id": "FIRST-USER.40",
+   "title": "40. Reorganize docs and enforce the teaching standard (linked yoke + platform pair)",
+   "status": "approved",
+   "scope": "Both projects",
+   "concepts": ["documentation/ownership", "documentation/cascade", "context/docs", "reference/commands"],
+   "surfaces": ["docs-landing", "manual-overview", "manual-contents", "category-summary", "detail-home", "project-native", "skills-roles", "execution-instructions"],
+   "scenarios": ["help-cascade", "execution-instructions", "agent-context"]
+  },
+  {
+   "id": "FIRST-USER.41",
+   "title": "41. Make installed help and context independently usable",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["context/docs", "context/packets", "agents/harnesses"],
+   "surfaces": ["agent-help", "packets-help", "project-native", "skills-roles"],
+   "scenarios": ["help-cascade", "agent-context"]
+  },
+  {
+   "id": "FIRST-USER.42",
+   "title": "42. Preserve setup facts across sessions and machines",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["projects/onboarding", "projects/settings", "machines/inspection"],
+   "surfaces": ["project-orientation", "global-orientation", "setup-agent"],
+   "scenarios": ["project-adoption", "work-progress-continuity"]
+  },
+  {
+   "id": "FIRST-USER.43",
+   "title": "43. Show agents the relevant setup facts and next action",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["projects/onboarding", "context/disclosure", "context/packets"],
+   "surfaces": ["project-orientation", "global-orientation", "packets-help", "skills-roles", "command-feedback"],
+   "scenarios": ["agent-context", "project-adoption", "work-intent"]
+  },
+  {
+   "id": "FIRST-USER.A",
+   "title": "A. Setup's agent mode",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["installation/entry", "installation/choices", "repositories/github"],
+   "surfaces": ["setup-agent", "command-feedback"],
+   "scenarios": ["install-entry", "github-choices"]
+  },
+  {
+   "id": "FIRST-USER.B",
+   "title": "B. New homepage: \"Tell your agent: install upyoke.com\" (**platform**, frozen, operator launches)",
+   "status": "approved",
+   "scope": "Platform",
+   "concepts": ["basics/model", "installation/entry"],
+   "surfaces": ["docs-landing", "setup-agent"],
+   "scenarios": ["install-entry"]
+  },
+  {
+   "id": "FIRST-USER.C",
+   "title": "C. Confirm Yoke is ready before onboarding (after P1 and E)",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["installation/readiness", "sessions/identity", "agents/harnesses"],
+   "surfaces": ["setup-agent", "global-orientation", "project-orientation"],
+   "scenarios": ["harness-readiness"]
+  },
+  {
+   "id": "FIRST-USER.D",
+   "title": "D. Extend the installer tests to cover this call and agent install (Wave 0)",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["installation/readiness", "verification/checks", "context/disclosure", "deployments/outcomes"],
+   "surfaces": ["setup-tui", "setup-agent", "project-orientation", "global-orientation"],
+   "scenarios": ["install-entry", "harness-readiness", "project-adoption", "delivery_outcome"]
+  },
+  {
+   "id": "FIRST-USER.E",
+   "title": "E. Focused install health check",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["installation/readiness", "observability/doctor"],
+   "surfaces": ["setup-agent", "command-feedback", "detail-home"],
+   "scenarios": ["harness-readiness", "health-events"]
+  }
+ ]
+}

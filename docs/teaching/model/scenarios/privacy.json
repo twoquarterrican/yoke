@@ -1,0 +1,58 @@
+{
+ "scenario": {
+  "id": "privacy",
+  "title": "Privacy, telemetry and local-machine authority",
+  "status": "draft-copy",
+  "situations": ["A tool call receives a privacy refusal or advisory.", "A user asks what Yoke records or where data goes.", "An operator needs credentials or personal files without leaking them into chat."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Trace actual redaction at each UI/CLI/packet boundary separately; doc assertions do not prove it.", "Where should the human-facing privacy/support explanation be linked before a guard fires?"],
+  "related_scenarios": ["capabilities", "browser_identities", "people-access"],
+  "plan_refs": ["FIRST-USER.16", "FIRST-USER.34", "FIRST-USER.P3"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Know who decides local-machine access",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "A privacy guard result appears",
+   "need": "System privacy database reads are refused by Yoke; broad home discovery is advisory. Personal-folder reads and GUI automation remain subject to harness permissions and OS controls. Automated-test isolation is stricter than live policy.",
+   "disclosure": "current cue",
+   "surface": "Local privacy guard diagnosis names authority and a recovery step.",
+   "gap": "The refusal teaching is concrete; proactive human help entry and end-to-end delivery outside project context were not traced.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER P3", "FIRST-USER item 34"],
+   "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/local_privacy_messages.py", "packages/yoke-contracts/src/yoke_contracts/hook_runner/local_privacy_guard.py"]
+  },
+  {
+   "id": "02",
+   "title": "Distinguish Yoke telemetry from customer domain data",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Explaining collection, retention or investigating event data",
+   "need": "Read the product telemetry contract and destination. Do not generalize Yoke analytics rules to an application event store installed or built in a customer project. Data provenance, actor attribution and query-time linkage need accurate audience-specific explanation.",
+   "disclosure": "audit needed",
+   "surface": "Public Events article describes universe-local collectors, redaction, attribution and visitor links; sidebar makes article reachable.",
+   "gap": "No full privacy/data-flow audit was performed. Reconcile the broad no-personal-data wording with documented actor/browser linkage rather than repeat an unchecked blanket claim.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["outside both"],
+   "sources": ["docs/public/nav.yaml", "docs/public/events-doctor-ouroboros.md"]
+  },
+  {
+   "id": "03",
+   "title": "Keep secrets out of explanatory output",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "Presenting command output, setup recovery or capability evidence",
+   "need": "Use redacted settings/key-presence evidence and secret input channels; never dump raw config/tokens. Human browser authorization and agent explanation should expose only the data required to continue.",
+   "disclosure": "current cue",
+   "surface": "Standing AGENTS rule -> capability/delivery home; secret-versus-settings CLI refusal.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke projects capability secret set --help"],
+   "plan_notes": ["FIRST-USER item 16 + F", "FIRST-USER item 26", "FIRST-USER item 35"],
+   "sources": ["AGENTS.md", "docs/public/capabilities.md", "docs/public/reference/agent-rules/delivery.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/projects_capability_settings.py"]
+  }
+ ]
+}

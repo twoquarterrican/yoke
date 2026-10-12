@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control-plane internals (continued) · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Control-plane internals (continued)</h1>
+<ul>
+<li id="runtime/harness-lifecycle-and-session-identity"><b>Harness lifecycle and
+session identity</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+  <div><b>Sources:</b> <code>docs/harness-substrate.md</code>,
+  <code>docs/session-identity-contract.md</code>,
+  <code>docs/session-identity-contract/process-anchor-registry.md</code>,
+  <code>docs/agents.md</code></div>
+<ul>
+<li id="runtime/harness-lifecycle-and-session-identity/native-discovery-and-adapters"><b>Native
+discovery and adapters</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/harness-lifecycle-and-session-identity/canonical-role-and-skill-bodies"><b>Canonical
+role and skill bodies</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/harness-lifecycle-and-session-identity/registration-and-orientation"><b>Registration
+and orientation</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/harness-lifecycle-and-session-identity/process-anchors-and-reactivation"><b>Process
+anchors and reactivation</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/harness-lifecycle-and-session-identity/resume-end-and-custody"><b>Resume,
+end and custody</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+</ul>
+</li>
+<li id="runtime/hooks-and-context-delivery"><b>Hooks and context delivery</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+  <div><b>Sources:</b> <code>docs/hooks.md</code>,
+  <code>docs/hook-parity-map.md</code>,
+  <code>docs/harness-bootstrap.md</code></div>
+<ul>
+<li id="runtime/hooks-and-context-delivery/hook-ownership-and-event-parity"><b>Hook
+ownership and event parity</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/hooks-and-context-delivery/resident-transport-and-deadlines"><b>Resident
+transport and deadlines</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/hooks-and-context-delivery/lifecycle-deduplication"><b>Lifecycle
+deduplication</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/hooks-and-context-delivery/read-only-observations"><b>Read-only
+observations</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/hooks-and-context-delivery/fingerprints-and-trust"><b>Fingerprints
+and trust</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/hooks-and-context-delivery/degradation-and-replay"><b>Degradation
+and replay</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+</ul>
+</li>
+<li id="runtime/relay-execution-and-custody"><b>Relay execution and custody</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+  <div><b>Sources:</b> <code>docs/harness-bootstrap.md</code>,
+  <code>docs/session-identity-contract.md</code></div>
+<ul>
+<li id="runtime/relay-execution-and-custody/capacity-and-registered-machine-access"><b>Capacity
+and registered machine access</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/relay-execution-and-custody/pinned-runtime-acquisition"><b>Pinned
+runtime acquisition</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/relay-execution-and-custody/atomic-upgrade-and-readiness-proof"><b>Atomic
+upgrade and readiness proof</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/relay-execution-and-custody/job-launch-and-isolation"><b>Job
+launch and isolation</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/relay-execution-and-custody/retry-quarantine-and-ambiguous-reports"><b>Retry,
+quarantine and ambiguous reports</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/relay-execution-and-custody/session-liveness-and-usage-accounting"><b>Session
+liveness and usage accounting</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+</ul>
+</li>
+<li id="runtime/browser-and-qa-execution-internals"><b>Browser and QA execution
+internals</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+  <div><b>Sources:</b> <code>docs/browser-substrate.md</code>,
+  <code>docs/browser-substrate/persistent-profile.md</code>,
+  <code>docs/browser-substrate/snapshot-primitives.md</code>,
+  <code>docs/browser-substrate/scenario-orchestration.md</code>,
+  <code>docs/browser-substrate/qa-artifact-integration.md</code>,
+  <code>docs/qa-platform/execution-target-declaration-rebind.md</code>,
+  <code>docs/qa-platform/plan-case-currency.md</code>,
+  <code>docs/qa-platform/deployment-stage-execution.md</code></div>
+<ul>
+<li id="runtime/browser-and-qa-execution-internals/browser-daemon-and-persistent-profiles"><b>Browser
+daemon and persistent profiles</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/browser-and-qa-execution-internals/snapshot-primitives"><b>Snapshot
+primitives</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/browser-and-qa-execution-internals/scenario-orchestration"><b>Scenario
+orchestration</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/browser-and-qa-execution-internals/artifact-attachment"><b>Artifact
+attachment</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/browser-and-qa-execution-internals/execution-targets-and-rebind"><b>Execution
+targets and rebind</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/browser-and-qa-execution-internals/plan-and-case-currency"><b>Plan
+and case currency</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+<li id="runtime/browser-and-qa-execution-internals/deployment-stage-execution"><b>Deployment-stage
+execution</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+  <div><b>Audience:</b> Maintainers</div>
+</li>
+</ul>
+</li>
+</ul>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

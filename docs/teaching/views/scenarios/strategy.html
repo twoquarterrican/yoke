@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strategy, current plans and initiative closeout · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Strategy, current plans and initiative closeout</h1>
+<h2 id="strategy">Strategy, current plans and initiative closeout
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> The user describes a large effort without a durable
+  plan. · The existing CURRENT-PLAN is stale or contains accepted standing
+  decisions. · Most linked work is done and the user wants to finish the
+  initiative.</div>
+  <div><b>Coverage:</b> partial</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> Current skill/doc semantics were read; strategy
+  mutation and archive behavior were not exercised. · Should a completed Blitz
+  receive the same scope/evidence audit before its existing automatic archive? ·
+  Command nodes, when present, were checked with installed CLI --help only; this
+  proves parser/help availability, not serving-control-plane capability or
+  successful execution.</div>
+  <div><b>JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-9">situation-9</a>,
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-10">situation-10</a>,
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-11">situation-11</a>,
+  <a href="../plan-coverage/journeys-project-situations.html#JOURNEYS.situation-15">situation-15</a>,
+  <a href="../plan-coverage/journeys-owned-work.html#JOURNEYS.also-owned-here">also-owned-here</a></div>
+<h3 id="strategy/01">Reuse direction and change only approved strategy
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> When strategy is absent, placeholder, stale, or the user
+  asks to change project direction.</div>
+  <div><b>Need:</b> CURRENT-PLAN holds near-term outcomes; strategy rows are
+  authority and local files are renders. Reuse accepted content and propose
+  changes before writing.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Onboard strategy step; Strategize proposal/approval
+  phases; Strategy page</div>
+  <div><b>Gap:</b> Review question: should JOURNEYS 9-10 distinguish a focused
+  first-work plan from a full five-document strategy review? Current Onboard
+  requires five accepted docs.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke strategy doc get --help</code></div>
+  <div><b>Plan notes:</b> FIRST-USER 24 · JOURNEYS row 9 · JOURNEYS row 10</div>
+  <div><b>Sources:</b> <code>docs/public/strategy.md</code>,
+  <code>.agents/skills/yoke/onboard/strategy-conversation.md</code>,
+  <code>.agents/skills/yoke/strategize/propose.md</code>,
+  <code>.agents/skills/yoke/strategize/approve.md</code></div>
+<h3 id="strategy/02">Staff a plan through Steer
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> When an accepted plan has runnable work with no owner, or
+  the user asks to pursue that plan.</div>
+  <div><b>Need:</b> Read the selected plan, live work state and covering
+  authority before staffing; preserve standing decisions and update the durable
+  checkpoint. Reconcile contradictory teaching about Feed versus Steer rather
+  than inventing an extra mandatory step.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Steer entry, scope and loop; public Strategy
+  guidance</div>
+  <div><b>Gap:</b> Public Strategy says strategy needs Feed to become runnable
+  work; current Steer says not to invoke Feed, while Strategize attributes
+  staffing to the scheduler. Review question: which shipped owner governs each
+  role, and which producer texts must change together?</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke strategy doc get --help</code></div>
+  <div><b>Plan notes:</b> JOURNEYS row 11 · FIRST-USER 32</div>
+  <div><b>Sources:</b> <code>.agents/skills/yoke/steer/SKILL.md</code>,
+  <code>.agents/skills/yoke/steer/scope-and-authority.md</code>,
+  <code>.agents/skills/yoke/steer/loop.md</code>,
+  <code>docs/public/strategy.md</code>,
+  <code>.agents/skills/yoke/strategize/SKILL.md</code></div>
+<h3 id="strategy/03">Close the initiative separately from ending a session
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> When linked work is nearly complete or the user asks whether
+  the initiative can be archived.</div>
+  <div><b>Need:</b> Audit delivered scope, evidence and tracked deferrals before
+  archiving an initiative. A session wrapup or steering-seat release answers a
+  different question.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> JOURNEYS completion proposal; existing Steer close-out
+  and Wrapup</div>
+  <div><b>Gap:</b> JOURNEYS 15 names no current initiative-audit home. Review
+  question: how should it coexist with Blitz automatically archiving its
+  execution document on successful done?</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> JOURNEYS row 15</div>
+  <div><b>Sources:</b> <code>.agents/skills/yoke/steer/close-out.md</code>,
+  <code>.agents/skills/yoke/wrapup/record-and-close.md</code>,
+  <code>docs/public/workflows.md</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

@@ -1,0 +1,83 @@
+{
+ "surface": {
+  "id": "project-hooks",
+  "title": "Recurring project hooks",
+  "status": "observed",
+  "scope": "Project addition",
+  "audience": "Agent → human for needed decisions",
+  "encounter": "Frequent checks · conditional text",
+  "location": "Project/lane policy through the same hook runner",
+  "basis": "Existing mechanism · scoped cues proposed",
+  "note": "Use the event that actually owns the fact: tool guard, command response, item read or stage entry. JOURNEYS need not put every cue in a hook.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "Retain scoped guards, messages and recovery; deduplicate ownership and budget the combined payload.",
+  "plan_notes": ["FIRST-USER P2/P3", "JOURNEYS contextual disclosure"],
+  "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"],
+  "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/hook_ordering.py:264", "packages/yoke-core/src/yoke_core/hooks/registration.py:1", "packages/yoke-contracts/src/yoke_contracts/hook_context_compose.py:114", "packages/yoke-core/src/yoke_core/hooks/hook_context_compose.py:14", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "Check the attempted action against its real lane, claim, workflow and project authority.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["coordination/work-claims", "coordination/path-claims", "workflows/gates"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "02",
+   "title": "On refusal: explain the relevant blocker, one supported repair and the exact deeper help.",
+   "status": "draft-copy",
+   "form": "Do",
+   "verification": "No delivery proof attached.",
+   "topics": ["context/hooks", "context/docs"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "03",
+   "title": "Deliver changes that matter now: holder/dependency changes, incoming instructions or a waiting decision.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["planning/dependencies", "sessions/ownership", "messaging/messages", "approvals/requests"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "04",
+   "title": "At the relevant action, point to migration governance, QA setup or delivery prerequisites.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["databases/setup", "qa-plans/bindings", "test-machines/setup", "deployments/flows"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "05",
+   "title": "Ask for a missing intent or constraint only when it changes the next action; suppress already-settled guidance.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["documentation/disclosure"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Apply project/lane rules at the action; explain a refusal’s real cause and supported recovery.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["context/hooks", "coordination/lanes", "security/boundaries"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Deliver messages, handoffs and changed facts; suppress routine success noise.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["messaging/messages", "context/disclosure"],
+   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
+  }
+ ]
+}

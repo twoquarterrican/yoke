@@ -1,0 +1,83 @@
+{
+ "surface": {
+  "id": "execution-instructions",
+  "title": "Scoped execution instructions",
+  "status": "observed",
+  "scope": "Configured workflow / project scope",
+  "audience": "Agent",
+  "encounter": "Before creation, item read or stage entry",
+  "location": "Live execution-instruction records with explicit delivery settings",
+  "basis": "Existing mechanism",
+  "note": "Universal product procedure belongs in shipped rules/skills. Private CURRENT-PLAN or instruction rows require a content audit before anything is promoted.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "Reuse scoped instructions for working obligations; move portable guidance to shipped homes and keep private choices private.",
+  "plan_notes": ["Previous standing-procedure audit", "JOURNEYS staged disclosure"],
+  "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"],
+  "sources": ["packages/yoke-core/src/yoke_core/domain/execution_instruction_delivery.py:85", "packages/yoke-core/src/yoke_core/domain/execution_instruction_projection.py:11"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "Only the operator/project policy that applies to this workflow, project and delivery point.",
+   "status": "draft-copy",
+   "form": "Rule",
+   "verification": "No delivery proof attached.",
+   "topics": ["context/instructions", "posture/resolution"],
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"]
+  },
+  {
+   "id": "02",
+   "title": "Instruction identity, scope and why it is being supplied now.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["context/instructions"],
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"]
+  },
+  {
+   "id": "03",
+   "title": "A precise full read for mandatory text withheld from compact output.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["context/instructions", "context/docs"],
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"]
+  },
+  {
+   "id": "04",
+   "title": "Project-specific procedures at the point they apply: creation, planning, implementation, QA or delivery.",
+   "status": "draft-copy",
+   "form": "Do",
+   "verification": "No delivery proof attached.",
+   "topics": ["items/creation", "planning", "verification", "deployments"],
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Apply the project/workflow instruction at its configured delivery point; verify workers receive it.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["context/instructions", "agents/roles"],
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Inspect affected prototype nodes when planning and finishing; update teaching and report remaining gaps with evidence.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["documentation/planning", "documentation/ownership", "learning/notes"],
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"]
+  },
+  {
+   "id": "desired-03",
+   "title": "Ship portable rules from canonical public homes; keep installation-specific operating choices private.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["documentation/ownership", "cloud-operations/operations"],
+   "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"]
+  }
+ ]
+}

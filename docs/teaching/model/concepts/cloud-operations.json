@@ -1,0 +1,171 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "cloud-operations",
+   "title": "Yoke Cloud and Platform internals",
+   "status": "draft-copy",
+   "audience": "Yoke maintainers",
+   "sources": ["docs/public/reference/hosted-org-admin.md", "docs/public/actors-members-billing.md"],
+   "private_sources": ["platform"],
+   "children": [
+    {
+     "id": "tenancy",
+     "title": "Tenancy",
+     "status": "draft-copy",
+     "audience": "Administrators / maintainers",
+     "plan_refs": ["FIRST-USER.P7"],
+     "children": [
+      {
+       "id": "organization-registry",
+       "title": "Organization registry",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "tenant-universe-lifecycle",
+       "title": "Tenant universe lifecycle",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "provisioning-and-readiness",
+       "title": "Provisioning and readiness",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "core-connection-binding",
+       "title": "Core connection binding",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      }
+     ]
+    },
+    {
+     "id": "people",
+     "title": "Membership administration",
+     "status": "draft-copy",
+     "audience": "Administrators / maintainers",
+     "related": "identity/accounts"
+    },
+    {
+     "id": "edge",
+     "title": "Hosted routing",
+     "status": "draft-copy",
+     "audience": "Administrators / maintainers",
+     "children": [
+      {
+       "id": "authentication-handoff",
+       "title": "Authentication handoff",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "trusted-proxy",
+       "title": "Trusted proxy",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "workbench-embedding",
+       "title": "Workbench embedding",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "github-relay",
+       "title": "GitHub relay",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "machine-authorization-relay",
+       "title": "Machine authorization relay",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      }
+     ]
+    },
+    {
+     "id": "operations",
+     "title": "Platform operation",
+     "status": "draft-copy",
+     "audience": "Administrators / maintainers",
+     "surface_refs": ["execution-instructions"],
+     "children": [
+      {
+       "id": "release-and-serving-identity",
+       "title": "Release and serving identity",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "health-and-diagnostics",
+       "title": "Health and diagnostics",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "registry-database",
+       "title": "Registry database",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "platform-specific-configuration",
+       "title": "Platform-specific configuration",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      },
+      {
+       "id": "incident-recovery",
+       "title": "Incident recovery",
+       "status": "draft-copy",
+       "audience": "Administrators / maintainers"
+      }
+     ]
+    },
+    {
+     "id": "hosted-architecture-and-tenant-lifecycle",
+     "title": "Hosted architecture and tenant lifecycle",
+     "status": "draft-copy",
+     "audience": "Yoke maintainers",
+     "private_sources": ["platform"],
+     "children": [
+      {
+       "id": "public-browser-app-and-private-service",
+       "title": "Public browser app and private service",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      },
+      {
+       "id": "one-universe-database-and-engine-per-organization",
+       "title": "One universe database and engine per organization",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      },
+      {
+       "id": "tenant-birth-replacement-and-retirement",
+       "title": "Tenant birth, replacement and retirement",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      },
+      {
+       "id": "stage-and-production-isolation",
+       "title": "Stage and production isolation",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      },
+      {
+       "id": "browser-to-tenant-relay-and-role-authority",
+       "title": "Browser-to-tenant relay and role authority",
+       "status": "draft-copy",
+       "audience": "Yoke maintainers"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

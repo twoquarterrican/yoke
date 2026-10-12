@@ -1,0 +1,165 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "qa-methods",
+   "title": "QA methods",
+   "status": "draft-copy",
+   "sources": ["packages/yoke-core/src/yoke_core/domain/qa_method_definitions.py", "docs/public/reference/qa-platform.md", "docs/public/reference/exploratory-qa.md", "packs/machine-qa/pack.json"],
+   "surface_refs": ["manual-overview"],
+   "commands": ["yoke qa method get", "yoke qa method list", "yoke qa methods get", "yoke qa methods list"],
+   "functions": ["qa.method.get", "qa.method.list"],
+   "children": [
+    {
+     "id": "model",
+     "title": "Method anatomy",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.also-owned-here", "JOURNEYS.situation-13"],
+     "children": [
+      {
+       "id": "purpose",
+       "title": "Purpose",
+       "status": "draft-copy"
+      },
+      {
+       "id": "runner",
+       "title": "Runner",
+       "status": "draft-copy"
+      },
+      {
+       "id": "capability-requirements",
+       "title": "Capability requirements",
+       "status": "draft-copy"
+      },
+      {
+       "id": "method-configuration",
+       "title": "Method configuration",
+       "status": "draft-copy"
+      },
+      {
+       "id": "evidence-contract",
+       "title": "Evidence contract",
+       "status": "draft-copy"
+      },
+      {
+       "id": "verdict-contract",
+       "title": "Verdict contract",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "builtin",
+     "title": "Built-in methods",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "command",
+       "title": "Command",
+       "status": "draft-copy"
+      },
+      {
+       "id": "command-ci",
+       "title": "Command (CI)",
+       "status": "draft-copy"
+      },
+      {
+       "id": "browser-check",
+       "title": "Browser check",
+       "status": "draft-copy"
+      },
+      {
+       "id": "browser-inspection",
+       "title": "Browser inspection",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "extended",
+     "title": "Project and Pack methods",
+     "status": "draft-copy",
+     "commands": ["yoke qa mission host-command", "yoke qa mission walk-end", "yoke qa mission walk-start"],
+     "children": [
+      {
+       "id": "terminal-and-machine-state-proof",
+       "title": "Terminal and machine-state proof",
+       "status": "draft-copy"
+      },
+      {
+       "id": "exploratory-missions",
+       "title": "Exploratory missions",
+       "status": "draft-copy"
+      },
+      {
+       "id": "human-judgment",
+       "title": "Human judgment",
+       "status": "draft-copy"
+      },
+      {
+       "id": "custom-registered-runner",
+       "title": "Custom registered runner",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "management",
+     "title": "Method lifecycle",
+     "status": "draft-copy",
+     "commands": ["yoke qa project-method register"],
+     "functions": ["qa.project_method.register"],
+     "children": [
+      {
+       "id": "discover-and-inspect",
+       "title": "Discover and inspect",
+       "status": "draft-copy"
+      },
+      {
+       "id": "configure",
+       "title": "Configure",
+       "status": "draft-copy"
+      },
+      {
+       "id": "validate-settings",
+       "title": "Validate settings",
+       "status": "draft-copy"
+      },
+      {
+       "id": "related-plans",
+       "title": "Related plans",
+       "status": "draft-copy"
+      },
+      {
+       "id": "register-or-update-project-method",
+       "title": "Register or update a project method",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "concurrency",
+     "title": "Method concurrency",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "runner-admission",
+       "title": "Runner admission",
+       "status": "draft-copy"
+      },
+      {
+       "id": "capability-readiness",
+       "title": "Capability readiness",
+       "status": "draft-copy"
+      },
+      {
+       "id": "executing-host-authority",
+       "title": "Executing host authority",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

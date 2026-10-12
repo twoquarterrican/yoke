@@ -1,0 +1,155 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "strategy",
+   "title": "Strategy and plans",
+   "status": "draft-copy",
+   "sources": ["docs/public/strategy.md", ".agents/skills/yoke/strategize/SKILL.md", ".agents/skills/yoke/steer/SKILL.md"],
+   "commands": ["yoke strategy master-plan-check"],
+   "functions": ["strategy.master_plan_check.run"],
+   "children": [
+    {
+     "id": "corpus",
+     "title": "Strategy corpus",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.24", "JOURNEYS.situation-10", "JOURNEYS.situation-9"],
+     "surface_refs": ["project-hub", "project-orientation", "setup-agent", "skills-roles"],
+     "commands": ["yoke strategy seed-defaults", "yoke strategy surface get", "yoke strategy surface list"],
+     "functions": ["strategy.seed_defaults.run", "strategy.surface.get", "strategy.surface.list"],
+     "children": [
+      {
+       "id": "mission",
+       "title": "MISSION",
+       "status": "draft-copy"
+      },
+      {
+       "id": "landscape",
+       "title": "LANDSCAPE",
+       "status": "draft-copy"
+      },
+      {
+       "id": "vision",
+       "title": "VISION",
+       "status": "draft-copy"
+      },
+      {
+       "id": "master-plan",
+       "title": "MASTER-PLAN",
+       "status": "draft-copy"
+      },
+      {
+       "id": "current-plan",
+       "title": "CURRENT-PLAN",
+       "status": "draft-copy"
+      },
+      {
+       "id": "focused-plans-and-linked-documents",
+       "title": "Focused plans and linked documents",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "authoring",
+     "title": "Strategy authoring",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.situation-10"],
+     "commands": ["yoke strategy doc archive", "yoke strategy doc create", "yoke strategy doc get", "yoke strategy doc list", "yoke strategy doc replace", "yoke strategy doc section-replace", "yoke strategy doc unarchive", "yoke strategy ingest", "yoke strategy render", "yoke strategy revision diff", "yoke strategy revision restore"],
+     "functions": ["strategy.doc.archive", "strategy.doc.create", "strategy.doc.get", "strategy.doc.list", "strategy.doc.replace", "strategy.doc.section_replace", "strategy.doc.unarchive", "strategy.ingest.run", "strategy.render.run", "strategy.revision.diff", "strategy.revision.restore"],
+     "children": [
+      {
+       "id": "create-and-read",
+       "title": "Create and read",
+       "status": "draft-copy"
+      },
+      {
+       "id": "render-and-ingest",
+       "title": "Render and ingest",
+       "status": "draft-copy"
+      },
+      {
+       "id": "summary-and-state",
+       "title": "Summary and state",
+       "status": "draft-copy"
+      },
+      {
+       "id": "revision-history",
+       "title": "Revision history",
+       "status": "draft-copy"
+      },
+      {
+       "id": "archive-and-restore",
+       "title": "Archive and restore",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "relationships",
+     "title": "Strategy relationships",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.situation-15"],
+     "commands": ["yoke strategy carry candidate-set", "yoke strategy carry mark", "yoke strategy carry register-new", "yoke strategy carry summary", "yoke strategy coordination append", "yoke strategy parent set"],
+     "functions": ["strategy.carry.candidate_set", "strategy.carry.mark", "strategy.carry.register_new", "strategy.carry.summary", "strategy.coordination.append", "strategy.parent.set"],
+     "children": [
+      {
+       "id": "plan-to-work-items",
+       "title": "Plan to work items",
+       "status": "draft-copy"
+      },
+      {
+       "id": "dependencies-between-initiatives",
+       "title": "Dependencies between initiatives",
+       "status": "draft-copy"
+      },
+      {
+       "id": "steering-document-scope",
+       "title": "Steering document scope",
+       "status": "draft-copy",
+       "commands": ["yoke strategy claim acquire", "yoke strategy claim break-glass-release", "yoke strategy claim release", "yoke strategy doc-claim acquire", "yoke strategy doc-claim list", "yoke strategy doc-claim release"],
+       "functions": ["strategy.claim.acquire", "strategy.claim.break_glass_release", "strategy.claim.release", "strategy.doc_claim.acquire", "strategy.doc_claim.list", "strategy.doc_claim.release"]
+      },
+      {
+       "id": "owner-and-success-conditions",
+       "title": "Owner and success conditions",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "operation",
+     "title": "Strategy operation",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.also-owned-here", "JOURNEYS.situation-11", "JOURNEYS.situation-15"],
+     "surface_refs": ["project-hub"],
+     "commands": ["yoke strategy checkpoint latest", "yoke strategy checkpoint record", "yoke strategy execution get", "yoke strategy execution link"],
+     "functions": ["strategy.checkpoint.latest", "strategy.checkpoint.record", "strategy.execution.get", "strategy.execution.link"],
+     "skills": ["feed", "strategize"],
+     "children": [
+      {
+       "id": "strategize",
+       "title": "Strategize",
+       "status": "draft-copy"
+      },
+      {
+       "id": "feed-from-strategy",
+       "title": "Feed from strategy",
+       "status": "draft-copy"
+      },
+      {
+       "id": "steer-a-current-plan",
+       "title": "Steer a current plan",
+       "status": "draft-copy"
+      },
+      {
+       "id": "close-an-initiative",
+       "title": "Close an initiative",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

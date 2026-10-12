@@ -1,0 +1,70 @@
+{
+ "plan": "FIRST-USER",
+ "title": "FIRST-USER projectless Yoke",
+ "reconciled_at": "2026-10-12T19:07:13.903317Z",
+ "rows": [
+  {
+   "id": "FIRST-USER.P1",
+   "title": "P1. Sessions work without a project",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["sessions/identity", "sessions/ownership", "messaging/messages"],
+   "surfaces": ["global-orientation", "command-feedback", "resume-context"],
+   "scenarios": ["agent-context", "shared-coordination", "messaging"]
+  },
+  {
+   "id": "FIRST-USER.P2",
+   "title": "P2. Light machine-wide hooks for every harness (after P1, P3)",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["context/hooks", "agents/harnesses"],
+   "surfaces": ["global-hooks", "project-hooks", "global-orientation"],
+   "scenarios": ["harness-readiness", "agent-context"]
+  },
+  {
+   "id": "FIRST-USER.P3",
+   "title": "P3. Guards only police where they should",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["context/hooks", "security/boundaries", "coordination/lanes"],
+   "surfaces": ["global-hooks", "project-hooks", "command-feedback"],
+   "scenarios": ["agent-context", "privacy", "path-claims"]
+  },
+  {
+   "id": "FIRST-USER.P4",
+   "title": "P4. Yoke speaks up in sessions outside a project (after P1, P2)",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["context/startup", "context/disclosure", "agents/skills", "projects/identity"],
+   "surfaces": ["global-orientation", "agent-help"],
+   "scenarios": ["agent-context", "project-adoption"]
+  },
+  {
+   "id": "FIRST-USER.P5",
+   "title": "P5. The dashboard points you to your agent to add a project (after P4)",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["projects/adoption", "workbench/onboarding"],
+   "surfaces": ["workbench-cues", "agent-help"],
+   "scenarios": ["project-adoption", "ui-navigation"]
+  },
+  {
+   "id": "FIRST-USER.P6",
+   "title": "P6. CLI cleanups for use outside a project",
+   "status": "approved",
+   "scope": "Yoke",
+   "concepts": ["projects/identity", "reference/commands", "maintenance/portability"],
+   "surfaces": ["command-feedback", "packets-help", "agent-help"],
+   "scenarios": ["project-adoption", "help-cascade"]
+  },
+  {
+   "id": "FIRST-USER.P7",
+   "title": "P7. Hosted counts real projects (**platform**)",
+   "status": "approved",
+   "scope": "Platform",
+   "concepts": ["projects/identity", "identity/billing", "cloud-operations/tenancy"],
+   "surfaces": ["workbench-cues"],
+   "scenarios": ["ui-navigation", "people-access"]
+  }
+ ]
+}

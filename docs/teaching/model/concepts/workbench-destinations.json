@@ -1,0 +1,204 @@
+{
+ "parent": "workbench",
+ "nodes": [
+  {
+   "id": "destinations",
+   "title": "Dashboard destinations",
+   "status": "draft-copy",
+   "children": [
+    {
+     "id": "strategy",
+     "title": "Strategy",
+     "status": "draft-copy",
+     "related": "strategy"
+    },
+    {
+     "id": "frontier",
+     "title": "Frontier",
+     "status": "draft-copy",
+     "related": "frontier"
+    },
+    {
+     "id": "shipping",
+     "title": "Shipping",
+     "status": "draft-copy",
+     "related": "deployments/shipping"
+    },
+    {
+     "id": "machines",
+     "title": "Machines",
+     "status": "draft-copy",
+     "related": "machines"
+    },
+    {
+     "id": "sessions",
+     "title": "Sessions",
+     "status": "draft-copy",
+     "related": "sessions"
+    },
+    {
+     "id": "inbox",
+     "title": "Inbox",
+     "status": "draft-copy",
+     "related": "messaging/inbox"
+    },
+    {
+     "id": "organization",
+     "title": "Universe",
+     "status": "draft-copy",
+     "related": "universes"
+    },
+    {
+     "id": "levels",
+     "title": "Levels",
+     "status": "draft-copy",
+     "related": "levels"
+    },
+    {
+     "id": "workflows",
+     "title": "Workflows",
+     "status": "draft-copy",
+     "related": "workflows"
+    },
+    {
+     "id": "projects",
+     "title": "Projects",
+     "status": "draft-copy",
+     "related": "projects"
+    },
+    {
+     "id": "github",
+     "title": "GitHub",
+     "status": "draft-copy",
+     "related": "repositories/github"
+    },
+    {
+     "id": "actors",
+     "title": "Actors",
+     "status": "draft-copy",
+     "related": "identity/actors"
+    },
+    {
+     "id": "members",
+     "title": "Members",
+     "status": "draft-copy",
+     "related": "identity/accounts"
+    },
+    {
+     "id": "billing",
+     "title": "Billing",
+     "status": "draft-copy",
+     "related": "identity/billing"
+    },
+    {
+     "id": "items",
+     "title": "Items",
+     "status": "draft-copy",
+     "related": "items"
+    },
+    {
+     "id": "deployments",
+     "title": "Deployments",
+     "status": "draft-copy",
+     "related": "deployments"
+    },
+    {
+     "id": "environments",
+     "title": "Environments",
+     "status": "draft-copy",
+     "related": "environments"
+    },
+    {
+     "id": "databases",
+     "title": "Databases",
+     "status": "draft-copy",
+     "related": "databases"
+    },
+    {
+     "id": "qa-methods",
+     "title": "QA methods",
+     "status": "draft-copy",
+     "related": "qa-methods"
+    },
+    {
+     "id": "qa-plans",
+     "title": "QA plans",
+     "status": "draft-copy",
+     "related": "qa-plans"
+    },
+    {
+     "id": "qa-activity",
+     "title": "QA activity",
+     "status": "draft-copy",
+     "related": "qa-evidence"
+    },
+    {
+     "id": "capabilities",
+     "title": "Capabilities",
+     "status": "draft-copy",
+     "related": "capabilities"
+    },
+    {
+     "id": "packs",
+     "title": "Packs",
+     "status": "draft-copy",
+     "related": "packs"
+    },
+    {
+     "id": "architecture",
+     "title": "Architecture",
+     "status": "draft-copy",
+     "related": "architecture"
+    },
+    {
+     "id": "messages",
+     "title": "Messages",
+     "status": "draft-copy",
+     "related": "messaging/messages"
+    },
+    {
+     "id": "launches",
+     "title": "Launches",
+     "status": "draft-copy",
+     "related": "frontier/launch"
+    },
+    {
+     "id": "events",
+     "title": "Events",
+     "status": "draft-copy",
+     "related": "observability/events"
+    },
+    {
+     "id": "performance",
+     "title": "Performance",
+     "status": "draft-copy",
+     "related": "observability/performance"
+    },
+    {
+     "id": "doctor",
+     "title": "Doctor",
+     "status": "draft-copy",
+     "related": "observability/doctor"
+    },
+    {
+     "id": "ouroboros",
+     "title": "Ouroboros",
+     "status": "draft-copy",
+     "related": "learning"
+    },
+    {
+     "id": "profile",
+     "title": "Profile",
+     "status": "draft-copy",
+     "related": "workbench/profile"
+    },
+    {
+     "id": "machine-approval",
+     "title": "Connect your machine",
+     "status": "draft-copy",
+     "related": "machines/registration"
+    }
+   ]
+  }
+ ]
+}

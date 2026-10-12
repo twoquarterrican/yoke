@@ -1,0 +1,84 @@
+{
+ "surface": {
+  "id": "detail-home",
+  "title": "The canonical topic article",
+  "status": "approved",
+  "scope": "Public or project/private owner",
+  "audience": "Human + agent",
+  "encounter": "A summary or exact pointer leads here",
+  "location": "One maintained concept/procedure/reference home per subject",
+  "basis": "Documentation audit still open",
+  "note": "Concept, procedure, tutorial and reference can be distinct pages within a concept branch. Split by reader need before the 350-line authored-file ceiling.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "One owner per rule or recipe, meaningful nesting and breadcrumbs, valid release-matched pointers.",
+  "plan_notes": ["New documentation organization proposal"],
+  "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"],
+  "sources": ["docs/public/nav.yaml", "docs/public/qa.md", "docs/public/reference/qa-platform.md", "docs/public/index.md"],
+  "private_sources": ["platform"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "What the concept means, when it applies and how it relates to nearby concepts.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["documentation/cascade"],
+   "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "02",
+   "title": "Supported scope, prerequisites, limits and the supported action when a case is outside them.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["documentation/disclosure"],
+   "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "03",
+   "title": "A focused procedure or worked learning example when needed; exact syntax comes from command help.",
+   "status": "draft-copy",
+   "form": "Do",
+   "verification": "No delivery proof attached.",
+   "topics": ["reference/commands"],
+   "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "04",
+   "title": "Parent breadcrumb, meaningful siblings, related concepts and next action.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["documentation/cascade"],
+   "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "05",
+   "title": "Version/applicability and ownership; distinguish current guidance from proposals and historical decisions.",
+   "status": "draft-copy",
+   "form": "State",
+   "verification": "No delivery proof attached.",
+   "topics": ["documentation/ownership", "documentation/current-decisions-versus-historical-records"],
+   "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Own the complete narrow recipe, prerequisites, supported limits, expected result and recovery.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["documentation/ownership", "context/disclosure"],
+   "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Keep a discoverable parent route and release-compatible source, installed and web links.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["documentation/cascade", "reference/docs"],
+   "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"]
+  }
+ ]
+}

@@ -1,0 +1,198 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "qa-evidence",
+   "title": "QA executions, evidence and verdicts",
+   "status": "draft-copy",
+   "sources": ["docs/public/reference/qa-platform/requirement-state-model.md", "docs/public/reference/qa-platform/success-policy-schema.md", "docs/public/reference/db-reference/qa-and-sessions.md", "docs/public/reference/browser-evidence.md"],
+   "children": [
+    {
+     "id": "runs",
+     "title": "Executions and attempts",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.also-owned-here", "JOURNEYS.situation-13"],
+     "commands": ["yoke qa activity list", "yoke qa case run", "yoke qa plan abort", "yoke qa run add", "yoke qa run get", "yoke qa run list"],
+     "functions": ["qa.activity.list", "qa.case.waive", "qa.case_execution.begin", "qa.run.add", "qa.run.get", "qa.run.list"],
+     "children": [
+      {
+       "id": "plan-execution",
+       "title": "Plan execution",
+       "status": "draft-copy",
+       "commands": ["yoke qa plan run"],
+       "functions": ["qa.plan_execution.abort", "qa.plan_execution.advance", "qa.plan_execution.begin", "qa.plan_execution.complete", "qa.plan_execution.heartbeat"]
+      },
+      {
+       "id": "case-attempt",
+       "title": "Case attempt",
+       "status": "draft-copy"
+      },
+      {
+       "id": "running-and-waiting",
+       "title": "Running and waiting",
+       "status": "draft-copy"
+      },
+      {
+       "id": "retry-history",
+       "title": "Retry history",
+       "status": "draft-copy"
+      },
+      {
+       "id": "cancellation-and-hold",
+       "title": "Cancellation and hold",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "artifacts",
+     "title": "Evidence",
+     "status": "draft-copy",
+     "commands": ["yoke direct-workflow dash evidence", "yoke qa artifact add", "yoke qa artifact get", "yoke qa artifact presign", "yoke qa artifact read", "yoke qa artifact rehome", "yoke test-machine screenshot"],
+     "functions": ["direct_workflow.dash.evidence", "qa.artifact.add", "qa.artifact.get", "qa.artifact.presign", "qa.artifact.read", "qa.artifact.rehome", "test_machine.screenshot"],
+     "children": [
+      {
+       "id": "logs-and-command-output",
+       "title": "Logs and command output",
+       "status": "draft-copy"
+      },
+      {
+       "id": "screenshots",
+       "title": "Screenshots",
+       "status": "draft-copy"
+      },
+      {
+       "id": "browser-trace",
+       "title": "Browser trace",
+       "status": "draft-copy"
+      },
+      {
+       "id": "artifact-storage-and-handles",
+       "title": "Artifact storage and handles",
+       "status": "draft-copy"
+      },
+      {
+       "id": "candidate-identity",
+       "title": "Candidate identity",
+       "status": "draft-copy"
+      },
+      {
+       "id": "environment-and-authentication-evidence",
+       "title": "Environment and authentication evidence",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "verdicts",
+     "title": "Verdicts and reviews",
+     "status": "draft-copy",
+     "commands": ["yoke qa plan review-submit", "yoke qa run complete", "yoke qa run record-verdict"],
+     "functions": ["qa.plan_review.begin", "qa.plan_review.submit", "qa.run.complete", "qa.run.record_verdict"],
+     "children": [
+      {
+       "id": "automatic-pass-fail",
+       "title": "Automatic pass / fail",
+       "status": "draft-copy"
+      },
+      {
+       "id": "agent-judgment",
+       "title": "Agent judgment",
+       "status": "draft-copy"
+      },
+      {
+       "id": "human-review",
+       "title": "Human review",
+       "status": "draft-copy"
+      },
+      {
+       "id": "undetermined-and-error",
+       "title": "Undetermined and error",
+       "status": "draft-copy"
+      },
+      {
+       "id": "all-pass-policy",
+       "title": "All-pass policy",
+       "status": "draft-copy"
+      },
+      {
+       "id": "current-proof-selection",
+       "title": "Current proof selection",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "gates",
+     "title": "QA gate settlement",
+     "status": "draft-copy",
+     "commands": ["yoke qa gate-summary"],
+     "functions": ["qa.gate_summary.run"],
+     "children": [
+      {
+       "id": "item-verification",
+       "title": "Item verification",
+       "status": "draft-copy"
+      },
+      {
+       "id": "post-deploy-proof",
+       "title": "Post-deploy proof",
+       "status": "draft-copy",
+       "commands": ["yoke qa post-deploy declare-none", "yoke qa post-deploy record-no-obligation"],
+       "functions": ["qa.post_deploy.declare_none", "qa.post_deploy.record_no_obligation"]
+      },
+      {
+       "id": "run-stage-acceptance",
+       "title": "Run-stage acceptance",
+       "status": "draft-copy"
+      },
+      {
+       "id": "member-obligations",
+       "title": "Member obligations",
+       "status": "draft-copy"
+      },
+      {
+       "id": "empty-versus-unsatisfied-scope",
+       "title": "Empty versus unsatisfied scope",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "correction",
+     "title": "Correction and recovery",
+     "status": "draft-copy",
+     "commands": ["yoke qa requirement supersede", "yoke qa requirement waive"],
+     "functions": ["qa.requirement.supersede", "qa.requirement.waive"],
+     "children": [
+      {
+       "id": "retry",
+       "title": "Retry",
+       "status": "draft-copy"
+      },
+      {
+       "id": "waiver",
+       "title": "Waiver",
+       "status": "draft-copy"
+      },
+      {
+       "id": "supersession",
+       "title": "Supersession",
+       "status": "draft-copy"
+      },
+      {
+       "id": "retraction",
+       "title": "Retraction",
+       "status": "draft-copy"
+      },
+      {
+       "id": "stale-or-mismatched-evidence",
+       "title": "Stale or mismatched evidence",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

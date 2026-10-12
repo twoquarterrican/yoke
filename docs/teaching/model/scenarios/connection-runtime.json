@@ -1,0 +1,44 @@
+{
+ "scenario": {
+  "id": "connection-runtime",
+  "title": "Connections and background runtime lifecycle",
+  "status": "draft-copy",
+  "situations": ["A user changes the selected Yoke connection or loses access to its server.", "The local core, local PostgreSQL, relay or dashboard is stopped or stale.", "Logging out or shutting down a machine interrupts background work.", "An operator maintains a self-hosted server after initial setup."],
+  "coverage": "catalogued",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Verify core build/start/upgrade audience rather than inferring it from a command namespace.", "Trace self-host sign-in, service upgrade/teardown and auth removal without treating them as everyday first-use steps."],
+  "related_scenarios": ["universe-choice", "machine-access", "updates"],
+  "plan_refs": ["FIRST-USER.15", "FIRST-USER.32"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Separate connection, universe and application environment",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When switching, repairing or removing a Yoke connection.",
+   "need": "Know which control plane the CLI is addressing and whether an action only changes this client or changes shared state; do not confuse that connection with an application deployment target.",
+   "disclosure": "audit needed",
+   "surface": "config/status, env, auth, connect/connection; HTTPS diagnostics",
+   "gap": "Mode selection is mapped, but ongoing connection lifecycle is not yet traced. Review question: should connection errors and switching help explain the affected machine/universe before recommending repair?",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 1", "FIRST-USER 3", "FIRST-USER 35", "outside both"],
+   "sources": ["docs/public/cli-and-config.md", "docs/public/modes.md", "docs/public/reference/https-connection-diagnostics.md", "docs/public/reference/db-reference/functions-project-configuration.md"]
+  },
+  {
+   "id": "02",
+   "title": "Name the component that must be running",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When work fails because core/database/relay/UI service is down or a session ends.",
+   "need": "Read the component status, ownership, version and supported restart/resume procedure; distinguish host login lifetime from server reachability.",
+   "disclosure": "audit needed",
+   "surface": "core/local-postgres/relay/ui/self-host operation families; Linux supervision guidance",
+   "gap": "Runtime control commands are exposed, but this census does not decide which are ordinary product operations versus source-development tools. Review question: should existing status/help docs provide a small component-to-recovery map?",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 6", "FIRST-USER 15", "FIRST-USER 32", "FIRST-USER E", "JOURNEYS row 8"],
+   "sources": ["docs/public/install.md", "docs/public/reference/linux-relay.md", "docs/public/windows-wsl.md", "docs/self-host.md", "docs/source-dev-doctrine.md"]
+  }
+ ]
+}

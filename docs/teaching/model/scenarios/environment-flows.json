@@ -1,0 +1,76 @@
+{
+ "scenario": {
+  "id": "environment_flows",
+  "title": "Environments, release flows and approval gates",
+  "status": "draft-copy",
+  "situations": ["Single production environment", "Several persistent environments", "Stage promotion or parallel target QA", "Human release approval", "A deployment fails or waits"],
+  "coverage": "traced",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "review": "Older research may describe heavier onboarding. Apply minimum activation and optional-adoption boundaries first.",
+  "questions": ["Serving-runtime support and each actual project definition still require live validation; no deployment was executed in this audit."],
+  "related_scenarios": ["qa-subjects-targets", "preview_environments", "database_change_and_release"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Use the project topology",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Delivery is being configured or changed",
+   "need": "Name actual environments and final delivery target. A persistent flow has one declared final target; richer stages can name other registered targets. Neither two environments nor stage-before-prod is universal.",
+   "disclosure": "current cue",
+   "surface": "Flow target contract; stage reference validator; target-specific QA rules.",
+   "gap": "Current managed onboarding still gives stage/prod creation and first-stage-deploy recipes. Proposed teaching should derive names/order from the project rather than copy Yoke topology.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke deployment-flows get FLOW-ID --json", "yoke deployment-flows stages FLOW-ID"],
+   "plan_notes": ["JOURNEYS row 12"],
+   "sources": ["packages/yoke-core/src/yoke_core/domain/flow_target.py", "packages/yoke-core/src/yoke_core/domain/deployment_flow_stage_references.py", "docs/public/reference/agent-rules/delivery.md", ".agents/skills/yoke/onboard/hosting-and-environments.md"]
+  },
+  {
+   "id": "02",
+   "title": "Validate the executable route",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "Before activation, assignment or changing a release policy",
+   "need": "Read the serving validation result, capabilities, registered targets and deployed-identity proof. Current source supports ordered execution and scoped QA; a stored definition is not evidence the serving build can execute it.",
+   "disclosure": "current cue",
+   "surface": "Onboard validate gate; flow schema and identity admission.",
+   "gap": "JOURNEYS needs a short validation/recovery pointer at the moment a flow is adopted. Used definitions are versioned and retained, not overwritten.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke deployment-flows validate --help", "yoke deployment-flows version --help"],
+   "plan_notes": ["JOURNEYS row 12"],
+   "sources": [".agents/skills/yoke/onboard/hosting-and-environments.md", "docs/public/reference/db-reference/projects-and-flows.md", "packages/yoke-core/src/yoke_core/domain/deployment_flow_target_support.py"]
+  },
+  {
+   "id": "03",
+   "title": "Know who is deciding what",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Authoring a release approval or receiving its request",
+   "need": "Release human-approval is distinct from a QA verdict. Review exact run/stage, declared reviewers and any/all policy. One approval may still leave others outstanding; cleared approval wakes the same run driver.",
+   "disclosure": "current cue",
+   "surface": "approve skill lines 17–58; deployment-runs approve help.",
+   "gap": "Concept exists and execution has a home; the delivery setup journey should offer this choice when defining release risk rather than leave users to discover stage JSON.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke deployment-runs approve --help"],
+   "plan_notes": ["JOURNEYS row 12"],
+   "sources": [".agents/skills/yoke/approve/SKILL.md", "docs/public/reference/db-reference/projects-and-flows.md"]
+  },
+  {
+   "id": "04",
+   "title": "Recover the same run",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "Run waits, is interrupted or refuses target occupancy",
+   "need": "Read the named holder, current stage and structured refusal. Runs occupy target origins until QA settles; a live driver owns re-entry. Recover the existing run using its printed command rather than duplicate it.",
+   "disclosure": "current cue",
+   "surface": "Delivery rules opening and run records.",
+   "gap": "Expose one recovery link from the human run page and agent result. Never export Yoke self-deploy db-admin authority as an ordinary project requirement.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke deployment-runs approve --help"],
+   "plan_notes": ["JOURNEYS row 12"],
+   "sources": ["docs/public/reference/agent-rules/delivery.md", "docs/public/reference/db-reference/deployment-run-records.md"]
+  }
+ ]
+}

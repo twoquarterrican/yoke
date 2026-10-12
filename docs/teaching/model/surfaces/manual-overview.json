@@ -1,0 +1,101 @@
+{
+ "surface": {
+  "id": "manual-overview",
+  "title": "First read: “Yoke”",
+  "status": "draft-copy",
+  "scope": "Public global",
+  "audience": "Human + agent",
+  "encounter": "First intentional overview read",
+  "location": "One canonical introduction; consolidate current index.md / concepts.md prose",
+  "basis": "Proposed consolidation",
+  "note": "The first summary participates in the cascade. Its category links are generated from the shared tree; deeper pages own the full definitions.",
+  "current": "Existing source references; delivered content is not yet proved.",
+  "desired": "Broad concise introduction with immediate children; final article structure and copy remain to be designed.",
+  "plan_notes": ["FIRST-USER 8/24", "JOURNEYS operating model", "New documentation proposal"],
+  "plan_refs": ["FIRST-USER.40"],
+  "sources": ["docs/public/index.md", "docs/public/concepts.md", "docs/public/operating-with-agents.md", ".agents/skills/yoke/steer/SKILL.md", ".agents/skills/yoke/onboard/strategy-conversation.md"]
+ },
+ "teaching": [
+  {
+   "id": "01",
+   "title": "What Yoke is; what the human decides, what agents do and what deterministic workers do.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["basics/model", "agents/boundaries"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "02",
+   "title": "Universe → projects; people and machines → sessions. Explain local, cloud and self-hosted reachability.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["basics/objects", "modes", "identity/actors", "machines", "sessions/identity"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "03",
+   "title": "Strategy and current plan → concrete items → a pinned workflow. Different work can need different structure.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["strategy/corpus", "items/identity", "workflows/types", "posture/structure"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "04",
+   "title": "Staffing a plan and choosing one ready item are separate actions; levels control execution choices.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["frontier/entrypoints", "levels/scheme"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "05",
+   "title": "Verification and QA produce evidence; approvals make specific decisions; merging may or may not lead to deployment.",
+   "status": "draft-copy",
+   "form": "Teach",
+   "verification": "No delivery proof attached.",
+   "topics": ["qa-evidence", "approvals/types", "merging", "deployments/outcomes"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "06",
+   "title": "One short description per top-level concept category, then the appropriate category summary. Existing projects can adopt gradually.",
+   "status": "draft-copy",
+   "form": "Link",
+   "verification": "No delivery proof attached.",
+   "topics": ["documentation/cascade", "projects/adoption"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "desired-01",
+   "title": "Explain the model: humans set direction; agents execute work through policy, proof and completion.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["basics/model", "basics/objects"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "desired-02",
+   "title": "Orient readers to modes, projects, work, agents, verification and delivery with concise child summaries.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["modes", "projects", "items", "agents", "qa-methods", "deployments"],
+   "plan_refs": ["FIRST-USER.40"]
+  },
+  {
+   "id": "desired-03",
+   "title": "Route to the full concept tree; choose final categories and copy during the docs reorganization.",
+   "status": "candidate",
+   "form": "Do",
+   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "topics": ["documentation/cascade", "reference/docs"],
+   "plan_refs": ["FIRST-USER.40"]
+  }
+ ]
+}

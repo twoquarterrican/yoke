@@ -5,6 +5,7 @@
 | **`docs/public/`** | Operators + agents | Yes → `.yoke/docs/` | Yes |
 | **`docs/`** (outside `public/`) | Yoke source-dev / contributors | No | No |
 | **`docs/archive/`** | Historical | No | No |
+| **[`docs/teaching/`](teaching/README.md)** | Contributors maintaining what Yoke teaches | No | No |
 
 In the Yoke source repository, author operator docs only under `docs/public/`.
 Refresh the dogfood mirror and packaged snapshot with:

@@ -1,0 +1,29 @@
+{
+ "scenario": {
+  "id": "shared-coordination",
+  "title": "Work ownership and shared resource coordination",
+  "status": "draft-copy",
+  "situations": ["Several sessions need one shared mutable resource.", "A process/coordination hold survives a session and blocks progress.", "A resource must be handed to another holder without discarding active work."],
+  "coverage": "catalogued",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Audit which coordination keys are product procedures versus maintainer-specific locks.", "Verify orphan/operator-release authority from current help/state; do not teach blanket cleanup from claim age alone."],
+  "plan_refs": ["FIRST-USER.P1", "JOURNEYS.situation-7"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Distinguish ownership from resource coordination",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "When concurrent work needs a declared shared resource or a holder conflict appears.",
+   "need": "Identify whether the hold owns an item, steering scope, process or resource; preserve the real owner and use the declared handoff/release path.",
+   "disclosure": "audit needed",
+   "surface": "claims work/steering/coordination-claim reads; operation-specific procedures",
+   "gap": "Existing map traces path overlaps and steering, but not every non-path coordination scenario. Review question: should JOURNEYS show resource-busy recovery as a branch rather than teaching all claims during installation?",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["JOURNEYS row 11", "FIRST-USER 35", "outside both"],
+   "sources": ["docs/public/reference/db-reference/functions-claims.md", "docs/public/reference/agent-rules/lanes-and-claims.md", ".agents/skills/yoke/steer/close-out.md"]
+  }
+ ]
+}

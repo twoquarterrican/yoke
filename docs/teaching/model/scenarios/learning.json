@@ -1,0 +1,56 @@
+{
+ "scenario": {
+  "id": "learning",
+  "title": "Field-notes, curation and session continuity",
+  "status": "draft-copy",
+  "situations": ["An agent encounters a recipe gap or supporting observation.", "An operator wants to turn repeated failures into work.", "A long session must hand off its current state."],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Does a projectless session have a valid supported field-note ownership/recovery path after P1?", "Has the note-to-full-evidence link been checked on installed/workbench surfaces?"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Record evidence where it can be found again",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "At an actual recipe gap, failed recipe or supporting observation",
+   "need": "Use a field-note with bounded evidence and the correct kind; read its help decision tree. A note is a supporting learning record, not automatically an executable work item.",
+   "disclosure": "current cue",
+   "surface": "Generated AGENTS/skill directive -> field-note append help; public Ouroboros page.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke ouroboros field-note append --help", "yoke ouroboros field-note list --unreviewed"],
+   "plan_notes": ["outside both"],
+   "sources": ["AGENTS.md", "packages/yoke-contracts/src/yoke_contracts/field_note_text.py", "packages/yoke-cli/src/yoke_cli/commands/adapters/ouroboros_field_note.py", "docs/public/events-doctor-ouroboros.md"]
+  },
+  {
+   "id": "02",
+   "title": "Curate deliberately rather than auto-file everything",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Repeated notes or observations suggest a system problem",
+   "need": "Curate clusters unreviewed evidence, verifies the current cause, chooses the work shape and archives handled entries. It is operator-invoked, not an automatic background policy.",
+   "disclosure": "current cue",
+   "surface": "Help/native skill catalog -> Curate; public Ouroboros section -> /yoke curate.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke ouroboros field-note list --unreviewed", "yoke ouroboros field-note get --help"],
+   "plan_notes": ["outside both"],
+   "sources": [".agents/skills/yoke/curate/SKILL.md", ".agents/skills/yoke/curate/cluster-and-work-item.md", "docs/public/events-doctor-ouroboros.md"]
+  },
+  {
+   "id": "03",
+   "title": "Keep continuity separate from chat memory",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "Wrapping up, resuming or recovering after compaction",
+   "need": "Use item Progress Log as a current-state checkpoint with evidence links; re-read the current phase and durable artifacts. Wrapup records observations/unfinished work. A UI preference or old transcript is not authoritative work state.",
+   "disclosure": "current cue",
+   "surface": "Wrapup router -> survey/record phases; AGENTS compaction instruction; public learning page.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke items get PREFIX-N"],
+   "plan_notes": ["FIRST-USER item 24", "outside both"],
+   "sources": [".agents/skills/yoke/wrapup/SKILL.md", ".agents/skills/yoke/wrapup/record-and-close.md", "AGENTS.md", "docs/public/events-doctor-ouroboros.md"]
+  }
+ ]
+}

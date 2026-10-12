@@ -1,0 +1,160 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "maintenance",
+   "title": "Updates, backup and removal",
+   "status": "draft-copy",
+   "sources": ["docs/public/install.md", "docs/public/modes.md", "docs/public/private-forks.md"],
+   "children": [
+    {
+     "id": "updates",
+     "title": "Updating Yoke",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.15", "FIRST-USER.6"],
+     "commands": ["yoke core upgrade", "yoke self-host upgrade", "yoke update"],
+     "children": [
+      {
+       "id": "recorded-distribution",
+       "title": "Recorded distribution",
+       "status": "draft-copy"
+      },
+      {
+       "id": "cli-and-server-versions",
+       "title": "CLI and server versions",
+       "status": "draft-copy"
+      },
+      {
+       "id": "installed-operating-layer",
+       "title": "Installed operating layer",
+       "status": "draft-copy"
+      },
+      {
+       "id": "hooks-and-relay",
+       "title": "Hooks and relay",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-refresh",
+       "title": "Project refresh",
+       "status": "draft-copy"
+      },
+      {
+       "id": "source-checkout-boundary",
+       "title": "Source-checkout boundary",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "portability",
+     "title": "Backup and portability",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.9", "FIRST-USER.P6"],
+     "surface_refs": ["setup-tui"],
+     "commands": ["yoke self-host import", "yoke universe export", "yoke universe import", "yoke universe validate"],
+     "children": [
+      {
+       "id": "universe-export",
+       "title": "Universe export",
+       "status": "draft-copy"
+      },
+      {
+       "id": "backup-content-and-limits",
+       "title": "Backup content and limits",
+       "status": "draft-copy"
+      },
+      {
+       "id": "import-and-restore",
+       "title": "Import and restore",
+       "status": "draft-copy"
+      },
+      {
+       "id": "move-to-another-machine",
+       "title": "Move to another machine",
+       "status": "draft-copy"
+      },
+      {
+       "id": "move-between-modes",
+       "title": "Move between modes",
+       "status": "draft-copy"
+      },
+      {
+       "id": "credential-rebinding",
+       "title": "Credential rebinding",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "uninstall",
+     "title": "Uninstall",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.1"],
+     "commands": ["yoke project uninstall", "yoke self-host teardown", "yoke uninstall"],
+     "functions": ["project.uninstall.run"],
+     "children": [
+      {
+       "id": "machine-installation",
+       "title": "Machine installation",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-operating-layer",
+       "title": "Project operating layer",
+       "status": "draft-copy"
+      },
+      {
+       "id": "keep-or-remove-universe-data",
+       "title": "Keep or remove universe data",
+       "status": "draft-copy"
+      },
+      {
+       "id": "leftovers-and-partial-installs",
+       "title": "Leftovers and partial installs",
+       "status": "draft-copy"
+      },
+      {
+       "id": "preserve-unrelated-content",
+       "title": "Preserve unrelated content",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "forks",
+     "title": "Private distributions",
+     "status": "draft-copy",
+     "commands": ["yoke config distribution set"],
+     "children": [
+      {
+       "id": "artifact-origin",
+       "title": "Artifact origin",
+       "status": "draft-copy"
+      },
+      {
+       "id": "wheel-index",
+       "title": "Wheel index",
+       "status": "draft-copy"
+      },
+      {
+       "id": "release-channels-and-pins",
+       "title": "Release channels and pins",
+       "status": "draft-copy"
+      },
+      {
+       "id": "server-build",
+       "title": "Server build",
+       "status": "draft-copy"
+      },
+      {
+       "id": "update-provenance",
+       "title": "Update provenance",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

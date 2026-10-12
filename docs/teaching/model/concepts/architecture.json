@@ -1,0 +1,149 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "architecture",
+   "title": "Project Structure and architecture",
+   "status": "draft-copy",
+   "sources": ["docs/public/reference/agent-rules/architecture-model.md", "docs/public/reference/db-reference/projects-and-flows.md", "docs/public/concepts.md"],
+   "commands": ["yoke project-structure architecture-draft get", "yoke project-structure architecture-health get"],
+   "functions": ["project_structure.architecture_draft.get", "project_structure.architecture_health.get"],
+   "children": [
+    {
+     "id": "structure",
+     "title": "Project Structure",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.situation-18"],
+     "surface_refs": ["packets-help", "project-hub"],
+     "commands": ["yoke project snapshot sync", "yoke project-structure get", "yoke project-structure patch apply"],
+     "functions": ["project.snapshot.ensure_at", "project.snapshot.sync", "project_structure.get", "project_structure.patch.apply"],
+     "children": [
+      {
+       "id": "declared-families",
+       "title": "Declared families",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-context-routing",
+       "title": "Project context routing",
+       "status": "draft-copy"
+      },
+      {
+       "id": "related-projects",
+       "title": "Related projects",
+       "status": "draft-copy"
+      },
+      {
+       "id": "file-inventory",
+       "title": "File inventory",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-owned-policy",
+       "title": "Project-owned policy",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "model",
+     "title": "Architecture model",
+     "status": "draft-copy",
+     "plan_refs": ["JOURNEYS.also-owned-here"],
+     "surface_refs": ["project-hub", "project-native"],
+     "children": [
+      {
+       "id": "layer-map",
+       "title": "Layer map",
+       "status": "draft-copy"
+      },
+      {
+       "id": "area-patterns",
+       "title": "Area patterns",
+       "status": "draft-copy"
+      },
+      {
+       "id": "package-roots",
+       "title": "Package roots",
+       "status": "draft-copy"
+      },
+      {
+       "id": "dependency-rules",
+       "title": "Dependency rules",
+       "status": "draft-copy"
+      },
+      {
+       "id": "cross-cutting-gateways",
+       "title": "Cross-cutting gateways",
+       "status": "draft-copy"
+      },
+      {
+       "id": "exemptions",
+       "title": "Exemptions",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "impact",
+     "title": "Architecture impact",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "none",
+       "title": "None",
+       "status": "draft-copy"
+      },
+      {
+       "id": "path-context-only",
+       "title": "Path context only",
+       "status": "draft-copy"
+      },
+      {
+       "id": "model-change",
+       "title": "Model change",
+       "status": "draft-copy"
+      },
+      {
+       "id": "uncertain-and-unresolved",
+       "title": "Uncertain and unresolved",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "health",
+     "title": "Architecture assessment",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "inventory-sync",
+       "title": "Inventory sync",
+       "status": "draft-copy"
+      },
+      {
+       "id": "applicable-files",
+       "title": "Applicable files",
+       "status": "draft-copy"
+      },
+      {
+       "id": "coverage",
+       "title": "Coverage",
+       "status": "draft-copy"
+      },
+      {
+       "id": "violations",
+       "title": "Violations",
+       "status": "draft-copy"
+      },
+      {
+       "id": "not-assessed-versus-healthy",
+       "title": "Not assessed versus healthy",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

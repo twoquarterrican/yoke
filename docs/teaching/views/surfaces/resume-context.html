@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume and context recovery · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Resume and context recovery</h1>
+<h2 id="resume-context">Resume and context recovery
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Scope:</b> Current session / assignment</div>
+  <div><b>Audience:</b> Agent</div>
+  <div><b>Encounter:</b> Compaction, resume or replacement worker</div>
+  <div><b>Location:</b> Stable recovery pointer + current skill/phase + durable
+  checkpoint reads</div>
+  <div><b>Basis:</b> Existing partial rules · proof gap</div>
+  <div><b>Note:</b> Compaction, native transcript resume and ended-session
+  reactivation are different cases. A session registration marker does not prove
+  context was restored.</div>
+  <div><b>Current:</b> Existing source references; delivered content is not yet
+  proved.</div>
+  <div><b>Desired:</b> Re-read live scope, stage, claims, progress and setup
+  facts. Compaction is not proof that orientation is replayed.</div>
+  <div><b>Plan notes:</b> FIRST-USER D/E validation proposal · JOURNEYS delivery
+  clarification</div>
+  <div><b>Sources:</b> <code>AGENTS.md:75</code>,
+  <code>.agents/skills/yoke/steer/loop.md:14</code>,
+  <code>.agents/skills/yoke/implement/reentry.md:1</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/sessions_resume_block.py:1</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/session_orientation_delivery.py:78</code>,
+  <code>packages/yoke-core/src/yoke_core/hooks/session_dispatch.py:245</code>,
+  <code>packages/yoke-contracts/src/yoke_contracts/hook_runner/chain_registry.py:29</code></div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+<h3 id="resume-context/01">Re-read the live item stage, work claim, lane and
+latest durable checkpoint. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/sessions.html#sessions/continuity">sessions/continuity</a>,
+  <a href="../concepts/sessions.html#sessions/ownership">sessions/ownership</a>,
+  <a href="../concepts/items.html#items/state">items/state</a></div>
+<h3 id="resume-context/02">Reload current skill/phase, relevant operation homes
+and scoped execution instructions. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Link</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/agents.html#agents/skills">agents/skills</a>,
+  <a href="../concepts/context-guidance.html#context/instructions">context/instructions</a>,
+  <a href="../concepts/context-guidance.html#context/docs">context/docs</a></div>
+<h3 id="resume-context/03">Recover evidence and unfinished work; recheck facts
+that can change during absence. <i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> State</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/qa-evidence.html#qa-evidence/artifacts">qa-evidence/artifacts</a>,
+  <a href="../concepts/deployments.html#deployments/runs">deployments/runs</a>,
+  <a href="../concepts/planning.html#planning/dependencies">planning/dependencies</a></div>
+<h3 id="resume-context/04">Continue the real next step without replaying
+completed transitions or restarting onboarding.
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> No delivery proof attached.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/workflows.html#workflows/bindings">workflows/bindings</a>,
+  <a href="../concepts/sessions.html#sessions/lifecycle">sessions/lifecycle</a></div>
+<h3 id="resume-context/desired-01">Re-read live session/project, item stage,
+claim/lane and the current progress checkpoint.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/sessions.html#sessions/continuity">sessions/continuity</a>,
+  <a href="../concepts/sessions.html#sessions/identity">sessions/identity</a>,
+  <a href="../concepts/coordination.html#coordination/work-claims">coordination/work-claims</a></div>
+<h3 id="resume-context/desired-02">Reuse project setup choices; recheck this
+machine and changed settings without restarting the interview.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/projects.html#projects/onboarding">projects/onboarding</a>,
+  <a href="../concepts/machines.html#machines/inspection">machines/inspection</a></div>
+<h3 id="resume-context/desired-03">Verify the harness recovery path;
+registration alone does not prove teaching arrived.
+<i class="s candidate">candidate</i></h3>
+  <div><b>Form:</b> Do</div>
+  <div><b>Verification:</b> Desired outline; exact recipe and live delivery
+  still need proof.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.42">42</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.43">43</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/agents.html#agents/harnesses">agents/harnesses</a>,
+  <a href="../concepts/context.html#context/startup">context/startup</a></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

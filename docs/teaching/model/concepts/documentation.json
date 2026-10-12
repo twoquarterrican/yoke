@@ -1,0 +1,121 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "documentation",
+   "title": "Documentation, design and history",
+   "status": "draft-copy",
+   "audience": "Documentation authors / maintainers",
+   "children": [
+    {
+     "id": "design-proposals-and-evidence",
+     "title": "Design proposals and evidence",
+     "status": "draft-copy",
+     "audience": "Documentation authors / maintainers",
+     "sources": ["docs/install-onboard-archetypes.md", "docs/install-onboard-archetypes/gap-ledger.md", "docs/install-onboard-archetypes/test-setup.md"],
+     "private_sources": ["platform"],
+     "children": [
+      {
+       "id": "ux-requirements-and-prototypes",
+       "title": "UX requirements and prototypes",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "review-and-capture-provenance",
+       "title": "Review and capture provenance",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "adoption-archetypes",
+       "title": "Adoption archetypes",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "known-gaps-and-experiment-setup",
+       "title": "Known gaps and experiment setup",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      }
+     ]
+    },
+    {
+     "id": "current-decisions-versus-historical-records",
+     "title": "Current decisions versus historical records",
+     "status": "draft-copy",
+     "audience": "Documentation authors / maintainers",
+     "sources": ["docs/README.md"],
+     "private_sources": ["platform"],
+     "children": [
+      {
+       "id": "adopted-architecture-decisions",
+       "title": "Adopted architecture decisions",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "superseded-operational-recipes",
+       "title": "Superseded operational recipes",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "incident-evidence",
+       "title": "Incident evidence",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "prior-plans-and-audits",
+       "title": "Prior plans and audits",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      }
+     ]
+    },
+    {
+     "id": "ownership",
+     "title": "Documentation ownership",
+     "status": "draft-copy",
+     "audience": "Documentation authors / maintainers",
+     "plan_refs": ["FIRST-USER.40"],
+     "surface_refs": ["agent-help", "category-summary", "detail-home", "docs-landing", "execution-instructions", "manual-contents", "project-native"],
+     "children": [
+      {
+       "id": "public-manual-and-installed-copy",
+       "title": "Public manual and installed copy",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "project-owned-docs-and-policies",
+       "title": "Project-owned docs and policies",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "maintainer-internals",
+       "title": "Maintainer internals",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "generated-references",
+       "title": "Generated references",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      },
+      {
+       "id": "archived-decisions",
+       "title": "Archived decisions",
+       "status": "draft-copy",
+       "audience": "Documentation authors / maintainers"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

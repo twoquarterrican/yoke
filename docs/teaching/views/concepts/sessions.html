@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sessions and continuity · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Sessions and continuity</h1>
+<ul>
+<li id="sessions"><b>Sessions and continuity</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Sources:</b> <code>docs/public/items-and-sessions.md</code>,
+  <code>docs/public/reference/agent-rules/claude-sessions.md</code>,
+  <code>docs/public/reference/db-reference/qa-and-sessions.md</code></div>
+  <div><b>Commands:</b> <code>yoke sessions get</code>, <code>yoke sessions
+  list</code></div>
+  <div><b>Functions:</b> <code>sessions.list</code></div>
+<ul>
+<li id="sessions/identity"><b>Session identity</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.23">23</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.C">C</a>,
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a></div>
+  <div><b>Mapped by JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-3">situation-3</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/agent-help.html">agent-help
+  ×1</a>, <a href="../surfaces/global-hooks.html">global-hooks ×1</a>,
+  <a href="../surfaces/global-native.html">global-native ×1</a>,
+  <a href="../surfaces/global-orientation.html">global-orientation ×3</a>,
+  <a href="../surfaces/manual-overview.html">manual-overview ×1</a>,
+  <a href="../surfaces/project-orientation.html">project-orientation ×1</a>,
+  <a href="../surfaces/resume-context.html">resume-context ×1</a>,
+  <a href="../surfaces/setup-agent.html">setup-agent ×1</a></div>
+  <div><b>Commands:</b> <code>yoke sessions identity</code></div>
+  <div><b>Functions:</b> <code>sessions.identity</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/global-orientation.html">global-orientation</a>,
+  <a href="../surfaces/project-orientation.html">project-orientation</a>,
+  <a href="../surfaces/resume-context.html">resume-context</a></div>
+<ul>
+<li id="sessions/identity/native-harness-session"><b>Native harness session</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/identity/registered-session"><b>Registered session</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/identity/actor-and-machine"><b>Actor and machine</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/identity/episodes-and-reactivation"><b>Episodes and
+reactivation</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="sessions/identity/labels-and-execution-level"><b>Labels and execution
+level</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="sessions/lifecycle"><b>Session lifecycle</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Taught on:</b>
+  <a href="../surfaces/resume-context.html">resume-context ×1</a></div>
+  <div><b>Commands:</b> <code>yoke session-control keepalive hold</code>,
+  <code>yoke session-control keepalive release</code>, <code>yoke
+  session-control session terminate</code>, <code>yoke session-control session
+  wake</code>, <code>yoke sessions begin</code>, <code>yoke sessions
+  create</code>, <code>yoke sessions end-if-empty</code>, <code>yoke sessions
+  keepalive hold</code>, <code>yoke sessions keepalive release</code>,
+  <code>yoke sessions reclaim-stale</code>, <code>yoke sessions
+  terminate</code>, <code>yoke sessions touch</code></div>
+  <div><b>Functions:</b> <code>session_control.keepalive.hold</code>,
+  <code>session_control.keepalive.release</code>,
+  <code>session_control.relay.claim</code>,
+  <code>session_control.relay.idle_hosts</code>,
+  <code>session_control.relay.list</code>,
+  <code>session_control.relay.liveness</code>,
+  <code>session_control.relay.report</code>,
+  <code>session_control.relay.turn_end</code>,
+  <code>session_control.session.terminate</code>,
+  <code>session_control.session.wake</code>, <code>sessions.begin</code>,
+  <code>sessions.end_if_empty</code>, <code>sessions.reclaim_stale</code>,
+  <code>sessions.touch</code></div>
+<ul>
+<li id="sessions/lifecycle/start-and-attach"><b>Start and attach</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/lifecycle/heartbeat-and-liveness"><b>Heartbeat and liveness</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/lifecycle/pause-and-park"><b>Pause and park</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/lifecycle/resume-and-revive"><b>Resume and revive</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/lifecycle/end-and-retire"><b>End and retire</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/lifecycle/reclaim-stale-sessions"><b>Reclaim stale sessions</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="sessions/ownership"><b>Session work</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-projectless.html#FIRST-USER.P1">P1</a></div>
+  <div><b>Mapped by JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-7">situation-7</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/project-hooks.html">project-hooks
+  ×1</a>, <a href="../surfaces/project-orientation.html">project-orientation
+  ×1</a>, <a href="../surfaces/resume-context.html">resume-context ×1</a>,
+  <a href="../surfaces/workbench-cues.html">workbench-cues ×1</a></div>
+<ul>
+<li id="sessions/ownership/work-claims"><b>Work claims</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Related:</b>
+  <a href="coordination.html#coordination/work-claims">coordination/work-claims</a></div>
+</li>
+<li id="sessions/ownership/steering-scope"><b>Steering scope</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/ownership/current-stage-and-skill"><b>Current stage and
+skill</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+<li id="sessions/ownership/hand-back-and-reassignment"><b>Hand-back and
+reassignment</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+<li id="sessions/continuity"><b>Durable continuity</b>
+<i class="s draft-copy">draft-copy</i>
+  <div><b>Taught on:</b> <a href="../surfaces/global-native.html">global-native
+  ×1</a>, <a href="../surfaces/project-native.html">project-native ×2</a>,
+  <a href="../surfaces/project-orientation.html">project-orientation ×1</a>,
+  <a href="../surfaces/resume-context.html">resume-context ×2</a>,
+  <a href="../surfaces/setup-agent.html">setup-agent ×1</a>,
+  <a href="../surfaces/skills-roles.html">skills-roles ×1</a>,
+  <a href="../surfaces/workbench-cues.html">workbench-cues ×1</a></div>
+  <div><b>Commands:</b> <code>yoke session-control evidence get</code>,
+  <code>yoke sessions checkpoint</code>, <code>yoke sessions
+  checkpoint-read</code>, <code>yoke workflow-item epic-progress-note
+  append</code>, <code>yoke workflow-item epic-progress-note list</code></div>
+  <div><b>Functions:</b> <code>session_control.evidence.get</code>,
+  <code>sessions.checkpoint</code>, <code>sessions.checkpoint_read</code>,
+  <code>workflow_item.epic_progress_note.append</code>,
+  <code>workflow_item.epic_progress_note.list</code></div>
+  <div><b>Skills:</b> <code>wrapup</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/project-native.html">project-native</a>,
+  <a href="../surfaces/project-orientation.html">project-orientation</a>,
+  <a href="../surfaces/resume-context.html">resume-context</a>,
+  <a href="../surfaces/setup-agent.html">setup-agent</a></div>
+<ul>
+<li id="sessions/continuity/progress-checkpoint"><b>Progress checkpoint</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+  <div><b>Commands:</b> <code>yoke items progress-log append</code>, <code>yoke
+  items progress-log get</code></div>
+  <div><b>Functions:</b> <code>items.progress_log.append</code>,
+  <code>items.progress_log.get</code></div>
+</li>
+<li id="sessions/continuity/next-action"><b>Next action</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/continuity/unfinished-business"><b>Unfinished business</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/continuity/wrap-up"><b>Wrap-up</b>
+<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="sessions/continuity/session-evidence-and-transcript-access"><b>Session
+evidence and transcript access</b> <i class="s draft-copy">draft-copy</i>
+<span class="gap">unmapped</span>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

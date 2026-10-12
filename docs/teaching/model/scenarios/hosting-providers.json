@@ -1,0 +1,57 @@
+{
+ "scenario": {
+  "id": "hosting_providers",
+  "title": "Hosting ownership and existing delivery providers",
+  "status": "draft-copy",
+  "situations": ["Existing mature deploy pipeline", "New AWS-managed app", "Render/Fly/DigitalOcean/dokku/on-prem hosting", "Existing non-GitHub CI"],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["No live external-provider adoption performed; confirm which existing non-Actions deployment systems have a supported integration rather than inferring one.", "Confirm the project-specific rollback and incident runbook before treating a mapped pipeline as operationally ready."]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Preserve the existing pipeline",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Survey finds deployed app or CI/release files",
+   "need": "Map the existing app and installed Pack receipts. Existing scripts are evidence to inspect, not permission to reinstall infrastructure. Current executor can dispatch a project-owned GitHub Actions workflow.",
+   "disclosure": "current cue",
+   "surface": "Onboard profile lines 9–42; flow runner contract lines 287–312.",
+   "gap": "Onboarding offers no-host projects only merge-only/no-default although the executor supports external-project Actions delivery. Proposed adoption branch needs to separate infrastructure ownership from delivery orchestration.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke deployment-flows stages FLOW-ID", "yoke deployment-flows validate --help"],
+   "plan_notes": ["FIRST-USER 24", "JOURNEYS row 12"],
+   "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", "docs/public/reference/db-reference/projects-and-flows.md"]
+  },
+  {
+   "id": "02",
+   "title": "Know which Pack fits",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Agent proposes new hosting or an infrastructure/deploy Pack",
+   "need": "Shipped hosting path targets AWS. Production Deploy assumes VPS/Compose/CloudFront; preview templates assume FastAPI/Next.js on a Docker host. Preview actual dependencies, prerequisites and resources before approval.",
+   "disclosure": "current cue",
+   "surface": "Onboard profile lines 24–35 and domain-and-deploy lines 36–54; installed Pack README owns adaptation.",
+   "gap": "Public adoption guidance needs these support limits before the user accepts a Pack. Do not present provider prose as an executable adapter.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["JOURNEYS row 12"],
+   "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", ".agents/skills/yoke/onboard/domain-and-deploy.md", "packs/production-deploy/versions/1.1.2/files/docs/packs/production-deploy/README.md"]
+  },
+  {
+   "id": "03",
+   "title": "Keep test CI separate from deploy CI",
+   "status": "draft-copy",
+   "audience": "agent",
+   "when": "Registering existing verification commands",
+   "need": "Only a declared eligible Actions test workflow uses command-ci. Deploy/release/build workflows are not that declaration; other CI keeps the documented native-command path.",
+   "disclosure": "current cue",
+   "surface": "Onboard verification-binding lines 8–31.",
+   "gap": "Existing-provider discovery should name this distinction before auto-binding tests or offering a merge queue.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["JOURNEYS row 13"],
+   "sources": [".agents/skills/yoke/onboard/verification-binding.md"]
+  }
+ ]
+}

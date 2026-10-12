@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Packs: discover, adopt, customize and update · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Packs: discover, adopt, customize and update</h1>
+<h2 id="packs">Packs: discover, adopt, customize and update
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> A project needs a reusable capability. · An installed
+  Pack has an update or local customizations. · Pack-owned application files
+  were moved.</div>
+  <div><b>Coverage:</b> partial</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> Can a user read each full Pack contract before
+  installing it through a supported external-project route? · Does the workbench
+  teach stale report versus newer version rather than one undifferentiated stale
+  state?</div>
+  <div><b>Related:</b> <a href="capabilities.html">capabilities</a>,
+  <a href="qa-machine-setup.html">qa_machine_setup</a>,
+  <a href="hosting-providers.html">hosting_providers</a>,
+  <a href="preview-environments.html">preview_environments</a></div>
+<h3 id="packs/01">Find the available and installed choices
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Before proposing new reusable implementation or selecting an
+  Onboard profile</div>
+  <div><b>Need:</b> Use the project-scoped catalog; distinguish available,
+  installed and stale. Read dependencies, tool prerequisites, source catalog and
+  installed version.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Docs sidebar -&gt; Projects -&gt; Packs; Onboard profile
+  -&gt; yoke packs list; documented workbench Packs page.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke packs list --project P --json</code>,
+  <code>yoke packs get --help</code></div>
+  <div><b>Plan notes:</b> JOURNEYS row 12 · outside both</div>
+  <div><b>Sources:</b> <code>docs/public/nav.yaml</code>,
+  <code>docs/public/projects.md</code>,
+  <code>.agents/skills/yoke/onboard/profile-and-scaffold.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py</code></div>
+<h3 id="packs/02">Reach the Pack-specific instructions
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> After selecting a Pack, before treating it as suitable or
+  ready</div>
+  <div><b>Need:</b> Read the selected Pack README and its application/runbook
+  children; its installed files become project-owned source. A Pack description
+  is not its setup or support contract.</div>
+  <div><b>Disclosure:</b> missing cue</div>
+  <div><b>Surface:</b> Catalog JSON has documentation; installed entry is
+  docs/packs/&lt;slug&gt;/README.md. Plain packs list output prints
+  description/tools but omits that documentation pointer.</div>
+  <div><b>Gap:</b> Proven narrow omission in human list output. Pre-install
+  availability of complete Pack docs and actual workbench link behavior are not
+  established.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke packs list --project P --json</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/pack_projection.py</code>,
+  <code>packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md</code></div>
+<h3 id="packs/03">Preview updates and preserve customization
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Before first apply, a version update, or recovery from a
+  conflict</div>
+  <div><b>Need:</b> Preview first. Installed receipt is the baseline; repeating
+  get is not an update. Read the exact Pack conflict recipe, do not overwrite
+  custom files or rewrite immutable historical versions.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Onboard profile -&gt; selected installed README; packs
+  get/update help and preview result.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke packs update --help</code>, <code>yoke packs
+  get --help</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b>
+  <code>.agents/skills/yoke/onboard/profile-and-scaffold.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py</code>,
+  <code>packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md</code></div>
+<h3 id="packs/04">Record a project-owned move
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> agent</div>
+  <div><b>When:</b> A customized application file has moved since its Pack
+  baseline</div>
+  <div><b>Need:</b> Use Pack relink to record the move. Relink does not move
+  files; co-owned AGENTS and ignore contributions cannot be relinked. A
+  source-installed version may need its original catalog until served.</div>
+  <div><b>Disclosure:</b> current cue</div>
+  <div><b>Surface:</b> Projects -&gt; Packs catalog contract; relink help;
+  selected Pack README.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Recipes:</b> <code>yoke packs relink --help</code>, <code>yoke packs
+  update --help</code></div>
+  <div><b>Plan notes:</b> outside both</div>
+  <div><b>Sources:</b> <code>docs/public/projects.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py</code>,
+  <code>packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

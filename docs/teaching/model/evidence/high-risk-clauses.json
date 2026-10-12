@@ -1,0 +1,84 @@
+{
+ "title": "Clauses at high risk of omission",
+ "scope": "Research evidence read from source on 2026-10-12; each record states what it checked. Revalidate before relying on it as live behavior.",
+ "records": [
+  {
+   "id": "01",
+   "title": "FIRST-USER:42",
+   "status": "observed",
+   "text": "7. **350 lines is the hard maximum for every teaching file and displayed response.** The smaller targets below are advisory, not gates. Count displayed lines after wrapping at 80 columns; character counts include spaces and code."
+  },
+  {
+   "id": "02",
+   "title": "FIRST-USER:53",
+   "status": "observed",
+   "text": "9. **Budget complete deliveries.** Existing stricter harness byte limits still apply to the combined payload, including messages and required recovery. Reuse the composer; optional material gives way first. Check actual delivery, not only installed files."
+  },
+  {
+   "id": "03",
+   "title": "FIRST-USER:153",
+   "status": "observed",
+   "text": "- **Shared access:** the editable source and its views must be reachable by the relevant Yoke and Platform workers across machines. Use one maintained source behind the views. The iCloud collection is the research input; verify the actual worker access path. Shared-file publication remains the separate thin upload/link helper, with no new artifact records or revisions system."
+  },
+  {
+   "id": "04",
+   "title": "FIRST-USER:154",
+   "status": "observed",
+   "text": "- **Worker upkeep:** install concise project-scoped execution instructions for Yoke and Platform. When planning and finishing any item, inspect the prototype topics it touches. Add missing concepts/surfaces, update affected teachings and links, mark uncovered or stale teaching and report remaining gaps with evidence and exact prototype references through existing work reports/field-notes. Changes to behavior carry their necessary teaching updates; broader gaps go to steering. Verify live behavior before marking it live. Review only affected topics, not the whole catalog on every item."
+  },
+  {
+   "id": "05",
+   "title": "FIRST-USER:155",
+   "status": "observed",
+   "text": "- **Steering upkeep:** put the matching standing instruction in the project's steering guidance/CURRENT-PLAN so itemless steering receives it too: consult the prototype, review reported gaps, link them to existing work or file follow-ups, and maintain planned coverage. Recording a gap does not complete its teaching. Reuse existing reporting and intake; add no new deterministic upkeep-enforcement system. Later access failures record the specific pending update rather than silently claiming it happened."
+  },
+  {
+   "id": "06",
+   "title": "FIRST-USER:244",
+   "status": "observed",
+   "text": "- **Fix:** TUI setup silently leaves issue sync off; add no question. Agent-led setup may explain and offer opt-in when relevant. Users can change the project setting later."
+  },
+  {
+   "id": "07",
+   "title": "FIRST-USER:327",
+   "status": "observed",
+   "text": "- **Minimum activation:** for new or existing projects, reuse existing setup and guidance. Establish concise strategy, CURRENT-PLAN and relevant initiative docs, then hand off to steering to file meaningful work and route it through its workflow. Configure only what the first selected work requires; preserve existing checks, approvals and project rules. Activation succeeds when the first meaningful item reaches **done under its actual completion obligations**; merge alone is sufficient only when those obligations say so."
+  },
+  {
+   "id": "08",
+   "title": "FIRST-USER:461",
+   "status": "observed",
+   "text": "  - Extend representative activation cases beyond the onboard handoff: project setup, meaningful strategy/initiative docs, steering-created work and the first item reaching its actual **done** state. Prove required checks and approvals; merging is sufficient only when the selected completion obligations permit it. Cover new and mature projects, no GitHub, interrupted/resumed onboarding and a second machine. Optional capabilities absent from the selected work must not become setup gates; project facts persist while this machine is checked separately. Use the existing campaign archetypes, not a new exhaustive feature matrix."
+  },
+  {
+   "id": "09",
+   "title": "FIRST-USER:519",
+   "status": "observed",
+   "text": "- Full Yoke skills remain per-project; `yoke-global` must not shadow one. This adds no second in-project context block or unconditional native-startup publisher. Cloud sessions may not see user-level skills; D verifies supported discovery."
+  },
+  {
+   "id": "10",
+   "title": "FIRST-USER:561",
+   "status": "observed",
+   "text": "- **Fix:** extend existing configuration reads and onboarding runs/rows to distinguish configured, deferred, not needed and unknown setup. Actual settings remain authoritative; preserve explicit choices and evidence, and recheck them on resume or relevant setup changes. Scope shared facts to the project/universe and local readiness to the machine; resuming one project must not use another project's latest onboarding run. A new machine reuses project choices and checks its own prerequisites."
+  },
+  {
+   "id": "11",
+   "title": "FIRST-USER:568",
+   "status": "observed",
+   "text": "- **Fix:** use plan entry 42's facts in existing global orientation, project context, packets and relevant skill/command replies. For activation and first work, state the relevant configured/deferred/not-needed/unknown facts and give the shortest complete next-action recipe plus its deeper home. Respect scope, permissions and current project choices; optional suggestions use agent judgment and required guidance arrives before the affected action. Add no second project startup block, new suggestion engine or required configuration interview."
+  },
+  {
+   "id": "12",
+   "title": "JOURNEYS:49",
+   "status": "observed",
+   "text": "FIRST-USER ships first. These agreements remain the desired direction while JOURNEYS continues planning and refinement; they do not authorize JOURNEYS execution. Where FIRST-USER already touches a surface, propose the coherent adjacent JOURNEYS improvement now. Every change to a locked FIRST-USER entry requires an exact reviewed delta. Locked transfers: minimal onboarding and first-item activation (24/D), scoped setup facts (42), first-use agent visibility (43), the shared teaching-prototype/upkeep prerequisite (0), and portable guidance/docs reorganization (40). JOURNEYS uses those foundations for the broader adoption map; its execution remains deferred."
+  },
+  {
+   "id": "13",
+   "title": "JOURNEYS:60",
+   "status": "observed",
+   "text": "9. **Resolve completion, approval and QA for the work being selected.** Survey existing build/test/merge/release arrangements and establish the required landing, approval, done meaning and QA target before the affected action. Configure/read back the appropriate flow/default when needed. Offer merge-only when it meets those obligations; it removes neither approval nor QA and supplies no deployment run or post-deploy proof. Existing external automation may still deploy after merge. Preserve deliberate no-default/deferred choices; work requiring deployed proof needs that path before it can close. Verify required human approval cannot be bypassed."
+  }
+ ]
+}

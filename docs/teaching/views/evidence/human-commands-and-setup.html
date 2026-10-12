@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human-facing commands and setup · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Human-facing commands and setup</h1>
+<p>Research evidence read from source on 2026-10-12; each record states what it
+checked. Revalidate before relying on it as live behavior.</p>
+<h2 id="human-commands-and-setup/agent-help">Agent-led help: /yoke help and
+planned yoke-global help <i class="s observed">observed</i></h2>
+<div><b>Name:</b> Agent-led help: /yoke help and planned yoke-global help</div>
+<div><b>Audience:</b> Human asking an agent, with the agent selecting the right
+deeper instruction</div>
+<div><b>Scope:</b> Project help inside a wired project; global help outside
+one</div>
+<div><b>Trigger:</b> User asks how to use Yoke, invokes help, or needs a
+missing-project recovery path</div>
+<div><b>Current:</b> /yoke help exists and prints a broad generated skill table
+plus terminal recipes. yoke-global is planned in FIRST-USER P4, not established
+here as shipped.</div>
+<div><b>Proposed purpose:</b> Translate the person’s intent into one useful
+action and its canonical instructions.</div>
+<div><b>Content:</b> If the user gave a task, answer that task with one
+recommended route. · If they asked generally, offer a short choice: start a
+project, plan work, run work, check progress, review a decision, or get unstuck.
+· Name where the action belongs: this project folder, another project folder, or
+the global session. · Explain only the unfamiliar term needed for that action. ·
+Offer the relevant manual section and exact skill/help pointer when more detail
+is wanted.</div>
+<div><b>Scope variants:</b> {&#x27;outsideProject&#x27;: &#x27;Show accessible
+projects or create/add a project; carry the chosen intent into the actual folder
+before /yoke onboard or item execution.&#x27;, &#x27;insideProject&#x27;:
+&#x27;Use current project facts and the item’s pinned workflow to route; do not
+require the user to memorize stage commands.&#x27;}</div>
+<div><b>Authority and reuse:</b> The skill is a router to canonical skill
+bodies, docs and generated command reference, not another command catalog or a
+second set of operating rules.</div>
+<div><b>Proposal status:</b> Modify existing project help; planned global skill
+carries the global variant</div>
+<div><b>Plan notes:</b> FIRST-USER 8 · FIRST-USER P1/P4 · JOURNEYS principles
+3–6</div>
+<div><b>Sources:</b> <code>.agents/skills/yoke/SKILL.md</code>,
+<code>.agents/skills/yoke/help/SKILL.md</code>,
+<code>docs/public/operating-with-agents.md</code></div>
+<h2 id="human-commands-and-setup/return-to-work">Return-to-work panels / concise
+session orientation <i class="s observed">observed</i></h2>
+<div><b>Name:</b> Return-to-work panels / concise session orientation</div>
+<div><b>Audience:</b> Returning human operator; agent reading live continuity
+first</div>
+<div><b>Scope:</b> Global summary outside a project; project/item summary inside
+one</div>
+<div><b>Trigger:</b> User returns or asks what to do next; at startup the agent
+receives facts and surfaces human text only when useful/actionable</div>
+<div><b>Proposed purpose:</b> Restore orientation and resume safely without
+repeating the introductory course.</div>
+<div><b>Content:</b> Where you are: universe and selected project or no project.
+· What is active, waiting on you, blocked, or recently completed, with titles
+rather than bare IDs. · For interrupted work: last durable checkpoint, current
+holder/lane, evidence state and the live next-step pointer. · For a decision:
+say whether it approves work, reviews QA evidence or accepts a deployment. · For
+a missing prerequisite: one reason and one action/help link at the point it
+matters. · For a nearly finished initiative: offer a completion/evidence audit
+and deferred-work review before archival.</div>
+<div><b>Scope variants:</b> {&#x27;global&#x27;: &#x27;A short cross-project
+status plus the right project/folder link. Cross-project coordination does not
+switch an existing session’s project.&#x27;, &#x27;project&#x27;: &#x27;Current
+plan, active work, personal Inbox and delivery state; links to their existing
+pages rather than repeating them all.&#x27;, &#x27;noneActive&#x27;: &#x27;Offer
+to select ready work or steer the current plan; do not imply Feed must precede
+Steer.&#x27;}</div>
+<div><b>Authority and reuse:</b> Reuse orientation, durable checkpoints,
+Frontier/Sessions/Inbox/Shipping, and the existing onboarding panel. No separate
+progress database or prescribed multi-stage tour. Unreadable facts stay unknown;
+preference and cue-dedup policy remains an open JOURNEYS decision.</div>
+<div><b>Proposal status:</b> Proposed future human rendering of current/planned
+context facts; archival completion audit is explicitly planned</div>
+<div><b>Plan notes:</b> FIRST-USER P1/P4/P5/8 · JOURNEYS rows 7–15; open
+questions 1/3/6</div>
+<div><b>Sources:</b>
+<code>packages/yoke-core/src/yoke_core/domain/session_orientation.py</code>,
+<code>packages/yoke-core/src/yoke_core/ui/static/universe_views_frontier.js</code>,
+<code>packages/yoke-core/src/yoke_core/ui/static/universe_views_sessions.js</code>,
+<code>packages/yoke-core/src/yoke_core/ui/static/universe_views_inbox.js</code>,
+<code>packages/yoke-core/src/yoke_core/ui/static/universe_views_shipping.js</code>,
+<code>packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_control.js</code>,
+<code>.agents/skills/yoke/steer/SKILL.md</code>,
+<code>.agents/skills/yoke/wrapup/SKILL.md</code></div>
+<h2 id="human-commands-and-setup/setup-agent">Agent-assisted setup conversation
+and receipt <i class="s observed">observed</i></h2>
+<div><b>Name:</b> Agent-assisted setup conversation and receipt</div>
+<div><b>Audience:</b> Human with an agent operating setup</div>
+<div><b>Scope:</b> Machine/global until project selection; project onboarding
+only in the selected folder</div>
+<div><b>Trigger:</b> User asks the agent to install Yoke or resume
+installation</div>
+<div><b>Proposed purpose:</b> Let the agent handle routine work and explain only
+the choice the human needs to make.</div>
+<div><b>Content:</b> Begin with the person’s practical constraint: just this
+computer, several computers, or a team. · Translate each real setup decision
+into one short recommendation and reason. · Reuse existing configuration and
+make consequential replacement/import choices explicit. · Distinguish GitHub
+access from optional issue sync; leave sync off unless the user intentionally
+enables it. · Explain sign-in, device authorization and harness trust only when
+the human must act. · Verify the active harness, registration and hooks; show a
+plain repair if needed. · Carry the chosen project and existing-work intent into
+the correct folder, then start project onboarding there.</div>
+<div><b>Scope variants:</b> {&#x27;global&#x27;: &#x27;Choose/add/open a project
+via planned yoke-global; do not call project-only onboard as a global
+chooser.&#x27;, &#x27;matureProject&#x27;: &#x27;Ask what existing plans, local
+work, issues/PRs or transcripts should be read before synthesizing
+CURRENT-PLAN.&#x27;, &#x27;otherScm&#x27;: &#x27;Explain the supported
+GitHub-integration boundary, then continue with it skipped; do not promise
+another provider integration.&#x27;}</div>
+<div><b>Authority and reuse:</b> Same setup engine and resumable facts as TUI,
+using planned structured agent-mode responses. Human prose is a short rendering
+of that state, not a second setup implementation.</div>
+<div><b>Proposal status:</b> Depends on planned agent-mode/global-context
+mechanics; not claimed to be current behavior</div>
+<div><b>Plan notes:</b> FIRST-USER A/C/E/P1/P4/24/26 · JOURNEYS principles 3–6
+and rows 1–9</div>
+<div><b>Sources:</b>
+<code>packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py</code>,
+<code>.agents/skills/yoke/onboard/SKILL.md</code>,
+<code>.agents/skills/yoke/onboard/strategy-conversation.md</code></div>
+<h2 id="human-commands-and-setup/setup-tui">Interactive terminal setup
+<i class="s observed">observed</i></h2>
+<div><b>Name:</b> Interactive terminal setup</div>
+<div><b>Audience:</b> Human installing without an agent</div>
+<div><b>Scope:</b> Machine/universe first; optional project selection
+later</div>
+<div><b>Trigger:</b> Run yoke setup interactively</div>
+<div><b>Proposed purpose:</b> Complete necessary setup with the fewest decisions
+and an unambiguous handoff.</div>
+<div><b>Content:</b> At the mode choice, say which computers can reach this
+universe: this machine only, your server, or Yoke Cloud. · At an
+identity/browser step, say why the browser opens, what to approve and how to
+return. · Allow a project now or later; when chosen, distinguish an existing
+checkout from a new project. · Keep GitHub integration optional. Silently keep
+item-to-issue sync off; no sync-choice screen. · Run routine checks
+automatically; show one plain repair step only when something needs attention. ·
+End with the connected mode/universe, actual project or no project,
+active-harness readiness, and one concrete next action.</div>
+<div><b>Scope variants:</b> {&#x27;noProject&#x27;: &#x27;Finish machine setup;
+explain how to ask the agent to choose/add a project later.&#x27;,
+&#x27;projectChosen&#x27;: &#x27;Open that actual folder in the active harness
+and continue the existing onboarding handoff.&#x27;, &#x27;githubSkipped&#x27;:
+&#x27;Report skipped GitHub-dependent checks as not applicable, not setup
+failure.&#x27;}</div>
+<div><b>Authority and reuse:</b> Use the existing setup state machine and its
+resumable steps. Longer explanations link to the manual; no
+workflow/QA/infrastructure course inside the TUI.</div>
+<div><b>Proposal status:</b> Proposed post-plan presentation; applies later user
+corrections over the older captured item 10/C/E wording</div>
+<div><b>Plan notes:</b> FIRST-USER 3/8/9/10/25/26/37–39 · FIRST-USER C/E/P4 ·
+JOURNEYS rows 1–9</div>
+<div><b>Sources:</b>
+<code>packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py</code>,
+<code>packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py</code>,
+<code>packages/yoke-cli/src/yoke_cli/config/onboard_destination_rows.py</code></div>
+<h2 id="human-commands-and-setup/terminal-help">Top-level terminal help: yoke
+help / yoke --help <i class="s observed">observed</i></h2>
+<div><b>Name:</b> Top-level terminal help: yoke help / yoke --help</div>
+<div><b>Audience:</b> Human terminal users and agents discovering commands</div>
+<div><b>Scope:</b> Global; usable without a project or completed setup</div>
+<div><b>Trigger:</b> Explicit help request; bare yoke after valid machine
+configuration</div>
+<div><b>Current:</b> Both spellings already work and print the same large
+generated command catalog. Bare yoke first checks machine configuration and may
+route to setup. yoke help TOPIC is not currently topic routing; yoke
+&lt;group&gt; --help is.</div>
+<div><b>Proposed purpose:</b> Answer what to do next and how to find exact
+commands in one screen.</div>
+<div><b>Content:</b> One sentence: Yoke keeps plans, work, proof and delivery
+together while agents do the work. · Set up this machine: yoke setup. · Check
+your current connection and checkout: yoke status. · Open the workbench: yoke
+ui. · Work with an agent: distinguish /yoke help in a project from the planned
+global project chooser. · Find exact commands with yoke &lt;group&gt; --help and
+the full generated command reference; link the overview, contents and
+troubleshooting.</div>
+<div><b>Scope variants:</b> {&#x27;outsideProject&#x27;: &#x27;Name that project
+selection is separate from universe selection; point to choose/add/open, without
+failing help.&#x27;, &#x27;insideProject&#x27;: &#x27;Point to project status
+and the project help route; do not print its full live state or secrets into
+root help.&#x27;}</div>
+<div><b>Authority and reuse:</b> Keep command names/usages generated from the
+existing registry. Preserve the exhaustive catalog behind an explicit
+discoverable route; decide that route rather than inventing a flag in
+documentation. Keep help usable offline without mandatory server reads.</div>
+<div><b>Proposal status:</b> New presentation proposal using existing
+command/help mechanisms</div>
+<div><b>Plan notes:</b> FIRST-USER 35: short readable output · FIRST-USER P6:
+projectless CLI refusals · JOURNEYS principle 4: exact deep pointers</div>
+<div><b>Sources:</b> <code>packages/yoke-cli/src/yoke_cli/main.py</code>,
+<code>packages/yoke-cli/src/yoke_cli/commands/group_help.py</code>,
+<code>packages/yoke-cli/src/yoke_cli/commands/registry.py</code>,
+<code>docs/public/reference/commands.md</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>

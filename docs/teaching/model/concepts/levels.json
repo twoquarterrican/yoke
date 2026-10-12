@@ -1,0 +1,158 @@
+{
+ "parent": null,
+ "nodes": [
+  {
+   "id": "levels",
+   "title": "Execution levels and models",
+   "status": "draft-copy",
+   "sources": ["docs/public/reference/session-level-routing.md", "docs/public/cli-and-config.md", "docs/public/reference/db-reference/model-reference.md"],
+   "children": [
+    {
+     "id": "scheme",
+     "title": "Execution levels",
+     "status": "draft-copy",
+     "commands": ["yoke models level-proposal", "yoke projects level-summary get", "yoke universe levels get", "yoke universe levels set"],
+     "functions": ["models.level_proposal.run", "projects.level_summary.get", "universe.levels.get", "universe.levels.set"],
+     "children": [
+      {
+       "id": "ordered-capability-bands",
+       "title": "Ordered capability bands",
+       "status": "draft-copy"
+      },
+      {
+       "id": "level-names-and-glyphs",
+       "title": "Level names and glyphs",
+       "status": "draft-copy"
+      },
+      {
+       "id": "launch-options",
+       "title": "Launch options",
+       "status": "draft-copy"
+      },
+      {
+       "id": "universe-levels",
+       "title": "Universe levels",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-override",
+       "title": "Project override",
+       "status": "draft-copy"
+      },
+      {
+       "id": "item-level-adjustment",
+       "title": "Item level adjustment",
+       "status": "draft-copy"
+      },
+      {
+       "id": "stage-defaults",
+       "title": "Stage defaults",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "options",
+     "title": "Launch option",
+     "status": "draft-copy",
+     "children": [
+      {
+       "id": "harness-surface",
+       "title": "Harness surface",
+       "status": "draft-copy"
+      },
+      {
+       "id": "model-or-native-selector",
+       "title": "Model or native selector",
+       "status": "draft-copy"
+      },
+      {
+       "id": "reasoning-effort",
+       "title": "Reasoning effort",
+       "status": "draft-copy"
+      },
+      {
+       "id": "context-window",
+       "title": "Context window",
+       "status": "draft-copy"
+      },
+      {
+       "id": "fallback",
+       "title": "Fallback",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "catalog",
+     "title": "Model catalog",
+     "status": "draft-copy",
+     "commands": ["yoke models diff", "yoke models get", "yoke models lookup", "yoke models publish", "yoke models restore", "yoke models revisions", "yoke models validate", "yoke relay probe-models"],
+     "functions": ["models.diff.run", "models.get.run", "models.lookup.run", "models.publish.run", "models.restore.run", "models.revisions.run", "models.validate.run"],
+     "skills": ["models"],
+     "children": [
+      {
+       "id": "published-model-facts",
+       "title": "Published model facts",
+       "status": "draft-copy"
+      },
+      {
+       "id": "effective-dated-revisions",
+       "title": "Effective-dated revisions",
+       "status": "draft-copy"
+      },
+      {
+       "id": "native-observations",
+       "title": "Native observations",
+       "status": "draft-copy"
+      },
+      {
+       "id": "supported-versus-selectable",
+       "title": "Supported versus selectable",
+       "status": "draft-copy"
+      },
+      {
+       "id": "research-and-level-proposals",
+       "title": "Research and level proposals",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "capacity",
+     "title": "Level capacity",
+     "status": "draft-copy",
+     "commands": ["yoke universe level-capacity get"],
+     "functions": ["universe.level_capacity.get"],
+     "children": [
+      {
+       "id": "quota-pools",
+       "title": "Quota pools",
+       "status": "draft-copy"
+      },
+      {
+       "id": "remaining-headroom",
+       "title": "Remaining headroom",
+       "status": "draft-copy"
+      },
+      {
+       "id": "unknown-meters",
+       "title": "Unknown meters",
+       "status": "draft-copy"
+      },
+      {
+       "id": "next-launch-per-project",
+       "title": "Next launch per project",
+       "status": "draft-copy"
+      },
+      {
+       "id": "no-usable-option",
+       "title": "No usable option",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

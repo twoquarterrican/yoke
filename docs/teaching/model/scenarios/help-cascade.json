@@ -1,0 +1,58 @@
+{
+ "scenario": {
+  "id": "help-cascade",
+  "title": "Finding deeper help and knowing who owns it",
+  "status": "draft-copy",
+  "situations": ["Human or agent encounters an unfamiliar concept", "A command refuses or only gives a short answer", "A public reader wants an overview or deeper article", "An external project needs its own rules or a Pack guide"],
+  "coverage": "partial",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "questions": ["Which documents require split, merge, promotion, retirement or missing coverage?", "Can every child identify its parent and every overview lead to all intended children?", "Do CLI help, packets, refusals and UI links resolve for ordinary installations as well as source developers?"],
+  "plan_refs": ["FIRST-USER.summary-60-chars-max", "FIRST-USER.state-16-chars-max", "FIRST-USER.operator-intent", "FIRST-USER.shared-teaching-standard", "FIRST-USER.planning-research-artifacts", "FIRST-USER.cold-start-context", "FIRST-USER.filing-rules", "FIRST-USER.order-and-dependencies", "FIRST-USER.0", "FIRST-USER.35", "FIRST-USER.P6", "FIRST-USER.40", "FIRST-USER.41", "FIRST-USER.decisions-and-non-goals", "FIRST-USER.moved-to-journeys", "FIRST-USER.unfiled-ideas", "FIRST-USER.open-verifications", "JOURNEYS.summary-60-chars-max", "JOURNEYS.state-16-chars-max", "JOURNEYS.operator-intent", "JOURNEYS.planning-research-artifacts", "JOURNEYS.situations-catalog"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Summary → category overview → article → precise operation",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Proactive pointer, help request or browsing public docs",
+   "need": "Give each level a short explanation, scope and links down and back up. A person should be able to find the right concept without knowing the command name first.",
+   "disclosure": "missing cue",
+   "surface": "Public overview/index, category summaries and article breadcrumbs",
+   "gap": "The cascade is the proposed navigation principle; category boundaries remain open. Current Help’s bare README pointer needs the accepted installed-doc repair.",
+   "review": "Pending exact recipe proof.",
+   "recipes": ["yoke --help", "yoke <operation> --help"],
+   "plan_notes": ["FIRST-USER accepted guidance-access amendment", "JOURNEYS principles 2–4"],
+   "sources": ["docs/public/index.md", "docs/public/reference/commands.md", ".agents/skills/yoke/help/SKILL.md"]
+  },
+  {
+   "id": "02",
+   "title": "One public source, several delivery surfaces",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Following a source link, updating guidance or diagnosing drift",
+   "need": "Product help is authored under docs/public and delivered to the website and installed .yoke/docs. Project rules/docs and installed Pack files have separate ownership.",
+   "disclosure": "current cue",
+   "surface": "Public source → website / install bundle; project-owned documents remain local",
+   "gap": "A public and installed copy are distribution, not two authorities. Private Yoke/Platform operations should link to public customer guidance; exact build versions can differ.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 32", "FIRST-USER accepted public/private boundary amendment", "JOURNEYS centralize wording later"],
+   "sources": ["docs/public/index.md", "docs/public/reference/execution-instructions.md", "docs/public/capabilities.md"]
+  },
+  {
+   "id": "03",
+   "title": "Short feedback that tells you where to go next",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Every result, especially a setup gap or refusal",
+   "need": "Routine output stays short; failures name the reason, missing fact and recovery. Agents can request deeper structured data without losing required context in a quiet-mode change.",
+   "disclosure": "planned cue",
+   "surface": "Command feedback, receipts, --help and deeper pointers",
+   "gap": "Audit the whole refusal → reachable installed guide → successful recovery chain. Do not mistake a reference page’s existence for a usable journey.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 29", "FIRST-USER 35", "JOURNEYS open question 4"],
+   "sources": ["docs/public/reference/agent-rules/code-and-cli.md", "docs/public/reference/https-connection-diagnostics.md"]
+  }
+ ]
+}

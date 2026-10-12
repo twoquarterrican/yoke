@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entering through a terminal or an agent · Yoke teaching prototype</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav>
+<a href="../index.html">Overview</a> · <a href="../concepts.html">Concepts</a> ·
+<a href="../surfaces.html">Surfaces</a> ·
+<a href="../scenarios.html">Scenarios</a> · <a href="../plan-coverage.html">Plan
+coverage</a> · <a href="../evidence.html">Evidence</a> ·
+<a href="../boundaries.html">Boundaries</a> · <a href="../gaps.html">Gaps</a>
+</nav>
+<main>
+<h1>Entering through a terminal or an agent</h1>
+<h2 id="install-entry">Entering through a terminal or an agent
+<i class="s draft-copy">draft-copy</i></h2>
+  <div><b>Situations:</b> A human runs the installer in a terminal · A human
+  tells an existing agent: install upyoke.com · Installation stops halfway or
+  changes presentation mode</div>
+  <div><b>Coverage:</b> traced</div>
+  <div><b>Current:</b> Research trace; requirements and source paths need live
+  proof.</div>
+  <div><b>Desired:</b> Reconciled against current plan records.</div>
+  <div><b>Questions:</b> Can an agent with no Yoke-specific context complete the
+  exact public entry path? · Does every failure preserve enough context to
+  resume without guessing?</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.14">14</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.17">17</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.19">19</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.26">26</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.37">37</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.38">38</a>,
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.39">39</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.A">A</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.B">B</a>,
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.D">D</a></div>
+  <div><b>JOURNEYS:</b>
+  <a href="../plan-coverage/journeys-global-situations.html#JOURNEYS.situation-1">situation-1</a></div>
+  <div><b>Related:</b> <a href="universe-choice.html">universe-choice</a>,
+  <a href="github-choices.html">github-choices</a>,
+  <a href="project-adoption.html">project-adoption</a>,
+  <a href="harness-readiness.html">harness-readiness</a></div>
+<h3 id="install-entry/01">Finding Yoke before Yoke is installed
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Before the first installer command</div>
+  <div><b>Need:</b> The terminal user needs the visible install command. An
+  existing agent needs public instructions before any Yoke hook, skill or packet
+  is available.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Public install page; proposed homepage agent entry</div>
+  <div><b>Gap:</b> FIRST-USER B plans the homepage route. The complete
+  first-turn fetch → correct install action still needs real-agent proof.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER B · FIRST-USER D · JOURNEYS 1</div>
+  <div><b>Sources:</b> <code>docs/public/install.md</code></div>
+<h3 id="install-entry/02">One setup decision at a time
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> At each setup step</div>
+  <div><b>Need:</b> The TUI teaches the human directly. Agent mode must provide
+  a structured question, allowed answers, links and guidance, which the agent
+  translates for the human.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Current TUI/noninteractive setup; FIRST-USER A structured
+  agent steps</div>
+  <div><b>Gap:</b> The audited adapter does not yet expose the planned --agent /
+  --answer contract. A noninteractive flag alone is not the proposed context
+  chain.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER A · FIRST-USER 8 · FIRST-USER 35 · JOURNEYS
+  1</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py</code>,
+  <code>docs/public/guides/terminal-onboarding.md</code></div>
+<h3 id="install-entry/03">Authentication, progress and a recoverable finish
+<i class="s draft-copy">draft-copy</i></h3>
+  <div><b>Audience:</b> both</div>
+  <div><b>When:</b> Browser authorization, Apply, failure and completion</div>
+  <div><b>Need:</b> Show what changed, what is waiting for the human, and one
+  continuation. TUI browser actions and agent-returned links/codes are different
+  channels.</div>
+  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Surface:</b> Setup screens, step results and resume handoff</div>
+  <div><b>Gap:</b> Trace expiration, denial, partial Apply, Back, reinstall
+  leftovers and mode switching. Preserve original intent, project and run
+  identity.</div>
+  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Plan notes:</b> FIRST-USER 1 · FIRST-USER 7 · FIRST-USER 14 ·
+  FIRST-USER 17 · FIRST-USER 19 · FIRST-USER 26 · FIRST-USER 37 · FIRST-USER 38
+  · FIRST-USER 39 · FIRST-USER D</div>
+  <div><b>Sources:</b> <code>docs/public/install.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/config/project_onboarding_handoff.py</code></div>
+</main>
+<footer>Generated by docs/teaching/tools/build.py from
+docs/teaching/model. Edit the model, then rebuild.</footer>
+</body>
+</html>
