@@ -10,6 +10,11 @@ from yoke_core.api.service_client_structured_api_adapter_inventory_types import 
 
 PROJECT_ADAPTERS = [
     AdapterEntry(
+        function_id="files.upload",
+        cli_invocation="yoke files upload LOCAL_FILE [--path DEST] [--project P]",
+        notes="stores a shared file and prints its stable read URL",
+    ),
+    AdapterEntry(
         function_id="projects.retire",
         cli_invocation="yoke projects retire --project P --reason TEXT",
         notes="hides an obligation-free project while preserving history",

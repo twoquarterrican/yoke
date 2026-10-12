@@ -41,7 +41,7 @@ def is_shared_file_browser_read(request: Request) -> bool:
     from yoke_core.api.web_session_auth import WEB_SESSION_COOKIE_NAME
 
     return (
-        request.method.upper() in {"GET", "HEAD"}
+        request.method.upper() == "GET"
         and request.url.path.startswith(f"{SHARED_FILE_ROUTE_PREFIX}/")
         and not request.headers.get("authorization")
         and bool(request.cookies.get(WEB_SESSION_COOKIE_NAME))
