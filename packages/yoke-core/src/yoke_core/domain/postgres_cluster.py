@@ -190,6 +190,27 @@ def initdb_if_needed(spec: ClusterSpec) -> int:
     return res.returncode
 
 
+def data_dir_major_mismatch(spec: ClusterSpec) -> Optional[str]:
+    """Name an initialized data directory the spec's server cannot open.
+
+    Returns ``"data directory PG N, server PG M"`` when the major versions
+    differ, else ``None`` (uninitialized, unreadable, or matching).
+    """
+    marker = spec.data_dir / "PG_VERSION"
+    if not marker.is_file():
+        return None
+    data_major = marker.read_text(errors="replace").strip()
+    try:
+        res = _run([binary(spec, "pg_ctl"), "--version"])
+    except FileNotFoundError:
+        return None
+    words = (res.stdout or "").split()
+    server_major = words[-1].split(".")[0] if res.returncode == 0 and words else ""
+    if not server_major or server_major == data_major:
+        return None
+    return f"data directory PG {data_major}, server PG {server_major}"
+
+
 def server_options(spec: ClusterSpec) -> str:
     """The ``pg_ctl -o`` option string: socket-only plus spec settings."""
     parts = [
@@ -294,6 +315,7 @@ __all__ = [
     "PostgresClusterError",
     "SOCKET_PORT",
     "binary",
+    "data_dir_major_mismatch",
     "destroy",
     "dsn",
     "ensure_started",

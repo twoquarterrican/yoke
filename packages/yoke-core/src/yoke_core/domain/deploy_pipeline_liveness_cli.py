@@ -37,7 +37,7 @@ _ENGINE = "yoke_core.domain.deploy_pipeline_liveness_cli"
 
 
 def _reexec_into_pinned_source(argv: List[str]) -> Optional[int]:
-    """Freeze a self-deploy driver, then replace this process from that tree.
+    """Freeze a self-release driver, then replace this process from that tree.
 
     The execute adapter must not import ``yoke_core`` — product CLI loads it
     at startup. The pin therefore lives in this engine process. ``os.execve``

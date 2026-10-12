@@ -1,9 +1,15 @@
-"""Pin a serving-API self-deploy driver to the run's ``release_lineage``.
+"""Pin a Yoke self-release driver to the run's ``release_lineage``.
 
-A relayed project dispatches to a server running an installed build, which
-cannot move underneath it. Only a self-deploy reads a live checkout, so only
-that path takes a detached worktree at the pin. Relayed execution does not
-take a checkout.
+A run whose project checkout is Yoke's own source releases the engine that
+drives it, so the driver executes the release commit rather than whatever
+CLI is installed: a detached worktree at the pin, on every transport. The
+stage run over HTTPS and the production run on paired local database
+authority therefore rehearse and apply exactly what the release ships. Any
+other project's run is driven by the installed engine and takes no checkout.
+
+Everything before the re-exec runs under the installed release, so it reads
+only what locating that checkout needs and leaves validating the machine
+config to the candidate's own rules.
 
 The freeze is the isolation: a merge landing on the live tree cannot mix
 already-cached modules with files read later from disk. The per-stage
@@ -23,7 +29,8 @@ from pathlib import Path
 from yoke_cli.config import repo_upstream_git
 from yoke_contracts.deployment_itemless_teaching import INTERRUPTED_RUN_RECOVERY
 from yoke_core.domain import deploy_pipeline_control_plane as control_plane
-from yoke_core.domain.project_checkout_locations import checkout_for_project_slug
+from yoke_core.domain import machine_config
+from yoke_core.domain.project_checkout_locations import project_id_for_slug
 from yoke_core.domain.worktree_paths import _run, captured_process_detail
 from yoke_core.domain.worktree_provision import GIT_WORKTREE_ADD_TIMEOUT_SECONDS
 from yoke_core.engines.deploy_run_worktree_naming import (
@@ -47,16 +54,10 @@ class DeployPinnedSourceError(RuntimeError):
 
 @dataclass(frozen=True)
 class PinnedDriverSource:
-    """Detached checkout the self-deploy child must execute from."""
+    """Detached checkout the self-release child must execute from."""
 
     root: Path
     lineage: str
-
-
-def _https_transport() -> bool:
-    from yoke_core.domain.events_transport_guard import _active_transport_is_https
-
-    return _active_transport_is_https()
 
 
 def _yoke_shaped(root: Path) -> bool:
@@ -159,10 +160,48 @@ def ensure_pinned_worktree(checkout: str, run_id: str, revision: str) -> Path:
     return path
 
 
-def prepare_self_deploy_driver(run_id: str) -> PinnedDriverSource | None:
-    """Freeze driver source for a local self-deploy; None on the relayed path."""
-    if _https_transport():
+def self_release_checkout(project: str) -> Path | None:
+    """This machine's Yoke checkout for *project*; None drives with the installed engine.
+
+    Reads each ``projects`` entry's ``checkout`` and ``project_id`` from the
+    raw machine config and nothing else, so a release that changes the rest
+    of the machine-config contract is still located by the release before it.
+    """
+    project_id = project_id_for_slug(project)
+    if project_id is None:
+        raise DeployPinnedSourceError(
+            f"project {project!r} could not be resolved through projects.get; "
+            "confirm the selected connection serves it and re-drive the run"
+        )
+    try:
+        entries = machine_config.load_config().get("projects")
+    except machine_config.MachineConfigError as exc:
+        raise DeployPinnedSourceError(
+            f"machine config is unreadable ({exc}); repair ~/.yoke/config.json "
+            "and re-drive the run"
+        ) from exc
+    mapped = [
+        Path(str(entry["checkout"])).expanduser().resolve()
+        for entry in (entries if isinstance(entries, list) else [])
+        if isinstance(entry, dict)
+        and str(entry.get("project_id")) == str(project_id)
+        and isinstance(entry.get("checkout"), str)
+        and entry["checkout"].strip()
+    ]
+    if not mapped:
+        print(
+            f"No machine-config checkout for project {project!r} (project_id "
+            f"{project_id}); the installed engine drives this run. A Yoke "
+            "self-release needs its checkout: register it with `yoke project "
+            "register` from that checkout, then re-drive the run.",
+            file=sys.stderr,
+        )
         return None
+    return next((root for root in mapped if _yoke_shaped(root)), None)
+
+
+def prepare_self_deploy_driver(run_id: str) -> PinnedDriverSource | None:
+    """Freeze driver source for a Yoke self-release; None for other projects."""
     context = timed_call("pin_read", control_plane.run_pin, run_id)
     lineage = str(context.get("release_lineage") or "").strip()
     project = str(context.get("project") or "")
@@ -170,16 +209,10 @@ def prepare_self_deploy_driver(run_id: str) -> PinnedDriverSource | None:
     if not lineage:
         raise DeployPinnedSourceError(
             f"deployment run {run_id} has no release_lineage to pin the "
-            "self-deploy driver to"
+            "self-release driver to"
         )
-    checkout = checkout_for_project_slug(project)
+    checkout = self_release_checkout(project)
     if checkout is None:
-        raise DeployPinnedSourceError(
-            f"no machine-config checkout for project {project!r}; a "
-            "self-deploy driver cannot freeze source it cannot find"
-        )
-    checkout = checkout.expanduser().resolve()
-    if not _yoke_shaped(checkout):
         return None
     # Before taking a slot, give back the ones finished runs are still holding.
     # A deploy is the one moment this checkout is certain to be asked for a
@@ -196,7 +229,7 @@ def prepare_self_deploy_driver(run_id: str) -> PinnedDriverSource | None:
 def driver_source_drift_refusal(release_lineage: str) -> str | None:
     """Named halt when the executing tree is not the run pin.
 
-    No-op when the pin env is unset so relayed drivers and pipeline tests
+    No-op when the pin env is unset so installed-engine drivers and pipeline tests
     that call ``run_pipeline`` directly stay unchanged.
     """
     pinned = os.environ.get(PINNED_RELEASE_ENV, "").strip()
@@ -254,4 +287,5 @@ __all__ = [
     "ensure_pinned_worktree",
     "prepare_self_deploy_driver",
     "retire_finished_driver_worktrees",
+    "self_release_checkout",
 ]

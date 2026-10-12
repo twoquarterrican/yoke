@@ -77,26 +77,6 @@ def _yoke_shape(repo: Path) -> None:
     (marker / "__init__.py").write_text("", encoding="utf-8")
 
 
-def test_https_prepare_takes_no_checkout(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(pinned, "_https_transport", lambda: True)
-    assert pinned.prepare_self_deploy_driver("run-1") is None
-
-
-def test_non_yoke_checkout_is_not_this_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(pinned, "_https_transport", lambda: False)
-    monkeypatch.setattr(
-        pinned.control_plane,
-        "run_pin",
-        lambda _run_id: {"release_lineage": "abc", "project": "other"},
-    )
-    other = tmp_path / "other"
-    other.mkdir()
-    monkeypatch.setattr(pinned, "checkout_for_project_slug", lambda _p: other)
-    assert pinned.prepare_self_deploy_driver("run-1") is None
-
-
 def test_worktree_stays_at_the_pin_when_main_moves(tmp_path: Path) -> None:
     repo = _init_repo(tmp_path / "repo")
     pin = _commit(repo, "pin")
@@ -145,13 +125,12 @@ def test_prepare_freezes_a_yoke_shaped_checkout(
     repo = _init_repo(tmp_path / "repo")
     _yoke_shape(repo)
     pin = _commit(repo, "pin")
-    monkeypatch.setattr(pinned, "_https_transport", lambda: False)
     monkeypatch.setattr(
         pinned.control_plane,
         "run_pin",
         lambda _run_id: {"release_lineage": pin, "project": "yoke"},
     )
-    monkeypatch.setattr(pinned, "checkout_for_project_slug", lambda _p: repo)
+    monkeypatch.setattr(pinned, "self_release_checkout", lambda _p: repo)
     prepared = pinned.prepare_self_deploy_driver("run-20260921-010")
     assert prepared is not None
     assert prepared.lineage == pin
@@ -164,13 +143,12 @@ def test_prepare_does_not_compose_membership(
     repo = _init_repo(tmp_path / "repo")
     _yoke_shape(repo)
     pin = _commit(repo, "pin")
-    monkeypatch.setattr(pinned, "_https_transport", lambda: False)
     monkeypatch.setattr(
         pinned.control_plane,
         "run_pin",
         lambda _run_id: {"release_lineage": pin, "project": "yoke"},
     )
-    monkeypatch.setattr(pinned, "checkout_for_project_slug", lambda _p: repo)
+    monkeypatch.setattr(pinned, "self_release_checkout", lambda _p: repo)
 
     def _boom(_run_id: str) -> dict:
         raise AssertionError("prepare must not enroll via execution_context")
@@ -247,7 +225,6 @@ def test_stage_dispatch_halts_on_drift_without_running_the_runner(
     assert diag.startswith(DRIVER_SOURCE_DRIFT_PREFIX)
 
 
-
 def test_preparation_sweeps_finished_runs_before_taking_a_slot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -259,16 +236,13 @@ def test_preparation_sweeps_finished_runs_before_taking_a_slot(
     stale = pinned.ensure_pinned_worktree(str(repo), "run-20260101-001", pin)
     assert stale.is_dir()
 
-    monkeypatch.setattr(pinned, "_https_transport", lambda: False)
     monkeypatch.setattr(
         pinned.control_plane,
         "run_pin",
         lambda _run_id: {"release_lineage": pin, "project": "yoke"},
     )
-    monkeypatch.setattr(pinned, "checkout_for_project_slug", lambda _p: repo)
-    monkeypatch.setattr(
-        retirement, "_run_status", lambda _run_id: ("succeeded", "")
-    )
+    monkeypatch.setattr(pinned, "self_release_checkout", lambda _p: repo)
+    monkeypatch.setattr(retirement, "_run_status", lambda _run_id: ("succeeded", ""))
     monkeypatch.setattr(
         retirement, "declared_disposable_roots", lambda _root: frozenset()
     )
@@ -289,16 +263,13 @@ def test_preparation_never_sweeps_the_run_it_is_preparing(
     pin = _commit(repo, "pin")
     mine = pinned.ensure_pinned_worktree(str(repo), "run-20260101-003", pin)
 
-    monkeypatch.setattr(pinned, "_https_transport", lambda: False)
     monkeypatch.setattr(
         pinned.control_plane,
         "run_pin",
         lambda _run_id: {"release_lineage": pin, "project": "yoke"},
     )
-    monkeypatch.setattr(pinned, "checkout_for_project_slug", lambda _p: repo)
-    monkeypatch.setattr(
-        retirement, "_run_status", lambda _run_id: ("succeeded", "")
-    )
+    monkeypatch.setattr(pinned, "self_release_checkout", lambda _p: repo)
+    monkeypatch.setattr(retirement, "_run_status", lambda _run_id: ("succeeded", ""))
     monkeypatch.setattr(
         retirement, "declared_disposable_roots", lambda _root: frozenset()
     )
@@ -317,20 +288,17 @@ def test_a_sweep_failure_never_blocks_the_deploy(
     _yoke_shape(repo)
     pin = _commit(repo, "pin")
 
-    monkeypatch.setattr(pinned, "_https_transport", lambda: False)
     monkeypatch.setattr(
         pinned.control_plane,
         "run_pin",
         lambda _run_id: {"release_lineage": pin, "project": "yoke"},
     )
-    monkeypatch.setattr(pinned, "checkout_for_project_slug", lambda _p: repo)
+    monkeypatch.setattr(pinned, "self_release_checkout", lambda _p: repo)
 
     def _explode(**_kwargs):
         raise RuntimeError("sweep exploded")
 
-    monkeypatch.setattr(
-        retirement, "retire_terminal_deploy_run_worktrees", _explode
-    )
+    monkeypatch.setattr(retirement, "retire_terminal_deploy_run_worktrees", _explode)
 
     prepared = pinned.prepare_self_deploy_driver("run-20260101-004")
 

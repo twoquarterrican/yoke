@@ -234,3 +234,26 @@ def test_live_lifecycle_on_scratch_root():
         postgres_cluster.destroy(spec)
         shutil.rmtree(scratch, ignore_errors=True)
     assert not spec.root.exists()
+
+
+@pytest.mark.parametrize(
+    ("data_major", "server_line", "expected"),
+    [
+        ("16", "pg_ctl (PostgreSQL) 17.10\n", "data directory PG 16, server PG 17"),
+        ("17", "pg_ctl (PostgreSQL) 17.10\n", None),
+    ],
+)
+def test_data_dir_major_mismatch_names_both_majors(
+    tmp_path, monkeypatch, data_major, server_line, expected
+):
+    spec = _spec(tmp_path)
+    spec.data_dir.mkdir(parents=True)
+    (spec.data_dir / "PG_VERSION").write_text(f"{data_major}\n")
+    monkeypatch.setattr(
+        postgres_cluster, "_run", lambda *_a, **_k: _completed(server_line)
+    )
+    assert postgres_cluster.data_dir_major_mismatch(spec) == expected
+
+
+def test_uninitialized_data_dir_is_never_a_mismatch(tmp_path):
+    assert postgres_cluster.data_dir_major_mismatch(_spec(tmp_path)) is None

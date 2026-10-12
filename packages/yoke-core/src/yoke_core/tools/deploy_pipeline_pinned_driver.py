@@ -1,4 +1,4 @@
-"""Child-process env so a self-deploy driver loads the pinned tree."""
+"""Child-process env so a self-release driver loads the pinned tree."""
 
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ def environment_for_pinned_driver(
 def pinned_driver_command(
     module: str, argv: list[str], env: Mapping[str, str] | None
 ) -> list[str]:
-    """Use the prepared checkout Python, or the installed relayed engine."""
+    """Use the prepared checkout Python, or the installed engine."""
     root = (env or {}).get(PINNED_SOURCE_ROOT_ENV)
     python = (
         str(
@@ -97,7 +97,7 @@ def pinned_driver_command(
 
 
 def child_environment(run_id: str) -> dict[str, str] | None:
-    """Env for the self-deploy engine child, or None on the relayed path."""
+    """Env for the self-release engine child, or None for the installed engine."""
     prepared = prepare_self_deploy_driver(run_id)
     if prepared is None:
         return None
