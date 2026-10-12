@@ -131,9 +131,15 @@ def ensure_started() -> int:
 
     A running cluster whose settings predate the current disposable tuning
     (e.g. too few connections for xdist) is destroyed and recreated — the
-    data is throwaway, so recreate is the cheapest upgrade path.
+    data is throwaway, so recreate is the cheapest upgrade path. A data
+    directory another PostgreSQL major initialized (the engine binaries
+    changed underneath it) is recreated for the same reason.
     """
     spec = _spec()
+    mismatch = postgres_cluster.data_dir_major_mismatch(spec)
+    if mismatch:
+        sys.stderr.write(f"recreating disposable test cluster: {mismatch}\n")
+        destroy()
     spec.sock_dir.mkdir(parents=True, exist_ok=True)
     rc = postgres_cluster.initdb_if_needed(spec)
     if rc != 0:

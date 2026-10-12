@@ -52,20 +52,11 @@ def checkout_for_project(
     return checkout_for_project_id(project_id, config_path=config_path)
 
 
-def checkout_for_project_slug(
-    project: str,
-    *,
-    config_path: str | Path | None = None,
-) -> Optional[Path]:
-    """Resolve a project slug to this machine's checkout via the relay.
+def project_id_for_slug(project: str) -> Optional[int]:
+    """Resolve a project slug to its id through the ``projects.get`` relay.
 
-    Transport-aware sibling of :func:`checkout_for_project`: instead of
-    reading the project id from a caller-supplied DB connection it resolves
-    the id through the ``projects.get`` registered function, which relays
-    over https and dispatches in-process on a local Postgres connection.
-    The checkout mapping is machine-local, so :func:`checkout_for_project_id`
-    needs no connection. Returns ``None`` when the project cannot be
-    resolved or has no machine-local checkout mapping.
+    The function relays over https and dispatches in-process on a local
+    Postgres connection. Returns ``None`` when the project cannot be resolved.
     """
 
     from yoke_contracts.api.function_call import TargetRef
@@ -87,8 +78,27 @@ def checkout_for_project_slug(
     if value in (None, ""):
         return None
     try:
-        project_id = int(value)
+        return int(value)
     except (TypeError, ValueError):
+        return None
+
+
+def checkout_for_project_slug(
+    project: str,
+    *,
+    config_path: str | Path | None = None,
+) -> Optional[Path]:
+    """Resolve a project slug to this machine's checkout via the relay.
+
+    Transport-aware sibling of :func:`checkout_for_project`: the project id
+    comes from :func:`project_id_for_slug` instead of a caller-supplied DB
+    connection. The checkout mapping is machine-local, so
+    :func:`checkout_for_project_id` needs no connection. Returns ``None``
+    when the project cannot be resolved or has no machine-local checkout.
+    """
+
+    project_id = project_id_for_slug(project)
+    if project_id is None:
         return None
     return checkout_for_project_id(project_id, config_path=config_path)
 
@@ -199,5 +209,6 @@ __all__ = [
     "checkout_for_project_slug",
     "epic_task_worktree_path",
     "item_worktree_path",
+    "project_id_for_slug",
     "worktree_path_for_branch",
 ]

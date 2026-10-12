@@ -141,6 +141,7 @@ def export_universe(
     from yoke_core.domain.source_authority_receipts import authority_receipt
 
     resolved_dsn = dsn if dsn is not None else resolve_export_dsn()
+    _start_own_universe(resolved_dsn, emit)
     timeout = runtime_settings.get_seconds(
         EXPORT_TIMEOUT_SETTING,
         DEFAULT_EXPORT_TIMEOUT_S,
@@ -230,6 +231,19 @@ def _dump_payload(
             f"universe export refused or failed safely: {exc}. If the embedded "
             "Postgres is stopped, `yoke local-postgres start` brings it up."
         ) from exc
+
+
+def _start_own_universe(dsn: str, emit: Callable[[str], None]) -> None:
+    """Start this machine's stopped embedded cluster before reading it."""
+    from yoke_core.domain import local_universe, local_universe_autostart
+    from yoke_core.domain.local_universe_convergence import serves_own_universe
+
+    if not serves_own_universe(dsn):
+        return
+    try:
+        local_universe_autostart.ensure_running(emit=emit)
+    except local_universe.LocalUniverseError as exc:
+        raise UniverseExportError(str(exc)) from exc
 
 
 def _snapshot_connection(dsn: str):

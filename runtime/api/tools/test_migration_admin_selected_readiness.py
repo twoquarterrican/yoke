@@ -20,7 +20,11 @@ from runtime.api.tools.test_adopt_migration_content_identity import (
     _mock_github_attestations,
 )
 from yoke_core.domain import connected_env_readiness as readiness
-from yoke_core.domain import local_universe, migration_fleet_preflight
+from yoke_core.domain import (
+    local_universe,
+    local_universe_autostart,
+    migration_fleet_preflight,
+)
 from yoke_core.tools import adopt_migration_content_identity as adopter
 from yoke_core.tools import yoke_migration_fleet as fleet_selector
 
@@ -140,6 +144,9 @@ def test_preflight_keeps_receipt_on_preexisting_control_plane(
         "cluster_spec",
         lambda **_kwargs: SimpleNamespace(sock_dir=tmp_path / "socket"),
     )
+    monkeypatch.setattr(
+        local_universe_autostart, "ensure_running", lambda *_a, **_k: None
+    )
     _select_yoke_fleet(monkeypatch)
     monkeypatch.setattr(migration_fleet_preflight, "rehearse_fleet", rehearse)
     monkeypatch.setattr(
@@ -193,6 +200,9 @@ def test_preflight_records_receipt_on_registered_environment_not_admin(
         "cluster_spec",
         lambda **_kwargs: SimpleNamespace(sock_dir=tmp_path / "socket"),
     )
+    monkeypatch.setattr(
+        local_universe_autostart, "ensure_running", lambda *_a, **_k: None
+    )
     _select_yoke_fleet(monkeypatch)
     monkeypatch.setattr(migration_fleet_preflight, "rehearse_fleet", rehearse)
     monkeypatch.setattr(
@@ -245,6 +255,9 @@ def test_preflight_resolves_an_environment_name_to_the_admin_connection(
         local_universe,
         "cluster_spec",
         lambda **_kwargs: SimpleNamespace(sock_dir=tmp_path / "socket"),
+    )
+    monkeypatch.setattr(
+        local_universe_autostart, "ensure_running", lambda *_a, **_k: None
     )
     _select_yoke_fleet(monkeypatch)
     monkeypatch.setattr(migration_fleet_preflight, "rehearse_fleet", rehearse)

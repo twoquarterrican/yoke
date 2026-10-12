@@ -17,7 +17,10 @@ yoke --env prod deployment-runs create yoke STAGE_FLOW --environment stage --sou
 ```
 
 Validate each composition and drive concurrently through its selected
-connection with yoke watch deploy. Interrupted/drifted driver reuses the same
+connection with yoke watch deploy. Both drivers re-exec into the frozen
+release commit, so no local CLI install precedes a release, even one adding a
+migration or changing machine config; the prod relay installs the released
+CLI once prod serves it. Interrupted/drifted driver reuses the same
 run id and frozen lineage, never a new unrelated release. Completion waits
 for production and all owed stage-targeted proofs. Stage here tests the live
 control plane; other projects keep their declared order on configured HTTPS.

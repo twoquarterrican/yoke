@@ -131,9 +131,9 @@ project-policy`.
 
 ### Deploy-run driver worktrees
 
-A self-deploy run pins its driver source in a detached worktree at
-`.worktrees/deploy-<run-id>` so the driver reads a tree a merge landing cannot
-move underneath it. Because it carries no branch, it is absent from the
+A Yoke self-release run, stage or production, pins its driver source in a
+detached worktree at `.worktrees/deploy-<run-id>` so the driver reads a tree a
+merge landing cannot move underneath it. Because it carries no branch, it is absent from the
 branch-bearing registry the lane paths read, and no item owns it — so the lane
 sweep and `HC-worktree-health` could not see one at all while it consumed the
 same `max_active_worktrees` slot an item lane does.

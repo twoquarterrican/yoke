@@ -104,6 +104,15 @@ same distribution. An install without that record refuses updates; explicitly
 select one with `yoke config distribution set --origin URL --channel NAME`
 before retrying. `yoke update --channel NAME` selects another channel at the
 recorded origin; a successful reinstall saves that channel for later updates.
+`yoke update --version VERSION` installs that exact release from the recorded
+origin instead of the channel's current one.
+
+A machine with a prod relay follows prod automatically: each time the relay
+observes prod serving a new release it restarts on that release and installs
+exactly that version as this machine's CLI. Nothing runs on a schedule. When the
+CLI is still older than the release prod serves, commands relayed to prod print
+one warning naming `yoke update --version VERSION`; they never update or refuse
+on their own.
 The installer itself repairs the git credential
 helper a reinstall wipes from site-packages, as the last step of every
 successful run — so re-running the curl installer directly still resolves

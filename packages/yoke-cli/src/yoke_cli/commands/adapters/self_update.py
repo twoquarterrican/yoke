@@ -15,16 +15,21 @@ from yoke_cli.config import self_update
 
 __all__ = ["UPDATE_USAGE", "update"]
 
-UPDATE_USAGE = "yoke update [--channel NAME] [--json]"
+UPDATE_USAGE = "yoke update [--channel NAME] [--version VERSION] [--json]"
 
 
 def update(args: List[str]) -> int:
     parser = argparse.ArgumentParser(prog="yoke update")
     parser.add_argument("--channel", default=None)
+    parser.add_argument(
+        "--version",
+        default=None,
+        help="install this exact release instead of the channel's current one",
+    )
     parser.add_argument("--json", dest="json_mode", action="store_true")
     parsed = parser.parse_args(args)
     try:
-        result = self_update.run_update(channel=parsed.channel)
+        result = self_update.run_update(channel=parsed.channel, version=parsed.version)
     except self_update.SelfUpdateError as exc:
         if parsed.json_mode:
             print(json.dumps({"ok": False, "error": str(exc)}))

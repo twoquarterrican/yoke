@@ -13,6 +13,7 @@ from yoke_cli.config import machine_config
 from yoke_cli.transport import function_version_skew
 from yoke_cli.transport import https as https_transport
 from yoke_cli.transport import local_github_dispatch
+from yoke_cli.transport.installed_cli_staleness import warn_if_behind_prod
 from yoke_cli.transport.public_ref_display import emit_response
 from yoke_contracts.api.function_call import (
     ActorContext,
@@ -207,6 +208,10 @@ def call_dispatcher(
         if max_attempts is not None:
             relay_kwargs["max_attempts"] = max_attempts
         response = https_transport.relay_https(request, https, **relay_kwargs)
+        warn_if_behind_prod(
+            prod=bool(getattr(https, "prod", False)),
+            server_version=getattr(handshake, "engine_version", "") or "",
+        )
         return _redact_response(
             _apply_version_skew_gate(
                 response, request, https, handshake, _function_hint
