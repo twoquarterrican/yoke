@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
 import urllib.error
 
 from runtime.api.domain.test_deploy_pipeline_admin_bootstrap import (
@@ -33,7 +34,6 @@ from runtime.api.domain.test_deploy_pipeline_admin_bootstrap import (
 )
 from runtime.api.domain.test_deploy_pipeline_https_execution import (
     FLOW,
-    LINEAGE,
     PROJECT,
     _decision_request_id,
     _invoke,
@@ -191,7 +191,32 @@ def _hide_from_the_https_sibling_only(monkeypatch, function_ids: set[str]) -> No
 def test_admin_candidate_keeps_local_scoped_qa_while_its_https_sibling_still_relays_approval(
     serving_plane,  # noqa: F811 - fixture re-export, this is the intended shadow
     monkeypatch,
+    tmp_path,
 ) -> None:
+    subprocess.run(
+        ["git", "init", "-b", "main", str(tmp_path)], check=True, capture_output=True
+    )
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(tmp_path),
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "release source",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    source_sha = subprocess.check_output(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        text=True,
+    ).strip()
     conn = serving_plane["conn"]
     plan_id = create_smoke_plan(conn, project=PROJECT, slug="mixed-build-smoke")
     stages = [dict(stage) for stage in _STAGES]
@@ -208,11 +233,13 @@ def test_admin_candidate_keeps_local_scoped_qa_while_its_https_sibling_still_rel
         flow=FLOW,
         stages=stages,
         item_id=ITEM_ID,
-        lineage=LINEAGE,
+        lineage=source_sha,
     )
 
     _admin_driver_env(monkeypatch, serving_plane)
-    monkeypatch.setattr(deploy_pipeline, "resolve_project_checkout_path", lambda _p: "")
+    monkeypatch.setattr(
+        deploy_pipeline, "resolve_project_checkout_path", lambda _p: str(tmp_path)
+    )
 
     # The candidate's ambient connection is the admin door (no explicit env
     # named), so an unqualified call_dispatcher picks it up automatically.
@@ -260,7 +287,7 @@ def test_admin_candidate_keeps_local_scoped_qa_while_its_https_sibling_still_rel
                 status="ready",
                 target_name="candidate-preview",
                 observed_url="https://candidate-preview.example.test",
-                observed_release_lineage=LINEAGE,
+                observed_release_lineage=source_sha,
                 executor_receipt="test://deploy-ready",
                 commit=True,
             )
