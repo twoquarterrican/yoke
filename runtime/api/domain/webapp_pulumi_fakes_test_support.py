@@ -38,8 +38,13 @@ class _FakeComponentResource:
 
 class _FakeResourceOptions:
     def __init__(
-        self, parent=None, ignore_changes=None, aliases=None, import_=None,
-        depends_on=None, provider=None,
+        self,
+        parent=None,
+        ignore_changes=None,
+        aliases=None,
+        import_=None,
+        depends_on=None,
+        provider=None,
     ):
         self.parent = parent
         self.ignore_changes = ignore_changes
@@ -126,7 +131,8 @@ def _build_fake_pulumi(recorder):
         def __init__(self, name, stack_name=None, opts=None):
             self.name = stack_name or name
             recorder.stack_references = [
-                *getattr(recorder, "stack_references", []), self.name,
+                *getattr(recorder, "stack_references", []),
+                self.name,
             ]
 
         def require_output(self, key):
@@ -144,9 +150,7 @@ def _build_fake_pulumi(recorder):
 
 def _build_fake_aws(recorder):
     aws = types.ModuleType("pulumi_aws")
-    aws.get_caller_identity = (
-        lambda: types.SimpleNamespace(account_id="123456789012")
-    )
+    aws.get_caller_identity = lambda: types.SimpleNamespace(account_id="123456789012")
     aws.get_region = lambda: types.SimpleNamespace(name="us-east-1")
     aws.kms = types.SimpleNamespace(
         get_alias=lambda name: types.SimpleNamespace(
@@ -161,13 +165,15 @@ def _build_fake_aws(recorder):
         GetSubnetsFilterArgs=_FakeArgs,
         Vpc=_make_resource_class(recorder, "aws:ec2:Vpc"),
         InternetGateway=_make_resource_class(
-            recorder, "aws:ec2:InternetGateway",
+            recorder,
+            "aws:ec2:InternetGateway",
         ),
         Subnet=_make_resource_class(recorder, "aws:ec2:Subnet"),
         RouteTable=_make_resource_class(recorder, "aws:ec2:RouteTable"),
         Route=_make_resource_class(recorder, "aws:ec2:Route"),
         RouteTableAssociation=_make_resource_class(
-            recorder, "aws:ec2:RouteTableAssociation",
+            recorder,
+            "aws:ec2:RouteTableAssociation",
         ),
         SecurityGroup=_make_resource_class(recorder, "aws:ec2:SecurityGroup"),
         SecurityGroupIngressArgs=_FakeArgs,
@@ -197,14 +203,17 @@ def _build_fake_aws(recorder):
     )
     aws.cloudfront = types.SimpleNamespace(
         Distribution=_make_resource_class(
-            recorder, "aws:cloudfront:Distribution",
+            recorder,
+            "aws:cloudfront:Distribution",
         ),
         Function=_make_resource_class(recorder, "aws:cloudfront:Function"),
         OriginAccessControl=_make_resource_class(
-            recorder, "aws:cloudfront:OriginAccessControl",
+            recorder,
+            "aws:cloudfront:OriginAccessControl",
         ),
         OriginAccessIdentity=_make_resource_class(
-            recorder, "aws:cloudfront:OriginAccessIdentity",
+            recorder,
+            "aws:cloudfront:OriginAccessIdentity",
         ),
         DistributionOriginArgs=_FakeArgs,
         DistributionOriginS3OriginConfigArgs=_FakeArgs,
@@ -212,19 +221,22 @@ def _build_fake_aws(recorder):
         DistributionOriginCustomHeaderArgs=_FakeArgs,
         DistributionDefaultCacheBehaviorArgs=_FakeArgs,
         DistributionOrderedCacheBehaviorArgs=_FakeArgs,
-        DistributionDefaultCacheBehaviorFunctionAssociationArgs=_FakeArgs, DistributionOrderedCacheBehaviorFunctionAssociationArgs=_FakeArgs,
+        DistributionDefaultCacheBehaviorFunctionAssociationArgs=_FakeArgs,
+        DistributionOrderedCacheBehaviorFunctionAssociationArgs=_FakeArgs,
         DistributionViewerCertificateArgs=_FakeArgs,
         DistributionRestrictionsArgs=_FakeArgs,
         DistributionRestrictionsGeoRestrictionArgs=_FakeArgs,
     )
     aws.iam = types.SimpleNamespace(
         OpenIdConnectProvider=_make_resource_class(
-            recorder, "aws:iam:OpenIdConnectProvider",
+            recorder,
+            "aws:iam:OpenIdConnectProvider",
         ),
         Role=_make_resource_class(recorder, "aws:iam:Role"),
         RolePolicy=_make_resource_class(recorder, "aws:iam:RolePolicy"),
         RolePolicyAttachment=_make_resource_class(
-            recorder, "aws:iam:RolePolicyAttachment",
+            recorder,
+            "aws:iam:RolePolicyAttachment",
         ),
         InstanceProfile=_make_resource_class(recorder, "aws:iam:InstanceProfile"),
     )
@@ -253,7 +265,8 @@ def _build_fake_aws(recorder):
     aws.acm = types.SimpleNamespace(
         Certificate=_make_certificate_class(recorder),
         CertificateValidation=_make_resource_class(
-            recorder, "aws:acm:CertificateValidation",
+            recorder,
+            "aws:acm:CertificateValidation",
         ),
         get_certificate=lambda **kwargs: types.SimpleNamespace(
             arn="arn:aws:acm:us-east-1:123456789012:certificate/abc",
@@ -262,14 +275,9 @@ def _build_fake_aws(recorder):
     aws.s3 = types.SimpleNamespace(
         BucketV2=_make_resource_class(recorder, "aws:s3:BucketV2"),
         BucketPublicAccessBlock=_make_resource_class(
-            recorder, "aws:s3:BucketPublicAccessBlock",
-        ),
-        BucketLifecycleConfigurationV2=_make_resource_class(
-            recorder, "aws:s3:BucketLifecycleConfigurationV2",
+            recorder,
+            "aws:s3:BucketPublicAccessBlock",
         ),
         BucketPolicy=_make_resource_class(recorder, "aws:s3:BucketPolicy"),
-        BucketLifecycleConfigurationV2RuleArgs=_FakeArgs,
-        BucketLifecycleConfigurationV2RuleExpirationArgs=_FakeArgs,
     )
     return aws
-
