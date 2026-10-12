@@ -28,7 +28,6 @@ from yoke_contracts.timestamps import InvalidInstant
 import argparse
 import json
 import sys
-import webbrowser
 from typing import Callable, Dict, List, Tuple
 
 from yoke_cli.commands._helpers import parse_or_usage_error
@@ -152,11 +151,7 @@ def ui_up(args: List[str]) -> int:
         return 1
 
     url = str(report.get("private_url") or "")
-    browser_result = (
-        open_url(url, browser_open=webbrowser.open)
-        if url and not parsed.no_browser
-        else None
-    )
+    browser_result = open_url(url) if url and not parsed.no_browser else None
     opened = bool(browser_result and browser_result.opened)
     if parsed.json_mode:
         print(

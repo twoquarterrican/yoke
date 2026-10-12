@@ -7,7 +7,6 @@ import re
 import time
 from typing import Any, Callable, Mapping
 import urllib.request
-import webbrowser
 
 from yoke_cli.config.hosted_machine_browser import open_url
 
@@ -94,7 +93,7 @@ def authorize(
         notify({"phase": "device_authorization", **authorization.public_dict()})
     browser_opened = _open_browser(
         authorization.verification_uri,
-        lambda url: open_url(url, browser_open=browser_open or webbrowser.open).opened,
+        lambda url: open_url(url, browser_open=browser_open).opened,
     )
     if notify is not None:
         notify(

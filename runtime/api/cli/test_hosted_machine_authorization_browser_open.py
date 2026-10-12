@@ -1,4 +1,7 @@
-"""Opening the approval URL records why it failed and falls back on macOS."""
+"""Opening the approval URL records why it failed and falls back on macOS.
+
+Only the default opener falls back; an injected one is the whole answer.
+"""
 
 from __future__ import annotations
 
@@ -90,6 +93,25 @@ def test_a_missing_open_command_is_a_named_failure_not_a_crash() -> None:
     assert "open command failed: FileNotFoundError: open" in (result.reason or "")
 
 
+def test_an_injected_opener_never_falls_back_to_the_real_open_command(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        browser, "_run_macos_open", lambda url: pytest.fail(f"real open {url}")
+    )
+
+    result = browser.open_browser(
+        PENDING,
+        browser_open=lambda _url: None,
+        platform=browser.MACOS_PLATFORM,
+    )
+
+    assert result == browser.BrowserOpenResult(
+        opened=False,
+        reason="webbrowser.open returned False",
+    )
+
+
 def test_other_platforms_report_the_webbrowser_failure_alone() -> None:
     macos_calls: list[str] = []
 
@@ -109,7 +131,9 @@ def test_other_platforms_report_the_webbrowser_failure_alone() -> None:
 
 def test_complete_stops_at_once_when_the_wait_is_cancelled(monkeypatch) -> None:
     monkeypatch.setattr(
-        auth.machine_config_mutation, "ensure_local_machine_identity", lambda: "machine-id"
+        auth.machine_config_mutation,
+        "ensure_local_machine_identity",
+        lambda: "machine-id",
     )
     monkeypatch.setattr(auth, "machine_display_name", lambda: "Test Host")
     polls: list[str] = []

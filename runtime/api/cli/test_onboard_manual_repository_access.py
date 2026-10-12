@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from functools import partial
 import asyncio
 from types import SimpleNamespace
 
 import pytest
 
+from yoke_cli.config import hosted_machine_browser
 from yoke_cli.config import onboard_wizard_flow_publish_manual as manual
 from yoke_cli.config import onboard_wizard_manual_access as recovery
 from yoke_cli.config import onboard_wizard_project_github as project_access
@@ -115,7 +117,11 @@ def test_missing_repo_grants_owner_settings_then_rechecks_exact_identity(
             raise opened
         return opened
 
-    monkeypatch.setattr(project_access.webbrowser, "open", browser)
+    monkeypatch.setattr(
+        project_access,
+        "open_url",
+        partial(hosted_machine_browser.open_url, browser_open=browser),
+    )
     flow._after_manual_publish_refresh(_report([_repo(UNRELATED)]))
     assert recovery.GRANT_ACCESS not in _choices(flow)
     _identify(flow)

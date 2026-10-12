@@ -38,7 +38,6 @@ from __future__ import annotations
 
 import socket
 import threading
-import webbrowser
 from urllib.parse import urlencode
 from starlette.requests import Request
 from yoke_core.ui.dashboard_routes import is_dashboard_path
@@ -302,7 +301,7 @@ def serve_ui(
     if open_browser:
         opener = threading.Timer(
             _BROWSER_OPEN_DELAY_S,
-            lambda url: open_url(url, browser_open=webbrowser.open),
+            open_url,
             [private_url(port, token, host=bind_host)],
         )
         opener.daemon = True
