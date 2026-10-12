@@ -109,6 +109,7 @@ export function createSelectionNavigation(root, windowNode, state, basePath = ""
       for (const anchor of root.querySelectorAll?.("a[href]") || []) rewrite(anchor);
     },
     dispose() {
+      paths.dispose();
       observer?.disconnect();
       root.removeEventListener("click", followAnchor);
       root.removeEventListener("click", activate, true);

@@ -232,6 +232,8 @@ export class FakeDocument extends EventTarget {
   constructor() {
     super();
     this.defaultView = new FakeWindow();
+    this.defaultView.document = this;
+    this.title = "Yoke";
     this.activeElement = null;
     this.head = new FakeNode(this, "head");
     this.documentElement = Object.assign(new FakeNode(this, "html"), {

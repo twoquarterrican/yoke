@@ -8,7 +8,11 @@ collects is personal data, and a local or self-hosted workbench collects into
 its own universe. The first load captures the visitor's attribution cookie, and
 that load and each client navigation that changes the path emit `PageViewed`
 with `event_type=page_view`. Query-only, fragment-only, and state-only
-navigation (filters, `?selection=all` rewrites) emits no view. The installed
+navigation (filters, `?selection=all` rewrites) emits no view. The workbench
+names each screen in the browser title before the URL changes, most specific
+part first (`PREFIX-12 · Items · Yoke`, `Runs · Deployments · Yoke`), so each
+view's `page_title` tells screens apart; a machine-approval code never enters
+the title. The installed
 Structured Events Pack removes `?token=`, `?user_code=`, other sensitive query
 keys, userinfo, and fragments from `page_url` and referrer, and stores
 `/machine-approval/<code>` as `/machine-approval/redacted` in `page_url`,

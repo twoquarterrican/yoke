@@ -1,6 +1,11 @@
 // One history owner for real navigation, entry canonicalization, and Back.
 // History records route ancestry only; scroll state belongs to the browser.
-import { normalizeRouteBase, parseUniverseRoute, routeHref } from "./universe_navigation.js";
+// It also owns the document title: every history write names its screen
+// first, because the page-view tracker reads the title as the URL changes,
+// before any view renders.
+import {
+  normalizeRouteBase, parseUniverseRoute, routeDocumentTitle, routeHref,
+} from "./universe_navigation.js";
 
 export const ROUTE_NAVIGATION_EVENT = "yoke:navigate";
 const HISTORY_KEY = "yokeDashboard";
@@ -15,15 +20,24 @@ export function createPathNavigation(windowNode, basePath = "") {
   const stateAt = (index) => ({ ...history.state,
     [HISTORY_KEY]: { basePath: base, position: index },
   });
+  const nameScreen = (href) => {
+    windowNode.document.title = routeDocumentTitle(parseUniverseRoute(href, base));
+  };
+  // Back/Forward have already moved the URL; this listener precedes the
+  // page-view tracker's because the tracker starts after mount.
+  const onPopState = () => nameScreen(currentRouteHref(windowNode));
+  windowNode.addEventListener("popstate", onPopState);
   // A bookmark's fragment query moves into the server-visible query once.
   if (location.hash?.startsWith("#/")) {
     const legacy = routeHref(location.hash.slice(1), base);
     if (legacy) history.replaceState(history.state, "", legacy);
   }
+  nameScreen(currentRouteHref(windowNode));
   history.replaceState(stateAt(position()), "", currentRouteHref(windowNode));
   function replace(href) {
     const next = routeHref(href, base);
     if (next && next !== currentRouteHref(windowNode)) {
+      nameScreen(next);
       history.replaceState(stateAt(position()), "", next);
     }
   }
@@ -32,6 +46,7 @@ export function createPathNavigation(windowNode, basePath = "") {
     if (!next || next === currentRouteHref(windowNode)) return;
     const before = parseUniverseRoute(currentRouteHref(windowNode), base);
     const after = parseUniverseRoute(next, base);
+    nameScreen(next);
     // Selection changes render normally while retaining the current ancestry.
     if (replace) history.replaceState(stateAt(position()), "", next);
     else history.pushState(stateAt(position() + 1), "", next);
@@ -45,6 +60,9 @@ export function createPathNavigation(windowNode, basePath = "") {
     back(fallback) {
       if (position() > 0) history.back();
       else navigate(fallback);
+    },
+    dispose() {
+      windowNode.removeEventListener("popstate", onPopState);
     },
   };
 }
