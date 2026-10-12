@@ -7,6 +7,8 @@ from yoke_contracts.api.function_call import (
     FunctionCallRequest,
     TargetRef,
 )
+from yoke_core.domain.actor_permissions import ROLE_DESCRIPTIONS
+from yoke_core.domain.actor_role import MACHINE_ONLY_ROLES
 from yoke_core.domain.actors import seed_human_actor, seed_system_actor
 from yoke_core.domain.db_helpers import iso8601_now
 from yoke_core.domain.handlers.actors_roster import handle_actors_roster
@@ -42,6 +44,11 @@ def test_roster_reads_every_actor_with_roles_and_linked_identity(test_db):
     payload = result.result_payload
     assert payload["current_actor_id"] == human
     assert payload["person_org_roles"] == ["admin", "operator", "viewer"]
+    assert payload["role_descriptions"] == ROLE_DESCRIPTIONS
+    assert payload["role_descriptions"]["hosted_service"]
+    assert payload["machine_only_roles"] == list(MACHINE_ONLY_ROLES)
+    assert "deployment_ci" in payload["machine_only_roles"]
+    assert payload["bootstrap_only_roles"] == ["hosted_service"]
     rows = payload["rows"]
     assert [row["id"] for row in rows] == sorted(row["id"] for row in rows)
     dana = next(row for row in rows if row["id"] == human)

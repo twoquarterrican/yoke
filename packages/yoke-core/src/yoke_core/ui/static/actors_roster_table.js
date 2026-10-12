@@ -1,6 +1,6 @@
 // One Actors roster table: people or machine accounts, with sortable headers.
 
-import { ACTOR_SORT_COLUMNS, projectAccess } from "./actor_roster_sort.js";
+import { ACTOR_SORT_COLUMNS, actorGrants, projectAccess } from "./actor_roster_sort.js";
 import { roleControl } from "./actor_role_control.js";
 import { sortHeader } from "./item_roster_sort.js";
 import { callFunction, el, labelCellsByColumn } from "./universe_view_support.js";
@@ -45,6 +45,60 @@ function orgRoleCell(documentNode, actor, roster, feedback, reload) {
   for (const role of roles) cell.appendChild(pill(
     documentNode, role.role, role.role === "admin" ? "run" : "idle",
   ));
+  return cell;
+}
+
+// A role chip carries the server's description of the role on hover; a
+// server that does not yet send role_descriptions shows the bare role.
+function roleChip(documentNode, role, roster) {
+  const chip = el(documentNode, "span", "actors-role", role);
+  const description = roster.role_descriptions?.[role];
+  if (description) chip.title = description;
+  return chip;
+}
+
+function projectAccessCell(documentNode, actor, roster) {
+  const cell = el(documentNode, "td");
+  const entries = projectAccess(actor);
+  if (!entries.length) cell.appendChild(el(documentNode, "span", "actors-muted", "—"));
+  for (const entry of entries) {
+    const access = el(documentNode, "span", "actors-access");
+    if (entry.from) {
+      access.appendChild(el(documentNode, "b", null, entry.project));
+      access.appendChild(el(documentNode, "span", "actors-muted", ` · from org ${entry.from}`));
+    } else {
+      access.appendChild(el(documentNode, "span", null, `${entry.project} · `));
+      access.appendChild(roleChip(documentNode, entry.role, roster));
+    }
+    cell.appendChild(access);
+  }
+  return cell;
+}
+
+// Each machine grant names its scope, its role, how the role may be held and
+// what it allows. Tags and descriptions come from the roster read, so a
+// server that does not yet send them shows scope and role alone.
+function grantsCell(documentNode, actor, roster) {
+  const cell = el(documentNode, "td", "actors-grants");
+  const grants = actorGrants(actor);
+  if (!grants.length) cell.appendChild(el(documentNode, "span", "actors-muted", "—"));
+  const listed = (field, role) => Array.isArray(roster[field]) && roster[field].includes(role);
+  for (const grant of grants) {
+    const row = el(documentNode, "div", "actors-grant");
+    const head = el(documentNode, "div", "actors-grant-head");
+    head.appendChild(el(documentNode, "span", "actors-grant-scope", grant.scope));
+    head.appendChild(el(documentNode, "span", "actors-role", grant.role));
+    if (listed("machine_only_roles", grant.role)) {
+      head.appendChild(el(documentNode, "span", "actors-tag", "machine-only"));
+    }
+    if (listed("bootstrap_only_roles", grant.role)) {
+      head.appendChild(el(documentNode, "span", "actors-tag", "bootstrap-granted"));
+    }
+    row.appendChild(head);
+    const description = roster.role_descriptions?.[grant.role];
+    if (description) row.appendChild(el(documentNode, "div", "actors-muted", description));
+    cell.appendChild(row);
+  }
   return cell;
 }
 
@@ -117,7 +171,8 @@ const CELLS = {
     return cell;
   },
   "Org role": (d, actor, roster, feedback, reload) => orgRoleCell(d, actor, roster, feedback, reload),
-  "Project access": (d, actor) => el(d, "td", "actors-muted", projectAccess(actor) || "—"),
+  "Project access": (d, actor, roster) => projectAccessCell(d, actor, roster),
+  Grants: (d, actor, roster) => grantsCell(d, actor, roster),
   "Member email": (d, actor) => el(d, "td", "actors-muted", actor.identity?.email || "—"),
   "API keys": (d, actor) => keysCell(d, actor),
   Action: (d, actor, roster, feedback, reload) => actionCell(d, actor, roster, feedback, reload),

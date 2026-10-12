@@ -72,3 +72,53 @@
 
 .universe-app-root .actors-confirm-copy { max-width: 30ch; margin: 0 0 8px; }
 .universe-app-root .actors-table .item-button + .item-button { margin-left: 6px; }
+
+/* Grants: each role reads as a role, labelled with its scope and limits. */
+.universe-app-root .actors-access {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 6px 4px 0;
+  padding: 2px 8px;
+  border: 1px solid var(--yoke-border);
+  border-radius: var(--yoke-radius);
+  background: var(--yoke-surface);
+  white-space: nowrap;
+}
+
+.universe-app-root .actors-role {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--yoke-accent-weak);
+  color: var(--yoke-ink);
+  font-family: var(--yoke-font-mono);
+  font-size: 11.5px;
+}
+
+.universe-app-root .actors-grants { min-width: 320px; }
+.universe-app-root .actors-grant + .actors-grant { margin-top: 8px; }
+
+.universe-app-root .actors-grant-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.universe-app-root .actors-grant-scope {
+  color: var(--yoke-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.universe-app-root .actors-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--yoke-park-bg);
+  color: var(--yoke-park);
+  font-size: 10.5px;
+  font-weight: 600;
+}

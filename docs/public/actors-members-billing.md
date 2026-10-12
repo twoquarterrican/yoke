@@ -8,9 +8,18 @@ at the platform routes (`/connect`, `/machine`).
 
 The dashboard's **Actors** page reads the live actor roster in two groups:
 **People** (human actors) and **Machine accounts** (system actors). Each row
-shows the actor's active or disabled state, organization role, project
-grants as `project (role)` — `all projects` for an org admin — and every
-unrevoked API key by name, ID, last use, and machine association. Hosted
+shows the actor's active or disabled state and every unrevoked API key by
+name, ID, last use, and machine association. A person's row also shows
+their org role and **Project access**: every org role reaches every project
+in the org, so access starts with `All projects · from org <role>`, then
+each project grant as `<project> · <role>`, with the role styled as a role
+and its description on hover. A machine account's row has one **Grants**
+column listing each org and project grant with its scope (`Org` or
+`Project · <project>`), its role, a `machine-only` tag for roles only
+machine credentials hold, a `bootstrap-granted` tag for a role only its own
+bootstrap grants (`hosted_service`), and what the role allows. The roster
+read serves these role descriptions and role sets, so the page copies no
+role prose. Hosted
 mode adds a **Member email** column to People: the linked sign-in email when
 one exists. Disabled actors are hidden by default; **Show disabled (N)** names
 how many are hidden and reveals them. Every column but Action sorts from its

@@ -10,6 +10,9 @@ const ok = (result) => ({ status: 200, envelope: { success: true, result } });
 
 const roster = {
   current_actor_id: 2,
+  role_descriptions: { deployment_ci: "Release tags and deploys." },
+  machine_only_roles: ["deployment_ci"],
+  bootstrap_only_roles: [],
   rows: [
     {
       id: 2, name: "Ben", kind: "human",
@@ -76,15 +79,17 @@ test("Actors route groups people and machine accounts with readable grants", asy
   assert.deepEqual(headings(people), [
     "Actor", "State", "Org role", "Project access", "Member email", "API keys", "Action",
   ]);
-  assert.deepEqual(headings(machines), [
-    "Actor", "State", "Org role", "Project access", "API keys",
-  ]);
+  assert.deepEqual(headings(machines), ["Actor", "State", "Grants", "API keys"]);
   assert.deepEqual(byClass(root, "actors-name").map((node) => node.textContent), [
     "Ben (you)", "deploy-ci",
   ]);
-  assert.ok(people.textContent.includes("all projects, yoke (owner)"));
+  assert.deepEqual(byClass(people, "actors-access").map((node) => node.textContent), [
+    "All projects · from org admin", "yoke · owner",
+  ]);
   assert.ok(people.textContent.includes("ben@example.test"));
-  assert.ok(machines.textContent.includes("yoke (deployment_ci)"));
+  assert.deepEqual(byClass(machines, "actors-grant").map((node) => node.textContent), [
+    "Project · yokedeployment_cimachine-onlyRelease tags and deploys.",
+  ]);
   assert.deepEqual(reads.requests.filter((request) => request.function === "actors.roster")
     .map((request) => request.payload), [{}]);
   const text = root.textContent;
