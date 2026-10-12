@@ -12,10 +12,9 @@ an answer. The failing case observed live was
 last hook event was the ``PostToolUse`` two seconds earlier, and the row
 read as if it were still working.
 
-Only the error-terminal end is reported. A clean ``task_complete`` belongs
-to a session whose relay-run native exits on its own, and a tail that is
-still a tool call belongs to a turn genuinely in flight; reclassifying
-either would resume a session that does not need it.
+Both clean and failed ``task_complete`` events prove the turn ended. A clean
+ending can leave posture running when project authorization denied its Stop
+hook. A later prompt or tool call invalidates either terminal observation.
 
 Reading is deliberately shallow — one directory glob and one tail read,
 no parse of the conversation — because it runs on a poll, against a store
@@ -41,7 +40,7 @@ _TAIL_BYTES = 1024 * 1024
 
 @dataclass(frozen=True)
 class ObservedTurnEnd:
-    """One session's native record that its turn ended on an error."""
+    """One session's native record that its turn ended."""
 
     session_id: str
     observed_at: datetime
@@ -93,12 +92,12 @@ def _tail_event(path: Path) -> Mapping[str, Any] | None:
     return terminal
 
 
-def error_terminal_turn(
+def terminal_turn(
     session_id: str,
     *,
     transcript_roots: list[Path] | None = None,
 ) -> ObservedTurnEnd | None:
-    """Return the turn end for a session whose last turn failed, else ``None``."""
+    """Return the newest completed turn, clean or failed, else ``None``."""
     if not session_id:
         return None
     path = _rollout_path(session_id, transcript_roots)
@@ -111,8 +110,7 @@ def error_terminal_turn(
     if not isinstance(payload, Mapping) or payload.get("type") != "task_complete":
         return None
     error = payload.get("error")
-    if not isinstance(error, Mapping):
-        return None
+    error = error if isinstance(error, Mapping) else {}
     try:
         observed_at = parse_instant(event.get("timestamp"))
     except InvalidInstant:
@@ -134,5 +132,5 @@ def error_terminal_turn(
 
 __all__ = [
     "ObservedTurnEnd",
-    "error_terminal_turn",
+    "terminal_turn",
 ]
