@@ -102,18 +102,10 @@ class GitOwnership:
             revision,
             "--",
             ".agents/skills/yoke",
-            ".claude/skills/yoke",
-            ".codex/skills/yoke",
-            ".cursor/skills/yoke",
             ".yoke/docs",
             ".claude/agents",
             ".codex/agents",
             ".cursor/agents",
-            "CODEX.md",
-            "CURSOR.md",
-            "CLAUDE.md",
-            ".claude/CLAUDE.md",
-            "CLAUDE.local.md",
             "AGENTS.md",
         )
         if result.returncode:
@@ -147,9 +139,7 @@ def _installer_subject(subject: str) -> bool:
 def plan(root: Path, bundle: dict[str, Any], prior: dict[str, Any]) -> dict[str, Any]:
     """Refuse real edits; missing files and positively proven drift are repairable."""
     incoming = {e["path"]: sha256_text(e["content"]) for e in bundle["files"]}
-    from yoke_cli.project_install.skill_discovery import prune_records
-
-    previous = prune_records(root, dict(prior.get("files") or {}))
+    previous = dict(prior.get("files") or {})
     interrupted = pending(root)
     missing, changed = [], []
     proof = None

@@ -33,8 +33,7 @@ def register_project(
     Re-pointing an already-claimed ``(env, project_id)`` slot at a different
     checkout moves shared routing every other reader resolves against —
     worktree preparation included — so it requires ``reassign=True`` from an
-    explicit setup/operator-authorized caller (``yoke setup``, ``yoke
-    project install``/``create``/``import``). Registering a slot with no
+    operator using ``yoke project register --reassign``. Registering a slot with no
     existing checkout, or re-registering the same checkout, is ordinary
     first-time setup and always proceeds without it.
     """
@@ -65,11 +64,8 @@ def register_project(
         raise MachineConfigWriteError(
             f"project {normalized} in env {env!r} is already routed to "
             f"{displaced!r}; registering {root} would move shared checkout "
-            "routing out from under every other reader (worktree "
-            "preparation included). Pass --reassign only for a deliberate "
-            "setup/operator-authorized move (yoke setup, yoke project "
-            "install/create/import) — routine agent execution must not "
-            "silently repoint an existing project's checkout."
+            "routing. To move it deliberately, run yoke project register "
+            "--reassign from a plain operator terminal with no harness session."
         )
     # Project ids are per universe, so the mapping records the id per env: the
     # (checkout, env) row is upserted, leaving the checkout's rows for other

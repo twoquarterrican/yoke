@@ -1,4 +1,4 @@
-"""Plan baseline-owned instruction retirement and check native Claude loading."""
+"""Check native canonical instruction loading without changing project files."""
 
 from __future__ import annotations
 
@@ -13,83 +13,11 @@ from typing import Any
 
 from yoke_cli.project_install.files import (
     ProjectInstallError,
-    assert_resolved_targets_within,
-    sha256_text,
 )
-from yoke_contracts.project_contract.managed_block import block_span
+from yoke_contracts.machine_config.checkout import main_checkout
 from yoke_contracts.harness_cli_manifest import (
     HARNESS_CLI_MANIFESTS,
 )
-
-RETIRED_INSTRUCTION_PATHS = ("CLAUDE.md", "CODEX.md", "CURSOR.md")
-
-
-def retirement_plan(root: Path, prior: dict[str, Any]) -> dict[str, str | None]:
-    """Only a matching prior block digest authorizes retiring that block."""
-    plans = {}
-    records = prior.get("managed_markdown") or {}
-    for rel in RETIRED_INSTRUCTION_PATHS:
-        target = root / rel
-        assert_resolved_targets_within(root, [rel], context="instruction retirement")
-        if target.is_symlink():
-            # A project-owned link already reads the canonical bytes once.
-            # Never strip its target's managed block.
-            continue
-        if not target.is_file():
-            continue
-        current = target.read_bytes().decode("utf-8")
-        span = block_span(current)
-        if span is None:
-            # Re-entry after retirement but before the install commit.
-            from yoke_cli.project_install.install_recovery import GitOwnership
-            from yoke_cli.project_install import checkout_gate
-
-            writer = GitOwnership(root).writers.get(rel)
-            if writer:
-                old = checkout_gate.run_git(root, "show", f"{writer}:{rel}")
-                old_span = block_span(old.stdout) if old.returncode == 0 else None
-                if (
-                    old_span
-                    and current == old.stdout[: old_span[0]] + old.stdout[old_span[1] :]
-                ):
-                    plans[rel] = current
-            continue
-        start, end = span
-        record = records.get(rel) or {}
-        if record.get("block_sha") != sha256_text(
-            current[start:end].replace("\r\n", "\n")
-        ):
-            from yoke_cli.project_install.install_recovery import GitOwnership
-
-            if GitOwnership(root).proves(rel, sha256_text(current)):
-                remainder = current[:start] + current[end:]
-                plans[rel] = (
-                    None
-                    if record.get("file_created") and not remainder.strip()
-                    else remainder
-                )
-                continue
-            raise ProjectInstallError(
-                f"instruction_ownership_ambiguous: {rel} has a modified Yoke "
-                "block or no prior baseline. Preserved all files; compare "
-                "with the original install manifest, save your edits outside "
-                "the managed block, then rerun refresh with that lineage."
-            )
-        remainder = current[:start] + current[end:]
-        plans[rel] = (
-            None if record.get("file_created") and not remainder.strip() else remainder
-        )
-    return plans
-
-
-def apply_retirement(root: Path, plans: dict[str, str | None]) -> list[str]:
-    for rel, content in plans.items():
-        target = root / rel
-        if content is None:
-            target.unlink()
-        else:
-            target.write_bytes(content.encode("utf-8"))
-    return list(plans)
 
 
 def _settings(path: Path) -> dict[str, Any]:
@@ -122,11 +50,10 @@ def _settings(path: Path) -> dict[str, Any]:
 
 def assert_claude_loading(
     root: Path,
-    plans: dict[str, str | None],
     *,
     settings: dict[str, Any],
 ) -> None:
-    """Check projected instruction files, keeping user-specific prose intact."""
+    """Accept native AGENTS loading or an explicit canonical link/import."""
     plugins = settings.get("enabledPlugins") or {}
     configs = settings.get("pluginConfigs") or {}
     plugin_ids = ("agents-md@builtin", "cc-plugin-agents-md@builtin")
@@ -151,30 +78,48 @@ def assert_claude_loading(
             _loading_refusal("claudeMdExcludes excludes the canonical AGENTS.md")
     if mode == "claude-md-and-agents-md":
         return
+    canonical = {
+        (root / "AGENTS.md").resolve(),
+        (main_checkout(root) / "AGENTS.md").resolve(),
+    }
     for directory in (root, *root.parents):
         for rel in ("CLAUDE.md", "CLAUDE.local.md", ".claude/CLAUDE.md"):
             path = directory / rel
-            if directory == root and rel in plans and plans[rel] is None:
-                continue
             if path.is_file():
-                if path.resolve() == (root / "AGENTS.md").resolve():
+                if path.resolve() in canonical or _imports_canonical(path, canonical):
                     continue
                 _loading_refusal(f"{path} suppresses native AGENTS.md loading")
 
 
+def _imports_canonical(path: Path, canonical: set[Path]) -> bool:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ProjectInstallError(
+            f"instruction_file_unreadable: {path}; repair its encoding or read permissions and rerun refresh"
+        ) from exc
+    # Claude ignores imports in inline and fenced code.
+    text = re.sub(r"```.*?```|~~~.*?~~~|`[^`]*`", "", text, flags=re.S)
+    for token in re.findall(r"(?<![\w@])@([^\s`]+)", text):
+        if (path.parent / token).resolve() in canonical:
+            return True
+    return False
+
+
 def _loading_refusal(detail: str) -> None:
+    if "disabled" in detail:
+        fix = "Enable the built-in AGENTS.md plugin in /plugin."
+    elif "excludes" in detail:
+        fix = "Remove the AGENTS.md exclusion from claudeMdExcludes."
+    else:
+        fix = "Set Project instructions to claude-md-and-agents-md in /config (user or managed settings)."
     raise ProjectInstallError(
-        f"canonical_instructions_not_loaded: {detail}. Preserved project content. "
-        "Upgrade Claude Code to >=2.1.281, enable the built-in AGENTS.md plugin "
-        "in /plugin, and set Project instructions to claude-md-and-agents-md "
-        "in /config (user/managed/--settings, never project settings). Remove "
-        "exclusions for AGENTS.md and start a new session; verify its path in "
-        "/memory. No CLAUDE.md fallback is installed."
+        f"canonical_instructions_not_loaded: {detail}. {fix} "
+        "Start a new session and verify AGENTS.md in /memory."
     )
 
 
-def preflight(root: Path, prior: dict[str, Any]) -> dict[str, str | None]:
-    plans = retirement_plan(root, prior)
+def preflight(root: Path) -> None:
     if (root / "AGENTS.override.md").is_file():
         raise ProjectInstallError(
             "canonical_instructions_not_loaded: AGENTS.override.md suppresses "
@@ -210,7 +155,7 @@ def preflight(root: Path, prior: dict[str, Any]) -> dict[str, str | None]:
                 "embedded desktop engine, start a new session, and rerun refresh"
             )
     if shutil.which("claude") is None:
-        return plans
+        return
     config_dir = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
     settings = _settings(config_dir / "settings.json")
     # Native plugin enablement and exclusions may come from project/local
@@ -245,5 +190,4 @@ def preflight(root: Path, prior: dict[str, Any]) -> dict[str, str | None]:
             if key not in {"pluginConfigs", "enabledPlugins"}
         }
     )
-    assert_claude_loading(root, plans, settings=settings)
-    return plans
+    assert_claude_loading(root, settings=settings)

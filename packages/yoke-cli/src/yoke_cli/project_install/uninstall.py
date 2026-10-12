@@ -90,9 +90,7 @@ def uninstall(
     )
     project_worktrees_ignore.report(root, apply=False)
     commit_paths = uninstall_commit.prepare(root, manifest, config_path)
-    file_records = skill_discovery.prune_records(
-        root, dict(manifest.get("files") or {})
-    )
+    file_records = dict(manifest.get("files") or {})
     discovery_removed = skill_discovery.remove(
         root, manifest.get("skill_discovery_links")
     )

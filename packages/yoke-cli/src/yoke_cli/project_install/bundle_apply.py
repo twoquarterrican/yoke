@@ -19,7 +19,6 @@ from yoke_cli.project_install import (
 )
 from yoke_cli.project_install import strategy as strategy_layer
 from yoke_cli.project_install import (
-    instruction_discovery,
     skill_discovery,
     install_recovery,
 )
@@ -107,20 +106,10 @@ def apply_bundle(
     hashes.update(preserved_files)
     pruned, skipped, warnings = files_layer.prune_files(
         repo_root,
-        skill_discovery.prune_records(
-            repo_root,
-            {
-                **preflight["install_recovery"]["prior_files"],
-                **preflight["legacy_files"],
-            },
-        ),
+        preflight["install_recovery"]["prior_files"],
         hashes,
     )
     discovery_written = skill_discovery.apply(repo_root)
-    retired_instructions = instruction_discovery.apply_retirement(
-        repo_root,
-        preflight["instruction_retirement"],
-    )
     contract_map, contract_written, contract_existing, contract_adopted = (
         files_layer.apply_contract_files(
             repo_root,
@@ -299,17 +288,11 @@ def apply_bundle(
             k: preflight["install_recovery"][k]
             for k in ("missing", "changed", "interrupted")
         },
-        "legacy_skill_files_adopted": sorted(preflight["legacy_files"]),
-        "skill_discovery_paths": [
-            ".claude/skills/yoke",
-            ".codex/skills/yoke",
-            ".cursor/skills/yoke",
-        ],
+        "skill_discovery_paths": list(bundle["skill_discovery_links"]),
         "files_written": written,
         "files_unchanged": len(hashes) - len(written),
         "files_pruned": pruned,
         "skill_discovery_written": discovery_written,
-        "retired_instruction_paths": retired_instructions,
         "files_skipped_modified": skipped,
         "files_preserved_unrendered": sorted(preserved_files),
         "contract_files_written": contract_written,

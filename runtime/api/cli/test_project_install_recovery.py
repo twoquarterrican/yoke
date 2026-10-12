@@ -4,7 +4,7 @@ import json
 import subprocess
 import pytest
 from yoke_cli.project_install import install_recovery as recovery
-from yoke_cli.project_install import instruction_discovery, skill_discovery
+from yoke_cli.project_install import instruction_discovery
 from yoke_cli.project_install.bundle_apply import apply_bundle
 from yoke_cli.project_install.files import ProjectInstallError, sha256_text
 from yoke_core.domain.project_install_test_helpers import make_bundle
@@ -35,55 +35,6 @@ def _commit(root, message):
         "-m",
         message,
     )
-
-
-def test_bundle_proves_unrecorded_legacy_copy_and_refuses_edit(tmp_path):
-    rel = ".codex/skills/yoke/onboard/SKILL.md"
-    path = _file(tmp_path, rel, "released skill\n")
-    bundle = {
-        "files": [
-            {
-                "path": ".agents/skills/yoke/onboard/SKILL.md",
-                "content": "released skill\n",
-            }
-        ]
-    }
-    assert skill_discovery.preflight(tmp_path, {}, bundle) == {
-        rel: sha256_text("released skill\n")
-    }
-    path.write_text("local edit\n")
-    with pytest.raises(
-        ProjectInstallError, match="skill_discovery_ownership_ambiguous"
-    ):
-        skill_discovery.preflight(tmp_path, {}, bundle)
-    assert path.read_text() == "local edit\n"
-
-
-@pytest.mark.parametrize(
-    "subject",
-    [
-        "Install Yoke operating layer 1.0.0",
-        "Refresh the installed Yoke operating layer to 1.0.0",
-    ],
-)
-def test_installer_history_proves_old_copy_and_refuses_user_commit(tmp_path, subject):
-    rel = ".claude/skills/yoke/onboard/SKILL.md"
-    _git(tmp_path, "init")
-    path = _file(tmp_path, rel, "old release\n")
-    _commit(tmp_path, subject)
-    assert skill_discovery.preflight(tmp_path, {}) == {
-        rel: sha256_text("old release\n")
-    }
-    path.write_text("uncommitted edit\n")
-    with pytest.raises(
-        ProjectInstallError, match="skill_discovery_ownership_ambiguous"
-    ):
-        skill_discovery.preflight(tmp_path, {})
-    _commit(tmp_path, "Customize skill")
-    with pytest.raises(
-        ProjectInstallError, match="skill_discovery_ownership_ambiguous"
-    ):
-        skill_discovery.preflight(tmp_path, {})
 
 
 def test_record_ahead_of_installer_content_is_repaired(tmp_path, monkeypatch):
@@ -173,61 +124,6 @@ def test_failed_atomic_write_keeps_prior_manifest(tmp_path, monkeypatch, failure
         recovery.atomic_text(path, '{"new": true}\n')
     assert path.read_text() == '{"old": true}\n'
     assert list(path.parent.iterdir()) == [path]
-
-
-def test_tagged_release_proves_manually_refreshed_copy(tmp_path, monkeypatch):
-    from yoke_cli.project_install import released_bundle_files
-
-    source = tmp_path / "source"
-    source.mkdir()
-    _git(source, "init")
-    _file(source, ".agents/skills/yoke/onboard/SKILL.md", "archived release\n")
-    _commit(source, "Publish authored skill")
-    _git(
-        source,
-        "-c",
-        "user.name=Publisher",
-        "-c",
-        "user.email=publisher@example.test",
-        "tag",
-        "-a",
-        "v1.0.0",
-        "-m",
-        "Release",
-    )
-    target = tmp_path / "consumer"
-    target.mkdir()
-    rel = ".claude/skills/yoke/onboard/SKILL.md"
-    path = _file(target, rel, "archived release\n")
-    monkeypatch.setattr(released_bundle_files, "source_checkout_root", lambda _: source)
-    assert skill_discovery.preflight(target, {}) == {
-        rel: sha256_text("archived release\n")
-    }
-    path.write_text("local changes\n")
-    with pytest.raises(
-        ProjectInstallError, match="skill_discovery_ownership_ambiguous"
-    ):
-        skill_discovery.preflight(target, {})
-
-
-def test_committed_instruction_drift_retires_block_preserving_user_text(tmp_path):
-    from yoke_contracts.project_contract.managed_block import render_block
-
-    _git(tmp_path, "init")
-    path = _file(
-        tmp_path, "CODEX.md", "User instructions\n" + render_block("old release")
-    )
-    _commit(tmp_path, "Install Yoke operating layer 1.0.0")
-    prior = {
-        "managed_markdown": {
-            "CODEX.md": {"block_sha": sha256_text(render_block("later release"))}
-        }
-    }
-    planned = instruction_discovery.retirement_plan(tmp_path, prior)
-    assert planned["CODEX.md"] == "User instructions\n"
-    path.write_text("User instructions\n" + render_block("local edit"))
-    with pytest.raises(ProjectInstallError, match="instruction_ownership_ambiguous"):
-        instruction_discovery.retirement_plan(tmp_path, prior)
 
 
 def test_dirty_interrupted_checkout_accepts_planned_settings_and_refuses_edits(

@@ -25,7 +25,6 @@ from yoke_contracts.machine_config.schema_projects import (
     _error,
     _is_nonempty_str,
     _nonempty_str,
-    _strip_worktree_path as _strip_worktree_path,
 )
 from yoke_contracts.machine_config.schema_project_validation import (
     validate_projects,
