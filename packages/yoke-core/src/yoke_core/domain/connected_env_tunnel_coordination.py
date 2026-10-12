@@ -106,6 +106,12 @@ def lifecycle_lock(
                 fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except OSError:
+                if time.monotonic() >= deadline:
+                    raise TunnelReplacementContended(
+                        local_port=local_port,
+                        timeout=timeout,
+                        holder=_lock_holder(path),
+                    ) from None
                 if not announced:
                     announced = True
                     announce_designed_wait(
@@ -113,12 +119,6 @@ def lifecycle_lock(
                         f"{local_port} (lock {path})",
                         max_wait_seconds=timeout,
                     )
-                if time.monotonic() >= deadline:
-                    raise TunnelReplacementContended(
-                        local_port=local_port,
-                        timeout=timeout,
-                        holder=_lock_holder(path),
-                    ) from None
                 time.sleep(LIFECYCLE_LOCK_POLL_SECONDS)
         _stamp_holder(descriptor)
         yield
