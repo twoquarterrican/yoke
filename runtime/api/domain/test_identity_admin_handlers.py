@@ -45,8 +45,13 @@ def _seed_auth_catalog():
     try:
         seed_roles_and_permissions(conn)
         seed_default_org(conn)
+        _CALLER["actor_id"] = str(seed_human_actor(conn))
     finally:
         conn.close()
+
+
+# The dispatcher-bound calling actor every identity write is attributed to.
+_CALLER: dict[str, str] = {}
 
 
 @pytest.fixture
@@ -54,13 +59,32 @@ def unique() -> str:
     return uuid.uuid4().hex[:10]
 
 
-def _request(function_id: str, payload: dict) -> FunctionCallRequest:
+def _request(function_id: str, payload: dict, *, caller: bool = True) -> FunctionCallRequest:
     return FunctionCallRequest(
         function=function_id,
-        actor=ActorContext(session_id="handler-test-session"),
+        actor=ActorContext(
+            actor_id=_CALLER["actor_id"] if caller else None,
+            session_id="handler-test-session",
+        ),
         target=TargetRef(kind="global"),
         payload=payload,
     )
+
+
+@pytest.mark.parametrize(
+    ("handler", "function_id", "payload"),
+    [
+        (handle_identity_invite_create, "identity.invite.create", {"email": "x@example.com"}),
+        (handle_identity_invite_revoke, "identity.invite.revoke", {"invite_id": 1}),
+        (handle_identity_link_set, "identity.link.set", {"actor": "1", "email": "x@example.com"}),
+        (handle_organization_domain_set, "organizations.domain.set", {"domain": "example.com"}),
+    ],
+)
+def test_identity_writes_without_a_calling_actor_refuse(handler, function_id, payload):
+    outcome = handler(_request(function_id, payload, caller=False))
+    assert not outcome.primary_success
+    assert outcome.error.code == "actor_required"
+    assert "yoke setup" in outcome.error.message
 
 
 def test_invite_create_list_revoke_round_trip(unique):
@@ -84,9 +108,8 @@ def test_invite_create_list_revoke_round_trip(unique):
         _request("identity.invite.list", {"status": "pending"}),
     )
     assert listed.primary_success
-    assert any(
-        row["invite_id"] == invite_id for row in listed.result_payload["invites"]
-    )
+    (row,) = [r for r in listed.result_payload["invites"] if r["invite_id"] == invite_id]
+    assert row["invited_by_actor_id"] == int(_CALLER["actor_id"])
 
     revoked = handle_identity_invite_revoke(
         _request("identity.invite.revoke", {"invite_id": invite_id}),

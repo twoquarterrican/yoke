@@ -83,6 +83,9 @@ def handle_identity_link_set(request: FunctionCallRequest) -> HandlerOutcome:
         hosted = _hosted_refusal()
         if hosted is not None:
             return hosted
+    caller_id, caller_error = caller_actor_id(request)
+    if caller_error is not None:
+        return HandlerOutcome(primary_success=False, error=caller_error)
     conn = connect()
     try:
         actor_id, actor_error = resolve_actor_ref(
@@ -100,7 +103,7 @@ def handle_identity_link_set(request: FunctionCallRequest) -> HandlerOutcome:
                     issuer=parsed.issuer,
                     subject=parsed.subject,
                     email=parsed.email,
-                    created_by_actor_id=caller_actor_id(conn, request),
+                    created_by_actor_id=caller_id,
                 )
             except (ExternalIdentityConflict, ExternalIdentityError) as exc:
                 return HandlerOutcome(
@@ -122,7 +125,7 @@ def handle_identity_link_set(request: FunctionCallRequest) -> HandlerOutcome:
                     conn,
                     email=parsed.email,
                     org_id=org_id,
-                    invited_by_actor_id=caller_actor_id(conn, request),
+                    invited_by_actor_id=caller_id,
                     actor_id=actor_id,
                 )
             except InviteError as exc:

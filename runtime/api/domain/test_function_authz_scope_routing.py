@@ -340,20 +340,19 @@ def test_actor_session_op_allowed_with_actor(conn):
     ).error is None
 
 
-def test_no_verified_actor_is_permissive_local(conn):
-    # No numeric actor -> local/advisory context -> permissive for every scope.
-    # A project-scoped write that WOULD be denied with a non-owning actor is
-    # allowed when there is no verified actor at all.
-    project_op = _entry("items.structured_field.replace")
-    assert check_dispatch_permission(
-        conn, project_op, _no_actor_request("items.structured_field.replace")
-    ).error is None
-    # ...and even an unclassified side-effecting op (the DENY bucket) is
-    # permissive locally — DENY only fires once a verified actor is present.
-    unclassified = _entry("totally.unknown.sideeffecting.op")
-    assert check_dispatch_permission(
-        conn, unclassified, _no_actor_request("totally.unknown.sideeffecting.op")
-    ).error is None
+def test_side_effecting_call_without_verified_actor_refuses_actor_required(conn):
+    # No numeric actor -> nothing to authorize or attribute -> refused for
+    # every side-effecting scope, including the unclassified DENY bucket.
+    for function_id in (
+        "items.structured_field.replace",
+        "totally.unknown.sideeffecting.op",
+    ):
+        res = check_dispatch_permission(
+            conn, _entry(function_id), _no_actor_request(function_id)
+        )
+        assert res.error is not None
+        assert res.error.error.code == "actor_required"
+        assert "yoke setup" in res.error.error.message
 
 
 def test_projects_create_is_org_scoped_update_is_project_scoped(conn):

@@ -14,6 +14,10 @@ from yoke_core.domain.actor_permissions import (
 )
 from yoke_core.domain.actor_project_visibility import actor_project_ids_with_permission
 from yoke_core.domain.control_plane_authority import require_control_plane_permission
+from yoke_core.domain.dispatch_actor_requirement import (
+    missing_actor_refusal,
+    numeric_actor_id,
+)
 from yoke_core.domain.function_authz_scope import (
     ACTOR_SESSION,
     CLIENT_LOCAL,
@@ -61,7 +65,7 @@ def check_dispatch_permission(
         side_effects=bool(entry.side_effects),
         project_permission=permission_key_for(entry),
     )
-    actor_id = _numeric_actor_id(request.actor.actor_id)
+    actor_id = numeric_actor_id(request.actor.actor_id)
     if actor_id is not None and not actor_is_active(conn, actor_id):
         return DispatchPermission(
             spec.permission_key,
@@ -94,7 +98,7 @@ def check_dispatch_permission(
     if spec.scope == CLIENT_LOCAL:
         return DispatchPermission(spec.permission_key, None, None)
     if actor_id is None:
-        return DispatchPermission(spec.permission_key, None, None)
+        return missing_actor_refusal(entry, request, spec.permission_key)
     if (
         entry.function_id == "claims.work.holder_list"
         and request.payload.get("session_id") == request.actor.session_id
@@ -262,8 +266,10 @@ def dispatch_permission_for_request(
         side_effects=bool(entry.side_effects),
         project_permission=permission_key_for(entry),
     )
-    if _numeric_actor_id(request.actor.actor_id) is None:
-        return DispatchPermission(spec.permission_key, None, None)
+    if numeric_actor_id(request.actor.actor_id) is None:
+        if spec.scope == CLIENT_LOCAL:
+            return DispatchPermission(spec.permission_key, None, None)
+        return missing_actor_refusal(entry, request, spec.permission_key)
     if spec.scope == DENY:
         return DispatchPermission(
             spec.permission_key,
@@ -294,15 +300,6 @@ def dispatch_permission_for_request(
                 f"permission check failed before handler dispatch: {exc}",
             ),
         )
-
-
-def _numeric_actor_id(value: Any) -> int | None:
-    if value is None:
-        return None
-    text = str(value).strip()
-    if not text or not text.isdigit():
-        return None
-    return int(text)
 
 
 __all__ = [

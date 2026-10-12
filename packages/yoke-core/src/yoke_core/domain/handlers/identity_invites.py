@@ -115,6 +115,9 @@ def handle_identity_invite_create(request: FunctionCallRequest) -> HandlerOutcom
     parsed, failure = _parse(InviteCreateRequest, request)
     if failure is not None:
         return failure
+    caller_id, caller_error = caller_actor_id(request)
+    if caller_error is not None:
+        return HandlerOutcome(primary_success=False, error=caller_error)
     conn = connect()
     try:
         org_id, org_error = resolve_org_ref(conn, parsed.org)
@@ -145,7 +148,7 @@ def handle_identity_invite_create(request: FunctionCallRequest) -> HandlerOutcom
                 conn,
                 email=parsed.email,
                 org_id=org_id,
-                invited_by_actor_id=caller_actor_id(conn, request),
+                invited_by_actor_id=caller_id,
                 role_id=role_id,
                 actor_id=target_actor_id,
             )
@@ -220,13 +223,16 @@ def handle_identity_invite_revoke(request: FunctionCallRequest) -> HandlerOutcom
     parsed, failure = _parse(InviteRevokeRequest, request)
     if failure is not None:
         return failure
+    caller_id, caller_error = caller_actor_id(request)
+    if caller_error is not None:
+        return HandlerOutcome(primary_success=False, error=caller_error)
     conn = connect()
     try:
         try:
             invite = revoke_invite(
                 conn,
                 invite_id=parsed.invite_id,
-                revoked_by_actor_id=caller_actor_id(conn, request),
+                revoked_by_actor_id=caller_id,
             )
         except InviteNotFound as exc:
             return HandlerOutcome(

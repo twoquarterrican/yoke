@@ -88,8 +88,13 @@ def _dispatch_field_note(
     evidence: str,
     session_id: str,
     correlation_id: Optional[str],
-) -> None:
-    """Dispatch one ``ouroboros.field_note.append`` in-process."""
+) -> Optional[str]:
+    """Dispatch one ``ouroboros.field_note.append``; return its refusal, if any.
+
+    The call carries the capturing session when one is known; otherwise the
+    dispatcher binds this universe's operating actor or refuses
+    ``actor_required``.
+    """
     from yoke_core.domain.handlers.__init_register__ import (
         register_all_handlers,
     )
@@ -115,11 +120,17 @@ def _dispatch_field_note(
     request = FunctionCallRequest(
         function="ouroboros.field_note.append",
         request_id=str(uuid.uuid4()),
-        actor=ActorContext(session_id=session_id or "reflection-capture"),
+        actor=ActorContext(session_id=session_id),
         target=TargetRef(kind="global"),
         payload=payload,
     )
-    dispatch(request, ambient_session_id=session_id or None)
+    response = dispatch(request, ambient_session_id=session_id or None)
+    if response.success:
+        return None
+    error = response.error
+    code = error.code if error is not None else "dispatch_failed"
+    message = error.message if error is not None else "no error detail returned"
+    return f"field-note {kind!r} not recorded: {code}: {message}"
 
 
 def dispatch_markers_for_entry(
@@ -129,6 +140,7 @@ def dispatch_markers_for_entry(
     context: str,
     session_id: str,
     correlation_id: Optional[str] = None,
+    errors: Optional[List[str]] = None,
 ) -> int:
     """Process every field-note marker found in one reflection entry.
 
@@ -137,8 +149,9 @@ def dispatch_markers_for_entry(
     ``ReflectionMarkerParseFailed`` and are skipped (no field-note).
 
     Returns the number of field-notes successfully dispatched. The
-    function never raises — field-note dispatch is best-effort follow-on
-    work and must not block reflection capture itself.
+    function never raises — field-note dispatch is follow-on work and must
+    not block reflection capture itself — but every refused or failed
+    dispatch is appended to ``errors`` so the capture reports it.
     """
     if not body:
         return 0
@@ -147,16 +160,18 @@ def dispatch_markers_for_entry(
     for raw_value in find_markers(body):
         if raw_value in FIELD_NOTE_KIND_VALUES:
             try:
-                _dispatch_field_note(
+                refusal = _dispatch_field_note(
                     kind=raw_value,
                     evidence=evidence,
                     session_id=session_id,
                     correlation_id=correlation_id,
                 )
+            except Exception as exc:  # noqa: BLE001 - reported, never raised
+                refusal = f"field-note {raw_value!r} dispatch failed: {exc!r}"
+            if refusal is None:
                 dispatched += 1
-            except Exception:
-                # Dispatch is best-effort; failures must not propagate.
-                pass
+            elif errors is not None:
+                errors.append(refusal)
         else:
             try:
                 _emit_parse_failed(

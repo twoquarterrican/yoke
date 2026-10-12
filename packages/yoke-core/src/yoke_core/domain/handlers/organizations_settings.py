@@ -190,6 +190,9 @@ def handle_organization_domain_set(
     parsed = _parse(OrganizationDomainSetRequest, request)
     if isinstance(parsed, HandlerOutcome):
         return parsed
+    caller_id, caller_error = caller_actor_id(request)
+    if caller_error is not None:
+        return HandlerOutcome(primary_success=False, error=caller_error)
     from yoke_core.domain.db_helpers import connect
     from yoke_core.domain.external_identities import (
         ExternalIdentityError,
@@ -206,7 +209,7 @@ def handle_organization_domain_set(
                 conn,
                 org_id=int(org_id),
                 domain=parsed.domain,
-                changed_by_actor_id=caller_actor_id(conn, request),
+                changed_by_actor_id=caller_id,
             )
         except ExternalIdentityError as exc:
             return _failure("validation_error", str(exc), "$.payload.domain")

@@ -113,13 +113,13 @@ class TestDispatcherProvenanceMarking(_IntegrationBase):
         request = _make_request(
             function="intg.replay.ghost",
             payload_session="ghost-session",
-            actor_id="ghost-actor",
+            actor_id="77",
             request_id="r-1",
         )
         stored = (
             {"replayed": True},
             "intg.replay.ghost",
-            "ghost-actor",
+            "77",
             "authenticated_actor",
             idempotency_payload_checksum(request),
         )
