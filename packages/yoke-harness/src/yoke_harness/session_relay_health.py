@@ -264,8 +264,9 @@ def relay_health_recovery(health: Mapping[str, object]) -> str:
         return (
             "Permanent server rejections are preserved under the relay state "
             "directory. report_conflict means the server already settled the "
-            "attempt, and relay_lease_expired or invalid_state that it closed "
-            "the job without this report; do not replay either. Use `yoke relay "
+            "attempt; relay_lease_expired, invalid_state, attempt_missing and "
+            "lease_mismatch mean it closed or never held the job for this "
+            "report; do not replay any of them. Use `yoke relay "
             "report quarantine <report-id>` only for a named pending report with "
             "recorded permanent-rejection evidence."
         )

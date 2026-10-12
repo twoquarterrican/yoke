@@ -10,6 +10,7 @@ import pytest
 
 from yoke_cli.commands.adapters import session_control_relay as relay
 from yoke_cli.commands.adapters import session_control_relay_report as report_cli
+from yoke_contracts.session_control.relay_health import SETTLED_RELAY_REPORT_CODES
 from yoke_harness import session_relay
 from yoke_harness.session_relay_health import (
     record_relay_run_refusal,
@@ -200,7 +201,8 @@ def test_quarantined_status_teaches_terminal_recovery_without_replay(
 
     assert relay.relay_status(["--json"]) == 1
     payload = json.loads(capsys.readouterr().out)
-    assert "report_conflict" in payload["relay_health_recovery"]
+    for code in SETTLED_RELAY_REPORT_CODES:
+        assert code in payload["relay_health_recovery"]
     assert "do not replay" in payload["relay_health_recovery"]
     assert "yoke relay report quarantine" in payload["relay_health_recovery"]
 

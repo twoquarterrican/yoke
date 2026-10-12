@@ -12,7 +12,20 @@ MAX_RELAY_QUARANTINE_FACTS = 20
 RELAY_NEWER_THAN_SERVER = "relay_newer_than_server"
 RELAY_NEWER_THAN_SERVER_RECOVERY = "deploy"
 RELAY_HEALTH_STATES = frozenset({"healthy", "retrying", "quarantined", "refused"})
-SETTLED_RELAY_REPORT_CODE = "report_conflict"
+# Server rejections that close the report's attempt for good: the server
+# already settled it, expired or closed its lease, or never held it. Replay
+# cannot change the outcome, so retained evidence of these is not actionable.
+# Contract rejections (payload_invalid, relay_report_payload_invalid,
+# request_validation_failed) stay out: they mean client and server disagree.
+SETTLED_RELAY_REPORT_CODES = frozenset(
+    {
+        "attempt_missing",
+        "invalid_state",
+        "lease_mismatch",
+        "relay_lease_expired",
+        "report_conflict",
+    }
+)
 
 
 def _text(value: object, *, limit: int = 128) -> str:
@@ -126,12 +139,12 @@ def relay_refuses_jobs(value: object) -> bool:
     return sanitize_relay_health(value)["state"] == "refused"
 
 
-def retained_settled_conflicts_only(value: object) -> bool:
-    """True when health is only already-settled report_conflict evidence.
+def retained_settled_reports_only(value: object) -> bool:
+    """True when health is only retained evidence of server-settled reports.
 
     Incomplete bounded metadata never qualifies: a truncated quarantine
-    list, a missing error_code, or any non-conflict entry stays
-    actionable. Pending reports, live failures, and run refusals also
+    list, a missing error_code, or any entry outside
+    ``SETTLED_RELAY_REPORT_CODES`` stays actionable. Pending reports, live failures, and run refusals also
     stay actionable.
     """
     health = sanitize_relay_health(value)
@@ -143,20 +156,20 @@ def retained_settled_conflicts_only(value: object) -> bool:
     if health["quarantine_count"] != len(quarantines):
         return False
     codes = [str(entry.get("error_code") or "") for entry in quarantines]
-    return bool(codes) and all(code == SETTLED_RELAY_REPORT_CODE for code in codes)
+    return bool(codes) and all(code in SETTLED_RELAY_REPORT_CODES for code in codes)
 
 
 def fleet_relay_error_code(
     failure: Mapping[str, Any],
     quarantines: list[dict[str, Any]],
 ) -> str:
-    """Prefer a live failure or an unsettled quarantine over the last conflict."""
+    """Prefer a live failure or an unsettled quarantine over settled evidence."""
     code = _text(failure.get("error_code"))
     if code:
         return code
     for entry in quarantines:
         candidate = _text(entry.get("error_code"))
-        if candidate and candidate != SETTLED_RELAY_REPORT_CODE:
+        if candidate and candidate not in SETTLED_RELAY_REPORT_CODES:
             return candidate
     return _text((quarantines[-1] if quarantines else {}).get("error_code"))
 
@@ -166,9 +179,9 @@ __all__ = [
     "RELAY_HEALTH_STATES",
     "RELAY_NEWER_THAN_SERVER",
     "RELAY_NEWER_THAN_SERVER_RECOVERY",
-    "SETTLED_RELAY_REPORT_CODE",
+    "SETTLED_RELAY_REPORT_CODES",
     "fleet_relay_error_code",
     "relay_refuses_jobs",
-    "retained_settled_conflicts_only",
+    "retained_settled_reports_only",
     "sanitize_relay_health",
 ]
