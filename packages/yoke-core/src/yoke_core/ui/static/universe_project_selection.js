@@ -151,12 +151,19 @@ export function createProjectSelection(saveView, onNotice, saveSort) {
     try {
       const result = await readPreferences();
       if (revision !== selectionRevision) return false;
+      const savedViews = Object.entries(result.views || {});
+      const changed = savedViews.length !== remembered.size || savedViews.some(([viewId, view]) => {
+        const prior = remembered.get(viewId);
+        return !prior || selectionParam(prior.selection) !== selectionParam(view.selection)
+          || prior.focus !== (view.focus ?? null);
+      });
+      state.ready = true;
+      if (!changed) return false;
       views.clear();
       remembered.clear();
-      for (const [viewId, view] of Object.entries(result.views || {})) {
+      for (const [viewId, view] of savedViews) {
         state.seed(viewId, view.selection, view.focus);
       }
-      state.ready = true;
       return true;
     } catch {
       if (revision !== selectionRevision) return false;
