@@ -17,6 +17,7 @@ from yoke_contracts.designed_wait import (
     ("seconds", "rendered"),
     [
         (0, "0s"),
+        (0.25, "0.25s"),
         (30, "30s"),
         (119.6, "2m"),
         (150, "2m30s"),

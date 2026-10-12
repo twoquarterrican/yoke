@@ -29,6 +29,7 @@ import sys
 import time
 from typing import Callable, Optional, Sequence
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_core.domain import db_backend
 
 DEFAULT_ATTEMPTS = 30
@@ -80,6 +81,13 @@ def wait_for_postgres(
             probe(target)
         except Exception as exc:  # noqa: BLE001 — readiness retries on ANY connect-class failure
             last_error = exc
+            if attempt == 1 and attempts > 1:
+                announce_designed_wait(
+                    f"Postgres at [{redacted}] to accept connections",
+                    max_wait_seconds=delay * (attempts - 1),
+                    cadence=poll_every(delay),
+                    write=log,
+                )
             if attempt < attempts:
                 sleep(delay)
             continue

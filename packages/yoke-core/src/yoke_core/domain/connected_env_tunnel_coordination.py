@@ -42,6 +42,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator, List, Optional
 
+from yoke_contracts.designed_wait import announce_designed_wait
 from yoke_contracts.machine_config import runtime as machine_config
 
 from yoke_core.domain.connected_env_readiness_connector import (
@@ -98,12 +99,20 @@ def lifecycle_lock(
     create_private_directory(path.parent)
     descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     deadline = time.monotonic() + timeout
+    announced = False
     try:
         while True:
             try:
                 fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except OSError:
+                if not announced:
+                    announced = True
+                    announce_designed_wait(
+                        f"another process replacing the tunnel on local port "
+                        f"{local_port} (lock {path})",
+                        max_wait_seconds=timeout,
+                    )
                 if time.monotonic() >= deadline:
                     raise TunnelReplacementContended(
                         local_port=local_port,

@@ -20,6 +20,7 @@ import re
 import time
 from typing import Callable, Sequence
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_contracts.github_app_installation_permissions import (
     GITHUB_ACTIONS_WRITE_PERMISSION_LEVELS,
 )
@@ -115,6 +116,12 @@ def redispatch_no_verdict_checks(
         f"  Re-ran cancelled or never-started required checks ({names}) on "
         f"the same head via run(s) {', '.join(run_ids)}",
         flush=True,
+    )
+    announce_designed_wait(
+        f"GitHub to replace the re-run required checks on PR #{pr_num}",
+        max_wait_seconds=REPLACED_CONFIRM_SECONDS,
+        cadence=poll_every(REPLACED_READ_INTERVAL_SECONDS),
+        write=lambda line: print(f"  {line}", flush=True),
     )
     deadline = now() + REPLACED_CONFIRM_SECONDS
     while True:

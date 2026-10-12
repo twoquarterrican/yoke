@@ -29,6 +29,7 @@ import time
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from runtime.api.tools.follow_moved_platform_consumer import MOVED_AGAIN, follow
+from runtime.api.tools.platform_consumer_run_wait import wait_run
 from runtime.api.tools.require_platform_consumer_compatibility import (
     CONSUMER_PROJECT,
     CONSUMER_REPO,
@@ -108,19 +109,14 @@ def dispatch(inputs: Dict[str, str], request_id: str) -> Tuple[str, str]:
 
 def await_run(run_id: str) -> Dict[str, Any]:
     """The promotion run's terminal result; empty when it could not be read."""
-    code, stdout, stderr = _yoke(
-        [
-            "github-actions",
-            "wait-run",
-            CONSUMER_REPO,
-            run_id,
-            "--project",
-            CONSUMER_PROJECT,
-            "--timeout",
-            str(PROMOTION_TIMEOUT_SECONDS),
-            "--json",
-        ],
-        timeout=PROMOTION_TIMEOUT_SECONDS + _COMMAND_TIMEOUT_SECONDS,
+    code, stdout, stderr = wait_run(
+        _yoke,
+        repo=CONSUMER_REPO,
+        project=CONSUMER_PROJECT,
+        run_id=run_id,
+        timeout_sec=PROMOTION_TIMEOUT_SECONDS,
+        grace_sec=_COMMAND_TIMEOUT_SECONDS,
+        purpose="the platform promotion run",
     )
     try:
         result = (json.loads(stdout) or {}).get("result")

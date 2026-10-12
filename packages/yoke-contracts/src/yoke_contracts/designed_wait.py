@@ -24,7 +24,9 @@ DESIGNED_WAIT_PREFIX = "Waiting by design:"
 
 
 def format_duration(seconds: float) -> str:
-    """Render *seconds* compactly: ``45s``, ``2m30s``, ``15m``, ``3h``."""
+    """Render *seconds* compactly: ``0.25s``, ``45s``, ``2m30s``, ``15m``, ``3h``."""
+    if 0 < seconds < 1:
+        return f"{seconds:g}s"
     total = max(0, int(round(seconds)))
     if total < 120:
         return f"{total}s"

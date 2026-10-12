@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 if __package__:
+    from yoke_contracts.designed_wait import announce_designed_wait
     from yoke_contracts.machine_config.directories import create_private_directory
 else:
+    from _yoke_designed_wait import announce_designed_wait
     from _yoke_private_directories import create_private_directory
 
 from contextlib import contextmanager
@@ -135,25 +137,7 @@ def quarantine_json_document(
     quarantine_path: str | Path,
 ) -> bool:
     """Atomically move a credential to a non-live, retryable deletion name."""
-    selected = Path(path).expanduser()
-    quarantine = Path(quarantine_path).expanduser()
-    if selected.parent != quarantine.parent:
-        raise CredentialFileError(
-            "GitHub App credential quarantine must stay in the same directory"
-        )
-    with exclusive_lock(selected):
-        try:
-            selected.lstat()
-        except FileNotFoundError:
-            return False
-        try:
-            os.replace(selected, quarantine)
-            _fsync_directory(selected.parent)
-        except OSError as exc:
-            raise CredentialFileError(
-                "GitHub App credential could not be quarantined"
-            ) from exc
-    return True
+    return _move_under_lock(path, quarantine_path, "quarantine", "quarantined")
 
 
 def restore_quarantined_json_document(
@@ -161,23 +145,30 @@ def restore_quarantined_json_document(
     path: str | Path,
 ) -> bool:
     """Restore a quarantine when the config still references the credential."""
-    quarantine = Path(quarantine_path).expanduser()
-    selected = Path(path).expanduser()
-    if selected.parent != quarantine.parent:
+    return _move_under_lock(quarantine_path, path, "restore", "restored")
+
+
+def _move_under_lock(
+    source_path: str | Path, target_path: str | Path, action: str, done: str
+) -> bool:
+    """Rename *source_path* onto *target_path* under the source's lock."""
+    source = Path(source_path).expanduser()
+    target = Path(target_path).expanduser()
+    if source.parent != target.parent:
         raise CredentialFileError(
-            "GitHub App credential restore must stay in the same directory"
+            f"GitHub App credential {action} must stay in the same directory"
         )
-    with exclusive_lock(quarantine):
+    with exclusive_lock(source):
         try:
-            quarantine.lstat()
+            source.lstat()
         except FileNotFoundError:
             return False
         try:
-            os.replace(quarantine, selected)
-            _fsync_directory(selected.parent)
+            os.replace(source, target)
+            _fsync_directory(source.parent)
         except OSError as exc:
             raise CredentialFileError(
-                "GitHub App credential could not be restored"
+                f"GitHub App credential could not be {done}"
             ) from exc
     return True
 
@@ -266,7 +257,6 @@ def _wait_for_exclusive_lock(
     monotonic: Any,
 ) -> None:
     """Take the lock, waiting a bounded turn while another process holds it."""
-
     deadline = monotonic() + max(float(wait_seconds), 0.0)
     delay = _LOCK_POLL_SECONDS
     while True:
@@ -274,12 +264,16 @@ def _wait_for_exclusive_lock(
             fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
             return
         except BlockingIOError:
-            pass
-        remaining = deadline - monotonic()
+            remaining = deadline - monotonic()
         if remaining <= 0:
             raise CredentialFileBusy(
                 "GitHub App credential lock is held by another local Yoke "
                 f"operation after waiting {float(wait_seconds):g}s: {lock_path}"
+            )
+        if delay == _LOCK_POLL_SECONDS:
+            announce_designed_wait(
+                f"another local Yoke operation to release {lock_path}",
+                max_wait_seconds=float(wait_seconds),
             )
         sleep(min(delay, remaining))
         delay = min(delay * 2, _LOCK_POLL_MAX_SECONDS)

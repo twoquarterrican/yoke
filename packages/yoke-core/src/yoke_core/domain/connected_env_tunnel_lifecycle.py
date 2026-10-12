@@ -23,6 +23,7 @@ import subprocess
 import time
 from typing import Callable, List, Sequence
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_core.domain.connected_env_readiness_connector import (
     ACTION_ADOPTED,
     ACTION_RESTARTED,
@@ -189,6 +190,11 @@ def _wait_out_leases(spec: TunnelSpec, probe: Callable[[], bool]) -> bool:
     Returns as soon as the forward answers (it was slow, not dead) or the last
     lease is released (the holder finished, so replacing it is safe again).
     """
+    announce_designed_wait(
+        f"another process's lease on the tunnel at local port {spec.local_port}",
+        max_wait_seconds=LEASE_WAIT_SECONDS,
+        cadence=poll_every(LEASE_WAIT_POLL_SECONDS),
+    )
     deadline = time.monotonic() + LEASE_WAIT_SECONDS
     while time.monotonic() < deadline:
         time.sleep(LEASE_WAIT_POLL_SECONDS)

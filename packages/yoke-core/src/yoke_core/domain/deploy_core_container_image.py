@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Callable, Mapping, Optional
 
 from yoke_cli.config import credentialed_git
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 
 from yoke_core.domain.deploy_environment_settings import DeployEnvironment
 from yoke_core.domain.deploy_image_tag import canonical_image_tag
@@ -136,10 +137,11 @@ def _wait_for_prewarmed_image(
     """
     image_ref = env.image_ref(tag)
     max_attempts = max(1, int(budget_s / poll_interval_s))
-    emit(
-        f"  [core-deploy] image absent; {IMAGE_WAIT_ENV_VAR}=1 — waiting "
-        f"for prewarmed {image_ref} (budget {budget_s}s, "
-        f"poll every {poll_interval_s:g}s)"
+    announce_designed_wait(
+        f"prewarmed image {image_ref} ({IMAGE_WAIT_ENV_VAR}=1, image absent)",
+        max_wait_seconds=budget_s,
+        cadence=poll_every(poll_interval_s),
+        write=emit,
     )
     for attempt in range(1, max_attempts + 1):
         sleeper(poll_interval_s)

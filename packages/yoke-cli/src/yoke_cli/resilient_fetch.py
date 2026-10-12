@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
+from yoke_contracts.designed_wait import announce_designed_wait
+
 
 MAX_ATTEMPTS = 3
 BACKOFF_SECONDS = (15.0, 60.0)
@@ -110,7 +112,12 @@ def fetch_bytes(
                 raise _transport_error(
                     url, attempt, str(exc) or type(exc).__name__, True, None
                 ) from exc
-        sleep(BACKOFF_SECONDS[attempt - 1])
+        backoff = BACKOFF_SECONDS[attempt - 1]
+        announce_designed_wait(
+            f"backoff before retrying {url} (attempt {attempt + 1} of {MAX_ATTEMPTS})",
+            max_wait_seconds=backoff,
+        )
+        sleep(backoff)
     raise AssertionError("bounded fetch loop exhausted without a result")
 
 

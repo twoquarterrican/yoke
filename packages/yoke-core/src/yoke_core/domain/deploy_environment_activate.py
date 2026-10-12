@@ -22,6 +22,7 @@ import sys
 import time
 from typing import Callable, Optional
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_core.domain.deploy_environment_settings import (
     DeployEnvironment,
     DeployEnvironmentError,
@@ -125,6 +126,12 @@ def ensure_instance_running(
                 "[env-activate] start-instances failed: "
                 + started.stderr.strip()
             )
+    announce_designed_wait(
+        f"origin instance {instance_id} to reach running (aws ec2 wait)",
+        max_wait_seconds=600,
+        cadence=poll_every(15),
+        write=emit,
+    )
     waited = runner.run(
         [
             "aws", "ec2", "wait", "instance-running",

@@ -15,6 +15,7 @@ import json
 import time
 from typing import NamedTuple, Optional
 
+from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_core.domain.item_test_results_classify import (
     classify_test_results,
     read_item_test_results,
@@ -128,8 +129,15 @@ def _wait_for_ci(pr_num: str, ctx: MergeContext) -> CIOutcome:
     if not pr_num:
         return PASSED
 
+    poll_interval = runtime_settings.get_seconds("ci_poll_interval", 30)
+    timeout = runtime_settings.get_seconds("ci_timeout", 1800)
     _print("")
-    _print("Waiting for CI checks...")
+    announce_designed_wait(
+        f"CI checks on PR #{pr_num}",
+        max_wait_seconds=timeout,
+        cadence=poll_every(poll_interval),
+        write=_print,
+    )
 
     def _query_states() -> tuple[Optional[CheckRunsState], Optional[str]]:
         return get_check_runs(ctx, pr_num)
@@ -149,7 +157,6 @@ def _wait_for_ci(pr_num: str, ctx: MergeContext) -> CIOutcome:
         )
         return FAILED
     assert initial_state is not None
-    poll_interval = runtime_settings.get_seconds("ci_poll_interval", 30)
 
     # Empty check-runs. When the project declares a CI workflow the
     # runs may not be registered on the head SHA yet — wait a bounded window
@@ -162,9 +169,11 @@ def _wait_for_ci(pr_num: str, ctx: MergeContext) -> CIOutcome:
         reg_timeout = runtime_settings.get_seconds(
             "ci_registration_timeout", 120
         )
-        _print(
-            f"CI workflow declared; waiting up to {reg_timeout}s for checks "
-            "to register..."
+        announce_designed_wait(
+            f"declared CI checks to register on PR #{pr_num}",
+            max_wait_seconds=reg_timeout,
+            cadence=poll_every(poll_interval),
+            write=_print,
         )
         reg_elapsed = 0
         while reg_elapsed < reg_timeout:
@@ -195,7 +204,6 @@ def _wait_for_ci(pr_num: str, ctx: MergeContext) -> CIOutcome:
             )
             return SKIPPED_UNREGISTERED
 
-    timeout = runtime_settings.get_seconds("ci_timeout", 1800)
     elapsed = 0
     latest = initial_state
 
