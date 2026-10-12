@@ -55,10 +55,6 @@ def db(monkeypatch):
     seed_initial_catalog(conn)
     create_universe_settings_table(conn)
     monkeypatch.setattr(db_helpers, "connect", lambda *_a, **_k: _Conn(conn))
-    monkeypatch.setattr(
-        "yoke_core.domain.handlers.identity_common.caller_actor_id",
-        lambda *_a, **_k: 1,
-    )
     yield conn
     conn.close()
 

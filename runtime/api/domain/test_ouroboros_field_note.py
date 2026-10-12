@@ -27,6 +27,7 @@ from yoke_contracts.api.function_call import (
     FunctionCallRequest,
     TargetRef,
 )
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.file_test_db import init_test_db
 
 
@@ -303,6 +304,8 @@ class TestRegistrationContract:
 
         reset_registry_for_tests()
         register_all_handlers()
+        with connect(tmp_db) as conn:
+            register_session_actor(conn, "ambient-session-id")
 
         request = _build_request(
             kind="new",

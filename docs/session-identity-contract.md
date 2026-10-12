@@ -200,12 +200,12 @@ onboarding, and the project-config writes they drive — create/update,
 capability and environment settings, github binding, project-structure patches
 (the wizard's hosting-posture stage), the install's harness machine report, and
 a new project's first deployment flows. A session is still bound and audited
-when one is present, https callers stay project-scoped through the dispatch
-permission gate (which enforces only once a numeric actor id is bound), and
-the call is still recorded via `YokeFunctionCalled` — session-less, not
-audit-less. Operator-only mutations outside the bootstrap path, including
-flow-definition edits (`deployment_flows.set_status` / `update_stages`),
-keep the session requirement.
+when one is present; otherwise the call carries the https bearer actor or this
+universe's operating actor, the permission gate refuses a side-effecting call
+with no numeric actor as `actor_required`, and it is recorded via
+`YokeFunctionCalled` — session-less, not audit-less. Operator-only mutations
+outside the bootstrap path, including flow-definition edits
+(`deployment_flows.set_status` / `update_stages`), keep the session requirement.
 
 **Membership is a declaration, so something checks it.** Nothing in the
 registry knows which functions a person without a session actually reaches — an

@@ -150,6 +150,12 @@ Email-only pre-links create invites on local and self-hosted universes. A hosted
 tenant refuses them with `hosted_invites_platform_owned`; use hosted invite
 commands or the org's Members page. Direct issuer/subject links remain available.
 
+Each invite, revoke, link and domain write records the calling actor as its
+author (`invited_by`, `revoked_by`, `created_by`, `changed_by`). A call that
+carries no numeric actor is refused as `actor_required`; run it from a
+signed-in connection, a registered harness session, or a machine whose
+operating actor `yoke setup` recorded.
+
 These invites are the server's own. On Yoke Cloud Platform owns invites; the
 same `yoke identity invite` commands reach Platform's invites over a hosted
 connection, and the hosted universe's engine refuses them as

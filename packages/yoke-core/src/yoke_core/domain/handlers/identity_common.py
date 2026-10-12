@@ -2,7 +2,8 @@
 
 Every identity handler is org-admin-gated at dispatch (the ``identity.``
 prefix classifies ORG + ``org.admin`` in ``function_authz_scope``); these
-helpers only translate payload references into row ids.
+helpers translate payload references into row ids and return the calling
+actor that every identity write is attributed to.
 """
 
 from __future__ import annotations
@@ -12,11 +13,11 @@ from typing import Any, Optional, Tuple
 from yoke_contracts.api.function_call import FunctionCallRequest, FunctionError
 
 from yoke_core.domain import db_backend
-from yoke_core.domain.actors import (
-    SYSTEM_COMPONENT_YOKE_CORE,
-    resolve_actors_by_name,
-    seed_system_actor,
-    validate_actor_id,
+from yoke_core.domain.actors import resolve_actors_by_name, validate_actor_id
+from yoke_core.domain.dispatch_actor_requirement import (
+    ACTOR_REQUIRED,
+    actor_required_message,
+    numeric_actor_id,
 )
 from yoke_core.domain.external_identities import default_org_id
 from yoke_core.domain.org_schema import org_id_by_slug
@@ -30,18 +31,24 @@ def not_found_error(message: str, jsonpath: str = "$.payload") -> FunctionError:
     return FunctionError(code="not_found", message=message, jsonpath=jsonpath)
 
 
-def caller_actor_id(conn: Any, request: FunctionCallRequest) -> int:
-    """Resolve the calling actor id for attribution columns.
+def caller_actor_id(
+    request: FunctionCallRequest,
+) -> Tuple[Optional[int], Optional[FunctionError]]:
+    """Return the calling actor id for attribution columns, or a refusal.
 
-    The dispatcher fills ``request.actor.actor_id`` from the verified
-    token/session server-side. Local source-dev dispatch may carry no
-    numeric actor; attribution then falls back to the canonical
-    ``yoke-core`` system actor (seeded idempotently).
+    The dispatcher binds ``request.actor.actor_id`` from the verified
+    token, browser session, harness session or operating actor. A request
+    with no numeric actor refuses ``actor_required``; nothing is written
+    under a stand-in identity.
     """
-    raw = str(request.actor.actor_id or "").strip()
-    if raw.isdigit():
-        return int(raw)
-    return seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE)
+    actor_id = numeric_actor_id(request.actor.actor_id)
+    if actor_id is not None:
+        return actor_id, None
+    return None, FunctionError(
+        code=ACTOR_REQUIRED,
+        message=actor_required_message(request.function, request.actor.actor_id),
+        jsonpath="$.actor.actor_id",
+    )
 
 
 def resolve_org_ref(

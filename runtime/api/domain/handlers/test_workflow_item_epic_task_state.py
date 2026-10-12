@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from yoke_core.domain import yoke_function_dispatch as dispatch_module
 from yoke_core.domain import yoke_function_dispatch_claims as claims_module
 from yoke_core.domain import yoke_function_dispatch_events as events_module
@@ -202,6 +203,7 @@ class TestDispatcherClaimVerification:
         monkeypatch.setenv("YOKE_SESSION_ID", "s-1")
         with (
             patch.object(events_module, "emit_event"),
+            authorize_every_dispatch(),
             patch.object(
                 dispatch_module,
                 "_idempotency_lookup",

@@ -7,6 +7,7 @@ from runtime.api.test_api_yoke_functions import (
     _ApiSuite as _ApiSuite,
     _Req as _Req,
     _Resp as _Resp,
+    _actor_echo_handler as _actor_echo_handler,
     _envelope as _envelope,
     _ok_handler as _ok_handler,
     _stable_kwargs as _stable_kwargs,
@@ -53,6 +54,26 @@ class TestHttpAuthBoundary(_ApiSuite):
             json=_envelope("items.scalar.update"),
         )
         self.assertEqual(resp.status_code, 401)
+
+    def test_side_effecting_call_with_empty_envelope_actor_runs_as_bearer_actor(self):
+        # Over https the bearer token always supplies the numeric actor, so an
+        # envelope that names none never reaches the gate actor-less.
+        register(
+            "items.scalar.update",
+            _actor_echo_handler,
+            _Req,
+            _Resp,
+            **_stable_kwargs(side_effects=["db_write"]),
+        )
+        resp = self._client.post(
+            "/v1/functions/call",
+            json=_envelope(
+                "items.scalar.update", actor={"actor_id": "", "session_id": "s-1"}
+            ),
+            headers=self._headers,
+        )
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertEqual(resp.json()["result"]["actor_id"], str(self._auth.actor_id))
 
     def test_call_rejects_malformed_authorization_header(self):
         self._register_ok_function()

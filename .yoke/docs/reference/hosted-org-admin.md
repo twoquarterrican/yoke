@@ -60,4 +60,5 @@ universe's own engine refuses `identity.invite.*` and the email-only
 hosted invite commands above or the org's Members page. Direct issuer/subject
 identity links still work on hosted universes. On a
 self-hosted universe the same `yoke identity invite` commands manage the
-server's own sign-in admission.
+server's own sign-in admission, attributed to the calling actor; a call with
+no numeric actor refuses as `actor_required`.

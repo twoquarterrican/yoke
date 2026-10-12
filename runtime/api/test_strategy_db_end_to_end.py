@@ -25,11 +25,11 @@ from yoke_core.domain.handlers._strategy_docs_test_helpers import (
     SEED_CONTENT,
     SEED_SLUGS,
     seed_docs,
-    seed_session,
 )
 from yoke_core.domain.strategy_docs_header import parse_file_text
 from yoke_core.domain.strategy_docs_paths import strategy_view_path
 from yoke_core.domain.yoke_function_registry import reset_registry_for_tests
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 
 pytestmark = pytest.mark.usefixtures("bound_project_context")
@@ -53,8 +53,8 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         conn = connect_test_db(db_path)
         try:
             seed_docs(conn)
-            seed_session(conn, OPERATOR)
-            seed_session(conn, OTHER)
+            register_session_actor(conn, OPERATOR)
+            register_session_actor(conn, OTHER)
         finally:
             conn.close()
         checkout = tmp_path / "checkout"

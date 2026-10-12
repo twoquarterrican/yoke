@@ -30,8 +30,19 @@ from contextlib import (
 )
 from types import SimpleNamespace as SimpleNamespace
 
+import pytest
+
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
+
 
 _FIXTURE_ITEM_REF = f"YOK-{42}"
+
+
+@pytest.fixture(autouse=True)
+def _authorize_dispatch():
+    """Handlers and item resolution are stubbed; authorization is not under test."""
+    with authorize_every_dispatch():
+        yield
 
 
 def _silence_claim(monkeypatch):

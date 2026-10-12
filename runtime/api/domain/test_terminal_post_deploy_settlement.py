@@ -17,6 +17,8 @@ from runtime.api.domain.test_no_obligation_member_close_out import _landing_evid
 from runtime.api.domain.test_run_success_member_settlement import _run, _status
 from runtime.api.domain.test_status_transition_preflight import _isolate_status_effects
 from runtime.api.fixtures.backlog import insert_item, insert_qa_run
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+from runtime.api.fixtures.runtime import DEFAULT_TEST_SESSION_ID
 from yoke_core.domain.deployment_qa_stage_materialization import (
     materialize_deployment_qa_stage,
 )
@@ -193,6 +195,7 @@ def test_production_source_closes_member_and_finalizes_run(
     environment,
 ):
     _isolate_status_effects(monkeypatch)
+    register_session_actor(test_db, DEFAULT_TEST_SESSION_ID)
     item_id, run_id, source_id = _source_member(
         test_db,
         workflow=workflow,

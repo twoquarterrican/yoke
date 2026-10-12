@@ -14,6 +14,7 @@ from yoke_contracts.api.function_call import (
     TargetRef,
 )
 from runtime.api.fixtures.backlog_inserts import insert_item, insert_qa_requirement
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from runtime.api.fixtures.pg_testdb import test_database
 from yoke_core.domain.work_claim_targets import make_item_target
 
@@ -206,6 +207,7 @@ class TestQaRequirementClaimDispatch(unittest.TestCase):
                     "yoke_core.domain.yoke_function_dispatch.emit_called",
                     return_value=None,
                 ),
+                authorize_every_dispatch(),
             ):
                 return yoke_function_dispatch.dispatch(request)
         finally:

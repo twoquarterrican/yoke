@@ -17,7 +17,17 @@ from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from types import SimpleNamespace
 
+import pytest
+
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from runtime.api.test_constants import TEST_ITEM_ID, TEST_ITEM_REF
+
+
+@pytest.fixture(autouse=True)
+def _authorize_dispatch():
+    """The domain ``amend`` and item resolution are stubbed; authorization is not under test."""
+    with authorize_every_dispatch():
+        yield
 
 
 class TestDbClaimAmendDispatch:

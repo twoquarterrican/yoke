@@ -36,6 +36,9 @@ CLIENT_LOCAL_BY_ID: dict[str, AuthzSpec] = {
     "packets.startup_delivery.get": AuthzSpec(CLIENT_LOCAL, None),
     # Reads the caller's own .yoke/lint-config; never server-resolved.
     "lint.config.show": AuthzSpec(CLIENT_LOCAL, None),
+    # Observes path boundaries in the caller's own checkout; the item-scoped
+    # boundary_context and boundary_prove calls around it carry the authority.
+    "claims.path.boundary_observe": AuthzSpec(CLIENT_LOCAL, None),
 }
 
 __all__ = ["CLIENT_LOCAL_BY_ID"]

@@ -1,36 +1,30 @@
-"""Attribute a session-less mutating call to the actor that made it.
+"""Attribute an actor-less mutating call to the actor that operates this universe.
 
-A function declared session-optional
-(:mod:`yoke_core.domain.terminal_reachable_functions`) runs in a plain
-terminal, where there is no harness session to read an actor from. It
-still has an author: over https the bearer token names one before the
-envelope reaches dispatch, and locally the universe knows who operates
-it — the machine owner seeded at birth, holding org admin on the one org
-(:mod:`yoke_core.domain.local_operating_actor`).
+A mutating call can reach in-process dispatch with no actor: a
+session-optional function
+(:mod:`yoke_core.domain.terminal_reachable_functions`) run in a plain
+terminal, or a call whose session has no ``harness_sessions`` row or no
+actor on it. It still has an author: over https the bearer token names
+one before the envelope reaches dispatch, and locally the universe knows
+who operates it — the machine owner seeded at birth, holding org admin on
+the one org (:mod:`yoke_core.domain.local_operating_actor`).
 
-Binding that actor is what keeps a session-less write attributed rather
-than anonymous, and it is the same resolution item creation already
-performed for itself. Doing it once in the dispatcher's identity binder
-makes it true of every session-optional function instead of the ones
-that remembered — the difference between a contract and a patch.
+Binding that actor is what keeps the write attributed rather than
+anonymous. Doing it once in the dispatcher's identity binder makes it
+true of every mutating function instead of the ones that remembered.
 
-Naming the actor is also what makes it answerable to the permission
-gate, which enforces only once a numeric actor id is bound. A local
-universe grants its machine owner org admin at birth, so the gate says
-yes; a universe born before that grant existed converges it here, the
-same repair session registration performs. Without that, binding an
-actor on an older install would deny the very first terminal write, and
-the operator would never learn that a missing role — not their command —
-was the cause.
+Naming the actor is also what makes the call answerable to the permission
+gate, which refuses a side-effecting call with no numeric actor
+(``actor_required``, :mod:`yoke_core.domain.dispatch_actor_requirement`).
+A local universe grants its machine owner org admin at birth, so the gate
+says yes; a universe born before that grant existed converges it here,
+the same repair session registration performs.
 
-Best-effort by construction: resolution that cannot name an actor leaves
-the request unbound and the call proceeds exactly as it did before. A
-control plane reached over https has no local database to ask, and a
-multi-person server has no single operating human to name; refusing
-there would take out the merge subprocess and the relayed hook writes,
-which have never carried an actor and do not need one. The handlers that
-genuinely require an attributed actor refuse for themselves, naming the
-binding refusal that :func:`resolve_operating_actor` already carries.
+Resolution that cannot name an actor leaves the request unbound, and the
+gate then refuses it with the recovery: run from a registered harness
+session, run ``yoke setup`` so the machine records its operating actor, or
+connect over https. A multi-person server has no single operating human
+to name; its callers arrive over https already carrying their bearer actor.
 """
 
 from __future__ import annotations

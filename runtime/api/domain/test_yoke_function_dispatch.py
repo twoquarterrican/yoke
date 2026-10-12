@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 from pydantic import BaseModel
 
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from yoke_core.domain import yoke_function_dispatch as dispatch_module
 from yoke_core.domain import yoke_function_dispatch_claims as claims_module
 from yoke_core.domain import yoke_function_dispatch_events as events_module
@@ -134,6 +135,7 @@ class _DispatcherTestBase(unittest.TestCase):
             patch.object(events_module, "emit_event", _EventRecorder()),
             patch.object(events_module, "record_call", lambda *_a, **_k: True),
             patch.object(dispatch_module, "_idempotency_lookup", lambda *_a, **_k: None),
+            authorize_every_dispatch(),
         ]
         for p in self._patchers:
             p.start()

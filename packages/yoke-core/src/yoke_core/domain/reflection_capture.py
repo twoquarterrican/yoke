@@ -189,6 +189,7 @@ def capture_reflections(
         dispatch_markers_for_entry(
             body=entry.body, agent=entry.agent,
             context=entry.context, session_id=session_id,
+            errors=result.errors,
         )
     return result
 

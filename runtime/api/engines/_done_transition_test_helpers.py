@@ -14,6 +14,7 @@ import pytest
 
 from yoke_contracts.timestamps import parse_instant
 
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from runtime.api.fixtures.schema_ddl import apply_fixture_ddl
 
 
@@ -197,7 +198,11 @@ def dt_db(tmp_path, monkeypatch):
         conn.commit()
 
         monkeypatch.setenv("YOKE_SCRIPTS_DIR", str(scripts_dir))
-        yield db_path, scripts_dir
+        # The minimal schema carries no actor or role tables, so the engine's
+        # in-process dispatch cannot name an actor; authorization is not
+        # what these tests exercise.
+        with authorize_every_dispatch():
+            yield db_path, scripts_dir
     finally:
         conn.close()
         monkeypatch.setenv(db_backend.PG_DSN_ENV, prior_dsn)

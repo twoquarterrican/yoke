@@ -98,10 +98,8 @@ UI_READ_FUNCTION_ALLOWLIST = frozenset(
         "test_machine.get",
         "test_machine.list",
         # Documented exception to "no side effects": the Overview activation
-        # read latches newly satisfied module activations into
-        # overview_activation_facts — universe-scoped, monotone, idempotent,
-        # and carrying no actor attribution. See
-        # UI_ACTIVATION_LATCH_FUNCTIONS.
+        # read latches satisfied module activations into
+        # overview_activation_facts. See UI_ACTIVATION_LATCH_FUNCTIONS.
         "overview.activation.get",
         "overview.vitals.get",
         # Actor-scoped like the entries above: identity shapes the result
@@ -116,9 +114,9 @@ UI_READ_FUNCTION_ALLOWLIST = frozenset(
 
 #: Read-allowlist members whose one sanctioned side effect is the
 #: universe-scoped monotone activation latch. Kept as its own roster so
-#: the read-only assertion over the rest of the allowlist stays exact,
-#: and so these dispatch as the resolved local operator actor (when one
-#: resolves) — the response's ``dismiss_available`` and per-actor
+#: the read-only assertion over the rest of the allowlist stays exact.
+#: The latch is a write, so these dispatch as the resolved local operator
+#: actor and refuse without one; ``dismiss_available`` and the per-actor
 #: dismissal flags then match what the dismissal writes would do.
 UI_ACTIVATION_LATCH_FUNCTIONS = frozenset({"overview.activation.get"})
 
@@ -282,16 +280,18 @@ def proxy_function_call(
         resolved = resolve_local_operator_actor()
         operator_actor_id = None if resolved is None else str(resolved)
         if (
-            is_mutation or function_id in UI_ACTOR_BOUND_READ_FUNCTIONS
+            is_mutation
+            or function_id in UI_ACTOR_BOUND_READ_FUNCTIONS
+            or function_id in UI_ACTIVATION_LATCH_FUNCTIONS
         ) and operator_actor_id is None:
             return (
                 {
                     "error": {
                         "code": "operator_actor_unresolved",
                         "message": (
-                            "this universe has no unambiguous local "
-                            "operator actor, so this per-actor operation "
-                            "is refused"
+                            "this universe has no unambiguous local operator "
+                            "actor, so this per-actor operation is refused; "
+                            "run `yoke setup` to record this machine's operator"
                         ),
                     }
                 },

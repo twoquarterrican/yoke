@@ -22,7 +22,9 @@ from pydantic import BaseModel
 from yoke_core.domain import yoke_function_actor_identity as identity_module
 from yoke_core.domain import yoke_function_dispatch as dispatch_module
 from yoke_core.domain import yoke_function_dispatch_events as events_module
+from yoke_core.domain.dispatch_actor_requirement import numeric_actor_id
 from yoke_core.domain.yoke_function_actor_identity import ActorLookup
+from yoke_core.domain.yoke_function_permission_types import DispatchPermission
 from yoke_core.domain.yoke_function_dispatch import dispatch
 from yoke_contracts.api.function_call import (
     ActorContext,
@@ -89,11 +91,28 @@ class _Recorder:
 
 class _IntegrationBase(unittest.TestCase):
     resolver_lookup = ActorLookup(actor_id=None, session_found=True)
+    operating_actor: Optional[str] = "42"
+
+    def _permission(self, entry, request):
+        # A bound numeric actor is authorized here: these tests cover identity
+        # binding. An actor-less call meets the real gate, which refuses
+        # side effects before any database read.
+        if numeric_actor_id(request.actor.actor_id) is not None:
+            return DispatchPermission(None, None, None)
+        return self._real_permission(entry, request)
 
     def setUp(self):
         reset_registry_for_tests()
         self._recorder = _Recorder()
+        self._real_permission = dispatch_module.dispatch_permission_for_request
         self._patchers = [
+            patch.object(
+                dispatch_module, "dispatch_permission_for_request", self._permission
+            ),
+            patch(
+                "yoke_core.domain.session_less_actor_binding.operating_actor_id",
+                lambda: self.operating_actor,
+            ),
             patch.object(events_module, "emit_event", self._recorder),
             patch.object(
                 dispatch_module,
@@ -217,6 +236,30 @@ class TestDispatcherMutatingIdentity(_IntegrationBase):
         events = self._called_events()
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0]["kwargs"]["session_id"], "")
+        self.assertEqual(events[0]["kwargs"]["auth_context"].actor_id, 42)
+
+    def test_unregistered_session_mutating_binds_the_operating_actor(self):
+        self._register("intg.mut.unregistered", side_effects=["rows_insert"])
+        self.resolver_lookup = ActorLookup(actor_id=None, session_found=False)
+        resp = dispatch(
+            _make_request(function="intg.mut.unregistered", payload_session="s-x"),
+            ambient_session_id="s-x",
+        )
+        self.assertTrue(resp.success)
+        self.assertEqual(self._called_events()[0]["kwargs"]["auth_context"].actor_id, 42)
+
+    def test_mutating_call_with_no_resolvable_actor_refuses_actor_required(self):
+        self._register("intg.mut.noactor", side_effects=["rows_insert"])
+        self.operating_actor = None
+        resp = dispatch(
+            _make_request(function="intg.mut.noactor", payload_session="s-y"),
+            ambient_session_id="s-y",
+        )
+        self.assertFalse(resp.success)
+        assert resp.error is not None
+        self.assertEqual(resp.error.code, "actor_required")
+        self.assertIn("yoke setup", resp.error.message)
+        self.assertEqual(self._called_events(), [])
 
     def test_match_lets_handler_run_without_identity_context(self):
         self._register("intg.mut.match", side_effects=["rows_insert"])

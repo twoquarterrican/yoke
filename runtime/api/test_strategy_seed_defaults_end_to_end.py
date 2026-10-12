@@ -15,9 +15,9 @@ import pytest
 from yoke_cli.main import main as cli_main
 from yoke_core.domain import strategy_docs as sd
 from yoke_core.domain.handlers.__init_register__ import register_all_handlers
-from yoke_core.domain.handlers._strategy_docs_test_helpers import seed_session
 from yoke_core.domain.strategy_docs_defaults import DEFAULT_STRATEGY_DOC_SLUGS
 from yoke_core.domain.yoke_function_registry import reset_registry_for_tests
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 
 OPERATOR = "e2e-seed-operator"
@@ -32,7 +32,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         register_all_handlers()
         conn = connect_test_db(db_path)
         try:
-            seed_session(conn, OPERATOR)
+            register_session_actor(conn, OPERATOR)
         finally:
             conn.close()
         yield db_path

@@ -127,6 +127,9 @@ def handle_universe_levels_set(request: FunctionCallRequest) -> HandlerOutcome:
     from yoke_core.domain.model_reference_store import revision_at
     from yoke_core.domain.universe_levels import write_universe_levels
 
+    caller_id, caller_error = caller_actor_id(request)
+    if caller_error is not None:
+        return HandlerOutcome(primary_success=False, error=caller_error)
     try:
         with connect() as conn:
             try:
@@ -138,7 +141,7 @@ def handle_universe_levels_set(request: FunctionCallRequest) -> HandlerOutcome:
             )
             refuse_capability_conflicts(conflicts)
             levels = write_universe_levels(
-                conn, parsed.levels, actor_id=caller_actor_id(conn, request)
+                conn, parsed.levels, actor_id=caller_id
             )
     except LevelsError as exc:
         return _failure(

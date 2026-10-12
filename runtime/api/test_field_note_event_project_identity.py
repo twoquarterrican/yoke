@@ -34,7 +34,9 @@ from yoke_contracts.api.function_call import (
     FunctionCallRequest,
     TargetRef,
 )
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.file_test_db import init_test_db
+from runtime.api.fixtures.backlog import seed_fixture_operating_actor
 
 
 SESSION_ID = "session-field-note-event-project"
@@ -49,6 +51,11 @@ def isolated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Fresh production schema plus the baseline project identity rows."""
     with init_test_db(tmp_path) as db_path:
         monkeypatch.setenv("YOKE_DB", db_path)
+        # A born local universe records its operating actor, which is the
+        # actor a note from an unregistered session is written as.
+        with connect(db_path) as conn:
+            seed_fixture_operating_actor(conn)
+            conn.commit()
         yield db_path
 
 
@@ -81,6 +88,7 @@ def _seed_session(db_path: str) -> None:
             ),
         )
         conn.commit()
+        register_session_actor(conn, SESSION_ID)
 
 
 def _append(session_id: str = SESSION_ID, **payload_extra):

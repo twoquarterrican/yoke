@@ -21,7 +21,9 @@ import pytest
 
 from yoke_core.domain import schema
 from yoke_core.domain.db_helpers import connect, iso8601_now
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.file_test_db import init_test_db
+from runtime.api.fixtures.backlog import seed_fixture_operating_actor
 from yoke_core.domain.handlers.__init_register__ import register_all_handlers
 from yoke_core.domain.ouroboros_entries import get_entry_row, list_entry_rows
 from yoke_core.domain.ouroboros_field_note_provenance import DEFAULT_AUTHOR
@@ -59,6 +61,11 @@ def isolated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     with init_test_db(tmp_path, apply_schema=apply_schema) as db_path:
         monkeypatch.setenv("YOKE_DB", db_path)
+        # A born local universe records its operating actor, which is the
+        # actor a note from an unregistered session is written as.
+        with connect(db_path) as conn:
+            seed_fixture_operating_actor(conn)
+            conn.commit()
         yield db_path
 
 
@@ -91,6 +98,7 @@ def _seed_session(db_path: str) -> None:
             ),
         )
         conn.commit()
+        register_session_actor(conn, SESSION_ID)
 
 
 def _append(

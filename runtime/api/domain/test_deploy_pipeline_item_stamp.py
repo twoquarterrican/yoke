@@ -13,7 +13,8 @@ import pytest
 
 from runtime.api.fixtures.backlog_inserts import insert_item
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
-from yoke_core.domain.actors import seed_human_actor
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+from runtime.api.fixtures.runtime import DEFAULT_TEST_SESSION_ID
 from yoke_core.domain import deploy_pipeline_run_updates as run_updates
 from yoke_core.domain.deploy_pipeline_reporting import _set_deploy_stage
 from yoke_core.domain.deployment_item_stamp import (
@@ -52,7 +53,7 @@ def test_stamp_item_field_writes_non_default_project_row(db):
             id=item_id,
             project="externalwebapp",
             project_sequence=4,
-            source=str(seed_human_actor(conn)),
+            source=str(register_session_actor(conn, DEFAULT_TEST_SESSION_ID)),
         )
     finally:
         conn.close()
@@ -81,7 +82,7 @@ def test_set_deploy_stage_stamps_member_then_run(db, monkeypatch):
             id=item_id,
             project="externalwebapp",
             project_sequence=5,
-            source=str(seed_human_actor(conn)),
+            source=str(register_session_actor(conn, DEFAULT_TEST_SESSION_ID)),
         )
     finally:
         conn.close()

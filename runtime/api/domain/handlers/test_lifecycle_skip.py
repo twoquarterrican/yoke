@@ -17,6 +17,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
+from runtime.api.fixtures.dispatch_actor import authorize_every_dispatch
 from yoke_core.domain.handlers import lifecycle_skip
 from yoke_contracts.api.function_call import (
     ActorContext,
@@ -222,8 +223,8 @@ class TestRegistrationDescriptor(unittest.TestCase):
 class TestDispatchIntegration(unittest.TestCase):
     """End-to-end through the function-call registry.
 
-    The dispatcher's claim verification and event emission paths are
-    patched out so the test exercises registry lookup + handler routing
+    The dispatcher's permission gate, claim verification and event emission
+    paths are patched out so the test exercises registry lookup + handler routing
     in isolation. The handler-level side effects (helper call shape,
     response payload) are already covered above; this case verifies the
     function id is reachable through the canonical entrypoint.
@@ -275,6 +276,7 @@ class TestDispatchIntegration(unittest.TestCase):
                 "yoke_core.domain.function_response_refs.render_item_refs",
                 return_value={_ITEM_ID: f"YOK-{_ITEM_ID}"},
             ),
+            authorize_every_dispatch(),
             _connect_returns_stub(),
             _helper_returns_entry(stub_entry),
         ):

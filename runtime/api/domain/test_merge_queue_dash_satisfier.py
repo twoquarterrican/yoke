@@ -12,6 +12,8 @@ from runtime.api.domain.test_status_transition_preflight import (
     _isolate_status_effects,
 )
 from runtime.api.fixtures.backlog import insert_item
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+from runtime.api.fixtures.runtime import DEFAULT_TEST_SESSION_ID
 from yoke_contracts.api.function_call import (
     ActorContext,
     FunctionCallRequest,
@@ -22,6 +24,7 @@ from yoke_core.domain import merge_queue_batch_receipt as batch_receipt
 from yoke_core.domain import merge_queue_close_out as queue_close_out
 from yoke_core.domain import standalone_item_merge_converge as converging
 from yoke_core.domain import standalone_item_merge_landed as landed
+from yoke_core.domain import yoke_function_actor_identity as actor_identity
 from yoke_core.domain.handlers.direct_workflow_execution import (
     handle_dash_evidence,
 )
@@ -37,6 +40,7 @@ COMBINED_SHA = "3" * 40
 def test_no_posture_queue_handoff_stamps_ci_backed_merge(test_db, monkeypatch):
     """The queue receipt creates the only CI requirement this Dash needs."""
     _isolate_status_effects(monkeypatch)
+    register_session_actor(test_db, DEFAULT_TEST_SESSION_ID)
     monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_target_sha",
         lambda *_a: MERGE_SHA,
@@ -69,6 +73,14 @@ def test_no_posture_queue_handoff_stamps_ci_backed_merge(test_db, monkeypatch):
     )
     test_db.commit()
     monkeypatch.setattr(db_helpers, "connect", lambda: nullcontext(test_db))
+    # The dispatcher's session lookup opens and closes its own connection,
+    # which the borrowed fixture connection cannot serve; read the
+    # registered session's actor from the fixture database instead.
+    monkeypatch.setattr(
+        actor_identity,
+        "_default_actor_id_resolver",
+        lambda session_id: actor_identity._read_actor_lookup(test_db, session_id),
+    )
     assert (
         test_db.execute(
             "SELECT COUNT(*) FROM qa_requirements WHERE item_id = %s",

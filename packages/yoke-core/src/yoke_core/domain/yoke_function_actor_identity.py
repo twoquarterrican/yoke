@@ -22,10 +22,10 @@ ambient because the caller's environment lives client-side):
   yields a session. That state is a Yoke infrastructure gap (hook
   registration / process-anchor resolution failed), not something for
   agents to work around with env exports.
-- A mutating function whose entry declares the session optional binds
-  this universe's operating actor instead
-  (:mod:`yoke_core.domain.session_less_actor_binding`), so a write from
-  a plain terminal is attributed rather than anonymous.
+- A mutating call that leaves session binding with no actor (no session,
+  an unregistered session, a NULL session actor) binds this universe's
+  operating actor (:mod:`yoke_core.domain.session_less_actor_binding`);
+  with none, the permission gate refuses it ``actor_required``.
 - ``actor_id`` is resolved server-side from ``harness_sessions`` keyed
   on the bound session; a contradicting payload ``actor_id`` still
   denies mutating calls (``actor_id_mismatch``). The same lookup also
@@ -323,14 +323,14 @@ def _bind_actor_id(
         )
         bound_request = bound_request.model_copy(update={"actor": new_actor})
 
-    # Empty payload + missing resolved value, or non-empty payload +
-    # missing resolved value: leave as-is. Downstream gates (claim
-    # verification, handler resolution) reject unregistered sessions
-    # naturally; the binder reports the row-existence finding so the
-    # dispatcher marks the call's events instead of silently trusting
-    # an unverifiable session string.
+    # No actor from the session (unregistered id or NULL row actor): a
+    # mutating call binds the operating actor, else the permission gate
+    # refuses it ``actor_required``. The row-existence finding still
+    # marks the call's events for an unverifiable session string.
     return BoundIdentity(
-        bound_request=bound_request,
+        bound_request=(
+            bound_request if read_only else bind_operating_actor(bound_request)
+        ),
         payload_session_id=payload_session_id,
         ambient_session_id=ambient_session_id,
         explicit_override=explicit_override,
