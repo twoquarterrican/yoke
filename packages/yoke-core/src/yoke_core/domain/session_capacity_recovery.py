@@ -13,7 +13,10 @@ from yoke_contracts.session_control.native_model_parsers import (
 from yoke_core.domain import db_backend, json_helper
 from yoke_core.domain.project_identity import placeholder, render_item_ref
 from yoke_core.domain.session_launch_store import get_launch_by_dedupe, value
-from yoke_core.domain.session_launch_types import SessionLaunchError
+from yoke_core.domain.session_launch_types import (
+    DEFAULT_LAUNCH_DEADLINE_SECONDS,
+    SessionLaunchError,
+)
 from yoke_core.domain.session_recovery_facts import resume_episode_key
 from yoke_core.domain.work_claim_target_sql import scope_int_sql
 
@@ -169,7 +172,7 @@ def relaunch_capacity_worker(
             conn,
             parsed,
             project_id=int(state["project_id"]),
-            deadline_seconds=600,
+            deadline_seconds=DEFAULT_LAUNCH_DEADLINE_SECONDS,
             actor_id=auth.actor_id,
         )
         request = replace(
