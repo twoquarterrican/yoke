@@ -11,13 +11,17 @@ from __future__ import annotations
 import sys
 from typing import TextIO
 
-from yoke_cli.config.operator_cli_release_follow import update_recovery
 from yoke_contracts.engine_version import (
     compare_engine_versions,
     local_handshake_version,
 )
 
 _warned = False
+
+
+def update_recovery(version: str) -> str:
+    """The command that installs *version* by hand."""
+    return f"run `yoke update --version {version}`"
 
 
 def warn_if_behind_prod(
@@ -45,4 +49,4 @@ def warn_if_behind_prod(
     return True
 
 
-__all__ = ["warn_if_behind_prod"]
+__all__ = ["update_recovery", "warn_if_behind_prod"]

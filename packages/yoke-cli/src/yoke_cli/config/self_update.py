@@ -50,8 +50,7 @@ def run_update(
     """Rerun the official installer for this machine, then verify and repair.
 
     ``version`` installs that exact release from the same origin instead of
-    the channel's current one; the prod relay passes the release it observed
-    prod serving.
+    the channel's current one.
     """
 
     try:
@@ -69,22 +68,7 @@ def run_update(
     if not yoke_bin:
         raise SelfUpdateError("could not resolve the `yoke` executable on PATH")
 
-    try:
-        selected = distribution.recorded()
-        target = release_target.channel_release_target(
-            channel=channel or selected["channel"], base_url=selected["origin"]
-        )
-    except distribution.DistributionError as exc:
-        raise SelfUpdateError(str(exc)) from exc
-    except release_target.ReleaseTargetError as exc:
-        raise SelfUpdateError(f"could not resolve the release channel: {exc}") from exc
-    if version:
-        target = dataclasses.replace(
-            target,
-            version=version.strip().removeprefix("v"),
-            source_commit="",
-            image="",
-        )
+    target = resolve_target(channel=channel, version=version)
 
     if target.version == old_version:
         # `uv tool install --reinstall --force` wipes and rebuilds the tool
@@ -96,6 +80,40 @@ def run_update(
             yoke_bin, _result(old_version, old_version, target, repair)
         )
 
+    new_version = install_release(target, yoke_bin)
+    return _with_project_refresh(
+        yoke_bin, _result(old_version, new_version, target, _INSTALLER_OWNED_REPAIR)
+    )
+
+
+def resolve_target(
+    *, channel: str | None = None, version: str | None = None
+) -> release_target.ReleaseTarget:
+    """The release to install from this machine's recorded origin.
+
+    ``version`` names an exact release instead of the channel's current one.
+    """
+    try:
+        selected = distribution.recorded()
+        target = release_target.channel_release_target(
+            channel=channel or selected["channel"], base_url=selected["origin"]
+        )
+    except distribution.DistributionError as exc:
+        raise SelfUpdateError(str(exc)) from exc
+    except release_target.ReleaseTargetError as exc:
+        raise SelfUpdateError(f"could not resolve the release channel: {exc}") from exc
+    if not version:
+        return target
+    return dataclasses.replace(
+        target,
+        version=version.strip().removeprefix("v"),
+        source_commit="",
+        image="",
+    )
+
+
+def install_release(target: release_target.ReleaseTarget, yoke_bin: str) -> str:
+    """Run the official installer for *target*; return the verified version."""
     try:
         installer_bytes = release_target.fetch_installer(target)
     except release_target.ReleaseTargetError as exc:
@@ -113,7 +131,6 @@ def run_update(
             f"the Yoke installer failed (exit {completed.returncode}): "
             f"{diagnostic or 'no diagnostic output'}"
         )
-
     new_version = _probe_version(yoke_bin)
     if new_version != target.version:
         raise SelfUpdateError(
@@ -121,9 +138,7 @@ def run_update(
             f"`yoke --version` reports {new_version!r}, not the requested "
             f"{target.version!r}"
         )
-    return _with_project_refresh(
-        yoke_bin, _result(old_version, new_version, target, _INSTALLER_OWNED_REPAIR)
-    )
+    return new_version
 
 
 def _with_project_refresh(yoke_bin: str, result: dict[str, Any]) -> dict[str, Any]:
@@ -170,4 +185,4 @@ def _probe_version(yoke_bin: str) -> str:
     return completed.stdout.strip()
 
 
-__all__ = ["SelfUpdateError", "run_update"]
+__all__ = ["SelfUpdateError", "install_release", "resolve_target", "run_update"]

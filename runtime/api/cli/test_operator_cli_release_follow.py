@@ -23,52 +23,61 @@ from yoke_core.tools import session_relay_release
 from yoke_harness import session_relay_daemon
 
 
-def _cli(tmp_path: Path, versions: list[str], *, installs: bool = True):
+def _cli(tmp_path: Path, monkeypatch, versions: list[str], *, installs: bool = True):
     yoke = tmp_path / "yoke"
     yoke.write_text("", encoding="utf-8")
-    calls: list[list[str]] = []
+    installed: list[str] = []
 
     def run(argv, **_kwargs):
-        calls.append(list(argv))
-        if argv[1] == "--version":
-            return subprocess.CompletedProcess(argv, 0, stdout=versions[0] + "\n")
-        if installs:
-            versions.pop(0)
-        return subprocess.CompletedProcess(
-            argv, 1 - installs, stdout="installer said no"
-        )
+        return subprocess.CompletedProcess(argv, 0, stdout=versions[0] + "\n")
 
-    return yoke, calls, run
+    def install(target, _bin):
+        installed.append(target)
+        if not installs:
+            raise self_update.SelfUpdateError("the Yoke installer failed (exit 1)")
+        versions.pop(0)
+        return versions[0]
+
+    monkeypatch.setattr(self_update, "resolve_target", lambda *, version: version)
+    monkeypatch.setattr(self_update, "install_release", install)
+    return yoke, installed, run
 
 
-def test_behind_cli_installs_exactly_the_observed_release(tmp_path) -> None:
-    yoke, calls, run = _cli(tmp_path, ["0.1.1+launch.616", "0.1.1+launch.621"])
+def test_behind_cli_installs_exactly_the_observed_release(
+    tmp_path, monkeypatch
+) -> None:
+    yoke, installed, run = _cli(
+        tmp_path, monkeypatch, ["0.1.1+launch.616", "0.1.1+launch.621"]
+    )
     record = follow.follow_release(
         "v0.1.1+launch.621", tmp_path, run=run, executable=yoke
     )
     assert record["outcome"] == "updated"
-    assert [str(yoke), "update", "--version", "0.1.1+launch.621", "--json"] in calls
+    assert installed == ["0.1.1+launch.621"]
     stored = json.loads((tmp_path / follow.FOLLOW_RECORD_NAME).read_text())
     assert stored["after"] == "0.1.1+launch.621"
 
 
-def test_current_cli_is_left_alone(tmp_path) -> None:
-    yoke, calls, run = _cli(tmp_path, ["0.1.1+launch.621"])
+def test_current_cli_is_left_alone(tmp_path, monkeypatch) -> None:
+    yoke, installed, run = _cli(tmp_path, monkeypatch, ["0.1.1+launch.621"])
     record = follow.follow_release(
         "v0.1.1+launch.621", tmp_path, run=run, executable=yoke
     )
     assert record["outcome"] == "current"
-    assert all(call[1] == "--version" for call in calls)
+    assert installed == []
 
 
-def test_failed_install_names_the_recovery(tmp_path, capsys) -> None:
-    yoke, _calls, run = _cli(tmp_path, ["0.1.1+launch.616"], installs=False)
+def test_failed_install_names_the_recovery(tmp_path, monkeypatch, capsys) -> None:
+    yoke, _installed, run = _cli(
+        tmp_path, monkeypatch, ["0.1.1+launch.616"], installs=False
+    )
     record = follow.follow_release(
         "v0.1.1+launch.621", tmp_path, run=run, executable=yoke
     )
     assert record["outcome"] == "update_failed"
     err = capsys.readouterr().err
     assert "OPERATOR-CLI-FOLLOW-FAILED" in err
+    assert "installer failed" in err
     assert "yoke update --version 0.1.1+launch.621" in err
 
 

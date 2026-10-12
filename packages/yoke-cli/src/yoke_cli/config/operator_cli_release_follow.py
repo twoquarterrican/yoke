@@ -3,8 +3,9 @@
 The prod relay re-execs into every release it observes prod serving, so its
 start is the event that says "prod now serves this release". There it compares
 the operator's installed CLI with the release it runs and, when the CLI is
-behind, installs exactly that release through `yoke update --version`. Nothing
-runs on a schedule. Every outcome is written to the relay log and to
+behind, runs the official installer for exactly that release from the
+machine's recorded distribution origin — the relay's own code, so even a CLI
+too old to know `yoke update --version` is moved. Nothing runs on a schedule. Every outcome is written to the relay log and to
 ``operator-cli-follow.json`` in the relay state directory; a CLI left behind
 also warns on each command it relays to prod, naming the same recovery.
 """
@@ -17,20 +18,16 @@ import sys
 from pathlib import Path
 from typing import Any, Callable
 
+from yoke_cli.config import self_update
 from yoke_cli.config.path_state_contract import tool_bin_dir
+from yoke_cli.transport.installed_cli_staleness import update_recovery
 from yoke_contracts.engine_version import compare_engine_versions
 from yoke_contracts.timestamps import iso8601_now
 
 FOLLOW_RECORD_NAME = "operator-cli-follow.json"
-INSTALL_TIMEOUT_SECONDS = 900
 PROBE_TIMEOUT_SECONDS = 30
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]
-
-
-def update_recovery(version: str) -> str:
-    """The command that installs *version* by hand."""
-    return f"run `yoke update --version {version}`"
 
 
 def follow_release(
@@ -51,16 +48,12 @@ def follow_release(
     if compare_engine_versions(before, target) != -1:
         return _finish(record, state_dir, "current")
     try:
-        completed = run(
-            [str(yoke), "update", "--version", target, "--json"],
-            capture_output=True,
-            text=True,
-            timeout=INSTALL_TIMEOUT_SECONDS,
-            check=False,
+        self_update.install_release(
+            self_update.resolve_target(version=target), str(yoke)
         )
-        detail = (completed.stdout or completed.stderr or "").strip()[-2048:]
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        detail = f"{type(exc).__name__}: {exc}"
+        detail = ""
+    except self_update.SelfUpdateError as exc:
+        detail = str(exc)
     record["after"] = _version(run, yoke)
     if record["after"] == target:
         return _finish(record, state_dir, "updated")
@@ -105,4 +98,4 @@ def _finish(record: dict[str, Any], state_dir: Path, outcome: str) -> dict[str, 
     return record
 
 
-__all__ = ["FOLLOW_RECORD_NAME", "follow_release", "update_recovery"]
+__all__ = ["FOLLOW_RECORD_NAME", "follow_release"]

@@ -160,9 +160,9 @@ rules. Both direct execute and the deploy watcher use this preparation; failures
 name `DEPLOY-DRIVER-ENVIRONMENT` and the same-run recovery.
 
 The operator's installed CLI follows prod: the prod relay re-execs into each
-release it observes prod serving and, on that start, installs exactly that
-release with `yoke update --version VERSION`, recording the outcome in the relay
-log and `operator-cli-follow.json` in its state directory. A CLI still behind
+release it observes prod serving and, on that start, runs the official
+installer for exactly that release, recording the outcome in the relay log and
+`operator-cli-follow.json` in its state directory. A CLI still behind
 prod warns once per command relayed to prod, naming that command.
 See [deployment start diagnostics](public/reference/deployment-start.md).
 
