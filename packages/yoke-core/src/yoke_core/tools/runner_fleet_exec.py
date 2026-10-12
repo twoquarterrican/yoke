@@ -50,17 +50,19 @@ RUNNER_FLEET_GITHUB_TOKEN_ENV = "RUNNER_FLEET_GITHUB_TOKEN"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 RUNNER_FLEET_AUTHORITY_INTENT_ENV = "YOKE_RUNNER_FLEET_AUTHORITY_INTENT"
 RUNNER_FLEET_TOKEN_SOURCE_ENV = "YOKE_RUNNER_FLEET_TOKEN_SOURCE"
-_UNINTENDED_GITHUB_AUTH_ENV = frozenset({
-    "GH_ENTERPRISE_TOKEN",
-    "GH_TOKEN",
-    "GITHUB_APP_ID",
-    "GITHUB_APP_INSTALLATION_ID",
-    "GITHUB_APP_PEM_FILE",
-    "GITHUB_BASE_URL",
-    "GITHUB_ENTERPRISE_TOKEN",
-    "GITHUB_ORGANIZATION",
-    "GITHUB_OWNER",
-})
+_UNINTENDED_GITHUB_AUTH_ENV = frozenset(
+    {
+        "GH_ENTERPRISE_TOKEN",
+        "GH_TOKEN",
+        "GITHUB_APP_ID",
+        "GITHUB_APP_INSTALLATION_ID",
+        "GITHUB_APP_PEM_FILE",
+        "GITHUB_BASE_URL",
+        "GITHUB_ENTERPRISE_TOKEN",
+        "GITHUB_ORGANIZATION",
+        "GITHUB_OWNER",
+    }
+)
 
 
 class RunnerFleetExecError(RuntimeError):
@@ -112,14 +114,10 @@ def execute_runner_fleet_command(
     settings_file: Path | str,
     command: Sequence[str],
     *,
-    aws_env_loader: Callable[..., Mapping[str, str]] = (
-        aws_capability_env
-    ),
+    aws_env_loader: Callable[..., Mapping[str, str]] = (aws_capability_env),
     secret_loader: Callable[..., str] = load_secret_string,
     token_minter: Callable[..., Any] = mint_installation_token,
-    hosted_token_loader: Callable[
-        [str, str, Mapping[str, str]], str
-    ] | None = None,
+    hosted_token_loader: Callable[[str, str, Mapping[str, str]], str] | None = None,
     child_factory: Callable[..., Any] = subprocess.Popen,
     out: TextIO | None = None,
     err: TextIO | None = None,
@@ -139,7 +137,8 @@ def execute_runner_fleet_command(
         raise RunnerFleetExecError("runner-fleet child command is required")
 
     settings = _settings_for_project(
-        selected_project, Path(settings_file),
+        selected_project,
+        Path(settings_file),
     )
     values = _enabled_runner_fleet_values(settings)
     aws_capability, region = _runner_aws_authority(settings)
@@ -156,15 +155,16 @@ def execute_runner_fleet_command(
         ) from exc
 
     try:
-        aws_env = dict(aws_env_loader(
-            selected_project,
-            region,
-            capability_type=aws_capability,
-        ))
+        aws_env = dict(
+            aws_env_loader(
+                selected_project,
+                region,
+                capability_type=aws_capability,
+            )
+        )
     except Exception as exc:
         raise RunnerFleetExecError(
-            f"AWS capability {aws_capability!r} credentials could not be "
-            "materialized"
+            f"AWS capability {aws_capability!r} credentials could not be materialized"
         ) from exc
 
     if _hosted_token_required():
@@ -176,8 +176,11 @@ def execute_runner_fleet_command(
         try:
             token = str(
                 hosted_token_loader(
-                    selected_project, authority_intent, aws_env,
-                ) or ""
+                    selected_project,
+                    authority_intent,
+                    aws_env,
+                )
+                or ""
             ).strip()
         except Exception as exc:
             # Name the cause class so a missing broker function, a denied
@@ -231,7 +234,8 @@ def execute_runner_fleet_command(
 
 
 def _settings_for_project(
-    project: str, settings_file: Path,
+    project: str,
+    settings_file: Path,
 ) -> ProjectRendererSettings:
     try:
         payload = json_helper.load_path(settings_file)
@@ -308,7 +312,7 @@ def _load_private_key(
         ).strip()
     except Exception as exc:
         raise RunnerFleetExecError(
-            "GitHub App private key could not be loaded from Secrets Manager"
+            f"GitHub App private key could not be loaded from Secrets Manager: {exc}"
         ) from exc
     if not private_key_pem:
         raise RunnerFleetExecError(
@@ -327,13 +331,9 @@ def _mint_repository_automation_token(
         minted = token_minter(
             issuer=values["runner_fleet_github_app_issuer"],
             private_key_pem=private_key_pem,
-            installation_id=int(
-                values["runner_fleet_github_installation_id"]
-            ),
+            installation_id=int(values["runner_fleet_github_installation_id"]),
             api_url=values["runner_fleet_github_api_url"],
-            repository_ids=[
-                int(values["runner_fleet_github_repository_id"])
-            ],
+            repository_ids=[int(values["runner_fleet_github_repository_id"])],
             permissions=_repository_automation_permissions(values),
         )
         token = str(getattr(minted, "token", "") or "").strip()
@@ -375,11 +375,7 @@ def _hosted_token_required() -> bool:
 
 def _redaction_terms(private_key_pem: str, token: str) -> tuple[str, ...]:
     terms = {token}
-    terms.update(
-        line.strip()
-        for line in private_key_pem.splitlines()
-        if line.strip()
-    )
+    terms.update(line.strip() for line in private_key_pem.splitlines() if line.strip())
     return tuple(sorted(terms, key=len, reverse=True))
 
 

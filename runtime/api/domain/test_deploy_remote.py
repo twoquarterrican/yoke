@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from yoke_core.domain import deploy_remote
@@ -146,8 +148,11 @@ class TestAwsCapabilityEnv:
             }[a[2]],
         )
         env = aws_capability_env("yoke", "us-east-1")
-        for name in AWS_AMBIENT_AUTH_ENV_VARS:
+        detached = {"AWS_CONFIG_FILE", "AWS_SHARED_CREDENTIALS_FILE"}
+        for name in set(AWS_AMBIENT_AUTH_ENV_VARS) - detached:
             assert name not in env
+        for name in detached:
+            assert env[name] == os.devnull
         assert env["AWS_PAGER"] == ""
 
     def test_materializes_capability_session_token(self, monkeypatch):
@@ -218,8 +223,6 @@ class TestAwsCapabilityEnv:
 
     def test_missing_secret_fails_with_seed_recipe(self, monkeypatch):
         monkeypatch.setattr(deploy_remote, "cmd_capability_get_secret", lambda *a: None)
-        # No capability creds AND no ambient creds -> loud failure (a naked
-        # unauthenticated aws call is never the fallback).
         monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
         monkeypatch.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
         with pytest.raises(RuntimeError) as exc:
@@ -227,20 +230,14 @@ class TestAwsCapabilityEnv:
         assert "aws-admin capability secrets are missing" in str(exc.value)
         assert "capability secret set" in str(exc.value)
 
-    def test_missing_secret_falls_back_to_ambient_oidc_creds(self, monkeypatch):
-        # An ephemeral CI runner has no capability store, but the GitHub-OIDC
-        # role exports a real authenticated AWS credential set; use it, keep it
-        # intact, and only pin the region.
+    def test_missing_secret_refuses_despite_ambient_aws_login(self, monkeypatch):
+        # Outside GitHub Actions the operator's ambient AWS login is never a
+        # fallback for missing capability credentials.
         monkeypatch.setattr(deploy_remote, "cmd_capability_get_secret", lambda *a: None)
-        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "ASIA_OIDC")
-        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "oidc-secret")
-        monkeypatch.setenv("AWS_SESSION_TOKEN", "oidc-session-token")
-        env = aws_capability_env("yoke", "us-east-1")
-        assert env["AWS_ACCESS_KEY_ID"] == "ASIA_OIDC"
-        assert env["AWS_SECRET_ACCESS_KEY"] == "oidc-secret"
-        assert env["AWS_SESSION_TOKEN"] == "oidc-session-token"
-        assert env["AWS_DEFAULT_REGION"] == "us-east-1"
-        assert env["AWS_REGION"] == "us-east-1"
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "ASIA_AMBIENT")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "ambient-secret")
+        with pytest.raises(RuntimeError, match="never falls back to the ambient"):
+            aws_capability_env("yoke", "us-east-1")
 
     def test_actions_oidc_precedes_unreachable_capability_store(self, monkeypatch):
         monkeypatch.setenv("GITHUB_ACTIONS", "true")

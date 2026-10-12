@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,6 +13,7 @@ import pytest
 
 from yoke_cli import main as yoke_operations_cli
 from yoke_cli.config import db_admin_dsn_exec as exec_mod
+from yoke_core.domain.yoke_cloud_db_authority import CloudAuthorityCommandError
 
 PASSWORD = "hunter2-never-shown"
 DSN = f"host=127.0.0.1 port=6548 user=admin password={PASSWORD} dbname=registry_db"
@@ -95,6 +95,9 @@ def engine(tmp_path: Path, monkeypatch):
         "yoke_core.domain.connected_env_readiness_connector": SimpleNamespace(
             redact=_redact, ConnectedEnvUnavailable=ConnectedEnvUnavailable
         ),
+        "yoke_core.domain.yoke_cloud_db_authority": SimpleNamespace(
+            CloudAuthorityCommandError=CloudAuthorityCommandError
+        ),
     }
     monkeypatch.setattr(exec_mod, "import_module", modules.__getitem__)
     monkeypatch.setattr(
@@ -162,8 +165,10 @@ def test_child_exit_code_passes_through(engine) -> None:
                 s,
                 "activate",
                 lambda env: (_ for _ in ()).throw(
-                    subprocess.CalledProcessError(
-                        254, ["aws"], stderr="AccessDeniedException"
+                    CloudAuthorityCommandError(
+                        "aws secretsmanager get-secret-value",
+                        "exit 254: AccessDeniedException",
+                        "rerun once AWS is reachable",
                     )
                 ),
             ),

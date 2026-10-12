@@ -1,9 +1,11 @@
 """Helpers for resolving Yoke cloud Postgres authority.
 
 This module is intentionally small: it converts declared stack/output facts
-and a Secrets Manager JSON payload into a libpq DSN. Live Pulumi, AWS, and SSH
-commands stay explicit operator-attended steps; tests exercise only parsing and
-DSN construction.
+and a Secrets Manager JSON payload into a libpq DSN. Every Pulumi and AWS child
+runs with a caller-supplied environment carrying the project's aws-admin
+capability credentials, never the operator's ambient AWS login, and every
+failure surfaces the child's redacted stderr as a named
+:class:`CloudAuthorityCommandError`.
 """
 
 from __future__ import annotations
@@ -19,6 +21,18 @@ from typing import Any, Mapping, Optional
 DEFAULT_ENDPOINT_OUTPUT = "databaseClusterEndpoint"
 DEFAULT_SECRET_ARN_OUTPUT = "databaseSecretArn"
 DEFAULT_POSTGRES_PORT = 5432
+CLI_TIMEOUT_SECONDS = 120
+_STDERR_TAIL_CHARS = 1200
+
+
+class CloudAuthorityCommandError(RuntimeError):
+    """A Pulumi or AWS child command failed; carries its redacted cause."""
+
+    def __init__(self, step: str, detail: str, recovery: str) -> None:
+        super().__init__(f"{step} failed: {detail}; {recovery}")
+        self.step = step
+        self.detail = detail
+        self.recovery = recovery
 
 
 @dataclass(frozen=True)
@@ -88,32 +102,33 @@ def load_stack_outputs(
     infra_dir: Path,
     location: PostgresAuthorityLocation,
     *,
-    env: Optional[Mapping[str, str]] = None,
+    env: Mapping[str, str],
 ) -> Mapping[str, Any]:
     """Read Pulumi stack outputs as JSON without exposing secrets.
 
-    ``env`` lets callers materialize capability-owned AWS credentials into
-    the subprocess environment instead of relying on ambient shell state.
+    ``env`` carries the capability-owned AWS credentials the state backend and
+    stack read authenticate with; there is no ambient-credential default.
     """
-    subprocess_env = dict(env) if env is not None else None
-    if location.state_backend:
-        subprocess.run(
-            ["pulumi", "login", location.state_backend],
-            cwd=str(infra_dir),
-            check=True,
-            capture_output=True,
-            text=True,
-            env=subprocess_env,
-        )
-    proc = subprocess.run(
-        ["pulumi", "stack", "output", "--stack", location.stack, "--json"],
-        cwd=str(infra_dir),
-        check=True,
-        capture_output=True,
-        text=True,
-        env=subprocess_env,
+    recovery = (
+        f"check stack {location.stack!r} exists in {infra_dir} and that the "
+        "project's aws-admin capability can reach its state backend"
     )
-    parsed = json.loads(proc.stdout or "{}")
+    if location.state_backend:
+        _run_cli(
+            ["pulumi", "login", location.state_backend],
+            step=f"pulumi login {location.state_backend}",
+            recovery=recovery,
+            env=env,
+            cwd=infra_dir,
+        )
+    stdout = _run_cli(
+        ["pulumi", "stack", "output", "--stack", location.stack, "--json"],
+        step=f"pulumi stack output --stack {location.stack}",
+        recovery=recovery,
+        env=env,
+        cwd=infra_dir,
+    )
+    parsed = json.loads(stdout or "{}")
     if not isinstance(parsed, dict):
         raise ValueError("Pulumi stack output JSON must be an object")
     return parsed
@@ -122,11 +137,15 @@ def load_stack_outputs(
 def load_secret_string(
     secret_arn: str,
     *,
+    env: Mapping[str, str],
     region: Optional[str] = None,
-    env: Optional[Mapping[str, str]] = None,
     version_stage: Optional[str] = None,
 ) -> str:
-    """Read the RDS secret JSON string from AWS Secrets Manager."""
+    """Read a secret's JSON string from AWS Secrets Manager.
+
+    ``env`` carries the capability-owned AWS credentials; there is no
+    ambient-credential default.
+    """
     cmd = [
         "aws",
         "secretsmanager",
@@ -142,14 +161,56 @@ def load_secret_string(
         cmd.extend(["--region", region])
     if version_stage:
         cmd.extend(["--version-stage", version_stage])
-    proc = subprocess.run(
+    stdout = _run_cli(
         cmd,
-        check=True,
-        capture_output=True,
-        text=True,
-        env=dict(env) if env is not None else None,
+        step=f"aws secretsmanager get-secret-value {secret_arn}",
+        recovery=(
+            "rerun once AWS is reachable; if it persists, confirm the project's "
+            "aws-admin capability may read the secret with `yoke aws exec "
+            f"-- secretsmanager describe-secret --secret-id {secret_arn}`"
+        ),
+        env=env,
     )
-    return proc.stdout.strip()
+    return stdout.strip()
+
+
+def _run_cli(
+    argv: list[str],
+    *,
+    step: str,
+    recovery: str,
+    env: Mapping[str, str],
+    cwd: Optional[Path] = None,
+) -> str:
+    """Run one child command; refuse with its redacted stderr on failure."""
+    try:
+        proc = subprocess.run(
+            argv,
+            cwd=str(cwd) if cwd is not None else None,
+            capture_output=True,
+            text=True,
+            env=dict(env),
+            timeout=CLI_TIMEOUT_SECONDS,
+        )
+    except FileNotFoundError:
+        raise CloudAuthorityCommandError(
+            step,
+            f"`{argv[0]}` is not installed or not on PATH",
+            f"install `{argv[0]}` on this machine and rerun",
+        ) from None
+    except subprocess.TimeoutExpired:
+        raise CloudAuthorityCommandError(
+            step,
+            f"no answer within {CLI_TIMEOUT_SECONDS}s",
+            "check network reachability to AWS and rerun",
+        ) from None
+    if proc.returncode != 0:
+        from yoke_core.domain.connected_env_readiness_connector import redact
+
+        stderr = (proc.stderr or "").strip()[-_STDERR_TAIL_CHARS:]
+        detail = f"exit {proc.returncode}: {redact(stderr) or 'no stderr output'}"
+        raise CloudAuthorityCommandError(step, detail, recovery)
+    return proc.stdout or ""
 
 
 def endpoint_and_secret_arn(
@@ -193,14 +254,18 @@ def resolve_declared_dsn(
     *,
     infra_dir: Path,
     location: PostgresAuthorityLocation,
+    aws_env: Mapping[str, str],
     host_override: Optional[str] = None,
     port_override: Optional[int] = None,
 ) -> tuple[str, dict]:
-    """Resolve DSN plus redacted evidence from Pulumi outputs + AWS secret."""
-    outputs = load_stack_outputs(infra_dir, location)
+    """Resolve DSN plus redacted evidence from Pulumi outputs + AWS secret.
+
+    ``aws_env`` is the aws-admin capability environment both reads run under.
+    """
+    outputs = load_stack_outputs(infra_dir, location, env=aws_env)
     endpoint, secret_arn = endpoint_and_secret_arn(outputs, location)
     secret = PostgresSecret.from_json(
-        load_secret_string(secret_arn, region=location.region)
+        load_secret_string(secret_arn, region=location.region, env=aws_env)
     )
     host = host_override or endpoint
     port = port_override or secret.port or DEFAULT_POSTGRES_PORT

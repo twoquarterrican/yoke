@@ -134,16 +134,16 @@ def _resolve_dsn(admin_env: str, source: Mapping[str, Any]) -> str:
     connector = _engine(
         lambda: import_module("yoke_core.domain.connected_env_readiness_connector")
     )
+    cloud_authority = _engine(
+        lambda: import_module("yoke_core.domain.yoke_cloud_db_authority")
+    )
     secret_arn = str(source.get("secret_arn") or "")
     try:
         authority = selected.activate_selected_postgres(admin_env)
-    except subprocess.CalledProcessError as exc:
-        detail = (
-            connector.redact(str(exc.stderr or "").strip()) or f"exit {exc.returncode}"
-        )
+    except cloud_authority.CloudAuthorityCommandError as exc:
         raise DbAdminExecRefusal(
             "secret_unreadable",
-            f"AWS Secrets Manager did not return the managed secret for {admin_env!r}: {detail}",
+            f"AWS Secrets Manager did not return the managed secret for {admin_env!r}: {exc.detail}",
             f"check the aws-admin principal may read it with `yoke aws exec --project "
             f"{source.get('project')} -- secretsmanager describe-secret --secret-id "
             f"{secret_arn}`; rerun {SETUP_RECIPE} if the stack replaced the secret",
