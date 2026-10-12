@@ -119,6 +119,25 @@ def test_pending_timeout_never_reads_faster_than_the_shared_floor(
     assert clock.sleeps == [60.0, 60.0, 30.0]
 
 
+def test_the_wait_announces_itself_once_before_the_first_read(
+    monkeypatch, capsys
+) -> None:
+    _run(
+        monkeypatch,
+        [
+            ((_check("in_progress"),), ""),
+            ((_check("in_progress"),), ""),
+            ((_check("completed", "success"),), ""),
+        ],
+    )
+
+    err = capsys.readouterr().err
+    assert err == (
+        "Waiting by design: post-push CI checks on merge-sha; checks every 60s; "
+        "gives up after 15m. Silence until then is expected.\n"
+    )
+
+
 def test_post_push_timeouts_are_recognized_machine_settings() -> None:
     assert is_recognized(post_push.DISCOVERY_TIMEOUT_KEY)
     assert is_recognized(post_push.CONCLUSION_TIMEOUT_KEY)
