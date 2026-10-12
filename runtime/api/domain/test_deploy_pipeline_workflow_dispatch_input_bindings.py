@@ -1,9 +1,7 @@
 """A stage dispatches the commit its run recorded, and refuses without one.
 
-Declared input bindings are resolved once when the run starts, so the
-dispatch's whole job here is to substitute the recorded value. That is what
-makes a retry, a --fresh retrigger and the delivery record agree on one
-consumer commit: none of them can consult the branch again.
+The preparation receipt supplies the exact consumer commit. Once consumed,
+a retry and a fresh retrigger keep that commit and refuse a moved branch.
 """
 
 from __future__ import annotations
@@ -11,6 +9,7 @@ from __future__ import annotations
 import subprocess
 from unittest import mock
 
+from yoke_contracts.api.function_call import FunctionCallResponse, FunctionError
 from yoke_core.domain import (
     deploy_pipeline_bound_inputs,
     deploy_pipeline_github_workflow,
@@ -70,8 +69,19 @@ def _dispatch(
         ),
         mock.patch.object(
             deploy_pipeline_bound_inputs,
-            "stale_bound_source_refusal",
-            new=freshness_check or mock.Mock(return_value=""),
+            "call_dispatcher",
+            new=freshness_check
+            or mock.Mock(
+                return_value=FunctionCallResponse(
+                    success=True,
+                    function="deployment_runs.execution.bound_sources_prepare",
+                    version="v1",
+                    result={
+                        "bound_sources": {"inputs": bound_inputs or {}},
+                        "members": [],
+                    },
+                )
+            ),
         ),
     ):
         return deploy_pipeline_github_workflow._dispatch_github_actions_workflow(
@@ -122,7 +132,7 @@ class TestRecordedInputBindingDispatch:
         rc, diag = _dispatch(bound_inputs={}, gh_calls=gh_calls)
 
         assert rc == 1
-        assert "consumer_sha" in diag and "recorded no source commit" in diag
+        assert "consumer_sha" in diag and "receipt_incomplete" in diag
         assert not [c for c in gh_calls if c and c[0] == "trigger"]
 
     def test_a_stage_without_input_bindings_needs_no_recorded_commit(self):
@@ -145,7 +155,16 @@ class TestRecordedInputBindingDispatch:
     def test_a_stale_bound_source_stops_the_stage_before_any_dispatch(self):
         gh_calls: list = []
         refusal = "stage 'hosted-release' was not dispatched: bound source stale"
-        freshness_check = mock.Mock(return_value=refusal)
+        freshness_check = mock.Mock(
+            return_value=FunctionCallResponse(
+                success=False,
+                function="deployment_runs.execution.bound_sources_prepare",
+                version="v1",
+                error=FunctionError(
+                    code="bound_source_preparation_refused", message=refusal
+                ),
+            )
+        )
 
         rc, diag = _dispatch(
             bound_inputs={"consumer_sha": CONSUMER_B},
@@ -153,8 +172,8 @@ class TestRecordedInputBindingDispatch:
             freshness_check=freshness_check,
         )
 
-        assert (rc, diag) == (1, refusal)
-        freshness_check.assert_called_once_with("run-test", "hosted-release")
+        assert rc == 1 and refusal in diag
+        freshness_check.assert_called_once()
         assert not [c for c in gh_calls if c and c[0] == "trigger"]
 
     def test_a_stage_without_input_bindings_skips_the_freshness_check(self):

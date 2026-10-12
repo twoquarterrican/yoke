@@ -98,7 +98,9 @@ class CandidateCustody:
         return frozenset(record.item_id for record in self.held)
 
 
-def candidate_custody(conn: Any, run_id: str) -> CandidateCustody:
+def candidate_custody(
+    conn: Any, run_id: str, *, source_shas: dict[int, str] | None = None
+) -> CandidateCustody:
     """Split what this run's candidate carries into unheld and held landings.
 
     Walks every project the run ships code for, because membership follows
@@ -109,7 +111,9 @@ def candidate_custody(conn: Any, run_id: str) -> CandidateCustody:
     enrollable: set[int] = set()
     held: list[HeldCandidate] = []
     for project_id in carried_project_ids(conn, run_id):
-        lineage = run_source_sha(conn, run_id, int(project_id))
+        lineage = (source_shas or {}).get(int(project_id)) or run_source_sha(
+            conn, run_id, int(project_id)
+        )
         if not lineage:
             continue
         found, holders = _project_custody(
@@ -144,12 +148,14 @@ class CustodyResolution:
 
     __slots__ = ("_conn", "_run_id", "_custody", "_refusal", "_walked")
 
-    def __init__(self, conn: Any, run_id: str) -> None:
+    def __init__(
+        self, conn: Any, run_id: str, *, candidate: CandidateCustody | None = None
+    ) -> None:
         self._conn = conn
         self._run_id = run_id
-        self._custody: CandidateCustody | None = None
+        self._custody: CandidateCustody | None = candidate
         self._refusal: str | None = None
-        self._walked = False
+        self._walked = candidate is not None
 
     def _resolve(self) -> None:
         """Walk custody once, keeping an unanswerable one as a named refusal.

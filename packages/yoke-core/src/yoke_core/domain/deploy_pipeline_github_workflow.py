@@ -1,9 +1,4 @@
-"""github-actions-workflow stage step_runner — CI gate, trigger, reconcile, poll.
-
-Split from :mod:`yoke_core.domain.deploy_pipeline_step_runners` so the
-dispatch table stays small; the dispatcher delegates the
-``github-actions-workflow`` step_runner here.
-"""
+"""GitHub workflow stages: verify CI, prepare inputs, trigger, reconcile, poll."""
 
 from __future__ import annotations
 
@@ -27,6 +22,7 @@ from yoke_core.domain.deploy_pipeline_github_workflow_reconciliation import (
 )
 from yoke_core.domain.deploy_pipeline_github_workflow_dispatch import (
     trigger_with_recovery_retries,
+    narrate_uncorrelated_dispatch,
 )
 from yoke_core.domain.deploy_pipeline_github_workflow_inputs import (
     config_bool as _config_bool,
@@ -69,12 +65,7 @@ def _dispatch_github_actions_workflow(
     preview_slug: str = "",
     sd: Optional[str] = None,
 ) -> tuple[int, str]:
-    """Handle github-actions-workflow step_runner.
-
-    Returns ``(exit_code, diagnostic)``.  ``diagnostic`` carries the GitHub
-    Actions poll stdout+stderr when the poll declares stage failure so callers
-    can surface root cause on ``DeploymentRunStageFailed``.
-    """
+    """Dispatch the workflow and return its exit code and failure evidence."""
     sd = sd or _resolve_script_dir()
     workflow = str(config.get("workflow", "") or "")
     if not workflow:
@@ -95,10 +86,7 @@ def _dispatch_github_actions_workflow(
         print(f"Error: {diagnostic}", file=sys.stderr)
         return 1, diagnostic
     if not correlation_input:
-        print(
-            "  Legacy workflow stage has no dispatch correlation input; "
-            "using one-shot dispatch without durable response-loss recovery"
-        )
+        narrate_uncorrelated_dispatch()
     raw_workflow_inputs = _workflow_inputs(config)
     default_timeout_min = (
         max(timeout_min, CORRELATED_WORKFLOW_TIMEOUT_MIN)
@@ -157,13 +145,22 @@ def _dispatch_github_actions_workflow(
             return 1, sha_error
 
     resolved_bindings, diagnostic = bound_inputs_for_dispatch(
-        config, name=name, run_id=run_id, bound_inputs=bound_inputs
+        config,
+        name=name,
+        run_id=run_id,
+        bound_inputs=bound_inputs,
+        member_items=member_items,
     )
     workflow_ref = ""
     if not diagnostic:  # Where in the DEPLOY repo the workflow file runs from.
         workflow_ref, diagnostic = dispatch_ref(
-            config, name=name, run_id=run_id, github_repo=github_repo,
-            head_sha=head_sha, project=project, sd=sd,
+            config,
+            name=name,
+            run_id=run_id,
+            github_repo=github_repo,
+            head_sha=head_sha,
+            project=project,
+            sd=sd,
             github_actions=_github_actions,
         )
     if diagnostic:

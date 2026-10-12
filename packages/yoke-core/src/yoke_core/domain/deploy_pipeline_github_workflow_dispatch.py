@@ -82,3 +82,11 @@ __all__ = [
     "is_idempotency_key_collision",
     "trigger_with_recovery_retries",
 ]
+
+
+def narrate_uncorrelated_dispatch() -> None:
+    """Explain the declared one-shot workflow dispatch mode."""
+    print(
+        "  Legacy workflow stage has no dispatch correlation input; "
+        "using one-shot dispatch without durable response-loss recovery"
+    )

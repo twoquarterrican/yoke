@@ -32,9 +32,9 @@ Two things enrollment deliberately does not do. It never invents attribution:
 an underivable carried set stays a refusal, because enrolling from an unknown
 set would waive coverage silently. Commits no item owns ship as recorded
 commits made outside Yoke. And
-it never recomputes membership a previous run already froze — a retry inherits
-its predecessor's members so the same candidate keeps delivering the same
-items, and re-deriving would let a moved baseline rewrite that answer.
+it preserves membership a previous run already froze. An unused consumer
+refresh may admit newly carried members while retaining existing acceptance
+contracts and every other project's recorded source facts.
 """
 
 from __future__ import annotations
@@ -171,15 +171,17 @@ def project_carried_sets(payload: Mapping[str, Any]) -> tuple[Mapping[str, Any],
     return (payload, *(entry for entry in bound if isinstance(entry, Mapping)))
 
 
-def carried_enrollment_blocked(conn: Any, run_id: str) -> str:
+def carried_enrollment_blocked(
+    conn: Any, run_id: str, *, refreshing_bound_sources: bool = False
+) -> str:
     """Name why this run enrolls nothing, or ``''`` when it may enroll."""
     if not requires_release_admission(conn, run_id):
         return "flow_without_delivery_custody"
     if not _column_exists(conn, "deployment_runs", "composition_resolution"):
         return "composition_schema_unconverged"
-    if has_frozen_composition(conn, run_id):
+    if not refreshing_bound_sources and has_frozen_composition(conn, run_id):
         return "composition_already_frozen"
-    if inherited_frozen_membership(conn, run_id):
+    if not refreshing_bound_sources and inherited_frozen_membership(conn, run_id):
         return "membership_inherited_from_frozen_run"
     return ""
 
@@ -190,6 +192,7 @@ def enroll_carried_members(
     *,
     carried_work: Mapping[str, Any] | None = None,
     custody: CustodyResolution | None = None,
+    rebound_project_ids: frozenset[int] = frozenset(),
 ) -> tuple[str, ...]:
     """Attach every delivery-ready carried item the run does not already own.
 
@@ -203,7 +206,9 @@ def enroll_carried_members(
     it here is still done before any lock below is taken, because the walk
     reaches GitHub and the run row must never be held across a network call.
     """
-    if carried_enrollment_blocked(conn, run_id):
+    if carried_enrollment_blocked(
+        conn, run_id, refreshing_bound_sources=bool(rebound_project_ids)
+    ):
         return ()
     row = conn.execute(
         "SELECT COALESCE(release_lineage,'') FROM deployment_runs WHERE id=%s",
@@ -242,14 +247,26 @@ def enroll_carried_members(
     # item this read called terminal could otherwise become deliverable
     # between the decision and the insert.
     lock_item_workflow_bindings(conn, carried + list(member_ids(conn, run_id)))
-    if lock_run(conn, run_id) != "created":
+    allowed_statuses = (
+        {"created", "executing", "failed"} if rebound_project_ids else {"created"}
+    )
+    if lock_run(conn, run_id) not in allowed_statuses:
         # Membership is mutable only while a run is composable, and the run
         # row now says it is not. Nothing was written.
         return ()
-    if carried_enrollment_blocked(conn, run_id):
+    if carried_enrollment_blocked(
+        conn, run_id, refreshing_bound_sources=bool(rebound_project_ids)
+    ):
         return ()
     members = set(member_ids(conn, run_id))
     needed = needed_member_ids(conn, run_id=run_id, item_ids=carried)
+    if rebound_project_ids:
+        rows = conn.execute(
+            "SELECT id,project_id FROM items WHERE id=ANY(%s)", (carried,)
+        ).fetchall()
+        carried = sorted(
+            int(row[0]) for row in rows if int(row[1]) in rebound_project_ids
+        )
     candidates = [
         item_id
         for item_id in carried

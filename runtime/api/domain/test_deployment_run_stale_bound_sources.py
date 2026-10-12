@@ -1,10 +1,4 @@
-"""A failure caused by a frozen bound source says a new run is required.
-
-The run keeps the bound commit it resolved at start, and a retry copies it,
-so once the bound branch has moved a failure naming that commit reproduces on
-every re-drive. These tests freeze a real bound commit, move the real branch,
-and read the diagnosis a failure trace carries.
-"""
+"""Bound-source diagnosis distinguishes unused pins from consumed commits."""
 
 from __future__ import annotations
 
@@ -44,6 +38,20 @@ def test_a_failure_naming_the_frozen_commit_says_a_new_run_is_required(
     test_db: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     frozen, current = _frozen_then_moved(test_db, tmp_path, monkeypatch)
+    from yoke_core.domain.deployment_run_bound_sources import parse_bound_sources
+
+    row = test_db.execute(
+        "SELECT bound_sources FROM deployment_runs WHERE id='run-candidate'"
+    ).fetchone()
+    record = parse_bound_sources(row[0])
+    record["projects"][0]["consumed_by"] = "hosted-release"
+    import json
+
+    test_db.execute(
+        "UPDATE deployment_runs SET bound_sources=%s WHERE id='run-candidate'",
+        (json.dumps(record),),
+    )
+    test_db.commit()
 
     stale, unverified = diagnose_stale_bound_sources(
         test_db,
@@ -123,7 +131,8 @@ def test_before_dispatch_a_moved_branch_is_stale_whatever_any_failure_says(
     assert [(e["project"], e["frozen_sha"], e["current_sha"]) for e in stale] == [
         (CONSUMER_PROJECT, frozen, current)
     ]
-    assert "create a new run" in stale[0]["reason"]
+    assert "re-drive run-candidate" in stale[0]["reason"]
+    assert "re-binds" in stale[0]["reason"]
 
 
 def test_before_dispatch_an_unmoved_branch_is_current(

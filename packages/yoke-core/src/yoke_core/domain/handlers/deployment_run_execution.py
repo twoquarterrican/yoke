@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 from typing import Any, Dict, List, Optional
 
 from yoke_core.domain.deployment_start_timing import (
@@ -120,12 +121,12 @@ def _record_bound_sources(
         return recorded
 
 
-def _member_rows(run_id_value: str) -> List[Dict[str, Any]]:
+def _member_rows(run_id_value: str, *, connection: Any = None) -> List[Dict[str, Any]]:
     from yoke_core.domain.db_helpers import connect, query_rows
     from yoke_core.domain.item_worktrees import primary_item_worktree
     from yoke_core.domain.project_identity import render_item_ref
 
-    with connect() as conn:
+    with connect() if connection is None else nullcontext(connection) as conn:
         # A star-select never names delivery_intent/requirement_snapshot
         # explicitly, so a live table that has not yet converged those
         # additive columns just omits them from the row instead of raising

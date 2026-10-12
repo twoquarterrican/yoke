@@ -9,11 +9,11 @@ did this release carry, has this merge been delivered, what is the delivery
 box looking at — would re-resolve to a different answer than the one that was
 built.
 
-So each declared branch resolves exactly once, at start, and the resolved
+So each declared branch initially resolves at composition, and the resolved
 commit is stored beside the run's own lineage. Enrollment, composition
 validation, the dispatch that substitutes the placeholder, run detail and the
-delivery summary all read that record. Nothing re-resolves a branch after
-start.
+delivery summary all read that record. Before first consumption, preparation may refresh a stale source and
+re-derive those facts. Consumption seals the commit for later stages and retries.
 
 A run records at most one source commit per project, because delivery is
 judged per project: two branches of one project in a single run would make
@@ -30,6 +30,7 @@ from yoke_core.domain.json_helper import dumps_compact, loads_text
 
 BOUND_SOURCES_FIELD = "bound_sources"
 BOUND_SOURCES_SCHEMA = 1
+BOUND_SOURCES_PREPARE_FUNCTION_ID = "deployment_runs.execution.bound_sources_prepare"
 
 
 def _p(conn: Any) -> str:
@@ -185,9 +186,9 @@ def _resolve_branch_head(
 def copy_bound_sources(conn: Any, source_run_id: str, run_id: str) -> None:
     """Carry one run's recorded source commits onto its retry, unresolved.
 
-    Retrying a candidate means retrying every commit it pinned. Letting the
-    retry resolve its own would quietly turn a retry into a different
-    release the moment a bound branch had moved.
+    Consumption and rebinding history travel with the source. A consumed
+    candidate stays fixed on retry; preparation may still refresh an unused
+    candidate before its first consuming stage.
     """
     if not bound_sources_recorded(conn):
         return
@@ -232,7 +233,7 @@ def record_bound_sources(conn: Any, run_id: str) -> dict[str, Any]:
     ).fetchone()
     if row is None:
         raise LookupError(f"deployment run {run_id!r} not found")
-    stored = str(_cell(row, BOUND_SOURCES_FIELD, 0) or "")
+    stored = _cell(row, BOUND_SOURCES_FIELD, 0)
     if stored:
         return parse_bound_sources(stored)
     stages = json.loads(str(_cell(row, "stages", 1) or "[]"))
