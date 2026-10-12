@@ -2,8 +2,8 @@
 
 The prod relay re-execs into every release it observes prod serving, so its
 start is the event that says "prod now serves this release". There it compares
-the operator's installed CLI with the release it runs and, when the CLI is
-behind, runs the official installer for exactly that release from the
+the operator's installed CLI with the release it runs and, whenever the CLI is
+not exactly that release, runs the official installer for exactly that release from the
 machine's recorded distribution origin — the relay's own code, so even a CLI
 too old to know `yoke update --version` is moved. Nothing runs on a schedule. Every outcome is written to the relay log and to
 ``operator-cli-follow.json`` in the relay state directory; a CLI left behind
@@ -21,11 +21,11 @@ from typing import Any, Callable
 from yoke_cli.config import self_update
 from yoke_cli.config.path_state_contract import tool_bin_dir
 from yoke_cli.transport.installed_cli_staleness import update_recovery
-from yoke_contracts.engine_version import compare_engine_versions
 from yoke_contracts.timestamps import iso8601_now
 
 FOLLOW_RECORD_NAME = "operator-cli-follow.json"
 PROBE_TIMEOUT_SECONDS = 30
+SOURCE_VERSION = "source"
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -37,7 +37,7 @@ def follow_release(
     run: Runner = subprocess.run,
     executable: Path | None = None,
 ) -> dict[str, Any]:
-    """Install *release* as the operator CLI when the installed one is older."""
+    """Install exactly *release* as the operator CLI unless it already is."""
     target = release.strip().removeprefix("v")
     yoke = executable or Path(tool_bin_dir()) / "yoke"
     record: dict[str, Any] = {"release": target, "cli": str(yoke), "at": iso8601_now()}
@@ -45,8 +45,11 @@ def follow_release(
         return _finish(record, state_dir, "no_installed_cli")
     before = _version(run, yoke)
     record["before"] = before
-    if compare_engine_versions(before, target) != -1:
+    if before == target:
         return _finish(record, state_dir, "current")
+    if before == SOURCE_VERSION:
+        # A source-checkout launcher is updated with git, never by an installer.
+        return _finish(record, state_dir, "source_checkout")
     try:
         self_update.install_release(
             self_update.resolve_target(version=target), str(yoke)

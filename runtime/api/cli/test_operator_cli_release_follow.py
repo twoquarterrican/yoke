@@ -67,6 +67,30 @@ def test_current_cli_is_left_alone(tmp_path, monkeypatch) -> None:
     assert installed == []
 
 
+def test_a_hand_installed_development_build_is_moved_to_the_release(
+    tmp_path, monkeypatch
+) -> None:
+    yoke, installed, run = _cli(
+        tmp_path,
+        monkeypatch,
+        ["0.1.2.dev49+launch.621.g09b049c58", "0.1.1+launch.622"],
+    )
+    record = follow.follow_release(
+        "v0.1.1+launch.622", tmp_path, run=run, executable=yoke
+    )
+    assert record["outcome"] == "updated"
+    assert installed == ["0.1.1+launch.622"]
+
+
+def test_a_source_checkout_launcher_is_left_to_git(tmp_path, monkeypatch) -> None:
+    yoke, installed, run = _cli(tmp_path, monkeypatch, ["source"])
+    record = follow.follow_release(
+        "v0.1.1+launch.622", tmp_path, run=run, executable=yoke
+    )
+    assert record["outcome"] == "source_checkout"
+    assert installed == []
+
+
 def test_failed_install_names_the_recovery(tmp_path, monkeypatch, capsys) -> None:
     yoke, _installed, run = _cli(
         tmp_path, monkeypatch, ["0.1.1+launch.616"], installs=False
