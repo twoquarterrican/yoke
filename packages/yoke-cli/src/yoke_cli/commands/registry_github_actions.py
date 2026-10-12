@@ -26,42 +26,77 @@ from yoke_cli.commands.adapters.github_actions_failed_log import (
 )
 
 
+from yoke_cli.commands.adapters.github_actions_rerun import github_actions_rerun_failed
+
+
 AdapterFn = Callable[[List[str]], int]
 
 
-GITHUB_ACTIONS_SUBCOMMAND_REGISTRY: Dict[
-    Tuple[str, ...], Tuple[str, AdapterFn]
-] = {
-    ("github-actions", "failed-log"):
-        ("github_actions.failed_log", github_actions_failed_log),
-    ("github-actions", "commit-runs", "list"):
-        ("github_actions.commit_runs.list", github_actions_commit_runs),
-    ("github-actions", "check-ci"):
-        ("github_actions.check_ci", _adapters.github_actions_check_ci),
-    ("github-actions", "workflow", "dispatch"):
-        ("github_actions.workflow.dispatch", github_actions_trigger),
-    ("github-actions", "workflow", "dispatch-once"):
-        ("github_actions.workflow.dispatch_once", github_actions_trigger_once),
-    ("github-actions", "workflow", "find-run"):
-        ("github_actions.workflow.find_run", github_actions_find_run),
-    ("github-actions", "run", "jobs-count"):
-        ("github_actions.run.jobs_count", github_actions_jobs_count),
-    ("github-actions", "dispatch-tag", "ensure"):
-        ("github_actions.dispatch_tag.ensure", github_actions_dispatch_tag_ensure),
-    ("github-actions", "wait-run"):
-        ("github_actions.wait_run", _adapters.github_actions_wait_run),
-    ("github-actions", "runners", "status"):
-        ("github_actions.runners.status", github_actions_runners_status),
-    ("github-actions", "secret", "set"):
-        ("github_actions.secret.set", _adapters.github_actions_secret_set),
-    ("github-actions", "secret", "delete"):
-        ("github_actions.secret.delete", _adapters.github_actions_secret_delete),
-    ("github-actions", "variable", "get"):
-        ("github_actions.variable.get", _adapters.github_actions_variable_get),
-    ("github-actions", "variable", "set"):
-        ("github_actions.variable.set", _adapters.github_actions_variable_set),
-    ("github-actions", "variable", "delete"):
-        ("github_actions.variable.delete", _adapters.github_actions_variable_delete),
+GITHUB_ACTIONS_SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
+    ("github-actions", "run", "rerun-failed"): (
+        "github_actions.run.rerun_failed",
+        github_actions_rerun_failed,
+    ),
+    ("github-actions", "failed-log"): (
+        "github_actions.failed_log",
+        github_actions_failed_log,
+    ),
+    ("github-actions", "commit-runs", "list"): (
+        "github_actions.commit_runs.list",
+        github_actions_commit_runs,
+    ),
+    ("github-actions", "check-ci"): (
+        "github_actions.check_ci",
+        _adapters.github_actions_check_ci,
+    ),
+    ("github-actions", "workflow", "dispatch"): (
+        "github_actions.workflow.dispatch",
+        github_actions_trigger,
+    ),
+    ("github-actions", "workflow", "dispatch-once"): (
+        "github_actions.workflow.dispatch_once",
+        github_actions_trigger_once,
+    ),
+    ("github-actions", "workflow", "find-run"): (
+        "github_actions.workflow.find_run",
+        github_actions_find_run,
+    ),
+    ("github-actions", "run", "jobs-count"): (
+        "github_actions.run.jobs_count",
+        github_actions_jobs_count,
+    ),
+    ("github-actions", "dispatch-tag", "ensure"): (
+        "github_actions.dispatch_tag.ensure",
+        github_actions_dispatch_tag_ensure,
+    ),
+    ("github-actions", "wait-run"): (
+        "github_actions.wait_run",
+        _adapters.github_actions_wait_run,
+    ),
+    ("github-actions", "runners", "status"): (
+        "github_actions.runners.status",
+        github_actions_runners_status,
+    ),
+    ("github-actions", "secret", "set"): (
+        "github_actions.secret.set",
+        _adapters.github_actions_secret_set,
+    ),
+    ("github-actions", "secret", "delete"): (
+        "github_actions.secret.delete",
+        _adapters.github_actions_secret_delete,
+    ),
+    ("github-actions", "variable", "get"): (
+        "github_actions.variable.get",
+        _adapters.github_actions_variable_get,
+    ),
+    ("github-actions", "variable", "set"): (
+        "github_actions.variable.set",
+        _adapters.github_actions_variable_set,
+    ),
+    ("github-actions", "variable", "delete"): (
+        "github_actions.variable.delete",
+        _adapters.github_actions_variable_delete,
+    ),
 }
 
 
@@ -71,16 +106,23 @@ GITHUB_ACTIONS_SUBCOMMAND_REGISTRY: Dict[
 GITHUB_ACTIONS_SUBCOMMAND_ALIAS_REGISTRY: Dict[
     Tuple[str, ...], Tuple[str, AdapterFn]
 ] = {
-    ("github-actions", "trigger"):
-        ("github_actions.workflow.dispatch", github_actions_trigger),
-    ("github-actions", "trigger-once"):
-        ("github_actions.workflow.dispatch_once", github_actions_trigger_once),
-    ("github-actions", "find-run"):
-        ("github_actions.workflow.find_run", github_actions_find_run),
-    ("github-actions", "poll"):
-        ("github_actions.wait_run", github_actions_poll),
-    ("github-actions", "jobs-count"):
-        ("github_actions.run.jobs_count", github_actions_jobs_count),
+    ("github-actions", "trigger"): (
+        "github_actions.workflow.dispatch",
+        github_actions_trigger,
+    ),
+    ("github-actions", "trigger-once"): (
+        "github_actions.workflow.dispatch_once",
+        github_actions_trigger_once,
+    ),
+    ("github-actions", "find-run"): (
+        "github_actions.workflow.find_run",
+        github_actions_find_run,
+    ),
+    ("github-actions", "poll"): ("github_actions.wait_run", github_actions_poll),
+    ("github-actions", "jobs-count"): (
+        "github_actions.run.jobs_count",
+        github_actions_jobs_count,
+    ),
 }
 
 

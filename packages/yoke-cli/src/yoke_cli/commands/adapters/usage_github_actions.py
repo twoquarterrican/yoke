@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Dict
 
+from yoke_cli.commands.adapters.github_actions_rerun import (
+    GITHUB_ACTIONS_RERUN_FAILED_USAGE,
+)
 from yoke_cli.commands.adapters.github_actions import (
     GITHUB_ACTIONS_CHECK_CI_USAGE,
     GITHUB_ACTIONS_SECRET_SET_USAGE,
@@ -39,6 +42,7 @@ from yoke_cli.commands.adapters.github_actions_workflow import (
 
 
 USAGE_BY_FUNCTION_ID: Dict[str, str] = {
+    "github_actions.run.rerun_failed": GITHUB_ACTIONS_RERUN_FAILED_USAGE,
     "github_actions.check_ci": GITHUB_ACTIONS_CHECK_CI_USAGE,
     "github_actions.failed_log": GITHUB_ACTIONS_FAILED_LOG_USAGE,
     "github_actions.workflow.dispatch": GITHUB_ACTIONS_TRIGGER_USAGE,
