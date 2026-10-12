@@ -233,7 +233,7 @@ def record_bound_sources(conn: Any, run_id: str) -> dict[str, Any]:
     ).fetchone()
     if row is None:
         raise LookupError(f"deployment run {run_id!r} not found")
-    stored = str(_cell(row, BOUND_SOURCES_FIELD, 0) or "")
+    stored = _cell(row, BOUND_SOURCES_FIELD, 0)
     if stored:
         return parse_bound_sources(stored)
     stages = json.loads(str(_cell(row, "stages", 1) or "[]"))

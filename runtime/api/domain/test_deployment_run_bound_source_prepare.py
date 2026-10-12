@@ -253,3 +253,53 @@ def test_unreadable_head_keeps_pins_and_members_unchanged(
     assert not test_db.execute(
         "SELECT 1 FROM deployment_run_items WHERE run_id='run-candidate'"
     ).fetchone()
+
+
+def test_native_json_source_rows_preserve_the_original_comparison_snapshot(
+    test_db: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    release = two_project_release(test_db, tmp_path, monkeypatch)
+    record_bound_sources(test_db, "run-candidate")
+    test_db.commit()
+    current = _move(release)
+    decoded = []
+
+    class NativeJsonCursor:
+        def __init__(self, cursor):
+            self.cursor = cursor
+
+        def __getattr__(self, name):
+            return getattr(self.cursor, name)
+
+        def fetchone(self):
+            row = self.cursor.fetchone()
+            if row is None:
+                return row
+            indices = [
+                i
+                for i, column in enumerate(self.cursor.description)
+                if column.name == "bound_sources"
+            ]
+            if not indices:
+                return row
+            cells = list(row)
+            for i in indices:
+                if isinstance(cells[i], str) and cells[i]:
+                    cells[i] = json.loads(cells[i])
+                    decoded.append(cells[i])
+            return tuple(cells)
+
+    class NativeJsonConnection:
+        def __getattr__(self, name):
+            return getattr(test_db, name)
+
+        def execute(self, *args, **kwargs):
+            return NativeJsonCursor(test_db.execute(*args, **kwargs))
+
+    result = prepare_bound_sources(
+        NativeJsonConnection(), "run-candidate", "hosted-release"
+    )
+    test_db.commit()
+    assert result["bound_sources"]["inputs"]["consumer_sha"] == current
+    assert decoded[0]["projects"][0]["commit_sha"] == release["consumer_tip"]
+    assert not decoded[0]["projects"][0].get("consumed_by")

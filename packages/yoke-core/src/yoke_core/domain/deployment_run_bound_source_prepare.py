@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import json
+from copy import deepcopy
 from typing import Any
 from yoke_contracts.timestamps import format_instant, utc_now
 from yoke_core.domain.deployment_run_bound_sources import (
@@ -42,7 +43,8 @@ def prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str, 
         raise ValueError(
             f"bound_source_run_terminal: {run_id} is {status}; compose a new run"
         )
-    record = parse_bound_sources(stored)
+    snapshot = deepcopy(parse_bound_sources(stored))
+    record = deepcopy(snapshot)
     stages = json.loads(str(stages_text or "[]"))
     stage = next((s for s in stages if s.get("name") == stage_name), None)
     if stage is None or not stage.get("input_bindings"):
@@ -102,7 +104,7 @@ def prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str, 
     latest = conn.execute(
         "SELECT bound_sources FROM deployment_runs WHERE id=%s", (run_id,)
     ).fetchone()[0]
-    if locked_status != status or str(latest or "") != str(stored or ""):
+    if locked_status != status or parse_bound_sources(latest) != snapshot:
         raise ValueError(
             f"bound_source_preparation_changed: {run_id} changed during preparation; re-drive the same run"
         )
