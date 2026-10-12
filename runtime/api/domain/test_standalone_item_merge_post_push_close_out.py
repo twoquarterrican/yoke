@@ -32,6 +32,7 @@ LANE_SHA = "a" * 40
 def _wire_complete(monkeypatch, verdict):
     recorded = []
     monkeypatch.setattr(post_push.git, "git_out", lambda *_a: MERGE_SHA)
+    monkeypatch.setattr(post_push, "verified_target_sha", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(post_push.git, "publish", lambda *_a: (True, ""))
     monkeypatch.setattr(post_push.git, "has_remote", lambda *_a: True)
     monkeypatch.setattr(
@@ -120,34 +121,37 @@ def test_no_discovered_ci_leaves_lane_retirement_to_terminal_close_out(
     )
 
 
-def test_failed_push_stays_unresolved_in_output(monkeypatch) -> None:
-    monkeypatch.setattr(post_push.git, "git_out", lambda *_a: MERGE_SHA)
+def test_failed_push_refuses_before_stamping_or_recording(monkeypatch) -> None:
+    from yoke_core.domain.merge_landing_proof import LandingUnverified
+
+    _wire_complete(monkeypatch, post_push.PostPushVerdict("no_checks"))
+    monkeypatch.setattr(post_push.git, "publish", lambda *_a: (False, "denied"))
     monkeypatch.setattr(
-        post_push.git,
-        "publish",
-        lambda *_a: (
-            False,
-            "merge landed locally but publishing 'main' failed: denied",
+        post_push,
+        "verified_target_sha",
+        lambda *_a: (_ for _ in ()).throw(
+            LandingUnverified("merge_candidate_not_landed: retry governed merge")
         ),
     )
-    monkeypatch.setattr(post_push.git, "has_remote", lambda *_a: True)
+    monkeypatch.setattr(post_push.receipts, "record_failure", lambda *_a, **_k: "")
     monkeypatch.setattr(
-        merge_boundary, "stamp_merged_at", lambda _item, **_kwargs: None
+        post_push.receipts,
+        "record",
+        lambda *_a, **_k: pytest.fail("no landing receipt"),
     )
-    monkeypatch.setattr(post_push.receipts, "record", lambda *_a, **_k: "")
-    monkeypatch.setattr(post_push, "fast_forward_main_checkout", lambda *_a: "")
-
+    monkeypatch.setattr(
+        merge_boundary,
+        "stamp_merged_at",
+        lambda *_a, **_k: pytest.fail("no landing stamp"),
+    )
     outcome = _complete()
-
-    assert outcome.ok
-    assert not outcome.pushed
-    assert "publishing 'main' failed" in outcome.output
-    assert any("publishing 'main' failed" in warning for warning in outcome.warnings)
-    assert "skipping push/PR/CI" not in outcome.output
+    assert not outcome.ok and not outcome.pushed and not outcome.merge_sha
+    assert "merge_candidate_not_landed" in outcome.error
 
 
 def test_no_remote_publication_stays_local_only(monkeypatch) -> None:
     monkeypatch.setattr(post_push.git, "git_out", lambda *_a: MERGE_SHA)
+    monkeypatch.setattr(post_push, "verified_target_sha", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(post_push.git, "publish", lambda *_a: (False, ""))
     monkeypatch.setattr(post_push.git, "has_remote", lambda *_a: False)
     monkeypatch.setattr(

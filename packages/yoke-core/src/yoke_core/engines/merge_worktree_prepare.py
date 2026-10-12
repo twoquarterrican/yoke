@@ -162,7 +162,7 @@ def resolve_context(args: MergeArgs) -> MergeContext:
                     raise RuntimeError(
                         f"project '{ctx.project}' has no machine-local checkout mapping"
                     )
-                ctx.repo_root = str(checkout)
+                ctx.repo_root = resolve_main_root(cwd=str(checkout))
                 # Resolve the project's default branch
                 if not args.target or args.target == "main":
                     branch_resp = call_dispatcher(

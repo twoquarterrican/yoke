@@ -1,4 +1,4 @@
-"""Prove connected publication; disconnected projects can always close locally."""
+"""Prove publication and candidate ancestry before closing a landing."""
 
 from __future__ import annotations
 
@@ -15,10 +15,10 @@ from yoke_core.domain import standalone_item_merge_git as git
 from yoke_core.domain.merge_github_authority import github_merge_enabled
 from yoke_core.domain.standalone_item_merge_publication_message import (
     refusal_message,
-    missing_merge_identity_message,
     publication_narration,
 )
 from yoke_core.domain import item_merge_receipts as receipts
+from yoke_core.domain.merge_landing_proof import LandingUnverified, verified_target_sha
 from yoke_core.domain.gh_rest_transport import (
     RestRequest,
     RestTransportError,
@@ -236,36 +236,38 @@ def complete(
         stamp_merged_at,
     )
 
-    merge_sha = receipts.landed_merge_identity(
-        item_id=item_id,
-        branch=branch,
-        target=target,
-        repo_root=repo_root,
-        already=already,
-        commit_sha=commit_sha,
-    )
     notes = list(warnings)
+    pushed, push_warning = git.publish(repo_root, target)
+    if push_warning and not pushed:
+        notes.append(push_warning)
     try:
-        disconnected = git.has_remote(repo_root) and not github_merge_enabled(project)
-    except RuntimeError as exc:
+        merge_sha = verified_target_sha(repo_root, target, commit_sha)
+        disconnected = (
+            not github_merge_enabled(project) if git.has_remote(repo_root) else True
+        )
+    except (LandingUnverified, RuntimeError) as exc:
+        reason = str(exc)
+        note = receipts.record_failure(
+            item_id,
+            branch=branch,
+            target=target,
+            label="merge_landing_unverified",
+            phase="publication",
+            reason=reason,
+        )
+        if note:
+            notes.append(note)
         return StandaloneMergeOutcome(
             ok=False,
             exit_code=1,
-            already_merged=already,
+            already_merged=False,
             commit_sha=commit_sha,
-            merge_sha=merge_sha,
             touched_files=touched,
+            pushed=pushed,
             output=output,
-            error=f"github_merge_mode_unreadable: {exc}. The merge is landed; retry {resume_command or f'yoke merge item {branch}'} after repairing the project GitHub binding status read.",
+            error=reason,
             warnings=tuple(notes),
         )
-    pushed, push_warning = git.publish(repo_root, target)
-    if disconnected and not pushed:
-        push_warning = "Merged locally; not pushed because GitHub is not connected." + (
-            f" {push_warning}" if push_warning else ""
-        )
-    if push_warning and not disconnected and not pushed:
-        notes.append(push_warning)
     stamp_error = stamp_merged_at(item_id, repo_root=repo_root, merge_sha=merge_sha)
     if stamp_error:
         notes.append(f"merged_at not recorded: {stamp_error}")
@@ -287,8 +289,6 @@ def complete(
 
     record()
     observed: Optional[PostPushVerdict] = None
-    if pushed and not disconnected and not merge_sha:
-        notes.append(missing_merge_identity_message(branch, target))
     if pushed and not disconnected and merge_sha:
         observed = await_post_push_checks(project, merge_sha, authority)
         if observed.runs:

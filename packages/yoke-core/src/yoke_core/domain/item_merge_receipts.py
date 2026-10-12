@@ -273,34 +273,6 @@ def touched_files_from_merge_commit(
     )
 
 
-def landed_merge_identity(
-    *,
-    item_id: int,
-    branch: str,
-    target: str,
-    repo_root: str,
-    already: bool,
-    commit_sha: str,
-) -> str:
-    """The merge commit this branch actually landed on ``target``.
-
-    A merge that just ran left the target tip pointing at its own merge
-    commit, so the tip is the identity. When the branch was already contained
-    on entry nothing landed now, and the tip is wherever the target has since
-    moved — reading it there would hand this item whichever merge happened to
-    be last. The branch's own landing merge answers instead, then the receipt
-    a previous attempt recorded, and a branch that carried nothing in has no
-    merge identity at all.
-    """
-    if not already:
-        return git.git_out(repo_root, "rev-parse", target)
-    landed = landing_merge_commit(repo_root, target, commit_sha)
-    if landed:
-        return landed
-    recorded = load(item_id, branch, target)
-    return recorded.merge_sha if recorded is not None else ""
-
-
 def resolve_touched_files(
     *,
     repo_root: str,
@@ -327,7 +299,6 @@ __all__ = [
     "GET_FUNCTION_ID",
     "RECORD_FUNCTION_ID",
     "MergeReceipt",
-    "landed_merge_identity",
     "landing_merge_commit",
     "load",
     "record",

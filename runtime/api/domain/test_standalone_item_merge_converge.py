@@ -15,6 +15,7 @@ MERGE_SHA = "2" * 40
 def test_converging_records_the_merge_identity_a_retry_reads(monkeypatch):
     recorded: list[receipts.MergeReceipt] = []
     monkeypatch.setattr(converging, "stale_unlanded_work", lambda **_k: "")
+    monkeypatch.setattr(converging, "verified_target_sha", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(converging, "fast_forward_main_checkout", lambda *_a: "")
     monkeypatch.setattr(landed.git, "has_remote", lambda *_a: True)
     monkeypatch.setattr(landed.git, "fetch_target", lambda *_a: None)
@@ -80,10 +81,22 @@ def test_converge_refuses_new_commits_without_recording(monkeypatch):
 
 def test_converging_publishes_a_landing_that_never_reached_origin(monkeypatch):
     monkeypatch.setattr(converging, "stale_unlanded_work", lambda **_k: "")
+    monkeypatch.setattr(converging, "verified_target_sha", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(converging, "fast_forward_main_checkout", lambda *_a: "")
     monkeypatch.setattr(landed.git, "has_remote", lambda *_a: True)
     monkeypatch.setattr(landed.git, "fetch_target", lambda *_a: None)
     monkeypatch.setattr(landed.git, "is_ancestor", lambda *_a: False)
+    from yoke_core.domain.merge_landing_proof import LandingUnverified
+
+    readings = iter((LandingUnverified("not landed"), MERGE_SHA))
+
+    def proof(*_a):
+        value = next(readings)
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+    monkeypatch.setattr(converging, "verified_target_sha", proof)
     pushes: list[str] = []
     monkeypatch.setattr(
         landed.git,

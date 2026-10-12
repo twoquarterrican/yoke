@@ -32,3 +32,11 @@ The harness manifest determines whether the existing wake route can resume
 the holder automatically. Operator-driven surfaces need the operator to
 re-enter the session. If the holder is gone, the notice routes to the project's
 steering seat for restaffing.
+
+Before recording a landing, the merge boundary fetches the remote default
+branch and requires it to contain the exact candidate commit. The recorded
+merge SHA is that fetched remote tip. Push success, a local target, or a
+prior receipt cannot replace this proof. A failed fetch or missing candidate
+returns a named refusal, retains the lane, and leaves the item before landing.
+Repair routing or remote access and re-enter the same governed merge command.
+A project with no remote proves candidate ancestry on its local default branch.

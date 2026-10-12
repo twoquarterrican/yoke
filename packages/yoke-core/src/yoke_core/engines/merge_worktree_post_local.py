@@ -178,7 +178,16 @@ def do_local_merge(ctx: MergeContext) -> int:
         _print("Local merge mode \u2014 skipping push/PR/CI pipeline.")
 
     _print(f"Merging {ctx.args.branch} into local {ctx.args.target}...")
-    _run_git(["checkout", ctx.args.target], cwd=ctx.repo_root, capture=True)
+    checkout = _run_git(["checkout", ctx.args.target], cwd=ctx.repo_root, capture=True)
+    if checkout.returncode != 0:
+        _print(
+            f"merge_target_checkout_failed: cannot check out {ctx.args.target} in "
+            f"{ctx.repo_root}: {checkout.stderr or checkout.stdout}. "
+            "Preserve the lane; restore the project mapping to its owning main "
+            "checkout and retry the governed merge command.",
+            err=True,
+        )
+        return 1
     result = _run_git(
         ["merge", "--no-edit", ctx.args.branch], cwd=ctx.repo_root, capture=True
     )

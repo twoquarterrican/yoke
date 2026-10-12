@@ -1,192 +1,151 @@
-"""Regression checks for item merge landing identity."""
+"""Fresh remote ancestry owns landing identity and failed publication refuses."""
 
 from __future__ import annotations
 
-from runtime.api.domain.test_item_merge_receipt_transport import (
-    BRANCH as BRANCH,
-    ITEM_REF as ITEM_REF,
-    TARGET as TARGET,
-    pytest as pytest,
-    receipts as receipts,
-)
+from types import SimpleNamespace
+
+import pytest
+
+from runtime.api.domain.standalone_merge_simulation_support import git, make_checkout
+from yoke_core.domain import standalone_item_merge_post_push as completion
+from yoke_core.domain import merge_queue_close_out as queue
+from yoke_core.domain.merge_landing_proof import LandingUnverified, verified_target_sha
+from yoke_core.engines import merge_worktree_post_local as integration
+from yoke_core.engines.merge_worktree_prepare import MergeArgs, MergeContext
 
 
-class TestLandedMergeIdentity:
-    """The recorded merge identity is the branch's own, or nothing."""
+@pytest.fixture
+def checkout(tmp_path, monkeypatch):
+    repo = make_checkout(tmp_path)
+    remote = tmp_path / "remote.git"
+    remote.mkdir()
+    git(remote, "init", "--bare")
+    git(repo, "remote", "add", "origin", str(remote))
+    git(repo, "push", "origin", "main")
+    candidate = git(repo, "rev-parse", "ITEM-1")
+    git(repo, "merge", "--no-edit", "ITEM-1")
+    records, stamps, failures = [], [], []
+    monkeypatch.setattr(completion, "github_merge_enabled", lambda *_a: False)
+    monkeypatch.setattr(completion, "fast_forward_main_checkout", lambda *_a: "")
+    monkeypatch.setattr(
+        completion.receipts,
+        "record",
+        lambda _id, receipt: records.append(receipt) or "",
+    )
+    monkeypatch.setattr(
+        completion.receipts,
+        "record_failure",
+        lambda _id, **kw: failures.append(kw) or "",
+    )
+    monkeypatch.setattr(
+        "yoke_core.domain.standalone_item_merge.stamp_merged_at",
+        lambda _id, **kw: stamps.append(kw) or None,
+    )
+    return repo, remote, candidate, records, stamps, failures
 
-    def test_a_fresh_merge_takes_the_tip_it_just_created(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.setattr(
-            receipts.git,
-            "git_out",
-            lambda *_a, **_k: "c" * 40,
+
+def complete(repo, candidate):
+    return completion.complete(
+        item_id=7,
+        branch="ITEM-1",
+        target="main",
+        repo_root=str(repo),
+        project="sample",
+        authority="installation",
+        commit_sha=candidate,
+        touched=("feature.txt",),
+        already=False,
+    )
+
+
+@pytest.mark.parametrize("push_ok", [False, True])
+def test_push_that_did_not_land_never_records_a_landing(checkout, monkeypatch, push_ok):
+    repo, _, candidate, records, stamps, failures = checkout
+    monkeypatch.setattr(
+        completion.git, "publish", lambda *_a: (push_ok, "push did not update remote")
+    )
+    result = complete(repo, candidate)
+    assert not result.ok and not result.merge_sha
+    assert "merge_candidate_not_landed" in result.error
+    assert "governed merge command" in result.error
+    assert not records and not stamps
+    assert failures[0]["label"] == "merge_landing_unverified"
+    assert git(repo, "rev-parse", "ITEM-1") == candidate
+
+
+def test_normal_landing_records_the_fresh_remote_tip(checkout):
+    repo, remote, candidate, records, stamps, _ = checkout
+    result = complete(repo, candidate)
+    assert result.ok and result.pushed
+    assert result.merge_sha == git(remote, "rev-parse", "main")
+    assert records[0].merge_sha == result.merge_sha
+    assert stamps[0]["merge_sha"] == result.merge_sha
+
+
+def test_cached_tracking_ref_cannot_hide_a_failed_fetch(checkout):
+    repo, _, candidate, _, _, _ = checkout
+    git(repo, "push", "origin", "main")
+    git(repo, "remote", "set-url", "origin", str(repo / "missing.git"))
+    with pytest.raises(LandingUnverified, match="merge_landing_fetch_failed"):
+        verified_target_sha(str(repo), "main", candidate)
+
+
+def test_queue_close_out_refuses_before_any_landing_writes(checkout, monkeypatch):
+    repo, _, candidate, records, stamps, failures = checkout
+    monkeypatch.setattr(
+        queue,
+        "read_recorded_batch",
+        lambda *_a, **_kw: pytest.fail("no batch read before ancestry proof"),
+    )
+    result = queue.record_landing(
+        MergeContext(
+            args=MergeArgs(branch="ITEM-1", target="main"), repo_root=str(repo)
+        ),
+        item_id=7,
+        commit_sha=candidate,
+        pr_num="42",
+    )
+    assert "merge_candidate_not_landed" in result.ci_evidence_refusal("42")
+    assert not records and not stamps and failures
+
+
+def test_local_checkout_refusal_does_not_merge_the_lane(monkeypatch):
+    calls = []
+
+    def run(args, **_kw):
+        calls.append(args)
+        return SimpleNamespace(
+            returncode=1, stderr="main checked out elsewhere", stdout=""
         )
 
-        assert (
-            receipts.landed_merge_identity(
-                item_id=ITEM_REF,
-                branch=BRANCH,
-                target=TARGET,
-                repo_root="/repo",
-                already=False,
-                commit_sha="a" * 40,
-            )
-            == "c" * 40
-        )
-
-    def test_an_already_contained_branch_never_reads_the_moved_tip(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        """The tip belongs to whoever moved the target since."""
-        monkeypatch.setattr(
-            receipts.git,
-            "git_out",
-            lambda *_a, **_k: pytest.fail("read the target tip"),
-        )
-        monkeypatch.setattr(
-            receipts,
-            "landing_merge_commit",
-            lambda *_a, **_k: "d" * 40,
-        )
-
-        assert (
-            receipts.landed_merge_identity(
-                item_id=ITEM_REF,
-                branch=BRANCH,
-                target=TARGET,
-                repo_root="/repo",
-                already=True,
-                commit_sha="a" * 40,
-            )
-            == "d" * 40
-        )
-
-    def test_a_retry_falls_back_to_the_receipt_it_already_recorded(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.setattr(receipts, "landing_merge_commit", lambda *_a, **_k: "")
-        monkeypatch.setattr(
-            receipts,
-            "load",
-            lambda *_a, **_k: receipts.MergeReceipt(
-                branch=BRANCH,
-                target=TARGET,
-                commit_sha="a" * 40,
-                merge_sha="e" * 40,
-            ),
-        )
-
-        assert (
-            receipts.landed_merge_identity(
-                item_id=ITEM_REF,
-                branch=BRANCH,
-                target=TARGET,
-                repo_root="/repo",
-                already=True,
-                commit_sha="a" * 40,
-            )
-            == "e" * 40
-        )
-
-    def test_a_branch_that_carried_nothing_in_has_no_merge_identity(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.setattr(receipts, "landing_merge_commit", lambda *_a, **_k: "")
-        monkeypatch.setattr(receipts, "load", lambda *_a, **_k: None)
-
-        assert (
-            receipts.landed_merge_identity(
-                item_id=ITEM_REF,
-                branch=BRANCH,
-                target=TARGET,
-                repo_root="/repo",
-                already=True,
-                commit_sha="a" * 40,
-            )
-            == ""
-        )
+    parent = SimpleNamespace(_print=lambda *_a, **_kw: None, _run_git=run)
+    monkeypatch.setattr(integration, "_parent", lambda: parent)
+    ctx = MergeContext(
+        args=MergeArgs(branch="ITEM-1", target="main", standalone=True),
+        repo_root="/mapped/lane",
+    )
+    assert integration.do_local_merge(ctx) == 1
+    assert calls == [["checkout", "main"]]
 
 
-class TestAnAbsorbedMergeIsNeverTheLanding:
-    """A branch's own merge can be an ancestor without ever landing.
+def test_checkout_mapping_to_a_relocated_lane_resolves_owning_main(
+    tmp_path, monkeypatch
+):
+    from yoke_core.domain import standalone_item_merge_checkout as checkout_resolution
+    from yoke_core.domain import worktree_preflight_repo_resolution as routing
+    from yoke_core.engines import done_transition_gates as gates
 
-    When a sidecar branch merges the branch in and that sidecar is what
-    reaches the base, the branch's own merge is an ancestor of the base
-    while sitting off its first-parent chain entirely. Walking plain
-    ancestry answered with that absorbed merge, which dated an item to a
-    landing the trunk never took -- the shape a branch that lands twice
-    produces, where the first merge is absorbed and a later one lands the
-    result.
-    """
-
-    @staticmethod
-    def _repo(tmp_path):
-        import subprocess
-
-        root = tmp_path / "absorbed"
-        root.mkdir()
-
-        def git(*args: str) -> str:
-            return subprocess.run(
-                ["git", "-C", str(root), *args],
-                check=True,
-                capture_output=True,
-                text=True,
-            ).stdout.strip()
-
-        git("init", "-b", "main")
-        git("config", "user.email", "test@test.com")
-        git("config", "user.name", "Test")
-        (root / "base.txt").write_text("base\n")
-        git("add", "base.txt")
-        git("commit", "-m", "base")
-
-        git("checkout", "-b", "feature")
-        (root / "feature.txt").write_text("feature\n")
-        git("add", "feature.txt")
-        git("commit", "-m", "feature work")
-        feature_head = git("rev-parse", "HEAD")
-
-        # The sidecar takes the feature branch in. This merge carries the
-        # feature commit but never joins main's first-parent chain.
-        git("checkout", "-b", "sidecar", "main")
-        (root / "sidecar.txt").write_text("sidecar\n")
-        git("add", "sidecar.txt")
-        git("commit", "-m", "sidecar work")
-        git("merge", "--no-ff", "--no-edit", "feature")
-        absorbed = git("rev-parse", "HEAD")
-
-        git("checkout", "main")
-        git("merge", "--no-ff", "--no-edit", "sidecar")
-        landing = git("rev-parse", "HEAD")
-        return root, feature_head, absorbed, landing
-
-    def test_the_trunk_merge_is_answered_not_the_absorbed_one(
-        self,
-        tmp_path,
-    ) -> None:
-        root, feature_head, absorbed, landing = self._repo(tmp_path)
-
-        resolved = receipts.landing_merge_commit(
-            str(root),
-            "main",
-            feature_head,
-        )
-
-        assert resolved == landing
-        assert resolved != absorbed
-
-    def test_the_absorbed_merge_is_an_ancestor_all_the_same(
-        self,
-        tmp_path,
-    ) -> None:
-        """The absorbed merge is reachable -- which is why ancestry misled."""
-        root, feature_head, absorbed, _landing = self._repo(tmp_path)
-
-        assert receipts.git.is_ancestor(str(root), absorbed, "main")
-        assert receipts.git.is_ancestor(str(root), feature_head, absorbed)
+    repo = make_checkout(tmp_path)
+    lane = tmp_path / "relocated-lane"
+    git(repo, "worktree", "add", str(lane), "ITEM-1")
+    monkeypatch.setattr(
+        routing,
+        "resolve_preflight_lane_target",
+        lambda **_kw: SimpleNamespace(
+            error="", repo_root=str(lane), project_slug="sample"
+        ),
+    )
+    monkeypatch.setattr(gates, "_resolve_default_branch", lambda *_a: "main")
+    monkeypatch.setattr(gates, "_get_base_branch", lambda *_a: "main")
+    resolved, target = checkout_resolution.resolve_checkout({}, "")
+    assert resolved == repo and target == "main"

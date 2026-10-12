@@ -46,11 +46,3 @@ def publication_narration(
         "passed": "Publication: target pushed; post-push checks passed.",
         "no_checks": "Publication: target pushed; no post-push checks discovered.",
     }.get(kind, "")
-
-
-def missing_merge_identity_message(branch: str, target: str) -> str:
-    return (
-        f"post-push checks skipped: no merge commit records {branch!r} "
-        f"landing on {target!r}, so there is nothing to prove. Re-run "
-        "the merge once the branch has a commit the target does not already contain."
-    )

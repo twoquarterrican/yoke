@@ -60,6 +60,10 @@ def _dispatch(record):
 def _wire(monkeypatch, *, merge_sha: str):
     recorded: dict = {}
     monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_target_sha",
+        lambda *_a: merge_sha,
+    )
+    monkeypatch.setattr(
         close_out_mod,
         "stamp_merged_at",
         lambda item_id, **_kwargs: None,

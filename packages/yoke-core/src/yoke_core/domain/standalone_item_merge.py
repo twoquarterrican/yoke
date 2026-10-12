@@ -281,6 +281,8 @@ def merge_standalone_branch(
                     output=output,
                 )
 
+    # The engine may rebase before integration and records that advanced head.
+    commit_sha = git.head_of(repo_root, branch) or commit_sha
     return _complete(
         item_id=item_id,
         branch=branch,
