@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from unittest.mock import patch
 
 from yoke_core.domain import schema_api_context
 from yoke_core.domain.schema_api_context_render import PACKET_DETAIL_FULL
@@ -55,10 +56,11 @@ NEW_HARNESS_SESSION_COLUMNS = (
 
 
 def main_body() -> str:
-    """Fetch full topic depth to verify schema and operation notes."""
-    return "\n".join(
-        schema_api_context.render_topic_packet(
-            topic, role="main_agent", detail=PACKET_DETAIL_FULL
+    """Render canonical teaching independently of ambient fixture databases."""
+    with patch.object(schema_api_context, "_try_live_schema", return_value=None):
+        return "\n".join(
+            schema_api_context.render_topic_packet(
+                topic, role="main_agent", detail=PACKET_DETAIL_FULL
+            )
+            for topic in schema_api_context.seed.ROLE_TOPICS["main_agent"]
         )
-        for topic in schema_api_context.seed.ROLE_TOPICS["main_agent"]
-    )
