@@ -18,6 +18,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `items.freeze.run` | `none` |
 | `items.get.run` | `none` |
 | `items.github_done_sync` | `none` |
+| `items.github_link` | `item` |
 | `items.github_sync` | `none` |
 | `items.list.run` | `none` |
 | `items.merge_provenance.operator_correct` | `none` |
