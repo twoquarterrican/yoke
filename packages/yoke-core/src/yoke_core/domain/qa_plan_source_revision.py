@@ -7,7 +7,7 @@ import subprocess
 from collections.abc import Mapping
 from typing import Any
 
-from yoke_core.domain.db_helpers import instant_parameter, query_one
+from yoke_core.domain.db_helpers import instant_parameter, query_scalar
 from yoke_core.domain.deployment_run_carried_work_source import (
     CarriedWorkSourceUnavailable,
     SOURCE_CHECKOUT,
@@ -30,10 +30,10 @@ def require_merged_source(conn: Any, project_id: int, revision: str) -> None:
         raise QaPlanError(
             "qa_plan_source_revision_invalid: supply the full source commit SHA"
         )
-    row = query_one(
+    value = query_scalar(
         conn, "SELECT default_branch FROM projects WHERE id=%s", (project_id,)
     )
-    branch = str((row or {}).get("default_branch") or "")
+    branch = str(value or "")
     try:
         if not branch:
             raise ValueError("the project has no declared default branch")
@@ -71,12 +71,12 @@ def update_plan_source(
         raise QaPlanError(SOURCE_BINDING_UNAVAILABLE)
     column = "source_revision" if supported else "NULL AS source_revision"
     lock = " FOR UPDATE" if marker == "%s" else ""
-    row = query_one(
+    current_revision = query_scalar(
         conn,
         f"SELECT {column} FROM qa_plans WHERE id={marker}{lock}",
         (int(plan["id"]),),
     )
-    if row and row.get("source_revision") and revision is None:
+    if current_revision and revision is None:
         raise QaPlanError(
             "qa_plan_source_revision_required: this plan is source-bound; "
             "use qa plan-cases sync with a clean, merged source export."
@@ -98,12 +98,12 @@ def require_candidate_plan(conn: Any, plan: Mapping[str, Any], run_id: str) -> N
     revision = plan.get("source_revision")
     if not revision:
         if _column_exists(conn, "qa_plans", "source_revision"):
-            current = query_one(
+            current = query_scalar(
                 conn,
                 "SELECT source_revision FROM qa_plans WHERE id=%s",
                 (int(plan["id"]),),
             )
-            if current and current.get("source_revision"):
+            if current:
                 raise QaPlanError(
                     "qa_plan_source_snapshot_missing: this frozen plan predates source "
                     "binding; retain its evidence and select a source-proven plan for "
