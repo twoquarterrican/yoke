@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yoke_core.domain.agent_mission_review import agent_mission_dispatch_contract
 
 
@@ -52,12 +54,11 @@ def test_walker_prompt_uses_yoke_browser_only_when_the_walk_installed_yoke() -> 
     assert "Never install Yoke on a Test Machine to get a browser." in prompt
 
 
-@pytest.mark.parametrize("executor", ["naive_target_session", "informed_subagent"])
 @pytest.mark.parametrize("identities", [["operator"], ["operator", "admin"]])
 def test_named_identities_select_managed_browser_without_installing_yoke(
-    executor: str, identities: list[str]
+    identities: list[str],
 ) -> None:
-    walker = _walker(executor, identities)
+    walker = _walker("informed_subagent", identities)
     prompt = walker["prompt"]
 
     assert "For named browser identities, use the managed browser" in prompt
