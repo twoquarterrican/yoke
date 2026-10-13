@@ -95,11 +95,15 @@ def _late_fixture(monkeypatch, tmp_path, setup_returncode):
     executable = tmp_path / "codex"
     executable.write_text("fixture binary")
     monkeypatch.setattr(shutil, "which", lambda name: str(executable))
-    monkeypatch.setattr(sys, "argv", ["fixture", "setup-fixture"])
-    monkeypatch.setattr(
-        subprocess, "run",
-        lambda argv, **kwargs: CompletedProcess(argv, setup_returncode if kwargs.get("shell") else 0),
-    )
+    monkeypatch.setattr(sys, "argv", ["fixture", "setup-fixture", str(tmp_path / "late-codex")])
+
+    def run(argv, **kwargs):
+        if kwargs.get("shell") and executable.exists() and setup_returncode == 0:
+            config = Path(kwargs["env"]["CODEX_HOME"]) / "config.toml"
+            config.write_text(plan("")[0])
+        return CompletedProcess(argv, setup_returncode if kwargs.get("shell") else 0)
+
+    monkeypatch.setattr(subprocess, "run", run)
     return executable
 
 
@@ -117,7 +121,7 @@ def test_failed_setup_restores_the_preserved_harness(monkeypatch, tmp_path):
     assert not home.with_name(".codex.installer-qa-saved").exists()
 
 
-def test_late_discovery_runs_setup_with_absent_then_restored_home(monkeypatch, tmp_path):
+def test_late_discovery_uses_absent_then_available_disposable_home(monkeypatch, tmp_path):
     executable = _late_fixture(monkeypatch, tmp_path, 0)
     home = tmp_path / ".codex"
     home.mkdir()
@@ -125,7 +129,10 @@ def test_late_discovery_runs_setup_with_absent_then_restored_home(monkeypatch, t
 
     def run(argv, **kwargs):
         if kwargs.get("shell"):
-            observed.append((executable.exists(), home.exists()))
+            fixture_home = Path(kwargs["env"]["CODEX_HOME"])
+            assert fixture_home != home
+            assert home.is_dir()
+            observed.append((executable.exists(), fixture_home.exists()))
         return CompletedProcess(argv, 0)
 
     monkeypatch.setattr(subprocess, "run", run)
@@ -134,23 +141,23 @@ def test_late_discovery_runs_setup_with_absent_then_restored_home(monkeypatch, t
     assert observed == [(False, False), (True, True)]
 
 
-def test_home_restore_failure_still_restores_the_executable(monkeypatch, tmp_path):
+def test_late_fixture_never_moves_personal_codex_home(monkeypatch, tmp_path):
     executable = _late_fixture(monkeypatch, tmp_path, 1)
     home = tmp_path / ".codex"
     home.mkdir()
-    saved = home.with_name(".codex.installer-qa-saved")
+    marker = home / "preserved-file"
+    marker.write_text("original fixture state")
     rename = Path.rename
 
     def restore(path, target):
-        if path == saved:
-            raise OSError("fixture restoration refusal")
+        assert path != home
         return rename(path, target)
 
     monkeypatch.setattr(Path, "rename", restore)
-    with pytest.raises(SystemExit, match="late_harness_home_restore_failed"):
+    with pytest.raises(SystemExit, match="late_harness_setup_failed"):
         exec(compile(_LATE_HARNESS_SCRIPT, "late_fixture", "exec"), {})
     assert executable.exists()
-    assert saved.is_dir()
+    assert marker.read_text() == "original fixture state"
 
 
 def test_native_probe_timeout_names_recovery_after_restoration(monkeypatch, tmp_path):
@@ -169,9 +176,6 @@ def test_native_probe_timeout_names_recovery_after_restoration(monkeypatch, tmp_
 
 def test_configured_permissions_without_trusted_hooks_do_not_pass(monkeypatch, tmp_path):
     executable = _late_fixture(monkeypatch, tmp_path, 0)
-    config = tmp_path / ".codex/config.toml"
-    config.parent.mkdir()
-    config.write_text(plan("")[0])
     with pytest.raises(SystemExit, match="late_harness_hooks_unready"):
         exec(compile(_LATE_HARNESS_SCRIPT, "late_fixture", "exec"), {})
     assert executable.exists()

@@ -198,52 +198,43 @@ UNINSTALL = _command_case(
 )
 
 _LATE_HARNESS_SCRIPT = """
-import pathlib, shutil, subprocess, sys
+import os, pathlib, shutil, subprocess, sys
 from yoke_contracts.codex_config_posture import changed, plan
 from yoke_contracts.codex_hook_trust_store import inspect_hook_file_trust
-from yoke_contracts.harness_unattended_posture import codex_config_path
 binary = shutil.which('codex')
 if not binary:
     sys.exit('late_harness_fixture_missing: install and sign in to Codex on the dedicated Test Machine before rerunning')
 original = pathlib.Path(binary)
 backup = original.with_name(original.name + '.installer-qa-saved')
-home = codex_config_path().parent
-saved_home = home.with_name(home.name + '.installer-qa-saved')
-if backup.exists() or saved_home.exists():
-    sys.exit('late_harness_fixture_interrupted: restore the saved executable and Codex home before rerunning')
+home = pathlib.Path(sys.argv[2])
+if backup.exists() or home.exists():
+    sys.exit('late_harness_fixture_interrupted: restore the executable and reset the owned fixture before rerunning')
+environment = os.environ.copy()
+environment['CODEX_HOME'] = str(home)
 try:
     original.rename(backup)
-    if home.exists():
-        home.rename(saved_home)
-    result = subprocess.run(sys.argv[1], shell=True, timeout=600)
+    result = subprocess.run(sys.argv[1], shell=True, timeout=600, env=environment)
 except (OSError, subprocess.SubprocessError):
     sys.exit('late_harness_fixture_failed: repair the fixture executable or setup timeout before rerunning')
 finally:
-    restore_failures = []
-    if saved_home.exists():
-        try:
-            saved_home.rename(home)
-        except OSError:
-            restore_failures.append('late_harness_home_restore_failed: restore the saved Codex home before another test')
     if backup.exists():
         try:
             backup.rename(original)
         except OSError:
-            restore_failures.append('late_harness_restore_failed: restore codex.installer-qa-saved to codex before another test')
-    if restore_failures:
-        sys.exit('; '.join(restore_failures))
+            sys.exit('late_harness_restore_failed: restore codex.installer-qa-saved to codex before another test')
 if result.returncode:
     sys.exit('late_harness_setup_failed: inspect the setup refusal and rerun after recovery')
 try:
-    version = subprocess.run([str(original), '--version'], timeout=60)
-    discovery = subprocess.run(sys.argv[1], shell=True, timeout=600)
+    version = subprocess.run([str(original), '--version'], timeout=60, env=environment)
+    home.mkdir(parents=True, exist_ok=True)
+    discovery = subprocess.run(sys.argv[1], shell=True, timeout=600, env=environment)
 except (OSError, subprocess.SubprocessError):
     sys.exit('late_harness_discovery_failed: inspect the executable or setup timeout before rerunning')
 if version.returncode:
     sys.exit('late_harness_executable_unusable: repair Codex before rerunning')
 if discovery.returncode:
     sys.exit('late_harness_discovery_failed: inspect setup refusal and rerun after recovery')
-config = codex_config_path()
+config = home / 'config.toml'
 if not config.is_file():
     sys.exit('late_harness_permissions_missing: run setup after installing Codex')
 try:
@@ -252,7 +243,7 @@ except (OSError, ValueError):
     sys.exit('late_harness_config_unreadable: repair Codex config before rerunning')
 if changed(record) or record['conflicts']:
     sys.exit('late_harness_permissions_unready: resolve the reported Codex posture before rerunning')
-trust = inspect_hook_file_trust(pathlib.Path.home() / '.codex/hooks.json', config_path=config)
+trust = inspect_hook_file_trust(home / 'hooks.json', config_path=config)
 if not trust.approved:
     sys.exit('late_harness_hooks_unready: reconcile and trust the installed Codex hooks before rerunning')
 """
@@ -261,12 +252,12 @@ LATE_HARNESS = _command_case(
     "late-harness-discovery",
     '"$(uv tool dir)/yoke-cli/bin/python3" -c '
     + shlex.quote(_LATE_HARNESS_SCRIPT)
-    + " " + shlex.quote(_LOCAL_SETUP),
+    + " " + shlex.quote(_LOCAL_SETUP) + f" {FIXTURE_ROOT}/late-codex",
     instructions=(
-        "Temporarily preserve the Codex executable and home outside discovery while configuring Yoke, "
-        "then restore them and rerun public setup for the newly available harness. Verify native version, trust, hooks "
+        "Use a disposable CODEX_HOME and temporarily preserve its executable outside discovery while configuring Yoke, "
+        "then restore the executable and rerun public setup for the newly available harness. Verify native version, trust, hooks "
         "and permission pickup in a real session. Keep sign-in data untouched and restore the "
-        "executable and home even if setup fails. CLI presence alone is not a passing discovery result."
+        "executable even if setup fails. Never move the personal Codex home. CLI presence alone is not a passing discovery result."
     ),
     outcome=(
         "A harness made available after setup has approved hooks and unattended permissions. "
