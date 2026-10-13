@@ -170,6 +170,14 @@ def parse_or_usage_error(
     if parser.formatter_class is argparse.HelpFormatter:
         parser.formatter_class = argparse.RawDescriptionHelpFormatter
     _ensure_project_arg_for_item_parser(parser)
+    from yoke_cli.transport.output_limit import full_output_requested
+
+    if full_output_requested() and not _has_arg(parser, "full"):
+        parser.add_argument(
+            "--full",
+            action="store_true",
+            help="Explicitly permit the complete read output beyond the CLI size limit.",
+        )
     try:
         return parser.parse_args(args)
     except SystemExit as exc:

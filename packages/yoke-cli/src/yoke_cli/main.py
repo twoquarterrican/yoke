@@ -42,6 +42,7 @@ from yoke_cli.conceptual_cli_names import conceptual_cli_hint
 from yoke_cli.config import install_binding, machine_config
 from yoke_cli import sandbox_denial
 from yoke_cli.cli_output import quiet_closed_stdout
+from yoke_cli.transport.output_limit import read_output_scope
 from yoke_cli.session_id_propagation import propagated_session_identity
 from yoke_contracts.control_plane_locality import (
     local_authority_is_pinned,
@@ -320,7 +321,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         # because the code that must not open a connection is the engine work
         # the adapter runs locally — worktree preflight, merge, resync,
         # GitHub sync — not the relay call itself.
-        with _control_plane_locality(global_env), propagated_session_identity(argv):
+        with (
+            _control_plane_locality(global_env),
+            propagated_session_identity(argv),
+            read_output_scope(remaining),
+        ):
             try:
                 return sandbox_denial.run(adapter, remaining, argv)
             except SystemExit as exc:
