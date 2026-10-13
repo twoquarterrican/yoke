@@ -20,7 +20,7 @@ from runtime.api.cli.universe_ui_command_test_support import (
     stub_server,
     write_local_connection,
 )
-from yoke_cli.config import hosted_machine_browser
+from yoke_cli.config import hosted_machine_browser, browser_admission as admission
 from yoke_cli.commands import universe_ui as commands
 from yoke_cli.commands import universe_ui_connection as connection
 from yoke_cli.commands import universe_ui_serve as serve
@@ -37,8 +37,8 @@ class TestUp:
     @pytest.fixture(autouse=True)
     def local_connection(self, machine_home, monkeypatch):
         write_local_connection()
-        monkeypatch.setattr(commands, "_resolve_session_id", lambda: None)
-        monkeypatch.setattr(commands, "nearest_harness_family", lambda: None)
+        monkeypatch.setattr(admission, "_resolve_session_id", lambda: None)
+        monkeypatch.setattr(admission, "nearest_harness_family", lambda: None)
 
     def test_up_starts_the_daemon_without_printing_admission(
         self,

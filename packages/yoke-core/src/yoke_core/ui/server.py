@@ -36,7 +36,6 @@ Security model:
 from __future__ import annotations
 
 import socket
-import threading
 from urllib.parse import urlencode
 from starlette.requests import Request
 from yoke_core.ui.dashboard_routes import is_dashboard_path
@@ -44,7 +43,7 @@ from typing import Any, Dict, Optional
 
 from yoke_contracts.local_ui_address import DEFAULT_UI_HOST, DEFAULT_UI_PORT
 from yoke_contracts.runtime_identity import PORTABILITY_LOCAL, SERVED_BUILD_PATH
-from yoke_cli.config.hosted_machine_browser import open_url
+from yoke_cli.config.browser_admission import schedule_browser_admission
 from yoke_core.ui.asset_roster import ASSET_CACHE_CONTROL, ASSET_CONTENT_TYPES
 from yoke_core.ui.function_proxy import (
     UI_ACTIVATION_LATCH_FUNCTIONS,
@@ -75,8 +74,6 @@ from yoke_core.ui.workbench_shell import (
 )
 
 LOOPBACK_UI_HOSTS = frozenset({"127.0.0.1", "localhost"})
-
-_BROWSER_OPEN_DELAY_S = 0.5
 
 
 class UiServerError(RuntimeError):
@@ -296,20 +293,15 @@ def serve_ui(
     """Run the UI server until interrupted (blocking).
 
     ``open_browser=True`` opens the tokened URL in the default browser
-    shortly after startup begins; the URL itself stays terminal-only.
+    shortly after startup begins. Agents are refused with human-terminal
+    recovery, and private admission URLs are never printed.
     """
     import uvicorn
 
     bind_host = resolve_ui_host(host)
     app = create_ui_app(token, port=port)
     if open_browser:
-        opener = threading.Timer(
-            _BROWSER_OPEN_DELAY_S,
-            open_url,
-            [private_url(port, token, host=bind_host)],
-        )
-        opener.daemon = True
-        opener.start()
+        schedule_browser_admission(private_url(port, token, host=bind_host))
     uvicorn.run(app, host=bind_host, port=port, log_level="warning")
 
 

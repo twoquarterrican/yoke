@@ -9,7 +9,6 @@ headless callers and ``--no-browser`` receive the human-terminal recovery.
 from __future__ import annotations
 
 from yoke_contracts.timestamps import InvalidInstant
-from yoke_contracts.harness_family_identity import nearest_harness_family
 
 import argparse
 import json
@@ -26,9 +25,9 @@ from yoke_cli.commands.universe_ui_serve import (
 )
 from yoke_cli.config import universe_ui_daemon as daemon
 from yoke_cli.config.hosted_machine_browser import open_url
+from yoke_cli.config.browser_admission import browser_recovery, open_private_url
 from yoke_cli.config.universe_ui_daemon_state import UiDaemonError
 from yoke_cli.config.universe_ui_launchd import UiLaunchdError
-from yoke_cli.transport.dispatcher import _resolve_session_id
 
 AdapterFn = Callable[[List[str]], int]
 
@@ -139,21 +138,10 @@ def ui_up(args: List[str]) -> int:
         return 1
 
     url = str(report.pop("private_url", "") or "")
-    reason = "browser_open_disabled" if parsed.no_browser else ""
-    if not reason and (_resolve_session_id() or nearest_harness_family()):
-        reason = "browser_agent_mode"
-    opened = False
-    if not reason:
-        try:
-            opened = bool(url and open_url(url).opened)
-        except Exception:  # Browser exceptions can contain the private URL.
-            opened = False
-        if not opened:
-            reason = "browser_open_failed"
-    recovery = (
-        "Run `yoke ui up` from your own terminal on a machine with a display "
-        "to open the browser and sign in."
-    )
+    browser = open_private_url(url, disabled=parsed.no_browser, opener=open_url)
+    opened = browser.opened
+    reason = browser.reason or ""
+    recovery = browser_recovery("yoke ui up")
     failed = reason == "browser_open_failed"
     if parsed.json_mode:
         print(

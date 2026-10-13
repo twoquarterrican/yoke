@@ -8,6 +8,7 @@ import pytest
 
 from yoke_cli.commands import universe_ui as commands
 from yoke_cli.config.hosted_machine_browser import BrowserOpenResult
+from yoke_cli.config import browser_admission as admission
 
 
 @pytest.mark.parametrize("json_mode", [False, True])
@@ -35,12 +36,12 @@ def test_admission_only_reaches_human_browser(
     }
     monkeypatch.setattr(commands, "self_host_report", lambda **_: dict(report))
     monkeypatch.setattr(
-        commands,
+        admission,
         "_resolve_session_id",
         lambda: "agent-session" if outcome == "agent" else None,
     )
     monkeypatch.setattr(
-        commands,
+        admission,
         "nearest_harness_family",
         lambda: "codex" if outcome == "unregistered-agent" else None,
     )

@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from yoke_cli.config import hosted_machine_browser
+from yoke_cli.config import hosted_machine_browser, browser_admission as admission
 from yoke_cli.commands import universe_ui as commands, universe_ui_remote as remote
 from yoke_contracts.browser_sign_in import (
     BROWSER_SIGN_IN_MAX_LENGTH,
@@ -20,8 +20,8 @@ from yoke_contracts.api_urls import HOSTED_PROD_API_URL, HOSTED_STAGE_API_URL
 
 @pytest.fixture()
 def setup(monkeypatch, tmp_path):
-    monkeypatch.setattr(commands, "_resolve_session_id", lambda: None)
-    monkeypatch.setattr(commands, "nearest_harness_family", lambda: None)
+    monkeypatch.setattr(admission, "_resolve_session_id", lambda: None)
+    monkeypatch.setattr(admission, "nearest_harness_family", lambda: None)
     token_path = tmp_path / "token"
     token_path.write_text("test-token")
     connection = {
