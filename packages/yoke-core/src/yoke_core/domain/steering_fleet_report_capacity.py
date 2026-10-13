@@ -95,19 +95,21 @@ def launchable_surfaces(
     )
 
 
-def _serves(raw: Any, project_id: int) -> bool:
+def _projects(raw: Any) -> frozenset[str]:
     try:
         projects = json.loads(str(raw or "[]")) if not isinstance(raw, list) else raw
     except (TypeError, ValueError):
-        return False
-    return isinstance(projects, list) and any(
-        str(value) == str(project_id) for value in projects
+        return frozenset()
+    return (
+        frozenset(str(value) for value in projects if str(value).isdecimal())
+        if isinstance(projects, list)
+        else frozenset()
     )
 
 
 def machine_capacities(
     conn: Any, *, project_id: int | None, now: datetime
-) -> tuple[MachineCapacity | tuple[frozenset[int], MachineCapacity], ...]:
+) -> tuple[MachineCapacity | tuple[frozenset[str], MachineCapacity], ...]:
     """Lanes against cap for every connected machine serving this project.
 
     Read from the relay rows directly rather than from eligibility, because a
@@ -126,13 +128,12 @@ def machine_capacities(
     found = {}
     for row in rows:
         machine_id = str(row["machine_id"])
-        raw = row["project_checkouts"]
-        projects = json.loads(raw or "[]") if isinstance(raw, str) else raw
+        projects = _projects(row["project_checkouts"])
         keys = [
-            (int(project), machine_id)
-            for project in (projects or ())
+            (project, machine_id)
+            for project in projects
             if (project_id is None or str(project) == str(project_id))
-            and (int(project), machine_id) not in found
+            and (project, machine_id) not in found
         ]
         if not keys:
             continue

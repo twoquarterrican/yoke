@@ -33,15 +33,16 @@ def session_labels(conn: Any, reports, machine_names):
         tuple(sorted(ids)),
     ).fetchall()
     names = render_actor_names(conn, (row["actor_id"] for row in rows))
+    found = {
+        str(
+            row["session_id"]
+        ): f"{names.get(row['actor_id']) or 'person unavailable'} on "
+        f"{machine_names.get(str(row['machine_id'])) or 'machine unavailable'}"
+        for row in rows
+    }
     return tuple(
-        sorted(
-            (
-                str(row["session_id"]),
-                f"{names.get(row['actor_id']) or 'person unavailable'} on "
-                f"{machine_names.get(str(row['machine_id'])) or 'machine unavailable'}",
-            )
-            for row in rows
-        )
+        (session, found.get(session, "person unavailable on machine unavailable"))
+        for session in sorted(ids)
     )
 
 

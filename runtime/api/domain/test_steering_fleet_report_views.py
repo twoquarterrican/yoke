@@ -115,3 +115,11 @@ def test_machine_values_are_read_once_and_membership_filters_per_project(test_db
     assert len(first) == 2
     assert len(second) == 1
     factory.assert_called_once()
+
+
+def test_capacity_membership_rejects_malformed_lists_without_coercing_identity():
+    from yoke_core.domain.steering_fleet_report_capacity import _projects
+
+    assert _projects("broken") == frozenset()
+    assert _projects("{}") == frozenset()
+    assert _projects([1, "01", "unavailable"]) == frozenset({"1", "01"})
