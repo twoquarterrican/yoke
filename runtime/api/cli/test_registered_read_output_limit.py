@@ -25,13 +25,14 @@ def test_read_catalog_matches_all_registrations():
 
 
 @pytest.mark.parametrize("json_mode", [True, False])
-def test_oversized_read_refuses_without_partial_answer(capsys, json_mode):
-    raw = response(result={"rows": [{"secret_marker": "x" * READ_OUTPUT_LIMIT_BYTES}]})
+@pytest.mark.parametrize("function", ["qa.plan.list", "onboard.checklist.get"])
+def test_oversized_read_refuses_without_partial_answer(capsys, json_mode, function):
+    raw = response(function, {"rows": [{"secret_marker": "x" * READ_OUTPUT_LIMIT_BYTES}]})
     assert emit_response(raw, json_mode=json_mode) == 1
     output = capsys.readouterr()
     assert "secret_marker" not in output.out + output.err
     assert "read_output_limit_exceeded" in output.out + output.err
-    assert "yoke qa plan list" in output.out + output.err
+    assert "yoke " + function.replace(".", " ") in output.out + output.err
     assert "--full" in output.out + output.err
     if json_mode:
         assert json.loads(output.out)["success"] is False
@@ -50,10 +51,11 @@ def test_human_writer_stderr_is_bounded_atomically(capsys):
 
 
 @pytest.mark.parametrize("json_mode", [True, False])
-def test_full_returns_every_byte(capsys, json_mode):
+@pytest.mark.parametrize("function", ["qa.plan.list", "onboard.checklist.get"])
+def test_full_returns_every_byte(capsys, json_mode, function):
     value = "z" * (READ_OUTPUT_LIMIT_BYTES + 1)
     with read_output_scope(["--full"]):
-        assert emit_response(response(result={"body": value}), json_mode=json_mode) == 0
+        assert emit_response(response(function, {"body": value}), json_mode=json_mode) == 0
     assert value in capsys.readouterr().out
 
 
