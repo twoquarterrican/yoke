@@ -4,6 +4,10 @@ The server composes reports for the calling session's held steering scopes;
 reporting never staffs work. `yoke steering report get` combines them;
 `--project P` filters a scope and `--full` retrieves complete detail.
 Headings use project slug or `<project> · <document>`.
+JSON returns one count summary per scope; `--json --full` returns every fact.
+Repeated SQL reads share one request-local answer across sections and held seats;
+the next report reads fresh state. Waiter, machine-count and candidate-claim
+inputs load in sets before classification.
 
 ## Scope and available work
 

@@ -15,7 +15,7 @@ or plan note. Nothing acknowledged is automatically completed.
 - **Idle holders**: process running→message; exited→message resumes transcript;
   resuming now→let start. `--mode parked` declared its wait; in-flight,
   vendor-stopped and stranded are separate rows. Read live mode/quiet_reason with
-  yoke sessions list --json, not remembered reason. When actual blocker clears,
+  yoke sessions list --session SESSION-ID --full --json. When actual blocker clears,
   item-address resume and confirm mode leaves parked. Active work claims protect
   holders from age-based reclaim; no stale TTL countdown releases a live lane.
   Read reported effective_stale_ttl_minutes/reclaim evidence only for the actual
@@ -55,7 +55,7 @@ or plan note. Nothing acknowledged is automatically completed.
   answerer. Read it before probing; a wake alone parks it on the same question.
 
 ```text
-yoke sessions list --json
+yoke sessions list --full --json
 yoke session-control evidence get --session SESSION-ID
 yoke session-control session wake --item PREFIX-N --prompt "Resume: the named blocker cleared" --json
 yoke messages cancel MESSAGE-ID

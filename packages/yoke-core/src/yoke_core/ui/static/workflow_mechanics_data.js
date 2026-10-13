@@ -31,7 +31,7 @@ export async function loadWorkflowMechanicsData(context, flows = []) {
   const planPromises = projects.map(async (project) => {
     const key = String(project.slug || project.id);
     const result = await callFunction(
-      context.client, "qa.plan.list", { project: key },
+      context.client, "qa.plan.list", { project: key, detail: "full" },
     );
     return [key, rows(result)];
   });

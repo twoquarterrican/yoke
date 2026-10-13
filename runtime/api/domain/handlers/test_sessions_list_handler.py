@@ -38,7 +38,7 @@ def _request(payload: dict | None = None) -> FunctionCallRequest:
         function="sessions.list",
         actor=ActorContext(actor_id=None, session_id=""),
         target=TargetRef(kind="global"),
-        payload=payload or {},
+        payload={"detail": "full", **(payload or {})},
     )
 
 

@@ -88,7 +88,11 @@ def test_sessions_list_narrows_kills_through_ended_cause(monkeypatch) -> None:
     )
 
     assert roster.session_control_roster_list(["--ended-cause", "killed"]) == 0
-    assert calls[0]["payload"] == {"ended_cause": "killed"}
+    assert calls[0]["payload"] == {
+        "ended_cause": "killed",
+        "detail": "summary",
+        "offset": 0,
+    }
 
 
 def test_sessions_list_rejects_terminated_as_a_liveness_peer(capsys) -> None:

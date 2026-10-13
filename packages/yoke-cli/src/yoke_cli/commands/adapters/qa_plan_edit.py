@@ -215,7 +215,7 @@ def qa_plan_edit(args: List[str]) -> int:
     listed = call_dispatcher(
         function_id="qa.plan.list",
         target=target,
-        payload={"project": project},
+        payload={"project": project, "detail": "full"},
         actor=actor,
     )
     if not listed.success:

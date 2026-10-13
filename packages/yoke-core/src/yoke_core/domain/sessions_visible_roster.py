@@ -53,7 +53,8 @@ def _matched_projects(row: Dict[str, Any]) -> set[int]:
 def open_roster_rows(
     request: FunctionCallRequest,
     project_refs: List[str],
-    limit: int,
+    limit: int | None,
+    offset: int = 0,
 ) -> List[Dict[str, Any]]:
     """The live roster for every project this caller can see, grouped by
     project in id order, each session appearing once."""
@@ -72,7 +73,7 @@ def open_roster_rows(
     finally:
         conn.close()
     if project_ids is None:
-        return list_sessions(open=True, limit=limit)
+        return list_sessions(open=True, limit=limit, offset=offset)
     if not project_ids:
         # No visible project matches nothing, not everything: an unfiltered
         # read here would show the whole universe to a caller who can see
@@ -82,7 +83,7 @@ def open_roster_rows(
     # One roster read covers the whole visible set. Asking it once per project
     # re-ran the entire pipeline — the same whole-table claim-holder read, the
     # same page enrichments — for every project the operator can see.
-    rows = list_sessions(project_ids=ordered, open=True, limit=limit)
+    rows = list_sessions(project_ids=ordered, open=True, limit=limit, offset=offset)
     # A session's live steering claim can name a project other than its own
     # home project, so the same session legitimately belongs to more than one
     # project's group; keep its first appearance and drop the repeat rather

@@ -11,6 +11,7 @@ import argparse
 from typing import Any, Dict, List
 
 from yoke_cli.commands._helpers import (
+    add_full_arg,
     add_json_arg,
     add_session_arg,
     dispatch_and_emit,
@@ -23,7 +24,7 @@ from yoke_contracts.session_control.liveness import ENDED_CAUSES, LIVENESS_STATE
 SESSIONS_LIST_USAGE = (
     "yoke sessions list [--project P] [--liveness active|waiting|stale|ended] "
     "[--ended-cause killed|wound_down] "
-    "[--limit N] [--session S] [--session-id S] [--json]"
+    "[--limit N] [--offset N] [--full] [--session S] [--session-id S] [--json]"
 )
 
 SESSIONS_STEERING_GROUPS_LIST_USAGE = (
@@ -49,6 +50,11 @@ def sessions_list(args: List[str]) -> int:
         "--ended-cause", dest="ended_cause", choices=ENDED_CAUSES, default=None
     )
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--offset", type=int, default=0)
+    add_full_arg(
+        parser,
+        "all sessions and their diagnostics, holdings, usage and messageability unless --limit is named",
+    )
     parser.add_argument(
         "--session",
         default=None,
@@ -72,7 +78,10 @@ def sessions_list(args: List[str]) -> int:
             )
         return None
 
-    payload: Dict[str, Any] = {}
+    payload: Dict[str, Any] = {
+        "detail": "full" if parsed.full else "summary",
+        "offset": parsed.offset,
+    }
     for key in ("project", "liveness", "ended_cause"):
         value = getattr(parsed, key)
         if value is not None:
@@ -100,7 +109,7 @@ def sessions_get(args: List[str]) -> int:
     parsed = parse_or_usage_error(parser, args, "yoke sessions get SESSION [--json]")
     if parsed is None:
         return 2
-    forwarded = ["--session", parsed.session]
+    forwarded = ["--session", parsed.session, "--full"]
     if parsed.session_id:
         forwarded.extend(("--session-id", parsed.session_id))
     if parsed.json_mode:

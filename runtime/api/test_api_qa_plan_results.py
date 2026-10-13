@@ -254,7 +254,7 @@ def test_activity_summary_counts_the_full_day_before_limiting_recent_rows() -> N
             limit=1,
             day=activity_day,
         )
-        plans = list_plans(conn, project="yoke")
+        plans = list_plans(conn, project="yoke", full=True)
 
     assert len(activity["rows"]) == 1
     assert activity["rows"][0]["verdict_reason"] == "Evidence is ambiguous."

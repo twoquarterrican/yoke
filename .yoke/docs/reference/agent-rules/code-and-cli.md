@@ -225,6 +225,15 @@ Want part of an answer? Ask the narrow question — every read has a shape that 
 
 ### Routine versus deliberate reads
 
+Every registered CLI read has one 28,000-byte rendered-output limit, including
+text, JSON and renderer advisories. Oversized reads print no partial answer:
+`read_output_limit_exceeded` names the narrower recipe and the explicit `--full`
+opt-in. `--json` selects format; it does not bypass the limit. Lists serve
+summary pages: QA plans require `--project P`, and QA/session lists default to
+25 rows. Use `--limit N --offset N` for pages, or `--full` for complete rows
+and the uncapped catalog. Steering JSON serves scope counts; add `--full`
+for complete facts. Human steering pulls still show changed sections.
+
 Routine summaries name withheld content and its deliberate command. Nothing is
 silently dropped or condensed by size. Messages lists name body get; QA plan get
 names `--full` for probe instructions/config/expected outcome and proof tail/

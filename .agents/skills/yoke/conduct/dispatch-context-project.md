@@ -19,7 +19,7 @@ project/path and repair, and never count as read. Carry successfully read
 filename/content once into the relevant Engineer/Tester dispatch context.
 
 ```text
-yoke qa plan list --project {PROJECT} --json
+yoke qa plan list --project {PROJECT} --full --json
 yoke qa requirement list --item PREFIX-N --json
 yoke ephemeral-env get {PROJECT} {BRANCH} --json
 ```

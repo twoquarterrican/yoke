@@ -38,7 +38,7 @@ export function renderRegisteredSessionDetail(
     const calls = scopeBuckets(scope, context.projects(), false).map((project) => ({
       functionId: "sessions.list",
       payload: {
-        session_id: sessionId,
+        session_id: sessionId, detail: "full",
         ...(project === null ? {} : { project }),
       },
     }));

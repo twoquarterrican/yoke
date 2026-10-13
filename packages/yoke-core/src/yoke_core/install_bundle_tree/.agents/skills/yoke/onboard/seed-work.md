@@ -42,7 +42,7 @@ Reusable test plan: resolve ID and attach its immutable snapshot to the matching
 item at the transition where proof is definition-of-done:
 
 ```bash
-yoke qa plan list --project {project} --json
+yoke qa plan list --project {project} --full --json
 yoke qa item-plan attach --item {ITEM} --project {project} --plan-id {plan_id} --transition reviewing-implementation --qa-phase verification
 ```
 

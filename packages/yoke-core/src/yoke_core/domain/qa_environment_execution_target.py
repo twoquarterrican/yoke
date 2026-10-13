@@ -68,6 +68,17 @@ def environment_execution_target(
         )
     except ValueError as exc:
         raise QaExecutionTargetError(str(exc)) from exc
+    target = environment_target_snapshot(identity)
+    if require_runtime_match:
+        runtime_settings = load_environment_settings(
+            conn, int(identity["project_id"]), runtime_environment_name()
+        )
+        require_runtime_target(target, runtime_settings=runtime_settings)
+    return target
+
+
+def environment_target_snapshot(identity: Mapping[str, Any]) -> dict[str, Any]:
+    """Assemble endpoint facts after the caller verifies environment access."""
     settings = _decode(identity["settings"])
     environment_name = str(identity["environment_name"])
     endpoints = _generic_endpoints(identity, settings)
@@ -97,11 +108,6 @@ def environment_execution_target(
         "endpoints": endpoints,
         "role": {"production": is_production(settings)},
     }
-    if require_runtime_match:
-        runtime_settings = load_environment_settings(
-            conn, int(identity["project_id"]), runtime_environment_name()
-        )
-        require_runtime_target(target, runtime_settings=runtime_settings)
     return target
 
 

@@ -52,7 +52,7 @@ export function renderFrontierView(context, main, scope) {
   // read one session roster: Ready omits every item a live session holds.
   const sessionRoster = settledScopedCalls(context, [{
     functionId: "sessions.list",
-    payload: { per_project: true, open: true },
+    payload: { per_project: true, open: true, detail: "full" },
   }]);
   // A revealed session card is tinted by its steering group exactly as it is
   // on Sessions. Those colors are ranked from the open roster, which is the

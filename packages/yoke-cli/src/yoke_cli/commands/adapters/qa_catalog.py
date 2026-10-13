@@ -26,6 +26,7 @@ from yoke_cli.commands.adapters.qa_catalog_usage import (
     PLAN_CASES_REPLACE_EPILOG,
     USAGE_BY_FUNCTION_ID,
 )
+from yoke_cli.commands.adapters.qa_plan_listing import qa_plan_list
 from yoke_contracts.api.function_call import TargetRef
 from yoke_cli.commands.adapters.qa_catalog_usage import (
     configure_attachment as _configure_attachment,
@@ -157,17 +158,6 @@ def qa_method_register(args: List[str]) -> int:
         function_id="qa.project_method.register",
         configure=_configure_method_register,
         payload=payload,
-    )
-
-
-def qa_plan_list(args: List[str]) -> int:
-    usage = "yoke qa plan list --project P [--json]"
-    return _global(
-        args,
-        prog="yoke qa plan list",
-        usage=usage,
-        function_id="qa.plan.list",
-        payload=lambda _args: {},
     )
 
 

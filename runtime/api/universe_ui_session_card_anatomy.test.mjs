@@ -116,7 +116,7 @@ test("Sessions matches the prototype's runtime, assignment, level, and operator 
     requests.filter((request) => String(request.function).startsWith("sessions.")),
     [
       { function: "sessions.steering_groups.list", payload: {} },
-      { function: "sessions.list", payload: { open: true, projects: ["1"] } },
+      { function: "sessions.list", payload: { open: true, detail: "full", projects: ["1"] } },
       { function: "sessions.steering_groups.list", payload: {} },
       { function: "sessions.list", payload: { usage_last_24h: true, projects: ["1"] } },
     ],

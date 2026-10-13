@@ -42,7 +42,7 @@ def _open_request(actor_id: int | None = _SCOPED_ACTOR_ID) -> FunctionCallReques
             session_id="",
         ),
         target=TargetRef(kind="global"),
-        payload={"open": True},
+        payload={"open": True, "detail": "full"},
     )
 
 
@@ -135,7 +135,8 @@ class TestOpenRosterSinglePass:
         assert {"home-1", "other-1"} <= shown
 
     def test_a_steering_claim_still_shows_the_holder_under_that_project(
-        self, test_db,
+        self,
+        test_db,
     ):
         other = _second_project(test_db)
         _scoped_actor(test_db, (1, other))
@@ -156,7 +157,9 @@ class TestOpenRosterSinglePass:
         # The other project's session is the most recently active, so a flat
         # activity ordering would put it first; the grouped roster does not.
         _insert_session(test_db, "home-older", last_heartbeat=_iso(30))
-        _insert_session(test_db, "other-newest", last_heartbeat=_iso(), project_id=other)
+        _insert_session(
+            test_db, "other-newest", last_heartbeat=_iso(), project_id=other
+        )
 
         outcome = handle_sessions_list(_open_request())
 

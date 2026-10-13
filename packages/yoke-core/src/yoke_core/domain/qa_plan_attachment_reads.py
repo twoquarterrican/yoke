@@ -35,10 +35,18 @@ def retracted_item_plan_ids(conn: Any, item_id: int) -> set[int]:
 
 
 def plan_attachment_rows(conn: Any, plan_id: int) -> list[dict]:
+    return plan_attachments_by_plan(conn, [plan_id]).get(plan_id, [])
+
+
+def plan_attachments_by_plan(conn: Any, plan_ids: list[int]) -> dict[int, list[dict]]:
+    """Two set reads for every plan's workflow and item attachments."""
+    if not plan_ids:
+        return {}
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
+    markers = ",".join(marker for _ in plan_ids)
     project_defaults = query_rows(
         conn,
-        "SELECT 'project_default' AS kind, p.slug AS project, "
+        "SELECT d.plan_id, 'project_default' AS kind, p.slug AS project, "
         "d.workflow_id, d.transition_id, NULL AS item_id, "
         "v.id AS workflow_version_id, v.version, "
         "v.definition_json, v.definition_digest "
@@ -46,13 +54,13 @@ def plan_attachment_rows(conn: Any, plan_id: int) -> list[dict]:
         "JOIN projects p ON p.id=d.project_id "
         "JOIN workflows w ON w.id=d.workflow_id "
         "JOIN workflow_versions v ON v.id=w.current_version_id "
-        f"WHERE d.plan_id={marker} "
+        f"WHERE d.plan_id IN ({markers}) "
         "ORDER BY p.slug, d.workflow_id, d.transition_id",
-        (plan_id,),
+        tuple(plan_ids),
     )
     item_attachments = query_rows(
         conn,
-        "SELECT 'item' AS kind, p.slug AS project, "
+        "SELECT a.plan_id, 'item' AS kind, p.slug AS project, "
         "i.workflow_id, a.transition_id, i.id AS item_id, "
         "p.public_item_prefix, i.project_sequence, "
         "v.id AS workflow_version_id, v.version, "
@@ -61,13 +69,14 @@ def plan_attachment_rows(conn: Any, plan_id: int) -> list[dict]:
         "JOIN items i ON i.id=a.item_id "
         "JOIN projects p ON p.id=i.project_id "
         "JOIN workflow_versions v ON v.id=i.workflow_version_id "
-        f"WHERE a.plan_id={marker} "
+        f"WHERE a.plan_id IN ({markers}) "
         "ORDER BY p.slug, i.id, a.transition_id",
-        (plan_id,),
+        tuple(plan_ids),
     )
-    result = []
+    result: dict[int, list[dict]] = {}
     for raw in [*project_defaults, *item_attachments]:
         row = dict(raw)
+        plan_id = int(row.pop("plan_id"))
         runtime = workflow_runtime_from_row(row)
         row["transition_label"] = runtime.stage_label(str(row["transition_id"]))
         for key in (
@@ -81,7 +90,7 @@ def plan_attachment_rows(conn: Any, plan_id: int) -> list[dict]:
             prefix = row.pop("public_item_prefix")
             sequence = row.pop("project_sequence")
             row["public_ref"] = format_item_ref(row["project"], prefix, sequence)
-        result.append(row)
+        result.setdefault(plan_id, []).append(row)
     return result
 
 

@@ -28,7 +28,7 @@ export function itemClaimantPanel(context, item) {
     let rows = null;
     try {
       const read = await callFunction(context.client, "sessions.list", {
-        session_id: String(claim.session_id),
+        session_id: String(claim.session_id), detail: "full",
         project: String(item.project.id),
       });
       if (read.status === 200 && read.envelope.success) {

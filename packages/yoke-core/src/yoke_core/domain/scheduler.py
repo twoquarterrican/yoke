@@ -17,7 +17,7 @@ from .project_settings import resolve_default_wip_cap
 from .scheduler_claims import _evaluate_claim_states
 from .scheduler_exceptional import project_slug_or_id, query_exceptional_items
 from .scheduler_events import _emit_frontier_step_selected, _logger
-from .scheduler_routing import _compute_next_step
+from .scheduler_routing import _compute_next_step, compute_routing_results
 from .scheduler_types import (
     ClaimState,
     GateEvaluation,
@@ -150,13 +150,9 @@ def compute_schedule(
 
     # 5. Convert runnable FrontierItems to definition-selected next steps.
     ranked_steps: List[ScheduledStep] = []
+    routing = compute_routing_results(conn, raw.runnable)
     for rank_idx, fi in enumerate(raw.runnable):
-        step_result = _compute_next_step(
-            fi.adapter,
-            probe_path_claim_activation=fi.probe_path_claim_activation,
-            conn=conn,
-            item_id=fi.item_id,
-        )
+        step_result = routing[fi.item_id]
         step = ScheduledStep(
             item_id=fi.item_id,
             workflow_id=fi.workflow_id,

@@ -160,6 +160,9 @@ def compose_held_reports(
     created here and dropped with the reply.
     """
     now = parse_instant(now)
+    from yoke_core.domain.steering_report_read_connection import ReportReadConnection
+
+    conn = ReportReadConnection(conn)
     reads = FleetReportReads()
     sections: list[ScopedFleetReport] = []
     for claim in list_session_claims(conn, session_id=session_id, active_only=True):

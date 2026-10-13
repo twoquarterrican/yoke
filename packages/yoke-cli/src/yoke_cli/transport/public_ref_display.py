@@ -7,6 +7,7 @@ predates public response composition. No client performs an id lookup.
 from __future__ import annotations
 
 import json
+import io
 import sys
 from typing import Any, TextIO
 
@@ -33,21 +34,46 @@ def emit_response(
     *,
     json_mode: bool,
     human_writer=None,
+    full: bool = False,
 ) -> int:
     from yoke_cli.transport.dispatcher import response_to_dict
 
+    from yoke_cli.transport.output_limit import output_exceeds_limit, read_recovery
+    from yoke_contracts.api.function_call import FunctionError
+
+    stdout, stderr = io.StringIO(), io.StringIO()
     if json_mode:
         print(
             json.dumps(
                 response_to_dict(prepare_human_response(response)), sort_keys=True
-            )
+            ),
+            file=stdout,
         )
     else:
         display = prepare_human_response(response)
         if human_writer is not None and display.success:
-            human_writer(display, sys.stdout, sys.stderr)
+            human_writer(display, stdout, stderr)
         else:
-            _default_human_writer(display, sys.stdout, sys.stderr)
+            _default_human_writer(display, stdout, stderr)
+    if output_exceeds_limit(
+        response.function, stdout.getvalue(), stderr.getvalue(), full=full
+    ):
+        refusal = response.model_copy(
+            update={
+                "success": False,
+                "result": {},
+                "warnings": [],
+                "event_ids": [],
+                "error": FunctionError(
+                    code="read_output_limit_exceeded",
+                    message="The rendered read exceeds the 28000-byte CLI output limit; no partial answer was printed.",
+                    recovery_hint=read_recovery(response.function),
+                ),
+            }
+        )
+        return emit_response(refusal, json_mode=json_mode, full=True)
+    sys.stdout.write(stdout.getvalue())
+    sys.stderr.write(stderr.getvalue())
     return 0 if response.success else 1
 
 

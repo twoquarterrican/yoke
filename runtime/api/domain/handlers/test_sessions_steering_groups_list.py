@@ -125,7 +125,9 @@ def _roster_groups(*, actor_id: int | None = None) -> list[str]:
     """The same answer the way the tint used to reach it, for comparison."""
     outcome = handle_sessions_list(
         _request(
-            "sessions.list", {"per_project": True, "open": True}, actor_id=actor_id
+            "sessions.list",
+            {"per_project": True, "open": True, "detail": "full"},
+            actor_id=actor_id,
         )
     )
     assert outcome.primary_success, outcome.error

@@ -56,7 +56,7 @@ export async function locationResolves(client, href, projects, sections = {}, ba
       case "machines":
         return Boolean((await read("machine.detail", { machine_id: detail }))?.machine);
       case "sessions": {
-        const result = await read("sessions.list", { session_id: detail, project });
+        const result = await read("sessions.list", { session_id: detail, project, detail: "full" });
         return Boolean(result?.rows?.some((row) => String(row.session_id) === detail));
       }
       case "shipping":

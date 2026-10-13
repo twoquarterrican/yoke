@@ -35,7 +35,7 @@ def resolve_dash_verification_plan(
     listed = call_dispatcher(
         function_id="qa.plan.list",
         target=TargetRef(kind="global"),
-        payload={"project": project},
+        payload={"project": project, "detail": "full"},
         actor=build_actor(session_id=session_id),
     )
     if not listed.success:

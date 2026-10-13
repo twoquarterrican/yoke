@@ -174,7 +174,7 @@ export async function renderQaPlans(context, main, scope) {
     documentNode, "p", "empty", "loading test plans…",
   ));
   const { callResults, failed } = await loadProjectCalls(
-    context, scope, "qa.plan.list", {},
+    context, scope, "qa.plan.list", { detail: "full" },
   );
   if (!context.isMounted()) return;
   if (failed) {

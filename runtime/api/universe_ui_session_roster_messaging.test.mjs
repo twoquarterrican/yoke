@@ -139,7 +139,7 @@ test("roster defaults to active and exposes only the supported filters", async (
     requests.filter((request) => request.function === "sessions.list")
       .map((request) => request.payload),
     [
-      { open: true, projects: ["1"] },
+      { open: true, detail: "full", projects: ["1"] },
       { usage_last_24h: true, projects: ["1"] },
     ],
   );

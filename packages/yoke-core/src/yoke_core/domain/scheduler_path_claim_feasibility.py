@@ -53,9 +53,7 @@ def _p(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
 
 
-def _fetch_candidate_claim(
-    conn: Any, item_id: int
-) -> Optional[Tuple[int, str]]:
+def _fetch_candidate_claim(conn: Any, item_id: int) -> Optional[Tuple[int, str]]:
     """Most relevant exclusive non-terminal claim — prefer active over
     planned, most recently registered on a tie. Returns ``None`` when
     the path-claim tables are absent (minimal-schema test fixtures)."""
@@ -86,9 +84,7 @@ def _fetch_candidate_claim(
     return int(row[0]), str(row[1])
 
 
-def _fetch_claim_target_ids(
-    conn: Any, claim_id: int
-) -> List[int]:
+def _fetch_claim_target_ids(conn: Any, claim_id: int) -> List[int]:
     p = _p(conn)
     rows = conn.execute(
         f"SELECT target_id FROM path_claim_targets WHERE claim_id = {p}",
@@ -141,9 +137,7 @@ def _enumerate_conflicts(
             # public ref, not the internal id.
             conflicting_item_ids.append(render_item_ref(conn, int(other_item_id)))
         shared_target_ids.update(int(tid) for tid in shared)
-    shared_path_map = path_string_map_for_target_ids(
-        conn, sorted(shared_target_ids)
-    )
+    shared_path_map = path_string_map_for_target_ids(conn, sorted(shared_target_ids))
     return (
         sorted(conflicting_claim_ids),
         sorted(conflicting_item_ids),
@@ -152,7 +146,11 @@ def _enumerate_conflicts(
 
 
 def probe_implement_feasibility(
-    conn: Any, *, item_id: int,
+    conn: Any,
+    *,
+    item_id: int,
+    candidates: dict | None = None,
+    targets: dict | None = None,
 ) -> FeasibilityVerdict:
     """Dry-run feasibility verdict for the candidate's planned
     ``advance`` path-claim activation.
@@ -163,14 +161,22 @@ def probe_implement_feasibility(
     ``SERIAL_VIA_DEPENDENCY``. ``BLOCKED_CROSS_ITEM_OVERLAP`` with
     conflict enumeration when classify_overlap is ``INCOMPATIBLE``.
     """
-    candidate = _fetch_candidate_claim(conn, item_id)
+    candidate = (
+        candidates.get(item_id)
+        if candidates is not None
+        else _fetch_candidate_claim(conn, item_id)
+    )
     if candidate is None:
         return FeasibilityVerdict(
             outcome=FeasibilityOutcome.NO_CLAIM,
             reason=f"no planned path-claim found for {render_item_ref(conn, item_id)}",
         )
     claim_id, integration_target = candidate
-    target_ids = _fetch_claim_target_ids(conn, claim_id)
+    target_ids = (
+        targets.get(claim_id, [])
+        if targets is not None
+        else _fetch_claim_target_ids(conn, claim_id)
+    )
     if not target_ids:
         return FeasibilityVerdict(
             outcome=FeasibilityOutcome.FEASIBLE,
@@ -209,6 +215,44 @@ def probe_implement_feasibility(
         reason=f"classify_overlap={classification.value}",
         candidate_claim_id=claim_id,
     )
+
+
+def probe_implement_feasibilities(conn: Any, item_ids: list[int]) -> dict:
+    """Batch candidate and target reads before the shared overlap classifier."""
+    if not item_ids:
+        return {}
+    p = _p(conn)
+    from yoke_core.domain.schema_common import _table_exists
+
+    if not _table_exists(conn, "path_claims"):
+        candidates, targets = {}, {}
+    else:
+        rows = conn.execute(
+            "SELECT owner_item_id, id, integration_target FROM ("
+            "SELECT owner_item_id, id, integration_target, ROW_NUMBER() OVER ("
+            "PARTITION BY owner_item_id ORDER BY CASE state WHEN 'active' THEN 0 ELSE 1 END, "
+            "registered_at DESC, id DESC) AS position FROM path_claims "
+            "WHERE owner_kind='item' AND mode='exclusive' AND state IN ('planned','active') "
+            f"AND owner_item_id IN ({','.join(p for _ in item_ids)})) claims WHERE position=1",
+            tuple(item_ids),
+        ).fetchall()
+        candidates = {int(row[0]): (int(row[1]), str(row[2])) for row in rows}
+        claim_ids = [value[0] for value in candidates.values()]
+        targets = {}
+        if claim_ids:
+            rows = conn.execute(
+                "SELECT claim_id, target_id FROM path_claim_targets "
+                f"WHERE claim_id IN ({','.join(p for _ in claim_ids)})",
+                tuple(claim_ids),
+            ).fetchall()
+            for row in rows:
+                targets.setdefault(int(row[0]), []).append(int(row[1]))
+    return {
+        item_id: probe_implement_feasibility(
+            conn, item_id=item_id, candidates=candidates, targets=targets
+        )
+        for item_id in item_ids
+    }
 
 
 __all__ = [

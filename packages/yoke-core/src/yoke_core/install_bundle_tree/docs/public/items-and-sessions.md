@@ -269,8 +269,8 @@ Read `--help` for project and disabled-flow filters.
 
 `yoke steering report get` shows scope, inbox and shared-machine sections whose
 content changed since this session's last pull read, plus an unchanged count.
-`--full` shows every section; `--json` keeps all facts without consuming the
-human checkpoint. Read state belongs to the session and does not spend the
+`--full` shows every section; `--json` returns scope counts and `--json --full`
+keeps all facts without consuming the human checkpoint. Read state belongs to the session and does not spend the
 hook/watcher delivery interval.
 
 Only the registered top-level session may send, acknowledge, or cancel Fleet messages or handle Fleet wake requests. In-process subagents receive no Fleet delivery at all; they report through their parent channel. Independently launched workers participate as top-level sessions.
@@ -282,7 +282,7 @@ printf '%s\n' 'PEER REQUEST' | yoke say --item PREFIX-N --steering --stdin
 printf '%s\n' 'PEER REPLY' | yoke say --session EXACT-REQUESTING-SESSION-ID --steering --stdin
 printf '%s\n' 'MESSAGE' | yoke say --actor ben --stdin
 printf '%s\n' 'MESSAGE' | yoke say --steering --stdin
-yoke sessions list --liveness active
+yoke sessions list --liveness active --limit 25
 yoke messages list --recipient-session CURRENT-SESSION-ID --state unacknowledged
 yoke messages get MESSAGE-ID
 yoke messages acknowledge MESSAGE-ID

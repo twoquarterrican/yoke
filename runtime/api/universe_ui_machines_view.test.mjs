@@ -192,7 +192,7 @@ test("a large open roster keeps every session in the machine totals", async () =
     }),
     "sessions.list": (request) => {
       if (request.payload.usage_last_24h) return ok({ rows: [] });
-      assert.deepEqual(request.payload, { open: true });
+      assert.deepEqual(request.payload, { open: true, detail: "full" });
       return ok({ rows });
     },
   });

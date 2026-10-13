@@ -66,7 +66,7 @@ def add_json_arg(parser: argparse.ArgumentParser) -> None:
         "--json",
         dest="json_mode",
         action="store_true",
-        help="Emit the command's JSON response envelope on stdout.",
+        help="Print the JSON envelope.",
     )
 
 
@@ -170,6 +170,19 @@ def parse_or_usage_error(
     if parser.formatter_class is argparse.HelpFormatter:
         parser.formatter_class = argparse.RawDescriptionHelpFormatter
     _ensure_project_arg_for_item_parser(parser)
+    from yoke_cli.transport.output_limit import (
+        full_output_requested,
+        registered_read_requested,
+    )
+
+    if (full_output_requested() or registered_read_requested()) and not _has_arg(
+        parser, "full"
+    ):
+        parser.add_argument(
+            "--full",
+            action="store_true",
+            help="Uncapped read output.",
+        )
     try:
         return parser.parse_args(args)
     except SystemExit as exc:

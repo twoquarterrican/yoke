@@ -131,19 +131,40 @@ def live_lane_count(conn: Any, *, machine_id: str, now: datetime) -> int:
     return int(sessions or 0) + int(launches or 0)
 
 
+def live_lane_counts(conn: Any, *, now: datetime) -> dict[str, int]:
+    """One grouped read of all machines' sessions and in-flight launches."""
+    p = _marker(conn)
+    states = ",".join(p for _ in IN_FLIGHT_LAUNCH_STATES)
+    rows = conn.execute(
+        "SELECT machine_id, SUM(n) AS n FROM ("
+        "SELECT machine_id, COUNT(*) AS n FROM harness_sessions "
+        "WHERE ended_at IS NULL GROUP BY machine_id UNION ALL "
+        "SELECT assigned_machine_id AS machine_id, COUNT(*) AS n FROM session_launches "
+        f"WHERE state IN ({states}) AND registered_session_id IS NULL AND deadline_at > {p} "
+        "GROUP BY assigned_machine_id) counts GROUP BY machine_id",
+        (*IN_FLIGHT_LAUNCH_STATES, instant_parameter(conn, as_utc(now))),
+    ).fetchall()
+    return {str(row["machine_id"]): int(row["n"]) for row in rows}
+
+
 def machine_capacity(
     conn: Any,
     *,
     machine_id: str,
     capacity_document: Any,
     now: datetime,
+    live_lanes: int | None = None,
 ) -> MachineCapacity:
     """Pair the relay's published reading with the lanes the plane can see."""
     current = as_utc(now)
     reading = _document(capacity_document)
     return MachineCapacity(
         machine_id=machine_id,
-        live_lanes=live_lane_count(conn, machine_id=machine_id, now=current),
+        live_lanes=(
+            live_lane_count(conn, machine_id=machine_id, now=current)
+            if live_lanes is None
+            else live_lanes
+        ),
         max_worker_lanes=reading.get("max_worker_lanes"),
         cap_source=reading.get("cap_source"),
         free_memory_bytes=reading.get("free_memory_bytes"),

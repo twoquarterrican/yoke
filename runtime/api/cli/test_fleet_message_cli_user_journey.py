@@ -202,12 +202,12 @@ def test_operator_journey_discovers_sends_reads_and_acknowledges() -> None:
 
     result, output, error = _run_cli(
         broker,
-        ["sessions", "list", "--liveness", "active"],
+        ["sessions", "list", "--liveness", "active", "--full"],
         session_id=SENDER_ID,
     )
     assert result == 0 and error == ""
     assert RECIPIENT_ID in output
-    assert "yes" in output
+    assert '"messageable": true' in output
     evidence.append(output)
 
     result, output, error = _run_cli(

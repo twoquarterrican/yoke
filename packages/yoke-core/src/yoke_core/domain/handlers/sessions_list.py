@@ -15,6 +15,7 @@ from yoke_core.domain.sessions_visible_roster import (
     open_roster_rows,
     resolve_project_ids,
 )
+from yoke_contracts.read_detail import DETAIL_FULL, DETAIL_SUMMARY, ReadDetail
 
 
 class SessionsHistoryRequest(BaseModel):
@@ -38,6 +39,8 @@ class SessionsListRequest(BaseModel):
     session_id: Optional[str] = None
     history: Optional[SessionsHistoryRequest] = None
     usage_last_24h: bool = False
+    detail: ReadDetail = DETAIL_SUMMARY
+    offset: int = Field(default=0, ge=0)
 
 
 class SessionsListResponse(BaseModel):
@@ -147,6 +150,17 @@ def handle_sessions_list(request: FunctionCallRequest) -> HandlerOutcome:
             jsonpath="$.target.kind",
         )
     payload = request.payload or {}
+    detail, offset = payload.get("detail", DETAIL_SUMMARY), payload.get("offset", 0)
+    if (
+        detail not in (DETAIL_FULL, DETAIL_SUMMARY)
+        or isinstance(offset, bool)
+        or not isinstance(offset, int)
+        or offset < 0
+    ):
+        return _error(
+            "payload_invalid",
+            "detail must be summary or full; offset must be nonnegative; start at --offset 0",
+        )
     if payload.get("history") is not None:
         incompatible = _incompatible_keys(
             payload, "project", "projects", "usage_last_24h"
@@ -182,8 +196,7 @@ def handle_sessions_list(request: FunctionCallRequest) -> HandlerOutcome:
             )
         usage_projects = payload.get("projects", [])
         if not isinstance(usage_projects, list) or any(
-            not isinstance(value, str) or not value.strip()
-            for value in usage_projects
+            not isinstance(value, str) or not value.strip() for value in usage_projects
         ):
             return _error(
                 "payload_invalid",
@@ -251,19 +264,19 @@ def handle_sessions_list(request: FunctionCallRequest) -> HandlerOutcome:
             jsonpath="$.payload.per_project",
         )
     from yoke_core.domain.sessions_list_read import (
-        DEFAULT_SESSIONS_LIST_LIMIT,
-        MAX_SESSIONS_LIST_LIMIT,
         list_sessions,
+        session_summary_result,
     )
 
     try:
-        default_limit = (
-            MAX_SESSIONS_LIST_LIMIT if open_only else DEFAULT_SESSIONS_LIST_LIMIT
-        )
+        default_limit = None if detail == DETAIL_FULL else 25
         effective_limit = limit if limit is not None else default_limit
         if open_only:
             rows = open_roster_rows(
-                request, projects or ([project] if project else []), effective_limit
+                request,
+                projects or ([project] if project else []),
+                effective_limit,
+                offset,
             )
         else:
             rows = list_sessions(
@@ -271,6 +284,7 @@ def handle_sessions_list(request: FunctionCallRequest) -> HandlerOutcome:
                 liveness=liveness,
                 ended_cause=ended_cause,
                 limit=effective_limit,
+                offset=offset,
                 per_project=per_project,
                 session_id=session_filter.strip()
                 if session_filter is not None
@@ -293,6 +307,14 @@ def handle_sessions_list(request: FunctionCallRequest) -> HandlerOutcome:
             jsonpath="$.payload.project",
         )
     from yoke_core.domain.session_control_roster import session_control_roster_result
+
+    if detail != DETAIL_FULL:
+        return HandlerOutcome(
+            result_payload=session_summary_result(
+                rows, offset=offset, limit=effective_limit
+            ),
+            primary_success=True,
+        )
 
     return HandlerOutcome(
         result_payload=session_control_roster_result(rows),

@@ -189,7 +189,7 @@ def test_session_closeout_and_reclaim_dispatch() -> None:
     assert request.payload == {"confirm": True, "project_ids": [1, 3]}
 
 
-def test_sessions_list_dispatches_filters_and_prints_roster_table() -> None:
+def test_sessions_list_dispatches_filters_and_prints_summary_rows() -> None:
     def stub(request: FunctionCallRequest) -> FunctionCallResponse:
         _CAPTURED_REQUESTS.append(request)
         return FunctionCallResponse(
@@ -198,16 +198,13 @@ def test_sessions_list_dispatches_filters_and_prints_roster_table() -> None:
             version=request.version,
             request_id=request.request_id,
             result={
-                "fields": ["session_id", "liveness", "mode", "claims"],
+                "fields": ["session_id", "liveness", "mode", "current_item_ref"],
                 "rows": [
                     {
                         "session_id": "s-1",
                         "liveness": "active",
                         "mode": "charge",
-                        "claims": [
-                            {"target_kind": "item", "target": "YOK-41"},
-                            {"target_kind": "process", "target": "feed"},
-                        ],
+                        "current_item_ref": "YOK-41",
                     },
                 ],
             },
@@ -236,15 +233,8 @@ def test_sessions_list_dispatches_filters_and_prints_roster_table() -> None:
                     )
 
     assert rc == 0
-    lines = out.getvalue().splitlines()
-    assert lines[:3] == [
-        "SESSIONS",
-        "SESSION  PROJECT  FOCUS         ROLE  RUNNER  MACHINE  LIVENESS  RESUME  RELAY  MESSAGEABLE  DIAGNOSTICS",
-        "-------  -------  ------------  ----  ------  -------  --------  ------  -----  -----------  -----------",
-    ]
-    assert lines[3] == (
-        "s-1      —        YOK-41, feed  —     —       —        active    —       —      unknown      —"
-    )
+    assert out.getvalue().splitlines() == ["s-1|active|charge|YOK-41"]
+    assert "--full" in err.getvalue()
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "sessions.list"
     assert req.target.kind == "global"
@@ -252,6 +242,8 @@ def test_sessions_list_dispatches_filters_and_prints_roster_table() -> None:
         "project": "yoke",
         "liveness": "active",
         "limit": 5,
+        "detail": "summary",
+        "offset": 0,
     }
 
 
