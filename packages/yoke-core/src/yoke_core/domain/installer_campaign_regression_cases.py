@@ -8,7 +8,6 @@ from yoke_core.domain.installer_campaign_current_text_cases import (
 )
 from yoke_core.domain.installer_campaign_plan_common import (
     FRESH_HOST,
-    PATH_READY_TEXT,
     PUBLIC_INSTALL,
     SHELL_PRECONFIGURED,
     action,
@@ -57,15 +56,12 @@ def _command_case(position, key, command, *, instructions, outcome):
 
 def _hosted_case(position, key, prefix, *, instructions, outcome):
     source = next(
-        row for row in CURRENT_TEXT_INSTALLER_CAMPAIGN_CASES
+        row
+        for row in CURRENT_TEXT_INSTALLER_CAMPAIGN_CASES
         if row["case_key"] == "cold-start-hosted"
     )
     config = deepcopy(source["method_config"]["baseline_configs"][SHELL_PRECONFIGURED])
     config["setup_operations"] = current_release_setup(key, path_ready=True)
-    for step in config["actions"]:
-        if step["step"] == "path-diagnosis":
-            step["ready_text"] = list(PATH_READY_TEXT)
-            step["ready_timeout_seconds"] = 180
     config["expected_text"].append(key + "-prepared")
     config["notes"] = instructions
     return terminal_case(
@@ -126,7 +122,9 @@ _STALE_PREPARE = (
 STALE_REINSTALL = _command_case(
     11,
     "stale-reinstall",
-    _STALE_PREPARE + "; " + _INSTALL_ONLY
+    _STALE_PREPARE
+    + "; "
+    + _INSTALL_ONLY
     + f'; test "$({YOKE_BIN} --version)" = "$_campaign_expected"',
     instructions=(
         "Resolve a published predecessor from this target's wheel index. Install it without setup, "
@@ -162,7 +160,7 @@ LOCAL_HOSTED_NO_BACKUP = _hosted_case(
 SECOND_MACHINE_JOIN = _hosted_case(
     14,
     "second-machine-join",
-    "test ! -e \"$HOME/.yoke/config.json\"",
+    'test ! -e "$HOME/.yoke/config.json"',
     instructions=(
         "Run on a second registered physical Test Machine after the first machine has joined the "
         "same organization. Pin that second machine through the saved case's machine constraint. "
@@ -187,8 +185,9 @@ UNINSTALL = _command_case(
     "uninstall",
     _LOCAL_SETUP
     + f"; {YOKE_BIN} uninstall --no-backup --projects none --yes"
-    + "; python3 -c " + shlex.quote(_UNINSTALL_WAIT_SCRIPT)
-    + f" {YOKE_BIN}; test ! -f \"$HOME/.yoke/config.json\"",
+    + "; python3 -c "
+    + shlex.quote(_UNINSTALL_WAIT_SCRIPT)
+    + f' {YOKE_BIN}; test ! -f "$HOME/.yoke/config.json"',
     instructions=(
         "Install and configure a local machine-only universe on the isolated host. Uninstall with "
         "explicit no-backup and no-project choices. Verify launcher and machine config removal "
@@ -252,7 +251,9 @@ LATE_HARNESS = _command_case(
     "late-harness-discovery",
     '"$(uv tool dir)/yoke-cli/bin/python3" -c '
     + shlex.quote(_LATE_HARNESS_SCRIPT)
-    + " " + shlex.quote(_LOCAL_SETUP) + f" {FIXTURE_ROOT}/late-codex",
+    + " "
+    + shlex.quote(_LOCAL_SETUP)
+    + f" {FIXTURE_ROOT}/late-codex",
     instructions=(
         "Use a disposable CODEX_HOME and temporarily preserve its executable outside discovery while configuring Yoke, "
         "then restore the executable and rerun public setup for the newly available harness. Verify native version, trust, hooks "
@@ -285,7 +286,8 @@ def recovery_cases(*, primary_machine: str, joining_machine: str):
     cases = deepcopy(INSTALLER_RECOVERY_CASES)
     for case in cases:
         case["method_config"]["machine"] = (
-            joining_machine if case["case_key"] == "second-machine-join"
+            joining_machine
+            if case["case_key"] == "second-machine-join"
             else primary_machine
         )
     return cases

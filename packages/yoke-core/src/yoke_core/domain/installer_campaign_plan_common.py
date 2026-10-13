@@ -66,7 +66,6 @@ PARENT_HANDOFF_TEXT = (
     "Next: make it execution-ready.",
     "run /yoke onboard",
 )
-PATH_READY_TEXT = ("Yoke is already on your PATH.",)
 MACHINE_GITHUB_TEXT = ("Connect GitHub?",)
 PROJECT_MODE_TEXT = ("Set up a project.", "Where's the code?")
 
