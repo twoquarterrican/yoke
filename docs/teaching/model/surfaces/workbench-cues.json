@@ -84,8 +84,10 @@
    "title": "Make identity, machine approval, progress and useful next actions understandable.",
    "status": "candidate",
    "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["identity/auth", "machines/registration", "workbench/onboarding"],
+   "verification": "Standalone hosted setup has a committed candidate with fixture screenshots of beta refusals and organization creation at desktop/375px in light/dark themes. Production captures still show the previous serving baseline; exact deployed proof and timed stage founding acceptance remain pending. Shared machine approval has its own implementation and approval proof; this candidate does not prove that page.",
+   "current": "The hosted candidate removes title eyebrows and the no-invite diagnostic while keeping named invitation failures. Settled URL and Subscription rows are grouped; creation shows one indicator and a quiet line that changes after 45 seconds to explain resumability.",
+   "desired": "Accept the standalone hosted screens against their exact deployed build and real timed founding journey. Verify shared machine approval separately, including its machine identity, local expiry and human approval outcome. These standalone screens do not apply to local or self-hosted setup.",
+   "topics": ["identity/auth", "identity/accounts/beta-access-and-organization-creation", "machines/registration", "workbench/onboarding"],
    "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
   },
   {
