@@ -35,10 +35,11 @@ def machine_home(monkeypatch, tmp_path) -> Path:
 
 class TestUp:
     @pytest.fixture(autouse=True)
-    def local_connection(self, machine_home):
+    def local_connection(self, machine_home, monkeypatch):
         write_local_connection()
+        monkeypatch.setattr(commands, "_resolve_session_id", lambda: None)
 
-    def test_up_starts_the_daemon_and_reports_the_door(
+    def test_up_starts_the_daemon_without_printing_admission(
         self,
         monkeypatch,
         capsys,
@@ -58,7 +59,8 @@ class TestUp:
         assert report["ok"] is True
         assert report["started"] is True
         assert report["browser_opened"] is False
-        assert report["private_url"] == "http://127.0.0.1:9999/?token=stub-token"
+        assert "private_url" not in report
+        assert report["browser_reason"] == "browser_open_disabled"
         assert started == {"host": "127.0.0.1", "port": 9999, "env": "local"}
 
     def test_up_on_a_serving_daemon_reports_it_without_restarting(
@@ -136,7 +138,10 @@ class TestUp:
         monkeypatch.setattr(
             commands,
             "open_url",
-            partial(hosted_machine_browser.open_url, browser_open=opened.append),
+            partial(
+                hosted_machine_browser.open_url,
+                browser_open=lambda url: opened.append(url) or True,
+            ),
         )
 
         assert commands.ui_up(["--json"]) == 0

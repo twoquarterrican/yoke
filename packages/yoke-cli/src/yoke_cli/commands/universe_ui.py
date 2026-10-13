@@ -1,24 +1,9 @@
-"""Tool-shaped ``yoke ui`` — open self-host or machine-local workbenches.
+"""Open self-host or machine-local workbenches without exposing sign-in tokens.
 
-The view is a daemon, not a terminal job: ``yoke ui up`` starts the
-token-gated, read-only server detached and prints the tokened URL,
-``yoke ui down`` stops it, and ``yoke ui`` / ``yoke ui status`` report
-whether it is serving. The server outlives the shell that started it
-and, on macOS, the login session — closing the window no longer closes
-the view. The foreground server it supervises is
-``yoke ui serve-process``, a child entrypoint rather than an operator
-command.
-
-On self-host HTTPS connections, ``up`` opens the server's own workbench
-through company sign-in or a single-use token link. Local serving consults
-the connection allowlist (see
-:mod:`yoke_cli.commands.universe_ui_connection`); ``status`` and
-``down`` carry no gate, because they report on and stop a process
-rather than open a universe.
-
-The tokened URL printed here is the user's door — terminal-only output,
-never written into event streams or logs. ``--json`` carries it under
-``private_url`` so the secrecy is obvious to tooling.
+``yoke ui up`` opens the browser and starts the local daemon when needed.
+``yoke ui`` / ``status`` report daemon state; ``down`` stops it. Browser
+admission URLs stay in memory and never enter text or JSON output. Agents,
+headless callers and ``--no-browser`` receive the human-terminal recovery.
 """
 
 from __future__ import annotations
@@ -42,6 +27,7 @@ from yoke_cli.config import universe_ui_daemon as daemon
 from yoke_cli.config.hosted_machine_browser import open_url
 from yoke_cli.config.universe_ui_daemon_state import UiDaemonError
 from yoke_cli.config.universe_ui_launchd import UiLaunchdError
+from yoke_cli.transport.dispatcher import _resolve_session_id
 
 AdapterFn = Callable[[List[str]], int]
 
@@ -74,17 +60,17 @@ def ui_status(
         prog=prog,
         description=(
             "Report whether this machine's universe view is serving, and "
-            "print its tokened URL when it is. Reading status is all bare "
+            "report its state without sign-in tokens. Reading status is all bare "
             "`yoke ui` does — serving is `yoke ui up`."
         ),
         epilog=(
             "The view is a machine daemon, not a terminal job:\n"
-            "  yoke ui up      start it detached and print the tokened URL\n"
+            "  yoke ui up      start it detached and open the browser\n"
             "  yoke ui         report it (this command)\n"
             "  yoke ui status  the same report, named\n"
             "  yoke ui down    stop it and drop its supervisor\n"
-            "\nThe URL carries a session token stable to this machine — "
-            "treat it like a password. The server binds loopback only."
+            "\nRun `yoke ui up` from your own terminal to sign in. "
+            "The server binds loopback only."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -98,6 +84,7 @@ def ui_status(
         print(f"error: {exc}", file=sys.stderr)
         return 1
     if parsed.json_mode:
+        report.pop("private_url", None)
         print(json.dumps({"ok": True, **report}, sort_keys=True), flush=True)
         return 0
     _print_status(report)
@@ -111,7 +98,7 @@ def ui_up(args: List[str]) -> int:
             "Open the active self-host server's workbench, using company "
             "sign-in or a single-use API-token sign-in link. On a non-prod "
             "local-postgres connection (`yoke init --local`), start the "
-            "loopback universe view as a detached daemon and print its URL."
+            "loopback universe view as a detached daemon and open the browser."
         ),
     )
     _add_host_port_flags(parser)
@@ -119,7 +106,7 @@ def ui_up(args: List[str]) -> int:
         "--no-browser",
         dest="no_browser",
         action="store_true",
-        help="Do not open the default browser on the tokened URL.",
+        help="Skip browser opening; sign-in tokens are still never printed.",
     )
     _add_json_flag(parser)
     parsed = parse_or_usage_error(parser, args, UI_UP_USAGE)
@@ -150,33 +137,55 @@ def ui_up(args: List[str]) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    url = str(report.get("private_url") or "")
-    browser_result = open_url(url) if url and not parsed.no_browser else None
-    opened = bool(browser_result and browser_result.opened)
+    url = str(report.pop("private_url", "") or "")
+    reason = "browser_open_disabled" if parsed.no_browser else ""
+    if not reason and _resolve_session_id():
+        reason = "browser_agent_mode"
+    opened = False
+    if not reason:
+        try:
+            opened = bool(url and open_url(url).opened)
+        except Exception:  # Browser exceptions can contain the private URL.
+            opened = False
+        if not opened:
+            reason = "browser_open_failed"
+    recovery = (
+        "Run `yoke ui up` from your own terminal on a machine with a display "
+        "to open the browser and sign in."
+    )
+    failed = reason == "browser_open_failed"
     if parsed.json_mode:
         print(
             json.dumps(
-                {"ok": True, "browser_opened": opened, **report},
+                {
+                    "ok": not failed,
+                    "browser_opened": opened,
+                    **report,
+                    **(
+                        {"browser_reason": reason, "recovery": recovery}
+                        if reason
+                        else {}
+                    ),
+                },
                 sort_keys=True,
             ),
             flush=True,
         )
     else:
         if report.get("mode") == "self-host":
-            print(f"yoke ui: self-host workbench at:\n  {url}", flush=True)
-            if report.get("auth_method") == "token":
-                print(
-                    "This single-use sign-in link is private and expires shortly; run `yoke ui up` again if needed.",
-                    flush=True,
-                )
+            print(
+                f"yoke ui: self-host workbench on env {report.get('env')}", flush=True
+            )
         else:
             _print_status(report)
+        if opened:
+            print("Browser opened for sign-in.", flush=True)
+        if reason:
+            print(f"{reason}: {recovery}", flush=True)
         note = str(report.get("supervisor_note") or "")
         if note:
             print(note, flush=True)
-    if browser_result and not opened:
-        print(f"Browser did not open: {browser_result.reason}", file=sys.stderr)
-    return 0
+    return 1 if failed else 0
 
 
 def ui_down(args: List[str]) -> int:
@@ -185,7 +194,7 @@ def ui_down(args: List[str]) -> int:
         description=(
             "Stop the machine-local universe view and remove its "
             "supervisor. The machine's session token survives, so the "
-            "next `yoke ui up` prints the same URL."
+            "next `yoke ui up` opens the browser for sign-in."
         ),
     )
     _add_json_flag(parser)
@@ -198,6 +207,7 @@ def ui_down(args: List[str]) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     if parsed.json_mode:
+        report.pop("private_url", None)
         print(json.dumps({"ok": True, **report}, sort_keys=True), flush=True)
     elif report.get("stopped"):
         print(f"yoke ui: stopped (pid {report.get('stopped_pid')})")
@@ -212,11 +222,10 @@ def _print_status(report: Dict[str, object]) -> None:
         print("Start the local universe view with `yoke ui up`.", flush=True)
         return
     print(
-        "yoke ui: serving the local universe (read-only) as pid "
-        f"{report.get('pid')} on env {report.get('env')} at:"
+        "yoke ui: serving the local universe as pid "
+        f"{report.get('pid')} on env {report.get('env')}"
     )
-    print(f"  {report.get('private_url')}")
-    print("This URL is the door — treat it like a password.")
+    print("Run `yoke ui up` from your own terminal to open the browser and sign in.")
     if not report.get("serving"):
         print(
             "The process is alive but not yet accepting connections; "
@@ -231,9 +240,8 @@ def _add_json_flag(parser: argparse.ArgumentParser) -> None:
         dest="json_mode",
         action="store_true",
         help=(
-            "Print a JSON line naming the daemon state and, when it is "
-            "serving, or the self-host browser door, under private_url "
-            "(a tokened URL or single-use sign-in link is private)."
+            "Print daemon state or self-host browser outcome as JSON. "
+            "Sign-in URLs and tokens are never included."
         ),
     )
 

@@ -50,7 +50,12 @@
       {
        "id": "connection-tokens",
        "title": "Connection tokens",
-       "status": "draft-copy"
+       "status": "observed",
+       "sources": ["packages/yoke-cli/src/yoke_cli/commands/universe_ui.py", "docs/self-host-browser-sign-in.md"],
+       "note": "UI launch/status output contains no sign-in tokens in text or JSON. Human terminals open browser admission directly; agents and unavailable browsers receive a named reason and human-terminal recovery.",
+       "surface_refs": ["command-feedback"],
+       "scenario_refs": ["browser_identities"],
+       "plan_refs": ["FIRST-USER.16"]
       },
       {
        "id": "provider-secrets",

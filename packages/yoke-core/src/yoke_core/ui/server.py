@@ -25,10 +25,9 @@ Security model:
   the bare URL, so asset and API requests authenticate via the cookie and
   the tokened form drops out of browser history. That cookie is named
   after the bind port (:func:`~yoke_core.ui.session_gate.session_cookie_name`),
-  because cookies are not port-scoped. Print the door URL only to the terminal.
+  because cookies are not port-scoped. Keep the admission URL private to browser opening.
 * The function proxy accepts only the function ids in
-  :data:`UI_READ_FUNCTION_ALLOWLIST` — a closed, read-only roster — plus
-  the two actor-scoped Overview dismissal writes in
+  :data:`UI_READ_FUNCTION_ALLOWLIST` and the actor-scoped writes in
   :data:`UI_MUTATION_FUNCTION_ALLOWLIST`, which act only as the resolved
   local operator actor. Everything else is refused with 403 before the
   dispatcher sees it.
@@ -127,7 +126,7 @@ def private_url(
     *,
     host: str = DEFAULT_UI_HOST,
 ) -> str:
-    """The tokened URL that admits the caller — terminal-only, never logged."""
+    """The private URL that admits the browser; never printed or logged."""
     return f"http://{resolve_ui_host(host)}:{port}/?token={token}"
 
 

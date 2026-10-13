@@ -15,12 +15,14 @@ single-use link valid for two minutes. The server stores a public selector and
 the SHA-256 hash of its secret, compares the hash in constant time, and consumes
 it atomically when minting a normal browser session for the token's actor.
 The secret travels in a URL fragment and same-origin POST body; it is removed
-from browser history before redemption and is never a request URL. Treat the
-link printed in the terminal (or `private_url` with `--json`) like a password.
+from browser history before redemption and is never a request URL. The CLI
+passes the link directly to the browser and never prints it, including in JSON.
 Expired, used, or invalid links name `browser_sign_in_expired`,
 `browser_sign_in_used`, or `browser_sign_in_invalid` and tell you to run
-`yoke ui up` again. Actor disablement also blocks redemption. `--no-browser`
-prints the link without opening it. The signed-out page teaches this CLI path.
+`yoke ui up` again. Actor disablement also blocks redemption. Agents, machines
+without a display and `--no-browser` receive a named browser reason and the
+recovery: run `yoke ui up` from your own terminal on a machine with a display.
+The signed-out page teaches this CLI path.
 
 **With company sign-in.** `yoke ui up` opens the server's own URL, and the
 OIDC admission ladder below applies. Token-link minting and redemption are

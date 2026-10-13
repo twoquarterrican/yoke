@@ -88,8 +88,8 @@ def log_path() -> Path:
 def stable_session_token() -> str:
     """Return this machine's UI token, minting it on first use.
 
-    Stable by design: the tokened URL is the operator's bookmark, so it
-    has to survive ``down`` and ``up`` again on the same machine.
+    Stable by design: browser admission survives ``down`` and ``up``
+    again on the same machine without printing the credential.
     """
     path = token_path()
     try:

@@ -20,6 +20,7 @@ from yoke_contracts.api_urls import HOSTED_PROD_API_URL, HOSTED_STAGE_API_URL
 
 @pytest.fixture()
 def setup(monkeypatch, tmp_path):
+    monkeypatch.setattr(commands, "_resolve_session_id", lambda: None)
     token_path = tmp_path / "token"
     token_path.write_text("test-token")
     connection = {
@@ -71,8 +72,8 @@ def test_up_opens_server_door_with_active_credential(
     report = json.loads(capsys.readouterr().out)
     assert report["browser_opened"] is True
     assert report["mode"] == "self-host"
-    assert report["private_url"] == "https://team.example" + path
-    assert seen == [report["private_url"]]
+    assert "private_url" not in report
+    assert seen == ["https://team.example" + path]
 
 
 @pytest.mark.parametrize(
@@ -83,7 +84,9 @@ def test_up_opens_server_door_with_active_credential(
         "s." + "c" * (BROWSER_SIGN_IN_MAX_LENGTH - 2),
     ],
 )
-def test_no_browser_prints_private_link(setup, monkeypatch, capsys, code):
+def test_no_browser_teaches_human_terminal_without_printing_link(
+    setup, monkeypatch, capsys, code
+):
     # The server owns entropy/length choices; the CLI validates the wire shape.
     path = BROWSER_SIGN_IN_REDEEM_PATH + "#" + code
     monkeypatch.setattr(
@@ -95,8 +98,9 @@ def test_no_browser_prints_private_link(setup, monkeypatch, capsys, code):
     )
     assert commands.ui_up(["--no-browser"]) == 0
     output = capsys.readouterr().out
-    assert "https://team.example" + path in output
-    assert "single-use" in output
+    assert code not in output
+    assert "browser_open_disabled" in output
+    assert "your own terminal" in output
 
 
 @pytest.mark.parametrize(
@@ -191,4 +195,4 @@ def test_oidc_needs_no_api_token(setup, monkeypatch, capsys):
         lambda *_args, **_kwargs: SimpleNamespace(payload={"auth_method": "oidc"}),
     )
     assert commands.ui_up(["--no-browser", "--json"]) == 0
-    assert json.loads(capsys.readouterr().out)["private_url"] == "https://team.example/"
+    assert "private_url" not in json.loads(capsys.readouterr().out)
