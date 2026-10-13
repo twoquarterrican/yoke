@@ -90,7 +90,7 @@ def test_plan_posture_attaches_and_materializes_at_dash_review(
             _create_request(
                 {
                     "title": "Fix the footer",
-                    "instruction": "Correct the footer and verify every link.",
+                    "spec": "Correct the footer and verify every link.",
                     "workflow": "dash",
                     "project": "yoke",
                     "entry_surface": "web_form",

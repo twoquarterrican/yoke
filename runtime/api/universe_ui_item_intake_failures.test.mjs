@@ -81,7 +81,7 @@ test("New item refuses missing fields and keeps a failed create editable", async
       status: 422,
       envelope: {
         success: false,
-        error: { message: "instruction violates project policy" },
+        error: { message: "spec violates project policy" },
       },
     },
   });
@@ -96,7 +96,7 @@ test("New item refuses missing fields and keeps a failed create editable", async
   form.dispatchEvent(new Event("submit"));
   assert.equal(
     byClass(root, "item-form-outcome")[0].textContent,
-    "Title and instruction are required.",
+    "Title and spec are required.",
   );
   assert.equal(
     client.requests.some((request) => request.function === "items.create"),
@@ -111,7 +111,7 @@ test("New item refuses missing fields and keeps a failed create editable", async
   await settle();
   assert.equal(
     byClass(root, "item-form-outcome")[0].textContent,
-    "instruction violates project policy",
+    "spec violates project policy",
   );
   assert.equal(
     allNodes(root).find(

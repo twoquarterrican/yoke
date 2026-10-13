@@ -43,9 +43,9 @@ const EXPECTED_GATE_PLACEMENT = {
 const EXPECTED_DESCRIPTION_COPY = {
   dash: {
     workflow:
-      "A short instruction you file in seconds — filing is the spec; an agent executes it end-to-end.",
+      "A short spec you file in seconds — filing is the spec; an agent executes it end-to-end.",
     implementing:
-      "The agent surveys for conflicts, takes a worktree, and executes the instruction in one pass.",
+      "The agent surveys for conflicts, takes a worktree, and executes the spec in one pass.",
     "reviewing-implementation":
       "The verification close — the agent self-checks, plus any case a tightened posture knob added.",
     done:
@@ -93,7 +93,7 @@ const EXPECTED_DESCRIPTION_COPY = {
 
 const EXPECTED_VERSION_ONE_DESCRIPTIONS = {
   dash: {
-    implementing: "The skill surveys conflicts and completes the instruction.",
+    implementing: "The skill surveys conflicts and completes the spec.",
     "reviewing-implementation":
       "The skill self-checks plus any item-declared verification.",
     done: "The result and verification evidence are recorded on the item.",
