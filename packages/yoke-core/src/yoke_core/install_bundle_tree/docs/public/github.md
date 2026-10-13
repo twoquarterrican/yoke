@@ -114,8 +114,9 @@ Run this check after changing App permissions or repository access. **Hosted**
 Yoke receives App webhooks for authorization, installation and repository
 access changes. **Local and self-hosted** Yoke do not receive those webhooks;
 they notice access changes at the next GitHub check, rather than immediately.
-When setup asks you to return from App settings, choose **Check repositories**
-to refresh access before continuing. Issue mirroring remains a separate setting.
+After returning from App settings, refresh access with **Check repositories**
+for a new repo or **Check access again** for an existing one before continuing.
+Issue mirroring remains a separate setting.
 
 ## CI verdicts and session wake-ups
 
