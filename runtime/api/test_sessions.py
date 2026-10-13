@@ -6,9 +6,7 @@ This is the shared-helpers parent module. Test classes live in:
   - test_sessions_queries.py    (list, get, query surface, offer/ownership)
   - test_sessions_api.py        (CLI dispatch, events, stale reclaim, telemetry)
 
-The shared ``conn`` fixture now builds the session schema on the disposable
-Postgres authority seam; tests that still need raw SQLite use local pure-unit
-doubles explicitly.
+Schema builders seed database state; connection fixtures bind each machine home.
 """
 
 from __future__ import annotations
@@ -24,7 +22,6 @@ from pathlib import Path
 import pytest
 from runtime.api.test_constants import TEST_MODEL_ID
 
-# Ensure the repo root is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from unittest.mock import patch
@@ -35,6 +32,8 @@ from runtime.api.test_dependency_schema import (
     PROJECTS_SCHEMA,
 )
 from yoke_core.domain import db_backend
+from yoke_core.domain.actors import seed_canonical_human
+from yoke_core.domain.local_operating_actor import ensure_local_operating_actor
 from runtime.api.fixtures.backlog import insert_item, seed_fixture_operating_actor
 from runtime.api.fixtures.operating_actor import seed_fixture_universe_identity
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
@@ -127,7 +126,7 @@ def _create_schema(conn) -> None:
         _SESSIONS_AND_CLAIMS_DDL,
     )
     create_work_claim_active_uniques(conn)
-    seed_fixture_operating_actor(conn)
+    seed_canonical_human(conn)
     from yoke_core.domain.workflow_registry import converge_builtin_workflows
     from yoke_core.domain.workflow_schema import ensure_workflow_schema
     from runtime.api.fixtures.level_store import create_level_store_tables
@@ -148,8 +147,9 @@ def _apply_on_backend(build) -> None:
 
 
 def _connect_with_backend_setup(tmp_path):
-    """Connect to the per-test DB; enable SQLite FKs when needed."""
+    """Connect and bind this test's machine to its checked-out universe."""
     c = connect_test_db(str(tmp_path / "yoke.db"))
+    seed_fixture_operating_actor(c)
     if not db_backend.is_postgres():
         c.execute("PRAGMA foreign_keys = ON")
     return c
@@ -278,7 +278,7 @@ def _build_ownership_schema(conn) -> None:
     _create_ownership_schema(conn)
     apply_ddl_statements(conn, EMIT_PATH_TABLES)
     seed_fixture_universe_identity(conn)
-    seed_fixture_operating_actor(conn)
+    ensure_local_operating_actor(conn)
     from yoke_core.domain.workflow_registry import converge_builtin_workflows
     from yoke_core.domain.workflow_schema import ensure_workflow_schema
 

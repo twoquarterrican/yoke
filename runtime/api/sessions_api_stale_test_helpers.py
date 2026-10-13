@@ -21,6 +21,7 @@ from typing import Any
 import pytest
 
 from yoke_core.domain import db_backend
+from yoke_core.domain.local_operating_actor import ensure_local_operating_actor
 from runtime.api.fixtures.backlog import insert_item, seed_fixture_operating_actor
 from runtime.api.fixtures.operating_actor import seed_fixture_universe_identity
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
@@ -84,6 +85,7 @@ def conn(tmp_path):
 
     with init_test_db(tmp_path, apply_schema=lambda: _build_schema(_create_schema)):
         c = connect_test_db(str(tmp_path / "yoke.db"))
+        seed_fixture_operating_actor(c)
         try:
             yield c
         finally:
@@ -104,6 +106,7 @@ def ownership_conn(tmp_path):
         tmp_path, apply_schema=lambda: _build_ownership_schema(_create_ownership_schema)
     ):
         c = connect_test_db(str(tmp_path / "yoke.db"))
+        seed_fixture_operating_actor(c)
         # Seed a runnable item (matches the legacy fixture).
         insert_item(
             c,
@@ -191,7 +194,7 @@ def _build_ownership_schema(create_ownership_schema) -> None:
         create_ownership_schema(conn)
         apply_ddl_statements(conn, _OWNERSHIP_EXTRA_TABLES)
         seed_fixture_universe_identity(conn)
-        seed_fixture_operating_actor(conn)
+        ensure_local_operating_actor(conn)
         from yoke_core.domain.workflow_registry import converge_builtin_workflows
         from yoke_core.domain.workflow_schema import ensure_workflow_schema
 
