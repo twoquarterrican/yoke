@@ -101,7 +101,7 @@ export function renderMachineApproval(context, main, _scope, code, page = {}) {
   const card = el(doc, "section", "machine-approval-card");
   card.setAttribute("aria-label", "Machine request");
   main.replaceChildren(head, card);
-  const mounted = () => context.isMounted() && main.contains(card);
+  const mounted = () => context.isMounted() && main.isConnected !== false && main.contains(card);
   let authorization, org, firstRun = false, timer;
   const clock = doc.defaultView || globalThis;
   const title = (text) => {

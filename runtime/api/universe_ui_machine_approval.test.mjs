@@ -133,3 +133,11 @@ test("decided codes show the outcome without another approval", async () => {
   assert.equal(button(main, "Approve machine"), undefined);
   assert.match(main.textContent, /Return to your terminal/);
 });
+
+test("a detached route ignores late reads even while the application stays mounted", async () => {
+  const { main, titles } = page();
+  main.isConnected = false;
+  await settle();
+  assert.equal(titles.at(-1), "Connect your machine");
+  assert.doesNotMatch(main.textContent, /My laptop|Approve machine/);
+});
