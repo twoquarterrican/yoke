@@ -45,8 +45,6 @@ def test_onboard_checklist_run_dispatches_payload_and_renders_response_view(
             str(project),
             "--project-id",
             "7",
-            "--project-slug",
-            "demo",
             "--github-repo",
             "owner/repo",
             "--row-status",
@@ -73,7 +71,6 @@ def test_onboard_checklist_run_dispatches_payload_and_renders_response_view(
         "checkout_path": str(project),
         "project_root": str(project),
         "project_id": 7,
-        "project_slug": "demo",
         "github_repo": "owner/repo",
         "row_status": {
             "machine-profile": "verified",

@@ -28,7 +28,8 @@ ONBOARD_CHECKLIST_INIT_USAGE = (
 )
 ONBOARD_CHECKLIST_USAGE = (
     "yoke onboard checklist [--run-id RUN] [--branch MODE] [--json] "
-    "[--project-root PATH] [--project-id N] [--project-slug SLUG] "
+    "[--project-root PATH] [--project-id N] "
+    "[--project P] [--config PATH] [--profile-file FILE] "
     "[--github-repo OWNER/REPO] [--row-status ROW=STATUS] "
     "[--evidence ROW=TEXT] [--blocker ROW=TEXT] [--note ROW=TEXT] "
     "[--view-path PATH | --no-view]"
@@ -60,7 +61,6 @@ def onboard_checklist_cmd(args: List[str]) -> int:
     )
     parser.add_argument("--project-root", dest="project_root", default=None)
     parser.add_argument("--project-id", dest="project_id", type=int, default=None)
-    parser.add_argument("--project-slug", dest="project_slug", default=None)
     parser.add_argument("--github-repo", dest="github_repo", default=None)
     parser.add_argument(
         "--row-status",
@@ -212,7 +212,6 @@ def _run_payload(parsed: argparse.Namespace) -> dict[str, Any]:
         "checkout_path": parsed.project_root,
         "project_root": parsed.project_root,
         "project_id": parsed.project_id,
-        "project_slug": parsed.project_slug,
         "project": parsed.project,
         "github_repo": parsed.github_repo,
         "row_status": _parse_assignments(
