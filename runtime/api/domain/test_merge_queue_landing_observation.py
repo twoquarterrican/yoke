@@ -62,7 +62,7 @@ def test_a_queue_that_still_holds_the_pull_request_is_waiting():
 
 
 def test_a_queue_entry_outranks_a_stale_mergeability_read():
-    """GitHub removes an entry it cannot merge, so an entry is still landing."""
+    """A viable queue entry outranks a stale pull-request mergeability read."""
     assert _classify(_state(), QUEUED).kind == WAITING
 
 
@@ -149,3 +149,23 @@ def test_the_steering_message_says_the_holder_is_gone():
 
     assert "claim holder is gone" in body
     assert "rebase the lane onto main" in body
+
+
+def test_an_unmergeable_queue_entry_is_ejected_before_removal():
+    membership = PrQueueMembership(
+        in_queue=True, entry_state="UNMERGEABLE", mergeable="UNKNOWN"
+    )
+    observation = _classify(
+        _state(auto_merge_active=True, merge_state_status="UNKNOWN"),
+        membership,
+        target="trunk",
+    )
+
+    assert observation.kind == EJECTED
+    assert "rebase the lane onto trunk" in observation.recovery
+    assert "re-run the verification gate" in observation.recovery
+    assert "mergeQueueEntry=UNMERGEABLE" in observation.observed
+    assert "isInMergeQueue=true" in observation.observed
+    body = ejection_message("ALP-1", "42", observation, "holder")
+    assert "Landing stopped" in body
+    assert "rebase the lane onto trunk" in body

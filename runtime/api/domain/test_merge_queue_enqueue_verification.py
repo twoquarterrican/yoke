@@ -216,3 +216,21 @@ def test_an_unreadable_rollup_does_not_block_the_arm():
         )
         == ""
     )
+
+
+def test_an_unmergeable_queue_entry_is_refused_even_while_armed():
+    membership = PrQueueMembership(
+        in_queue=True, entry_state="UNMERGEABLE", mergeable="UNKNOWN"
+    )
+    state = PrLandingState(
+        merged=False,
+        closed=False,
+        auto_merge_active=True,
+        merge_state_status="UNKNOWN",
+    )
+    refusal = _verify(membership=_scripted((membership, None)), state=state)
+
+    assert "was not taken by the merge queue" in refusal
+    assert "rebase the lane onto main" in refusal
+    assert "re-run the verification gate" in refusal
+    assert "mergeQueueEntry=UNMERGEABLE" in refusal
