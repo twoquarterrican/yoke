@@ -27,7 +27,7 @@ from yoke_core.engines.resync_detect import DriftRecord, PairedItem
 from yoke_core.domain.project_attribution import resolved_project
 
 
-# sync_item announces title-match reuse with one of these markers; the
+# sync_item announces full-content reuse with one of these markers; the
 # public-ref prefix letters vary per project.
 _REUSE_MARKER_RE = re.compile(
     r"Found existing GitHub issue #(\d+) for [A-Za-z][A-Za-z0-9]*-\d+ — reusing"

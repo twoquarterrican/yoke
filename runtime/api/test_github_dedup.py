@@ -1,19 +1,10 @@
-"""Tests for the shared GitHub dedup helper plus its ``sync_item``
-integration. Epic parent/task integration tests live in the sibling
-``test_github_dedup_epic.py`` module.
-
-The helper centralizes the typed-REST search pattern used by both
-``backlog_github_sync.sync_item`` and the epic parent/task paths in
-``epic_task_sync_github``. GitHub's full-text title search is fuzzy on
-bracketed and numeric tokens, so a token match is not a guarantee of an
-exact bracketed-prefix match — the helper post-filters candidates by
-``title.startswith(prefix)`` so wrong-issue reuse cannot occur. Wrong
-reuse is worse than creating a duplicate issue.
-"""
+"""Exact outgoing content comparison and backlog issue adoption tests."""
 
 from __future__ import annotations
 
 import io
+
+import pytest
 from typing import Any
 from unittest.mock import ANY, patch
 
@@ -27,6 +18,7 @@ from yoke_core.domain.project_seed_test_helpers import SEED_PROJECT_IDS
 from runtime.api.fixtures import pg_testdb
 from runtime.api.fixtures.backlog import seed_test_canonical_human
 from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from yoke_core.domain.render_body import build_body
 
 
 _DEDUP_PATCH = "yoke_core.domain.github_dedup.github_rest.list_issues"
@@ -36,8 +28,8 @@ _CREATE_PATCH = "yoke_core.domain.backlog_github_item_create.github_rest.create_
 # Canonical fuzzy-substring repro: a [YOK-1500] search returns issue
 # #3543 whose title merely contains "1500" as a substring inside
 # "1000-1500 lines" — the helper must reject it.
-def _issue(number: int, title: str) -> github_rest.Issue:
-    return github_rest.Issue(number=number, title=title, state="OPEN")
+def _issue(number: int, title: str, body: str = "") -> github_rest.Issue:
+    return github_rest.Issue(number=number, title=title, state="OPEN", body=body)
 
 
 def _make_db() -> Any:
@@ -59,68 +51,54 @@ def _make_db() -> Any:
 
 
 class TestSearchExistingIssue:
+    @pytest.mark.parametrize(
+        "candidate_title,candidate_body,matched",
+        [
+            ("[TEST-1] Same", "Body", True),
+            (" [TEST-1]  Same ", " Body\n\t", True),
+            ("[TEST-1] Same suffix", "Body", False),
+            ("[TEST-1] Other", "Body", False),
+            ("[TEST-1] Same", "Other body", False),
+            ("[TEST-1] Same", "", False),
+        ],
+    )
+    def test_requires_full_title_and_body(
+        self, candidate_title, candidate_body, matched
+    ):
+        with patch(
+            _DEDUP_PATCH, return_value=[_issue(7, candidate_title, candidate_body)]
+        ):
+            result = github_dedup.search_existing_issue(
+                "[TEST-1] Same", "Body", project="externalwebapp"
+            )
+        assert (result is not None) == matched
+
+    def test_skips_mismatches_before_exact_match(self):
+        candidates = [
+            _issue(4, "[TEST-1] Same", "Old"),
+            _issue(5, "[TEST-1] Same", "Body"),
+        ]
+        with patch(_DEDUP_PATCH, return_value=candidates):
+            assert (
+                github_dedup.search_existing_issue(
+                    "[TEST-1] Same", "Body", project="externalwebapp"
+                )[0]
+                == "5"
+            )
+
     def test_returns_none_when_rest_fails(self):
         stderr = io.StringIO()
         with patch(
-            _DEDUP_PATCH,
-            side_effect=github_rest.RestTransportError("boom", status=500),
+            _DEDUP_PATCH, side_effect=github_rest.RestTransportError("boom", status=500)
         ):
-            result = github_dedup.search_existing_issue(
-                "[YOK-1]",
-                project="externalwebapp",
-                stderr=stderr,
-            )
-        assert result is None
-        assert "Skipping reuse" in stderr.getvalue()
-
-    def test_returns_none_on_empty_results(self):
-        with patch(_DEDUP_PATCH, return_value=[]):
             assert (
                 github_dedup.search_existing_issue(
-                    "[YOK-1]",
-                    project="externalwebapp",
+                    "[TEST-1] Same", "Body", project="externalwebapp", stderr=stderr
                 )
                 is None
             )
-
-    def test_rejects_fuzzy_substring_match(self):
-        # Search prefix [YOK-1500]; candidate title starts with a different YOK-N.
-        fuzzy = _issue(
-            3543,
-            "[YOK-1498] 350-line decomp: split runtime/api/test_*.py top-14 "
-            "(1000-1500 lines)",
-        )
-        with patch(_DEDUP_PATCH, return_value=[fuzzy]):
-            result = github_dedup.search_existing_issue(
-                "[YOK-1500]",
-                project="externalwebapp",
-            )
-        assert result is None
-
-    def test_returns_first_exact_prefix_match(self):
-        candidates = [
-            _issue(99, "[YOK-2] Other"),
-            _issue(200, "[YOK-1] First"),
-            _issue(201, "[YOK-1] Second"),
-        ]
-        with patch(_DEDUP_PATCH, return_value=candidates):
-            result = github_dedup.search_existing_issue(
-                "[YOK-1]",
-                project="externalwebapp",
-            )
-        assert result == ("200", "[YOK-1] First")
-
-    def test_requires_issue_number_on_exact_match(self):
-        candidates = [
-            _issue(0, "[YOK-1] No number"),
-            _issue(4, "[YOK-1] Match"),
-        ]
-        with patch(_DEDUP_PATCH, return_value=candidates):
-            result = github_dedup.search_existing_issue(
-                "[YOK-1]",
-                project="externalwebapp",
-            )
-        assert result == ("4", "[YOK-1] Match")
+        assert "github_dedup_search_failed" in stderr.getvalue()
+        assert "Skipping reuse" in stderr.getvalue()
 
 
 # ---------------------------------------------------------------------------
@@ -153,11 +131,16 @@ class TestSyncItemDedup:
             patch("yoke_core.domain.backlog_github_item_create._regenerate_md"),
         ]
 
-    def test_reuses_existing_github_issue_on_exact_prefix(self):
-        """Happy path — exact-prefix candidate IS reused."""
+    def test_reuses_existing_github_issue_on_full_match(self):
+        """Only the complete rendered title and body are reused."""
         db = _make_db()
         insert_item(
-            db, id=20, workflow_id="issue", status="idea", project="externalwebapp"
+            db,
+            id=20,
+            title="Existing item title",
+            workflow_id="issue",
+            status="idea",
+            project="externalwebapp",
         )
         stdout = io.StringIO()
 
@@ -172,7 +155,9 @@ class TestSyncItemDedup:
             ),
             patch(
                 _DEDUP_PATCH,
-                return_value=[_issue(777, "[EXT-20] Existing item title")],
+                return_value=[
+                    _issue(777, "[EXT-20] Existing item title", build_body(db, 20))
+                ],
             ),
             patch(
                 "yoke_core.domain.backlog_github_item_create._regenerate_md",
@@ -189,10 +174,15 @@ class TestSyncItemDedup:
         db.close()
 
     def test_reuses_existing_epic_issue_and_syncs_child_tasks(self):
-        """Exact-prefix reuse for epic items also runs child sync."""
+        """Full-content reuse for epic items also runs child sync."""
         db = _make_db()
         insert_item(
-            db, id=23, workflow_id="epic", status="planning", project="externalwebapp"
+            db,
+            id=23,
+            title="Existing epic title",
+            workflow_id="epic",
+            status="planning",
+            project="externalwebapp",
         )
         insert_epic_task(db, epic_id=23, task_num=1, title="Task 1", status="planned")
         stdout = io.StringIO()
@@ -208,7 +198,9 @@ class TestSyncItemDedup:
             ),
             patch(
                 _DEDUP_PATCH,
-                return_value=[_issue(777, "[EXT-23] Existing epic title")],
+                return_value=[
+                    _issue(777, "[EXT-23] Existing epic title", build_body(db, 23))
+                ],
             ),
             patch(
                 "yoke_core.domain.backlog_github_item_create._regenerate_md",

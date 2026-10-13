@@ -54,6 +54,7 @@ class Issue:
     labels: tuple[str, ...] = ()
     html_url: str = ""
     user_login: str = ""
+    is_pull_request: bool = False
 
 
 @dataclass(frozen=True)
@@ -94,13 +95,18 @@ class Target:
     def from_auth(cls, auth: ProjectGithubAuth) -> "Target":
         owner, repo = _transport.split_repo(auth.repo)
         return cls(
-            project=auth.project, owner=owner, repo=repo,
-            token=auth.token, repo_slug=auth.repo,
+            project=auth.project,
+            owner=owner,
+            repo=repo,
+            token=auth.token,
+            repo_slug=auth.repo,
         )
 
 
 def resolve_target(
-    project: str, *, required_permissions: Mapping[str, str],
+    project: str,
+    *,
+    required_permissions: Mapping[str, str],
     db_path: str | None = None,
 ) -> Target:
     """Resolve the typed REST target for a project (auth + owner/repo split).
@@ -129,21 +135,36 @@ def resolve_target(
 
 __all__ = [
     # Types
-    "Issue", "Label", "Comment", "Target",
+    "Issue",
+    "Label",
+    "Comment",
+    "Target",
     # Transport exceptions (re-exported for convenience — callers handling
     # multiple GitHub error classes import from one place)
-    "RateLimitedError", "RestAuthError", "RestNotFoundError",
-    "RestServerError", "RestTransportError", "RestUnprocessableError",
+    "RateLimitedError",
+    "RestAuthError",
+    "RestNotFoundError",
+    "RestServerError",
+    "RestTransportError",
+    "RestUnprocessableError",
     "ProjectGithubAuthError",
     # Resolver
     "resolve_target",
     # Issue family
-    "create_issue", "update_issue", "set_issue_state",
-    "get_issue", "list_issues", "delete_issue",
+    "create_issue",
+    "update_issue",
+    "set_issue_state",
+    "get_issue",
+    "list_issues",
+    "delete_issue",
     # Label family
-    "list_labels", "create_label", "add_labels", "remove_labels",
+    "list_labels",
+    "create_label",
+    "add_labels",
+    "remove_labels",
     # Comment family
-    "post_comment", "list_comments",
+    "post_comment",
+    "list_comments",
     # Sub-issue family
     "add_sub_issue",
     # GraphQL
@@ -152,14 +173,22 @@ __all__ = [
 
 
 from yoke_core.domain.github_rest_issues import (  # noqa: E402
-    create_issue, update_issue, set_issue_state,
-    get_issue, list_issues, delete_issue,
+    create_issue,
+    update_issue,
+    set_issue_state,
+    get_issue,
+    list_issues,
+    delete_issue,
 )
 from yoke_core.domain.github_rest_labels import (  # noqa: E402
-    list_labels, create_label, add_labels, remove_labels,
+    list_labels,
+    create_label,
+    add_labels,
+    remove_labels,
 )
 from yoke_core.domain.github_rest_comments import (  # noqa: E402
-    post_comment, list_comments,
+    post_comment,
+    list_comments,
 )
 from yoke_core.domain.github_rest_sub_issues import (  # noqa: E402
     add_sub_issue,

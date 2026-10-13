@@ -66,6 +66,8 @@ ITEMS_TABLE: dict[str, dict] = {
             "has been deleted. The GitHub linkage is the single `github_issue` "
             "column — there is no "
             "`github_issue_number` and no `github_url`. "
+            "Repair item/task links with items.github_link (yoke items github-link); "
+            "explicit --issue verifies the project repository, --unlink needs no GitHub access. "
             "The lifecycle columns are the immutable `workflow_id` / "
             "`workflow_version_id` pin and the current `status`. "
             "Current item rows carry `items.workflow_id`; older deployment-run "

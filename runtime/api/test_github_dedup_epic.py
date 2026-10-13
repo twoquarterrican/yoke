@@ -27,13 +27,15 @@ from yoke_core.domain.epic_task_scope import (
 from yoke_core.domain.project_seed_test_helpers import SEED_PROJECT_IDS
 from yoke_core.domain.project_github_auth import ProjectGithubAuth
 from runtime.api.fixtures.pg_testdb import test_database
+from yoke_core.domain.render_body import build_body
 
 
-def _issue(number: int, title: str) -> github_rest.Issue:
+def _issue(number: int, title: str, body: str = "") -> github_rest.Issue:
     return github_rest.Issue(
         number=number,
         title=title,
         state="OPEN",
+        body=body,
         html_url=f"https://github.com/org/externalwebapp/issues/{number}",
     )
 
@@ -141,11 +143,8 @@ def _patches(*, dedup_results, create_response=None):
 
 
 class TestSyncEpicTasksDedup:
-    def test_task_path_reuses_exact_prefix_match(self, epic_db):
-        """Task path, exact reuse: typed list_issues whose title
-        matches the new-format prefix ``[YOK-N] NNN <task title>`` is
-        reused (no create call).
-        """
+    def test_task_path_reuses_full_content_match(self, epic_db):
+        """Task adoption requires the complete outgoing title and body."""
         insert_item(
             epic_db,
             id=10,
@@ -168,7 +167,7 @@ class TestSyncEpicTasksDedup:
         stdout = io.StringIO()
 
         patches = _patches(
-            dedup_results=[_issue(555, "[EXT-10] 001 Some task")],
+            dedup_results=[_issue(555, "[EXT-10] 001 Some task", "body")],
             create_response=None,
         )
         with patches[0], patches[1]:
@@ -234,10 +233,10 @@ class TestSyncEpicTasksDedup:
         assert "found existing github issue" not in stdout.getvalue().lower()
         assert "#3543" not in stdout.getvalue()
 
-    def test_parent_path_reuses_exact_prefix_match(self, epic_db):
-        """Epic parent path, exact reuse: when the parent epic has
-        no github_issue, the parent dedup search reuses an issue whose
-        title starts with the exact bracketed prefix ``[YOK-N]``.
+    def test_parent_path_reuses_full_content_match(self, epic_db):
+        """Epic parent path, full-content reuse: when the parent epic has
+        no github_issue, the parent dedup search compares the complete
+        outgoing title and body.
         """
         insert_item(
             epic_db,
@@ -259,9 +258,14 @@ class TestSyncEpicTasksDedup:
         finalize_generated_task_scopes(epic_db, 10)
         stdout = io.StringIO()
 
-        # Two list_issues calls: parent dedup returns the exact match;
+        # Two list_issues calls: parent dedup returns the full-content match;
         # task dedup returns nothing so the task is created fresh.
-        parent_match = _issue(808, "[EXT-10] Existing parent epic")
+        parent_match = _issue(
+            808,
+            "[EXT-10] "
+            + epic_db.execute("SELECT title FROM items WHERE id = 10").fetchone()[0],
+            build_body(epic_db, 10),
+        )
         task_created = _issue(9100, "[EXT-10] 001 First task")
 
         with (
