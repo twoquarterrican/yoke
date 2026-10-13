@@ -104,9 +104,10 @@ selects a file; a relative value anchors under `~/.yoke`, then the default is
 `~/.yoke/config.json`. `--config` selects an explicit file; relative values
 anchor under the selected machine home.
 
-Writers refuse `machine_config_not_owned` when the target resolves outside an
-explicit `YOKE_MACHINE_HOME`, including through a symlink. Remove `--config`
-or select a file inside that home, then retry. This check runs before config
+Writers refuse `machine_config_not_owned` when the target differs from the
+selected config or resolves outside an explicit `YOKE_MACHINE_HOME`, including
+through a symlink. Remove `--config` and retry with the selected config.
+This check runs before config
 locking or credential changes; readers may inspect an explicit foreign file.
 
 Relay-launched sessions discard an inherited `YOKE_MACHINE_CONFIG_FILE` for

@@ -39,8 +39,9 @@ AUTH_SET_USAGE = (
 CONFIG_SELECTION_HELP = (
     "Use YOKE_MACHINE_HOME/config.json when YOKE_MACHINE_HOME is set; otherwise "
     "YOKE_MACHINE_CONFIG_FILE selects the config (default ~/.yoke/config.json). "
-    "--config selects a path explicitly; writes outside an explicit machine "
-    "home refuse as machine_config_not_owned. See CLI and config: Machine config."
+    "--config selects a path explicitly; writes to a foreign config or outside "
+    "an explicit machine home refuse as machine_config_not_owned. "
+    "See CLI and config: Machine config."
 )
 
 

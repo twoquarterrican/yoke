@@ -118,3 +118,26 @@ def test_a_config_symlink_cannot_escape_the_selected_home(tmp_path, monkeypatch)
     ):
         writer.set_active_env("stage")
     assert steering.read_bytes() == original
+
+
+def test_default_home_cannot_write_a_foreign_explicit_config(tmp_path, monkeypatch):
+    steering = tmp_path / "steering" / "config.json"
+    original = _seed(steering)
+    monkeypatch.delenv("YOKE_MACHINE_HOME", raising=False)
+    monkeypatch.delenv("YOKE_MACHINE_CONFIG_FILE", raising=False)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "worker")
+    with pytest.raises(
+        writer.MachineConfigWriteError, match="machine_config_not_owned"
+    ):
+        writer.set_active_env("stage", path=steering)
+    assert steering.read_bytes() == original
+
+
+def test_deliberately_selected_shared_config_can_be_written(tmp_path, monkeypatch):
+    shared = tmp_path / "shared" / "config.json"
+    _seed(shared)
+    monkeypatch.delenv("YOKE_MACHINE_HOME", raising=False)
+    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(shared))
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "worker")
+    writer.set_active_env("stage", path=shared)
+    assert json.loads(shared.read_text())["active_env"] == "stage"

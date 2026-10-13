@@ -4,7 +4,7 @@
  "status": "observed",
  "audience": "agent",
  "when": "A launched worker initializes local state or changes connections",
- "need": "Select YOKE_MACHINE_HOME before configuration commands. It owns config.json and wins over a stale config-file override. Relay launches strip inherited YOKE_MACHINE_CONFIG_FILE; foreign writes refuse machine_config_not_owned with a recovery step.",
+ "need": "Select YOKE_MACHINE_HOME before configuration commands. It owns config.json and wins over a stale config-file override. Relay launches strip inherited YOKE_MACHINE_CONFIG_FILE; foreign writes refuse machine_config_not_owned with a recovery step, even when no home override is set.",
  "disclosure": "current cue",
  "surface": "Config writer help and CLI/config machine-config home",
  "review": "Candidate subprocess tests cover Claude, Codex and Cursor child environments and preserve the steering configuration; deployed behavior remains unproven.",
