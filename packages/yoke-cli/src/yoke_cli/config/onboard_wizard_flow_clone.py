@@ -139,7 +139,7 @@ class CloneFlow(CheckoutInspectionFlow, CloneSourceFlow):
                     self,
                     github_state.repository_access_url(self.result),
                     step=STEP_PROJECT,
-                    on_success=lambda browser: self._goto_private_repo_empty(),
+                    on_success=lambda browser: self._render_current(),
                 )
             except Exception as exc:
                 self._goto_private_repo_picker_error(exc)

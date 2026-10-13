@@ -137,7 +137,7 @@ def test_empty_private_repo_access_has_manage_retry_and_back(
     opened: list[str] = []
     monkeypatch.setattr(clone_flow, "fetch_private_repos", fetch)
     monkeypatch.setattr(
-        clone_flow,
+        clone_flow.setup_browser,
         "open_url",
         lambda url: (
             opened.append(url)

@@ -95,7 +95,7 @@ def test_unavailable_app_publish_opens_github_and_keeps_project_local(
         },
     )
     monkeypatch.setattr(
-        publish_flow,
+        publish_flow.setup_browser,
         "open_url",
         partial(hosted_machine_browser.open_url, browser_open=opened.append),
     )
@@ -121,6 +121,7 @@ def test_unavailable_app_publish_opens_github_and_keeps_project_local(
             await pilot.press("enter")
             await accept_project_details(pilot)
             await pilot.press("enter")  # publish: Yes (preselected)
+            await app.workers.wait_for_complete()
             await pilot.press("down")  # manual recovery: disabled
             await pilot.press("enter")  # App publishing unavailable: disabled
             await complete_board_art(pilot)
@@ -151,7 +152,7 @@ def test_default_app_grant_opens_github_and_keeps_project_local(monkeypatch) -> 
         ),
     )
     monkeypatch.setattr(
-        publish_flow,
+        publish_flow.setup_browser,
         "open_url",
         partial(hosted_machine_browser.open_url, browser_open=opened.append),
     )
@@ -163,6 +164,7 @@ def test_default_app_grant_opens_github_and_keeps_project_local(monkeypatch) -> 
             _mark_connected(app)
             app.result.project_checkout = "/home/code/widget"
             app._on_publish_choice(screens.PUBLISH_YES)
+            await app.workers.wait_for_complete()
             await pilot.pause()
             await pilot.pause()
             captured["body"] = _body_text(app)
@@ -194,7 +196,7 @@ def test_manual_create_browser_failure_renders_copyable_repository_url(
         return bool(failure)
 
     monkeypatch.setattr(
-        publish_flow,
+        publish_flow.setup_browser,
         "open_url",
         partial(hosted_machine_browser.open_url, browser_open=open_browser),
     )
@@ -206,6 +208,7 @@ def test_manual_create_browser_failure_renders_copyable_repository_url(
             _mark_connected(app)
             app.result.project_checkout = "/home/code/widget"
             app._on_publish_choice(screens.PUBLISH_YES)
+            await app.workers.wait_for_complete()
             await pilot.pause()
             captured["body"] = _body_text(app)
 
@@ -255,7 +258,7 @@ def test_selected_installation_never_attempts_one_step_repository_creation(
         ),
     )
     monkeypatch.setattr(
-        publish_flow,
+        publish_flow.setup_browser,
         "open_url",
         partial(hosted_machine_browser.open_url, browser_open=opened.append),
     )
@@ -271,6 +274,7 @@ def test_selected_installation_never_attempts_one_step_repository_creation(
             _mark_connected(app)
             app.result.project_checkout = "/home/code/widget"
             app._on_publish_choice(screens.PUBLISH_YES)
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert "all-repositories access" in _body_text(app)
             await pilot.press("down")
