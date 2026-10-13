@@ -148,6 +148,11 @@ authorization likewise prove through that paired HTTPS plane.
 
 ### Source execution and release rules
 
+Build local teaching views from the mapped main checkout with
+`yoke dev run -- python3 docs/teaching/tools/build.py`. This registered scanner
+needs no work claim and writes only ignored output; `--check` validates in memory
+and `--live` also writes ignored live pages. Edit the model in a claimed lane.
+
 Every Yoke self-release run — the stage run over HTTPS and the production run on
 paired `prod-db-admin` alike — re-execs its driver into the detached release
 commit, syncs runtime dependencies from that candidate's `uv.lock` and executes

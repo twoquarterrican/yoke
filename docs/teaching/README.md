@@ -8,6 +8,9 @@ ships in the install bundle.
 
 Build the local views with `yoke dev run -- python3 docs/teaching/tools/build.py`,
 then open `docs/teaching/views/index.html` in a browser from that checkout.
+This registered scanner works on the mapped main checkout without a work claim
+and in a claimed lane. It writes only ignored views (and `live/` with `--live`);
+it never rewrites the model.
 Agents read the model JSON directly. If a review tool refuses `file:` URLs,
 serve this directory locally (`python3 -m http.server` from `docs/teaching`).
 The overview links to each record home; aggregate model counts stay out of
@@ -151,7 +154,7 @@ inbound and outbound link counts).
 | `PLAN_ROW_UNMAPPED` | Map the row, or name an explicit gap |
 | `PLAN_ENTRY_MISSING`, `PLAN_RECONCILIATION_STALE` | Reconcile as above |
 | `DANGLING_ANCHOR`, `DANGLING_LINK` | Fix the target id or path, then rebuild |
-| `MODEL_NOT_CANONICAL` | Rebuild to apply canonical model formatting |
+| `MODEL_NOT_CANONICAL` | Format the named JSON record to match its peers, then check again |
 | `MODEL_RECORD_ID` | Store one record with an `id` matching its filename |
 | `LINE_LIMIT` | Shorten the record or separate distinct topics, then rebuild |
 | `PRIVATE_MATERIAL` | Remove the private path or id |

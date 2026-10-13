@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         check_canonical_model(model, canonical)
     else:
-        write(canonical, views)
+        _replace_tree(VIEWS_ROOT, views)
     if args.live:
         _replace_tree(LIVE_ROOT, live_pages)
     limits_and_privacy(model, views)
@@ -189,12 +189,6 @@ def check_canonical_model(model, canonical: dict) -> None:
                 path.relative_to(TEACHING_ROOT).as_posix(),
                 "formatting differs from the canonical layout",
             )
-
-
-def write(canonical: dict, views: dict[str, str]) -> None:
-    for path, text in canonical.items():
-        path.write_text(text, encoding="utf-8")
-    _replace_tree(VIEWS_ROOT, views)
 
 
 def _replace_tree(root: Path, pages: dict[str, str]) -> None:
