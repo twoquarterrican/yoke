@@ -40,6 +40,7 @@ from yoke_cli.config.universe_ui_daemon_state import (
     private_url,
     process_alive,
     read_record,
+    record_path,
     stable_session_token,
     state_dir,
     write_record,
@@ -133,6 +134,12 @@ def restart_running() -> Dict[str, Any]:
     """Replace a running machine dashboard using its saved serving settings."""
     record = read_record()
     if record is None:
+        if record_path().exists():
+            raise UiDaemonError(
+                "ui_restart_identity_invalid: the dashboard process record is unreadable; "
+                "inspect the dashboard process and stop it before running "
+                "`yoke ui down` and `yoke ui up --no-browser`, then rerun the installer."
+            )
         return {"restarted": False}
     if not process_alive(record.pid):
         clear_record()

@@ -116,3 +116,10 @@ def test_restart_receipt_never_prints_private_url(monkeypatch, capsys):
     monkeypatch.setattr(daemon, "restart_running", lambda: {"restarted": True})
     assert universe_ui.ui_restart_running(["--json"]) == 0
     assert capsys.readouterr().out.strip() == '{"ok": true, "restarted": true}'
+
+
+def test_invalid_record_blocks_success_instead_of_reporting_stopped():
+    state.record_path().write_text("broken json")
+    with pytest.raises(state.UiDaemonError, match="ui_restart_identity_invalid"):
+        daemon.restart_running()
+    assert state.record_path().read_text() == "broken json"

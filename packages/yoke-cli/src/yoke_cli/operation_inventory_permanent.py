@@ -171,6 +171,7 @@ PERMANENT_ROWS: Tuple[_Row, ...] = (
     _p("yoke ui up", "local_universe.ui", REASON_TOOL_SHAPED),
     _p("yoke ui down", "local_universe.ui", REASON_TOOL_SHAPED),
     _p("yoke ui status", "local_universe.ui", REASON_TOOL_SHAPED),
+    _p("yoke ui restart-running", "local_universe.ui", REASON_TOOL_SHAPED),
     _p("yoke ui serve-process", "local_universe.ui", REASON_TOOL_SHAPED),
     _p("yoke check file-line", "checks.file_line", REASON_TOOL_SHAPED),
     _p("yoke board art variant create", "board.art", REASON_TOOL_SHAPED),
