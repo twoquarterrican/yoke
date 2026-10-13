@@ -41,6 +41,27 @@ Responses carry `success`, `function`, `version`, `request_id`, `result`,
 failure and downstream-degraded warnings are different outcomes; inspect both.
 Post-write verification marked degraded is partial-state evidence, never green.
 
+## Read deadlines
+
+A registered function declaring no side effects shares a 25-second handler
+budget in local, self-hosted and hosted dispatch. The HTTPS relay allows
+30 seconds per attempt and one immediate timeout retry, so two abandoned
+attempts previously looked like a 60-second limit. The server reserves five
+seconds for its response and failure evidence. Browser dispatch and the local
+UI proxy use the same handler budget; neither declares an extra browser timer.
+
+Python loops stop on expiry. Each PostgreSQL statement takes the remaining
+budget as its server-side timeout; nested HTTP reads inherit the same deadline.
+Native database protocols finish or cancel before Python unwinds them.
+Mutations retain their existing execution and replay contracts.
+
+An expired read returns `read_deadline_exceeded` (HTTP 408), with a recovery
+hint, and `YokeFunctionCalled` records the failed outcome for Performance.
+Retry a narrower read: name a project or section, or use `--limit` and
+`--offset`. Request `--full` only when the caller needs detail. Plan pickers,
+search and intake follow summary pages; Test plans explicitly requests full
+rows for outcomes, execution targets, attachments and case counts.
+
 ## Claim verification
 
 | Catalog value | Dispatcher obligation |

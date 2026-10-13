@@ -101,7 +101,7 @@ export function renderError(body, callResult) {
     "request failed";
   body.appendChild(el(
     body.ownerDocument, "p", "error",
-    `read failed (HTTP ${callResult.status}): ${detail}`,
+    `read failed (HTTP ${callResult.status}): ${detail}${envelope.error?.code ? ` (${envelope.error.code})` : ""}`,
   ));
 }
 

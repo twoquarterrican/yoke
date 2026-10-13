@@ -6,12 +6,6 @@ const ROLE_LABELS = {
   admin: "org admin",
 };
 
-function rows(result) {
-  return result.status === 200 && result.envelope.success
-    ? (result.envelope.result?.rows || [])
-    : [];
-}
-
 export function emptyMechanicsData() {
   return {
     testingDefaults: [],
@@ -20,39 +14,26 @@ export function emptyMechanicsData() {
     plansByProject: {},
     flows: [],
     editable: false,
+    loading: true,
   };
 }
 
 export async function loadWorkflowMechanicsData(context, flows = []) {
-  const projects = context.projects();
-  const mechanicsPromise = callFunction(
+  const result = await callFunction(
     context.client, "workflows.mechanics.get", {},
   );
-  const planPromises = projects.map(async (project) => {
-    const key = String(project.slug || project.id);
-    const result = await callFunction(
-      context.client, "qa.plan.list", { project: key, detail: "full" },
-    );
-    return [key, rows(result)];
-  });
-  const [mechanicsResult, planEntries] = await Promise.all([
-    mechanicsPromise,
-    Promise.all(planPromises),
-  ]);
-  const editable = (
-    mechanicsResult.status === 200 &&
-    mechanicsResult.envelope.success
-  );
-  const mechanics = editable
-    ? (mechanicsResult.envelope.result || {})
-    : {};
+  if (result.status !== 200 || !result.envelope.success) {
+    return { ...emptyMechanicsData(), flows, failure: result, loading: false };
+  }
+  const mechanics = result.envelope.result || {};
   return {
     testingDefaults: mechanics.testing_defaults || [],
     deliveryDefaults: mechanics.delivery_defaults || [],
     approvers: mechanics.approvers || [],
-    plansByProject: Object.fromEntries(planEntries),
+    plansByProject: {},
     flows: flows || [],
-    editable,
+    editable: true,
+    loading: false,
   };
 }
 

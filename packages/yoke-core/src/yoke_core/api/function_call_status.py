@@ -44,6 +44,7 @@ ERROR_TO_STATUS: Dict[str, int] = {
     "write_failed": 500,
     "handler_contract": 500,
     "handler_exception": 500,
+    "read_deadline_exceeded": 408,
     # Per-handler validation/gate codes raised by registered handlers.
     "validation_error": 422,
     "unsupported_field": 422,

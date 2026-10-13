@@ -32,7 +32,7 @@ from yoke_core.domain.yoke_function_dispatch_idempotency import (
     handle_idempotency,
 )
 from yoke_core.domain.yoke_function_dispatch_target import resolve_request_item_refs
-from yoke_core.domain.handler_execution_context import invoke_resolved_handler
+from yoke_core.domain.function_read_deadline import invoke_handler
 from yoke_core.domain.yoke_function_idempotency_scope import (
     authorization_scope_key,
     idempotency_payload_checksum,
@@ -272,7 +272,7 @@ def _dispatch_impl(
             return claim_error
 
         handler_started = start_duration_measurement()
-        outcome = invoke_resolved_handler(entry.handler, typed_request)
+        outcome = invoke_handler(entry, typed_request)
         handler_duration_ms = elapsed_duration_ms(handler_started)
         note_handler_duration(handler_duration_ms)
         if not isinstance(outcome, HandlerOutcome):

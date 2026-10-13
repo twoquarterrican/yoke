@@ -1,0 +1,7 @@
+{
+ "id": "workflows-deployed-read-proof",
+ "title": "Prove Workflows loading and read deadlines on deployed data",
+ "status": "observed",
+ "text": "Candidate DOM tests cover immediate instructions, independent definitions, summary paging and visible retries. Python and PostgreSQL tests cover handler cancellation and named Performance failures. Actual production page timing and before/after call measurements wait for the selected release and its attached QA.",
+ "sources": ["runtime/api/universe_ui_workflows_loading.test.mjs", "runtime/api/universe_ui_plan_summary_consumers.test.mjs", "runtime/api/domain/test_function_read_deadline.py", "runtime/api/tools/workflow_read_timings.py"]
+}
