@@ -18,7 +18,11 @@ from __future__ import annotations
 from yoke_core.domain import item_merge_contributed_commits as contributed
 from yoke_core.domain import standalone_item_merge_git as git
 from yoke_core.domain import item_merge_receipts as receipts
-from yoke_core.domain.merge_landing_proof import LandingUnverified, verified_target_sha
+from yoke_core.domain.merge_landing_proof import (
+    LandingUnverified,
+    verified_landing_identity,
+    verified_target_sha,
+)
 from yoke_core.domain.standalone_item_merge_landed import LandedLane
 from yoke_core.domain.standalone_item_merge_stale_lane import stale_unlanded_work
 from yoke_core.engines.main_checkout_sync import fast_forward_main_checkout
@@ -134,6 +138,11 @@ def converge(
             if push_warning:
                 warnings.append(push_warning)
             merge_sha = verified_target_sha(repo_root, lane.target, lane.commit_sha)
+        merge_sha = verified_landing_identity(
+            repo_root,
+            merge_sha,
+            lane.commit_sha,
+        )
     except LandingUnverified as exc:
         note = receipts.record_failure(
             item_id,

@@ -189,6 +189,10 @@ def test_a_failed_repoint_write_names_the_carrier_it_could_not_record(
 
 
 def _wire_close_out(monkeypatch, *, landing_sha: str, merges=None):
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_landing_identity",
+        lambda _repo, _target, candidate, reported="": reported or candidate,
+    )
     """Everything close-out reaches outside the repoint under test.
 
     ``merges`` maps a commit to the merge that carried it, so a test can

@@ -20,7 +20,11 @@ from yoke_core.domain.standalone_item_merge_publication_message import (
     publication_narration,
 )
 from yoke_core.domain import item_merge_receipts as receipts
-from yoke_core.domain.merge_landing_proof import LandingUnverified, verified_target_sha
+from yoke_core.domain.merge_landing_proof import (
+    LandingUnverified,
+    verified_landing_identity,
+    verified_target_sha,
+)
 from yoke_core.domain.github_poll_schedule import MINIMUM_POLL_INTERVAL_SECONDS
 from yoke_core.engines.main_checkout_sync import fast_forward_main_checkout
 
@@ -226,6 +230,7 @@ def complete(
         notes.append(push_warning)
     try:
         merge_sha = verified_target_sha(repo_root, target, commit_sha)
+        merge_sha = verified_landing_identity(repo_root, merge_sha, commit_sha)
         disconnected = (
             not github_merge_enabled(project) if git.has_remote(repo_root) else True
         )
@@ -260,12 +265,7 @@ def complete(
             error=reason,
             warnings=tuple(notes),
         )
-    landing_commit = (
-        receipts.landing_merge_commit(repo_root, merge_sha, commit_sha) or commit_sha
-    )
-    stamp_error = stamp_merged_at(
-        item_id, repo_root=repo_root, merge_sha=landing_commit
-    )
+    stamp_error = stamp_merged_at(item_id, repo_root=repo_root, merge_sha=merge_sha)
     if stamp_error:
         notes.append(f"merged_at not recorded: {stamp_error}")
 

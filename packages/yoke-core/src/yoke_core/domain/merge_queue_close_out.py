@@ -192,16 +192,10 @@ def record_landing(
     drift_check: Optional[Mapping[str, str]] = None,
     resolve_landed_head: Optional[Callable[[int], tuple[str, str]]] = None,
 ) -> QueueCloseOut:
-    """Record everything the item owes after its train landed.
-
-    ``commit_sha`` is the identity this landing is answerable for, which a
-    converging close-out takes from the recorded receipt. ``candidate_sha``
-    is the commit actually being closed out, and defaults to it. They differ
-    for a lane that landed twice: both are on the base, and only the
-    candidate's own merge belongs to the landing in hand.
-    """
+    """Record the candidate's own landing and its train's verification."""
     from yoke_core.domain.merge_landing_proof import (
         LandingUnverified,
+        verified_landing_identity,
         verified_target_sha,
     )
 
@@ -276,6 +270,15 @@ def record_landing(
                 ci_evidence_recovery = ""
                 warnings.append(f"batch evidence not recorded: {evidence_error}")
 
+    try:
+        landing_sha = verified_landing_identity(
+            ctx.repo_root,
+            remote_sha,
+            candidate_sha or commit_sha,
+            batch.merge_sha if batch else landing_sha,
+        )
+    except LandingUnverified as exc:
+        return QueueCloseOut(receipt_error=str(exc))
     repoint_note = repoint_to_landing_carrier(
         ctx,
         item_id=item_id,
@@ -314,7 +317,7 @@ def record_landing(
                 branch=ctx.args.branch,
                 target=ctx.args.target,
                 commit_sha=receipt_commit,
-                merge_sha=remote_sha,
+                merge_sha=landing_sha,
                 touched_files=touched_files,
                 contributed_commits=contributed.after_landing(
                     ctx.repo_root or "",
@@ -331,7 +334,7 @@ def record_landing(
         if sync_warning:
             warnings.append(sync_warning)
     return QueueCloseOut(
-        merge_sha=remote_sha,
+        merge_sha=landing_sha,
         touched_files=touched_files,
         batch=batch,
         ci_evidence_error=ci_evidence_error,

@@ -34,6 +34,10 @@ def _ctx(repo_root: str = REPO_ROOT) -> MergeContext:
 def _wire(monkeypatch, *, batch: Any, failure: Any = None) -> dict:
     stamped: dict = {}
     monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_landing_identity",
+        lambda _repo, _target, candidate, reported="": reported or candidate,
+    )
+    monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_target_sha",
         lambda *_a: MERGE_SHA,
     )
@@ -91,10 +95,10 @@ def test_the_stamp_names_the_merge_this_landing_resolved(monkeypatch) -> None:
     }
 
 
-def test_unresolved_ci_still_stamps_the_verified_remote_tip(
+def test_unresolved_ci_still_stamps_the_candidate_landing(
     monkeypatch,
 ) -> None:
-    """CI discovery cannot change the independently proven remote identity."""
+    """CI discovery cannot assign a later target tip to the item."""
     stamped = _wire(
         monkeypatch,
         batch=None,

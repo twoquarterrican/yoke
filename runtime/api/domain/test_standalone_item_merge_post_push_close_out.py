@@ -33,6 +33,7 @@ def _wire_complete(monkeypatch, verdict):
     recorded = []
     monkeypatch.setattr(post_push.git, "git_out", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(post_push, "verified_target_sha", lambda *_a: MERGE_SHA)
+    monkeypatch.setattr(post_push, "verified_landing_identity", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(post_push.git, "publish", lambda *_a: (True, ""))
     monkeypatch.setattr(post_push.git, "has_remote", lambda *_a: True)
     monkeypatch.setattr(
@@ -152,6 +153,7 @@ def test_failed_push_refuses_before_stamping_or_recording(monkeypatch) -> None:
 def test_no_remote_publication_stays_local_only(monkeypatch) -> None:
     monkeypatch.setattr(post_push.git, "git_out", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(post_push, "verified_target_sha", lambda *_a: MERGE_SHA)
+    monkeypatch.setattr(post_push, "verified_landing_identity", lambda *_a: MERGE_SHA)
     monkeypatch.setattr(post_push.git, "publish", lambda *_a: (False, ""))
     monkeypatch.setattr(post_push.git, "has_remote", lambda *_a: False)
     monkeypatch.setattr(

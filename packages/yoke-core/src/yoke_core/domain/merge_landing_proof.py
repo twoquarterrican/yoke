@@ -6,10 +6,45 @@ import subprocess
 
 from yoke_cli.config import repo_upstream_git as upstream
 from yoke_core.domain import standalone_item_merge_git as git
+from yoke_core.domain.item_merge_receipts import landing_merge_commit
 
 
 class LandingUnverified(RuntimeError):
     """A landing has no fresh proof; its lane and lifecycle must be retained."""
+
+
+def verified_landing_identity(
+    repo_root: str,
+    target_sha: str,
+    candidate: str,
+    reported_sha: str = "",
+) -> str:
+    """Prove the reported PR merge or local landing against a fetched target."""
+    try:
+        landing = (
+            reported_sha
+            or landing_merge_commit(repo_root, target_sha, candidate)
+            or candidate
+        )
+        for ancestor, descendant in ((candidate, landing), (landing, target_sha)):
+            contains, error = git.ancestry(repo_root, ancestor, descendant)
+            if not contains:
+                reason = (
+                    "merge_landing_ancestry_unreadable"
+                    if contains is None
+                    else "merge_landing_identity_mismatch"
+                )
+                raise LandingUnverified(
+                    f"{reason}: {error or f'{ancestor} is not on {descendant}'}. "
+                    "Preserve the lane; repair the PR landing identity or checkout "
+                    "access, then re-run the governed merge command."
+                )
+        return landing
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise LandingUnverified(
+            f"merge_landing_git_failed: {exc}. Preserve the lane; repair checkout "
+            "access, then re-run the governed merge command."
+        ) from exc
 
 
 def verified_target_sha(repo_root: str, target: str, candidate: str) -> str:

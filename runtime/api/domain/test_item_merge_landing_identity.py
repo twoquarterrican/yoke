@@ -193,7 +193,7 @@ def test_retry_cannot_converge_on_an_unpublished_local_landing(checkout, monkeyp
     assert not records and not stamps and failures
 
 
-def test_remote_tip_is_recorded_when_main_advanced_after_the_landing(
+def test_own_landing_is_recorded_when_main_advanced_after_the_landing(
     checkout, monkeypatch
 ):
     from yoke_core.domain.merge_queue_batch_receipt import BatchReceipt
@@ -228,5 +228,19 @@ def test_remote_tip_is_recorded_when_main_advanced_after_the_landing(
         commit_sha=candidate,
         pr_num="42",
     )
-    assert result.merge_sha == tip and records[-1].merge_sha == tip
+    assert result.merge_sha == candidate and records[-1].merge_sha == candidate
+    assert result.merge_sha != tip
     assert result.receipt_commit_sha == candidate
+
+
+def test_local_publication_records_own_landing_after_later_push(checkout):
+    repo, _, candidate, records, stamps, _ = checkout
+    (repo / "neighbor.txt").write_text("neighbor\n")
+    git(repo, "add", "neighbor.txt")
+    git(repo, "commit", "-m", "later target push")
+    later = git(repo, "rev-parse", "main")
+    result = complete(repo, candidate)
+    assert result.ok and result.merge_sha == candidate
+    assert result.merge_sha != later
+    assert records[-1].merge_sha == candidate
+    assert stamps[-1]["merge_sha"] == candidate
