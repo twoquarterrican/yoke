@@ -56,7 +56,6 @@ def load_setup(shell):
     from yoke_cli.config import onboard_wizard_steps as steps
     from yoke_cli.config.onboard_wizard_state import _View
     from yoke_cli.config.onboard_wizard_widgets import SelectionRow
-    from yoke_cli.config.onboard_wizard_self_host import _back_to_destination
 
     try:
         return server.new_setup(config_path=shell.result.config_path)
@@ -72,7 +71,7 @@ def load_setup(shell):
                     [SelectionRow("back", "Back", "repair the named machine setting")],
                     ok=False,
                 ),
-                lambda _choice: _back_to_destination(shell),
+                lambda _choice: shell._step_back(),
             )
         )
         return None

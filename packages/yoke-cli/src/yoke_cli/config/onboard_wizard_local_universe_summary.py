@@ -40,12 +40,12 @@ def local_universe_summary_lines(state: dict[str, Any]) -> list[str]:
 def local_universe_summary_rows(state: dict[str, Any]) -> list[SelectionRow]:
     if state.get("state") == local_universe_setup.LOCAL_UNIVERSE_UNAVAILABLE:
         return [
-            SelectionRow("back", "Back", "choose another Yoke home"),
+            SelectionRow("back", "Back", "previous screen"),
         ]
     if state.get("state") == local_universe_setup.LOCAL_UNIVERSE_VERIFY:
         return [
             SelectionRow("continue", "Use existing", "preserve this database"),
-            SelectionRow("back", "Back", "choose another Yoke home"),
+            SelectionRow("back", "Back", "previous screen"),
         ]
     return steps.VERIFY_OK_ROWS
 

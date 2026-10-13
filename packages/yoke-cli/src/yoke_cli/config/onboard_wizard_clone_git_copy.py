@@ -11,21 +11,23 @@ UNREACHABLE_RECOVERY_LINES = [onboard_github_copy.CLONE_CONNECT_RECOVERY]
 CLONE_REMOTE_ERROR_ROWS = [
     SelectionRow("edit", "Change URL", "enter a different repo"),
     SelectionRow("retry", "Try again", "rerun the check"),
-    SelectionRow("back", "Back", "choose a different option"),
+    SelectionRow("back", "Back", "previous screen"),
 ]
 
 PRIVATE_REMOTE_ERROR_ROWS = [
     SelectionRow(
-        "repositories", "Refresh private repositories", "reload App access",
+        "repositories",
+        "Refresh private repositories",
+        "reload App access",
     ),
     SelectionRow("retry", "Try again", "rerun the check"),
-    SelectionRow("back", "Back", "choose public or private"),
+    SelectionRow("back", "Back", "previous screen"),
 ]
 
 GIT_INSTALL_ERROR_ROWS = [
     SelectionRow("install", "Try install again", "run installer"),
     SelectionRow("retry", "Try again", "after fixing git"),
-    SelectionRow("back", "Back", "choose a different project option"),
+    SelectionRow("back", "Back", "previous screen"),
 ]
 
 
@@ -65,15 +67,19 @@ def missing_rows() -> list[SelectionRow]:
     advice = project_git_prerequisite.install_advice()
     rows: list[SelectionRow] = []
     if advice.run_steps:
-        rows.append(SelectionRow(
-            "install",
-            project_git_prerequisite.install_action_label(advice),
-            project_git_prerequisite.install_action_hint(advice),
-        ))
-    rows.extend((
-        SelectionRow("retry", "Try again", "after installing git"),
-        SelectionRow("back", "Back", "choose a different project option"),
-    ))
+        rows.append(
+            SelectionRow(
+                "install",
+                project_git_prerequisite.install_action_label(advice),
+                project_git_prerequisite.install_action_hint(advice),
+            )
+        )
+    rows.extend(
+        (
+            SelectionRow("retry", "Try again", "after installing git"),
+            SelectionRow("back", "Back", "previous screen"),
+        )
+    )
     return rows
 
 
@@ -81,11 +87,13 @@ def install_error_rows() -> list[SelectionRow]:
     advice = project_git_prerequisite.install_advice()
     rows: list[SelectionRow] = []
     if advice.run_steps:
-        rows.append(SelectionRow(
-            "install",
-            "Try install again",
-            project_git_prerequisite.install_action_hint(advice),
-        ))
+        rows.append(
+            SelectionRow(
+                "install",
+                "Try install again",
+                project_git_prerequisite.install_action_hint(advice),
+            )
+        )
     rows.extend(GIT_INSTALL_ERROR_ROWS[1:])
     return rows
 
@@ -94,7 +102,7 @@ def handoff_rows() -> list[SelectionRow]:
     return [
         SelectionRow("retry", "Check again", "after installer finishes"),
         SelectionRow("install", "Open installer again", "if it did not open"),
-        SelectionRow("back", "Back", "choose a different project option"),
+        SelectionRow("back", "Back", "previous screen"),
     ]
 
 

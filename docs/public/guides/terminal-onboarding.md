@@ -5,6 +5,10 @@ the project commands, including `yoke onboard project`. Selection rows fit the
 terminal's available width, including 80 columns and narrower; a long label
 or description is shortened, and the selected description appears below.
 
+Press **Esc**, **Ctrl-[**, or a **Back** row to return to exactly the previous
+interactive screen. Back stays on the first screen and waits while Apply is
+writing. Checks without a cancellation route also wait until they finish.
+
 `yoke uninstall` also handles unfinished setup: absent GitHub authorization
 or an absent active connection skips disconnect with a reason, so an otherwise
 clean machine can finish removal.

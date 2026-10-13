@@ -1,149 +1,325 @@
 {
- "surface": {
-  "id": "setup-tui",
-  "title": "Interactive setup",
-  "status": "approved",
-  "scope": "Machine first; project optional",
-  "audience": "Human",
-  "encounter": "First install or requested reconfiguration",
-  "location": "yoke setup TUI and its completion summary",
-  "basis": "FIRST-USER design + accepted corrections",
-  "note": "Skipped GitHub checks are not applicable. Teach deeper project configuration when it becomes relevant; a completion summary does not imply the whole project is configured.",
-  "current": "Existing source references; delivered content is not yet proved. Source now distinguishes explicit TUI opening from structured agent actions and reuses saved authorization; deployed proof remains pending.",
-  "desired": "Fewer steps; issue sync silently off. Show real progress, one-screen Back and truthful repair instructions.",
-  "plan_notes": ["FIRST-USER 3/8/9/10/19/24/25/26/37–39", "FIRST-USER C/E/P4"],
-  "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"],
-  "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py", "packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_redraw.py", "packages/yoke-cli/src/yoke_cli/config/onboard_destination_rows.py"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "At the mode choice: this computer only, your server or Yoke Cloud; explain practical reachability.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["modes/local", "modes/self-hosted", "modes/cloud"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
+  "surface": {
+    "id": "setup-tui",
+    "title": "Interactive setup",
+    "status": "approved",
+    "scope": "Machine first; project optional",
+    "audience": "Human",
+    "encounter": "First install or requested reconfiguration",
+    "location": "yoke setup TUI and its completion summary",
+    "basis": "FIRST-USER design + accepted corrections",
+    "note": "Skipped GitHub checks are not applicable. Teach deeper project configuration when it becomes relevant; a completion summary does not imply the whole project is configured.",
+    "current": "Existing source references; delivered content is not yet proved. Source now distinguishes explicit TUI opening from structured agent actions and reuses saved authorization; deployed proof remains pending.",
+    "desired": "Fewer steps; issue sync silently off. Show real progress, one-screen Back and truthful repair instructions.",
+    "plan_notes": [
+      "FIRST-USER 3/8/9/10/19/24/25/26/37\u201339",
+      "FIRST-USER C/E/P4"
+    ],
+    "plan_refs": [
+      "FIRST-USER.1",
+      "FIRST-USER.7",
+      "FIRST-USER.10",
+      "FIRST-USER.17",
+      "FIRST-USER.26",
+      "FIRST-USER.37",
+      "FIRST-USER.38",
+      "FIRST-USER.39"
+    ],
+    "sources": [
+      "packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py",
+      "packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py",
+      "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_redraw.py",
+      "packages/yoke-cli/src/yoke_cli/config/onboard_destination_rows.py",
+      "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_app.py",
+      "runtime/api/cli/test_yoke_operations_cli_onboard_wizard_nav.py",
+      "runtime/api/cli/test_onboard_wizard_git_recovery_navigation.py"
+    ]
   },
-  {
-   "id": "02",
-   "title": "At sign-in or machine approval: why it is needed, what to do and how to return.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["identity/auth", "machines/registration"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
-  },
-  {
-   "id": "03",
-   "title": "Choose a new/existing project now, or finish machine setup and add one later.",
-   "status": "draft-copy",
-   "form": "Do",
-   "verification": "No delivery proof attached.",
-   "topics": ["projects/adoption", "installation/choices"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
-  },
-  {
-   "id": "04",
-   "title": "GitHub stays optional. Item-to-issue sync silently defaults off; no sync-choice screen.",
-   "status": "draft-copy",
-   "form": "Rule",
-   "verification": "No delivery proof attached.",
-   "topics": ["repositories/github", "repositories/sync"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
-  },
-  {
-   "id": "05",
-   "title": "Finish with mode/universe, actual project or no project, active-harness readiness and one next action.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["installation/readiness", "universes/universe", "agents/harnesses"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
-  },
-  {
-   "id": "06",
-   "title": "Each screen shows once: every screen change and resize erases and repaints the whole terminal at its live size, with the step header pinned.",
-   "status": "observed",
-   "form": "Rule",
-   "verification": "Source and runtime/api/cli/test_onboard_wizard_resize_redraw.py replay setup's real terminal output through screen changes and resizes; no live-terminal capture yet.",
-   "topics": ["installation/entry"],
-   "plan_refs": ["FIRST-USER.7"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Choose local, self-hosted or hosted with clear reachability; support stale setup and backup recovery.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["modes", "installation/choices", "maintenance/portability"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
-  },
-  {
-   "id": "desired-02",
-   "title": "Keep GitHub optional and issue sync silently off; reuse authorization and settled choices.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["repositories/github", "repositories/sync"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Open supported browser steps with notice; show real Apply progress, wrapping and one-screen Back.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["identity/auth", "installation/entry"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
-  },
-  {
-   "id": "desired-04",
-   "title": "Verify active-harness readiness, then reach the right project session for minimal onboarding.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["installation/readiness", "projects/onboarding"],
-   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"]
-  },
-  {
-   "id": "repository-access",
-   "title": "Check existing repository access live; add the exact owner/repo at its App installation settings and check again.",
-   "status": "observed",
-   "form": "Do",
-   "verification": "Source and scripted repository-access tests; deployed delivery remains unproved.",
-   "topics": ["repositories/github/repository-permissions"],
-   "plan_refs": ["FIRST-USER.5"],
-   "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_project_github.py", "runtime/api/cli/test_onboard_existing_repository_access.py"]
-  },
-  {
-   "id": "failure-recovery",
-   "title": "When Apply fails, show its real cause and a recovery action on screen and after exit.",
-   "status": "observed",
-   "form": "Do",
-   "verification": "Source trace and scripted regression cover network failure, project permission denial and repository collision through the durable report, failure screen and terminal exit; deployed delivery remains unproved.",
-   "topics": ["installation/readiness"],
-   "plan_refs": ["FIRST-USER.19"],
-   "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard_apply.py", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_flow_apply.py", "runtime/api/cli/test_setup_failure_reason.py"]
-  },
-  {
-   "id": "browser-steps",
-   "title": "Browser authorization is presented as data to agents and announced before TUI opening.",
-   "status": "observed",
-   "form": "Do",
-   "verification": "Source and focused regression tests; deployed campaign proof remains pending.",
-   "topics": ["identity/auth", "repositories/github"],
-   "plan_refs": ["FIRST-USER.26"]
-  },
-  {
-   "id": "board-art",
-   "title": "Setup adds a progress map and three random headers without a design prompt; customize after setup.",
-   "status": "observed",
-   "form": "State",
-   "verification": "Source and scripted setup flow tests; live delivery remains unproved.",
-   "topics": ["workbench/onboarding"],
-   "plan_refs": ["FIRST-USER.25"],
-   "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_flow_board_art.py", "runtime/api/cli/test_onboard_board_art.py", "docs/public/guides/terminal-onboarding.md"]
-  }
- ]
+  "teaching": [
+    {
+      "id": "01",
+      "title": "At the mode choice: this computer only, your server or Yoke Cloud; explain practical reachability.",
+      "status": "draft-copy",
+      "form": "Teach",
+      "verification": "No delivery proof attached.",
+      "topics": [
+        "modes/local",
+        "modes/self-hosted",
+        "modes/cloud"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "02",
+      "title": "At sign-in or machine approval: why it is needed, what to do and how to return.",
+      "status": "draft-copy",
+      "form": "Teach",
+      "verification": "No delivery proof attached.",
+      "topics": [
+        "identity/auth",
+        "machines/registration"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "03",
+      "title": "Choose a new/existing project now, or finish machine setup and add one later.",
+      "status": "draft-copy",
+      "form": "Do",
+      "verification": "No delivery proof attached.",
+      "topics": [
+        "projects/adoption",
+        "installation/choices"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "04",
+      "title": "GitHub stays optional. Item-to-issue sync silently defaults off; no sync-choice screen.",
+      "status": "draft-copy",
+      "form": "Rule",
+      "verification": "No delivery proof attached.",
+      "topics": [
+        "repositories/github",
+        "repositories/sync"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "05",
+      "title": "Finish with mode/universe, actual project or no project, active-harness readiness and one next action.",
+      "status": "draft-copy",
+      "form": "State",
+      "verification": "No delivery proof attached.",
+      "topics": [
+        "installation/readiness",
+        "universes/universe",
+        "agents/harnesses"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "06",
+      "title": "Each screen shows once: every screen change and resize erases and repaints the whole terminal at its live size, with the step header pinned.",
+      "status": "observed",
+      "form": "Rule",
+      "verification": "Source and runtime/api/cli/test_onboard_wizard_resize_redraw.py replay setup's real terminal output through screen changes and resizes; no live-terminal capture yet.",
+      "topics": [
+        "installation/entry"
+      ],
+      "plan_refs": [
+        "FIRST-USER.7"
+      ]
+    },
+    {
+      "id": "desired-01",
+      "title": "Choose local, self-hosted or hosted with clear reachability; support stale setup and backup recovery.",
+      "status": "candidate",
+      "form": "Do",
+      "verification": "Desired outline; exact recipe and live delivery still need proof.",
+      "topics": [
+        "modes",
+        "installation/choices",
+        "maintenance/portability"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "desired-02",
+      "title": "Keep GitHub optional and issue sync silently off; reuse authorization and settled choices.",
+      "status": "candidate",
+      "form": "Do",
+      "verification": "Desired outline; exact recipe and live delivery still need proof.",
+      "topics": [
+        "repositories/github",
+        "repositories/sync"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "desired-03",
+      "title": "Open supported browser steps with notice; show real Apply progress, wrapping and one-screen Back.",
+      "status": "candidate",
+      "form": "Do",
+      "verification": "Desired outline; exact recipe and live delivery still need proof.",
+      "topics": [
+        "identity/auth",
+        "installation/entry"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "desired-04",
+      "title": "Verify active-harness readiness, then reach the right project session for minimal onboarding.",
+      "status": "candidate",
+      "form": "Do",
+      "verification": "Desired outline; exact recipe and live delivery still need proof.",
+      "topics": [
+        "installation/readiness",
+        "projects/onboarding"
+      ],
+      "plan_refs": [
+        "FIRST-USER.1",
+        "FIRST-USER.7",
+        "FIRST-USER.10",
+        "FIRST-USER.17",
+        "FIRST-USER.26",
+        "FIRST-USER.37",
+        "FIRST-USER.38",
+        "FIRST-USER.39"
+      ]
+    },
+    {
+      "id": "repository-access",
+      "title": "Check existing repository access live; add the exact owner/repo at its App installation settings and check again.",
+      "status": "observed",
+      "form": "Do",
+      "verification": "Source and scripted repository-access tests; deployed delivery remains unproved.",
+      "topics": [
+        "repositories/github/repository-permissions"
+      ],
+      "plan_refs": [
+        "FIRST-USER.5"
+      ],
+      "sources": [
+        "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_project_github.py",
+        "runtime/api/cli/test_onboard_existing_repository_access.py"
+      ]
+    },
+    {
+      "id": "failure-recovery",
+      "title": "When Apply fails, show its real cause and a recovery action on screen and after exit.",
+      "status": "observed",
+      "form": "Do",
+      "verification": "Source trace and scripted regression cover network failure, project permission denial and repository collision through the durable report, failure screen and terminal exit; deployed delivery remains unproved.",
+      "topics": [
+        "installation/readiness"
+      ],
+      "plan_refs": [
+        "FIRST-USER.19"
+      ],
+      "sources": [
+        "packages/yoke-cli/src/yoke_cli/commands/adapters/onboard_apply.py",
+        "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_flow_apply.py",
+        "runtime/api/cli/test_setup_failure_reason.py"
+      ]
+    },
+    {
+      "id": "browser-steps",
+      "title": "Browser authorization is presented as data to agents and announced before TUI opening.",
+      "status": "observed",
+      "form": "Do",
+      "verification": "Source and focused regression tests; deployed campaign proof remains pending.",
+      "topics": [
+        "identity/auth",
+        "repositories/github"
+      ],
+      "plan_refs": [
+        "FIRST-USER.26"
+      ]
+    },
+    {
+      "id": "board-art",
+      "title": "Setup adds a progress map and three random headers without a design prompt; customize after setup.",
+      "status": "observed",
+      "form": "State",
+      "verification": "Source and scripted setup flow tests; live delivery remains unproved.",
+      "topics": [
+        "workbench/onboarding"
+      ],
+      "plan_refs": [
+        "FIRST-USER.25"
+      ],
+      "sources": [
+        "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_flow_board_art.py",
+        "runtime/api/cli/test_onboard_board_art.py",
+        "docs/public/guides/terminal-onboarding.md"
+      ]
+    },
+    {
+      "id": "back-navigation",
+      "title": "Press Esc, Ctrl-[ or Back to return to the previous interactive screen; the first screen stays put and Apply finishes before navigation.",
+      "status": "observed",
+      "form": "Do",
+      "verification": "Source pilots cover exact previous-view identity for keyboard and Back rows, clone recovery, first-screen and Apply boundaries. Live installed delivery remains unproved.",
+      "topics": [
+        "installation/entry"
+      ],
+      "plan_refs": [
+        "FIRST-USER.38"
+      ]
+    }
+  ]
 }
