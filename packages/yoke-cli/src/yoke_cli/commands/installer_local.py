@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Dict, Tuple
 
 from yoke_cli.commands.adapters.wsl import WSL_SETUP_USAGE, wsl_setup
+from yoke_cli.hook_resident_lifecycle import LIFECYCLE_USAGE, resident_lifecycle
 
 from yoke_cli.commands.adapters.aws import (
     aws_admin_link,
@@ -60,6 +61,7 @@ from yoke_cli.commands.flag_adapters import (
 )
 
 TOOL_SHAPED_SUBCOMMANDS: Dict[Tuple[str, ...], AdapterFn] = {
+    ("hook", "resident"): resident_lifecycle,
     ("wsl", "setup"): wsl_setup,
     ("config", "distribution", "set"): distribution_set,
     ("aws", "admin-link"): aws_admin_link,
@@ -92,6 +94,7 @@ TOOL_SHAPED_SUBCOMMANDS: Dict[Tuple[str, ...], AdapterFn] = {
 }
 
 TOOL_SHAPED_USAGE: Dict[str, str] = {
+    "yoke hook resident": LIFECYCLE_USAGE,
     "yoke wsl setup": WSL_SETUP_USAGE,
     "yoke config distribution set": DISTRIBUTION_SET_USAGE,
     "yoke aws admin-link": "yoke aws admin-link [--project PROJECT] [--region REGION]",

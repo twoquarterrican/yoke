@@ -303,6 +303,18 @@ class Installer:
         self._product_boundary_audit(expected_version=version, yoke_bin=yoke_bin)
         self._repair_credential_helper(yoke_bin)
         self._record_distribution(yoke_bin)
+        argv = [yoke_bin, "hook", "resident", "restart"]
+        resident = self.capture_runner(argv)
+        if resident.returncode:
+            raise InstallError(
+                "hook_evaluator_readiness_failed: the installed evaluator did not "
+                "pass its readiness check. "
+                + _bounded_diagnostic(
+                    (resident.stdout or "") + "\n" + (resident.stderr or ""),
+                    DIAGNOSTIC_MAX_CHARS,
+                )
+                + "; run yoke hook resident restart, then retry the installer."
+            )
         try:
             wsl_setup = self.terminal_runner([yoke_bin, "wsl", "setup"])
         except OSError as exc:

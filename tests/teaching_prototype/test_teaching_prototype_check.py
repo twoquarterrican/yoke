@@ -81,6 +81,30 @@ def test_coverage_counts_only_direct_mappings(tools):
     assert model.coverage(loaded) == {"parent": ["PLAN.1"], "parent/child": []}
 
 
+def test_overview_survives_independent_model_additions(tools):
+    model, *_ = tools
+    from render_overview import index_page
+
+    loaded = model.Model()
+    views = {}
+    index_page(views, "Teaching overview")
+    before = views["index.html"]
+    loaded.teaching["another-surface/lesson"] = {"title": "A new lesson"}
+    loaded.concepts["another-topic"] = {"title": "A new topic"}
+    index_page(views, "Teaching overview")
+    assert views["index.html"] == before
+    for target in (
+        "concepts.html",
+        "surfaces.html",
+        "scenarios.html",
+        "plan-coverage.html",
+        "boundaries.html",
+        "gaps.html",
+        "evidence.html",
+    ):
+        assert f'href="{target}"' in before
+
+
 @pytest.mark.parametrize(
     "line",
     [

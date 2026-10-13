@@ -56,6 +56,12 @@ def test_install_records_actual_selection_before_ready(monkeypatch, tmp_path):
 
     def record(argv):
         assert "is ready" not in instance.stdout.getvalue()
+        if argv[1:] == ["hook", "resident", "restart"]:
+            assert distribution.recorded() == {
+                "origin": "https://fork.example",
+                "channel": "preview",
+            }
+            return subprocess.CompletedProcess(argv, 0, "Hook evaluator: ready", "")
         assert argv[:4] == ["/bin/yoke", "config", "distribution", "set"]
         rc = distribution_set(argv[4:])
         return subprocess.CompletedProcess(argv, rc, "", "")

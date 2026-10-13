@@ -10,7 +10,7 @@ opposite repairs.
 
 A phase that was not measured is reported as ``not-measured`` rather than
 zero: a zero here reads as "instant" and would quietly hide a gap in
-coverage. Only durations and a refusal code are ever printed — never the
+coverage. Only durations and a refusal code are ever recorded — never the
 tool payload, the environment, or a credential — and rendering is pure
 string work, so the report cannot delay or fail the tool call.
 """
@@ -64,9 +64,28 @@ def _render(value: Optional[int]) -> str:
     return _UNMEASURED if value is None else str(max(0, int(value)))
 
 
+def record_phase_timing(timing: HookPhaseTiming) -> None:
+    """Append private diagnostics; an unwritable log never blocks a hook."""
+    from yoke_cli.hook_resident_client import resident_paths
+
+    try:
+        descriptor = os.open(
+            resident_paths().log,
+            os.O_CREAT | os.O_WRONLY | os.O_APPEND | os.O_NOFOLLOW,
+            0o600,
+        )
+        try:
+            os.write(descriptor, (timing.summary() + "\n").encode("utf-8"))
+        finally:
+            os.close(descriptor)
+    except OSError:
+        pass
+
+
 __all__ = [
     "HookPhaseTiming",
     "PHASE_TIMING_ENV_VAR",
     "PHASE_TIMING_MARKER",
     "phase_timing_requested",
+    "record_phase_timing",
 ]

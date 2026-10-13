@@ -161,8 +161,7 @@ def hook_evaluate(args: List[str]) -> int:
             client_timing=client_timing,
             elapsed_ms=fallback_ms,
         )
-        # A degraded hook always reports its phases: which one paid for the
-        # latency is the whole question, and it is unanswerable afterwards.
+        # Keep the phase evidence in diagnostics, outside harness chat.
         _report_phase_timing(
             resident_wait_ms=exc.resident_wait_ms,
             fallback_ms=fallback_ms[0] if fallback_ms else None,
@@ -193,11 +192,12 @@ def _report_phase_timing(
     fallback_reason: str,
     always: bool = False,
 ) -> None:
-    """Print the phase split when it is wanted, and never fail the hook."""
+    """Log the phase split when it is wanted, and never fail the hook."""
     try:
         from yoke_cli.hook_phase_timing import (
             HookPhaseTiming,
             phase_timing_requested,
+            record_phase_timing,
         )
 
         if not always and not phase_timing_requested():
@@ -210,6 +210,6 @@ def _report_phase_timing(
             ),
             fallback_reason=fallback_reason,
         )
-        sys.stderr.write(f"{timing.summary()}\n")
+        record_phase_timing(timing)
     except Exception:  # noqa: BLE001 — diagnostics never block a tool call
         return

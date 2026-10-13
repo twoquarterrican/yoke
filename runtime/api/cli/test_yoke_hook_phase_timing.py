@@ -42,8 +42,8 @@ def test_timing_is_off_until_this_machine_asks_for_it(monkeypatch) -> None:
     assert phase_timing_requested()
 
 
-def test_a_degraded_hook_reports_its_phases_and_still_returns_its_exit_code(
-    monkeypatch, capsys
+def test_a_degraded_hook_logs_its_phases_without_chat_noise(
+    monkeypatch, capsys, tmp_path
 ) -> None:
     from pathlib import Path
 
@@ -60,6 +60,9 @@ def test_a_degraded_hook_reports_its_phases_and_still_returns_its_exit_code(
 
     monkeypatch.setattr("yoke_cli.hook_resident_client.evaluate_with_resident", refuse)
     monkeypatch.setattr(
+        "yoke_cli.hook_resident_client.machine_config.cache_dir", lambda: tmp_path
+    )
+    monkeypatch.setattr(
         hooks,
         "_evaluate_inprocess",
         lambda *_args, elapsed_ms=None, **_kwargs: (
@@ -73,7 +76,8 @@ def test_a_degraded_hook_reports_its_phases_and_still_returns_its_exit_code(
     exit_code = hooks.hook_evaluate(["PreToolUse"])
 
     assert exit_code == 7
-    reported = capsys.readouterr().err
+    assert PHASE_TIMING_MARKER not in capsys.readouterr().err
+    reported = (tmp_path / "hook-evaluator" / "evaluator.log").read_text()
     assert f"{PHASE_TIMING_MARKER}: " in reported
     assert "resident_wait_ms=2001" in reported
     assert "fallback_ms=1841" in reported

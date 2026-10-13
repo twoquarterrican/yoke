@@ -36,6 +36,9 @@ def machine(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(steps, "command", lambda args: calls.append(args))
     monkeypatch.setattr(
+        steps, "stop_resident", lambda: calls.append(["hook evaluator"])
+    )
+    monkeypatch.setattr(
         steps.machine_uninstall_workers, "stop", lambda envs: calls.append(["workers"])
     )
     monkeypatch.setattr(steps.machine_uninstall_detached, "prepare", lambda: handoff)
@@ -56,6 +59,7 @@ def test_complete_cleanup_removes_home_and_hands_off_cli(machine):
     assert not value.home.exists()
     assert calls[0] == ["--env", "remote", "relay", "uninstall"]
     assert calls[1] == ["workers"]
+    assert ["hook evaluator"] in calls
     assert ["ui", "down"] in calls
     assert ["local-postgres", "stop"] in calls
     teardown = next(args for args in calls if args[:2] == ["self-host", "teardown"])
@@ -63,6 +67,20 @@ def test_complete_cleanup_removes_home_and_hands_off_cli(machine):
     assert handoff == ["armed"]
     assert "handed off" in output[-3]
     assert output[-1] == steps.NOT_REMOVED
+
+
+def test_evaluator_stop_failure_retains_home_and_cli(machine, monkeypatch):
+    value, _calls, handoff = machine
+
+    def fail():
+        raise RuntimeError("YOKE_HOOK_RESIDENT_STOP_TIMEOUT")
+
+    monkeypatch.setattr(steps, "stop_resident", fail)
+    output = []
+    assert steps.remove(value, value.projects, output.append) == 1
+    assert value.home.exists()
+    assert not handoff
+    assert any("hook evaluator: failed" in line for line in output)
 
 
 def test_one_failure_does_not_hide_other_cleanup_and_keeps_recovery(

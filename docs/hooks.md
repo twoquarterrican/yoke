@@ -163,12 +163,26 @@ The configured in-process path records or relays the same field. An unconfigured
 thin client leaves disposable telemetry unrecorded and never imports the engine
 solely to report it.
 
-Fallback writes `YOKE_HOOK_PHASE_TIMING` to stderr with `resident_wait_ms`,
+Fallback appends `YOKE_HOOK_PHASE_TIMING` to the machine cache's
+`hook-evaluator/evaluator.log` with `resident_wait_ms`,
 `fallback_ms`, `client_wall_ms` and `fallback_reason`; unmeasured phases say
 `not-measured`, never zero. Set `YOKE_HOOK_PHASE_TIMING=1` for healthy calls too.
-The line contains durations and a refusal code, never payload/environment/secret;
+Timing details never appear in harness chat. The log line contains durations
+and a refusal code, never payload/environment/secret;
 rendering cannot delay or fail the tool. Resident wait includes connect/restart/
 response; fallback includes its synchronous completion telemetry.
+
+Every public install, reinstall and upgrade stops the previous evaluator,
+starts the installed version and proves readiness with a dry evaluation.
+Uninstall stops it before removing the machine home and CLI.
+
+```text
+yoke hook resident restart
+```
+
+Use this machine-local command to repair an unavailable evaluator; its named
+failure points to the resident log. It works without a configured connection
+and shares one implementation across Claude Code, Codex and Cursor.
 
 ```text
 yoke sessions hook-overhead [--hours N] [--json]

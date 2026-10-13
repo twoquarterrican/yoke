@@ -37,6 +37,7 @@ from model import (
 )
 from render import LINE_LIMIT, wrapped_lines
 from render_pages import LIVE, Pages
+from render_overview import index_page
 
 VIEWS_ROOT = TEACHING_ROOT / "views"
 LIVE_ROOT = TEACHING_ROOT / "live"
@@ -94,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     pages.record_page(views, "gaps.html", "Gaps", model.gaps)
     pages.docs_pages(views)
     pages.commands_page(views)
-    pages.index_page(views, INTRO)
+    index_page(views, INTRO)
     live_pages = {
         path[len(LIVE) :]: views.pop(path)
         for path in list(views)
