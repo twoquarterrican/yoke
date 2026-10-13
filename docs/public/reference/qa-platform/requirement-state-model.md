@@ -187,7 +187,20 @@ predecessor when no passing same-scope case exists. Links held by a waived or
 retracted row carry no obligation. The gate and the writer guards read one rule,
 so any change to the scope rule reaches both.
 
-Cancelling a deployment run retracts each member's outstanding run-bound QA
-copies, as removing that member does. Unsettled, never-passed blocking copies
-are retracted. Passing evidence and standing item plans remain, and the next
-release materializes fresh copies.
+Failing or cancelling a deployment run aborts its live plan executions and
+retracts its unsettled run-bound requirements in the same transaction. Host
+reservations and leases release through execution settlement. Current passing
+evidence and standing item plans remain; a later release materializes fresh
+copies. Retraction records the run and reason; it grants no passing verdict.
+
+An aborted or errored execution retains a typed review bundle for its completed
+captures. Use its owner-bound `yoke qa plan review-begin` and returned
+`review-submit` command to judge those captures independently; unwalked cases
+remain unfulfilled and the execution remains terminal. Incomplete captures
+without review authority settle as errors.
+
+Verdict writers automatically record the actual plan execution id and its
+concrete artifact ids beside other proof. A deployment-stage verdict also
+re-evaluates active acceptance after commit, using the same frozen-target gate
+as the driver. Missing evidence still blocks; recording a verdict supplies no
+fabricated proof.

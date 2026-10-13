@@ -152,6 +152,13 @@ Item-bound delivery starts from `/yoke usher PREFIX-N` or `yoke deployment-runs 
 
 ### Target occupancy serializes deploys; no claim is taken
 
+Failure or cancellation aborts every live QA execution on that run and retracts
+its unsettled run requirements in the status transaction. Passing proof and
+standing plans remain. Completed captures retain typed review bundles for an
+independent verdict; review never reopens the failed run. Deployment verdict
+writes link the actual execution and artifacts automatically, then re-evaluate
+active stage acceptance after commit, even when no driver is attached.
+
 Creating a run (`deployment_runs.create`, `deployment_runs.start_for_item`) and executing one take no claim. Creation serializes against other creation under a transaction-scoped advisory lock, and what used to need a project-wide hold is answered by the run itself:
 
 - **Occupancy.** A run occupies the origin (`scheme://host[:port]`, lowercased) of every environment it targets — the run's own target environment plus every environment a flow stage targets — from the moment it is marked `executing` until every QA stage of its flow has settled (`deployment_qa_stage_outstanding` reports nothing outstanding) or it is terminal. A run whose flow has no QA stage holds its origins until it is terminal. The start (`status -> executing`) takes a transaction-scoped advisory lock per origin and refuses with `target_occupied` when another executing run still holds one, naming the origin, the holding run, its project and stage, and its open QA lines, with the recovery: re-run the start once the holder's QA settles, or terminalize a holder nobody will finish (`yoke deployment-runs terminalize RUN --disposition cancelled --reason R`). Environment records that resolve to one origin — two projects' stage environments on one host — are one occupancy unit with no configuration, and production origins are occupied exactly like stage ones, which keeps a later release from overtaking an earlier one on the same server. A run with no registered environment url (a frozen preview, which occupies its own slug instead) holds no origin. Owner: `deploy_target_occupancy`.

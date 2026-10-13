@@ -71,14 +71,26 @@ def settle_unreviewed_execution_captures(
     conn: Any,
     execution: Mapping[str, Any],
 ) -> None:
-    """Settle only still-NULL captures bound to this execution's results.
-
-    Abort, error, and any other terminal path that never wrote a review
-    would otherwise freeze those captures at every later item transition.
-    """
+    """Settle unusable captures; completed captures retain typed review authority."""
     if not _table_exists(conn, "qa_runs"):
         return
     from yoke_core.domain.qa_plan_review import _execution_capture_run_id
+    from yoke_core.domain.db_helpers import query_one
+    import json
+
+    bundle = query_one(
+        conn,
+        "SELECT bundle_json FROM qa_plan_review_bundles WHERE execution_id=%s",
+        (str(execution["id"]),),
+    )
+    reviewable = (
+        {
+            int(case["capture_run_id"])
+            for case in json.loads(bundle["bundle_json"])["cases"]
+        }
+        if bundle
+        else set()
+    )
 
     cases = {
         int(case["requirement_id"]): case
@@ -112,6 +124,8 @@ def settle_unreviewed_execution_captures(
     ).fetchall()
     now = utc_now()
     for row in unjudged:
+        if int(row["id"] if hasattr(row, "keys") else row[0]) in reviewable:
+            continue
         update_qa_run(
             conn,
             int(row["id"] if hasattr(row, "keys") else row[0]),

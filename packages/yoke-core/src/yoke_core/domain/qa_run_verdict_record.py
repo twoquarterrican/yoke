@@ -95,6 +95,9 @@ def insert_qa_run(conn: Any, **columns: Any) -> QaRunWrite:
         tuple(columns.values()),
     ).fetchone()
     run_id = int(row["id"] if hasattr(row, "keys") else row[0])
+    from yoke_core.domain.qa_run_execution_evidence import link_verdict_evidence
+
+    link_verdict_evidence(conn, run_id)
     return QaRunWrite(
         run_id,
         _discharge_on_pass(
@@ -140,7 +143,12 @@ def update_qa_run(
     if unjudged_only:
         sql += " AND verdict IS NULL"
     cursor = conn.execute(sql, tuple(params))
-    if not getattr(cursor, "rowcount", 1) or columns.get("verdict") != PASS_VERDICT:
+    if not getattr(cursor, "rowcount", 1):
+        return QaRunWrite(int(run_id))
+    from yoke_core.domain.qa_run_execution_evidence import link_verdict_evidence
+
+    link_verdict_evidence(conn, int(run_id))
+    if columns.get("verdict") != PASS_VERDICT:
         return QaRunWrite(int(run_id))
     requirement = conn.execute(
         f"SELECT qa_requirement_id FROM qa_runs WHERE id={p}", (int(run_id),)

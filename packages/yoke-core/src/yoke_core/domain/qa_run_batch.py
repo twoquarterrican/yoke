@@ -241,6 +241,12 @@ def cmd_run_add_batch(
 
         conn.commit()
 
+        from yoke_core.domain.qa_run_execution_evidence import settle_recorded_verdict
+
+        for run_id, row in zip(inserted_ids, payload):
+            if row.get("verdict") is not None:
+                settle_recorded_verdict(conn, run_id)
+
         # Emit per-row events after commit
         for i, row in enumerate(payload):
             verdict = row.get("verdict")

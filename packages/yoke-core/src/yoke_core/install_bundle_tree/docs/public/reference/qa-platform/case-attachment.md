@@ -290,7 +290,7 @@ registered, unique, and include the driving host. Run this case through
 `yoke qa plan run`; direct case execution refuses it. The
 runner acquires every host through its FIFO in sorted name order, releases
 partial acquisitions on contention, and retains the full set through case
-execution and mission review. Completion or abort releases the set. Cases
+execution and mission review. Completion or abort releases the set; [completed captures remain reviewable](requirement-state-model.md). Cases
 with different driving hosts or declared sets use separate execution rosters.
 
 ## Shared host turns and starting state

@@ -87,7 +87,12 @@ def handle_plan_review_begin(request: FunctionCallRequest) -> HandlerOutcome:
             begin_plan_review,
         )
 
-        review_bundle = begin_plan_review(conn, execution)
+        review_bundle = begin_plan_review(
+            conn,
+            execution,
+            completed_captures_only=execution["state"] in {"aborted", "error"},
+        )
+        conn.commit()
         result = {
             "execution_id": str(execution["id"]),
             "state": (
@@ -113,7 +118,12 @@ def handle_plan_review_submit(request: FunctionCallRequest) -> HandlerOutcome:
         return owned
     conn, execution = owned
     try:
-        if execution["state"] not in {"awaiting_agent_review", "completed"}:
+        if execution["state"] not in {
+            "awaiting_agent_review",
+            "completed",
+            "aborted",
+            "error",
+        }:
             raise ValueError("QA plan execution is not awaiting agent review")
         from yoke_core.domain.qa_plan_review import QaPlanReviewError
         from yoke_core.domain.qa_plan_review_submission import (
@@ -121,6 +131,11 @@ def handle_plan_review_submit(request: FunctionCallRequest) -> HandlerOutcome:
         )
 
         if parsed.host_wait is not None:
+            if execution["state"] in {"aborted", "error"}:
+                raise QaPlanReviewError(
+                    "qa_review_execution_terminal: review completed captures with verdicts; "
+                    "begin a new execution for host work"
+                )
             if parsed.verdicts:
                 raise QaPlanReviewError(
                     "host_wait_and_verdicts_exclusive: submit the hold without verdicts"

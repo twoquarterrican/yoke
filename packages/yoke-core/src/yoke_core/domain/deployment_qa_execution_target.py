@@ -306,7 +306,7 @@ def is_deployment_execution_target(target: Mapping[str, Any]) -> bool:
 
 
 def validate_deployment_execution_target(
-    conn: Any, execution: Mapping[str, Any]
+    conn: Any, execution: Mapping[str, Any], *, require_active: bool = True
 ) -> None:
     """Reject stale, superseded, cancelled, or cross-subject result writes."""
     stage = str(execution.get("deployment_stage") or "")
@@ -316,6 +316,7 @@ def validate_deployment_execution_target(
         run_id=str(execution.get("deployment_run_id") or ""),
         stage_name=stage,
         member_item_id=int(member) if member is not None else None,
+        require_active=require_active,
     )
     actual = execution.get("execution_target")
     observation = actual.get("observation") if isinstance(actual, Mapping) else None

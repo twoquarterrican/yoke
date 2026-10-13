@@ -8,19 +8,16 @@ from typing import Any, Mapping
 from uuid import uuid4
 
 from yoke_core.domain.db_helpers import instant_parameter, utc_now, query_one
-from yoke_core.domain.dispatch_descriptors import DispatchDescriptor
+from yoke_core.domain.qa_plan_review_dispatch import dispatch_contract
 from yoke_core.domain.qa_review_evidence import (
     capture_artifacts,
-    case_artifact_read_commands,
 )
 from yoke_core.domain.qa_plan_execution_store import (
     canonical,
     marker,
 )
 from yoke_core.domain.qa_review_verdict_modes import (
-    inconclusive_verdict_guidance,
     stage_review_verdicts,
-    verdict_enum_text,
 )
 
 
@@ -60,10 +57,14 @@ def _review_case(
     conn: Any,
     case: Mapping[str, Any],
     capture_run_id: int,
+    *,
+    completed_only: bool = False,
 ) -> dict[str, Any] | None:
     requirement_id = int(case["requirement_id"])
     capture = _capture_run(conn, requirement_id, capture_run_id)
     if capture is None:
+        if completed_only:
+            return None
         raise QaPlanReviewError(
             f"agent-verdict case {requirement_id} has no matching completed "
             f"capture run {capture_run_id}"
@@ -135,96 +136,6 @@ def _execution_capture_run_id(
     return run_id
 
 
-def _dispatch_contract(
-    bundle: Mapping[str, Any], *, allowed_verdicts: tuple[str, ...]
-) -> dict[str, Any]:
-    if any(case.get("capture_runner") == "agent_mission" for case in bundle["cases"]):
-        from yoke_core.domain.agent_mission_review import (
-            agent_mission_dispatch_contract,
-        )
-
-        return agent_mission_dispatch_contract(
-            bundle, allowed_verdicts=allowed_verdicts
-        )
-    descriptor = DispatchDescriptor("tester")
-    bundle_id = str(bundle["bundle_id"])
-    digest = str(bundle["bundle_digest"])
-    cases = bundle["cases"]
-    subject = bundle["subject"]
-    execution_target = bundle.get("execution_target")
-    execution_target_digest = str(bundle.get("execution_target_digest") or "")
-    environment = (
-        execution_target.get("environment")
-        if isinstance(execution_target, Mapping)
-        else None
-    )
-    authority_bound = (
-        isinstance(environment, Mapping)
-        and bool(str(environment.get("name") or "").strip())
-        and bool(execution_target_digest)
-    )
-    authority = {
-        "state": "bound" if authority_bound else "unavailable",
-        "environment": (
-            str(environment.get("name") or "") if authority_bound else None
-        ),
-        "execution_target_digest": (
-            execution_target_digest if authority_bound else None
-        ),
-    }
-    from yoke_core.domain.qa_plan_review_subject import subject_flag
-
-    subject_argument = subject_flag(subject, execution_target)
-    artifact_read_commands = case_artifact_read_commands(cases)
-    if authority_bound:
-        prompt = (
-            f"Review QA bundle {bundle_id} ({digest}) for immutable target "
-            f"environment {authority['environment']} at target digest "
-            f"{execution_target_digest}. Inspect every supplied transcript "
-            "and visual artifact against that case's instructions and "
-            "expected outcome. Return exactly one independent verdict and "
-            f"rationale for each of the {len(cases)} cases. Do not infer a "
-            "verdict from capture status. "
-            + inconclusive_verdict_guidance(allowed_verdicts)
-            + " Use only the "
-            "supplied artifact-read commands for bytes that are not directly "
-            "available — each lands the file and reports its path under the "
-            "result path key, which is the only address you may open; "
-            "artifact_handle.path names the capturing machine's disk. Refuse "
-            "a missing or different target authority."
-        )
-        submit_command = (
-            f"yoke qa plan review-submit {subject_argument} "
-            f"--execution-id {bundle['execution_id']} --bundle-id {bundle_id} "
-            f"--bundle-digest {digest} --stdin"
-        )
-    else:
-        prompt = (
-            f"QA bundle {bundle_id} ({digest}) predates immutable review "
-            "authority binding and cannot be dispatched. Preserve it as "
-            "historical evidence; do not query artifacts or submit verdicts."
-        )
-        submit_command = None
-    return {
-        "dispatch_kind": descriptor.dispatch_kind,
-        "role": descriptor.role,
-        "subagent_type": descriptor.subagent_type,
-        "authority": authority,
-        "artifact_read_commands": artifact_read_commands,
-        "result_schema": {
-            "verdicts": [
-                {
-                    "requirement_id": "integer",
-                    "verdict": verdict_enum_text(allowed_verdicts),
-                    "rationale": "non-empty string",
-                }
-            ]
-        },
-        "prompt": prompt,
-        "submit_command": submit_command,
-    }
-
-
 def _public_bundle(conn: Any, stored: Mapping[str, Any]) -> dict[str, Any]:
     payload = _json_object(stored["bundle_json"])
     result = {
@@ -241,16 +152,20 @@ def _public_bundle(conn: Any, stored: Mapping[str, Any]) -> dict[str, Any]:
         result["subject"] = public_review_subject(conn, subject)
     except ValueError as exc:
         raise QaPlanReviewError(str(exc)) from exc
-    result["dispatch"] = _dispatch_contract(result, allowed_verdicts=allowed_verdicts)
+    result["dispatch"] = dispatch_contract(result, allowed_verdicts=allowed_verdicts)
     return result
 
 
 def begin_plan_review(
     conn: Any,
     execution: dict[str, Any],
+    *,
+    completed_captures_only: bool = False,
 ) -> dict[str, Any] | None:
-    """Persist one review bundle after every deterministic case has captured."""
-    if int(execution["cursor_ordinal"]) != len(execution["roster"]):
+    """Persist review authority for a full walk or a terminated walk's captures."""
+    if not completed_captures_only and int(execution["cursor_ordinal"]) != len(
+        execution["roster"]
+    ):
         raise QaPlanReviewError(
             "agent review cannot begin before deterministic capture completes"
         )
@@ -268,7 +183,7 @@ def begin_plan_review(
         int(row["requirement_id"]): row["result"]
         for row in result_rows(conn, str(execution["id"]))
     }
-    if len(recorded) != len(execution["roster"]):
+    if not completed_captures_only and len(recorded) != len(execution["roster"]):
         raise QaPlanReviewError(
             "agent review requires one recorded result for every execution case"
         )
@@ -276,6 +191,14 @@ def begin_plan_review(
         review
         for case in execution["roster"]
         if str(case.get("verdict_path") or "") == "agent"
+        and int(case["requirement_id"]) in recorded
+        and (
+            not completed_captures_only
+            or (
+                recorded[int(case["requirement_id"])].get("qa_run_id")
+                or recorded[int(case["requirement_id"])].get("run_id")
+            )
+        )
         and (
             review := _review_case(
                 conn,
@@ -284,6 +207,7 @@ def begin_plan_review(
                     case,
                     recorded.get(int(case["requirement_id"]), {}),
                 ),
+                completed_only=completed_captures_only,
             )
         )
         is not None
@@ -327,12 +251,13 @@ def begin_plan_review(
     )
     from yoke_core.domain.qa_plan_execution_lifecycle import finish_plan_execution
 
-    finish_plan_execution(
-        conn,
-        execution,
-        state="awaiting_agent_review",
-        reason="qa-plan-awaiting-agent-review",
-    )
+    if not completed_captures_only:
+        finish_plan_execution(
+            conn,
+            execution,
+            state="awaiting_agent_review",
+            reason="qa-plan-awaiting-agent-review",
+        )
     stored = query_one(
         conn,
         f"SELECT * FROM qa_plan_review_bundles WHERE id={p}",

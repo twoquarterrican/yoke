@@ -1,8 +1,7 @@
 """Reviewed and terminated QA executions leave no capture run unsettled.
 
-Whatever ends an exploratory mission's execution — an agent verdict or an
-operator abort — must settle its NULL-verdict capture run in place, or every
-terminal item transition refuses while the gate summary reports green.
+An agent verdict settles its capture in place. An aborted walk preserves a
+typed review bundle for completed captures and still owes their judgment.
 """
 
 from __future__ import annotations
@@ -234,8 +233,6 @@ def test_review_submission_settles_the_capture_run_in_place(
     assert capture_row["verdict_reason"] == (
         "Ranked findings cover the expected outcome."
     )
-    # Browser-evidence gates match reviewed captures on these two columns
-    # plus the linked verdict; settlement must not disturb either.
     assert capture_row["execution_status"] == "captured"
     assert capture_row["case_outcome"] == "needs_review"
 
@@ -252,7 +249,7 @@ def test_review_submission_settles_the_capture_run_in_place(
     assert _unsettled_run_ids(test_db, requirement_id) == []
 
 
-def test_aborted_execution_settles_its_unreviewed_capture(
+def test_aborted_execution_preserves_its_capture_for_review(
     test_db: Any,
     tmp_path: Any,
     monkeypatch: Any,
@@ -274,14 +271,20 @@ def test_aborted_execution_settles_its_unreviewed_capture(
         reason="operator aborted the stalled walk",
     )
 
-    assert _unsettled_run_ids(test_db, requirement_id) == []
+    assert len(_unsettled_run_ids(test_db, requirement_id)) == 1
     settled = test_db.execute(
         "SELECT verdict,verdict_reason FROM qa_runs "
         "WHERE qa_requirement_id=%s AND performed_by='agent_mission'",
         (requirement_id,),
     ).fetchone()
-    assert settled["verdict"] == "error"
-    assert "without a review verdict" in settled["verdict_reason"]
+    assert settled["verdict"] is None
+    execution = lock_plan_execution(test_db, execution_id)
+    bundle = begin_plan_review(test_db, execution, completed_captures_only=True)
+    assert bundle is not None
+    _submit_pass(
+        test_db, execution, bundle, requirement_id, "Completed capture reviewed."
+    )
+    assert execution["state"] == "aborted"
     assert find_unsettled_records(test_db, item_id=item_id) == []
 
 
@@ -290,8 +293,6 @@ def test_repeated_attempts_leave_no_growing_wall_of_orphans(
     tmp_path: Any,
     monkeypatch: Any,
 ) -> None:
-    # Each abandoned attempt once left one more capture behind, until the
-    # terminal transition refused on all of them.
     item_id = 4603
     requirement_id = _materialize_mission(test_db, item_id=item_id)
     configure_test_machine(test_db, tmp_path, monkeypatch)
@@ -306,6 +307,15 @@ def test_repeated_attempts_leave_no_growing_wall_of_orphans(
             lock_plan_execution(test_db, execution_id),
             state="aborted",
             reason=f"operator aborted attempt {attempt}",
+        )
+        execution = lock_plan_execution(test_db, execution_id)
+        bundle = begin_plan_review(test_db, execution, completed_captures_only=True)
+        _submit_pass(
+            test_db,
+            execution,
+            bundle,
+            requirement_id,
+            "Capture reviewed independently.",
         )
 
     assert _unsettled_run_ids(test_db, requirement_id) == []
@@ -329,9 +339,6 @@ def test_gate_summary_and_terminal_gate_agree_after_review(
     bundle = begin_plan_review(test_db, execution)
     _submit_pass(test_db, execution, bundle, requirement_id, "Findings complete.")
 
-    # Gate summary treats any pass row as satisfied; the terminal gate
-    # treats a NULL verdict as unsettled. After settlement those two
-    # answers agree on this same connection (not an ambient DSN).
     pass_row = test_db.execute(
         "SELECT 1 FROM qa_runs r "
         "JOIN qa_requirements req ON req.id = r.qa_requirement_id "

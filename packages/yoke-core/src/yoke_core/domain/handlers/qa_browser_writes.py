@@ -163,6 +163,12 @@ def handle_qa_run_add(request: FunctionCallRequest) -> HandlerOutcome:
             created_at=now,
         ).run_id
         conn.commit()
+        if verdict is not None:
+            from yoke_core.domain.qa_run_execution_evidence import (
+                settle_recorded_verdict,
+            )
+
+            settle_recorded_verdict(conn, int(run_id))
         event_name = (
             "QARunCompleted"
             if verdict is not None
@@ -302,6 +308,12 @@ def handle_qa_run_complete(request: FunctionCallRequest) -> HandlerOutcome:
             columns["duration_ms"] = duration_ms
         update_qa_run(conn, int(run_id), columns)
         conn.commit()
+        if verdict is not None:
+            from yoke_core.domain.qa_run_execution_evidence import (
+                settle_recorded_verdict,
+            )
+
+            settle_recorded_verdict(conn, int(run_id))
         event_name = "QARunCompleted" if verdict is not None else "QARunCaptured"
         qa_events.emit_qa_run_event(
             conn,

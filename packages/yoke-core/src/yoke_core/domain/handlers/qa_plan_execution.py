@@ -183,6 +183,8 @@ def _owned_execution(
                 conn=conn,
                 deployment_stage=execution.get("deployment_stage"),
                 deployment_member_item_id=execution.get("deployment_member_item_id"),
+                reviewing=request.function
+                in {"qa.plan_review.begin", "qa.plan_review.submit"},
                 **subject,
             )
 

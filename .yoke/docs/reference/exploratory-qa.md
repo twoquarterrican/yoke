@@ -307,7 +307,7 @@ withdrawn in the same transaction, carrying the execution's state and its
 another live execution is still walking is retained; the subject-state
 contract refuses to withdraw a decision whose subject has not ended.
 
-Termination is guaranteed rather than hoped for. An execution whose owner has
+Termination preserves [review authority for completed captures](qa-platform/requirement-state-model.md). An execution whose owner has
 stopped reporting progress is reaped into `aborted` with `release_reason`
 `stale-heartbeat` after 30 minutes without a heartbeat — unless its owning
 session is live and parked, which is a declared hold rather than an absence
