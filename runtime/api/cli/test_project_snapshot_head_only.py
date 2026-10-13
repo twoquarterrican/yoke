@@ -33,7 +33,7 @@ def test_head_only_records_the_head_without_scanning_the_tree(
     )
 
     assert rc == 0
-    assert "identity only" in err
+    assert err == ""
     payload = _CALLS[-1]["payload"]
     assert len(payload["snapshots"]) == 1
     assert payload["snapshots"][0]["files"] == []
