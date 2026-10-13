@@ -1,7 +1,9 @@
 {
  "id": "exact-commit",
  "title": "Exact commit",
- "status": "draft-copy",
+ "status": "observed",
  "page": "merging",
- "position": 0
+ "position": 0,
+ "summary": "The item records its own PR merge commit, verified on the fetched target; later target pushes remain separate.",
+ "sources": ["packages/yoke-core/src/yoke_core/domain/merge_landing_proof.py"]
 }

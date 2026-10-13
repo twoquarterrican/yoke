@@ -96,6 +96,8 @@ def relay_signal(log: str, current: RunRef) -> RelaySignal:
     explicit: list[RunRef] = []
     all_refs: list[RunRef] = []
     for line in lines:
+        if "stale pair:" in line.casefold():
+            continue
         refs = [
             github_run_ref(match.group("repo"), match.group("run"))
             for match in _RUN_URL.finditer(line)
@@ -134,6 +136,8 @@ def relay_signal(log: str, current: RunRef) -> RelaySignal:
 
 def _error_score(text: str) -> tuple[int, int]:
     folded = text.casefold()
+    if "stale pair:" in folded:
+        return 95, len(text)
     if re.search(r"\b" + re.escape(STALLED_DISPATCH_TOKEN) + r"\b", folded):
         return 95, len(text)
     if "unauthorized: authentication required" in folded:

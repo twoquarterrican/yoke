@@ -1,23 +1,7 @@
 """Refuse to publish a release the hosted consumer has not been built against.
 
-A producer-only green run proves the producer and nothing else. Before the
-release train allocates its annotated tag, the consumer's own
-release-pin check builds the real host against this exact candidate.
-
-Usage::
-
-    python3 -m runtime.api.tools.require_platform_consumer_compatibility \\
-        --candidate-sha <40-hex> --consumer-sha <40-hex> [--timeout SEC]
-
-Both shas must be full 40-hex commits. The exact pair is that candidate and
-that consumer commit; simultaneous callers proving the identical pair share
-one ``github-actions trigger --request-id``, so they join one run instead of
-dispatching two. A different consumer commit is a different pair and never
-adopts an earlier proof — the caller is responsible for binding the exact
-consumer commit before invoking this gate (the deployment pipeline's own
-driver resolves it, recovering an already-bound value before ever resolving
-fresh, so a retry can never drift). Floating ``main`` is never the identity,
-and missing or mismatched evidence is unproven.
+Pass full --candidate-sha and --consumer-sha commits. An immutable consumer
+tag binds workflow source; identical pairs and retries rejoin the same run.
 
 On success it writes ``proven_consumer_sha`` to ``$GITHUB_OUTPUT``.
 Exits 0 when proven, 1 when refused or unattributable, 2 when unavailable.
@@ -35,26 +19,21 @@ import uuid
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from runtime.api.tools.platform_consumer_run_wait import wait_run
+from runtime.api.tools.platform_consumer_dispatch_ref import bound_dispatch_ref
 from yoke_contracts.api_urls import HOSTED_PROD_API_URL
 from yoke_contracts.github_workflow_dispatch import (
     WORKFLOW_DISPATCH_CORRELATION_INPUT,
 )
 
-#: The consumer that builds against this repo's universe bundle, and the
-#: check it already requires on its own pull requests; a candidate commit
-#: redirects what it builds against. Agreed with the consumer side.
 CONSUMER_REPO = "upyoke/platform"
 CONSUMER_PROJECT = "platform"
 CONSUMER_CHECK_WORKFLOW = "platform-release-pin-check.yml"
-#: The one supported named ref every dispatch targets (a bare commit 422s).
+#: Advisory runs follow trunk; exact-pair runs use an immutable commit tag.
 CONSUMER_TRUNK_REF = "main"
 CANDIDATE_INPUT = "product_ref"
 
-#: CI-only token for this helper's connection bootstrap, not local dispatch.
 CONSUMER_TOKEN_ENV = "YOKE_PLATFORM_RELEASE_API_TOKEN"
 
-#: A connection of its own, so binding it never disturbs whichever
-#: authority the caller had already selected for its other steps.
 CONSUMER_CONNECTION = "platform-consumer-check"
 
 _FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -62,32 +41,21 @@ _COMMAND_TIMEOUT_SECONDS = 300
 
 
 def pair_request_id(candidate_sha: str, consumer_sha: str) -> str:
-    """Shared key for this exact (candidate, consumer) pair.
-
-    A different consumer commit changes this key, so a caller can never
-    adopt a proof taken against a different pair.
-    """
+    """Identical pairs join; different commits never adopt that proof."""
     return (
-        f"consumer-compat:{candidate_sha}:{consumer_sha}:"
+        f"consumer-compat:{candidate_sha}:yoke-deploy/consumer-{consumer_sha}:"
         f"{CONSUMER_CHECK_WORKFLOW}"
     )
 
 
 def fresh_request_id(candidate_sha: str) -> str:
-    """One-shot key for a non-exact-pair dispatch (the advisory check).
-
-    Minted fresh on every call, so a caller with no bound consumer commit
-    to key on (a branch name is not an identity) can never permanently
-    reuse a proof taken against an earlier, possibly stale, consumer trunk.
-    """
+    """Advisory branch reads get a fresh key to avoid stale proof reuse."""
     return (
-        f"consumer-compat:{candidate_sha}:{uuid.uuid4().hex}:"
-        f"{CONSUMER_CHECK_WORKFLOW}"
+        f"consumer-compat:{candidate_sha}:{uuid.uuid4().hex}:{CONSUMER_CHECK_WORKFLOW}"
     )
 
-#: The consumer refused the candidate, or its evidence does not name it.
+
 UNPROVEN = 1
-#: No verdict could be obtained at all.
 UNAVAILABLE = 2
 
 
@@ -102,7 +70,10 @@ def _detail(stdout: str, stderr: str) -> str:
 
 
 def _yoke(
-    argv: Sequence[str], *, timeout: int, stdin: Optional[str] = None,
+    argv: Sequence[str],
+    *,
+    timeout: int,
+    stdin: Optional[str] = None,
 ) -> Tuple[int, str, str]:
     """Run one `yoke` command against the consumer connection."""
     env = dict(os.environ)
@@ -151,18 +122,26 @@ def bind_consumer_authority() -> str:
 
 
 def dispatch(
-    candidate_sha: str, consumer_sha: str, *, exact_pair: bool = True,
+    candidate_sha: str,
+    consumer_sha: str,
+    *,
+    exact_pair: bool = True,
 ) -> Tuple[str, str]:
-    """Dispatch or recover the consumer run onto the supported named ref.
-
-    ``exact_pair`` selects the request-id shape: the publication gate shares
-    one durable key per (candidate, consumer) pair, so simultaneous callers
-    proving the identical pair join one run. The advisory check has no
-    bound commit to key on — a branch name is not an identity — so it mints
-    a fresh key every call, trading reuse for never adopting a stale proof.
-    """
+    """Dispatch the bound consumer commit; advisory calls follow trunk."""
+    ref = CONSUMER_TRUNK_REF
+    if exact_pair:
+        ref, error = bound_dispatch_ref(
+            _yoke,
+            repo=CONSUMER_REPO,
+            project=CONSUMER_PROJECT,
+            sha=consumer_sha,
+            timeout=_COMMAND_TIMEOUT_SECONDS,
+        )
+        if error:
+            return "", error
     request_id = (
-        pair_request_id(candidate_sha, consumer_sha) if exact_pair
+        pair_request_id(candidate_sha, consumer_sha)
+        if exact_pair
         else fresh_request_id(candidate_sha)
     )
     code, stdout, stderr = _yoke(
@@ -172,7 +151,7 @@ def dispatch(
             CONSUMER_REPO,
             CONSUMER_CHECK_WORKFLOW,
             "--ref",
-            CONSUMER_TRUNK_REF,
+            ref,
             "--input",
             f"{CANDIDATE_INPUT}={candidate_sha}",
             "--request-id",
@@ -216,70 +195,89 @@ def await_verdict(run_id: str, *, timeout_sec: int) -> Tuple[Dict[str, Any], str
 
 
 def classify(
-    result: Dict[str, Any], *, candidate_sha: str, consumer_sha: str, run_id: str,
+    result: Dict[str, Any],
+    *,
+    candidate_sha: str,
+    consumer_sha: str,
+    run_id: str,
     exact_pair: bool = True,
 ) -> Tuple[int, str, str]:
-    """Exit code, narrative, and the consumer revision actually proven.
-
-    ``exact_pair`` enforces that the run's own evidence names exactly
-    ``consumer_sha`` — the publication gate's contract. A caller with no way
-    to bind the exact consumer commit ahead of dispatch (the advisory check,
-    which has no durable driver authority to resolve one) passes a branch
-    name for ``consumer_sha`` and ``exact_pair=False``, trusting whatever
-    the dispatched run reports instead of demanding a match.
-
-    The revision is empty on every non-zero code: nothing was proven, so
-    there is nothing promotion may bind itself to.
-    """
+    """Return code, diagnostic and proven revision (empty on refusal)."""
     where = str(result.get("html_url") or "").strip() or f"run {run_id}"
     state = str(result.get("state") or "").strip()
     proven = str(result.get("head_sha") or "").strip()
     if state == "timeout":
-        return UNAVAILABLE, (
-            f"consumer compatibility unproven: {where} had not concluded "
-            "within the wait budget. The candidate stays unpublished until it "
-            "does; re-running this gate rejoins the same consumer run."
-        ), ""
+        return (
+            UNAVAILABLE,
+            (
+                f"consumer compatibility unproven: {where} had not concluded "
+                "within the wait budget. The candidate stays unpublished until it "
+                "does; re-running this gate rejoins the same consumer run."
+            ),
+            "",
+        )
     if state != "success":
         conclusion = str(result.get("conclusion") or state or "unknown")
         against = proven or consumer_sha or "an unnamed revision"
-        return UNPROVEN, (
-            f"the hosted consumer refused this candidate: product "
-            f"{candidate_sha} against consumer {against} concluded "
-            f"{conclusion} — {where}. Land the paired consumer adaptation, "
-            f"which is a linked companion item in the {CONSUMER_PROJECT} "
-            "project; an instruction that excludes redesigning the consumer "
-            "never waives adapting it."
-        ), ""
+        return (
+            UNPROVEN,
+            (
+                f"the hosted consumer refused this candidate: product "
+                f"{candidate_sha} against consumer {against} concluded "
+                f"{conclusion} — {where}. Land the paired consumer adaptation, "
+                f"which is a linked companion item in the {CONSUMER_PROJECT} "
+                "project; an instruction that excludes redesigning the consumer "
+                "never waives adapting it."
+            ),
+            "",
+        )
     if not _FULL_SHA.match(proven):
-        return UNPROVEN, (
-            f"consumer evidence names no revision it proved: {where} "
-            "concluded success without a readable head commit, so it cannot "
-            f"be attributed to product {candidate_sha}. That is unproven, "
-            "not proven; re-run the gate."
-        ), ""
+        return (
+            UNPROVEN,
+            (
+                f"consumer evidence names no revision it proved: {where} "
+                "concluded success without a readable head commit, so it cannot "
+                f"be attributed to product {candidate_sha}. That is unproven, "
+                "not proven; re-run the gate."
+            ),
+            "",
+        )
     if exact_pair and proven.lower() != consumer_sha.lower():
-        return UNPROVEN, (
-            f"stale pair: {CONSUMER_TRUNK_REF} moved past the bound commit "
-            f"— {where} proved {proven}, not {consumer_sha}, for product "
-            f"{candidate_sha}. This intent stays unproven; start a new "
-            "deployment run to bind a fresh consumer commit rather than "
-            "retrying this pair."
-        ), ""
-    return 0, (
-        f"hosted consumer builds against this candidate: product "
-        f"{candidate_sha} with consumer {proven} — {where}"
-    ), proven
+        return (
+            UNPROVEN,
+            (
+                f"stale pair: {CONSUMER_TRUNK_REF} moved past the bound commit "
+                f"— {where} proved {proven}, not {consumer_sha}, for product "
+                f"{candidate_sha}. This intent stays unproven; start a new "
+                "deployment run to bind a fresh consumer commit rather than "
+                "retrying this pair."
+            ),
+            "",
+        )
+    return (
+        0,
+        (
+            f"hosted consumer builds against this candidate: product "
+            f"{candidate_sha} with consumer {proven} — {where}"
+        ),
+        proven,
+    )
 
 
 def prove(
-    candidate_sha: str, consumer_sha: str, *, timeout_sec: int, exact_pair: bool = True,
+    candidate_sha: str,
+    consumer_sha: str,
+    *,
+    timeout_sec: int,
+    exact_pair: bool = True,
 ) -> Tuple[int, str, str]:
     """Bind, dispatch, wait, classify — code, narrative, proven revision."""
     unavailable = bind_consumer_authority()
     if unavailable:
         return UNAVAILABLE, f"consumer compatibility unproven: {unavailable}", ""
-    run_id, dispatch_error = dispatch(candidate_sha, consumer_sha, exact_pair=exact_pair)
+    run_id, dispatch_error = dispatch(
+        candidate_sha, consumer_sha, exact_pair=exact_pair
+    )
     if dispatch_error:
         return UNAVAILABLE, f"consumer compatibility unproven: {dispatch_error}", ""
     print(f"consumer check run: {CONSUMER_REPO} run {run_id}", flush=True)
@@ -287,7 +285,10 @@ def prove(
     if unreadable:
         return UNAVAILABLE, f"consumer compatibility unproven: {unreadable}", ""
     return classify(
-        result, candidate_sha=candidate_sha, consumer_sha=consumer_sha, run_id=run_id,
+        result,
+        candidate_sha=candidate_sha,
+        consumer_sha=consumer_sha,
+        run_id=run_id,
         exact_pair=exact_pair,
     )
 
@@ -331,7 +332,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return UNAVAILABLE
 
     code, narrative, proven_revision = prove(
-        candidate, consumer, timeout_sec=args.timeout_sec,
+        candidate,
+        consumer,
+        timeout_sec=args.timeout_sec,
     )
     if code:
         print(narrative, file=sys.stderr)

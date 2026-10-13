@@ -272,8 +272,8 @@ jobs:
             --token-stdin >/dev/null
 
       # Read the immutable receipt from this exact successful promotion run.
-      # Bookkeeping failure retains the shipped result and teaches receipt
-      # recovery; QA refuses missing delivered identity before giving credit.
+      # A refused record fails the bridge while preserving the shipped result;
+      # recovery records that exact receipt without repeating deployment.
       - name: Record the pin commit this release produced
         env:
           DEPLOYMENT_RUN_ID: ${{ inputs.deployment_run_id }}
@@ -292,6 +292,8 @@ jobs:
             --project platform >"$output" 2>&1; then
             cat "$output"
           else
+            record_status=$?
             cat "$output" >&2
             echo "::error title=release_output_unrecorded::This promotion shipped. Recover its exact receipt using the named command above; QA cannot credit a missing promotion identity. Do not repeat deployment."
+            exit "$record_status"
           fi

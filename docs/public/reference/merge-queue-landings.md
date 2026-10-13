@@ -37,8 +37,10 @@ steering seat for restaffing.
 
 Before recording a landing, the merge boundary fetches the remote default
 branch and requires it to contain the exact candidate commit. The recorded
-merge SHA is that fetched remote tip. Push success, a local target, or a
-prior receipt cannot replace this proof. A failed fetch or missing candidate
+merge SHA is the item's own merged PR commit reported by GitHub, verified
+against that fetched branch. A later target push cannot become the item's
+landing. Local merges record the merge that first carried the candidate, or
+the candidate itself for a fast forward. A failed fetch or missing candidate
 returns a named refusal, retains the lane, and leaves the item before landing.
 Repair routing or remote access and re-enter the same governed merge command.
 A project with no remote proves candidate ancestry on its local default branch.

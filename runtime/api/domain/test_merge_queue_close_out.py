@@ -37,6 +37,13 @@ def _wire(
 ):
     recorded: dict = {}
     monkeypatch.setattr(
+        close_out_mod, "repoint_to_landing_carrier", lambda *_a, **_kw: ""
+    )
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_landing_identity",
+        lambda _repo, _target, candidate, reported="": reported or candidate,
+    )
+    monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_target_sha",
         lambda *_a: MERGE_SHA,
     )
@@ -222,7 +229,7 @@ def test_unresolved_batch_still_records_the_lane_head(monkeypatch):
         pr_num="42",
     )
 
-    assert outcome.merge_sha == MERGE_SHA
+    assert outcome.merge_sha == LANE_SHA
     assert outcome.ci_evidence_error == "merge_group run lookup failed"
     assert "merge_group run lookup failed" in outcome.warnings
     assert recorded["receipt"].commit_sha == LANE_SHA

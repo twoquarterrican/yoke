@@ -15,6 +15,11 @@ from yoke_core.domain.project_github_auth_models import (
 def _connected_project(monkeypatch):
     monkeypatch.setattr(post_push, "github_merge_enabled", lambda _p: True)
     monkeypatch.setattr(post_push, "verified_target_sha", lambda *_a: "m" * 40)
+    monkeypatch.setattr(
+        post_push,
+        "verified_landing_identity",
+        lambda *args: args[3] if len(args) > 3 and args[3] else args[1],
+    )
 
 
 def test_completed_standalone_landing_fast_forwards_main(monkeypatch):

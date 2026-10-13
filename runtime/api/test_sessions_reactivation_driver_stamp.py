@@ -67,6 +67,14 @@ def conn(tmp_path):
             c.close()
 
 
+def _fixture_actor_id(conn) -> int:
+    return int(
+        conn.execute(
+            "SELECT id FROM actors WHERE kind = 'human' ORDER BY id LIMIT 1"
+        ).fetchone()[0]
+    )
+
+
 def _register(conn, **kwargs):
     return register_session(
         conn,
@@ -76,6 +84,7 @@ def _register(conn, **kwargs):
         model_facts=SessionModelFacts(requested_model=TEST_MODEL_ID),
         workspace="/tmp/work",
         project_id=1,
+        actor_id=_fixture_actor_id(conn),
         entrypoint="claude-cli",
         **kwargs,
     )
@@ -206,7 +215,7 @@ def test_dispatch_tail_revival_records_driver_and_telemetry(conn) -> None:
             "claude-code",  # executor_hint
             True,  # register_in_process
             False,  # force_reregister
-            None,  # actor_id
+            _fixture_actor_id(conn),  # explicit disposable-universe actor
             1,  # project_id
         ),
     )

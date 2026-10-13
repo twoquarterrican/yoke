@@ -12,6 +12,7 @@ PACK_PREFIX_CONTRACTS = (
     (
         "structured_events_pack_contract",
         (
+            "events/",
             "packs/structured-events/",
             "packages/yoke-core/src/yoke_core/install_bundle_tree/packs/structured-events/",
         ),

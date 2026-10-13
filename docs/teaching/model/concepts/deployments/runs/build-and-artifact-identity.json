@@ -1,7 +1,9 @@
 {
  "id": "build-and-artifact-identity",
  "title": "Build and artifact identity",
- "status": "draft-copy",
+ "status": "observed",
  "page": "deployments",
- "position": 2
+ "position": 2,
+ "summary": "Exact consumer proof dispatches an immutable tag at the bound consumer commit. A moving trunk cannot change the pair being checked.",
+ "sources": ["runtime/api/tools/platform_consumer_dispatch_ref.py"]
 }

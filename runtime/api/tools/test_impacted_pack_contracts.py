@@ -35,3 +35,25 @@ def test_pack_payload_selects_catalog_and_installed_contracts(
     assert expected <= set(selection.files)
     assert f"pack_catalog_contract:{source}" in selection.widening_triggers
     assert f"structured_events_pack_contract:{source}" in selection.widening_triggers
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "events/test_browser.mjs",
+        "events/api-route.ts",
+        "events/test_collector_instants.mjs",
+    ],
+)
+def test_standalone_collector_selects_its_executable_contract(tmp_path, source):
+    contract = "runtime/api/domain/test_structured_events_pack.py"
+    for path, content in (
+        (source, "export {};"),
+        (contract, "def test_contract(): pass"),
+    ):
+        target = tmp_path / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+    selection = select([source], build_import_index(tmp_path), bounded=True)
+    assert contract in selection.files
+    assert f"structured_events_pack_contract:{source}" in selection.widening_triggers

@@ -60,6 +60,10 @@ def _dispatch(record):
 def _wire(monkeypatch, *, merge_sha: str):
     recorded: dict = {}
     monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_landing_identity",
+        lambda _repo, _target, candidate, reported="": reported or candidate,
+    )
+    monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_target_sha",
         lambda *_a: merge_sha,
     )
@@ -156,6 +160,22 @@ def test_correction_after_first_merge_receipt_names_the_landed_head(monkeypatch)
     assert recorded["receipt"].commit_sha == CORRECTION
     assert recorded["receipt"].merge_sha == CORRECTION_MERGE
     assert recorded["receipt"].commit_sha != CACHED
+
+
+def test_later_target_push_does_not_become_the_item_merge(monkeypatch):
+    recorded = _wire(monkeypatch, merge_sha=FIRST_MERGE)
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_target_sha",
+        lambda *_a: "f" * 40,
+    )
+    outcome = close_out_mod.record_landing(
+        _ctx(),
+        item_id=7,
+        commit_sha=REBASED,
+        pr_num="42",
+    )
+    assert outcome.merge_sha == FIRST_MERGE
+    assert recorded["receipt"].merge_sha == FIRST_MERGE
 
 
 def test_missing_landing_head_is_not_filled_from_the_cached_lane(monkeypatch):

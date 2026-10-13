@@ -221,15 +221,21 @@ def wire_happy_path(
 ) -> BatchReceipt:
     """Wire every collaborator a landing touches; return the batch receipt."""
     monkeypatch.setattr(
+        "yoke_core.domain.merge_queue_landing_outcome.landed_candidate_head",
+        lambda *_a, **_kw: (LANE_SHA, ""),
+    )
+    monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_target_sha", lambda *_a: "m" * 40
+    )
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_landing_identity",
+        lambda *args: args[3] if len(args) > 3 and args[3] else args[1],
     )
     monkeypatch.setattr(
         route_mod,
         "read_queue_members",
         lambda _ctx, base_branch="main": (list(members), None),
     )
-    # Nothing red before the arm is the default; the ordering cases say so
-    # for themselves.
     monkeypatch.setattr(
         route_mod,
         "red_entry_checks_refusal",
@@ -255,8 +261,6 @@ def wire_happy_path(
         "enter_merge_queue",
         lambda _ctx, pr_num: QueueEntryResult(success=True, pr_num=pr_num),
     )
-    # GitHub holding the landing is the default these tests assume; the
-    # cases about a queue that did not take it override this explicitly.
     monkeypatch.setattr(
         route_mod,
         "verify_landing_admitted",

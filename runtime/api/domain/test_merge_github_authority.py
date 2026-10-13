@@ -144,6 +144,11 @@ class TestPostPushProofUsesTheMergesAuthority:
         monkeypatch.setattr(post_push.git, "publish", lambda *_a: (True, ""))
         monkeypatch.setattr(post_push.git, "has_remote", lambda *_a: True)
         monkeypatch.setattr(post_push, "verified_target_sha", lambda *_a: "m" * 40)
+        monkeypatch.setattr(
+            post_push,
+            "verified_landing_identity",
+            lambda *args: args[3] if len(args) > 3 and args[3] else args[1],
+        )
         monkeypatch.setattr(post_push, "github_merge_enabled", lambda *_a: True)
         monkeypatch.setattr(post_push, "fast_forward_main_checkout", lambda *_a: "")
         monkeypatch.setattr(merge_boundary.git, "branch_exists", lambda *_a: True)
