@@ -37,17 +37,17 @@ serving floor and receipts; append-only UPDATE/DELETE guards remain enabled duri
 Permanent history freezes all 267 columns across 126 tables. Excess historical
 fraction digits are dropped at microseconds. Its finite mutable-document policy
 repairs only declared usage, episode, resume-notice, driver, QA-wait and
-machine-decision clocks
-using existing owner facts, preserving other document fields. Unknown optional
-usage observations become JSON null. Repairs use compare-and-set predicates; a
-concurrent writer refuses instead of losing newer facts. All document repairs
-are prepared before any type change. The owned progress view is reconstructed
-inside the same transaction; stored relay plan/model observations, plan reset
-clocks, capacity observations and health failure/quarantine/refusal clocks follow
-finite owned paths. Optional unknowns become null; invalid supplied history uses
-the relay observation owner fact. Model retirement calendar labels and opaque
-fields retain their meaning. Unowned dependents or custom view metadata refuse
-before any view is dropped. No immutable or signed document is rewritten.
+machine-decision clocks using existing owner facts, preserving other document
+fields. Unknown optional usage observations become JSON null. Repairs use
+compare-and-set predicates; a concurrent writer refuses instead of losing newer
+facts. All document repairs are prepared before any type change. The owned
+progress view is reconstructed inside the same transaction; stored relay
+plan/model observations, plan reset clocks, capacity observations and health
+failure/quarantine/refusal clocks follow finite owned paths. Optional unknowns
+become null; invalid supplied history uses the relay observation owner fact.
+Model retirement calendar labels and opaque fields retain their meaning.
+Unowned dependents or custom view metadata refuse before any view is dropped. No immutable or signed document is rewritten.
+Live relay health stores an absent failure or refusal as an empty object, so fleet preflight retires this entry's standing document invariant (it wanted null clock keys).
 The serving catalog probe also checks declared native instant types: matching
 column names with TEXT or timestamp-without-zone storage cannot prove that a
 build requiring TIMESTAMPTZ can serve that database. The governed serving floor
