@@ -92,6 +92,7 @@ def test_project_onboarding_run_updates_rows_and_reads_json_shape() -> None:
     second = project_onboarding_runs.update_run(
         conn=conn, machine_id=machine,
         run_id="run-db-backed",
+        project_id=11,
         row_status={"machine-profile": STATUS_VERIFIED},
         blocker={"machine-profile": None},
         observations={"machine-profile": {"status": STATUS_VERIFIED, "evidence": {"source": "doctor", "ok": True}}},

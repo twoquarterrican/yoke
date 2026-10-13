@@ -35,12 +35,12 @@ def resolve_run(
             f"SELECT * FROM project_onboarding_runs WHERE run_id = {p}{lock_sql}",
             (selected,),
         ).fetchone()
-        if existing is not None and project_id is not None:
+        if existing is not None:
             if existing["project_id"] != project_id:
                 raise ProjectOnboardingRunError(
                     "onboarding_project_mismatch: the run belongs to a different "
-                    f"project; run yoke onboard checklist --project-id {project_id} "
-                    "without --run-id to resume the selected project."
+                    "project; select the owning project with --project P, or omit "
+                    "--run-id to stay within the selected project or machine-only scope."
                 )
         return selected, existing
     if project_id is not None:

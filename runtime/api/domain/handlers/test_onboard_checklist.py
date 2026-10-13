@@ -158,6 +158,7 @@ def test_onboard_checklist_run_handler_updates_and_reads_json_shape(
             project_onboarding_runs.OPERATION_RUN,
             {
                 "run_id": "run-handler",
+                "project_id": 10,
                 "row_status": {"machine-profile": STATUS_VERIFIED},
                 "blocker": {"machine-profile": None},
             },

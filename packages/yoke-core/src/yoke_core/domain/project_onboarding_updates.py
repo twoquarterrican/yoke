@@ -156,7 +156,7 @@ def _upsert_run(
     now: datetime,
 ) -> None:
     p = _p(conn)
-    conn.execute(
+    written = conn.execute(
         "INSERT INTO project_onboarding_runs "
         "(run_id, schema_version, project_id, branch, github_repo, status, "
         "metadata_json, created_at, updated_at) "
@@ -164,7 +164,9 @@ def _upsert_run(
         "ON CONFLICT (run_id) DO UPDATE SET "
         "branch = EXCLUDED.branch, "
         "github_repo = COALESCE(EXCLUDED.github_repo, project_onboarding_runs.github_repo), "
-        "updated_at = EXCLUDED.updated_at",
+        "updated_at = EXCLUDED.updated_at "
+        "WHERE project_onboarding_runs.project_id IS NOT DISTINCT FROM EXCLUDED.project_id "
+        "RETURNING run_id",
         (
             run_id,
             SCHEMA_VERSION,
@@ -176,7 +178,12 @@ def _upsert_run(
             instant_parameter(conn, now),
             instant_parameter(conn, now),
         ),
-    )
+    ).fetchone()
+    if written is None:
+        raise ProjectOnboardingRunError(
+            "onboarding_project_mismatch: the run id was claimed by another project; "
+            "omit --run-id to resume the selected project."
+        )
 
 
 def _set_run_metadata(
