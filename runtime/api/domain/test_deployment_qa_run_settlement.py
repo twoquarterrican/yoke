@@ -39,6 +39,7 @@ def test_closure_preserves_execution_that_completes_before_its_lock(monkeypatch)
 
     conn = Mock()
     monkeypatch.setattr(settlement, "_table_exists", lambda *args: True)
+    monkeypatch.setattr(settlement, "settled_obligation_sql", lambda *args: "FALSE")
     monkeypatch.setattr(
         settlement,
         "query_rows",
