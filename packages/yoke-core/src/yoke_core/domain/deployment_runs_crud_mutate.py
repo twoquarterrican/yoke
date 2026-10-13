@@ -201,6 +201,12 @@ def cmd_update(
                     return f"Error: {exc}"
 
                 def stamp():
+                    if status == "failed":
+                        from yoke_core.domain.qa_deployment_run_settlement import (
+                            restore_retry_obligations,
+                        )
+
+                        restore_retry_obligations(conn, run_id)
                     conn.execute(
                         "UPDATE deployment_runs SET status=%s, started_at=%s WHERE id=%s",
                         (value, instant_parameter(conn, utc_now()), run_id),

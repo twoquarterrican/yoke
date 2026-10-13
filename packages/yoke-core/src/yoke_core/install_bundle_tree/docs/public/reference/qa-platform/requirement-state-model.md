@@ -192,6 +192,8 @@ retracts its unsettled run-bound requirements in the same transaction. Host
 reservations and leases release through execution settlement. Current passing
 evidence and standing item plans remain; a later release materializes fresh
 copies. Retraction records the run and reason; it grants no passing verdict.
+Retrying a failed run restores only its automatic retractions and requires a
+new walk; manual retractions and terminal execution histories remain intact.
 
 An aborted or errored execution retains a typed review bundle for its completed
 captures. Its owner retrieves that bundle through `qa.plan_review.begin`:

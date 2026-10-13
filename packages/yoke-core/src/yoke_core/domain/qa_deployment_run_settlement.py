@@ -55,5 +55,16 @@ def settle_unsuccessful_run(conn: Any, run_id: str, *, reason: str) -> None:
         (run_id,),
     )
     retract_requirements(
-        conn, [int(row["id"]) for row in rows], reason=reason, source="operator"
+        conn, [int(row["id"]) for row in rows], reason=reason, source="deployment_run"
     )
+
+
+def restore_retry_obligations(conn: Any, run_id: str) -> None:
+    """Reinstate only this run's automatic retirements on an authorized retry."""
+    if _table_exists(conn, "qa_requirements"):
+        conn.execute(
+            "UPDATE qa_requirements SET retracted_at=NULL, "
+            "retraction_rationale=NULL, retraction_source=NULL "
+            "WHERE deployment_run_id=%s AND retraction_source='deployment_run'",
+            (run_id,),
+        )

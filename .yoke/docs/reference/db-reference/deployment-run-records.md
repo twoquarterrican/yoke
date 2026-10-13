@@ -157,7 +157,9 @@ its unsettled run requirements in the status transaction. Passing proof and
 standing plans remain. Completed captures retain typed review bundles for an
 independent verdict; review never reopens the failed run. Deployment verdict
 writes link the actual execution and artifacts automatically, then re-evaluate
-active stage acceptance after commit, even when no driver is attached.
+active stage acceptance after commit, even when no driver is attached. Retrying
+a failed run restores its automatic retractions; manual retractions stay retired
+and the aborted execution stays terminal. Cancelled runs cannot restart.
 
 Creating a run (`deployment_runs.create`, `deployment_runs.start_for_item`) and executing one take no claim. Creation serializes against other creation under a transaction-scoped advisory lock, and what used to need a project-wide hold is answered by the run itself:
 

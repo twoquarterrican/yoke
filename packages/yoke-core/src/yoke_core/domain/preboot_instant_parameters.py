@@ -51,7 +51,7 @@ def text_storage(conn: Any, table: str, column: str) -> bool:
         else (id(conn),)
     )
     with _LOCK:
-        if key not in _TYPES:
+        if field not in _TYPES.get(key, {}):
             rows = conn.execute(
                 "SELECT table_name,column_name,data_type FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name=ANY(%s)",
