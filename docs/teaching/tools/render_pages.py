@@ -168,8 +168,14 @@ class Pages:
                 here, owner, {"title", "status"}
             )
             for part_id in owner["parts"]:
-                body += self.heading("h3", part_id, parts[part_id])
-                body += self.details(here, parts[part_id], {"title", "status"})
+                part = parts[part_id]
+                body += self.heading("h3", part_id, part)
+                skip = {"title", "status"}
+                if part.get("plan_refs") and part["plan_refs"] == owner.get("plan_refs"):
+                    skip.add("plan_refs")
+                    body += links_field("Same plan entries as", here,
+                                        [(here, oid, owner["title"])])
+                body += self.details(here, part, skip)
             views[here] = page(here, owner["title"], body)
         views[f"{kind}.html"] = page(f"{kind}.html", title, index)
 

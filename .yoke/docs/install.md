@@ -97,6 +97,18 @@ use `--token-stdin` or `--token-file PATH`.
 Flags: `--yes` for non-interactive apply; `--local` or `--connect URL` to skip
 the destination picker.
 
+To start a new install from a backup, run `yoke setup`, choose **This machine**
+or **Host a server here**, then **Start from a backup**. Select the portable
+`.tar` made by uninstall with backup or the web export panel. Setup validates
+it immediately with `yoke universe validate`; the backup carries the account,
+so there is no name prompt. Review the account and destination, then choose
+**Apply** to run the existing local or self-host import. Import replaces that
+destination's database and revokes imported credentials. Project setup then
+offers the restored projects and asks where their code lives on this machine;
+the universe backup carries project data, not repository folders or external
+services. **A team server** and **upyoke.com** keep their sign-in flows; hosted
+imports use the dashboard portability panel.
+
 ## After onboard
 
 The installer runs `uv tool update-shell`; uv chooses the shell configuration to

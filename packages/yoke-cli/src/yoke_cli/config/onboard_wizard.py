@@ -3,9 +3,10 @@
 Most steps present the existing pure assembly function
 :func:`yoke_cli.config.onboard.build_report`: they collect its fields, preview
 machine / Yoke-core-database / repo-local / edit-yoke-source writes, and apply
-them on the final confirm. Guided self-host setup is the deliberate exception:
-its own preview and Start confirmation create the Compose bundle, persist the
-owner-only connection, and show the one-time first-admin token for safe storage.
+them on the final confirm. Guided self-host setup uses its own preview and
+Start confirmation to create the Compose bundle and owner-only connection.
+Backup setup validates first, then restores at Account Apply before the
+Project step offers the restored projects. It reuses the product import paths.
 ``textual`` is imported lazily inside :func:`run_wizard` so non-interactive and
 import-graph paths never require it.
 """

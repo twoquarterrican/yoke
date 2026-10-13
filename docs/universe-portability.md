@@ -41,6 +41,13 @@ database as the validation target.
 
 ## Import: one file, one consent
 
+For a new install, run `yoke setup`, choose **This machine** or **Host a server
+here**, then **Start from a backup**. Setup validates the portable archive
+before offering **Apply**. Apply runs the existing import and establishes the
+new connection before the Project step offers the restored projects. The
+backup carries the account, so setup skips the name prompt. See
+[Install](public/install.md#onboard-wizard) for the complete setup route.
+
 `yoke universe import ARCHIVE` and `yoke self-host import ARCHIVE` ask the
 operator exactly two things: which
 archive, and consent to replace the destination universe (`--yes` for

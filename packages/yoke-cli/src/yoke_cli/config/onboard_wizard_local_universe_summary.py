@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from yoke_cli.config import local_universe_setup
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config.onboard_wizard_widgets import SelectionRow
 
 
@@ -32,7 +31,7 @@ def local_universe_summary_lines(state: dict[str, Any]) -> list[str]:
             "No account is required.",
             "Private data: ~/.yoke · database: embedded Postgres.",
             "Reinstalling Yoke preserves this universe by default.",
-            "Next, enter your name: you become this universe's first admin.",
+            "Start fresh, or bring your account and projects from a backup.",
         ]
     return lines
 
@@ -47,7 +46,9 @@ def local_universe_summary_rows(state: dict[str, Any]) -> list[SelectionRow]:
             SelectionRow("continue", "Use existing", "preserve this database"),
             SelectionRow("back", "Back", "previous screen"),
         ]
-    return steps.VERIFY_OK_ROWS
+    from yoke_cli.config.onboard_wizard_backup import START_ROWS
+
+    return START_ROWS
 
 
 __all__ = ["local_universe_summary_lines", "local_universe_summary_rows"]

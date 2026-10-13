@@ -285,6 +285,11 @@ class DestinationFlow:
         if choice == "back":
             self._step_back()
             return
+        if choice == "backup":
+            from yoke_cli.config.onboard_wizard_backup import prompt
+
+            prompt(self)
+            return
         status = state.get("state") or local_universe_setup.LOCAL_UNIVERSE_CREATE
         if status != local_universe_setup.LOCAL_UNIVERSE_CREATE:
             self._goto_machine_github()

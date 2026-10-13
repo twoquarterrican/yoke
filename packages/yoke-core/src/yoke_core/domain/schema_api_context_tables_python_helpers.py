@@ -33,7 +33,8 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "the wizard prepares default board art automatically. Wrong guess: "
             "complete_board_art remains an importable navigation helper. It was "
             "retired with the art-selection screens; remove its import and call "
-            "when adapting setup test consumers, including resize tests."
+            "when adapting setup test consumers, including resize and backup "
+            "restore project-selection tests."
         ),
     },
     "yoke_core.domain.handlers.deployment_common": {
