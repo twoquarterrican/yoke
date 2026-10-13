@@ -8,6 +8,7 @@ import threading
 from typing import Any, Callable, Mapping
 
 from yoke_cli.config.hosted_machine_browser import BrowserOpenResult, open_url
+from yoke_cli.config import github_response_safety
 from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 
 OPENING_NOTICE = "Opening your browser…"
@@ -74,13 +75,25 @@ def render_progress(event: Mapping[str, Any], *, json_mode: bool) -> None:
         return
     request = event.get("browser_action")
     if isinstance(request, Mapping):
-        print(f"Open {request['url']}", file=sys.stderr, flush=True)
+        print(
+            f"Open {github_response_safety.safe_error_text(request['url'])}",
+            file=sys.stderr,
+            flush=True,
+        )
         if request.get("user_code"):
-            print(f"One-time code: {request['user_code']}", file=sys.stderr, flush=True)
-        print(request["instructions"], file=sys.stderr, flush=True)
+            print(
+                f"One-time code: {github_response_safety.safe_error_text(request['user_code'])}",
+                file=sys.stderr,
+                flush=True,
+            )
+        print(
+            github_response_safety.safe_error_text(request["instructions"]),
+            file=sys.stderr,
+            flush=True,
+        )
     elif event.get("phase") == "github_access_propagation_retry":
         print(
-            "GitHub is finishing authorization; retrying the access check.",
+            f"GitHub is finishing authorization; retrying the access check in {event.get('retry_in_seconds'):g}s...",
             file=sys.stderr,
             flush=True,
         )
