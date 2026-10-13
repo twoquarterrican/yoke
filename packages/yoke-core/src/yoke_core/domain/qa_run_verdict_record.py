@@ -83,6 +83,15 @@ def _clock_columns(conn: Any, columns: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
+def link_verdict_evidence(conn: Any, run_id: int) -> None:
+    """Enrich the run's proof through the sole qa_runs writer."""
+    from yoke_core.domain.qa_run_execution_evidence import execution_evidence_payload
+
+    raw = execution_evidence_payload(conn, run_id)
+    if raw is not None:
+        conn.execute("UPDATE qa_runs SET raw_result=%s WHERE id=%s", (raw, run_id))
+
+
 def insert_qa_run(conn: Any, **columns: Any) -> QaRunWrite:
     """Insert one run on the caller's transaction; a pass discharges its replacements."""
     columns = _clock_columns(conn, columns)
@@ -95,8 +104,6 @@ def insert_qa_run(conn: Any, **columns: Any) -> QaRunWrite:
         tuple(columns.values()),
     ).fetchone()
     run_id = int(row["id"] if hasattr(row, "keys") else row[0])
-    from yoke_core.domain.qa_run_execution_evidence import link_verdict_evidence
-
     link_verdict_evidence(conn, run_id)
     return QaRunWrite(
         run_id,
@@ -145,8 +152,6 @@ def update_qa_run(
     cursor = conn.execute(sql, tuple(params))
     if not getattr(cursor, "rowcount", 1):
         return QaRunWrite(int(run_id))
-    from yoke_core.domain.qa_run_execution_evidence import link_verdict_evidence
-
     link_verdict_evidence(conn, int(run_id))
     if columns.get("verdict") != PASS_VERDICT:
         return QaRunWrite(int(run_id))
@@ -164,4 +169,10 @@ def update_qa_run(
     )
 
 
-__all__ = ["PASS_VERDICT", "QaRunWrite", "insert_qa_run", "update_qa_run"]
+__all__ = [
+    "PASS_VERDICT",
+    "QaRunWrite",
+    "insert_qa_run",
+    "update_qa_run",
+    "link_verdict_evidence",
+]

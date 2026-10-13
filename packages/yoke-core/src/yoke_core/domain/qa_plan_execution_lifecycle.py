@@ -133,7 +133,10 @@ def finish_plan_execution(
         from yoke_core.domain.qa_plan_review import begin_plan_review
 
         release_host_reservations(conn, str(execution["id"]))
-        if state in {"aborted", "error"}:
+        if state in {"aborted", "error"} and any(
+            case.get("verdict_path") == "agent"
+            for case in execution.get("roster") or []
+        ):
             begin_plan_review(conn, execution, completed_captures_only=True)
         settle_unreviewed_execution_captures(conn, execution)
         record_inflight_case_failure(conn, execution, reason=reason)

@@ -125,6 +125,7 @@ PERMANENT_ROWS: Tuple[_Row, ...] = (
     # SSH from this machine's own agent identity to a registered Test Machine.
     _p("yoke test-machine exec", "test_machine", REASON_TOOL_SHAPED),
     _p("yoke qa plan review-submit", "qa.plan", REASON_TOOL_SHAPED),
+    _p("yoke qa plan review-begin", "qa.plan", REASON_TOOL_SHAPED),
     _p("yoke qa plan abort", "qa.plan", REASON_TOOL_SHAPED),
     _p("yoke qa browser setup", "qa.browser", REASON_TOOL_SHAPED),
     _p("yoke qa browser screenshot", "qa.browser", REASON_TOOL_SHAPED),

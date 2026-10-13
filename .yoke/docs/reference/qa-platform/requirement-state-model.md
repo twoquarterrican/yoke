@@ -194,10 +194,16 @@ evidence and standing item plans remain; a later release materializes fresh
 copies. Retraction records the run and reason; it grants no passing verdict.
 
 An aborted or errored execution retains a typed review bundle for its completed
-captures. Use its owner-bound `yoke qa plan review-begin` and returned
-`review-submit` command to judge those captures independently; unwalked cases
-remain unfulfilled and the execution remains terminal. Incomplete captures
-without review authority settle as errors.
+captures. Its owner retrieves that bundle through `qa.plan_review.begin`:
+
+```text
+yoke qa plan review-begin --item PREFIX-N --execution-id ID
+```
+
+For a run use `--deployment-run-id RUN`; for a standalone plan use `--project P`.
+Use the returned `review-submit` command to judge the captures independently;
+unwalked cases remain unfulfilled and the execution remains terminal.
+Incomplete captures without review authority settle as errors.
 
 Verdict writers automatically record the actual plan execution id and its
 concrete artifact ids beside other proof. A deployment-stage verdict also

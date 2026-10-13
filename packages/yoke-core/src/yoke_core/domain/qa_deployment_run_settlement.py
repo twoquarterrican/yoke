@@ -9,17 +9,22 @@ from yoke_core.domain.qa_plan_attachment_retract import retract_requirements
 from yoke_core.domain.qa_plan_execution_lifecycle import finish_plan_execution
 from yoke_core.domain.qa_plan_execution_schema import LIVE_PLAN_EXECUTION_SQL
 from yoke_core.domain.qa_plan_execution_store import lock_plan_execution
+from yoke_core.domain.schema_common import _table_exists
 
 
 def settle_unsuccessful_run(conn: Any, run_id: str, *, reason: str) -> None:
     """Abort live cursors and retract unfulfilled run obligations without committing."""
     executions = [
         lock_plan_execution(conn, str(row["id"]))
-        for row in query_rows(
-            conn,
-            "SELECT id FROM qa_plan_executions WHERE deployment_run_id=%s "
-            f"AND state IN ({LIVE_PLAN_EXECUTION_SQL}) ORDER BY id",
-            (run_id,),
+        for row in (
+            query_rows(
+                conn,
+                "SELECT id FROM qa_plan_executions WHERE deployment_run_id=%s "
+                f"AND state IN ({LIVE_PLAN_EXECUTION_SQL}) ORDER BY id",
+                (run_id,),
+            )
+            if _table_exists(conn, "qa_plan_executions")
+            else []
         )
     ]
     # Clear queue intents together before a released host can grant the next
@@ -33,6 +38,8 @@ def settle_unsuccessful_run(conn: Any, run_id: str, *, reason: str) -> None:
         finish_plan_execution(
             conn, execution, state="aborted", reason=reason, commit=False
         )
+    if not _table_exists(conn, "qa_requirements"):
+        return
     rows = query_rows(
         conn,
         "SELECT r.id FROM qa_requirements r WHERE r.deployment_run_id=%s "
