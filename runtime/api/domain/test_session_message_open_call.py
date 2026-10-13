@@ -19,7 +19,7 @@ from runtime.api.domain.test_session_message_support import (
 )
 
 SURFACES = [
-    ("codex", "codex-cli", "0.148.0a15", False),
+    ("codex", "codex-cli", "0.148.0a15", True),
     ("cursor", "cursor-cli", "2026.08.11", True),
     ("claude-code", "claude-cli", "2.1.238", True),
     ("codex", "codex-desktop", "26.814.41407", False),
@@ -35,7 +35,7 @@ def wake_connection(request, monkeypatch):
 
     monkeypatch.setattr(session_staleness, "_resolve_effective_ttl", lambda *args: 20)
     conn = message_connection()
-    executor, surface, version, idle_supported = request.param
+    executor, surface, version, wake_supported = request.param
     conn.execute(
         "UPDATE harness_sessions SET executor=?,executor_surface=?,executor_version=?,"
         "turn_posture='running' WHERE session_id=?",
@@ -50,7 +50,7 @@ def wake_connection(request, monkeypatch):
         (NATIVE_WAKE_SESSION_ID, MESSAGE_NOW.isoformat()),
     )
     conn.commit()
-    yield conn, idle_supported
+    yield conn, wake_supported
     conn.close()
 
 
@@ -91,17 +91,22 @@ def test_a_stale_open_call_defers_without_recording_an_unsupported_wake(
 
 
 @pytest.mark.parametrize("wake_connection", SURFACES, indirect=True)
-def test_a_completed_call_keeps_the_manifest_selected_idle_route(wake_connection):
-    conn, idle_supported = wake_connection
+def test_a_completed_call_uses_the_manifest_selected_wake_route(wake_connection):
+    conn, wake_supported = wake_connection
     _queue(conn)
     conn.execute(
         "UPDATE session_tool_calls SET completed_at=?", (MESSAGE_NOW.isoformat(),)
     )
     conn.commit()
     eligible = wake_eligible_recipients(conn, now=SWEEP)
-    assert bool(eligible) == idle_supported
+    assert bool(eligible) == wake_supported
     if eligible:
-        assert eligible[0]["wake_mode"] == "idle_timeout"
+        expected_mode = (
+            "waiting"
+            if eligible[0]["executor_surface"] == "codex-cli"
+            else "idle_timeout"
+        )
+        assert eligible[0]["wake_mode"] == expected_mode
         assert eligible[0]["liveness"] == "stale"
 
 

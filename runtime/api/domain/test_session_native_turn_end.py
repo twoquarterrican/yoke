@@ -81,10 +81,10 @@ def _release_claims(conn, session_id: str = "s2") -> None:
     conn.commit()
 
 
-def _stuck(conn) -> list[dict[str, str]]:
-    """Send, let the wake sweep refuse it, and return the probe targets."""
+def _pending(conn) -> list[dict[str, str]]:
+    """Send, run the wake sweep, and return the native turn probe targets."""
     _send(conn)
-    assert wake_eligible_recipients(conn, now=LATER) == []
+    wake_eligible_recipients(conn, now=LATER)
     return _targets(conn)
 
 
@@ -110,10 +110,19 @@ def _posture(conn, session_id: str = "s2") -> str:
     ).fetchone()["turn_posture"]
 
 
-def test_a_refused_wake_names_its_session_for_a_turn_record_read():
+def test_a_recorded_refused_wake_names_its_session_for_a_turn_record_read():
     conn = _codex_connection()
     _release_claims(conn)
-    assert _stuck(conn) == [{"session_id": "s2", "executor_surface": "codex-cli"}]
+    message_id = _send(conn)
+    # A stored operation refusal remains a reason to inspect the native record.
+    conn.execute(
+        "INSERT INTO session_message_attempts "
+        "(attempt_id,message_id,target_session_id,attempt_kind,started_at,"
+        "completed_at,result_code) VALUES ('refused',?,'s2','wake_relay',?,?,'skipped_operation')",
+        (message_id, NOW_TEXT, NOW_TEXT),
+    )
+    conn.commit()
+    assert _targets(conn) == [{"session_id": "s2", "executor_surface": "codex-cli"}]
 
 
 def test_a_live_claim_holder_is_read_back_with_nothing_pending():
@@ -136,7 +145,7 @@ def test_a_surface_that_reports_its_own_turn_end_is_never_read_back():
 
 def test_targets_are_scoped_to_the_asking_machine_and_its_projects():
     conn = _codex_connection()
-    _stuck(conn)
+    _pending(conn)
     other_machine = "33333333-3333-4333-8333-333333333333"
     assert _targets(conn, machine_id=other_machine) == []
     assert _targets(conn, projects=(2,)) == []
@@ -144,7 +153,7 @@ def test_targets_are_scoped_to_the_asking_machine_and_its_projects():
 
 def test_an_observed_turn_end_stamps_the_posture_the_missing_hook_would_have():
     conn = _codex_connection()
-    _stuck(conn)
+    _pending(conn)
 
     assert _apply(conn) == {"reclassified": ["s2"], "skipped": []}
     assert _posture(conn) == "waiting"
@@ -152,7 +161,7 @@ def test_an_observed_turn_end_stamps_the_posture_the_missing_hook_would_have():
 
 def test_a_reclassified_session_becomes_wake_eligible_through_its_one_route():
     conn = _codex_connection()
-    _stuck(conn)
+    _pending(conn)
     _apply(conn)
 
     eligible = wake_eligible_recipients(conn, now=LATER)
@@ -166,7 +175,7 @@ def test_a_reclassified_session_becomes_wake_eligible_through_its_one_route():
 
 def test_a_newer_turn_keeps_running_and_the_report_is_named_superseded():
     conn = _codex_connection()
-    _stuck(conn)
+    _pending(conn)
     conn.execute(
         "UPDATE harness_sessions SET turn_posture_at=? WHERE session_id='s2'",
         (NOW_TEXT,),
@@ -182,7 +191,7 @@ def test_a_newer_turn_keeps_running_and_the_report_is_named_superseded():
 
 def test_a_report_from_the_wrong_machine_is_refused_by_name():
     conn = _codex_connection()
-    _stuck(conn)
+    _pending(conn)
     other_machine = "33333333-3333-4333-8333-333333333333"
 
     assert _apply(conn, machine_id=other_machine)["skipped"] == [

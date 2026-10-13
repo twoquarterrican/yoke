@@ -1,47 +1,14 @@
-"""Reclassify a session whose native ended its turn without saying so.
+"""Observe native turn completion when the surface did not report a hook.
 
-The wake router picks its operation from posture and liveness, and for one
-surface both readings can be wrong at once. A ``codex-cli`` turn that ends
-on a vendor error — the observed one was "Selected model is at capacity" —
-leaves the CLI process alive and fires no ``Stop`` hook, though Codex
-configures one and fires it on an ordinary ending. So posture stays
-``running`` while the turn is over, liveness ages from ``active`` to
-``stale``, and every wake for that session resolves
-``message_active`` or ``message_idle``: two operations ``codex-cli`` does
-not support. The envelope records ``skipped_operation`` and nothing else
-ever happens. One session sat unreachable for fifty minutes holding its
-item claim, silent to hook delivery and to the native resume both.
+A native turn can end while its recorded posture remains running. Reading the
+surface's own turn record lets its machine stamp the observed completion.
+Stale recipients without an idle message route can already use stopped resume;
+this observation also makes claim holders reachable before any message arrives.
 
-The one route that surface *does* support is the stopped-session resume,
-and posture is what selects it. The native's own turn record says whether
-the turn is really over, so the fix is to read that record and stamp the
-posture the missing hook would have stamped. Nothing downstream changes:
-``waiting`` already routes to ``message_stopped``.
-
-Only the machine that ran the native can read that record, so this module
-owns the two halves the control plane holds. :func:`probe_targets` names
-the sessions worth reading back, and :func:`apply_native_turn_ends`
-applies what the machine read, on the machine's authority over its own
-sessions and nobody else's.
-
-Waiting for a message to prove the session is stuck is too late. That was
-the original trigger — a wake attempt already recorded
-``skipped_operation`` — and it only fires once somebody sends the session
-something. On 2026-09-03 five workers' turns died on an upstream 404
-within eleven minutes and nothing was pending for any of them, so the
-control plane learned nothing until a person sent each one a message
-twenty minutes later. A worker holding a work item is the case where
-silence costs the most and where an observation is worth making
-unprompted, so a live claim holder on a surface that keeps a record is
-read back on the ordinary poll, alongside the sessions whose wake has
-already failed.
-
-The set stays small and self-limiting: only claim holders, only surfaces
-that declare a readable record, only sessions whose posture is not already
-the observed-turn-end posture — so a session drops out of the set the
-moment its end is recorded, and one error-terminal turn is observed
-exactly once. :data:`MAX_PROBE_TARGETS` bounds what any single poll asks
-one machine to read.
+The control plane names live claim holders and sessions with recorded operation
+refusals on surfaces that declare a readable turn record. Only the owning
+machine reads and applies that evidence. Newer posture observations supersede
+it, and sessions leave the bounded probe set after their turn end is recorded.
 """
 
 from __future__ import annotations
