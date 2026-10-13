@@ -9,6 +9,12 @@ import pytest
 from yoke_core.domain import machine_config
 
 
+@pytest.fixture(autouse=True)
+def _file_selection_without_inherited_home(monkeypatch):
+    """File-env tests opt out of the runner's separate isolated home."""
+    monkeypatch.delenv(machine_config.HOME_ENV, raising=False)
+
+
 def _write_config(tmp_path: Path, payload: dict) -> Path:
     path = tmp_path / "machine-config.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
@@ -99,7 +105,7 @@ def test_board_art_path_is_project_local_and_not_configurable(
     assert machine_config.board_art_path(repo_root) == repo_root / ".yoke" / "board-art"
 
 
-def test_config_path_relative_env_anchors_under_machine_home(
+def test_machine_home_overrides_relative_config_file_env(
     tmp_path: Path, monkeypatch
 ) -> None:
     home = tmp_path / "machine-home"
@@ -109,7 +115,7 @@ def test_config_path_relative_env_anchors_under_machine_home(
     resolved = machine_config.config_path()
 
     assert resolved.is_absolute()
-    assert resolved == home / "yoke-machine-config.json"
+    assert resolved == home / "config.json"
 
 
 def test_config_path_relative_env_does_not_resolve_into_cwd(
@@ -131,19 +137,20 @@ def test_config_path_relative_env_does_not_resolve_into_cwd(
 
     assert resolved.is_absolute()
     assert not resolved.is_relative_to(checkout)
-    assert resolved == home / "machine-config" / "yoke-machine-config.json"
+    assert resolved == home / "config.json"
 
 
 def test_config_path_absolute_env_is_returned_unchanged(
     tmp_path: Path, monkeypatch
 ) -> None:
     absolute = tmp_path / "explicit" / "config.json"
+    monkeypatch.delenv(machine_config.HOME_ENV, raising=False)
     monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(absolute))
 
     assert machine_config.config_path() == absolute
 
 
-def test_cli_config_path_relative_env_anchors_under_machine_home(
+def test_cli_machine_home_overrides_relative_config_file_env(
     tmp_path: Path, monkeypatch
 ) -> None:
     from yoke_cli.config import machine_config as cli_machine_config
@@ -155,7 +162,7 @@ def test_cli_config_path_relative_env_anchors_under_machine_home(
     resolved = cli_machine_config.config_path()
 
     assert resolved.is_absolute()
-    assert resolved == home / "yoke-machine-config.json"
+    assert resolved == home / "config.json"
 
 
 def test_register_machine_checkout_refuses_relative_config_root(

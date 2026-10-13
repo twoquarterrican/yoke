@@ -91,6 +91,30 @@ the surface API; which model a launch uses comes from the level options.
 environment is active, API URLs, local paths. Secrets for capabilities live
 under `~/.yoke/secrets/` (not in the repo).
 
+For an isolated machine config, select its home before running a writer:
+
+```bash
+YOKE_MACHINE_HOME=/tmp/yoke-worker yoke env use local
+```
+
+Configure `local` in that home first. `YOKE_MACHINE_HOME` selects
+`config.json` inside that directory and takes precedence over
+`YOKE_MACHINE_CONFIG_FILE`. Without a home override, the config-file variable
+selects a file; a relative value anchors under `~/.yoke`, then the default is
+`~/.yoke/config.json`. `--config` selects an explicit file; relative values
+anchor under the selected machine home.
+
+Writers refuse `machine_config_not_owned` when the target resolves outside an
+explicit `YOKE_MACHINE_HOME`, including through a symlink. Remove `--config`
+or select a file inside that home, then retry. This check runs before config
+locking or credential changes; readers may inspect an explicit foreign file.
+
+Relay-launched sessions discard an inherited `YOKE_MACHINE_CONFIG_FILE` for
+all harnesses and surfaces. They retain the selected machine home, and their
+child processes inherit that environment. An explicit launcher environment
+may select a shared config; set its machine home consistently. An isolated
+worker never uses a steering machine's config-file override implicitly.
+
 The `projects` list stores one checkout per project on this machine:
 
 ```json

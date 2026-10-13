@@ -7,6 +7,7 @@ import os
 from typing import Mapping
 
 from yoke_contracts.session_identity import ACTOR_ROLE_ENV_VAR, AMBIENT_ENV_VARS
+from yoke_contracts.machine_config.paths import CONFIG_FILE_ENV
 from yoke_contracts.session_control.resume import RESUME_ATTEMPT_ENV
 from yoke_harness.session_launch_handoff import LAUNCH_CONTEXT_ENV
 
@@ -17,6 +18,7 @@ _PARENT_HARNESS_ENV = frozenset(
         ACTOR_ROLE_ENV_VAR,
         RESUME_ATTEMPT_ENV,
         LAUNCH_CONTEXT_ENV,
+        CONFIG_FILE_ENV,
         "YOKE_EXECUTOR",
         "YOKE_PROVIDER",
         "YOKE_MODEL",
@@ -51,6 +53,8 @@ def native_session_environment(
     that serves a launch from a pre-warmed process pool hands the job to a
     process started long before, so a version stamped here outlives the
     binary it described. Every reader observes the surface instead.
+    The relay's config-file override is discarded; only explicit launch
+    markers can reintroduce it for a deliberately shared configuration.
     """
     env = dict(os.environ if environ is None else environ)
     for name in _PARENT_HARNESS_ENV:

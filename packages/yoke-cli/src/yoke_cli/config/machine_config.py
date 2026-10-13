@@ -4,14 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
-import os
 from pathlib import Path
 from typing import Any, Mapping
 
 from yoke_contracts.machine_config import schema as contract
+from yoke_contracts.machine_config.paths import (
+    CONFIG_FILE_ENV as CONFIG_FILE_ENV,
+    HOME_ENV as HOME_ENV,
+    config_path,
+    yoke_home,
+)
 
-CONFIG_FILE_ENV = "YOKE_MACHINE_CONFIG_FILE"
-HOME_ENV = "YOKE_MACHINE_HOME"
 DEFAULT_HOME_NAME = ".yoke"
 DEFAULT_CONFIG_NAME = contract.DEFAULT_CONFIG_NAME
 DEFAULT_BOARD_PATH = contract.DEFAULT_BOARD_PATH
@@ -35,25 +38,6 @@ class ConfiguredProject:
 
 def default_yoke_home() -> Path:
     return Path.home() / DEFAULT_HOME_NAME
-
-
-def yoke_home() -> Path:
-    explicit = os.environ.get(HOME_ENV, "").strip()
-    if explicit:
-        return Path(explicit).expanduser()
-    return default_yoke_home()
-
-
-def config_path(explicit: str | Path | None = None) -> Path:
-    # Route overrides through _machine_path so a relative value anchors under
-    # the machine home, never the current working directory (which would write
-    # config into whatever checkout/worktree the process happens to run from).
-    if explicit is not None:
-        return _machine_path(explicit)
-    env_path = os.environ.get(CONFIG_FILE_ENV, "").strip()
-    if env_path:
-        return _machine_path(env_path)
-    return yoke_home() / DEFAULT_CONFIG_NAME
 
 
 def load_config(path: str | Path | None = None) -> dict[str, Any]:

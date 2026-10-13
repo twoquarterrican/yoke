@@ -39,6 +39,9 @@ mode `0700`, including when the shell uses umask `002`. Existing directories
 keep their permissions. If the machine-config lock refuses a group- or
 world-writable `~/.yoke`, run `chmod 700 ~/.yoke` and retry. For a custom machine
 home, use the exact directory and `chmod` command named in the refusal.
+Select an isolated config with `YOKE_MACHINE_HOME=/tmp/yoke-worker yoke status`;
+that home takes precedence over a config-file environment override. See
+[Machine config](cli-and-config.md#machine-config) for selection and write ownership.
 
 ## Onboard wizard
 

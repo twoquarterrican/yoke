@@ -13,6 +13,10 @@ from yoke_cli.config import machine_config_file
 from yoke_contracts.machine_config import runtime as machine_runtime
 from yoke_contracts.machine_config import schema as contract
 from yoke_contracts.machine_config.retired_keys import strip_retired_keys
+from yoke_contracts.machine_config.paths import (
+    MachineConfigOwnershipError,
+    assert_write_owned,
+)
 
 
 class MachineConfigWriteError(RuntimeError):
@@ -31,11 +35,13 @@ def serialized_mutation(
     def locked(*args: Any, **kwargs: Any) -> _Result:
         cfg_path = machine_config.config_path(kwargs.get("path"))
         try:
+            assert_write_owned(cfg_path)
             with machine_config_file.exclusive_lock(cfg_path):
                 return operation(*args, **kwargs)
         except (
             machine_config.MachineConfigError,
             machine_config_file.MachineConfigFileError,
+            MachineConfigOwnershipError,
         ) as exc:
             raise MachineConfigWriteError(str(exc)) from exc
 
@@ -90,6 +96,10 @@ def write_payload(
     machine should be reported. Retired keys nothing reads any more are
     dropped here, so a machine converges on its next config write.
     """
+    try:
+        assert_write_owned(cfg_path)
+    except MachineConfigOwnershipError as exc:
+        raise MachineConfigWriteError(str(exc)) from exc
     payload.setdefault(contract.MACHINE_ID_KEY, str(uuid.uuid4()))
     strip_retired_keys(payload)
     tolerated = (

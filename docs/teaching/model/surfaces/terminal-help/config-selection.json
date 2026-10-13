@@ -1,0 +1,15 @@
+{
+ "id": "config-selection",
+ "title": "Select the machine config and recover a foreign-write refusal",
+ "status": "observed",
+ "form": "Do",
+ "verification": "Config writer help names HOME/file precedence, explicit --config and machine_config_not_owned; subprocess regression tests prove candidate refusal and recovery text.",
+ "topics": [
+  "machines/operations/config-isolation"
+ ],
+ "sources": [
+  "packages/yoke-cli/src/yoke_cli/commands/adapters/config_write.py",
+  "runtime/api/cli/test_worker_machine_config_isolation.py"
+ ],
+ "position": 8
+}

@@ -17,10 +17,16 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from yoke_contracts.machine_config import schema as contract
+from yoke_contracts.machine_config.paths import (
+    CONFIG_FILE_ENV as CONFIG_FILE_ENV,
+    HOME_ENV as HOME_ENV,
+    MachineConfigOwnershipError,
+    assert_write_owned,
+    config_path,
+    yoke_home,
+)
 
 
-CONFIG_FILE_ENV = "YOKE_MACHINE_CONFIG_FILE"
-HOME_ENV = "YOKE_MACHINE_HOME"
 DEFAULT_CONFIG_NAME = contract.DEFAULT_CONFIG_NAME
 DEFAULT_BOARD_PATH = contract.DEFAULT_BOARD_PATH
 DEFAULT_CACHE_DIR_NAME = contract.DEFAULT_CACHE_DIR_NAME
@@ -31,29 +37,6 @@ MACHINE_ID_KEY = contract.MACHINE_ID_KEY
 
 class MachineConfigError(RuntimeError):
     """Raised when machine config exists but is malformed."""
-
-
-def yoke_home() -> Path:
-    """Return the machine-local Yoke directory."""
-
-    explicit = os.environ.get(HOME_ENV, "").strip()
-    if explicit:
-        return Path(explicit).expanduser()
-    return Path.home() / ".yoke"
-
-
-def config_path(explicit: str | Path | None = None) -> Path:
-    """Return the selected machine config file path."""
-
-    # Route overrides through _machine_path so a relative value anchors under
-    # the machine home, never the current working directory (which would write
-    # config into whatever checkout/worktree the process happens to run from).
-    if explicit is not None:
-        return _machine_path(explicit)
-    env_path = os.environ.get(CONFIG_FILE_ENV, "").strip()
-    if env_path:
-        return _machine_path(env_path)
-    return yoke_home() / DEFAULT_CONFIG_NAME
 
 
 def cache_dir(path: str | Path | None = None) -> Path:
@@ -113,6 +96,10 @@ def ensure_machine_id(path: str | Path | None = None) -> str:
     if current is not None:
         return current
     selected = config_path(path)
+    try:
+        assert_write_owned(selected)
+    except MachineConfigOwnershipError as exc:
+        raise MachineConfigError(str(exc)) from exc
     if not selected.is_file():
         raise MachineConfigError(
             f"{selected} must be configured before assigning a machine id"
@@ -137,6 +124,10 @@ def ensure_machine_id(path: str | Path | None = None) -> str:
 
 def _replace_config(selected: Path, payload: Mapping[str, Any]) -> None:
     """Atomically publish a private machine-config document."""
+    try:
+        assert_write_owned(selected)
+    except MachineConfigOwnershipError as exc:
+        raise MachineConfigError(str(exc)) from exc
     handle = tempfile.NamedTemporaryFile(
         mode="w",
         encoding="utf-8",

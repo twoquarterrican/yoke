@@ -36,11 +36,19 @@ AUTH_SET_USAGE = (
     "yoke auth set ENV [CREDENTIAL | --token-file PATH | --token-stdin | "
     "--dsn DSN | --dsn-file PATH | --dsn-stdin] [--config PATH]"
 )
+CONFIG_SELECTION_HELP = (
+    "Use YOKE_MACHINE_HOME/config.json when YOKE_MACHINE_HOME is set; otherwise "
+    "YOKE_MACHINE_CONFIG_FILE selects the config (default ~/.yoke/config.json). "
+    "--config selects a path explicitly; writes outside an explicit machine "
+    "home refuse as machine_config_not_owned. See CLI and config: Machine config."
+)
 
 
 def env_use(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter, prog="yoke env use"
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        prog="yoke env use",
+        description=CONFIG_SELECTION_HELP,
     )
     parser.add_argument("env")
     parser.add_argument("--config", dest="config_path", default=None)
@@ -58,7 +66,9 @@ def env_use(args: List[str]) -> int:
 
 def connection_set(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter, prog="yoke connection set"
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        prog="yoke connection set",
+        description=CONFIG_SELECTION_HELP,
     )
     parser.add_argument("env")
     parser.add_argument("credential", nargs="?")
@@ -106,7 +116,7 @@ def connection_remove(args: List[str]) -> int:
             "Removing the active authority needs --activate to name the "
             "replacement, unless the alias is this machine's only connection, "
             "which simply leaves it unconfigured. Non-owned credential files "
-            "are refused."
+            "are refused. " + CONFIG_SELECTION_HELP
         ),
     )
     parser.add_argument("env")
@@ -132,7 +142,9 @@ def connection_remove(args: List[str]) -> int:
 
 def auth_set(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter, prog="yoke auth set"
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        prog="yoke auth set",
+        description=CONFIG_SELECTION_HELP,
     )
     parser.add_argument("env")
     parser.add_argument("credential", nargs="?")
