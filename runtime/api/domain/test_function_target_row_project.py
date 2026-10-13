@@ -290,3 +290,28 @@ def test_mark_archived_all_reviewed_without_project_is_denied(conn):
     assert "project_required: no project given" in (
         denied.error.error.message if denied.error.error else ""
     )
+
+@pytest.mark.parametrize("owner_slug", ["yoke", "externalwebapp"])
+@pytest.mark.parametrize("item_id", [42, None])
+@pytest.mark.parametrize("project_hint", [None, "externalwebapp"])
+def test_ci_rerun_authority_comes_from_its_item(
+    conn, owner_slug, item_id, project_hint
+):
+    project_id = resolve_project_id(conn, "yoke")
+    actor_id = _project_owner(conn, resolve_project_id(conn, owner_slug))
+    _seed_item(conn, item_id=42, project_id=project_id)
+    function = "github_actions.run.rerun_failed"
+    payload = {"run_id": "100"}
+    if project_hint is not None:
+        payload["project"] = project_hint
+    request = FunctionCallRequest(
+        function=function,
+        actor=ActorContext(actor_id=str(actor_id), session_id="worker"),
+        target=TargetRef(kind="item", item_id=item_id),
+        payload=payload,
+    )
+    allowed = check_dispatch_permission(
+        conn, _entry(function, side_effects=True), request
+    )
+    assert allowed.project_id == (project_id if item_id is not None else None)
+    assert (allowed.error is None) == (item_id is not None and owner_slug == "yoke")

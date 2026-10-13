@@ -65,6 +65,11 @@ def resolve_project_context(
         except (TypeError, ValueError):
             return None
         return resolve_ephemeral_env_project(conn, env_id)
+    if entry.function_id == "github_actions.run.rerun_failed":
+        item_id = request.target.item_id
+        if request.target.kind != "item" or item_id is None:
+            return None
+        return resolve_item_project(conn, int(item_id))
     if entry.function_id.startswith("github_actions."):
         return _resolve_github_actions_project_context(
             conn,
@@ -212,14 +217,7 @@ def _resolve_github_actions_project_context(
     *,
     visible_project_ids: Collection[int] | None = None,
 ) -> tuple[int, str] | None:
-    """Resolve GitHub Actions authority from the handler's project payload.
-
-    GitHub Actions handlers use ``payload.project`` to select both the GitHub
-    App installation and repository binding. Authorization must therefore use
-    that same project. A target hint is optional, but when supplied it must
-    resolve to the identical project rather than selecting a different scope
-    for the permission check.
-    """
+    """Resolve non-item GitHub Actions authority from its project payload."""
     payload_ref = str(request.payload.get("project") or "").strip()
     if not payload_ref:
         return None
