@@ -97,7 +97,7 @@ def test_report_interval_preserves_the_inclusive_microsecond_cutoff(test_db, zon
     conn = seed_steering_scope(test_db)
     conn.execute("SELECT set_config('TimeZone', %s, false)", (zone,))
     start = parse_instant(START)
-    args = {"session_id": STEERING_SESSION, "fingerprint": "opaque fingerprint"}
+    args = {"session_id": STEERING_SESSION}
     assert _claim_interval(conn, now=start, not_after=start, **args)
     assert _last_report(conn, STEERING_SESSION)[0] == start
     later = start + timedelta(minutes=15)
@@ -165,7 +165,6 @@ def test_supplied_invalid_fleet_clocks_refuse_before_any_read_or_write(bad):
         _claim_interval(
             conn,
             session_id="session",
-            fingerprint="opaque",
             now=bad,
             not_after=parse_instant(START),
         )
