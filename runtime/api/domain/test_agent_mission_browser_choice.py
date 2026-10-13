@@ -58,7 +58,7 @@ def test_walker_prompt_uses_yoke_browser_only_when_the_walk_installed_yoke(
 
 
 @pytest.mark.parametrize("executor", ["naive_target_session", "informed_subagent"])
-@pytest.mark.parametrize("identities", [["member"], ["member", "admin"]])
+@pytest.mark.parametrize("identities", [["operator"], ["operator", "admin"]])
 def test_named_identities_select_managed_browser_without_installing_yoke(
     executor: str, identities: list[str]
 ) -> None:

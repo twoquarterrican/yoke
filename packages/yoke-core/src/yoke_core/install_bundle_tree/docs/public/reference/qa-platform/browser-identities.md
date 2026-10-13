@@ -60,7 +60,7 @@ there, pass the project's browser-control settings document with
 Browser case names its identity with `method_config.browser_identity`; a run
 whose cases name several identities starts one daemon per identity. An
 hosted signed-in exploratory mission must name its persona, for example
-`method_config.browser_identities: ["member"]`. Any mission naming identities
+`method_config.browser_identities: ["operator"]`. Any mission naming identities
 uses the managed browser even when it installs nothing; host-browser access
 is reserved for missions naming none that have not installed Yoke.
 The dispatch gives the walker an exact

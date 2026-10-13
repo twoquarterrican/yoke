@@ -4,7 +4,7 @@
  "status": "observed",
  "audience": "both",
  "when": "Test needs authenticated behavior or more than one account",
- "need": "Declare personas and each target origin with signed-in probes in browser-control. Hosted signed-in missions set method_config.browser_identities, such as [\"member\"]. Named identities select managed setup, verification and steps even without installing Yoke; expired sites return a human gate naming identity, site and account. API/CLI credentials stay separate.",
+ "need": "Declare personas and each target origin with signed-in probes in browser-control. Hosted signed-in missions set method_config.browser_identities, such as [\"operator\"]. Named identities select managed setup, verification and steps even without installing Yoke; expired sites return a human gate naming identity, site and account. API/CLI credentials stay separate.",
  "disclosure": "current cue",
  "surface": "Browser scenario method configuration → browser-identities reference.",
  "gap": "Live signed-in prod mission proof remains a release obligation.",
