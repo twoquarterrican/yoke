@@ -1,0 +1,14 @@
+{
+ "id": "05",
+ "title": "Open a shared file through sign-in",
+ "status": "observed",
+ "audience": "both",
+ "when": "A file URL opens without a valid browser session",
+ "need": "Open the file URL; browser navigation redirects to sign-in and retains the original file path and query. Company sign-in and private token admission return to the file. Local views ask for yoke ui up on the serving machine. API and CLI clients receive a structured 401; an explicit Authorization header selects API authentication.",
+ "disclosure": "current cue",
+ "surface": "Shared-file reference and sign-in recovery pages.",
+ "review": "Candidate source behavior with HTTP regression coverage; live deployment proof remains separate.",
+ "recipes": ["yoke ui up --help"],
+ "sources": ["docs/public/reference/shared-files.md", "packages/yoke-core/src/yoke_core/api/browser_return.py", "runtime/api/test_file_sign_in.py"],
+ "position": 4
+}

@@ -37,14 +37,25 @@ _STATUS_BY_CODE = {
 
 
 def is_shared_file_browser_read(request: Request) -> bool:
-    """True for a cookie-carrying shared-file GET with no bearer header."""
+    """Admit cookies or browser navigation, while bearer clients stay on API auth."""
     from yoke_core.api.web_session_auth import WEB_SESSION_COOKIE_NAME
 
     return (
         request.method.upper() == "GET"
         and request.url.path.startswith(f"{SHARED_FILE_ROUTE_PREFIX}/")
-        and not request.headers.get("authorization")
-        and bool(request.cookies.get(WEB_SESSION_COOKIE_NAME))
+        and "authorization" not in request.headers
+        and (
+            bool(request.cookies.get(WEB_SESSION_COOKIE_NAME))
+            or is_browser_navigation(request)
+        )
+    )
+
+
+def is_browser_navigation(request: Request) -> bool:
+    """A page navigation requests HTML; an explicit bearer stays an API call."""
+    return "authorization" not in request.headers and (
+        request.headers.get("sec-fetch-mode") == "navigate"
+        or "text/html" in request.headers.get("accept", "").lower()
     )
 
 
@@ -125,6 +136,10 @@ def read_shared_file_route(
     )
     actor_id = getattr(auth, "actor_id", None)
     if actor_id is None:
+        if is_browser_navigation(request):
+            from yoke_core.api.browser_return import browser_sign_in_redirect
+
+            return browser_sign_in_redirect(request)
         return JSONResponse(
             {
                 "error": {

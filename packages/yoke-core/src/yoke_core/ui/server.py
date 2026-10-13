@@ -214,13 +214,18 @@ def create_ui_app(token: str, *, port: int = DEFAULT_UI_PORT):
         if request.url.path == SERVED_BUILD_PATH:
             return await call_next(request)
         if not token_matches(candidate, token):
+            from yoke_core.ui.file_sign_in import signed_out_file
+
+            sign_in = signed_out_file(request, cookie_name + "_return")
+            if sign_in is not None:
+                return sign_in
             return JSONResponse(
                 {
                     "error": {
                         "code": "session_token_required",
                         "message": (
                             "this UI server admits only the per-run session "
-                            "token printed by `yoke ui`"
+                            "token opened by `yoke ui up` in your terminal"
                         ),
                     }
                 },
@@ -247,7 +252,14 @@ def create_ui_app(token: str, *, port: int = DEFAULT_UI_PORT):
                 ]
             )
             url = request.url.path + (f"?{query}" if query else "")
+            from yoke_core.api.browser_return import consume_browser_return
+
             redirect: Response = RedirectResponse(url=url, status_code=303)
+            destination = consume_browser_return(
+                redirect, request, cookie=cookie_name + "_return"
+            )
+            if destination != "/":
+                redirect.headers["location"] = destination
             redirect.set_cookie(
                 cookie_name,
                 token,
