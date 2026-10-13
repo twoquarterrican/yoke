@@ -22,7 +22,7 @@ create/drop cost once per worker process instead of once per test:
   checkout, so DDL never leaks between tests — schema-mutating tests
   simply keep paying the old one-clone cost.
 - Nested checkout of an already-checked-out flavor yields ``None`` so
-  the caller falls back to its legacy clone path.
+  the caller uses an independent template clone.
 
 Accepted residual limits: the fingerprint and reset cover
 ``current_schema()`` only, and database-scoped settings
@@ -209,8 +209,8 @@ def checkout(flavor: Hashable, build: Callable[[], str]) -> Iterator[Optional[st
     runs again on the next checkout.
 
     A ``None`` yield means the flavor is already checked out (nested use in
-    the same process); the caller must fall back to its legacy
-    clone-per-test path for that inner context.
+    the same process); the caller uses an independent template clone
+    for that inner context.
     """
     state = _STATES.get(flavor)
     if state is not None and state["in_use"]:

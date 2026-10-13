@@ -7,7 +7,6 @@ alongside or extend these.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from runtime.api.fixtures.dispatch_actor import register_session_actor
@@ -52,6 +51,7 @@ def _seed_yoke_project_with_github_app(
     conn,
     *,
     repo_path: str,
+    config_root: Path,
     item_id: int,
     branch: str,
 ) -> None:
@@ -87,7 +87,7 @@ def _seed_yoke_project_with_github_app(
     )
     register_session_actor(conn, MERGE_SESSION_ID)
     register_machine_checkout(
-        Path(repo_path).parent / f".yoke-test-config-{os.getpid()}-{item_id}",
+        config_root,
         Path(repo_path),
         1,
     )
@@ -287,6 +287,7 @@ def _create_epic_tasks_db(db_path: Path, task_status: str = "implementing") -> N
     _seed_yoke_project_with_github_app(
         conn,
         repo_path="/tmp",
+        config_root=db_path.parent / "machine-config",
         item_id=TEST_ITEM_ID,
         branch=TEST_BRANCH,
     )

@@ -1,33 +1,19 @@
-"""Postgres-backed replacement for path-shaped test-DB helpers.
+"""Postgres schema templates for helpers that pass path-shaped test tokens.
 
-Many older per-module test helpers created a file-shaped ``db_path`` token,
-initialized one connection, then re-opened that path directly in test bodies.
-Under Postgres authority that pattern splits writes and reads across two
-databases: initialization connects through the backend factory to the
-DSN-pointed Postgres database while direct path opens read an empty local file.
+:func:`init_test_db` chooses a per-worker template by schema callable identity.
+The default and explicit ``schema.cmd_init`` share the production core schema
+with test-project identities; :func:`apply_fixture_schema_ddl` shares the
+fixture template, and other callables retain their own schema and seed data.
+Tests receive reusable clones reset after checkout. Nested contexts receive
+independent template clones that are dropped on exit.
 
-This module gives those helpers one backend-aware seam to delegate to so the
-same test bodies exercise the active authority. No caller infers the engine
-from cwd or the presence of ``data/yoke.db``.
+``YOKE_PG_DSN`` points at the checkout only for its context's lifetime.
+:func:`connect_test_db` opens that native authority; the yielded path token
+passes through consumers but does not select a database. Per-test machine
+configuration belongs in the consuming fixture after checkout, since schema
+callables run only when the template is built.
 
-- :func:`init_test_db` — context manager yielding a legacy path-shaped
-  ``db_path`` token with the schema applied to a disposable per-test Postgres
-  database. The ``apply_schema`` strategy chooses which schema:
-  ``schema.cmd_init`` (default, full production schema) or
-  :func:`apply_fixture_schema_ddl` (the composed fixture schema).
-  ``YOKE_PG_DSN`` is
-  repointed for the context's lifetime, then restored and the database is
-  dropped on exit. The yielded token threads through code-under-test unchanged;
-  the backend factory ignores it and targets the DSN.
-- :func:`apply_fixture_schema_ddl` — ``apply_schema`` strategy applying the
-  composed fixture schema.
-- :func:`connect_test_db` — connect to the native psycopg authority family
-  against the repointed DSN. Drop-in for direct path opens the file-based
-  helpers and their test bodies used to make.
-
-Conversion is two edits per helper: the path-shaped init delegates to
-:func:`init_test_db`, and each direct path open becomes
-:func:`connect_test_db`.
+Contributor guide: docs/testing-verification/test-database-templates.md.
 """
 
 from __future__ import annotations

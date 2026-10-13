@@ -15,6 +15,13 @@ closures retain their identity for the worker's lifetime. Use a distinct
 callable for different schema or seed inputs; do not change a callable's
 captured inputs between checkouts and expect the template to change.
 
+Keep machine-local setup outside the schema callable. For example, a fixture
+that registers sessions records its operating actor in each test's redirected
+machine home after checkout, using `record_fixture_operating_actor` for its
+already-seeded human. Cloning
+schema and rows does not copy machine configuration or replay other setup
+side effects.
+
 A failed template build drops its database and restores the prior DSN before
 raising the schema failure. Fix that schema strategy and retry; the failed
 build is never retained. Worker exit drops templates and reusable databases.
@@ -22,10 +29,13 @@ The existing invocation namespace keeps concurrent runs separate.
 
 Merge subprocess tests also copy an origin, repository and linked worktree
 built once per test module. Each copy rewrites its Git pointers and origin
-URL to its own directory. Database setup templates the complete production
-`environment_bootstrap.run_bootstrap` chain, including domain tables such as
-`item_dependencies`; `schema.cmd_init` alone supplies only the shared core.
-per-test project, machine and merge-item seeds still use each test's paths.
+URL to its own directory. Automatic maintenance and garbage collection are
+disabled in the template's repository and bare origin so a background Git
+process cannot change files while the template is copied. Database setup
+templates the complete production `environment_bootstrap.run_bootstrap` chain,
+including domain tables such as `item_dependencies`; `schema.cmd_init` alone
+supplies only the shared core. Per-test project, machine and merge-item seeds
+still use each test's paths.
 
 Use the watcher for focused checks and record CI's shard wall times when
 comparing performance. A green fixture check proves isolation and reuse;

@@ -1,6 +1,7 @@
 """Schema callable templates preserve seeds, isolation and build failures."""
 
 import os
+import json
 
 import pytest
 
@@ -136,3 +137,33 @@ def test_fixture_human_strategy_is_reused_and_resets_actor_data(tmp_path):
                 == baseline
             )
     pg_reusable_db.discard(id(apply_fixture_schema_with_human))
+
+
+def test_cached_session_schema_records_each_fresh_machine_home(tmp_path, monkeypatch):
+    from runtime.api import test_service_client_sessions_helpers as sessions
+    from yoke_contracts.machine_config.schema_connections import operating_actor_binding
+
+    builds = []
+    original = sessions._apply_session_schema
+
+    def apply():
+        builds.append(True)
+        original()
+
+    monkeypatch.setattr(sessions, "_apply_session_schema", apply)
+    for index in range(2):
+        with monkeypatch.context() as scoped:
+            home = tmp_path / f"machine-{index}"
+            workspace = tmp_path / f"workspace-{index}"
+            workspace.mkdir()
+            scoped.setenv("YOKE_MACHINE_HOME", str(home))
+            scoped.delenv("YOKE_MACHINE_CONFIG_FILE", raising=False)
+            fixture = sessions.session_test_db.__wrapped__(workspace, scoped)
+            try:
+                next(fixture)
+                payload = json.loads((home / "config.json").read_text())
+                actor_id, universe = operating_actor_binding(payload, "local")
+                assert actor_id is not None and universe
+            finally:
+                fixture.close()
+    assert builds == [True]

@@ -20,6 +20,10 @@ def _build_repository(root: Path, branch: str) -> None:
         if bare:
             args.append("--bare")
         subprocess.run([*args, str(path)], capture_output=True, check=True)
+        # Copies must observe an immutable template, with no detached Git
+        # maintenance changing object files or removing lock files mid-copy.
+        _git(path, "config", "maintenance.auto", "false")
+        _git(path, "config", "gc.auto", "0")
     _git(repo, "remote", "add", "origin", str(origin))
     _git(repo, "config", "user.email", "test@test.com")
     _git(repo, "config", "user.name", "Test")

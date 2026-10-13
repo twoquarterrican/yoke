@@ -150,7 +150,7 @@ def _apply_session_schema() -> None:
     own connection through the backend factory, satisfying the zero-arg contract.
     """
     from yoke_core.domain import db_backend
-    from runtime.api.fixtures.backlog import seed_fixture_operating_actor
+    from yoke_core.domain.local_operating_actor import ensure_local_operating_actor
     from runtime.api.sessions_api_stale_test_helpers import apply_ddl_statements
 
     conn = db_backend.connect()
@@ -174,7 +174,7 @@ def _apply_session_schema() -> None:
         create_actor_identity_tables(conn)
         create_auth_tables(conn)
         create_org_tables(conn)
-        seed_fixture_operating_actor(conn)
+        ensure_local_operating_actor(conn)
         from yoke_core.domain.workflow_registry import (
             converge_builtin_workflows,
             resolve_current_workflow_pin,
@@ -272,6 +272,14 @@ def session_test_db(tmp_path, monkeypatch):
     monkeypatch.setenv("TMPDIR", str(tmp_path))
     monkeypatch.setenv("YOKE_SCRATCH_ROOT", str(tmp_path / "scratch"))
     with init_test_db(tmp_path, apply_schema=_apply_session_schema) as db_path:
+        from runtime.api.fixtures.operating_actor import record_fixture_operating_actor
+        from runtime.api.fixtures.file_test_db import connect_test_db
+        from yoke_core.domain.actors import sole_human_actor_id
+
+        # Machine homes are per-test, even when schema and seeded rows reuse
+        # a template. Record this checkout's actor before any registration.
+        with connect_test_db(db_path) as conn:
+            record_fixture_operating_actor(conn, sole_human_actor_id(conn, oldest=True))
         # Create SML files so scheduler sees SML as coherent
         strategy_dir = os.path.join(str(tmp_path), "strategy")
         os.makedirs(strategy_dir, exist_ok=True)

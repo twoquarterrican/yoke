@@ -28,6 +28,12 @@ def test_module_template_is_built_once_and_copies_are_independent(
     copies = [tmp_path / name for name in ("first", "second")]
     for root in copies:
         repositories.copy_repository(root, request, TEST_BRANCH)
+        for part in ("repo", "origin.git"):
+            assert (
+                _git(root / part, "config", "maintenance.auto").stdout.strip()
+                == "false"
+            )
+            assert _git(root / part, "config", "gc.auto").stdout.strip() == "0"
         assert _git(root / "repo", "remote", "get-url", "origin").stdout.strip() == str(
             root / "origin.git"
         )

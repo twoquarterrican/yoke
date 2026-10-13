@@ -246,6 +246,7 @@ def merge_env(tmp_path: Path, request) -> MergeEnv:
         _seed_yoke_project_with_github_app(
             _seed_conn,
             repo_path=str(repo),
+            config_root=tmp_path / "machine-config",
             item_id=TEST_ITEM_ID,
             branch=TEST_BRANCH,
         )

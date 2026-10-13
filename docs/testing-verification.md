@@ -194,6 +194,8 @@ preserves the caller's connected-environment selection: source location changes,
 control-plane selection does not. Prod-flagged schema guards still apply.
 Pytest runners isolate their test environment; Ruff and changed-test fallback
 recipes live in [source-development.md](testing-verification/source-development.md).
+Schema-callable reuse and per-test setup are covered in
+[test database templates](testing-verification/test-database-templates.md).
 
 ## Which tree a run verified
 
