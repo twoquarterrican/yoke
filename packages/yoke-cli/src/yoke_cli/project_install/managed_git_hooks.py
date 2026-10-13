@@ -15,6 +15,7 @@ from yoke_contracts.git_hook_markers import (
 
 GIT_HOOK_NAMES = ("pre-commit", "post-commit", "pre-merge-commit")
 
+
 # A repository can reach a computer without Yoke (a synced folder, a plain
 # clone). The shims find the launcher on PATH, then at the installer's
 # launcher home, as the harness hooks do; with no launcher the commit goes
@@ -31,6 +32,7 @@ def _launcher_lookup(hook_name: str) -> str:
         "    exit 0\n"
         "fi\n"
     )
+
 
 PRE_COMMIT_SHIM = (
     "#!/bin/sh\n"
