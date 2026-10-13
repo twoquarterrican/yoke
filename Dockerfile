@@ -20,6 +20,12 @@ COPY pyproject.toml ./
 COPY .git_archival.txt ./
 COPY runtime ./runtime
 COPY packages ./packages
+COPY AGENTS.md ./
+
+# Standalone release inputs share the install-bundle source declaration.
+RUN PYTHONPATH=/build/packages/yoke-contracts/src:/build/packages/yoke-cli/src:/build/packages/yoke-harness/src:/build/packages/yoke-core/src \
+        python -m yoke_core.tools.container_bundle_validation \
+        stage-source-files /build /bundle-source-files
 
 # Portability runs pg_restore/pg_dump inside the server. Fetch the same
 # checksum-verified PostgreSQL build that local mode pins in product code.
@@ -100,7 +106,7 @@ COPY runtime/harness/claude/agents /srv/yoke-tree/runtime/harness/claude/agents
 COPY runtime/harness/claude/rules /srv/yoke-tree/runtime/harness/claude/rules
 COPY runtime/harness/codex/agents /srv/yoke-tree/runtime/harness/codex/agents
 COPY runtime/harness/cursor/agents /srv/yoke-tree/runtime/harness/cursor/agents
-COPY AGENTS.md /srv/yoke-tree/AGENTS.md
+COPY --from=builder /bundle-source-files /srv/yoke-tree
 # Install-bundle docs resolve from docs/public (DOCS_SOURCE) under the
 # server tree. .yoke/docs stays for dogfood source-tree teaching mirrors.
 COPY docs/public /srv/yoke-tree/docs/public
@@ -115,6 +121,9 @@ RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels \
 # Import every installed core module with the source checkout absent.
 # This deliberately runs after source and wheels have left the runtime stage.
 RUN python -m yoke_core.tools.product_wheel_validation
+
+# Exercise the actual server tree, not the wheel's complete fallback snapshot.
+RUN python -m yoke_core.tools.container_bundle_validation verify /srv/yoke-tree
 
 # Every image consumer inherits this build-time release-identity gate. An
 # explicit release version must match the installed wheel metadata exactly;

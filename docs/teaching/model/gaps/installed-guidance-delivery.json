@@ -2,9 +2,9 @@
  "id": "installed-guidance-delivery",
  "title": "Prove released installed guidance reaches the receiving agent",
  "status": "observed",
- "text": "Source and automated HTTPS transport tests cover installed help, managed release manifests, refresh recovery and the shared registered context recipe. After release, rerun the declared installer campaign and capture actual supported-harness context with configured project documents; automated file delivery is not a model transcript.",
+ "text": "Source and automated HTTPS transport tests cover installed help, managed release manifests, refresh recovery and the shared registered context recipe. A production image omitted required standalone manifests: image construction now stages canonical inputs and builds a real project bundle against its server tree before shipping. After release, rerun the declared installer campaign and scoped received-context check; automated file delivery is not a model transcript.",
  "plan_refs": ["FIRST-USER.41"],
- "sources": ["runtime/api/domain/test_installed_project_context.py", ".agents/skills/yoke/conduct/dispatch-context-project.md"],
+ "sources": ["runtime/api/domain/test_installed_project_context.py", "runtime/api/test_container_install_bundle.py", "Dockerfile", ".agents/skills/yoke/conduct/dispatch-context-project.md"],
  "work_items": ["YOK-3966"],
  "position": 20
 }
