@@ -12,6 +12,7 @@ import pytest
 
 from yoke_contracts.machine_qa_execution import GUI_SESSION_CONTEXT
 from yoke_harness.baseline_harness_requests import PROBE_PROMPT, harness_request
+from yoke_harness.baseline_probe_failure_causes import PROBE_EXIT_CODES
 from yoke_harness.ssh_linux_baseline import capture_linux_golden, prove_linux_probes
 from yoke_harness.ssh_mac_baseline_probes import (
     prove_declared_probes,
@@ -224,7 +225,9 @@ def test_missing_failed_or_malformed_native_completion_is_refused(stdout):
 
 @pytest.mark.parametrize("platform", ["macos", "linux"])
 def test_capture_does_not_archive_or_seal_an_expired_session(platform):
-    control = _Control("claude", returncode=1)
+    control = _Control(
+        "claude", returncode=PROBE_EXIT_CODES["probe_harness_exit_nonzero"]
+    )
     # No archive or upload method: a failed request must return before either.
     result = (
         capture_linux_golden(control, "/srv/new-golden", None)
@@ -236,6 +239,7 @@ def test_capture_does_not_archive_or_seal_an_expired_session(platform):
     evidence = (
         result.evidence if platform == "linux" else result.evidence["user_equivalence"]
     )
+    assert evidence["probes"][0]["cause"] == "probe_harness_exit_nonzero"
     assert "Claude" in evidence["reason"]
 
 

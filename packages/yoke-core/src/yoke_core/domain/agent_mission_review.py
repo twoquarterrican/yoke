@@ -107,6 +107,12 @@ def _walker_dispatch(
     walk_end_command = (
         f"yoke qa mission walk-end {walk_flags} --run-id {int(case['capture_run_id'])}"
     )
+    browser_intro = (
+        "For named browser identities, use the managed browser. Set it up with "
+        if identities
+        else "For web interaction, if Yoke is on the target because "
+        "this walk installed it, materialize the target browser with "
+    )
     prompt = (
         f"Before any other host command, run `{walk_start_command}`: it puts "
         "the Test Machine in this mission's declared starting state. If it "
@@ -135,16 +141,18 @@ def _walker_dispatch(
         f"`{artifact_add_command}`. For every artifact, "
         f"{artifact_bytes_clause}"
         f"Remote commands use `{host_command}`. "
-        "For web interaction, if Yoke is on the target because this walk "
-        "installed it, materialize the target browser with "
-        f"`{browser_setup_command}` using a bounded timeout long enough for "
-        "first setup, then drive it one chosen step at a time with "
+        f"{browser_intro}"
+        + f"`{browser_setup_command}` with a bounded first-setup timeout, then use "
         f"`{browser_step_command}`. "
         f"{identity_clause}"
-        "Otherwise open the host's own browser "
-        "(Safari on macOS; the desktop's default browser elsewhere) and "
-        "drive it with screenshots and keystrokes through the remote command. "
-        "Never install Yoke on a Test Machine to get a browser. "
+        + (
+            ""
+            if identities
+            else "Otherwise open the host's own browser "
+            "(Safari on macOS; the desktop's default browser elsewhere) and "
+            "drive it with screenshots and keystrokes through the remote command. "
+        )
+        + "Never install Yoke on a Test Machine to get a browser. "
         "Add `--gui-session` to the outer host command for macOS "
         "window-server or login-keychain work. This lease owns one "
         f"owner-only staging directory on the target, `{scratch_path}`: pipe "

@@ -15,7 +15,10 @@ from typing import Any, Callable, Sequence
 
 from yoke_contracts.machine_qa_execution import GUI_SESSION_CONTEXT
 from yoke_harness.baseline_harness_requests import harness_request
-from yoke_harness.baseline_probe_failure_causes import classify_declared_failure
+from yoke_harness.baseline_probe_failure_causes import (
+    UNDECLARED_EXIT,
+    classify_declared_failure,
+)
 from yoke_harness.ssh_mac_full_reset_contract import GOLDEN_PROBES_SUFFIX
 from yoke_harness.ssh_mac_gui_session import (
     classify_macos_session_context_failure,
@@ -161,94 +164,97 @@ def run_baseline_probes(
 ) -> HostActionResult:
     """Run probes through the supplied host session, recording no account output.
 
-    Harness executables must answer a real request, including for sealed
-    sidecars originally declaring login status. GUI bridge failures remain
-    distinct from a delivered request that cannot authenticate.
+    Retry an undeclared exit once; declared causes and bridge failures stop.
+    Harnesses must answer a real request; evidence never carries account output.
     """
     rows: list[dict[str, Any]] = []
     for probe in probes:
         request = harness_request(probe.argv)
-        try:
-            result = run_gui_command(
-                list(request.argv if request else probe.argv),
-                timeout=PROBE_TIMEOUT_SECONDS,
+        for attempt in range(2):
+            try:
+                result = run_gui_command(
+                    list(request.argv if request else probe.argv),
+                    timeout=PROBE_TIMEOUT_SECONDS,
+                )
+            except Exception:
+                rows.append(
+                    _failed_row(
+                        probe,
+                        exit_code=None,
+                        expectation_met=None,
+                        failure=_bridge_failure(
+                            BRIDGE_CALL_RAISED_CAUSE, BRIDGE_CALL_RAISED_REASON
+                        ),
+                    )
+                )
+                if not classify_gui_failures:
+                    rows[-1].update(
+                        cause="host_session_command_unavailable",
+                        reason="the SSH user-session command did not return",
+                        recovery="Check SSH reachability and retry the baseline probe.",
+                    )
+                if request:
+                    rows[-1]["reason"] = (
+                        f"{request.name} real request did not return. {request.recovery}"
+                    )
+                evidence = {
+                    "probes": rows,
+                    "reason": rows[-1]["reason"],
+                    "recovery": rows[-1]["recovery"],
+                }
+                return HostActionResult(False, evidence, NO_VERDICT_ERROR_CODE)
+            exit_code = int(result.returncode)
+            expectation = probe.expect_output_contains
+            stdout, stderr = result.stdout or "", result.stderr or ""
+            # Nothing expected is not an expectation met: it is reported as None.
+            matched: bool | None = None
+            if request:
+                matched = request.answered(stdout)
+            elif expectation is not None:
+                matched = expectation in "\n".join((stdout, stderr))
+            if exit_code == 0 and matched is not False:
+                rows.append(
+                    {
+                        "name": probe.name,
+                        "ok": True,
+                        "exit_code": exit_code,
+                        "expectation_met": matched,
+                        "outcome": "passed",
+                    }
+                )
+                break
+            classified = (
+                classify_macos_session_context_failure(result)
+                if classify_gui_failures
+                else None
             )
-        except Exception:
+            failure = (
+                _bridge_failure(classified.error_code, classified.reason)
+                if classified is not None
+                else standard_probe_failure(probe.name, exit_code)
+                or classify_declared_failure(
+                    probe.name, exit_code, request=request, stdout=stdout, stderr=stderr
+                )
+            )
             rows.append(
                 _failed_row(
-                    probe,
-                    exit_code=None,
-                    expectation_met=None,
-                    failure=_bridge_failure(
-                        BRIDGE_CALL_RAISED_CAUSE, BRIDGE_CALL_RAISED_REASON
-                    ),
+                    probe, exit_code=exit_code, expectation_met=matched, failure=failure
                 )
             )
-            if not classify_gui_failures:
-                rows[-1].update(
-                    cause="host_session_command_unavailable",
-                    reason="the SSH user-session command did not return",
-                    recovery="Check SSH reachability and retry the baseline probe.",
-                )
-            if request:
-                rows[-1]["reason"] = (
-                    f"{request.name} real request did not return. {request.recovery}"
-                )
-            evidence = {
-                "probes": rows,
-                "reason": rows[-1]["reason"],
-                "recovery": rows[-1]["recovery"],
-            }
-            return HostActionResult(False, evidence, NO_VERDICT_ERROR_CODE)
-        exit_code = int(result.returncode)
-        expectation = probe.expect_output_contains
-        stdout, stderr = result.stdout or "", result.stderr or ""
-        # Nothing expected is not an expectation met: it is reported as None.
-        matched: bool | None = None
-        if request:
-            matched = request.answered(stdout)
-        elif expectation is not None:
-            matched = expectation in "\n".join((stdout, stderr))
-        if exit_code == 0 and matched is not False:
-            rows.append(
+            if failure["cause"] == UNDECLARED_EXIT.cause and attempt == 0:
+                rows[-1].update(outcome="retrying", attempt=1)
+                continue
+            return HostActionResult(
+                False,
                 {
-                    "name": probe.name,
-                    "ok": True,
-                    "exit_code": exit_code,
-                    "expectation_met": matched,
-                    "outcome": "passed",
-                }
+                    "probes": rows,
+                    "reason": failure["reason"],
+                    "recovery": failure["recovery"],
+                },
+                NO_VERDICT_ERROR_CODE
+                if failure["cause"] == BRIDGE_UNDELIVERED_CAUSE
+                else FAILED_ERROR_CODE,
             )
-            continue
-        classified = (
-            classify_macos_session_context_failure(result)
-            if classify_gui_failures
-            else None
-        )
-        failure = (
-            _bridge_failure(classified.error_code, classified.reason)
-            if classified is not None
-            else standard_probe_failure(probe.name, exit_code)
-            or classify_declared_failure(
-                probe.name, exit_code, request=request, stdout=stdout, stderr=stderr
-            )
-        )
-        rows.append(
-            _failed_row(
-                probe, exit_code=exit_code, expectation_met=matched, failure=failure
-            )
-        )
-        return HostActionResult(
-            False,
-            {
-                "probes": rows,
-                "reason": failure["reason"],
-                "recovery": failure["recovery"],
-            },
-            NO_VERDICT_ERROR_CODE
-            if failure["cause"] == BRIDGE_UNDELIVERED_CAUSE
-            else FAILED_ERROR_CODE,
-        )
     return HostActionResult(True, {"probes": rows})
 
 

@@ -1,7 +1,8 @@
 {
  "id": "capture-golden-state",
  "title": "Capture golden state",
- "status": "draft-copy",
+ "status": "observed",
  "page": "test-machines",
- "position": 1
+ "position": 1,
+ "summary": "Capture a new golden through the governed operation to seal current cause-bearing probes. Keep live harness logins and browser identities outside the archive. An undeclared nonzero probe exit retries once with both attempts retained; a declared failure stops immediately."
 }

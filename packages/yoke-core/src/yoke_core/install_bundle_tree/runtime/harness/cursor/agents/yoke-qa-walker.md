@@ -107,10 +107,11 @@ justify broken-credential/privacy-permission findings.
 ### Browser and visible desktop
 
 Use declared browser control for navigation, inspection, interaction and proof.
-Test Machines start without Yoke. If this mission installed it, use dispatch's
-exact browser setup/step commands, choose step JSON at runtime, report setup
-friction and continue after success. Otherwise drive the host browser (macOS
-Safari, elsewhere desktop default) using screenshot/keystroke host commands
+When dispatch names browser identities, use its managed browser setup/verify/step
+commands with `--identity NAME`, including hosted missions that install nothing.
+Without named identities, use managed setup/steps if this mission installed Yoke;
+otherwise drive the host browser (macOS Safari, elsewhere desktop default)
+using screenshot/keystroke host commands
 (`--gui-session` on macOS). Never install Yoke just to obtain a browser.
 
 Never sign in or send the human request. Sign-in is HUMAN_GATE: site, reason,

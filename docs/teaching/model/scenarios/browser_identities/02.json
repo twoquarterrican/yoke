@@ -1,16 +1,16 @@
 {
  "id": "02",
  "title": "Declare personas before signing in",
- "status": "draft-copy",
+ "status": "observed",
  "audience": "both",
  "when": "Test needs authenticated behavior or more than one account",
- "need": "A browser identity is a persona profile across declared sites. Declare origins and signed-in probes in browser-control; default exists. Cases choose browser_identity; missions can name several. API/CLI credentials remain separate capability secrets.",
+ "need": "Declare personas and each target origin with signed-in probes in browser-control. Hosted signed-in missions set method_config.browser_identities, such as [\"operator\"]. Named identities select managed setup, verification and steps even without installing Yoke; expired sites return a human gate naming identity, site and account. API/CLI credentials stay separate.",
  "disclosure": "current cue",
  "surface": "Browser scenario method configuration → browser-identities reference.",
- "gap": "Feature teaching exists in depth; add an entry from authenticated test authoring rather than teaching every persona at startup.",
- "review": "Pending exact recipe proof.",
+ "gap": "Live signed-in prod mission proof remains a release obligation.",
+ "review": "Dispatch selection is covered for both mission executors, one or several identities, and missions without identities.",
  "recipes": ["yoke projects capability-settings get --project P --cap-type browser-control --json", "yoke browser authorize --help"],
  "plan_notes": ["JOURNEYS row 13", "outside both"],
- "sources": ["docs/public/reference/browser-scenarios.md", "docs/public/reference/qa-platform/browser-identities.md"],
+ "sources": ["docs/public/reference/browser-scenarios.md", "docs/public/reference/qa-platform/browser-identities.md", "packages/yoke-core/src/yoke_core/domain/agent_mission_review.py", "runtime/api/domain/test_agent_mission_browser_choice.py"],
  "position": 1
 }
