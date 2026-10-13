@@ -3,8 +3,23 @@
  "title": "17. Setup's Apply screen looks frozen",
  "status": "approved",
  "scope": "Yoke",
- "concepts": ["installation/entry"],
- "surfaces": ["setup-tui", "setup-agent"],
- "scenarios": ["install-entry"],
- "position": 7
+ "concepts": [
+  "installation/entry",
+  "installation/entry/apply-progress"
+ ],
+ "surfaces": [
+  "setup-tui",
+  "setup-agent"
+ ],
+ "scenarios": [
+  "install-entry"
+ ],
+ "position": 7,
+ "sources": [
+  "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_apply_steps.py",
+  "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_flow_apply.py",
+  "packages/yoke-cli/src/yoke_cli/config/onboard_relay_supervisor.py",
+  "runtime/api/cli/test_onboard_wizard_applying_summary.py",
+  "runtime/api/cli/test_onboard_relay_supervisor.py"
+ ]
 }

@@ -132,7 +132,7 @@ def apply_progress_lines(steps: list[dict[str, Any]]) -> dict[str, str]:
 
 
 def apply_progress_body(steps: list[dict[str, Any]]) -> list[Static]:
-    """Fixed-height grouped progress; the report retains exact step history."""
+    """Live totals and one status row per reviewed operation."""
     lines = apply_progress_lines(steps)
     widgets: list[Static] = [
         Static("Applying your setup.", classes="onboard-title"),
@@ -149,6 +149,12 @@ def apply_progress_body(steps: list[dict[str, Any]]) -> list[Static]:
             Static("", classes="onboard-spacer"),
             Static(lines["current"], id="apply-current", classes="onboard-plan-line"),
         ]
+    )
+    widgets.extend(
+        Static(
+            apply_step_line(step), id=f"apply-step-{index}", classes="onboard-plan-line"
+        )
+        for index, step in enumerate(steps)
     )
     return widgets
 

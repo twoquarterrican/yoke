@@ -2,38 +2,64 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import sys
-from yoke_cli.config.session_relay_instance import RELAY_LOGOUT_BEHAVIOR
+from typing import Mapping
 
-RELAY_PLIST_TARGET = "~/Library/LaunchAgents/com.upyoke.relay[.<environment-id>].plist"
+from yoke_cli.config import machine_config
+from yoke_cli.config.session_relay_instance import (
+    RELAY_LOGOUT_BEHAVIOR,
+    relay_instance_label,
+)
+from yoke_contracts.machine_config import schema
+
 UNIT_INSTALL_ACTION = "install-session-relay-unit"
 UNIT_ENABLE_ACTION = "enable-session-relay-user-service"
-RELAY_UNIT_TARGET = "~/.config/systemd/user/com.upyoke.relay[.<environment-id>].service"
 
 
-def lifecycle_steps() -> tuple[tuple[str, str], ...]:
+def lifecycle_steps(
+    *, config_path: str | Path, environment: str
+) -> tuple[tuple[str, str], ...]:
+    # Setup may not have written this connection yet. The writer preserves an
+    # existing prod marker and a new connection has no prod marker.
+    config_path = machine_config.config_path(config_path)
+    payload = machine_config.load_config(config_path)
+    connection = payload.get("connections", {}).get(environment, {})
+    label = relay_instance_label(
+        config_path=config_path,
+        environment=environment,
+        prod=schema.connection_is_prod(connection),
+    )
     if sys.platform == "linux":
         return (
-            (UNIT_INSTALL_ACTION, RELAY_UNIT_TARGET),
+            (UNIT_INSTALL_ACTION, f"~/.config/systemd/user/{label}.service"),
             (UNIT_ENABLE_ACTION, "systemd --user"),
         )
     return (
-        ("install-session-relay-plist", RELAY_PLIST_TARGET),
-        ("load-session-relay-login-item", "com.upyoke.relay"),
+        ("install-session-relay-plist", f"~/Library/LaunchAgents/{label}.plist"),
+        ("load-session-relay-login-item", label),
     )
 
 
-def complete_lines() -> tuple[str, ...]:
-    if sys.platform == "linux":
+def complete_lines(document: Mapping[str, object]) -> tuple[str, ...]:
+    if document.get("unit"):
         return (
-            f"Machine relay user unit: {RELAY_UNIT_TARGET}",
+            f"Machine relay user unit: {document['unit']}",
             "Machine relay starts at login and restarts on failure.",
             RELAY_LOGOUT_BEHAVIOR,
         )
-    return (f"Machine relay plist: {RELAY_PLIST_TARGET}",)
+    return (
+        (f"Machine relay plist: {document['plist']}",) if document.get("plist") else ()
+    )
 
 
-def report_document(*, planned: bool) -> dict[str, str | None]:
-    if sys.platform == "linux":
-        return {"unit": RELAY_UNIT_TARGET if planned else None}
-    return {"plist": RELAY_PLIST_TARGET if planned else None}
+def report_document(
+    *, planned: bool, config_path: str | Path, environment: str
+) -> dict[str, str | None]:
+    key = "unit" if sys.platform == "linux" else "plist"
+    target = (
+        lifecycle_steps(config_path=config_path, environment=environment)[0][1]
+        if planned
+        else None
+    )
+    return {key: target}

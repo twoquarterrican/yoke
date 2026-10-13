@@ -12,6 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from textual.css.query import NoMatches
 from textual.widgets import Static
 
 from yoke_cli.config import onboard_wizard_steps as steps
@@ -100,10 +101,17 @@ class ApplyFlow:
         try:
             self.query_one("#apply-overall", Static).update(lines["overall"])
             self.query_one("#apply-current", Static).update(lines["current"])
+            index = next(
+                i for i, candidate in enumerate(self._apply_steps) if candidate is step
+            )
+            row = self.query_one(f"#apply-step-{index}", Static)
+            row.update(steps.apply_step_line(step))
+            if status in {"running", "failed"}:
+                row.scroll_visible()
             for key in ("machine", "core", "project", "source"):
                 if key in lines:
                     self.query_one(f"#apply-group-{key}", Static).update(lines[key])
-        except Exception:  # noqa: BLE001 - body not mounted yet; model still updates
+        except NoMatches:  # Body not mounted yet; model still updates
             return
 
     def _match_apply_step(self, action: str, target: str) -> dict | None:

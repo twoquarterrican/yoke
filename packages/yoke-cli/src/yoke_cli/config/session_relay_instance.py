@@ -135,6 +135,15 @@ def _digest(config_path: Path, environment: str) -> str:
     return hashlib.sha256(identity).hexdigest()[:_INSTANCE_DIGEST_LENGTH]
 
 
+def relay_instance_label(
+    *, config_path: str | Path, environment: str, prod: bool
+) -> str:
+    """The service name shared by setup preview and the validated installer."""
+    if prod:
+        return PROD_RELAY_LABEL
+    return f"{NON_PROD_RELAY_LABEL_PREFIX}{_digest(_canonical(Path(config_path)), environment)}"
+
+
 def prod_https_environments(payload: Mapping[str, object]) -> tuple[str, ...]:
     """Return the sole connection class eligible for the legacy prod relay."""
     connections = payload.get("connections")
@@ -213,18 +222,18 @@ def resolve_relay_instance(
                 "machine relay requires exactly one prod https connection; "
                 f"configured prod https envs: {list(prod_environments)}"
             )
-        label = PROD_RELAY_LABEL
         state_dir = selected_home / PROD_RELAY_STATE_DIR_NAME
     else:
         instance_digest = _digest(selected_config, selected_environment)
-        label = f"{NON_PROD_RELAY_LABEL_PREFIX}{instance_digest}"
         state_dir = selected_home / NON_PROD_RELAY_STATE_ROOT_NAME / instance_digest
     return RelayInstance(
         environment=selected_environment,
         config_path=selected_config,
         yoke_home=selected_home,
         prod=is_prod,
-        label=label,
+        label=relay_instance_label(
+            config_path=selected_config, environment=selected_environment, prod=is_prod
+        ),
         state_dir=state_dir,
         follows_served_release=follows_served_release,
         machine_active=(
@@ -245,5 +254,6 @@ __all__ = [
     "RelayInstanceError",
     "prod_https_environments",
     "resolve_relay_instance",
+    "relay_instance_label",
     "strip_relay_owned_python_state",
 ]

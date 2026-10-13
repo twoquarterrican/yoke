@@ -1,0 +1,22 @@
+{
+ "id": "apply-progress",
+ "title": "Follow Apply without mistaking a running operation for a frozen screen",
+ "status": "observed",
+ "audience": "human",
+ "when": "After confirming Review",
+ "need": "Retain each operation’s row as it moves from pending to running to complete; distinguish skipped and failed work. Name the real relay service file.",
+ "disclosure": "live progress",
+ "surface": "Applying screen",
+ "review": "Source tests and the mixed-status SVG prove candidate rendering; installed-machine campaign proof remains separate.",
+ "plan_notes": [
+  "FIRST-USER 17"
+ ],
+ "sources": [
+  "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_apply_steps.py",
+  "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_flow_apply.py",
+  "packages/yoke-cli/src/yoke_cli/config/onboard_relay_supervisor.py",
+  "runtime/api/cli/test_onboard_wizard_applying_summary.py",
+  "runtime/api/cli/test_onboard_relay_supervisor.py"
+ ],
+ "position": 90
+}

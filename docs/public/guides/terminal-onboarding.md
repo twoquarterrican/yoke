@@ -50,6 +50,12 @@ GitHub shows no GitHub App binding in Review; it disables GitHub automation,
 and does not change the existing setup-publication behavior. Cancel at Review
 to leave Apply's writes undone.
 
+During Apply, each reviewed operation shows its status: ○ pending, ◐ running,
+✔ complete, ⊘ skipped or ✗ failed. Plain terminals use `o`, `~`, `+`, `-` and
+`x`. Overall and group counts summarize completion; the list follows the running
+operation and supports PageUp/PageDown. Relay steps name the actual plist or
+user-service file for the selected connection, including its instance suffix.
+
 On a wizard screen containing a link or one-time code, press **Ctrl-Y** to
 copy the exact value. A screen with both offers them in sequence; the footer
 names what the next press will take. **Ctrl-O** opens the screen's link in your

@@ -196,6 +196,8 @@ def build_report(
             ),
             installed=False,
             local_destination=local_destination,
+            config_path=cfg_path,
+            environment=env_name,
         ),
     }
     if normalized_project_mode == PROJECT_MODE_EDIT_YOKE_SOURCE:
