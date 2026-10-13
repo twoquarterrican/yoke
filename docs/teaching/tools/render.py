@@ -1,7 +1,7 @@
 """Shared HTML page shell, escaping, wrapping and line measurement.
 
 Views are static, dependency-free HTML. Every emitted line stays within 80
-columns so the committed files read cleanly in review and stay inside the
+columns so the generated pages remain readable and stay inside the
 shared 350-line teaching limit without minifying.
 """
 
@@ -14,10 +14,14 @@ from posixpath import dirname, normpath, relpath
 WIDTH = 80
 LINE_LIMIT = 350
 NAV = (
-    ("index.html", "Overview"), ("concepts.html", "Concepts"),
-    ("surfaces.html", "Surfaces"), ("scenarios.html", "Scenarios"),
-    ("plan-coverage.html", "Plan coverage"), ("evidence.html", "Evidence"),
-    ("boundaries.html", "Boundaries"), ("gaps.html", "Gaps"),
+    ("index.html", "Overview"),
+    ("concepts.html", "Concepts"),
+    ("surfaces.html", "Surfaces"),
+    ("scenarios.html", "Scenarios"),
+    ("plan-coverage.html", "Plan coverage"),
+    ("evidence.html", "Evidence"),
+    ("boundaries.html", "Boundaries"),
+    ("gaps.html", "Gaps"),
 )
 _BASE = "/teaching/views/"
 
@@ -110,8 +114,9 @@ def text_field(label: str, value, indent: str = "") -> list[str]:
     return field_line(label, esc(value) if value else "", indent)
 
 
-def links_field(label: str, from_page: str, targets: list[tuple[str, str, str]],
-                indent: str = "") -> list[str]:
+def links_field(
+    label: str, from_page: str, targets: list[tuple[str, str, str]], indent: str = ""
+) -> list[str]:
     """``targets`` holds ``(page, anchor, label)`` triples."""
     value = ", ".join(link(from_page, p, text, a) for p, a, text in targets)
     return field_line(label, value, indent)
