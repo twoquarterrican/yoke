@@ -14,7 +14,8 @@ landed yet, which the lane-based check owns).
 
 The diff is read from git when a checkout on this machine holds the merge
 commit, and otherwise from the project's GitHub capability, which is how a
-hosted control plane without checkouts answers it.
+hosted control plane without checkouts answers it
+(:mod:`path_claims_landed_boundary_github` reads the complete paged list).
 """
 
 from __future__ import annotations
@@ -23,11 +24,6 @@ import json
 import subprocess
 from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple
-from urllib.parse import quote
-
-from yoke_contracts.github_app_installation_permissions import (
-    GITHUB_CONTENTS_READ_PERMISSION_LEVELS,
-)
 from yoke_core.domain import db_backend
 from yoke_core.domain.gate_satisfier_facts import OBSERVED_LANDED_MERGE
 from yoke_core.domain.gate_satisfier_ladder import LadderResolution
@@ -44,16 +40,14 @@ from yoke_core.domain.path_claims_boundary_git import (
     run_git,
 )
 from yoke_core.domain.path_claims_boundary_targets import path_strings_for_target_ids
+from yoke_core.domain.path_claims_landed_boundary_github import (
+    LandedBoundaryUnprovable,
+    diff_from_github,
+)
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.schema_common import _table_exists
 
-#: GitHub's compare endpoint lists at most this many changed files.
-GITHUB_COMPARE_FILE_LIMIT = 300
 LANDED_MERGE_RUNG = "landed_merge"
-
-
-class LandedBoundaryUnprovable(RuntimeError):
-    """The landed merge's diff could not be read from any source."""
 
 
 def landing_for_boundary(conn: Any, item_id: int) -> Optional[ItemLanding]:
@@ -94,66 +88,6 @@ def _diff_from_git(
     return parent, touched, renames
 
 
-def _diff_from_github(
-    conn: Any, project_slug: str, merge_sha: str
-) -> Optional[Tuple[str, List[str], List[Tuple[str, str]]]]:
-    from yoke_core.domain.github_actions_rest import rest_get
-    from yoke_core.domain.project_github_auth import (
-        MissingCapability,
-        ProjectGithubAuthError,
-        resolve_project_github_auth,
-    )
-
-    try:
-        auth = resolve_project_github_auth(
-            project_slug,
-            conn=conn,
-            required_permissions=GITHUB_CONTENTS_READ_PERMISSION_LEVELS,
-        )
-    except MissingCapability:
-        return None
-    except ProjectGithubAuthError as exc:
-        raise LandedBoundaryUnprovable(
-            f"the project's GitHub capability is unusable: {exc.code}: {exc}"
-        ) from exc
-    try:
-        commit = rest_get(f"/repos/{auth.repo}/commits/{merge_sha}", token=auth.token)
-        parents = (commit or {}).get("parents") or []
-        if not parents:
-            raise LandedBoundaryUnprovable(
-                f"GitHub has no parent for merge {merge_sha} in {auth.repo}"
-            )
-        parent = str(parents[0].get("sha") or "")
-        compare = rest_get(
-            f"/repos/{auth.repo}/compare/{quote(parent)}...{quote(merge_sha)}",
-            token=auth.token,
-        )
-    except LandedBoundaryUnprovable:
-        raise
-    except Exception as exc:
-        raise LandedBoundaryUnprovable(
-            f"GitHub could not read merge {merge_sha}: {type(exc).__name__}: {exc}"
-        ) from exc
-    if compare is None:
-        raise LandedBoundaryUnprovable(
-            f"GitHub cannot compare {parent}...{merge_sha} in {auth.repo}"
-        )
-    files = list(compare.get("files") or [])
-    if len(files) >= GITHUB_COMPARE_FILE_LIMIT:
-        raise LandedBoundaryUnprovable(
-            f"merge {merge_sha} changes {len(files)} or more files, past the "
-            f"{GITHUB_COMPARE_FILE_LIMIT}-file list GitHub returns; rerun the "
-            "close-out on a machine whose project checkout has fetched the merge"
-        )
-    touched = list(dict.fromkeys(str(f.get("filename") or "") for f in files))
-    renames = [
-        (str(f["previous_filename"]), str(f.get("filename") or ""))
-        for f in files
-        if f.get("status") == "renamed" and f.get("previous_filename")
-    ]
-    return parent, [path for path in touched if path], renames
-
-
 def _local_checkouts(conn: Any, item_id: int, project_id: int) -> List[str]:
     from yoke_core.domain.project_checkout_locations import (
         checkout_for_project_id,
@@ -179,7 +113,7 @@ def landed_merge_diff(
                 return ("git", *_diff_from_git(repo_path, merge_sha))
             except BoundaryCheckError as exc:
                 raise LandedBoundaryUnprovable(str(exc)) from exc
-    remote = _diff_from_github(conn, project_slug, merge_sha)
+    remote = diff_from_github(conn, project_slug, merge_sha)
     if remote is None:
         raise LandedBoundaryUnprovable(
             f"no checkout on this machine holds merge {merge_sha} and the "
@@ -277,7 +211,6 @@ def check_landed_boundary(
 
 
 __all__ = [
-    "GITHUB_COMPARE_FILE_LIMIT",
     "LANDED_MERGE_RUNG",
     "LandedBoundaryUnprovable",
     "check_landed_boundary",

@@ -43,7 +43,9 @@ query($owner: String!, $name: String!, $number: Int!, $cursor: String) {
 """
 
 # GitHub returns at most 100 file nodes per page and stops listing a pull
-# request's files at 3000, so a complete read is at most thirty pages.
+# request's files at 3000, so a complete read is at most thirty pages. A
+# listing that reaches the ceiling may be missing paths and is refused.
+PR_FILES_LISTING_LIMIT = 3000
 _PR_FILES_PAGE_LIMIT = 30
 
 
@@ -53,7 +55,8 @@ def read_pr_changed_files(
     """Every path ``pr_num`` changed, in the order the listing reports.
 
     Returns ``(paths, None)`` — an empty tuple only when the pull request
-    genuinely lists no files — or ``(None, error_detail)``.
+    genuinely lists no files — or ``(None, error_detail)``, including for a
+    listing at GitHub's ceiling, which is never treated as complete.
     """
     auth, auth_err = resolve_auth_detail(ctx, PR_READ)
     if auth_err or auth is None:
@@ -93,6 +96,13 @@ def read_pr_changed_files(
             path = str(node.get("path") or "")
             if path:
                 paths.append(path)
+        if len(paths) >= PR_FILES_LISTING_LIMIT:
+            return None, (
+                f"pull request {pr_num} lists {len(paths)} or more changed "
+                f"files, the {PR_FILES_LISTING_LIMIT}-file ceiling GitHub "
+                "lists, so its file set may be incomplete; record the "
+                "landing from a checkout that holds the merge commit"
+            )
         page_info = files.get("pageInfo") or {}
         cursor = str(page_info.get("endCursor") or "")
         if not page_info.get("hasNextPage") or not cursor:
@@ -100,4 +110,4 @@ def read_pr_changed_files(
     return tuple(dict.fromkeys(paths)), None
 
 
-__all__ = ["read_pr_changed_files"]
+__all__ = ["PR_FILES_LISTING_LIMIT", "read_pr_changed_files"]
