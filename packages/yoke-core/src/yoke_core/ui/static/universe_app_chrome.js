@@ -158,7 +158,7 @@ export function createWorkbenchChrome({
     !hostFillsTopbarStart && mode !== "hosted"
       ? {
           kind: "human",
-          label: mode === "selfhost" ? "actor unavailable" : "local actor",
+          label: mode === "self-host" ? "actor unavailable" : "local actor",
         }
       : null
   ));
