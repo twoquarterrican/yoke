@@ -23,6 +23,16 @@ from __future__ import annotations
 
 
 PYTHON_HELPERS_TABLES: dict[str, dict] = {
+    "runtime.api.domain.test_session_native_turn_end": {
+        "columns": [("_pending", "test helper")],
+        "notes": (
+            "Native turn tests queue a message and inspect probe targets through "
+            "_pending(conn). Wrong guess: _stuck remains importable after the "
+            "fixture rename. Update all importing test consumers; stale running "
+            "recipients without an idle route now qualify for stopped resume, "
+            "so this helper does not assert that the wake sweep refuses them."
+        ),
+    },
     "runtime.api.cli.onboard_wizard_test_helpers": {
         "columns": [
             ("advance_past_path", "callable"),
