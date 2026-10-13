@@ -52,6 +52,9 @@ def resolve_project_context(
     visible_project_ids: Collection[int] | None = None,
 ) -> tuple[int, str] | None:
     """Resolve the real target project for a PROJECT-scoped op (or None)."""
+    if request.target.kind == "item":
+        item_id = request.target.item_id
+        return resolve_item_project(conn, int(item_id)) if item_id is not None else None
     if entry.function_id == "claims.path.override":
         try:
             return resolve_path_claim_project(
@@ -72,15 +75,11 @@ def resolve_project_context(
         return resolve_item_project(conn, int(item_id))
     if entry.function_id.startswith("github_actions."):
         return _resolve_github_actions_project_context(
-            conn,
-            request,
-            visible_project_ids=visible_project_ids,
+            conn, request, visible_project_ids=visible_project_ids
         )
     if entry.function_id in PAYLOAD_NAMED_PROJECT_FUNCTIONS:
         return _resolve_named_project_context(
-            conn,
-            request,
-            visible_project_ids=visible_project_ids,
+            conn, request, visible_project_ids=visible_project_ids
         )
     if entry.function_id.startswith("ouroboros.entry.") and request.payload.get(
         "entry_id"
@@ -187,7 +186,7 @@ def resolve_project_context(
         except LookupError:
             return None
         return project_id, slug_for_project_id(conn, project_id)
-    item_id = target.item_id or target.epic_id
+    item_id = target.epic_id
     if item_id is not None:
         item_project = resolve_item_project(conn, int(item_id))
         if item_project is not None:
