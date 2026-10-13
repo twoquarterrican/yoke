@@ -46,6 +46,7 @@ from yoke_cli.config.onboard_wizard_flow_publish import PublishFlow
 from yoke_cli.config.onboard_wizard_flow_publish_manual import ManualPublishFlow
 from yoke_cli.config.onboard_wizard_path import PathFlow
 from yoke_cli.config.onboard_wizard_input_entry import InputEntry
+from yoke_cli.config.onboard_wizard_redraw import FullFrameRedraw
 from yoke_cli.config.onboard_wizard_state import _PendingForm, _PendingInput, _View
 from yoke_cli.config.onboard_wizard_stored_connection import StoredConnectionHydration
 from yoke_cli.config.onboard_wizard_view_helpers import ViewHelpers
@@ -77,6 +78,7 @@ class OnboardWizardApp(
     CopyOpenFlow,
     StoredConnectionHydration,
     ViewHelpers,
+    FullFrameRedraw,
     App[None],
 ):
     CSS_PATH = "onboard_wizard.tcss"
@@ -254,11 +256,8 @@ class OnboardWizardApp(
     async def _swap_body(self) -> None:
         view = self._history[-1]
         body = self.query_one(f"#{BODY_ID}")
-        # One frame for the whole swap: painting the emptied body and then the
-        # new view as two frames lets the outgoing view's glyphs survive beside
-        # the incoming ones on terminals without synchronized output. The new
-        # view also starts at the top — a scroll offset carried over from a
-        # taller view would draw a shorter one from its middle.
+        # The batch hides the emptied body; the erased full frame requested after
+        # it repaints every cell. The new view starts at the top, not mid-way.
         with self.batch_update():
             await body.remove_children()
             body.scroll_home(animate=False)
@@ -280,6 +279,7 @@ class OnboardWizardApp(
             # so they are rebound with it rather than left pointing at the
             # screen the operator just left.
             self._set_copy_targets(view.copy_targets)
+        self._request_full_frame()
 
     def _refocus_body(self) -> None:
         """Move focus to the body's first focusable child (SelectionList/Input).
