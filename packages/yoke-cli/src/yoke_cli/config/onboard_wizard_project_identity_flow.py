@@ -51,7 +51,7 @@ class ProjectIdentityFlow:
                 retry=lambda: self._after_local_checkout_source(value),
             )
             return
-        if local_ref is not None:
+        if local_ref is not None and not self._project_link_unlinked(local_ref, value):
             self._lookup_recorded_project(local_ref, value)
             return
         if not remote or not self.result.project_github_repo:
@@ -101,10 +101,8 @@ class ProjectIdentityFlow:
                     match_source=existing_project_lookup.MATCH_SOURCE_LOCAL_CHECKOUT,
                     local_source=local_ref.source,
                 ),
-                on_error=lambda exc: self._goto_existing_project_lookup_error(
-                    exc,
-                    retry=lambda: self._after_local_checkout_source(value),
-                    local_destination=True,
+                on_error=lambda exc: self._after_recorded_project_error(
+                    exc, local_ref, value
                 ),
                 group="onboard-existing-project",
             )
@@ -133,12 +131,57 @@ class ProjectIdentityFlow:
                 match_source=existing_project_lookup.MATCH_SOURCE_LOCAL_CHECKOUT,
                 local_source=local_ref.source,
             ),
-            on_error=lambda exc: self._goto_existing_project_lookup_error(
-                exc,
-                retry=lambda: self._after_local_checkout_source(value),
+            on_error=lambda exc: self._after_recorded_project_error(
+                exc, local_ref, value
             ),
             group="onboard-existing-project",
         )
+
+    def _after_recorded_project_error(
+        self: _Shell, exc: BaseException, local_ref: Any, value: str
+    ) -> None:
+        """Offer to unlink a project the selected install doesn't let us use."""
+
+        def retry() -> None:
+            self._after_local_checkout_source(value)
+
+        if isinstance(
+            exc,
+            (
+                existing_project_lookup.ExistingProjectReferenceError,
+                existing_project_lookup.ExistingProjectAccessError,
+            ),
+        ):
+            self._goto_stale_project_link(
+                exc,
+                local_ref,
+                retry=retry,
+                unlink=lambda: self._unlink(local_ref, value),
+            )
+            return
+        self._goto_existing_project_lookup_error(
+            exc,
+            retry=retry,
+            local_destination=self.result.destination == DESTINATION_LOCAL,
+        )
+
+    def _project_link_key(self: _Shell, local_ref: Any, value: str) -> tuple:
+        return (
+            value,
+            local_ref.project_id,
+            self.result.destination,
+            self.result.api_url,
+        )
+
+    def _project_link_unlinked(self: _Shell, local_ref: Any, value: str) -> bool:
+        unlinked = getattr(self, "_unlinked_project_link", None)
+        return unlinked == self._project_link_key(local_ref, value)
+
+    def _unlink(self: _Shell, local_ref: Any, value: str) -> None:
+        # Nothing is written here: Apply registers the new project for this
+        # folder and its install rewrites the manifest, replacing the old link.
+        self._unlinked_project_link = self._project_link_key(local_ref, value)
+        self._after_local_checkout_source(value)
 
     def _goto_project_details(self: _Shell) -> None:
         from yoke_cli.config.onboard_wizard_app import _View

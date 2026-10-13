@@ -88,14 +88,35 @@ def test_project_branch_and_custom_connection_are_read(checkout, monkeypatch, tm
     ]
 
 
-def test_unreadable_project_branch_preserves_install(checkout, monkeypatch):
+@pytest.mark.parametrize(
+    "failure", [RuntimeError("project '7' not found"), OSError("connection refused")]
+)
+def test_unreachable_owner_still_removes_on_current_branch(
+    checkout, monkeypatch, failure
+):
     def fail(*args):
-        raise RuntimeError("connection unavailable")
+        raise failure
+
+    git(checkout, "switch", "-c", "feature")
+    monkeypatch.setattr(uninstall_commit, "dispatch", fail)
+    report = uninstall(checkout)
+    assert report["commit"]["status"] == "created"
+    assert not (checkout / ".yoke/install-manifest.json").exists()
+    assert git(checkout, "branch", "--show-current") == "feature"
+    [warning] = [
+        w for w in report["warnings"] if "project_uninstall_branch_unverified" in w
+    ]
+    assert str(failure) in warning
+    assert "'feature'" in warning
+
+
+def test_unreachable_owner_still_refuses_dirty_tree(checkout, monkeypatch):
+    def fail(*args):
+        raise RuntimeError("project '7' not found")
 
     monkeypatch.setattr(uninstall_commit, "dispatch", fail)
-    with pytest.raises(
-        ProjectInstallError, match="project_uninstall_default_branch_unavailable"
-    ):
+    (checkout / "app.txt").write_text("operator changed it\n")
+    with pytest.raises(ProjectInstallError, match="project_uninstall_dirty_tree"):
         uninstall(checkout)
     assert (checkout / ".yoke/install-manifest.json").is_file()
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from yoke_contracts import harness_settings_ledger as ledger
 from yoke_contracts.harness_unattended_posture import (
     CODEX_POSTURE_KEYS,
     CODEX_PROJECTS_TABLE,
@@ -168,10 +169,65 @@ def _apply(text: str, wanted: List[Tuple[str, str]], record: Dict[str, Any]) -> 
     return "\n".join(lines) + "\n"
 
 
+def record_written(target: Path, record: Dict[str, Any]) -> List[str]:
+    """Record what a written :func:`plan` changed; return unrecorded reports."""
+    values = dict(CODEX_POSTURE_KEYS)
+    entries = [ledger.codex_key_entry(target, k, values[k]) for k in record["set_keys"]]
+    if record["trusted_checkout"]:
+        entries.append(ledger.codex_trust_entry(target, record["trusted_checkout"]))
+    reports = (ledger.record(entry) for entry in entries)
+    return [f"codex: {report}" for report in reports if report]
+
+
+def remove_top_level_key(text: str, key: str) -> Optional[str]:
+    """Drop one top-level ``key = ...`` line, or ``None`` when it is absent."""
+    lines = text.splitlines()
+    index = _key_line(lines, _top_level_span(lines), key)
+    if index is None:
+        return None
+    del lines[index]
+    # plan() separates inserted keys from a following table with a blank
+    # line; once the keys are gone that leaves two in a row.
+    if (
+        0 < index < len(lines)
+        and not lines[index].strip()
+        and not lines[index - 1].strip()
+    ):
+        del lines[index]
+    return "\n".join(lines) + "\n" if lines else ""
+
+
+def remove_trust_table(text: str, checkout_key: str) -> Optional[str]:
+    """Drop the trust table :func:`plan` appended, exactly as it wrote it.
+
+    ``None`` when no table with that exact header holds only the trust line —
+    an edited or reformatted table is the operator's, not Yoke's.
+    """
+    lines = text.splitlines()
+    header = _trust_table_header(checkout_key)
+    trust_line = f"{CODEX_TRUST_LEVEL_KEY} = {_toml_string(CODEX_TRUST_LEVEL)}"
+    for index, line in enumerate(lines):
+        if line.strip() != header:
+            continue
+        end = index + 1
+        while end < len(lines) and not lines[end].strip().startswith("["):
+            end += 1
+        body = [entry.strip() for entry in lines[index + 1 : end] if entry.strip()]
+        if body != [trust_line]:
+            return None
+        start = index - 1 if index and not lines[index - 1].strip() else index
+        del lines[start:end]
+        return "\n".join(lines) + "\n" if lines else ""
+    return None
+
+
 __all__ = [
     "CodexConfigUnreadable",
     "changed",
     "parse_config",
     "plan",
     "read_config_text",
+    "record_written",
+    "remove_top_level_key",
+    "remove_trust_table",
 ]

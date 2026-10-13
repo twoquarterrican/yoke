@@ -21,6 +21,7 @@ from yoke_contracts.codex_config_posture import (
     changed,
     plan,
     read_config_text,
+    record_written,
 )
 
 
@@ -61,6 +62,7 @@ def configure_codex_unattended_posture(
         actions.append(
             f"codex: enabled unattended mode in {target} ({', '.join(granted)})"
         )
+        actions.extend(record_written(target, record))
     for conflict in record["conflicts"]:
         actions.append(
             f"codex: left your own setting in place — {conflict}; "

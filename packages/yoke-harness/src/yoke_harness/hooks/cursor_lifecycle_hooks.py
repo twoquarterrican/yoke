@@ -21,9 +21,9 @@ from typing import Any, Optional
 from yoke_contracts.hook_runner.config_owner import (
     CONFIG_OWNER_ENV_VAR,
     CURSOR_LIFECYCLE_COMMAND_MARKER,
-    CURSOR_LIFECYCLE_COMMAND_MARKERS,
     CURSOR_PROJECT_CONFIG_OWNER,
     CURSOR_USER_LIFECYCLE_OWNER,
+    is_cursor_lifecycle_entry,
 )
 from yoke_harness.hooks.shell_command import hook_shell_command
 
@@ -124,15 +124,6 @@ def _lifecycle_entry(event_verb: str) -> dict[str, Any]:
     }
 
 
-def _is_yoke_lifecycle_entry(entry: Any) -> bool:
-    if not isinstance(entry, dict):
-        return False
-    command = entry.get("command")
-    return isinstance(command, str) and any(
-        marker in command for marker in CURSOR_LIFECYCLE_COMMAND_MARKERS
-    )
-
-
 def ensure_user_lifecycle_hooks(
     *,
     hooks_path: Optional[Path] = None,
@@ -164,7 +155,7 @@ def ensure_user_lifecycle_hooks(
             kept = [
                 e
                 for e in existing
-                if not _is_yoke_lifecycle_entry(e)
+                if not is_cursor_lifecycle_entry(e)
                 and not (
                     isinstance(e, dict)
                     and isinstance(e.get("command"), str)
