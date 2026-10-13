@@ -15,6 +15,7 @@ MISSED_CONSUMERS = (
     "runtime/api/domain/test_project_install_checkout_identity.py",
     "runtime/api/cli/test_db_router_connected_retired.py",
     "runtime/api/cli/test_onboard_machine_setup.py",
+    "runtime/api/cli/test_hosted_machine_authorization_identity.py",
 )
 
 

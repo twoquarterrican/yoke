@@ -202,7 +202,7 @@ def test_start_sends_identity_and_platform_before_browser_approval(
     monkeypatch, tmp_path, self_host
 ):
     config_path = tmp_path / "config.json"
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, config_path)
     monkeypatch.setattr(auth, "machine_display_name", lambda: "Build Host")
     monkeypatch.setattr(auth.platform, "system", lambda: "Darwin")
     requests = []

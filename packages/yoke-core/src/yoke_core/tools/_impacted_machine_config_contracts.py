@@ -18,6 +18,7 @@ MACHINE_CONFIG_CONTRACTS = (
             "runtime/api/cli/test_board_policy_authority.py",
             "runtime/api/cli/test_db_router_connected_retired.py",
             "runtime/api/cli/test_github_machine_shared_config_cleanup.py",
+            "runtime/api/cli/test_hosted_machine_authorization_identity.py",
             "runtime/api/cli/test_onboard_machine_setup.py",
             "runtime/api/cli/test_operator_cli_release_follow.py",
             "runtime/api/cli/test_worker_machine_config_isolation.py",
