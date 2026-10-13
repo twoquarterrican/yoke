@@ -70,7 +70,12 @@ def test_future_created_repository_defers_binding_identity_until_apply(
         async with app.run_test() as pilot:
             app._after_prefix("WIDG")
             await pilot.pause()
-            assert "Here's your progress map." in _body_text(app)
+            assert "Review what Yoke will save." in _body_text(app)
+            assert [v.kind for v in app.result.board_art_variants] == [
+                "ASCII",
+                "Emoji",
+                "Mixed",
+            ]
 
     asyncio.run(scenario())
 
@@ -96,7 +101,12 @@ def test_future_fork_discards_source_binding_identity() -> None:
         async with app.run_test() as pilot:
             app._after_prefix("WIDG")
             await pilot.pause()
-            assert "Here's your progress map." in _body_text(app)
+            assert "Review what Yoke will save." in _body_text(app)
+            assert [v.kind for v in app.result.board_art_variants] == [
+                "ASCII",
+                "Emoji",
+                "Mixed",
+            ]
 
     asyncio.run(scenario())
 

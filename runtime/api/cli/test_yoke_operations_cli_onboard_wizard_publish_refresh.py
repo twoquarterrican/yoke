@@ -113,8 +113,12 @@ def test_manual_create_refresh_selects_exact_repo_and_continues_in_run(
             assert "How should Yoke manage this project on GitHub?" in _body_text(app)
             await pilot.press("enter")  # GitHub binding
             await pilot.pause()
-            assert "Here's your progress map." in _body_text(app)
             assert "Connect your hosting provider?" in _body_text(app)
+            assert [v.kind for v in app.result.board_art_variants] == [
+                "ASCII",
+                "Emoji",
+                "Mixed",
+            ]
             await skip_hosting(pilot)
             assert "Review what Yoke will save." in _body_text(app)
             await pilot.press("enter")

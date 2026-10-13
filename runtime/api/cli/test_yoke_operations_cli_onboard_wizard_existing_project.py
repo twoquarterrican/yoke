@@ -129,7 +129,11 @@ def test_local_checkout_manifest_project_id_skips_project_setup(
     assert applied["existing_project_id"] == 37
     assert applied["project_slug"] == "externalwebapp"
     assert applied["project_name"] == "ExternalWebapp"
-    assert len(app.result.board_art_variants) == 1
+    assert [v.kind for v in app.result.board_art_variants] == [
+        "ASCII",
+        "Emoji",
+        "Mixed",
+    ]
 
 
 @pytest.mark.parametrize("columns", [40, 80])
@@ -205,7 +209,11 @@ def test_stored_checkout_project_id_shows_confirmation_picker(
     assert applied["existing_project_id"] == 37
     assert applied["project_slug"] == "externalwebapp"
     assert applied["project_name"] == "ExternalWebapp"
-    assert len(app.result.board_art_variants) == 1
+    assert [v.kind for v in app.result.board_art_variants] == [
+        "ASCII",
+        "Emoji",
+        "Mixed",
+    ]
 
 
 def test_existing_project_with_board_art_skips_art_flow(

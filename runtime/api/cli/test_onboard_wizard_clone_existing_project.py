@@ -106,7 +106,11 @@ def test_clone_existing_yoke_project_offers_binding_upgrade(
     assert applied["project_github_repo"] == "example-org/externalwebapp"
     assert applied["project_public_item_prefix"] == "EXT"
     assert applied["project_github_adoption"] == "app-binding"
-    assert len(app.result.board_art_variants) == 1
+    assert [v.kind for v in app.result.board_art_variants] == [
+        "ASCII",
+        "Emoji",
+        "Mixed",
+    ]
     plan = applied["project_clone"]
     assert plan is not None
     assert plan.outcome == clone.CLONE_OUTCOME_JUST_CLONE

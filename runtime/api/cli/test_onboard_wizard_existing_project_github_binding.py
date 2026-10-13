@@ -131,7 +131,12 @@ def test_existing_backlog_project_can_bind_detected_checkout_origin(
             await pilot.press("enter")  # use connected installation
             await app.workers.wait_for_complete()
             await pilot.pause()
-            assert "Here's your progress map." in _body_text(app)
+            assert "Connect your hosting provider?" in _body_text(app)
+            assert [v.kind for v in app.result.board_art_variants] == [
+                "ASCII",
+                "Emoji",
+                "Mixed",
+            ]
             await skip_hosting(pilot)  # hosting: skip -> Finish
             await pilot.press("enter")
             await pilot.pause()
@@ -216,7 +221,12 @@ def test_new_project_keeps_existing_origin_and_reaches_binding(
             await pilot.press("enter")
             await app.workers.wait_for_complete()
             await pilot.pause()
-            assert "Here's your progress map." in _body_text(app)
+            assert "Connect your hosting provider?" in _body_text(app)
+            assert [v.kind for v in app.result.board_art_variants] == [
+                "ASCII",
+                "Emoji",
+                "Mixed",
+            ]
             await skip_hosting(pilot)  # hosting: skip -> Finish
             await pilot.press("enter")
             await pilot.pause()
