@@ -8,6 +8,7 @@ from typing import Any, Mapping
 from yoke_core.domain.installer_campaign_current_text_cases import (
     CURRENT_TEXT_INSTALLER_CAMPAIGN_CASES,
 )
+from yoke_core.domain.installer_campaign_regression_cases import recovery_cases
 from yoke_core.domain.environment_declared_facts import target_is_production
 from yoke_core.domain.qa_execution_environment_target import require_case_target
 
@@ -37,6 +38,9 @@ def _fill_template(value: Any, fields: Mapping[str, str]) -> Any:
 
 def installer_campaign_cases_for_target(
     target: Mapping[str, Any],
+    *,
+    primary_machine: str,
+    joining_machine: str,
 ) -> list[dict[str, Any]]:
     """Return concrete cases filled only from the plan's bound environment."""
     endpoints = target["endpoints"]
@@ -51,7 +55,13 @@ def installer_campaign_cases_for_target(
             else str(target["environment"]["name"]).title()
         ),
     }
-    cases = _fill_template(list(CURRENT_TEXT_INSTALLER_CAMPAIGN_CASES), fields)
+    cases = _fill_template(
+        list(CURRENT_TEXT_INSTALLER_CAMPAIGN_CASES)
+        + list(recovery_cases(primary_machine=primary_machine, joining_machine=joining_machine)),
+        fields,
+    )
+    for case in cases[:len(CURRENT_TEXT_INSTALLER_CAMPAIGN_CASES)]:
+        case["method_config"]["machine"] = primary_machine
     for case in cases:
         require_case_target(case, target)
     return cases

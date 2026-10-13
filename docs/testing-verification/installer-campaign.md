@@ -13,7 +13,7 @@ export it from the current Yoke source checkout using the plan's own registered
 
 ```text
 yoke qa plan get installer-campaign --project P --full --json > /tmp/installer-plan.json
-yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/installer-plan.json --cases-file /tmp/installer-cases.json
+yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/installer-plan.json --cases-file /tmp/installer-cases.json --primary-machine FIRST --joining-machine SECOND
 yoke qa plan-cases replace --project P --plan-id {plan_id} --cases-file /tmp/installer-cases.json --json
 yoke qa plan get installer-campaign --project P --full --json > /tmp/installer-plan-after.json
 yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/installer-plan-after.json --check
@@ -30,6 +30,40 @@ the registered replacement records the installation in the function-call ledger.
 Existing execution snapshots keep their original definitions and evidence; any
 `requirements_behind_plan` returned by replacement need their named refresh path
 before reuse, rather than being rewritten as part of the installation.
+
+Choose two distinct registered names from `yoke test-machine list --project P`.
+The saved case configurations retain those fixture choices; later source checks
+reuse them. The second-machine case must use a different physical host, not a
+reset of the first one. A deployment member stage runs the separate host rosters:
+
+```text
+yoke watch qa-plan -- --deployment-run-id RUN --stage STAGE --member ITEM --project P
+```
+
+Omit a single-host pin for that scope. Standalone executions retain one host
+lease; use a one-host saved plan for focused iteration, not a claimed full
+multi-host pass. Preserve the baseline and every unperformed case as evidence.
+
+The six recovery cases cover a published predecessor reinstall, local-to-hosted
+with and without a backup, a distinct joining machine, explicit uninstall and
+late harness discovery. Preparation failures preserve their named reason and
+recovery. The late-harness fixture restores its preserved executable even when
+setup fails; configuration checks do not replace the exploration's real
+received-context proof.
+
+## Complete machine approval links
+
+```text
+Open: https://example.invalid/connect?user_code=AB12-CD34
+One-time code: AB12-CD34
+```
+
+The gate binds the complete link to the displayed code and the execution
+target's declared HTTPS origin. Only one matching user_code is accepted;
+unknown parameters, other origins, credentials and fragments refuse as
+machine_browser_approval_context_invalid with recovery. Self-hosted
+machine/code links preserve the exact wizard-opened path. Coordinate validation
+does not grant approval authority; keep the selected human/fixture boundary.
 
 ## Isolated welcome frame
 

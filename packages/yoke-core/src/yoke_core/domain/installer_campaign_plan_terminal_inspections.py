@@ -42,7 +42,7 @@ WELCOME_FRAME = terminal_case(
             "Your operating system for software delivery",
             "Installing uv",
             "uv installation failed. Install uv manually",
-            "then rerun: curl -fsSL https://upyoke.com/install | sh",
+            "then rerun: curl -fsSL",
         ),
         capture_checkpoints=("welcome-frame",),
         notes=(

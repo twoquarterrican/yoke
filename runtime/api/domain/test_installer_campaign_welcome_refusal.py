@@ -14,7 +14,7 @@ from yoke_core.domain.ssh_mac_terminal_recipe_support import run_command_recipe
 def _welcome():
     return next(
         case
-        for case in installer_campaign_cases_for_target(_target("prod"))
+        for case in installer_campaign_cases_for_target(_target("prod"), primary_machine="primary-test", joining_machine="joining-test")
         if case["case_key"] == "welcome-frame"
     )
 

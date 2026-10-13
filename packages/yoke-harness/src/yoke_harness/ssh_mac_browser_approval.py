@@ -4,15 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
-import re
 from typing import Any
-from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qs, urlsplit, urlunsplit
+
+from yoke_contracts.machine_approval_coordinates import machine_approval_coordinates
 
 from yoke_harness.ssh_mac_terminal_app import RunRemote, run_osascript
 
 
-_APPROVAL_PATHS = frozenset({"/connect", "/machine"})
-_CODE_PATTERN = re.compile(r"[A-Z0-9]{4}-[A-Z0-9]{4}")
 _RESULT_SEPARATOR = "|"
 _REFUSED_STATUSES = frozenset(
     {"denied", "expired", "missing", "not_admin", "not_member", "used"}
@@ -29,24 +28,8 @@ class BrowserApprovalResult:
 
 
 def _approval_url(verification_url: str, user_code: str) -> tuple[str, str]:
-    parsed = urlsplit(verification_url)
-    if (
-        parsed.scheme != "https"
-        or not parsed.hostname
-        or parsed.username is not None
-        or parsed.password is not None
-        or parsed.path not in _APPROVAL_PATHS
-        or parsed.query
-        or parsed.fragment
-    ):
-        raise ValueError("browser approval URL is not a supported HTTPS entry")
-    code = user_code.strip().upper()
-    if _CODE_PATTERN.fullmatch(code) is None:
-        raise ValueError("browser approval code has an invalid shape")
-    complete = urlunsplit(
-        (parsed.scheme, parsed.netloc, parsed.path, urlencode({"user_code": code}), "")
-    )
-    return complete, f"{parsed.scheme}://{parsed.netloc}"
+    coordinates = machine_approval_coordinates(verification_url, user_code)
+    return coordinates.complete_uri, coordinates.origin
 
 
 def _script(*, expected_url: str) -> list[str]:

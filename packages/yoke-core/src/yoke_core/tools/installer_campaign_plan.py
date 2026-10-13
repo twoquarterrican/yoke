@@ -44,10 +44,17 @@ def _authored(case: dict[str, Any], field: str) -> Any:
     return value
 
 
-def _source_cases(plan: dict[str, Any]) -> list[dict]:
+def _source_cases(plan: dict[str, Any], primary_machine=None, joining_machine=None) -> list[dict]:
     slug = plan["slug"]
     if slug == "installer-campaign":
-        return installer_campaign_cases_for_target(plan["execution_target"])
+        configured = {case["case_key"]: case for case in plan["cases"]}
+        primary_machine = primary_machine or configured.get("path-on-shell", {}).get("method_config", {}).get("machine")
+        joining_machine = joining_machine or configured.get("second-machine-join", {}).get("method_config", {}).get("machine")
+        return installer_campaign_cases_for_target(
+            plan["execution_target"],
+            primary_machine=primary_machine,
+            joining_machine=joining_machine,
+        )
     if slug == "installer-exploration":
         descriptor = pack_catalog.load_pack_descriptor("machine-qa")
         version = descriptor["versions"][descriptor["latest_version"]]
@@ -62,9 +69,9 @@ def _source_cases(plan: dict[str, Any]) -> list[dict]:
     )
 
 
-def compare_plan(plan: dict[str, Any]) -> tuple[list[dict], dict]:
+def compare_plan(plan: dict[str, Any], *, primary_machine=None, joining_machine=None) -> tuple[list[dict], dict]:
     """Compare authored fields, excluding row identity and historical proof."""
-    cases = _source_cases(plan)
+    cases = _source_cases(plan, primary_machine, joining_machine)
     installed = {case["case_key"]: case for case in plan["cases"]}
     generated = {case["case_key"]: case for case in cases}
     if len(installed) != len(plan["cases"]):
@@ -108,6 +115,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         help="Export generated cases for qa.plan_cases.replace.",
     )
+    parser.add_argument("--primary-machine", help="Registered primary Test Machine for campaign cases.")
+    parser.add_argument("--joining-machine", help="Distinct registered Test Machine for the joining case.")
     parser.add_argument(
         "--check",
         action="store_true",
@@ -118,7 +127,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         receipt = json.loads(args.plan_file.read_text())
         if receipt.get("success") is not True:
             raise ValueError("plan read did not succeed")
-        cases, report = compare_plan(receipt["result"]["plan"])
+        cases, report = compare_plan(
+            receipt["result"]["plan"],
+            primary_machine=args.primary_machine,
+            joining_machine=args.joining_machine,
+        )
         if args.cases_file:
             args.cases_file.write_text(json.dumps(cases, indent=2) + "\n")
     except (OSError, ValueError, KeyError, TypeError) as exc:
