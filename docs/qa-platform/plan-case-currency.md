@@ -36,7 +36,10 @@ yoke qa plan rematerialize --deployment-run-id RUN --stage STAGE [--member PREFI
 ```
 
 The operation refreshes matching live rows in place, preserves QA run history,
-creates added cases and waives removed ones. It reaches all executable columns,
+creates added cases and retires removed ones. On an item, a removed
+post_deploy case replaced by exactly one created row of the same
+item/transition/phase/environment/baseline is superseded by it
+(`superseded_requirement_ids`); any other removed case is waived. It reaches all executable columns,
 including `instructions` / `expected_outcome`, which individual requirement
 update cannot write. It also corrects reachable unjudged admitted deployment
 copies and reports `corrected_admitted_copy_ids`.

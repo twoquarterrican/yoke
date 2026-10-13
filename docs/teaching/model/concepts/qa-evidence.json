@@ -181,6 +181,13 @@
        "status": "draft-copy"
       },
       {
+       "id": "post-deploy-source-retirement",
+       "title": "Post-deploy source retirement",
+       "status": "observed",
+       "commands": ["yoke qa plan rematerialize", "yoke qa requirement supersede"],
+       "functions": ["qa.plan.rematerialize", "qa.requirement.supersede"]
+      },
+      {
        "id": "retraction",
        "title": "Retraction",
        "status": "draft-copy"

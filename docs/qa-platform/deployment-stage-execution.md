@@ -232,9 +232,14 @@ case is materialized:
   `next_admission_notice` names the source and how to retire it — add the
   corrected body as an item requirement for the same item, transition, phase
   and target, then supersede the source with it. Post-deploy item rows never
-  execute, so retirement requires an admitted copy already superseded by a
-  passing run case (`run_replacement_requirement_id`), which still answers its
-  run at `done`; later releases admit only the corrected requirement. A
+  execute, so while a run the item still belongs to holds an admitted copy,
+  retirement requires one already superseded by a passing run case
+  (`run_replacement_requirement_id`), which still answers its run at `done`.
+  When no live membership holds a copy -- the item was removed with
+  `yoke deployment-runs remove-item`, or the run failed or was cancelled --
+  retirement records the link and `proof_owed_notice` says the corrected
+  requirement owes its own next-release proof. Later releases admit only the
+  corrected requirement. A
   source that is missing, or itself already discharged, is named by neither,
   because no future release admits it. Supersession refuses a
   replacement in another subject, one that is non-blocking, waived, already
