@@ -21,6 +21,8 @@ def refusal_message(
         reason = f"post-push CI remained pending for {merge_sha}: {observed}"
     else:
         reason = verdict.detail or f"post-push CI was unreadable for {merge_sha}"
+    if verdict.detail and verdict.kind in {"failed", "timed_out"}:
+        reason = f"{verdict.detail}; {reason}"
     return (
         f"{reason}. The merge is landed; the work claim and lane are retained. "
         f"Commit the fix in the same lane, then resume with `{resume_command}`."
@@ -41,8 +43,11 @@ def publication_narration(
             "Merged locally; not pushed because GitHub is not connected."
         )
     kind = None if verdict is None else verdict.kind
-    return {
+    message = {
         None: "Publication: target pushed; post-push checks were not run.",
         "passed": "Publication: target pushed; post-push checks passed.",
         "no_checks": "Publication: target pushed; no post-push checks discovered.",
     }.get(kind, "")
+    return (
+        f"{message} {verdict.detail}".strip() if verdict and verdict.detail else message
+    )

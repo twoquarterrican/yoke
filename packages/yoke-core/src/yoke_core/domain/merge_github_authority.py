@@ -21,9 +21,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Mapping
+from types import MappingProxyType
 
 from yoke_contracts.github_app_installation_permissions import (
+    GITHUB_ACTIONS_READ_PERMISSION_LEVELS,
     GITHUB_CHECKS_READ_PERMISSION_LEVELS,
+    GITHUB_CONTENTS_READ_PERMISSION_LEVELS,
     GITHUB_PULL_REQUESTS_WRITE_PERMISSION_LEVELS,
 )
 from yoke_core.domain import standalone_item_merge_git as git
@@ -36,6 +39,13 @@ from yoke_core.domain.project_github_auth_models import (
 
 DIRECT_MERGE_ROUTE = "direct_merge"
 PULL_REQUEST_MERGE_ROUTE = "pull_request_merge"
+DIRECT_MERGE_READ_PERMISSION_LEVELS = MappingProxyType(
+    {
+        **GITHUB_ACTIONS_READ_PERMISSION_LEVELS,
+        **GITHUB_CHECKS_READ_PERMISSION_LEVELS,
+        **GITHUB_CONTENTS_READ_PERMISSION_LEVELS,
+    }
+)
 
 _ROUTE_LABELS = {
     DIRECT_MERGE_ROUTE: "direct merge",
@@ -72,7 +82,7 @@ def classify_merge_authority(*, local_merge: bool) -> MergeAuthority:
         return MergeAuthority(
             route=DIRECT_MERGE_ROUTE,
             authority=GITHUB_AUTHORITY_INSTALLATION,
-            permissions=GITHUB_CHECKS_READ_PERMISSION_LEVELS,
+            permissions=DIRECT_MERGE_READ_PERMISSION_LEVELS,
         )
     return MergeAuthority(
         route=PULL_REQUEST_MERGE_ROUTE,
