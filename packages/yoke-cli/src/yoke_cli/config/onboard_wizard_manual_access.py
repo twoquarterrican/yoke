@@ -85,7 +85,9 @@ class ManualRepositoryAccessFlow:
             "repository_access_missing: the live check did not find this repo in App access.",
             "Grant repo access, add this repository to the App, then return and choose Check repositories.",
         ]
-        if opened:
+        if opened and getattr(self, "_project_github_access_error", ""):
+            details.append(self._project_github_access_error)
+        elif opened:
             details.extend(
                 [
                     (

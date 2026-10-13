@@ -1,15 +1,7 @@
-"""Exact-byte SVG golden gates — Project and Finish wizard screens.
+"""Exact SVG golden checks for Project and Finish wizard screens.
 
-Companion to :mod:`test_onboard_wizard_goldens` (PATH / Connect / GitHub); both
-share the render-and-assert harness in :mod:`onboard_wizard_golden_support`. Each
-gate renders the real wizard at a pinned virtual-terminal size, drives it to the
-target Project- or Finish-step screen with stubbed data, and asserts the exported
-SVG matches the committed golden. Regenerate after an approved copy change:
-
-    YOKE_WIZARD_GOLDEN_UPDATE=1 pytest runtime/api/cli/
-
-The catalog<->golden parity meta-test lives in the companion module and covers
-the goldens both modules produce.
+Render at the pinned terminal size using onboard_wizard_golden_support.
+Regenerate approved copy with YOKE_WIZARD_GOLDEN_UPDATE=1.
 """
 
 from __future__ import annotations
@@ -145,7 +137,22 @@ def test_project_owner_picker_long() -> None:
     )
 
 
-def test_project_private_repo_empty() -> None:
+def test_project_private_repo_empty(monkeypatch) -> None:
+    from yoke_cli.config import machine_config
+
+    monkeypatch.setattr(
+        machine_config,
+        "github_config",
+        lambda _: {
+            "installations": [
+                {
+                    "installation_id": 1,
+                    "account_login": "octocat",
+                    "account_type": "User",
+                }
+            ],
+        },
+    )
     app = make_app()
 
     async def drive(a: OnboardWizardApp, _pilot: Any) -> None:

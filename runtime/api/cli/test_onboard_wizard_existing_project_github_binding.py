@@ -23,6 +23,7 @@ from runtime.api.cli.test_yoke_operations_cli_onboard_wizard_existing_project im
     _configure_origin,
 )
 from yoke_cli.config import existing_project_lookup  # noqa: E402
+from yoke_cli.config import github_machine  # noqa: E402
 from yoke_cli.config import machine_config  # noqa: E402
 from yoke_cli.config import onboard_local_checkout_identity  # noqa: E402
 from yoke_cli.config import onboard_machine_github  # noqa: E402
@@ -32,6 +33,25 @@ from yoke_cli.config import onboard_wizard_flow_publish  # noqa: E402
 @pytest.fixture(autouse=True)
 def _stub_path_doctor(monkeypatch):
     stub_path_doctor(monkeypatch)
+
+
+@pytest.fixture(autouse=True)
+def _live_repository_report(monkeypatch, _stub_path_doctor):
+    stubbed_status = github_machine.status
+
+    def status(**kwargs):
+        config = machine_config.github_config(kwargs.get("config_path"))
+        return {
+            **stubbed_status(**kwargs),
+            "identity": {"checked": True, "ok": True},
+            "access": {
+                "repo_listing_ok": True,
+                "repositories": config.get("repositories", []),
+                "installations": config.get("installations", []),
+            },
+        }
+
+    monkeypatch.setattr(github_machine, "status", status)
 
 
 def test_existing_backlog_project_can_bind_detected_checkout_origin(
@@ -110,6 +130,7 @@ def test_existing_backlog_project_can_bind_detected_checkout_origin(
             await pilot.pause()
             assert "How should Yoke manage this project on GitHub?" in _body_text(app)
             await pilot.press("enter")  # use connected installation
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert "Here's your progress map." in _body_text(app)
             await complete_board_art(pilot)
@@ -195,6 +216,7 @@ def test_new_project_keeps_existing_origin_and_reaches_binding(
             await pilot.pause()
             assert "How should Yoke manage this project on GitHub?" in _body_text(app)
             await pilot.press("enter")
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert "Here's your progress map." in _body_text(app)
             await complete_board_art(pilot)
