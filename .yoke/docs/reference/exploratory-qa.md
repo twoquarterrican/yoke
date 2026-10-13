@@ -20,7 +20,7 @@ The Machine QA Pack method has these immutable properties:
 | `verdict_path` | `agent` |
 | `concurrency_mode` | `serial` |
 | required capabilities | `browser-control`, <!-- qa:test-machine-capability -->`test-machine` |
-| case config | `{"executor":"informed_subagent"}` or `{"executor":"naive_target_session"}` |
+| case config | `{"executor":"informed_subagent"}` |
 
 Capability declarations are provisioning authority, and the two kinds above
 resolve differently. <!-- qa:test-machine-capability -->`test-machine` is a project registration: materialization
@@ -44,7 +44,7 @@ Write one case with broad instructions and an observable good outcome:
   "method_id": "exploratory-mission",
   "instructions": "Install as a new user, work through onboarding, and investigate confusing, broken, missing, or unsafe behavior using the terminal, browser, and visible desktop.",
   "expected_outcome": "Return a ranked actionable report, name what could not be verified and why, and return a precise handoff if a person must act.",
-  "method_config": {"executor": "naive_target_session", "machine": "macos-example"},
+  "method_config": {"executor": "informed_subagent", "machine": "macos-example"},
   "host_baselines": ["fresh-host"]
 }
 ```
@@ -80,17 +80,15 @@ from the plan's bound environment through `{{app_url}}`, `{{installer_base_url}}
 `{{release_channel}}`, and `{{environment_display_name}}`. Each plan tests one environment;
 testing another requires a separate plan bound to it, using the same template.
 
-Choose the executor per case:
-
-- `informed_subagent` isolates the walk while supplying the relevant project
-  and Progress Log context. Its harness adapter must permit the mission's
-  state-changing host, browser, and artifact operations. Cursor renders this
-  contract explicitly as `readonly: false`; dispatch refuses
-  `cursor_qa_walker_readonly` before starting a walker when the discovered
-  adapter is stale, and tells the caller to rerender before retrying.
-- `naive_target_session` starts a separate agent session on the target machine.
-  A fresh machine without a project checkout is naive by construction. Do not
-  add a checkout or project internals to make the walk easier.
+Use `informed_subagent` for each case. It isolates the walk and supplies the
+relevant project and Progress Log context on the controller. Drive the target
+with the printed host commands; a fresh target needs no Yoke or source checkout.
+Do not add a checkout or project internals to bypass missing installed guidance.
+The harness adapter must permit the mission's host, browser and artifact writes.
+Cursor renders `readonly: false`; a stale adapter refuses as
+`cursor_qa_walker_readonly` and names the rerender recovery.
+Unsupported executors refuse as `agent_mission_executor_invalid`: update the
+saved case to `informed_subagent` and rematerialize affected requirements.
 
 ## Execution and Review
 
@@ -122,7 +120,7 @@ While parked, the execution retains and heartbeats its Test Machine lease. The
 returned dispatch has `dispatch_kind=main_agent_mission`. The main agent owns:
 
 - the item, work claim, Progress Log, and the human-request route;
-- dispatching each case's walker according to its executor;
+- dispatching each case's informed subagent walker;
 - combining walker returns into the primary written report;
 - choosing and submitting the final verdict for every bundled case.
 

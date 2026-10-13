@@ -20,7 +20,7 @@ built-in roster is:
 The `machine-qa` Pack adds **Terminal check**, **Terminal inspection**, and
 **Machine state check** through serial `host_control`, plus **Exploratory
 mission** through the Main-owned `agent_mission` runner. A mission uses its
-declared browser/machine substrates and informed or target-naive walker;
+declared browser/machine substrates and an informed subagent walker;
 deterministic checks stay with Command methods.
 
 Inspect the roster and a method contract with:

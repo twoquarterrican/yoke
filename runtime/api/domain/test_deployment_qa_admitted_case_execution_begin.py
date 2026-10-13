@@ -64,7 +64,7 @@ def _mission_obligation(conn: Any, *, item_id: int) -> int:
             method["runner_id"],
             method["required_capability_kinds"],
             method["verdict_path"],
-            json.dumps({"executor": "naive_target_session"}),
+            json.dumps({"executor": "informed_subagent"}),
             "A new user meets the deployed release on the machine as found.",
         ),
     ).fetchone()

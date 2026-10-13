@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from yoke_core.domain.agent_mission_review import agent_mission_dispatch_contract
 
 
@@ -40,11 +38,8 @@ def _walker(executor: str, identities: list[str] | None = None) -> dict:
     return agent_mission_dispatch_contract(bundle)["walker_dispatches"][0]
 
 
-@pytest.mark.parametrize("executor", ["naive_target_session", "informed_subagent"])
-def test_walker_prompt_uses_yoke_browser_only_when_the_walk_installed_yoke(
-    executor: str,
-) -> None:
-    walker = _walker(executor)
+def test_walker_prompt_uses_yoke_browser_only_when_the_walk_installed_yoke() -> None:
+    walker = _walker("informed_subagent")
     prompt = walker["prompt"]
 
     assert "if Yoke is on the target because this walk installed it" in prompt

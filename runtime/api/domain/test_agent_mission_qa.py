@@ -125,7 +125,7 @@ def _materialize_mission(conn: Any, *, item_id: int) -> int:
                     "Return ranked actionable findings and name anything "
                     "that could not be checked."
                 ),
-                "method_config": {"executor": "naive_target_session"},
+                "method_config": {"executor": "informed_subagent"},
                 "host_baselines": ["fresh-host"],
             }
         ],
@@ -224,8 +224,8 @@ def test_mission_parks_resumes_and_persists_the_main_report(
     assert dispatch["dispatch_kind"] == "main_agent_mission"
     assert dispatch["artifact_limit"] == AGENT_MISSION_ARTIFACT_LIMIT
     walker = dispatch["walker_dispatches"][0]
-    assert walker["dispatch_kind"] == "target_machine_agent_session"
-    assert walker["subagent_type"] is None
+    assert walker["dispatch_kind"] == "subagent"
+    assert walker["subagent_type"] == "yoke-qa-walker"
     assert "yoke qa browser setup" in walker["browser_setup_command"]
     assert "yoke qa browser step" in walker["browser_step_command"]
     assert (

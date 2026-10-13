@@ -28,12 +28,10 @@ Choose exploratory sequence at runtime: landmarks describe territory, not a
 step list. Follow surprising behavior when it advances this mission. Return
 ranked findings, proof, unverified areas and an exact resume point. Never rewrite
 instructions, outcome, method configuration or immutable materialized cases.
-Preserve the dispatched executor policy:
-
-- `informed_subagent`: use supplied project and Progress Log context; isolation
-  from main's working context does not mean withholding supplied facts.
-- `naive_target_session`: use only mission, good outcome, access contract and
-  existing target state. Do not acquire a checkout or project-internals top-up.
+Use the supplied project and Progress Log context as an `informed_subagent`.
+Drive the target through the mission's controller-side host commands. A fresh
+Test Machine remains free of a source checkout; do not add project internals
+to bypass missing installed guidance.
 
 Missing access is a substrate failure to report, not permission to change policy.
 
