@@ -36,6 +36,7 @@ FUNCTION_MINIMUM_SERVING_VERSIONS: dict[str, str] = {
     "github_actions.run.rerun_failed": "next-release",
     "item_landings.list": "next-release",
     "item_landings.record": "next-release",
+    "items.github_link": "next-release",
     "items.progress_log.get": "next-release",
     "merge_receipt.commits.attest": "next-release",
     "models.diff.run": "next-release",
