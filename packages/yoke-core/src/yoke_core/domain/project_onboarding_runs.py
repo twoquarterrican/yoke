@@ -6,7 +6,6 @@ import json
 from typing import Any, Mapping
 from datetime import datetime
 from yoke_contracts.timestamps import parse_instant
-from uuid import uuid4
 
 from yoke_contracts.onboard_checklist import (
     BRANCH_LOCAL_CHECKOUT,
@@ -38,6 +37,7 @@ from yoke_core.domain.project_onboarding_run_records import (
     validate_branch,
     with_operation,
 )
+from yoke_core.domain.project_onboarding_scope import resolve_run
 
 OPERATION_RUN = f"{OPERATION}.run"
 
@@ -114,9 +114,10 @@ def update_run(
     own_conn = conn is None
     selected = conn or connect()
     try:
-        selected_id = _normalize_run_id(run_id or f"run-{uuid4().hex[:12]}")
-        resumed = _run_exists(selected, selected_id)
-        existing = _fetch_run(selected, selected_id)
+        selected_id, existing = resolve_run(
+            selected, run_id=run_id, project_id=project_id
+        )
+        resumed = existing is not None
         selected_branch = branch or (
             existing["branch"] if existing is not None else BRANCH_LOCAL_CHECKOUT
         )
@@ -223,7 +224,6 @@ def _upsert_run(
         "machine_config_path, github_repo, status, metadata_json, created_at, updated_at) "
         f"VALUES ({', '.join([p] * 11)}) "
         "ON CONFLICT (run_id) DO UPDATE SET "
-        "project_id = COALESCE(EXCLUDED.project_id, project_onboarding_runs.project_id), "
         "branch = EXCLUDED.branch, "
         "checkout_path = COALESCE(EXCLUDED.checkout_path, project_onboarding_runs.checkout_path), "
         "machine_config_path = COALESCE(EXCLUDED.machine_config_path, project_onboarding_runs.machine_config_path), "
@@ -254,25 +254,6 @@ def _set_run_status_and_metadata(
         f"SET status = {p}, metadata_json = {p}, updated_at = {p} WHERE run_id = {p}",
         (status, json_dumps(metadata), instant_parameter(conn, now), run_id),
     )
-
-
-def _run_exists(conn: Any, run_id: str) -> bool:
-    return _fetch_run(conn, run_id) is not None
-
-
-def _fetch_run(conn: Any, run_id: str) -> Any | None:
-    p = _p(conn)
-    return conn.execute(
-        f"SELECT * FROM project_onboarding_runs WHERE run_id = {p}",
-        (run_id,),
-    ).fetchone()
-
-
-def _normalize_run_id(run_id: str) -> str:
-    selected = run_id.strip()
-    if not selected:
-        raise ProjectOnboardingRunError("run_id is required")
-    return selected
 
 
 __all__ = [
