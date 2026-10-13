@@ -58,6 +58,7 @@ function levelOverrideText(override = {}) {
 function levelFact(documentNode, level) {
   const host = el(documentNode, "span", "item-inline");
   host.appendChild(el(documentNode, "b", null, `${level.glyph} ${level.level}`));
+  if (level.level === level.stage_level && !Object.keys(level.override || {}).length) return host;
   host.appendChild(el(documentNode, "span", "item-muted",
     [level.stage_id, `${level.stage_glyph} ${level.stage_level}`, levelOverrideText(level.override)]
       .filter(Boolean).join(" · ")));
