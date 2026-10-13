@@ -22,8 +22,11 @@ to 20 MiB. `--json` returns `url`, `backend`, `address`, `bytes` and
 
 Open the URL with `items.read` on the project:
 
-- **Browser:** sign in to the server's workbench first. The file renders inline;
-  add `?download=1` to download it instead.
+- **Browser:** open the file URL. A signed-out or expired browser goes to
+  sign-in and returns to that URL afterward, including `?download=1`.
+  Without company sign-in, run `yoke ui up` from your terminal on a
+  connected machine to open admission in the same browser. Local views use
+  the same command on their own machine. The file renders inline by default.
 - **Agent or script:** send the connection's API token as
   `Authorization: Bearer`.
 
@@ -48,6 +51,10 @@ expiry rule for either, and the permanent local tree keeps files until someone
 deletes them.
 
 ## Failures
+
+API and CLI requests keep a structured 401 when credentials are absent or
+invalid; browser navigation redirects to sign-in. An explicit
+`Authorization` header always selects API authentication.
 
 Each refusal carries a code and the step that fixes it:
 

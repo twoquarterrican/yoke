@@ -17,6 +17,8 @@ from yoke_contracts.browser_sign_in import (
     BROWSER_SIGN_IN_REDEEM_PATH,
     BROWSER_SIGN_IN_MAX_LENGTH,
 )
+from yoke_contracts.machine_authorization import APPROVAL_RETURN_COOKIE
+from yoke_core.api.browser_return import browser_return_path
 from yoke_core.api.frontend_events_config import (
     link_sign_in_visitor,
     sign_in_attribution,
@@ -138,7 +140,7 @@ history.replaceState(null, '', location.pathname);
         result.error.code + ': ' + result.error.message;
       return;
     }
-    location.replace('/');
+    location.replace(result.return_path || '/');
   } catch (_) {
     document.getElementById('status').textContent =
       'browser_sign_in_unavailable: run `yoke ui up` again; if it persists, ask the server operator to restore service';
@@ -172,7 +174,11 @@ def redeem(request: Request, body: AdmissionCode) -> Response:
             "Sign-in storage is unavailable; ask the server operator to restore database service, then run `yoke ui up` again",
             503,
         )
-    response = JSONResponse({"success": True}, headers=_PRIVATE_HEADERS)
+    destination = browser_return_path(request.cookies.get(APPROVAL_RETURN_COOKIE, ""))
+    response = JSONResponse(
+        {"success": True, "return_path": destination or "/"}, headers=_PRIVATE_HEADERS
+    )
+    response.delete_cookie(APPROVAL_RETURN_COOKIE, path="/")
     response.set_cookie(
         WEB_SESSION_COOKIE_NAME,
         session.raw_token,

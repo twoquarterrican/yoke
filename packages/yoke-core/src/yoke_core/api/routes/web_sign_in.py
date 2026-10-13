@@ -27,8 +27,8 @@ from fastapi.routing import APIRouter
 
 from yoke_contracts.machine_authorization import (
     APPROVAL_RETURN_COOKIE,
-    approval_return_path,
 )
+from yoke_core.api.browser_return import browser_return_path
 from yoke_core.api.http_auth import OIDC_CALLBACK_PATH, OIDC_START_PATH, SIGN_OUT_PATH
 from yoke_core.api.oidc_client import (
     OidcDiscoveryError,
@@ -235,7 +235,7 @@ def oidc_callback(request: Request) -> Response:
         session = mint_web_session(conn, actor_id=resolution.actor_id)
         link_sign_in_visitor(conn, acquisition, resolution.actor_id)
 
-    destination = approval_return_path(request.cookies.get(APPROVAL_RETURN_COOKIE, ""))
+    destination = browser_return_path(request.cookies.get(APPROVAL_RETURN_COOKIE, ""))
     redirect = RedirectResponse(destination or _SIGNED_IN_LANDING, status_code=303)
     redirect.delete_cookie(APPROVAL_RETURN_COOKIE, path="/")
     redirect.set_cookie(
