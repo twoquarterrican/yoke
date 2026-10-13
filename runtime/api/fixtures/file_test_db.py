@@ -1,44 +1,31 @@
-"""Postgres-backed replacement for path-shaped test-DB helpers.
+"""Postgres schema templates for helpers that pass path-shaped test tokens.
 
-Many older per-module test helpers created a file-shaped ``db_path`` token,
-initialized one connection, then re-opened that path directly in test bodies.
-Under Postgres authority that pattern splits writes and reads across two
-databases: initialization connects through the backend factory to the
-DSN-pointed Postgres database while direct path opens read an empty local file.
+:func:`init_test_db` chooses a per-worker template by schema callable identity.
+The default and explicit ``schema.cmd_init`` share the production core schema
+with test-project identities; :func:`apply_fixture_schema_ddl` shares the
+fixture template, and other callables retain their own schema and seed data.
+Tests receive reusable clones reset after checkout. Nested contexts receive
+independent template clones that are dropped on exit.
 
-This module gives those helpers one backend-aware seam to delegate to so the
-same test bodies exercise the active authority. No caller infers the engine
-from cwd or the presence of ``data/yoke.db``.
+``YOKE_PG_DSN`` points at the checkout only for its context's lifetime.
+:func:`connect_test_db` opens that native authority; the yielded path token
+passes through consumers but does not select a database. Per-test machine
+configuration belongs in the consuming fixture after checkout, since schema
+callables run only when the template is built.
 
-- :func:`init_test_db` — context manager yielding a legacy path-shaped
-  ``db_path`` token with the schema applied to a disposable per-test Postgres
-  database. The ``apply_schema`` strategy chooses which schema:
-  ``schema.cmd_init`` (default, full production schema) or
-  :func:`apply_fixture_schema_ddl` (the composed fixture schema).
-  ``YOKE_PG_DSN`` is
-  repointed for the context's lifetime, then restored and the database is
-  dropped on exit. The yielded token threads through code-under-test unchanged;
-  the backend factory ignores it and targets the DSN.
-- :func:`apply_fixture_schema_ddl` — ``apply_schema`` strategy applying the
-  composed fixture schema.
-- :func:`connect_test_db` — connect to the native psycopg authority family
-  against the repointed DSN. Drop-in for direct path opens the file-based
-  helpers and their test bodies used to make.
-
-Conversion is two edits per helper: the path-shaped init delegates to
-:func:`init_test_db`, and each direct path open becomes
-:func:`connect_test_db`.
+Contributor guide: docs/testing-verification/test-database-templates.md.
 """
 
 from __future__ import annotations
 
+import atexit
 import contextlib
 import os
 from pathlib import Path
 from typing import Iterator
 
 
-PRODUCTION_SCHEMA_FLAVOR = "production_schema"
+_SCHEMA_TEMPLATES: dict[int, tuple[object, str]] = {}
 
 
 @contextlib.contextmanager
@@ -74,84 +61,78 @@ def _apply_production_schema() -> None:
         conn.close()
 
 
-def _build_production_schema_db() -> str:
+def _schema_strategy(apply_schema):
+    from yoke_core.domain import schema
+
+    if apply_schema is None or apply_schema is schema.cmd_init:
+        return _apply_production_schema
+    return apply_schema
+
+
+def _schema_template_db(strategy) -> str:
+    """Build each callable's schema once per worker, retaining its seed data."""
     from runtime.api.fixtures import pg_testdb
 
-    name = pg_testdb.create_test_database()
-    with _repointed_dsn(name):
-        _apply_production_schema()
-    return name
+    if strategy is apply_fixture_schema_ddl:
+        return pg_testdb._fixture_template_db()
+    key = id(strategy)
+    if key not in _SCHEMA_TEMPLATES:
+        name = pg_testdb.create_test_database(pooled=False)
+        try:
+            with _repointed_dsn(name):
+                strategy()
+        except BaseException:
+            pg_testdb.drop_test_database(name, pooled=False)
+            raise
+        # Retain the callable so its identity cannot be recycled by Python.
+        _SCHEMA_TEMPLATES[key] = (strategy, name)
+        atexit.register(pg_testdb.drop_test_database, name, pooled=False)
+    return _SCHEMA_TEMPLATES[key][1]
 
 
-def _reusable_checkout(apply_schema):
-    """Reusable-database checkout for the known schema strategies, or None.
+def _clone_schema_database(strategy) -> str:
+    from runtime.api.fixtures import pg_testdb
 
-    The default (production schema) and :func:`apply_fixture_schema_ddl`
-    strategies produce one deterministic schema each, so their databases
-    can be built once per worker and reset between uses. A caller-supplied
-    strategy is an arbitrary callable whose output cannot be keyed, so it
-    keeps the create/drop-per-use path.
-    """
+    return pg_testdb.create_test_database(template=_schema_template_db(strategy))
+
+
+def _reusable_checkout(strategy):
+    """All schema callables use the existing reusable baseline reset."""
     from runtime.api.fixtures import pg_reusable_db, pg_testdb
 
-    if apply_schema is None:
-        return pg_reusable_db.checkout(
-            PRODUCTION_SCHEMA_FLAVOR, _build_production_schema_db
-        )
-    if apply_schema is apply_fixture_schema_ddl:
+    if strategy is apply_fixture_schema_ddl:
         return pg_testdb.reusable_fixture_database()
-    return None
+    return pg_reusable_db.checkout(
+        id(strategy), lambda: _clone_schema_database(strategy)
+    )
 
 
 @contextlib.contextmanager
 def init_test_db(tmp_path: Path, apply_schema=None):
-    """Yield a path-shaped ``db_path`` token with the schema applied.
+    """Yield a path token targeting an isolated schema-loaded test database.
 
-    See the module docstring. The yielded value is always a string path-shaped
-    compatibility token; the connection target is the repointed Postgres DSN.
+    Every zero-argument schema callable has a per-worker Postgres template.
+    Default and explicit ``schema.cmd_init`` share the production flavor,
+    including baseline test-project identities. Other callables retain their
+    own schema and seeds. A reusable clone is reset after use; nested contexts
+    and schema-drift replacements clone the same template without replaying
+    schema initialization. Templates are never handed to tests.
 
-    ``apply_schema`` is a zero-argument callable that applies the schema to the
-    repointed ``YOKE_PG_DSN`` database. It defaults to ``schema.cmd_init``
-    (the full production schema) plus the two baseline test-project
-    identity rows (production init seeds no project rows; the shared
-    test universe keeps them as fixture data). Pass
-    :func:`apply_fixture_schema_ddl` for composed fixture-schema
-    consumers, or a project-specific ``cmd_init`` wrapper for families
-    that need a different schema.
-
-    The two known strategies are served from a per-worker reusable
-    database that ``pg_reusable_db`` resets between uses, so they run
-    their schema build once per worker instead of once per test. Custom
-    strategies (and nested contexts) fall back to a disposable per-use
-    database that is dropped on exit.
+    Use a distinct callable when its schema or seed inputs differ: callable
+    identity is the flavor, not its name or source text.
     """
     from runtime.api.fixtures import pg_testdb
 
     db_path = str(tmp_path / "yoke.db")
-    reusable_cm = _reusable_checkout(apply_schema)
-    if reusable_cm is not None:
-        with reusable_cm as reusable:
-            if reusable is not None:
-                with _repointed_dsn(reusable):
-                    yield db_path
-                return
-            # Flavor already checked out (nested use): disposable fallback.
-            name = pg_testdb.create_test_database()
-            try:
-                with _repointed_dsn(name):
-                    (apply_schema or _apply_production_schema)()
-                    yield db_path
-            finally:
+    strategy = _schema_strategy(apply_schema)
+    with _reusable_checkout(strategy) as reusable:
+        name = reusable if reusable is not None else _clone_schema_database(strategy)
+        try:
+            with _repointed_dsn(name):
+                yield db_path
+        finally:
+            if reusable is None:
                 pg_testdb.drop_test_database(name)
-            return
-
-    name = pg_testdb.create_test_database()
-    try:
-        with _repointed_dsn(name):
-            apply_schema()
-            yield db_path
-    finally:
-        pg_testdb.drop_test_database(name)
 
 
 def apply_fixture_schema_ddl() -> None:

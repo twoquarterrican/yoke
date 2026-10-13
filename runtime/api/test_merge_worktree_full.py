@@ -40,10 +40,7 @@ from runtime.api.merge_worktree_test_db import (
     _insert_canonical_integration_simulation as _insert_canonical_integration_simulation,
     _insert_plain_text_integration_simulation as _insert_plain_text_integration_simulation,
 )
-from runtime.api.source_pythonpath_test_helpers import (
-    REPO_ROOT as WORKTREE_ROOT,
-    SOURCE_PYTHONPATH,
-)
+from runtime.api.source_pythonpath_test_helpers import REPO_ROOT as WORKTREE_ROOT
 
 
 # ---------------------------------------------------------------------------
@@ -107,8 +104,7 @@ class MergeEnv:
         # https-default machine its board.data.get dispatch relays to
         # live prod instead of in-process (the 12349 hermeticity class,
         # subprocess edition).
-        for key in ("YOKE_PG_DSN", "YOKE_PG_DSN_FILE",
-                    "YOKE_MACHINE_HOME"):
+        for key in ("YOKE_PG_DSN", "YOKE_PG_DSN_FILE", "YOKE_MACHINE_HOME"):
             if key in os.environ:
                 e[key] = os.environ[key]
         if extra:
@@ -163,17 +159,6 @@ def _write_mock_gh(mock_dir: Path, script_content: str = MOCK_GH_SCRIPT) -> None
     gh_path.chmod(gh_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def _clean_yoke_env(*, extra: Optional[dict[str, str]] = None) -> dict[str, str]:
-    """Return a subprocess env without leaked Yoke DB bootstrap state."""
-    env = os.environ.copy()
-    for key in ("YOKE_DB", "YOKE_ROOT", "YOKE_DB_INIT_DONE",
-                "YOKE_DB_INIT_ALLOW"):
-        env.pop(key, None)
-    if extra:
-        env.update(extra)
-    return env
-
-
 def run_merge(
     env: MergeEnv,
     branch: str = TEST_BRANCH,
@@ -185,13 +170,21 @@ def run_merge(
     cwd: Optional[Path] = None,
 ) -> MergeResult:
     """Run the merge-worktree engine and capture output."""
-    cmd = [sys.executable, "-m", MERGE_MODULE, branch, target]  # absolute; bare python3 misses .venv deps on a clean runner
+    cmd = [
+        sys.executable,
+        "-m",
+        MERGE_MODULE,
+        branch,
+        target,
+    ]  # absolute; bare python3 misses .venv deps on a clean runner
     if extra_args:
         cmd.extend(extra_args)
     if standalone:
         cmd.append("--standalone")
 
-    merge_env = merge_subprocess_env(env.env(extra=extra_env), tmpdir=env.tmpdir, standalone=standalone)
+    merge_env = merge_subprocess_env(
+        env.env(extra=extra_env), tmpdir=env.tmpdir, standalone=standalone
+    )
 
     result = subprocess.run(
         cmd,
@@ -212,7 +205,7 @@ def run_merge(
 # ---------------------------------------------------------------------------
 @pytest.fixture
 def merge_env(tmp_path: Path, request) -> MergeEnv:
-    """Create a fresh test repo environment mirroring the shell _setup_repo()."""
+    """Copy the module's Git template and checkout a production-schema clone."""
     origin = tmp_path / "origin.git"
     repo = tmp_path / "repo"
     worktree = tmp_path / "worktree"
@@ -224,21 +217,14 @@ def merge_env(tmp_path: Path, request) -> MergeEnv:
 
     from yoke_core.domain import db_backend
 
-    if db_backend.is_postgres():
-        from runtime.api.fixtures import pg_testdb
+    from runtime.api.fixtures.file_test_db import init_test_db
+    from runtime.api.merge_worktree_test_repository import copy_repository
+    from yoke_core.domain.environment_bootstrap import run_bootstrap
 
-        pg_name = pg_testdb.create_test_database()
-        prior_pg_dsn = os.environ.get(db_backend.PG_DSN_ENV)
-        os.environ[db_backend.PG_DSN_ENV] = pg_testdb.dsn_for_test_database(pg_name)
-
-        def _cleanup_pg() -> None:
-            if prior_pg_dsn is not None:
-                os.environ[db_backend.PG_DSN_ENV] = prior_pg_dsn
-            else:
-                os.environ.pop(db_backend.PG_DSN_ENV, None)
-            pg_testdb.drop_test_database(pg_name)
-
-        request.addfinalizer(_cleanup_pg)
+    database = init_test_db(tmp_path, apply_schema=run_bootstrap)
+    database.__enter__()
+    request.addfinalizer(lambda: database.__exit__(None, None, None))
+    copy_repository(tmp_path, request, TEST_BRANCH)
 
     # Create gh log file
     gh_log.touch()
@@ -249,76 +235,24 @@ def merge_env(tmp_path: Path, request) -> MergeEnv:
     # Build PATH: mock gh first, then scripts dir, then system PATH
     test_path = f"{mock_dir}:{SCRIPTS_DIR}:{os.environ['PATH']}"
 
-    # Create bare origin. Pin initial branch to main so the bare repo's
-    # HEAD matches the working repo (CI runners without
-    # ~/.gitconfig init.defaultBranch default to 'master', which makes
-    # the eventual 'git push origin main' fail).
-    subprocess.run(
-        ["git", "init", "--bare", "--initial-branch=main", str(origin)],
-        capture_output=True, check=True,
-    )
-
-    # Create main repo with the same initial-branch pin so the first
-    # commit lands on main locally and 'push origin main' resolves.
-    subprocess.run(
-        ["git", "init", "--initial-branch=main", str(repo)],
-        capture_output=True, check=True,
-    )
-    _git(repo, "remote", "add", "origin", str(origin))
-    _git(repo, "config", "user.email", "test@test.com")
-    _git(repo, "config", "user.name", "Test")
-
     yoke_root.mkdir(parents=True, exist_ok=True)
-    _pythonpath = SOURCE_PYTHONPATH
-    subprocess.run(
-        [sys.executable, "-m", "yoke_core.cli.db_router", "init"],
-        cwd=str(repo),
-        capture_output=True,
-        check=True,
-        env=_clean_yoke_env(
-            extra={
-            "YOKE_ROOT": str(yoke_root),
-            "PYTHONPATH": _pythonpath,
-            "YOKE_DB_INIT_ALLOW": "1",
-        }),
-    )
 
     # Seed Yoke project + GitHub App auth + items row via the shared helper so
     # the REST precondition resolves for every merge subprocess test.
     from runtime.api.merge_worktree_test_db import _seed_yoke_project_with_github_app
+
     _seed_conn = db_backend.connect()
     try:
         _seed_yoke_project_with_github_app(
             _seed_conn,
             repo_path=str(repo),
+            config_root=tmp_path / "machine-config",
             item_id=TEST_ITEM_ID,
             branch=TEST_BRANCH,
         )
         _seed_conn.commit()
     finally:
         _seed_conn.close()
-
-    # Create .gitignore for generated views
-    _write_file(repo / ".gitignore", ".yoke/BOARD.md\n.yoke/BOARD.md.ts\n")
-
-    # Initial commit + push
-    _write_file(repo / "README.md", "initial\n")
-    _write_file(repo / ".yoke" / "BOARD.md", "# Board\n")
-    _git(repo, "add", "-A")
-    _git(repo, "commit", "-m", "initial commit")
-    _git(repo, "push", "origin", "main")
-
-    # Create test branch and worktree
-    _git(repo, "branch", TEST_BRANCH)
-    _git(repo, "worktree", "add", str(worktree), TEST_BRANCH)
-
-    # Make a commit on the test branch
-    _git(worktree, "config", "user.email", "test@test.com")
-    _git(worktree, "config", "user.name", "Test")
-    _write_file(worktree / "feature.txt", "feature work\n")
-    _git(worktree, "add", "feature.txt")
-    _git(worktree, "commit", "-m", "feature work")
-    _git(worktree, "push", "origin", TEST_BRANCH)
 
     # Seed happy-path REST fakes so tests that exercise the full merge
     # flow (prepare → conflict → execute → post-merge cleanup) succeed

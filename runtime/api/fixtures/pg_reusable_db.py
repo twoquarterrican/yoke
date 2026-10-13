@@ -22,7 +22,7 @@ create/drop cost once per worker process instead of once per test:
   checkout, so DDL never leaks between tests — schema-mutating tests
   simply keep paying the old one-clone cost.
 - Nested checkout of an already-checked-out flavor yields ``None`` so
-  the caller falls back to its legacy clone path.
+  the caller uses an independent template clone.
 
 Accepted residual limits: the fingerprint and reset cover
 ``current_schema()`` only, and database-scoped settings
@@ -34,13 +34,13 @@ from __future__ import annotations
 
 import atexit
 import contextlib
-from typing import Callable, Iterator, Optional
+from typing import Callable, Hashable, Iterator, Optional
 
 import psycopg
 
 from yoke_core.domain import schema_fingerprint
 
-_STATES: dict[str, dict] = {}
+_STATES: dict[Hashable, dict] = {}
 
 
 class SchemaDriftDetected(Exception):
@@ -134,9 +134,7 @@ def _capture_baseline(name: str) -> dict:
             # is needed to re-insert the seed rows at reset time.
             literals = [
                 row[0]
-                for row in conn.execute(
-                    f"SELECT (t.*)::text FROM {table} t"
-                ).fetchall()
+                for row in conn.execute(f"SELECT (t.*)::text FROM {table} t").fetchall()
             ]
             if literals:
                 overriding = (
@@ -193,7 +191,7 @@ def _reset(state: dict) -> None:
         conn.close()
 
 
-def discard(flavor: str) -> None:
+def discard(flavor: Hashable) -> None:
     """Drop the reusable database for *flavor*; the next checkout rebuilds."""
     state = _STATES.pop(flavor, None)
     if state is not None:
@@ -201,9 +199,7 @@ def discard(flavor: str) -> None:
 
 
 @contextlib.contextmanager
-def checkout(
-    flavor: str, build: Callable[[], str]
-) -> Iterator[Optional[str]]:
+def checkout(flavor: Hashable, build: Callable[[], str]) -> Iterator[Optional[str]]:
     """Yield the reusable database name for *flavor*, or ``None`` to fall back.
 
     ``build`` returns the name of a freshly built database for the flavor
@@ -213,8 +209,8 @@ def checkout(
     runs again on the next checkout.
 
     A ``None`` yield means the flavor is already checked out (nested use in
-    the same process); the caller must fall back to its legacy
-    clone-per-test path for that inner context.
+    the same process); the caller uses an independent template clone
+    for that inner context.
     """
     state = _STATES.get(flavor)
     if state is not None and state["in_use"]:

@@ -135,9 +135,7 @@ def test_reset_terminates_leaked_connections(flavor):
             leaked = _connect(name)
             # Open transaction holding a row lock; without termination the
             # baseline reset's DELETE would block behind it.
-            leaked.execute(
-                "INSERT INTO parent_rows (label) VALUES ('uncommitted')"
-            )
+            leaked.execute("INSERT INTO parent_rows (label) VALUES ('uncommitted')")
 
         with pg_reusable_db.checkout(flavor, _build_small_db) as again:
             assert again == name
@@ -145,9 +143,7 @@ def test_reset_terminates_leaked_connections(flavor):
             try:
                 labels = [
                     row[0]
-                    for row in conn.execute(
-                        "SELECT label FROM parent_rows"
-                    ).fetchall()
+                    for row in conn.execute("SELECT label FROM parent_rows").fetchall()
                 ]
                 assert labels == ["seed"]
             finally:
@@ -194,9 +190,7 @@ def test_init_test_db_default_strategy_reuses_database(tmp_path):
         conn = db_backend.connect_psycopg()
         try:
             second = conn.execute("SELECT current_database()").fetchone()[0]
-            again_projects = conn.execute(
-                "SELECT count(*) FROM projects"
-            ).fetchone()[0]
+            again_projects = conn.execute("SELECT count(*) FROM projects").fetchone()[0]
         finally:
             conn.close()
 
@@ -223,12 +217,7 @@ def test_init_test_db_fixture_strategy_shares_worker_fixture_database(tmp_path):
 
 
 def test_init_test_db_custom_strategy_starts_from_an_empty_database(tmp_path):
-    """A caller-supplied schema strategy always builds on bare ground.
-
-    Its database is not shared with the reusable flavors, and whatever the
-    previous run of the same strategy left behind is gone — the strategy
-    would fail outright on a second run if the table it creates survived.
-    """
+    """A custom template builds on bare ground once and resets between uses."""
     from yoke_core.domain import db_backend
 
     preexisting_tables = []
@@ -253,4 +242,4 @@ def test_init_test_db_custom_strategy_starts_from_an_empty_database(tmp_path):
     with file_test_db.init_test_db(tmp_path, apply_schema=custom):
         pass
 
-    assert preexisting_tables == [0, 0]
+    assert preexisting_tables == [0]

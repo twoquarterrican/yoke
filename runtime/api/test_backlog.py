@@ -33,17 +33,12 @@ from runtime.api.fixtures.file_test_db import (
 
 
 def _apply_backlog_fixture_schema() -> None:
-    """``apply_schema`` strategy: fixture ``SCHEMA_DDL`` + canonical actors.
+    """Build the fixture schema, project identities and canonical human.
 
-    The backlog ``tmp_db`` file fixture applies ``SCHEMA_DDL`` and then seeds
-    the canonical yoke-core + local human actors so writer tests resolve the
-    default actor. :func:`apply_fixture_schema_ddl` reproduces the DDL apply
-    (installing the Postgres introspection shims); the canonical actor seed
-    then runs on a fresh backend connection so the same post-init shape lands
-    on both engines.
+    Database permissions belong to the template baseline. The consuming
+    fixture records its machine-local operating actor after every checkout.
     """
     from runtime.api.fixtures.backlog import seed_test_canonical_human
-    from runtime.api.fixtures.operating_actor import record_fixture_operating_actor
     from yoke_core.domain.actor_permissions import (
         ROLE_OWNER,
         grant_actor_project_role,
@@ -67,23 +62,19 @@ def _apply_backlog_fixture_schema() -> None:
             role_name=ROLE_OWNER,
         )
         conn.commit()
-        # A born universe also records which actor this machine operates it
-        # as. Without that, a session-less terminal write has no operating
-        # human to attribute the item to and refuses.
-        record_fixture_operating_actor(conn, local_human)
     finally:
         conn.close()
 
 
 @pytest.fixture
 def tmp_db(tmp_path):
-    """Backend-aware temp DB with full schema and canonical actors.
-
-    SQLite: a real file under ``tmp_path``. Postgres: a disposable per-test
-    database with ``YOKE_PG_DSN`` repointed for the fixture's lifetime. Both
-    apply the fixture ``SCHEMA_DDL`` and seed the canonical actors.
-    """
+    """Template checkout with a per-test operating-actor machine binding."""
     with init_test_db(tmp_path, apply_schema=_apply_backlog_fixture_schema) as path:
+        from runtime.api.fixtures.operating_actor import record_fixture_operating_actor
+        from yoke_core.domain.actors import sole_human_actor_id
+
+        with connect_test_db(path) as conn:
+            record_fixture_operating_actor(conn, sole_human_actor_id(conn, oldest=True))
         yield path
 
 

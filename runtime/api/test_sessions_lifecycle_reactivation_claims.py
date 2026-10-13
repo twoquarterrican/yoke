@@ -25,7 +25,8 @@ from yoke_core.domain.sessions_lifecycle_reactivation import (
     emit_reactivated_with_released_claims,
 )
 from yoke_core.domain.work_claim_targets import make_item_target
-from runtime.api.fixtures.backlog import seed_fixture_operating_actor
+from runtime.api.fixtures.operating_actor import record_fixture_operating_actor
+from yoke_core.domain.actors import seed_canonical_human, sole_human_actor_id
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 from runtime.api.fixtures.schema_ddl import apply_fixture_ddl
 
@@ -146,7 +147,7 @@ def _apply_reactivation_schema() -> None:
         )
         # Registration binds the universe's operating actor; a fixture
         # without one models an install that cannot exist.
-        seed_fixture_operating_actor(conn)
+        seed_canonical_human(conn)
         from runtime.api.fixtures.level_store import create_level_store_tables
 
         create_level_store_tables(conn)
@@ -200,13 +201,7 @@ def _emitted_events(conn: Any, event_name: str) -> list:
 
 
 class _ReactivationDBTest(unittest.TestCase):
-    """Per-test backend-resolved DB shared by seeding and code-under-test.
-
-    SQLite: a real file under a temp dir. Postgres: a disposable per-test DB
-    (DSN repointed for the test, dropped on teardown). Seeding and
-    ``register_session`` share one connection so the backend-resolved exception
-    types match the live engine.
-    """
+    """Per-test template checkout shared by seeding and registration."""
 
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
@@ -215,6 +210,9 @@ class _ReactivationDBTest(unittest.TestCase):
         )
         self.db_path = self._db_ctx.__enter__()
         self.conn = connect_test_db(self.db_path)
+        record_fixture_operating_actor(
+            self.conn, sole_human_actor_id(self.conn, oldest=True)
+        )
 
     def tearDown(self) -> None:
         self.conn.close()
