@@ -59,8 +59,11 @@ there, pass the project's browser-control settings document with
 `--declarations-json`, read where the project is reachable. A
 Browser case names its identity with `method_config.browser_identity`; a run
 whose cases name several identities starts one daemon per identity. An
-exploratory mission lists the identities it needs in
-`method_config.browser_identities`; its dispatch gives the walker an exact
+hosted signed-in exploratory mission must name its persona, for example
+`method_config.browser_identities: ["member"]`. Any mission naming identities
+uses the managed browser even when it installs nothing; host-browser access
+is reserved for missions naming none that have not installed Yoke.
+The dispatch gives the walker an exact
 `yoke browser verify` per identity to run before browsing, and an expired site
 is a human gate naming the identity, site and account.
 

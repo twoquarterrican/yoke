@@ -28,8 +28,8 @@ resolves it against the project capability rows, and admission refuses a
 mission whose project has registered no Test Machine. `browser-control` needs no project
 capability row, because this method's own runner is declared to supply it on
 the host the mission walks: admission admits the mission, and the walker
-drives the host's own browser, or the Yoke browser runtime when the walk
-installed Yoke there, as the dispatch contract below describes.
+uses the managed browser for named identities or when the walk installed Yoke;
+otherwise it drives the host browser, as the dispatch contract below describes.
 The Test Machine connection comes from the `QA_HOST:` coordination lease
 recorded on `qa_plan_executions.machine_lease_id`; the mission does not open
 an undeclared host or browser path.
@@ -241,18 +241,18 @@ They mean the command ran in the wrong session. Retry through the Terminal
 GUI-session bridge before diagnosing broken credentials or privacy settings.
 
 Use the declared browser-control substrate for web interaction. Test Machines
-start without Yoke. When the walk installed Yoke on the target, the dispatch's
+start without Yoke. A mission naming browser identities uses the managed browser
+even when it installs nothing. When no identities are named, use it only if the
+walk installed Yoke. The dispatch's
 lease-routed `yoke qa browser setup` materializes the packaged runtime and
 `yoke qa browser step --base-url URL --step-json JSON` drives it one chosen
-step at a time; no scenario is authored in advance. Otherwise the walker opens
-the host's own browser (Safari on macOS; the desktop's default elsewhere) and
-drives it by screenshots and keystrokes through the host command. It never
-installs Yoke on a Test Machine to get a browser.
-
-Agents complete setup and application steps that do not need the user.
-The user supplies personal credentials. Password, MFA, passkey and personal
-permission prompts return a human gate for this run's host, substrate, and resume state.
-Missions list `browser_identities`; the walker verifies each before browsing. See
+step at a time. Without identities or a Yoke install, use the host browser
+(Safari on macOS; desktop default elsewhere) through screenshots and keystrokes.
+Never install Yoke on a Test Machine to get a browser.
+Agents complete steps that do not need the user; personal credentials, MFA,
+passkeys and permissions return a human gate naming host, substrate and resume state.
+Hosted signed-in missions set `method_config.browser_identities` (e.g. `["member"]`).
+The walker verifies each and uses `--identity NAME` for its steps. See
 [browser sign-in identities](qa-platform/browser-identities.md).
 The mission execution contract above governs every host command.
 

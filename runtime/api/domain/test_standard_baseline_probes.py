@@ -177,7 +177,9 @@ def test_default_capture_stops_before_archive_on_each_failed_standard_check(
     def run(argv, **kwargs):
         calls.append((argv, kwargs))
         return SimpleNamespace(
-            returncode=int(len(calls) - 1 == failure_index), stdout="", stderr=""
+            returncode=13 if len(calls) - 1 == failure_index else 0,
+            stdout="",
+            stderr="",
         )
 
     # Archive/upload methods deliberately absent: failure must precede them.

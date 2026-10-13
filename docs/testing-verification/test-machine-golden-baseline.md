@@ -95,6 +95,10 @@ Each sealed standard probe exits with a code from one table
 executable missing, request timed out, launch failed, harness non-zero exit,
 unanswered reply, or check unmet. No failure defaults to "not signed in", and
 `expectation_met` is null when nothing was expected.
+An undeclared nonzero exit is retried exactly once before `baseline_probe_failed`;
+evidence retains the first attempt as `retrying`. Declared causes, unmet
+expectations and unavailable bridges fail immediately. A repeated
+`probe_exit_undeclared` calls for recapturing the golden with current probes.
 An undelivered bridge probe is distinct from a program that ran and refused.
 Older sealed sidecars remain historical state, not implicit inputs to a new
 capture's required check set.
