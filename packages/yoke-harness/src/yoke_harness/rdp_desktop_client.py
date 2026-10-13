@@ -45,6 +45,9 @@ def _capture_output(source, destination, password, evidence):
                     evidence["cancelled"] = True
                 if "[exception]" in line:
                     evidence["client_failed"] = True
+                reasons = re.findall(r"\b(?:ERRCONNECT|ERRINFO)_[A-Z_]+\b", line)
+                if reasons:
+                    evidence["reason"] = reasons[-1]
     except (OSError, ValueError):
         evidence["capture_failed"] = True
 
@@ -65,6 +68,19 @@ def _stop(process, log_path):
             raise DesktopAccessError(
                 f"desktop_view_unresponsive: FreeRDP required a forced stop; retained log: {log_path}; inspect the log and rerun desktop-access --view"
             ) from None
+
+
+def _client_failure(code, evidence, log_path):
+    reason = evidence.get("reason", "client_exit_unknown")
+    if reason == "ERRINFO_LOGOFF_BY_USER":
+        recovery = "The remote desktop logged off; inspect /var/log/xrdp-sesman.log for a window manager that exited immediately, repair the fixture session, then rerun desktop-access --view."
+    elif reason in {"ERRCONNECT_CONNECT_FAILED", "ERRCONNECT_CONNECT_TRANSPORT_FAILED"}:
+        recovery = "Check the registered desktop port and xrdp service, repair the RDP route, then rerun desktop-access --view."
+    elif reason in {"ERRCONNECT_LOGON_FAILURE", "ERRCONNECT_AUTHENTICATION_FAILED"}:
+        recovery = "Repair the registered desktop_user and desktop_password fixture secret, then rerun desktop-access --view."
+    else:
+        recovery = "Inspect the retained client log, repair the named client or remote desktop failure, then rerun desktop-access --view."
+    return f"desktop_view_failed: {reason}; FreeRDP exited {code}; retained log: {log_path}; {recovery}"
 
 
 def view_desktop(project, machine, settings, password, receipt, run):
@@ -104,7 +120,10 @@ def view_desktop(project, machine, settings, password, receipt, run):
             f"/u:{user}",
             "/d:",
             "/from-stdin:force",
-            "/cert:tofu",
+            # Only the loopback SSH route trusts SSH's verified host key.
+            "/cert:ignore"
+            if settings["desktop_route"] == "ssh-forward"
+            else "/cert:deny",
             "/log-level:INFO",
             "/timeout:15000",
             # SDL retains /size as local window dimensions and negotiates the
@@ -156,10 +175,14 @@ def view_desktop(project, machine, settings, password, receipt, run):
         except KeyboardInterrupt:
             # The caller may close a deliberately retained viewer with Ctrl-C.
             pass
-        except (OSError, subprocess.TimeoutExpired):
+        except FileNotFoundError:
             raise DesktopAccessError(
-                f"desktop_view_unavailable: retained log: {log_path}; "
+                f"desktop_rdp_client_missing: retained log: {log_path}; "
                 + CLIENT_RECOVERY
+            ) from None
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise DesktopAccessError(
+                f"desktop_view_unavailable: {type(exc).__name__}; retained log: {log_path}; check workstation client permissions and resources, then rerun desktop-access --view"
             ) from None
         finally:
             try:
@@ -182,10 +205,7 @@ def view_desktop(project, machine, settings, password, receipt, run):
             and not evidence.get("client_failed")
         )
         if code and not local_quit:
-            raise DesktopAccessError(
-                f"desktop_view_failed: FreeRDP exited {code}; retained log: {log_path}; inspect the log and verify the registered XFCE desktop and RDP route; "
-                + CLIENT_RECOVERY
-            )
+            raise DesktopAccessError(_client_failure(code, evidence, log_path))
     return {
         "user": user,
         "desktop_session": receipt["desktop_session"],

@@ -41,6 +41,18 @@ stdin, and owns the SSH forward until the viewer closes. It does not write a
 password file or put the password in the client arguments. Personal sign-in is
 performed by the operator in the visible desktop.
 
+For a loopback SSH forward, SSH host-key verification is the trust boundary.
+The viewer uses `/cert:ignore`, so random local ports never consult or change
+FreeRDP's per-port certificate cache. SSH keeps its existing known-hosts check;
+direct RDP routes retain certificate verification.
+
+Desktop access reports `desktop_session=started`, `reused`, or `restarted`.
+A fixture XFCE session older than the running xrdp-sesman service is orphaned:
+sesman lost its session registry when it restarted. RDP access ends that stale
+fixture desktop, waits for its X socket to disappear, then starts a replacement.
+A connected RDP client blocks this repair; close it and rerun desktop access.
+GUI commands continue using their existing display without this access repair.
+
 The resizable viewer scales the shared desktop to fit its window. The initial
 window fits within 1280 by 800 logical pixels, with a doubled framebuffer on
 macOS for Retina readability. Resizing the window changes only the local view;
@@ -66,6 +78,13 @@ exits remain `desktop_view_failed` and name the retained log. A client requiring
 a forced kill during cleanup reports `desktop_view_unresponsive`, also with
 the log path. Inspect that log, repair the named client or registered desktop
 route, and rerun the command. Capture-storage failures refuse explicitly.
+
+`desktop_rdp_client_missing` is the only failure that asks you to install
+FreeRDP. Other failures name the logged `ERRCONNECT_*` or `ERRINFO_*` reason:
+connection failures point to the registered port and xrdp service; authentication
+failures point to the fixture user and secret. `ERRINFO_LOGOFF_BY_USER` means
+the remote desktop logged off: inspect `/var/log/xrdp-sesman.log` for a window
+manager that exited immediately, repair that session, and rerun the viewer.
 
 Renderer selection uses SDL's documented [render-driver hint](https://wiki.libsdl.org/SDL3/SDL_HINT_RENDER_DRIVER).
 The [FreeRDP SDL update loop](https://github.com/FreeRDP/FreeRDP/blob/3.32.1/client/SDL/SDL3/sdl_freerdp.cpp)

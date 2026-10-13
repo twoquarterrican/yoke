@@ -14,7 +14,7 @@ def ensure_desktop(control):
     source = Path(linux_desktop_state.__file__).read_text()
     program = (
         source
-        + "\nimport sys\ntry:\n print(json.dumps(ensure_desktop(sys.stdin.read().removesuffix('\\n'), int(sys.argv[1]))))\nexcept (RuntimeError, OSError, ValueError, subprocess.TimeoutExpired) as exc:\n print(str(exc), file=sys.stderr); sys.exit(69)"
+        + "\nimport sys\ntry:\n print(json.dumps(ensure_desktop(sys.stdin.read().removesuffix('\\n'), int(sys.argv[1]), rdp_access=sys.argv[2] == '1')))\nexcept (RuntimeError, OSError, ValueError, subprocess.TimeoutExpired) as exc:\n print(str(exc), file=sys.stderr); sys.exit(69)"
     )
     probe = control._run(
         shlex.join(
@@ -23,6 +23,7 @@ def ensure_desktop(control):
                 "-c",
                 program,
                 str(getattr(control, "desktop_port", linux_desktop_state.RDP_PORT)),
+                "1" if getattr(control, "rdp_access", False) else "0",
             ]
         ),
         input_text=(getattr(control, "desktop_password", None) or "") + "\n",
@@ -41,7 +42,7 @@ def ensure_desktop(control):
     try:
         receipt = json.loads(probe.stdout)
         if (
-            receipt["desktop_session"] not in {"started", "reused"}
+            receipt["desktop_session"] not in {"started", "reused", "restarted"}
             or not receipt["environment"]["DISPLAY"]
         ):
             raise ValueError()
