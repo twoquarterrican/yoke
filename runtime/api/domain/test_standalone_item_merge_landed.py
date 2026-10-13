@@ -196,6 +196,11 @@ def test_a_landed_lane_never_reaches_the_verification_gate_or_the_queue(
     )
     monkeypatch.setattr(converging, "fast_forward_main_checkout", lambda *_a: "")
     monkeypatch.setattr(converging, "verified_target_sha", lambda *_a: MERGE_SHA)
+    monkeypatch.setattr(
+        converging,
+        "verified_landing_identity",
+        lambda *args: args[3] if len(args) > 3 and args[3] else args[1],
+    )
     monkeypatch.setattr(landed.git, "has_remote", lambda *_a: False)
     monkeypatch.setattr(landed.receipts, "record", lambda *_a, **_k: "")
     monkeypatch.setattr(

@@ -187,6 +187,10 @@ def _wire_close_out(monkeypatch, *, pr_files) -> dict:
     monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_target_sha", lambda *_a: "m" * 40
     )
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_landing_identity",
+        lambda *args: args[3] if len(args) > 3 and args[3] else args[1],
+    )
     monkeypatch.setattr(close_out_mod, "stamp_merged_at", lambda _item, **_kwargs: None)
     monkeypatch.setattr(
         close_out_mod,

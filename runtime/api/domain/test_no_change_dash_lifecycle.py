@@ -167,6 +167,11 @@ def test_no_change_merge_records_base_identity_and_closes_dash(
     monkeypatch.setattr(landed.git, "has_remote", lambda *_a: False)
     monkeypatch.setattr(merge_cli.converge, "verified_target_sha", lambda *_a: LANE_SHA)
     monkeypatch.setattr(
+        merge_cli.converge,
+        "verified_landing_identity",
+        lambda *args: args[3] if len(args) > 3 and args[3] else args[1],
+    )
+    monkeypatch.setattr(
         close_out_transition,
         "close_out_route",
         lambda *_a, **_k: CloseOutRoute(stages=("done",)),

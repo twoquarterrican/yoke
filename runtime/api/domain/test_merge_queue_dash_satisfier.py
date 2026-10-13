@@ -45,6 +45,10 @@ def test_no_posture_queue_handoff_stamps_ci_backed_merge(test_db, monkeypatch):
         "yoke_core.domain.merge_landing_proof.verified_target_sha",
         lambda *_a: MERGE_SHA,
     )
+    monkeypatch.setattr(
+        "yoke_core.domain.merge_landing_proof.verified_landing_identity",
+        lambda *args: args[3] if len(args) > 3 and args[3] else args[1],
+    )
     item_id = 9601
     insert_item(
         test_db,
