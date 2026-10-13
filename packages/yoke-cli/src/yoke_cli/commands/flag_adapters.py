@@ -177,6 +177,7 @@ from yoke_cli.commands.adapters.projects_secret import (
 )
 from yoke_cli.commands.adapters.project_github_binding import (
     projects_github_binding_bind,
+    projects_github_binding_check,
     projects_github_binding_status,
     projects_github_binding_unbind,
     projects_github_sync_mode_repair,

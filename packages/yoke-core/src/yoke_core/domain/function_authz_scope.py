@@ -136,6 +136,9 @@ _BY_ID: dict[str, AuthzSpec] = {
     "projects.resolve_by_github_repo": AuthzSpec(ACTOR_SESSION, None),
     "projects.checkout_context.run": AuthzSpec(PROJECT, PERM_ITEMS_READ),
     "projects.github_binding.bind": AuthzSpec(PROJECT, PERM_PROJECT_ADMIN),
+    # A check re-verifies the stored binding with GitHub and may flip it to
+    # unavailable, so it carries the same authority as binding it.
+    "projects.github_binding.check": AuthzSpec(PROJECT, PERM_PROJECT_ADMIN),
     # Hosted lifecycle deliveries mutate one verified project binding, and
     # only the hosted service's own identity delivers them. Authority is that
     # identity's service-only permission on the org owning payload.project,

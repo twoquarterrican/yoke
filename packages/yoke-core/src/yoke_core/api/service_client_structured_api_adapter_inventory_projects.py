@@ -46,6 +46,15 @@ PROJECT_ADAPTERS = [
         cli_invocation="yoke projects github-binding status --project NAME",
     ),
     AdapterEntry(
+        function_id="projects.github_binding.check",
+        cli_invocation="yoke projects github-binding check --project NAME",
+        notes=(
+            "re-verifies the stored binding with GitHub and refreshes its "
+            "last-checked time; local and self-hosted universes have no "
+            "webhooks, so this is how their GitHub facts stay current"
+        ),
+    ),
+    AdapterEntry(
         function_id="projects.github_sync_mode.repair",
         cli_invocation=(
             "yoke projects github-sync-mode repair [--project NAME] [--apply]"
