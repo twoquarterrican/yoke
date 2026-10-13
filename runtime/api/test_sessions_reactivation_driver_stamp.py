@@ -16,7 +16,6 @@ import json
 import pytest
 
 from runtime.api.fixtures.file_test_db import init_test_db
-from runtime.api.fixtures.backlog import seed_fixture_operating_actor
 from runtime.api.test_constants import TEST_MODEL_ID
 from runtime.api.test_sessions import (
     _connect_with_backend_setup,
@@ -81,8 +80,6 @@ def _fixture_actor_id(conn) -> int:
 
 
 def _register(conn, **kwargs):
-    # Driver attribution is under test, not machine-local identity discovery.
-    kwargs.setdefault("actor_id", seed_fixture_operating_actor(conn))
     return register_session(
         conn,
         session_id=SESSION_ID,
