@@ -68,6 +68,15 @@ machine_browser_approval_context_invalid with recovery. Self-hosted
 machine/code links preserve the exact wizard-opened path. Coordinate validation
 does not grant approval authority; keep the selected human/fixture boundary.
 
+With the dedicated-machine approval exception, the visible Safari helper
+also accepts the declared origin's `/orgs/<org>/machine-approval/<code>`
+redirect from `/connect`. The code must match the displayed one-time code
+exactly; extra path segments, parameters, fragments and other origins refuse.
+The helper presses the visible approval control only in an exact validated
+tab and requires navigation from that tab's own starting URL. An unchanged
+redirect page is not approval evidence. Full hosted setup still requires the
+run-bound case verdict and independent inspection review.
+
 ## Isolated welcome frame
 
 The welcome probe uses an unwritable home to keep the real host untouched.
