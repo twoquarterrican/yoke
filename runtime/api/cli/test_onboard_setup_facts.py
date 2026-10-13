@@ -7,6 +7,8 @@ from uuid import uuid4
 from yoke_cli.config.onboard_setup_facts import collect
 from yoke_cli.commands.adapters import onboard_checklist_get as read_adapter
 from yoke_contracts.api.function_call import FunctionCallResponse, TargetRef
+from yoke_contracts.api.function_call import FunctionError
+from yoke_cli.config import machine_config
 
 
 def test_missing_identity_stays_unchecked(tmp_path):
@@ -49,3 +51,24 @@ def test_old_schema_refuses_without_sending_a_mutation(monkeypatch):
     assert response.error.code == "setup_facts_unavailable"
     assert [call["function_id"] for call in calls] == ["onboard.checklist.get"]
     assert "row_status" not in calls[0]["payload"]
+
+
+def test_selected_config_routes_get_and_restores_default_after_refusal(tmp_path, monkeypatch):
+    default, selected = tmp_path / "default.json", tmp_path / "selected.json"
+    selected.write_text(json.dumps({
+        "machine_id": str(uuid4()), "active_env": "prod",
+        "connections": {"prod": {"transport": "https", "api_url": "https://selected.invalid",
+                                  "credential_source": {"kind": "token_file", "path": str(tmp_path / "token")}}},
+    }))
+    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(default))
+    monkeypatch.setattr(read_adapter, "ensure_handlers_loaded", lambda: None)
+    calls = []
+    def dispatch(**kwargs):
+        calls.append(machine_config.active_connection()["api_url"])
+        assert machine_config.config_path() == selected
+        return FunctionCallResponse(version="v1", success=False, function=kwargs["function_id"],
+                                    error=FunctionError(code="fixture_refused", message="No mutation."))
+    monkeypatch.setattr(read_adapter, "call_dispatcher", dispatch)
+    assert read_adapter.onboard_checklist_get(["--config", str(selected), "--project", "7", "--json"]) == 1
+    assert calls == ["https://selected.invalid"]
+    assert machine_config.config_path() == default

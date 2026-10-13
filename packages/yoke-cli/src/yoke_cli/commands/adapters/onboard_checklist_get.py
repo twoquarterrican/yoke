@@ -79,25 +79,28 @@ def onboard_checklist_get(args: list[str]) -> int:
     parsed = parse_or_usage_error(parser, args, ONBOARD_CHECKLIST_GET_USAGE)
     if parsed is None:
         return 2
-    try:
-        payload = {
-            "project": parsed.project,
-            "run_id": parsed.run_id,
-            **onboard_setup_facts.collect(
-                config_path=parsed.config_path,
-                checkout_path=parsed.checkout_path,
+    from yoke_cli.config.project_onboard_support import machine_config_path
+
+    with machine_config_path(parsed.config_path):
+        try:
+            payload = {
+                "project": parsed.project,
+                "run_id": parsed.run_id,
+                **onboard_setup_facts.collect(
+                    config_path=parsed.config_path,
+                    checkout_path=parsed.checkout_path,
+                ),
+            }
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        response = get_setup(
+            payload,
+            TargetRef(
+                kind="global",
+                project_id=parsed.project or client_project_context(),
             ),
-        }
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
-    response = get_setup(
-        payload,
-        TargetRef(
-            kind="global",
-            project_id=parsed.project or client_project_context(),
-        ),
-    )
-    return emit_response(
-        response, json_mode=parsed.json_mode, human_writer=render_lookup
-    )
+        )
+        return emit_response(
+            response, json_mode=parsed.json_mode, human_writer=render_lookup
+        )

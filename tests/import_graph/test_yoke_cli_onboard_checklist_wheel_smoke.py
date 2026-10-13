@@ -61,6 +61,12 @@ def test_onboard_checklist_product_wheel_renders_with_inert_engine(
     function_server = _FunctionCallServer(expected_token="product-token")
     with function_server as api_url:
         _write_https_config(machine_home, token_file, api_url)
+        default_config = config
+        config = machine_home / "selected.json"
+        config.write_text(default_config.read_text())
+        wrong_connection = json.loads(default_config.read_text())
+        wrong_connection["connections"]["smoke"]["api_url"] = "http://127.0.0.1:1"
+        default_config.write_text(json.dumps(wrong_connection))
 
         # Engine present: the wheel channel ships yoke-core to every machine.
         script = "\n".join(
@@ -82,7 +88,7 @@ def test_onboard_checklist_product_wheel_renders_with_inert_engine(
                 ")",
                 "payload = json.loads(checklist.dumps_handoff_json(run))",
                 "assert payload['handoff_to'] == 'yoke onboard'",
-                "assert payload['machine_config_path'].endswith('config.json')",
+                f"assert payload['machine_config_path'] == {str(config)!r}",
                 "assert payload['rows'] == [",
                 "    {",
                 "        'id': 'machine-config',",

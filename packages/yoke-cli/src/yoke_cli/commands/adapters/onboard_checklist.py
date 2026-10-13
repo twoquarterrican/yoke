@@ -8,7 +8,6 @@ from typing import Any, List
 
 from yoke_cli.commands._helpers import (
     client_project_context,
-    ensure_handlers_loaded,
     parse_or_usage_error,
 )
 from yoke_cli.config import onboard_checklist_render, onboard_setup_facts
@@ -77,53 +76,55 @@ def onboard_checklist_cmd(args: List[str]) -> int:
     parsed = parse_or_usage_error(parser, args, ONBOARD_CHECKLIST_USAGE)
     if parsed is None:
         return 2
-    try:
-        payload = _run_payload(parsed)
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
-    ensure_handlers_loaded()
-    target = _target(parsed.project_id, project=parsed.project)
-    response = get_setup(payload, target)
-    if not response.success:
-        return emit_response(response, json_mode=parsed.json_mode)
-    writes = any(
-        (
-            parsed.row_status,
-            parsed.evidence,
-            parsed.blocker,
-            parsed.note,
-            parsed.profile_file,
-            parsed.branch,
-            parsed.github_repo,
-        )
-    )
-    if writes:
-        response = call_dispatcher(
-            function_id="onboard.checklist.run",
-            target=target,
-            payload=payload,
-            actor=build_actor(),
-        )
-    elif (response.result or {}).get("run") is None:
-        return emit_response(
-            response, json_mode=parsed.json_mode, human_writer=render_lookup
-        )
-    if response.success and not parsed.no_view:
+    from yoke_cli.config.project_onboard_support import machine_config_path
+
+    with machine_config_path(parsed.config_path):
         try:
-            onboard_checklist_render.write_project_view(
-                response.result or {},
-                project_root=parsed.project_root,
-                view_path=parsed.view_path,
-            )
+            payload = _run_payload(parsed)
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
-    return emit_response(
-        response,
-        json_mode=parsed.json_mode,
-        human_writer=_render_run_human,
-    )
+        target = _target(parsed.project_id, project=parsed.project)
+        response = get_setup(payload, target)
+        if not response.success:
+            return emit_response(response, json_mode=parsed.json_mode)
+        writes = any(
+            (
+                parsed.row_status,
+                parsed.evidence,
+                parsed.blocker,
+                parsed.note,
+                parsed.profile_file,
+                parsed.branch,
+                parsed.github_repo,
+            )
+        )
+        if writes:
+            response = call_dispatcher(
+                function_id="onboard.checklist.run",
+                target=target,
+                payload=payload,
+                actor=build_actor(),
+            )
+        elif (response.result or {}).get("run") is None:
+            return emit_response(
+                response, json_mode=parsed.json_mode, human_writer=render_lookup
+            )
+        if response.success and not parsed.no_view:
+            try:
+                onboard_checklist_render.write_project_view(
+                    response.result or {},
+                    project_root=parsed.project_root,
+                    view_path=parsed.view_path,
+                )
+            except ValueError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
+        return emit_response(
+            response,
+            json_mode=parsed.json_mode,
+            human_writer=_render_run_human,
+        )
 
 
 def onboard_checklist_init(args: List[str]) -> int:
@@ -148,51 +149,53 @@ def _init(args: List[str]) -> int:
     parsed = parse_or_usage_error(parser, args, ONBOARD_CHECKLIST_INIT_USAGE)
     if parsed is None:
         return 2
-    if parsed.project_id is not None and parsed.project_id <= 0:
-        print("error: --project-id must be a positive integer", file=sys.stderr)
-        return 1
-    if parsed.config_path is None and not (
-        (parsed.project or parsed.project_id is not None) and parsed.checkout_path
-    ):
-        print(
-            "error: without --config, standalone init requires both "
-            "--project (or --project-id) and --checkout",
-            file=sys.stderr,
-        )
-        return 1
-    payload: dict[str, Any] = {
-        "machine_config_path": parsed.config_path,
-        "checkout_path": parsed.checkout_path,
-        "project_id": parsed.project_id,
-    }
-    if parsed.project:
-        payload["project"] = parsed.project
-    try:
-        payload.update(
-            onboard_setup_facts.collect(
-                config_path=parsed.config_path,
-                checkout_path=parsed.checkout_path,
-                project_id=parsed.project_id,
+    from yoke_cli.config.project_onboard_support import machine_config_path
+
+    with machine_config_path(parsed.config_path):
+        if parsed.project_id is not None and parsed.project_id <= 0:
+            print("error: --project-id must be a positive integer", file=sys.stderr)
+            return 1
+        if parsed.config_path is None and not (
+            (parsed.project or parsed.project_id is not None) and parsed.checkout_path
+        ):
+            print(
+                "error: without --config, standalone init requires both "
+                "--project (or --project-id) and --checkout",
+                file=sys.stderr,
             )
+            return 1
+        payload: dict[str, Any] = {
+            "machine_config_path": parsed.config_path,
+            "checkout_path": parsed.checkout_path,
+            "project_id": parsed.project_id,
+        }
+        if parsed.project:
+            payload["project"] = parsed.project
+        try:
+            payload.update(
+                onboard_setup_facts.collect(
+                    config_path=parsed.config_path,
+                    checkout_path=parsed.checkout_path,
+                    project_id=parsed.project_id,
+                )
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        response = get_setup(payload, _target(parsed.project_id, project=parsed.project))
+        if not response.success:
+            return emit_response(response, json_mode=parsed.json_mode)
+        response = call_dispatcher(
+            function_id="onboard.checklist.init",
+            target=_target(parsed.project_id, project=parsed.project),
+            payload=payload,
+            actor=build_actor(),
         )
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
-    ensure_handlers_loaded()
-    response = get_setup(payload, _target(parsed.project_id, project=parsed.project))
-    if not response.success:
-        return emit_response(response, json_mode=parsed.json_mode)
-    response = call_dispatcher(
-        function_id="onboard.checklist.init",
-        target=_target(parsed.project_id, project=parsed.project),
-        payload=payload,
-        actor=build_actor(),
-    )
-    return emit_response(
-        response,
-        json_mode=parsed.json_mode,
-        human_writer=_render_init_human,
-    )
+        return emit_response(
+            response,
+            json_mode=parsed.json_mode,
+            human_writer=_render_init_human,
+        )
 
 
 def _target(project_id: int | None, project: str | None = None) -> TargetRef:

@@ -137,8 +137,8 @@ def run_cli(
 
     with ExitStack() as stack:
         for module in ("onboard_checklist", "onboard_checklist_get"):
-            stack.enter_context(patch(f"yoke_cli.commands.adapters.{module}.ensure_handlers_loaded"))
             stack.enter_context(patch(f"yoke_cli.commands.adapters.{module}.call_dispatcher", side_effect=stub_call_dispatcher))
+        stack.enter_context(patch("yoke_cli.commands.adapters.onboard_checklist_get.ensure_handlers_loaded"))
         stack.enter_context(patch("yoke_cli.config.onboard_setup_facts.collect", return_value={"machine_id": MACHINE_ID, "observations": {}}))
         rc = yoke_operations_cli.main(argv)
     return rc, calls
