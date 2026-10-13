@@ -50,6 +50,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `projects.environment_settings.merge` | `none` |
 | `projects.get` | `none` |
 | `projects.github_binding.bind` | `none` |
+| `projects.github_binding.check` | `none` |
 | `projects.github_binding.lifecycle` | `none` |
 | `projects.github_binding.status` | `none` |
 | `projects.github_binding.unbind` | `none` |
