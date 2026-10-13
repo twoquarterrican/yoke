@@ -112,3 +112,41 @@ def test_resolver_refusals_keep_their_causes(monkeypatch, reason):
         refusal = check_dispatch_permission(conn, entry, request).error.error
         assert refusal.code == reason
         assert "Accessible projects" not in refusal.message
+
+
+@pytest.mark.parametrize("run_id", [999999, 0, -1])
+def test_unknown_capture_does_not_disclose_an_unresolved_subject(run_id):
+    with _conn() as conn:
+        actor_id = seed_human_actor(conn)
+        grant_actor_project_role(
+            conn,
+            actor_id=actor_id,
+            project_id=resolve_project_id(conn, "externalwebapp"),
+            role_name=ROLE_OWNER,
+            granted_by_actor_id=actor_id,
+        )
+        entry = _entry("qa.run.get")
+        request = FunctionCallRequest(
+            function=entry.function_id,
+            actor=ActorContext(actor_id=str(actor_id), session_id="hosted-member"),
+            target=TargetRef(kind="global"),
+            payload={"run_id": run_id},
+        )
+        response = check_dispatch_permission(conn, entry, request).error
+        assert response.success is False
+        assert response.error.code == "permission_denied"
+        assert response.result == {}
+        assert "Accessible projects" not in response.error.message
+
+
+@pytest.mark.parametrize("key", ["requirement_id", "plan_id", "execution_id", "id"])
+def test_supplied_record_identity_is_not_missing_project_selection(key):
+    from yoke_core.domain.function_project_selection import project_selection_missing
+
+    request = FunctionCallRequest(
+        function="qa.run.get",
+        actor=ActorContext(actor_id="1", session_id="test"),
+        target=TargetRef(kind="global"),
+        payload={key: "missing"},
+    )
+    assert not project_selection_missing(request)

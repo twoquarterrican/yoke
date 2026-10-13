@@ -36,11 +36,20 @@ PAYLOAD_NAMED_PROJECT_FUNCTIONS = frozenset(
 
 
 def project_selection_missing(request: FunctionCallRequest) -> bool:
-    """A record slug is not a project selector unless its operation declares it."""
+    """Missing selection excludes supplied record identities, even unresolved ones."""
     target = request.target.model_dump(exclude={"kind"}, exclude_none=True)
     if any(str(value).strip() for value in target.values()):
         return False
-    keys = ["project", "project_id", "entry_id", "path_claim_id"]
+    # An unresolved record must retain the non-disclosing authorization denial.
+    # IDs identify a subject even when zero, malformed, or absent from storage.
+    if any(
+        (key == "id" or key.endswith("_id"))
+        and value is not None
+        and str(value).strip()
+        for key, value in request.payload.items()
+    ):
+        return False
+    keys = ["project"]
     if request.function in PAYLOAD_NAMED_PROJECT_FUNCTIONS:
         keys.extend(("slug", "scope"))
     if request.function == "ephemeral_env.update":
