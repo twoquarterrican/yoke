@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from yoke_cli.config import github_machine_operation
 from yoke_cli.config import machine_config
 from yoke_cli.config import machine_config_file
 from yoke_contracts.machine_config import schema as contract
@@ -25,35 +24,33 @@ def _write_connection(
 ) -> dict[str, Any]:
     cfg_path = machine_config.config_path(config_path)
     try:
-        with github_machine_operation.operation_lock(cfg_path):
-            with machine_config_file.exclusive_lock(cfg_path):
-                payload = machine_config.load_config(cfg_path)
-                if not payload:
-                    payload = {"schema_version": contract.SCHEMA_VERSION}
-                connections = payload.setdefault("connections", {})
-                if not isinstance(connections, dict):
-                    raise DbAdminSetupError(
-                        "connections must be an object; repair the file first"
-                    )
-                entry = {
-                    "transport": "local-postgres",
-                    contract.PROD_FLAG_KEY: bool(prod),
-                    "credential_source": dict(credential_source),
-                    "postgres": dict(postgres),
-                    "authority": dict(authority),
-                }
-                connections[env_name] = entry
-                if set_active_env or not str(payload.get("active_env") or "").strip():
-                    payload["active_env"] = env_name
-                _write_payload(payload, cfg_path)
-                return {
-                    "env": env_name,
-                    "connection": dict(entry),
-                    "active_env": payload.get("active_env"),
-                    "config": str(cfg_path),
-                }
+        with machine_config_file.exclusive_lock(cfg_path):
+            payload = machine_config.load_config(cfg_path)
+            if not payload:
+                payload = {"schema_version": contract.SCHEMA_VERSION}
+            connections = payload.setdefault("connections", {})
+            if not isinstance(connections, dict):
+                raise DbAdminSetupError(
+                    "connections must be an object; repair the file first"
+                )
+            entry = {
+                "transport": "local-postgres",
+                contract.PROD_FLAG_KEY: bool(prod),
+                "credential_source": dict(credential_source),
+                "postgres": dict(postgres),
+                "authority": dict(authority),
+            }
+            connections[env_name] = entry
+            if set_active_env or not str(payload.get("active_env") or "").strip():
+                payload["active_env"] = env_name
+            _write_payload(payload, cfg_path)
+            return {
+                "env": env_name,
+                "connection": dict(entry),
+                "active_env": payload.get("active_env"),
+                "config": str(cfg_path),
+            }
     except (
-        github_machine_operation.GitHubMachineOperationError,
         machine_config.MachineConfigError,
         machine_config_file.MachineConfigFileError,
     ) as exc:

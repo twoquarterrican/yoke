@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from yoke_cli.config import github_machine_operation, machine_config
+from yoke_cli.config import machine_config
 from yoke_cli.config import secrets as machine_secrets
 from yoke_cli.config.machine_config_mutation import (
     MachineConfigWriteError,
@@ -39,7 +39,6 @@ def remove_connection(
     }
 
 
-@github_machine_operation.serialized_operation(MachineConfigWriteError)
 @serialized_mutation
 def remove_connections(
     envs: Iterable[str],

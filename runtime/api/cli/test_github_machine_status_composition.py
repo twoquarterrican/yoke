@@ -124,7 +124,7 @@ def test_status_reports_an_unreachable_refresh_as_retryable_not_a_reconnect(
     assert "yoke github connect" not in issues["github_user_token_read_busy"]["hint"]
 
 
-def test_status_answers_a_contended_machine_lock_with_a_diagnosis(
+def test_offline_status_does_not_take_a_contended_machine_lock(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -135,11 +135,9 @@ def test_status_answers_a_contended_machine_lock_with_a_diagnosis(
 
     monkeypatch.setattr(credential_file, "exclusive_lock", busy)
 
-    with pytest.raises(github_machine.GitHubMachineError) as raised:
-        github_machine.status(config_path=config, check=False)
+    report = github_machine.status(config_path=config, check=False)
 
-    assert "holding the machine operation lock" in str(raised.value)
-    assert "reconnect" not in str(raised.value).lower()
+    assert report["configured"] is True
 
 
 def test_offline_status_does_not_republish_the_helper_bundle(

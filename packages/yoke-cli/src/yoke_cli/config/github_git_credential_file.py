@@ -257,7 +257,9 @@ def _wait_for_exclusive_lock(
     monotonic: Any,
 ) -> None:
     """Take the lock, waiting a bounded turn while another process holds it."""
-    deadline = monotonic() + max(float(wait_seconds), 0.0)
+    started = monotonic()
+    deadline = started + max(float(wait_seconds), 0.0)
+    announced = False
     delay = _LOCK_POLL_SECONDS
     while True:
         try:
@@ -270,7 +272,8 @@ def _wait_for_exclusive_lock(
                 "GitHub App credential lock is held by another local Yoke "
                 f"operation after waiting {float(wait_seconds):g}s: {lock_path}"
             )
-        if delay == _LOCK_POLL_SECONDS:
+        if not announced and deadline - remaining - started >= 2.0:
+            announced = True
             announce_designed_wait(
                 f"another local Yoke operation to release {lock_path}",
                 max_wait_seconds=float(wait_seconds),
@@ -301,7 +304,8 @@ def _assert_secure_parent(
     forbidden_mode = 0o077 if require_private else 0o022
     if stat.S_IMODE(info.st_mode) & forbidden_mode:
         raise CredentialFileError(
-            f"GitHub App credential directory permissions are unsafe: {path}"
+            f"GitHub App credential directory permissions are unsafe: {path}; "
+            "set directory permissions to 700, then retry"
         )
 
 

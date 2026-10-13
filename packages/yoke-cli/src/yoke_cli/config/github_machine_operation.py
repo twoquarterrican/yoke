@@ -1,4 +1,4 @@
-"""Cross-process serialization for machine GitHub App mutations and checks."""
+"""Cross-process serialization for machine GitHub App mutations."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ class GitHubMachineOperationBusy(GitHubMachineOperationError, TransientGitHubAut
 
 @contextmanager
 def operation_lock(config_path: str | Path | None = None):
-    """Serialize the complete machine-profile read/prove/refresh transaction."""
+    """Serialize machine-profile writes and credential refreshes."""
 
     depth = int(getattr(_LOCAL, "depth", 0))
     if depth:

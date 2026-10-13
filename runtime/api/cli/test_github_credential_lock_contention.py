@@ -109,39 +109,60 @@ def test_serialized_operations_report_the_contention_reason(
     assert "holding the machine operation lock" in str(raised.value)
 
 
-@pytest.mark.parametrize("failure,transient", [
-    (github_machine_operation.GitHubMachineOperationBusy("busy"), True),
-    (
-        github_user_tokens.GitHubUserTokenError("refresh failed"),
-        False,
-    ),
-])
+@pytest.mark.parametrize(
+    "failure,transient",
+    [
+        (github_machine_operation.GitHubMachineOperationBusy("busy"), True),
+        (
+            github_user_tokens.GitHubUserTokenError("refresh failed"),
+            False,
+        ),
+    ],
+)
 def test_local_access_classifies_its_own_failures(
-    failure: Exception, transient: bool, monkeypatch: pytest.MonkeyPatch,
+    failure: Exception,
+    transient: bool,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def raise_failure(*args, **kwargs):
         raise failure
 
     monkeypatch.setattr(
-        github_local_user_access.github_machine_operation,
-        "operation_lock",
+        github_local_user_access.github_user_tokens,
+        "access_token_from_machine_config",
         raise_failure,
     )
 
+    monkeypatch.setattr(
+        github_local_user_access.github_app_public_profile,
+        "selected_https_service_api_url",
+        lambda *_args: None,
+    )
     with pytest.raises(github_local_user_access.GitHubLocalUserAccessError) as raised:
         github_local_user_access.access_token()
 
-    assert isinstance(
-        raised.value,
-        github_local_user_access.TransientGitHubLocalUserAccessError,
-    ) is transient
+    assert (
+        isinstance(
+            raised.value,
+            github_local_user_access.TransientGitHubLocalUserAccessError,
+        )
+        is transient
+    )
 
 
-@pytest.mark.parametrize("status,transient", [
-    (401, True), (429, True), (503, True), (404, False), (400, False),
-])
+@pytest.mark.parametrize(
+    "status,transient",
+    [
+        (401, True),
+        (429, True),
+        (503, True),
+        (404, False),
+        (400, False),
+    ],
+)
 def test_refresh_response_status_decides_retryability(
-    status: int, transient: bool,
+    status: int,
+    transient: bool,
 ) -> None:
     http_error = urllib.error.HTTPError(
         "https://github.com/login/oauth/access_token",

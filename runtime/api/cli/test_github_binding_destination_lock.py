@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-import json
 from pathlib import Path
 from threading import Event, Thread, current_thread
 from types import SimpleNamespace
@@ -11,7 +10,11 @@ from types import SimpleNamespace
 import pytest
 
 from yoke_cli.commands.adapters import project_github_binding
-from yoke_cli.config import github_machine_operation, machine_config, writer
+from yoke_cli.config import (
+    machine_config,
+    machine_config_file,
+    writer,
+)
 from yoke_cli.config import project_onboard_progress, project_onboard_support
 from yoke_cli.transport import dispatcher
 from yoke_contracts.api.function_call import (
@@ -20,85 +23,21 @@ from yoke_contracts.api.function_call import (
 )
 
 
-def _two_service_config(tmp_path: Path) -> Path:
-    token = tmp_path / "actor.token"
-    token.write_text("actor-token\n", encoding="utf-8")
-    token.chmod(0o600)
-    config = tmp_path / "config.json"
-    def connection(name: str) -> dict[str, object]:
-        return {
-            "transport": "https",
-            "prod": False,
-            "api_url": f"https://{name}.yoke.example/v1",
-            "credential_source": {
-                "kind": "token_file", "path": str(token),
-            },
-        }
-    config.write_text(json.dumps({
-        "schema_version": 1,
-        "active_env": "service-a",
-        "connections": {
-            "service-a": connection("service-a"),
-            "service-b": connection("service-b"),
-        },
-    }), encoding="utf-8")
-    config.chmod(0o600)
-    return config
-
-
-def _install_observed_authority(
-    monkeypatch: pytest.MonkeyPatch,
-    config: Path,
-    target: object,
-) -> tuple[Event, Event, list[Thread]]:
-    attempted = Event()
-    switched = Event()
-    threads: list[Thread] = []
-    real_operation_lock = github_machine_operation.operation_lock
-
-    @contextmanager
-    def observed_operation_lock(path=None):
-        if current_thread().name == "github-destination-switch":
-            attempted.set()
-        with real_operation_lock(path):
-            yield
-
-    monkeypatch.setattr(
-        github_machine_operation, "operation_lock", observed_operation_lock,
-    )
-
-    @contextmanager
-    def locked_authority(*_args, **_kwargs):
-        with github_machine_operation.operation_lock(config):
-            yield SimpleNamespace(
-                api_url="https://api.github.com",
-                token=SimpleNamespace(access_token="service-a-user-token"),
-            )
-
-    monkeypatch.setattr(
-        target,
-        "locked_profile_bound_access_for_binding",
-        locked_authority,
-    )
-
-    def switch_destination() -> None:
-        writer.set_active_env("service-b", path=config)
-        switched.set()
-
-    threads.append(Thread(
-        target=switch_destination,
-        name="github-destination-switch",
-        daemon=True,
-    ))
-    return attempted, switched, threads
+from .github_binding_test_support import (
+    _two_service_config,
+    _install_observed_authority,
+)
 
 
 def test_binding_cli_holds_destination_through_token_dispatch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _two_service_config(tmp_path)
     attempted, switched, threads = _install_observed_authority(
-        monkeypatch, config, project_github_binding.github_binding_auth,
+        monkeypatch,
+        config,
+        project_github_binding.github_binding_auth,
     )
 
     def dispatch(_function_id, payload, *_args, **_kwargs):
@@ -111,10 +50,21 @@ def test_binding_cli_holds_destination_through_token_dispatch(
         return 0
 
     monkeypatch.setattr(project_github_binding, "_dispatch", dispatch)
-    assert project_github_binding.projects_github_binding_bind([
-        "--project", "demo", "--installation-id", "1",
-        "--repository-id", "2", "--github-repo", "owner/demo",
-    ]) == 0
+    assert (
+        project_github_binding.projects_github_binding_bind(
+            [
+                "--project",
+                "demo",
+                "--installation-id",
+                "1",
+                "--repository-id",
+                "2",
+                "--github-repo",
+                "owner/demo",
+            ]
+        )
+        == 0
+    )
 
     threads[0].join(2)
     assert switched.is_set()
@@ -122,13 +72,14 @@ def test_binding_cli_holds_destination_through_token_dispatch(
 
 
 def test_binding_cli_holds_actor_credential_through_token_dispatch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path / "machine-home"))
     config = _two_service_config(tmp_path)
     attempted = Event()
     rotated = Event()
-    real_operation_lock = github_machine_operation.operation_lock
+    real_operation_lock = machine_config_file.exclusive_lock
 
     @contextmanager
     def observed_operation_lock(path=None):
@@ -138,12 +89,14 @@ def test_binding_cli_holds_actor_credential_through_token_dispatch(
             yield
 
     monkeypatch.setattr(
-        github_machine_operation, "operation_lock", observed_operation_lock,
+        machine_config_file,
+        "exclusive_lock",
+        observed_operation_lock,
     )
 
     @contextmanager
     def locked_authority(*_args, **_kwargs):
-        with github_machine_operation.operation_lock(config):
+        with machine_config_file.exclusive_lock(config):
             yield SimpleNamespace(
                 api_url="https://api.github.com",
                 token=SimpleNamespace(access_token="service-a-user-token"),
@@ -160,7 +113,9 @@ def test_binding_cli_holds_actor_credential_through_token_dispatch(
         rotated.set()
 
     thread = Thread(
-        target=rotate, name="actor-credential-rotation", daemon=True,
+        target=rotate,
+        name="actor-credential-rotation",
+        daemon=True,
     )
 
     def dispatch(_function_id, payload, *_args, **_kwargs):
@@ -171,30 +126,48 @@ def test_binding_cli_holds_actor_credential_through_token_dispatch(
         return 0
 
     monkeypatch.setattr(project_github_binding, "_dispatch", dispatch)
-    assert project_github_binding.projects_github_binding_bind([
-        "--project", "demo", "--installation-id", "1",
-        "--repository-id", "2", "--github-repo", "owner/demo",
-    ]) == 0
+    assert (
+        project_github_binding.projects_github_binding_bind(
+            [
+                "--project",
+                "demo",
+                "--installation-id",
+                "1",
+                "--repository-id",
+                "2",
+                "--github-repo",
+                "owner/demo",
+            ]
+        )
+        == 0
+    )
 
     thread.join(2)
     assert rotated.is_set()
 
 
 def test_onboard_binding_holds_destination_through_token_dispatch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _two_service_config(tmp_path)
     attempted, switched, threads = _install_observed_authority(
-        monkeypatch, config, project_onboard_progress.github_binding_auth,
+        monkeypatch,
+        config,
+        project_onboard_progress.github_binding_auth,
     )
     monkeypatch.setattr(
         project_onboard_progress.machine_config,
         "github_config",
-        lambda _path: {"repositories": [{
-            "installation_id": 1,
-            "repository_id": 2,
-            "full_name": "owner/demo",
-        }]},
+        lambda _path: {
+            "repositories": [
+                {
+                    "installation_id": 1,
+                    "repository_id": 2,
+                    "full_name": "owner/demo",
+                }
+            ]
+        },
     )
 
     def dispatch(function_id, payload, _config_path, **_kwargs):
@@ -255,11 +228,15 @@ def test_onboard_binding_uses_the_run_selected_connection_scope(
     monkeypatch.setattr(
         project_onboard_progress.machine_config,
         "github_config",
-        lambda _path: {"repositories": [{
-            "installation_id": 1,
-            "repository_id": 2,
-            "full_name": "owner/demo",
-        }]},
+        lambda _path: {
+            "repositories": [
+                {
+                    "installation_id": 1,
+                    "repository_id": 2,
+                    "full_name": "owner/demo",
+                }
+            ]
+        },
     )
     monkeypatch.setattr(
         project_onboard_progress,
@@ -306,7 +283,9 @@ def test_onboard_dispatch_redacts_every_echo_of_transient_token(
         return dispatcher._redact_response(raw, kwargs["sensitive_values"])
 
     monkeypatch.setattr(
-        project_onboard_support, "call_dispatcher", hostile_dispatcher,
+        project_onboard_support,
+        "call_dispatcher",
+        hostile_dispatcher,
     )
     with pytest.raises(project_onboard_support.ProjectDispatchError) as caught:
         project_onboard_support.dispatch(

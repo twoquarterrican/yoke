@@ -18,7 +18,8 @@ from .github_user_token_test_support import (
 
 
 def test_credential_read_rejects_group_readable_file(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(machine_config.HOME_ENV, str(tmp_path))
     config_path, credential_path = configured_credential(
@@ -35,7 +36,8 @@ def test_credential_read_rejects_group_readable_file(
 
 
 def test_credential_read_rejects_group_accessible_parent(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(machine_config.HOME_ENV, str(tmp_path))
     config_path, credential_path = configured_credential(
@@ -45,15 +47,17 @@ def test_credential_read_rejects_group_accessible_parent(
 
     with pytest.raises(
         github_user_tokens.GitHubUserTokenError,
-        match="operation lock is unavailable",
-    ):
+        match="directory permissions are unsafe",
+    ) as raised:
         github_user_tokens.access_token_from_machine_config(
             config_path=config_path, now=NOW
         )
+    assert "set directory permissions to 700, then retry" in str(raised.value)
 
 
 def test_expired_refresh_credential_routes_to_device_reconnect(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(machine_config.HOME_ENV, str(tmp_path))
     config_path, credential_path = configured_credential(
@@ -77,7 +81,8 @@ def test_expired_refresh_credential_routes_to_device_reconnect(
 
 
 def test_rotated_refresh_local_save_failure_requires_reconnect(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(machine_config.HOME_ENV, str(tmp_path))
     config_path, _credential_path = configured_credential(
@@ -98,12 +103,14 @@ def test_rotated_refresh_local_save_failure_requires_reconnect(
         github_user_tokens.access_token_from_machine_config(
             config_path=config_path,
             now=NOW,
-            opener=lambda request, timeout: FakeResponse({
-                "access_token": "new-access",
-                "expires_in": 28800,
-                "refresh_token": "new-refresh",
-                "refresh_token_expires_in": 15552000,
-            }),
+            opener=lambda request, timeout: FakeResponse(
+                {
+                    "access_token": "new-access",
+                    "expires_in": 28800,
+                    "refresh_token": "new-refresh",
+                    "refresh_token_expires_in": 15552000,
+                }
+            ),
         )
 
 
@@ -112,16 +119,21 @@ def test_direct_refresh_can_include_hosted_client_secret() -> None:
 
     def fake_urlopen(request, timeout):
         seen["body"] = urllib.parse.parse_qs(request.data.decode("utf-8"))
-        return FakeResponse({
-            "access_token": "ghu_access",
-            "expires_in": 28800,
-            "refresh_token": "new-refresh",
-            "refresh_token_expires_in": 15552000,
-        })
+        return FakeResponse(
+            {
+                "access_token": "ghu_access",
+                "expires_in": 28800,
+                "refresh_token": "new-refresh",
+                "refresh_token_expires_in": 15552000,
+            }
+        )
 
     refreshed = github_user_tokens.refresh_user_access_token(
-        client_id="Iv1.hosted", client_secret="hosted-secret",
-        refresh_token="refresh", now=NOW, opener=fake_urlopen,
+        client_id="Iv1.hosted",
+        client_secret="hosted-secret",
+        refresh_token="refresh",
+        now=NOW,
+        opener=fake_urlopen,
     )
 
     assert seen["body"]["client_secret"] == ["hosted-secret"]
@@ -133,9 +145,7 @@ def test_oversized_persisted_refresh_document_is_rejected_before_replace(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(machine_config.HOME_ENV, str(tmp_path))
-    credential_path = (
-        tmp_path / "secrets" / f"github-app-user-{'b' * 32}.json"
-    )
+    credential_path = tmp_path / "secrets" / f"github-app-user-{'b' * 32}.json"
     oversized_refresh = "r" * (64 * 1024 - 100)
 
     with pytest.raises(

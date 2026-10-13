@@ -1,4 +1,4 @@
-"""Local in-process dispatch takes the machine GitHub lock only for tokens."""
+"""Local in-process dispatch leaves credential serialization to refresh."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def test_credential_free_dispatch_does_not_take_the_machine_lock(
     assert lock_calls == []
 
 
-def test_token_read_takes_the_machine_lock_through_access_token(
+def test_valid_token_read_does_not_take_the_machine_lock(
     monkeypatch,
 ) -> None:
     lock_calls: list[int] = []
@@ -81,8 +81,7 @@ def test_token_read_takes_the_machine_lock_through_access_token(
         access_token = "ghu_test"
 
     def fake_access_token(*_args, **_kwargs):
-        with github_machine_operation.operation_lock():
-            return _Token()
+        return _Token()
 
     import yoke_cli.config.github_local_user_access as access_mod
 
@@ -105,4 +104,4 @@ def test_token_read_takes_the_machine_lock_through_access_token(
     )
 
     assert response.success is True
-    assert lock_calls == [1]
+    assert lock_calls == []

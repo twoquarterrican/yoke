@@ -205,8 +205,7 @@ def test_teardown_retires_the_connection_pointing_at_this_bundle(
     assert report["connection"]["removed_envs"] == ["self-host"]
     payload = _payload(machine_home)
     assert payload["connections"] == {}
-    # The machine is now honestly unconfigured rather than pointed at a
-    # server that no longer answers — and no file was hand-edited to get here.
+    # Retiring the last alias leaves the machine unconfigured.
     assert payload.get("active_env", "") == ""
 
 
@@ -225,6 +224,8 @@ def test_teardown_retires_every_bundle_alias_and_cleans_machine_residue(
         machine_home / "secrets" / "walker-client.token",
     ]
     config_lock = machine_config_file.config_lock_path(config)
+    with github_machine_operation.operation_lock(config):
+        pass
     operation_lock = github_git_credential_file.lock_path(
         github_machine_operation.operation_lock_target()
     )

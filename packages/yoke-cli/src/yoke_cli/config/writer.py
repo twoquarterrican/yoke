@@ -14,7 +14,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional
 
-from yoke_cli.config import github_machine_operation
 from yoke_cli.config.machine_config_mutation import (
     MachineConfigWriteError as MachineConfigWriteError,
     load_payload as _load_payload,
@@ -36,7 +35,6 @@ from yoke_cli.config.writer_projects import (
 from yoke_contracts.machine_config import schema as contract
 
 
-@github_machine_operation.serialized_operation(MachineConfigWriteError)
 @_serialized_mutation
 def set_active_env(env: str, *, path: str | Path | None = None) -> dict[str, Any]:
     """Point ``active_env`` at an already-configured connection."""
@@ -54,7 +52,6 @@ def set_active_env(env: str, *, path: str | Path | None = None) -> dict[str, Any
     return {"active_env": env, "config": str(cfg_path)}
 
 
-@github_machine_operation.serialized_operation(MachineConfigWriteError)
 @_serialized_mutation
 def set_connection(
     env: str,
@@ -137,7 +134,6 @@ def set_connection(
     }
 
 
-@github_machine_operation.serialized_operation(MachineConfigWriteError)
 @_serialized_mutation
 def set_credential(
     env: str,

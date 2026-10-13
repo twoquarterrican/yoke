@@ -44,7 +44,7 @@ def access_token_from_machine_config(
     _expected_service_api_url: str | None = None,
     _expected_local_connection: bool = False,
 ) -> LocalUserAccessToken:
-    """Refresh under lock and return a transient, never-persisted access token."""
+    """Reuse stored access or serialize a credential refresh."""
     try:
         payload = credential_store.access_token_from_machine_config(
             _resolved_config_path(config_path),

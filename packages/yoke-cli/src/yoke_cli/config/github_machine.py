@@ -19,7 +19,6 @@ from yoke_cli.config import github_repo_helper_reconnect
 from yoke_cli.config import github_machine_disconnect
 from yoke_cli.config import github_git_credentials
 from yoke_cli.config import github_git_credential_document
-from yoke_cli.config import github_machine_operation
 from yoke_cli.config import github_machine_profile
 from yoke_cli.config import github_machine_report as reports
 from yoke_cli.config import github_machine_status
@@ -34,12 +33,6 @@ class GitHubMachineError(RuntimeError):
     """The machine GitHub App connection cannot be used."""
 
 
-_serialized_machine_github = github_machine_operation.serialized_operation(
-    GitHubMachineError
-)
-
-
-@_serialized_machine_github
 def connect(
     *,
     config_path: str | Path | None,
@@ -291,7 +284,6 @@ def connect(
     return report
 
 
-@_serialized_machine_github
 def status(
     *,
     config_path: str | Path | None,
@@ -318,7 +310,6 @@ def status(
     )
 
 
-@_serialized_machine_github
 def disconnect(*, config_path: str | Path | None) -> dict[str, Any]:
     """Forget local authorization without uninstalling the App from GitHub."""
     return github_machine_disconnect.disconnect(
