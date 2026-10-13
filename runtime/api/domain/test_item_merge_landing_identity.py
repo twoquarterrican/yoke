@@ -244,3 +244,56 @@ def test_local_publication_records_own_landing_after_later_push(checkout):
     assert result.merge_sha != later
     assert records[-1].merge_sha == candidate
     assert stamps[-1]["merge_sha"] == candidate
+
+
+def test_delayed_pr_close_outs_do_not_share_the_last_items_merge(checkout, monkeypatch):
+    from yoke_core.domain.merge_queue_batch_receipt import BatchReceipt
+
+    repo, _, _, records, _, _ = checkout
+    landings = {}
+    for index in range(4):
+        branch = f"feature-{index}"
+        git(repo, "checkout", "-b", branch)
+        (repo / f"{branch}.txt").write_text(f"{branch}\n")
+        git(repo, "add", f"{branch}.txt")
+        git(repo, "commit", "-m", branch)
+        head = git(repo, "rev-parse", "HEAD")
+        git(repo, "checkout", "main")
+        git(repo, "merge", "--no-ff", "--no-edit", branch)
+        landings[str(index)] = (head, git(repo, "rev-parse", "HEAD"))
+    git(repo, "push", "origin", "main")
+    final_merge = git(repo, "rev-parse", "main")
+    monkeypatch.setattr(queue, "read_recorded_batch", lambda *_a, **_kw: None)
+
+    def observe(_ctx, *, pr_num, **_kwargs):
+        return BatchReceipt(
+            pr_num=pr_num,
+            merge_sha=landings[pr_num][1],
+            head_sha=final_merge,
+            run_url="https://runs/shared-train",
+        ), None
+
+    monkeypatch.setattr(queue, "observe_batch", observe)
+    monkeypatch.setattr(queue, "record_batch_evidence", lambda *_a, **_kw: None)
+    monkeypatch.setattr(
+        queue, "read_pr_changed_files", lambda *_a: (("feature.txt",), "")
+    )
+    monkeypatch.setattr(queue, "repoint_to_landing_carrier", lambda *_a, **_kw: "")
+    monkeypatch.setattr(queue, "stamp_merged_at", lambda *_a, **_kw: None)
+    monkeypatch.setattr(queue, "fast_forward_main_checkout", lambda *_a: "")
+    for pr_num, (head, merge) in list(landings.items())[:3]:
+        result = queue.record_landing(
+            MergeContext(
+                args=MergeArgs(branch=f"feature-{pr_num}", target="main"),
+                repo_root=str(repo),
+            ),
+            item_id=int(pr_num) + 1,
+            commit_sha=head,
+            pr_num=pr_num,
+            resolve_landed_head=lambda _item, head=head: (head, ""),
+        )
+        assert not result.ci_evidence_refusal(pr_num)
+        assert result.merge_sha == records[-1].merge_sha == merge
+        assert result.receipt_commit_sha == head
+        assert result.merge_sha != final_merge
+    assert len({receipt.merge_sha for receipt in records}) == 3
