@@ -38,3 +38,31 @@ It proves the authored welcome, automatic uv attempt and diagnosed install
 refusal with recovery; exit 1 is expected only with that exact refusal text.
 A download failure, missing recovery or successful write does not pass this
 probe. Full installation success belongs to the cold-start cases.
+
+## Install the live-session exploration mission
+
+Create the exploration plan for the same declared target as the campaign:
+
+```text
+yoke qa plan create installer-exploration --project P --environment SITE/NAME
+yoke qa plan get installer-exploration --project P --full --json > /tmp/exploration-plan.json
+yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/exploration-plan.json --cases-file /tmp/exploration-cases.json
+yoke qa plan-cases replace --project P --plan-id PLAN_ID --cases-file /tmp/exploration-cases.json
+```
+
+Read PLAN_ID from the plan receipt. The exporter reads the latest immutable
+Machine QA Pack example, so there is one mission source. Check a fresh plan
+receipt with the same source checker before running it:
+
+```text
+yoke watch qa-plan -- --plan installer-exploration --project P
+```
+
+The mission chooses its route through real Claude, Codex and Cursor sessions,
+permission modes and representative project archetypes. It requires received
+context evidence and meaningful first work reaching its real done state.
+The human opens interactive sessions and handles personal approvals. A missing
+mode, readiness check, context receipt or terminal outcome remains unproven;
+it never passes because configuration files exist. Preserve failed evidence
+and add each new failure to the scripted campaign before rerunning after
+related installer, setup, connection or onboarding changes.

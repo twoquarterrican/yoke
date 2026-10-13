@@ -14,6 +14,7 @@ def _plan(environment="prod"):
     target = _target(environment)
     return {
         "id": 42,
+        "slug": "installer-campaign",
         "target_environment": environment,
         "execution_target": target,
         "cases": installer_campaign_cases_for_target(target),

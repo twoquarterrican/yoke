@@ -12,6 +12,7 @@ from yoke_contracts.qa_case_starting_state import BASELINE
 from yoke_core.domain.installer_campaign_execution_target import (
     installer_campaign_cases_for_target,
 )
+from yoke_core.domain import pack_catalog
 
 
 _CASE_DEFAULTS: dict[str, Any] = {
@@ -43,9 +44,27 @@ def _authored(case: dict[str, Any], field: str) -> Any:
     return value
 
 
+def _source_cases(plan: dict[str, Any]) -> list[dict]:
+    slug = plan["slug"]
+    if slug == "installer-campaign":
+        return installer_campaign_cases_for_target(plan["execution_target"])
+    if slug == "installer-exploration":
+        descriptor = pack_catalog.load_pack_descriptor("machine-qa")
+        version = descriptor["versions"][descriptor["latest_version"]]
+        source = pack_catalog.server_tree_root() / "packs" / "machine-qa"
+        return json.loads(
+            (source / version["source"] / "qa/examples/installer-exploration.json")
+            .read_text()
+        )
+    raise ValueError(
+        f"unsupported installer plan {slug!r}; read installer-campaign or "
+        "installer-exploration with yoke qa plan get before exporting."
+    )
+
+
 def compare_plan(plan: dict[str, Any]) -> tuple[list[dict], dict]:
     """Compare authored fields, excluding row identity and historical proof."""
-    cases = installer_campaign_cases_for_target(plan["execution_target"])
+    cases = _source_cases(plan)
     installed = {case["case_key"]: case for case in plan["cases"]}
     generated = {case["case_key"]: case for case in cases}
     if len(installed) != len(plan["cases"]):
