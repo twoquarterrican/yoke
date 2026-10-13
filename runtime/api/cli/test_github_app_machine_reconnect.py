@@ -15,7 +15,8 @@ from yoke_cli.config import github_machine
 
 
 def test_reconnect_discovery_failure_preserves_cached_access_snapshot(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     home = tmp_path / "home"
     monkeypatch.setenv("YOKE_MACHINE_HOME", str(home))
@@ -33,7 +34,11 @@ def test_reconnect_discovery_failure_preserves_cached_access_snapshot(
 
     def unavailable(request, timeout):
         raise urllib.error.HTTPError(
-            request.full_url, 503, "Unavailable", hdrs=None, fp=None,
+            request.full_url,
+            503,
+            "Unavailable",
+            hdrs=None,
+            fp=None,
         )
 
     with pytest.raises(
@@ -45,6 +50,7 @@ def test_reconnect_discovery_failure_preserves_cached_access_snapshot(
             **_explicit_profile(),
             device_opener=_device_opener(),
             api_opener=unavailable,
+            replace_profile=True,
             browser_open=lambda url: True,
             sleep=lambda seconds: None,
             monotonic=lambda: 0,

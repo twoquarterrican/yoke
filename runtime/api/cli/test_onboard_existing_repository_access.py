@@ -55,7 +55,9 @@ def setup(monkeypatch):
         lambda _title, _subtitle, details, *_args, **_kwargs: details,
     )
     monkeypatch.setattr(
-        access, "open_url", lambda _: pytest.fail("unexpected browser launch")
+        access.setup_browser,
+        "open_url",
+        lambda _: pytest.fail("unexpected browser launch"),
     )
     return Flow(), config
 

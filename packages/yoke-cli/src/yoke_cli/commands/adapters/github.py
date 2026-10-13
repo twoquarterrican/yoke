@@ -15,13 +15,13 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List
 
 from yoke_cli.config import (
     github_app_public_profile,
     github_machine,
     github_merge_path_binding,
-    github_response_safety,
+    setup_browser,
 )
 from yoke_cli.commands._helpers import (
     add_json_arg,
@@ -31,7 +31,6 @@ from yoke_cli.commands._helpers import (
     usage_error,
 )
 from yoke_contracts.api.function_call import TargetRef
-from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 
 
 __all__ = [
@@ -56,9 +55,7 @@ GITHUB_CONNECT_USAGE = (
 GITHUB_DISCONNECT_USAGE = "yoke github disconnect [--config PATH] [--json]"
 
 
-GITHUB_STATUS_USAGE = (
-    "yoke github status [--config PATH] [--offline] [--json]"
-)
+GITHUB_STATUS_USAGE = "yoke github status [--config PATH] [--offline] [--json]"
 
 
 GITHUB_PR_CREATE_USAGE = (
@@ -78,7 +75,9 @@ def github_connect(args: List[str]) -> int:
             "that App grants its owner access within the repositories selected "
             "on GitHub. Local and self-host operators may instead bring their "
             "own App with one complete five-field profile. "
-            "This never accepts or stores manual GitHub credentials."
+            "This never accepts or stores manual GitHub credentials. "
+            "No browser is opened; present the link and code to the person. "
+            "--json emits authorization progress as JSON lines on stderr before polling."
         ),
     )
     parser.add_argument(
@@ -95,7 +94,9 @@ def github_connect(args: List[str]) -> int:
         help="Local/self-host App profile; requires the other four App fields.",
     )
     parser.add_argument(
-        "--app-id", type=int, default=None,
+        "--app-id",
+        type=int,
+        default=None,
         help="Local/self-host App profile; requires the other four App fields.",
     )
     parser.add_argument(
@@ -127,13 +128,15 @@ def github_connect(args: List[str]) -> int:
     if parsed is None:
         return 2
     try:
-        explicit_profile = any((
-            parsed.client_id,
-            parsed.app_slug,
-            parsed.app_id,
-            parsed.api_url,
-            parsed.web_url,
-        ))
+        explicit_profile = any(
+            (
+                parsed.client_id,
+                parsed.app_slug,
+                parsed.app_id,
+                parsed.api_url,
+                parsed.web_url,
+            )
+        )
         report = github_machine.connect(
             config_path=parsed.config_path,
             client_id=parsed.client_id,
@@ -150,7 +153,9 @@ def github_connect(args: List[str]) -> int:
             ),
             replace_profile=parsed.replace,
             add_installation=parsed.add_installation,
-            notify=_render_connect_progress,
+            notify=lambda event: setup_browser.render_progress(
+                event, json_mode=parsed.json_mode
+            ),
         )
     except (
         github_machine.GitHubMachineError,
@@ -236,38 +241,6 @@ def github_status(args: List[str]) -> int:
     return 0 if report.get("ok") else 1
 
 
-def _render_connect_progress(event: Mapping[str, Any]) -> None:
-    phase = event.get("phase")
-    if phase in ("device_authorization", "device_browser"):
-        uri = github_response_safety.safe_error_text(event.get("verification_uri"))
-        code = github_response_safety.safe_error_text(event.get("user_code"))
-        if phase == "device_authorization":
-            print(f"Open {uri} and enter code {code}", file=sys.stderr, flush=True)
-            return
-        if not event.get("browser_opened"):
-            message = f"Browser did not open; use {uri} with code {code}"
-            print(message, file=sys.stderr, flush=True)
-        announce_designed_wait(
-            f"GitHub to report code {code} approved in the browser",
-            max_wait_seconds=float(event.get("expires_in") or 0),
-            cadence=poll_every(float(event.get("interval") or 0)),
-        )
-    elif phase == "github_access_propagation_retry":
-        print(
-            "GitHub is finishing authorization; retrying the access check in "
-            f"{event.get('retry_in_seconds'):g}s...",
-            file=sys.stderr,
-            flush=True,
-        )
-    elif phase == "app_installation":
-        prefix = "Opened" if event.get("browser_opened") else "Open"
-        print(
-            f"{prefix} {event.get('install_url')} to install the App and choose repositories.",
-            file=sys.stderr,
-            flush=True,
-        )
-
-
 def github_pr_create(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="yoke github pr create",
@@ -280,23 +253,30 @@ def github_pr_create(args: List[str]) -> int:
         ),
     )
     parser.add_argument(
-        "--title", required=True, help="Pull-request title.",
+        "--title",
+        required=True,
+        help="Pull-request title.",
     )
     parser.add_argument(
-        "--head", required=True,
+        "--head",
+        required=True,
         help="Branch the changes live on (the PR source branch).",
     )
     parser.add_argument(
-        "--base", default="main",
+        "--base",
+        default="main",
         help="Branch the PR merges into (default: main).",
     )
     body_group = parser.add_mutually_exclusive_group()
     body_group.add_argument(
-        "--body", default=None,
+        "--body",
+        default=None,
         help="Pull-request description (markdown).",
     )
     body_group.add_argument(
-        "--body-stdin", dest="body_stdin", action="store_true",
+        "--body-stdin",
+        dest="body_stdin",
+        action="store_true",
         help=(
             "Read the pull-request description from stdin (for "
             "multi-line bodies): printf '%%s' \"$BODY\" | yoke github "
@@ -304,10 +284,13 @@ def github_pr_create(args: List[str]) -> int:
         ),
     )
     parser.add_argument(
-        "--draft", action="store_true", help="Open the PR as a draft.",
+        "--draft",
+        action="store_true",
+        help="Open the PR as a draft.",
     )
     parser.add_argument(
-        "--project", required=True,
+        "--project",
+        required=True,
         help="Project capability owning the GitHub repo.",
     )
     add_session_arg(parser)
@@ -321,8 +304,7 @@ def github_pr_create(args: List[str]) -> int:
         body = sys.stdin.read()
         if not body.strip():
             return usage_error(
-                "PR body on stdin is empty; pipe it in: "
-                f"{GITHUB_PR_CREATE_USAGE}"
+                f"PR body on stdin is empty; pipe it in: {GITHUB_PR_CREATE_USAGE}"
             )
 
     payload: Dict[str, Any] = {

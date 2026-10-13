@@ -36,7 +36,7 @@ def test_suspended_administration_installation_never_opens_empty_owner_picker(
         ),
     )
     monkeypatch.setattr(
-        publish_flow,
+        publish_flow.setup_browser,
         "open_url",
         partial(hosted_machine_browser.open_url, browser_open=opened.append),
     )
@@ -47,6 +47,7 @@ def test_suspended_administration_installation_never_opens_empty_owner_picker(
             _mark_connected(app)
             app.result.project_checkout = "/home/code/widget"
             app._on_publish_choice(screens.PUBLISH_YES)
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert "Administration permission" in _body_text(app)
             await pilot.press("down")

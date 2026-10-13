@@ -65,6 +65,12 @@ class Flow(manual.ManualPublishFlow, project_access.ProjectGithubAccessFlow):
     def _run_checking(self, **kwargs):
         self.checking = kwargs
 
+    def call_from_thread(self, fn, *args):
+        return fn(*args)
+
+    def call_after_refresh(self, callback):
+        callback()
+
     def _after_repo(self, name):
         self.attached = name
 
@@ -118,7 +124,7 @@ def test_missing_repo_grants_owner_settings_then_rechecks_exact_identity(
         return opened
 
     monkeypatch.setattr(
-        project_access,
+        project_access.setup_browser,
         "open_url",
         partial(hosted_machine_browser.open_url, browser_open=browser),
     )
@@ -133,6 +139,10 @@ def test_missing_repo_grants_owner_settings_then_rechecks_exact_identity(
         manual.BACK,
     ]
     flow._on_manual_publish_recovery(recovery.GRANT_ACCESS)
+    assert flow.checking["title"] == "Opening your browser…"
+    assert flow.checking["copy_targets"][0].value == SETTINGS
+    assert urls == []
+    flow.checking["on_success"](flow.checking["work"]())
     assert urls == [SETTINGS]
     assert SETTINGS in " ".join(flow.body[0])
     if opened is not True:

@@ -23,6 +23,7 @@ from yoke_cli.config import github_machine_operation
 from yoke_cli.config import github_machine_profile
 from yoke_cli.config import github_machine_report as reports
 from yoke_cli.config import github_machine_status
+from yoke_cli.config import github_saved_authorization
 from yoke_cli.config import github_machine_state as state
 from yoke_cli.config import github_user_tokens
 from yoke_cli.config import machine_config, writer
@@ -110,6 +111,29 @@ def connect(
         return report
 
     device_kwargs: dict[str, Any] = {}
+    reused = github_saved_authorization.reuse(
+        existing=existing,
+        metadata=metadata,
+        replace_profile=replace_profile,
+        config_path=config_path,
+        api_opener=api_opener,
+        token_opener=token_opener,
+        service_api_url=service_api_url,
+        profile_opener=profile_opener,
+        sleep=sleep,
+        now=now,
+        error_type=GitHubMachineError,
+    )
+    if reused is not None:
+        if reused.get("state") == "pending_installation" and reused.get("ok"):
+            github_machine_access.open_install_page(
+                reused,
+                browser_open=browser_open,
+                notify=record,
+                pending=True,
+                error_type=GitHubMachineError,
+            )
+        return reused
     if sleep is not None:
         device_kwargs["sleep"] = sleep
     if monotonic is not None:
@@ -151,7 +175,7 @@ def connect(
     snapshot: dict[str, Any] | None = None
     discovery_error: github_app_user_api.GitHubAppUserApiError | None = None
     try:
-        snapshot = _discover_access_with_unauthorized_retry(
+        snapshot = github_machine_access.discover_access_with_unauthorized_retry(
             api_url=metadata["api_url"],
             access_token=str(device.token_response["access_token"]),
             opener=api_opener,
@@ -171,7 +195,9 @@ def connect(
         discovery_error = exc
     if existing and discovery_error is not None:
         try:
-            _cleanup_new_credential(credential_path, config_path=config_path)
+            state.release_config_credential(
+                credential_path, machine_config.config_path(config_path)
+            )
         except (OSError, ValueError) as cleanup_exc:
             raise GitHubMachineError(
                 "The replacement GitHub authorization could not be verified, "
@@ -200,9 +226,8 @@ def connect(
         try:
             current = state.existing_config(config_path)
             if state.credential_ref(current) != str(credential_path):
-                _cleanup_new_credential(
-                    credential_path,
-                    config_path=config_path,
+                state.release_config_credential(
+                    credential_path, machine_config.config_path(config_path)
                 )
         except (OSError, ValueError) as cleanup_exc:
             raise GitHubMachineError(
@@ -255,11 +280,12 @@ def connect(
             )
         )
     if snapshot is not None and (not snapshot["installations"] or add_installation):
-        _open_install_page(
+        github_machine_access.open_install_page(
             report,
             browser_open=browser_open,
             notify=record,
             pending=not snapshot["installations"],
+            error_type=GitHubMachineError,
         )
         report["progress"] = progress
     return report
@@ -301,42 +327,11 @@ def disconnect(*, config_path: str | Path | None) -> dict[str, Any]:
     )
 
 
-def _cleanup_new_credential(
-    path: Path,
-    *,
-    config_path: str | Path | None,
-) -> None:
-    if config_path is None:
-        raise ValueError("machine config path is required for credential cleanup")
-    state.release_config_credential(path, machine_config.config_path(config_path))
-
-
 def dumps_json(report: Mapping[str, Any]) -> str:
     return json.dumps(temporal_wire(report), indent=2, sort_keys=True) + "\n"
 
 
 render_human = reports.render_human
-
-
-_discover_access_with_unauthorized_retry = (
-    github_machine_access.discover_access_with_unauthorized_retry
-)
-
-
-def _open_install_page(
-    report: dict[str, Any],
-    *,
-    browser_open: Callable[[str], Any] | None,
-    notify: Callable[[Mapping[str, Any]], None] | None,
-    pending: bool,
-) -> None:
-    github_machine_access.open_install_page(
-        report,
-        browser_open=browser_open,
-        notify=notify,
-        pending=pending,
-        error_type=GitHubMachineError,
-    )
 
 
 __all__ = [

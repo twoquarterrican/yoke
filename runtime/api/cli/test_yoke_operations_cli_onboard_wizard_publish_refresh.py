@@ -69,7 +69,7 @@ def test_manual_create_refresh_selects_exact_repo_and_continues_in_run(
     )
     monkeypatch.setattr(machine_config, "github_config", lambda _path: github)
     monkeypatch.setattr(
-        publish_flow,
+        publish_flow.setup_browser,
         "open_url",
         partial(hosted_machine_browser.open_url, browser_open=opened.append),
     )
@@ -99,6 +99,7 @@ def test_manual_create_refresh_selects_exact_repo_and_continues_in_run(
     async def scenario() -> None:
         async with app.run_test() as pilot:
             app._on_publish_choice(screens.PUBLISH_YES)
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert "Check repositories" in _body_text(app)
             assert "grant the Yoke GitHub App access" not in _body_text(app)

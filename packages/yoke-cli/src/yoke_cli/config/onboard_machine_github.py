@@ -9,6 +9,7 @@ from yoke_contracts import github_origin
 from yoke_cli.config import github_app_public_profile
 from yoke_cli.config import github_machine
 from yoke_cli.config import machine_config
+from yoke_cli.config import setup_browser
 
 CHOICE_CONNECT = "connect"
 CHOICE_SKIP = "skip"
@@ -97,6 +98,9 @@ def apply(
                 config_path=config_path,
                 service_api_url=service_api_url,
                 use_local_product_profile=local_connection_selected,
+                notify=lambda event: setup_browser.render_progress(
+                    event, json_mode=True
+                ),
             )
     except (
         github_machine.GitHubMachineError,

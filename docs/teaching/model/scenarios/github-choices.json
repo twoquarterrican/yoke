@@ -5,7 +5,7 @@
   "status": "draft-copy",
   "situations": ["No GitHub account or another Git provider", "Existing repository needs access", "New repository may stay local", "User later asks about issue mirroring or CI"],
   "coverage": "traced",
-  "current": "Research trace; requirements and source paths need live proof.",
+  "current": "Research trace; requirements and source paths need live proof. Source now distinguishes explicit TUI opening from structured agent actions and reuses saved authorization; deployed proof remains pending.",
   "desired": "Reconciled against current plan records.",
   "questions": ["Can users distinguish all three choices without extra setup questions?", "Does general GitHub/relay teaching have one public source, with private operations only linking to it?"],
   "plan_refs": ["FIRST-USER.2", "FIRST-USER.4", "FIRST-USER.5", "FIRST-USER.10", "FIRST-USER.22", "FIRST-USER.32", "FIRST-USER.A", "JOURNEYS.situation-2", "JOURNEYS.moved-from-first-user-former-dash-g"]
@@ -77,6 +77,20 @@
    "review": "Source and recipe reviewed; installed and web delivery proof remains pending release.",
    "plan_refs": ["FIRST-USER.32"],
    "sources": ["docs/public/github.md", "docs/github-app-operations.md"]
+  },
+  {
+   "id": "browser-steps",
+   "title": "Browser authorization is presented as data to agents and announced before TUI opening.",
+   "status": "observed",
+   "audience": "both",
+   "when": "Sign-in, device authorization, App installation and repository-access settings",
+   "need": "Copy the code/link; finish human approval and return to the same waiting flow. Reuse valid saved authorization.",
+   "disclosure": "current cue",
+   "surface": "TUI opening notice and copy targets; connect --json and github connect --json",
+   "gap": "Deployed installer-campaign proof remains pending.",
+   "review": "Source and focused tests; no live pass asserted.",
+   "sources": ["docs/public/install.md", "docs/public/github.md", "runtime/api/cli/test_setup_browser_presentation.py"],
+   "plan_refs": ["FIRST-USER.26"]
   }
  ]
 }

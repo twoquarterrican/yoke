@@ -164,6 +164,10 @@ class CopyOpenFlow:
                 self._note(f"Shown {target.label} for terminal copying.")
             return
         marks = glyphs()
+        self._note("Opening your browser…")
+        self.call_after_refresh(self._open_target_after_notice, target, marks)
+
+    def _open_target_after_notice(self: _Shell, target: CopyTarget, marks) -> None:
         result = open_url(target.value)
         if result.opened:
             self._note(f"{marks.ok} Opened {target.label} in your browser.")

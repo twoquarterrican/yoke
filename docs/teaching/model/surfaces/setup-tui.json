@@ -9,7 +9,7 @@
   "location": "yoke setup TUI and its completion summary",
   "basis": "FIRST-USER design + accepted corrections",
   "note": "Skipped GitHub checks are not applicable. Teach deeper project configuration when it becomes relevant; a completion summary does not imply the whole project is configured.",
-  "current": "Existing source references; delivered content is not yet proved.",
+  "current": "Existing source references; delivered content is not yet proved. Source now distinguishes explicit TUI opening from structured agent actions and reuses saved authorization; deployed proof remains pending.",
   "desired": "Fewer steps; issue sync silently off. Show real progress, one-screen Back and truthful repair instructions.",
   "plan_notes": ["FIRST-USER 3/8/9/10/19/24/25/26/37–39", "FIRST-USER C/E/P4"],
   "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.10", "FIRST-USER.17", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39"],
@@ -125,6 +125,15 @@
    "topics": ["installation/readiness"],
    "plan_refs": ["FIRST-USER.19"],
    "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard_apply.py", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_flow_apply.py", "runtime/api/cli/test_setup_failure_reason.py"]
+  },
+  {
+   "id": "browser-steps",
+   "title": "Browser authorization is presented as data to agents and announced before TUI opening.",
+   "status": "observed",
+   "form": "Do",
+   "verification": "Source and focused regression tests; deployed campaign proof remains pending.",
+   "topics": ["identity/auth", "repositories/github"],
+   "plan_refs": ["FIRST-USER.26"]
   }
  ]
 }

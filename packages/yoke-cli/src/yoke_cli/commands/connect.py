@@ -17,6 +17,7 @@ from yoke_cli.commands._helpers import parse_or_usage_error, usage_error
 from yoke_cli.config import secrets as machine_secrets
 from yoke_cli.config import hosted_machine_authorization
 from yoke_cli.config import server_connect, team_server_authorization
+from yoke_cli.config import setup_browser
 from yoke_contracts.api_urls import HOSTED_PLATFORM_URL, HOSTED_STAGE_PLATFORM_URL
 from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 
@@ -44,7 +45,9 @@ def connect(args: List[str]) -> int:
             "normal shape and is required for every network server. Plain "
             "http:// is accepted only for a numeric loopback endpoint "
             "(for example, http://127.0.0.1:8765). Other schemes and "
-            "non-loopback plaintext endpoints are refused."
+            "non-loopback plaintext endpoints are refused. No browser is opened. "
+            "With --json, authorization link/code/instructions arrive as JSON "
+            "lines on stderr before polling; present them to the person."
         ),
     )
     parser.add_argument(
@@ -163,6 +166,22 @@ def _connect_hosted(parsed: argparse.Namespace) -> int:
         browser: hosted_machine_authorization.BrowserOpenResult,
     ) -> None:
         stream = sys.stderr if parsed.json_mode else sys.stdout
+        if parsed.json_mode:
+            setup_browser.render_progress(
+                {
+                    "phase": "machine_authorization",
+                    "browser_attempted": browser.attempted,
+                    "browser_action": setup_browser.action(
+                        pending.verification_uri_complete,
+                        "Sign in, approve this machine, then return to the agent.",
+                        user_code=pending.user_code,
+                    ),
+                    "expires_in": pending.expires_in,
+                    "interval": pending.interval,
+                },
+                json_mode=True,
+            )
+            return
         print(f"Open {pending.verification_uri_complete}", file=stream)
         print(f"One-time code: {pending.user_code}", file=stream)
         if parsed.self_host:
@@ -173,7 +192,7 @@ def _connect_hosted(parsed: argparse.Namespace) -> int:
                 "machine receives; a first machine connects with --token-stdin.",
                 file=stream,
             )
-        if not browser.opened:
+        if browser.attempted and not browser.opened:
             print(
                 f"The browser did not open ({browser.reason}); open the URL above "
                 "yourself.",

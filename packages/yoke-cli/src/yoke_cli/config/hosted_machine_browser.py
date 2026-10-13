@@ -33,6 +33,7 @@ class BrowserOpenResult:
     opened: bool
     method: str | None = None
     reason: str | None = None
+    attempted: bool = True
 
 
 # The macOS ``open`` command hands a URL to the default browser without the

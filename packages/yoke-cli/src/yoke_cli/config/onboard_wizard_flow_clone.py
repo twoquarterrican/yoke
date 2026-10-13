@@ -6,7 +6,8 @@ import asyncio
 from pathlib import Path
 from typing import Any, Optional
 
-from yoke_cli.config.hosted_machine_browser import open_url
+from yoke_cli.config import setup_browser
+from yoke_cli.config.onboard_wizard_state import CopyTarget
 
 from yoke_contracts import github_origin
 from yoke_contracts.github_app_installation_permissions import ACCESS_WRITE
@@ -116,6 +117,7 @@ class CloneFlow(CheckoutInspectionFlow, CloneSourceFlow):
                     "No private repositories are available to Yoke.",
                     "The connected GitHub App cannot currently access a private repo.",
                     [
+                        setup_browser.status_line(self),
                         "Choose private repositories in the App installation, then "
                         "return here and check again.",
                         f"GitHub App access URL: {access_url}",
@@ -124,13 +126,21 @@ class CloneFlow(CheckoutInspectionFlow, CloneSourceFlow):
                     ok=False,
                 ),
                 self._on_private_repo_empty,
+                copy_targets=(
+                    CopyTarget("the App access link", access_url, is_url=True),
+                ),
             )
         )
 
     def _on_private_repo_empty(self: _Shell, choice: str) -> None:
         if choice == "manage":
             try:
-                open_url(github_state.repository_access_url(self.result))
+                setup_browser.open_in_wizard(
+                    self,
+                    github_state.repository_access_url(self.result),
+                    step=STEP_PROJECT,
+                    on_success=lambda browser: self._render_current(),
+                )
             except Exception as exc:
                 self._goto_private_repo_picker_error(exc)
             return
@@ -184,10 +194,7 @@ class CloneFlow(CheckoutInspectionFlow, CloneSourceFlow):
         )
 
     def _validate_clone_folder(self: _Shell, value: str) -> Optional[str]:
-        """Validate the clone folder, allowing a matching prior partial clone.
-
-        Matching clones enter resumable Apply; other nonempty folders refuse.
-        """
+        """Accept empty folders or matching partial clones for resumable Apply."""
         target = Path(value).expanduser()
         safety_error = input_validation.validate_clone_resume_target_folder(value)
         if safety_error:
@@ -314,15 +321,7 @@ class CloneFlow(CheckoutInspectionFlow, CloneSourceFlow):
         self._goto_project_details()
 
     def _after_name_clone(self: _Shell) -> None:
-        """Route the clone path after the project name is entered.
-
-        Make-it-mine reuses the publish owner-picker + repo-name screens so the
-        new private repo's target is chosen the same way as a fresh publish (the
-        re-home itself runs through the ClonePlan at apply). Without a connected
-        token there is nothing to create the repo with, so the wizard degrades
-        to a plain clone rather than stranding the user. Just-clone and fork
-        record the source repo as the metadata default.
-        """
+        """Reuse publication for make-it-mine; other clones keep the source repo."""
         if (
             self.result.project_clone_outcome
             == clone_support.CLONE_OUTCOME_MAKE_IT_MINE

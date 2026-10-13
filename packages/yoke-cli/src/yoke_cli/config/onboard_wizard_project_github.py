@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from yoke_cli.config.hosted_machine_browser import open_url
+from yoke_cli.config import setup_browser
+from yoke_cli.config.onboard_wizard_state import CopyTarget
 
 from yoke_contracts import github_app_installation_permissions, github_origin
 from yoke_cli.config import github_machine
@@ -72,8 +73,8 @@ class ProjectGithubAccessFlow:
         return github_state.repository_access_url(self.result, owner=owner)
 
     def _open_project_github_access(
-        self, *, owner: str | None = None
-    ) -> tuple[str, bool]:
+        self, *, owner: str | None = None, on_success=None
+    ) -> None:
         try:
             url = (
                 github_state.repository_access_url(self.result, owner=owner)
@@ -84,19 +85,22 @@ class ProjectGithubAccessFlow:
             self._project_github_access_error = str(exc)
             self._project_github_access_opened = False
             self._project_github_access_opened_url = ""
-            return "", False
+            (on_success or self._goto_project_github_access)()
+            return
         self._project_github_access_error = ""
-        try:
-            opened = open_url(url).opened
-        except Exception:
-            opened = False
-        self._project_github_access_opened = opened
-        self._project_github_access_opened_url = url
-        return url, opened
+
+        def completed(browser):
+            self._project_github_access_opened = browser.opened
+            self._project_github_access_opened_url = url
+            self._project_github_access_reason = browser.reason
+            (on_success or self._goto_project_github_access)()
+
+        setup_browser.open_in_wizard(self, url, step=STEP_PROJECT, on_success=completed)
 
     def _goto_project_github_access(self) -> None:
         from yoke_cli.config.onboard_wizard_app import _View
 
+        url = ""
         details = [f"Repository: {self.result.project_github_repo}"]
         error = getattr(self, "_project_github_access_error", "")
         if error:
@@ -110,6 +114,7 @@ class ProjectGithubAccessFlow:
                 details.extend(
                     [
                         f"Your Yoke app can see selected repos only. Add {self.result.project_github_repo} here.",
+                        setup_browser.status_line(self),
                         f"GitHub App access URL: {url}",
                         "After updating access, choose Check access again.",
                     ]
@@ -125,6 +130,9 @@ class ProjectGithubAccessFlow:
                     ok=False,
                 ),
                 self._on_project_github_access,
+                copy_targets=(CopyTarget("the App access link", url, is_url=True),)
+                if url
+                else (),
             )
         )
 

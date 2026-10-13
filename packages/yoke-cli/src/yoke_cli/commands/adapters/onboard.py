@@ -129,6 +129,9 @@ def onboard(args: List[str]) -> int:
         return 2
     destination = choice.destination
     env_name = choice.env_name
+    reused_connection = hosted_auth.hydrate_saved(parsed, destination)
+    if reused_connection:
+        env_name = parsed.env_name or env_name
     local_destination = destination == onboard_destinations.DESTINATION_LOCAL
     selected_mode = "advanced" if parsed.advanced else "quick"
     config_path = str(machine_config.config_path(parsed.config_path))
@@ -140,7 +143,10 @@ def onboard(args: List[str]) -> int:
     token_sources = onboard_destination_args.token_sources(parsed)
     should_prompt = _should_prompt(parsed, env_name, token_sources, destination)
     hosted_usage_error = hosted_auth.usage_error(
-        destination, explicit_token_source, bool(parsed.resume_run_id), should_prompt
+        destination,
+        explicit_token_source,
+        bool(parsed.resume_run_id) or reused_connection,
+        should_prompt,
     )
     if hosted_usage_error:
         print(f"error: {hosted_usage_error}", file=sys.stderr)
@@ -299,15 +305,6 @@ def _should_prompt(
         return False
     if parsed.token_stdin:
         return False
-    return _has_missing_prompt_input(parsed, env_name, token_sources, destination)
-
-
-def _has_missing_prompt_input(
-    parsed: argparse.Namespace,
-    env_name: str,
-    token_sources: list[bool],
-    destination: str | None,
-) -> bool:
     if destination == onboard_destinations.DESTINATION_LOCAL:
         # Local runs have no API URL or token to collect; only the project
         # answers can still be missing.

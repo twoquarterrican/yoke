@@ -255,7 +255,7 @@ def test_project_access_browser_failure_renders_copyable_settings_url(
         return bool(failure)
 
     monkeypatch.setattr(
-        onboard_wizard_project_github,
+        onboard_wizard_project_github.setup_browser,
         "open_url",
         partial(hosted_machine_browser.open_url, browser_open=open_browser),
     )
@@ -265,7 +265,7 @@ def test_project_access_browser_failure_renders_copyable_settings_url(
         async with app.run_test() as pilot:
             app.result.project_github_repo = "octo-org/private"
             app._open_project_github_access()
-            app._goto_project_github_access()
+            await app.workers.wait_for_complete()
             await pilot.pause()
             captured["body"] = _body_text(app)
 

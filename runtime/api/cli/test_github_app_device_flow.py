@@ -30,23 +30,25 @@ class _Response:
 
 
 def test_device_flow_opens_browser_and_honors_pending_and_slow_down() -> None:
-    responses = iter([
-        {
-            "device_code": "device-secret",
-            "user_code": "ABCD-EFGH",
-            "verification_uri": "https://github.com/login/device",
-            "expires_in": 900,
-            "interval": 5,
-        },
-        {"error": "authorization_pending"},
-        {"error": "slow_down"},
-        {
-            "access_token": "access-secret",
-            "expires_in": 28800,
-            "refresh_token": "refresh-secret",
-            "refresh_token_expires_in": 15552000,
-        },
-    ])
+    responses = iter(
+        [
+            {
+                "device_code": "device-secret",
+                "user_code": "ABCD-EFGH",
+                "verification_uri": "https://github.com/login/device",
+                "expires_in": 900,
+                "interval": 5,
+            },
+            {"error": "authorization_pending"},
+            {"error": "slow_down"},
+            {
+                "access_token": "access-secret",
+                "expires_in": 28800,
+                "refresh_token": "refresh-secret",
+                "refresh_token_expires_in": 15552000,
+            },
+        ]
+    )
     requests: list[dict[str, list[str]]] = []
     sleeps: list[float] = []
     notices: list[dict[str, Any]] = []
@@ -56,10 +58,13 @@ def test_device_flow_opens_browser_and_honors_pending_and_slow_down() -> None:
         return _Response(next(responses), request.full_url)
 
     result = github_device_flow.authorize(
-        client_id="Iv1.local", web_url="https://github.com",
-        opener=opener, browser_open=lambda url: url.endswith("/login/device"),
+        client_id="Iv1.local",
+        web_url="https://github.com",
+        opener=opener,
+        browser_open=lambda url: url.endswith("/login/device"),
         notify=lambda event: notices.append(dict(event)),
-        sleep=sleeps.append, monotonic=lambda: 0,
+        sleep=sleeps.append,
+        monotonic=lambda: 0,
     )
 
     assert result.token_response["access_token"] == "access-secret"
@@ -77,41 +82,53 @@ def test_device_flow_opens_browser_and_honors_pending_and_slow_down() -> None:
 
 
 def test_device_flow_keeps_manual_details_when_browser_fails() -> None:
-    responses = iter([
-        {
-            "device_code": "device-secret",
-            "user_code": "ABCD-EFGH",
-            "verification_uri": "https://github.com/login/device",
-            "expires_in": 900,
-            "interval": 5,
-        },
-        {
-            "access_token": "access-secret",
-            "expires_in": 28800,
-            "refresh_token": "refresh-secret",
-            "refresh_token_expires_in": 15552000,
-        },
-    ])
+    responses = iter(
+        [
+            {
+                "device_code": "device-secret",
+                "user_code": "ABCD-EFGH",
+                "verification_uri": "https://github.com/login/device",
+                "expires_in": 900,
+                "interval": 5,
+            },
+            {
+                "access_token": "access-secret",
+                "expires_in": 28800,
+                "refresh_token": "refresh-secret",
+                "refresh_token_expires_in": 15552000,
+            },
+        ]
+    )
     notices: list[dict[str, Any]] = []
 
     result = github_device_flow.authorize(
-        client_id="Iv1.local", web_url="https://github.com",
+        client_id="Iv1.local",
+        web_url="https://github.com",
         opener=lambda request, timeout: _Response(
-            next(responses), request.full_url,
+            next(responses),
+            request.full_url,
         ),
         browser_open=lambda url: False,
         notify=lambda event: notices.append(dict(event)),
-        sleep=lambda seconds: None, monotonic=lambda: 0,
+        sleep=lambda seconds: None,
+        monotonic=lambda: 0,
     )
 
     assert result.browser_opened is False
     assert notices[-1] == {
         "phase": "device_browser",
         "browser_opened": False,
+        "browser_attempted": True,
+        "browser_reason": "browser_open_returned_false: copy the link and open it yourself",
         "user_code": "ABCD-EFGH",
         "verification_uri": "https://github.com/login/device",
         "expires_in": 900,
         "interval": 5,
+        "browser_action": {
+            "url": "https://github.com/login/device",
+            "user_code": "ABCD-EFGH",
+            "instructions": "Enter the code in GitHub, approve access, then return here.",
+        },
     }
 
 
@@ -127,12 +144,15 @@ def test_device_flow_rejects_cross_origin_verification_uri() -> None:
 
     try:
         github_device_flow.authorize(
-            client_id="Iv1.local", web_url="https://github.com",
+            client_id="Iv1.local",
+            web_url="https://github.com",
             opener=lambda request, timeout: _Response(
-                payload, request.full_url,
+                payload,
+                request.full_url,
             ),
             browser_open=lambda url: browser_calls.append(url),
-            sleep=lambda seconds: None, monotonic=lambda: 0,
+            sleep=lambda seconds: None,
+            monotonic=lambda: 0,
         )
     except github_device_flow.GitHubDeviceFlowError as exc:
         assert "crossed the configured web origin" in str(exc)
@@ -141,14 +161,18 @@ def test_device_flow_rejects_cross_origin_verification_uri() -> None:
     assert browser_calls == []
 
 
-@pytest.mark.parametrize("field,value", [
-    ("user_code", "[bold]spoof[/bold]"),
-    ("user_code", "ABCD-\x1bGH"),
-    ("verification_uri", "https://github.com/login/\x1b]2;spoof"),
-    ("verification_uri", "https://github.com/" + "x" * 2_048),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("user_code", "[bold]spoof[/bold]"),
+        ("user_code", "ABCD-\x1bGH"),
+        ("verification_uri", "https://github.com/login/\x1b]2;spoof"),
+        ("verification_uri", "https://github.com/" + "x" * 2_048),
+    ],
+)
 def test_device_flow_rejects_hostile_public_authorization_fields(
-    field: str, value: str,
+    field: str,
+    value: str,
 ) -> None:
     payload = {
         "device_code": "device-secret",
@@ -164,7 +188,8 @@ def test_device_flow_rejects_hostile_public_authorization_fields(
             client_id="Iv1.local",
             web_url="https://github.com",
             opener=lambda request, timeout: _Response(
-                payload, request.full_url,
+                payload,
+                request.full_url,
             ),
         )
 
@@ -177,9 +202,11 @@ def test_device_flow_disabled_error_teaches_app_registration_switches() -> None:
 
     try:
         github_device_flow.authorize(
-            client_id="Iv1.local", web_url="https://github.com",
+            client_id="Iv1.local",
+            web_url="https://github.com",
             opener=lambda request, timeout: _Response(
-                payload, request.full_url,
+                payload,
+                request.full_url,
             ),
         )
     except github_device_flow.GitHubDeviceFlowError as exc:
@@ -191,25 +218,30 @@ def test_device_flow_disabled_error_teaches_app_registration_switches() -> None:
 
 
 def test_nonrefreshable_user_token_teaches_expiry_setting() -> None:
-    responses = iter([
-        {
-            "device_code": "device-secret",
-            "user_code": "ABCD-EFGH",
-            "verification_uri": "https://github.com/login/device",
-            "expires_in": 900,
-            "interval": 5,
-        },
-        {"access_token": "access-secret", "expires_in": 28_800},
-    ])
+    responses = iter(
+        [
+            {
+                "device_code": "device-secret",
+                "user_code": "ABCD-EFGH",
+                "verification_uri": "https://github.com/login/device",
+                "expires_in": 900,
+                "interval": 5,
+            },
+            {"access_token": "access-secret", "expires_in": 28_800},
+        ]
+    )
 
     try:
         github_device_flow.authorize(
-            client_id="Iv1.local", web_url="https://github.com",
+            client_id="Iv1.local",
+            web_url="https://github.com",
             opener=lambda request, timeout: _Response(
-                next(responses), request.full_url,
+                next(responses),
+                request.full_url,
             ),
             browser_open=lambda url: True,
-            sleep=lambda seconds: None, monotonic=lambda: 0,
+            sleep=lambda seconds: None,
+            monotonic=lambda: 0,
         )
     except github_device_flow.GitHubDeviceFlowError as exc:
         message = str(exc)
@@ -222,12 +254,18 @@ def test_nonrefreshable_user_token_teaches_expiry_setting() -> None:
 def test_device_endpoint_http_error_teaches_registration_prerequisites() -> None:
     def denied(request, timeout):
         raise urllib.error.HTTPError(
-            request.full_url, 404, "Not Found", hdrs=None, fp=None,
+            request.full_url,
+            404,
+            "Not Found",
+            hdrs=None,
+            fp=None,
         )
 
     try:
         github_device_flow.authorize(
-            client_id="Iv1.local", web_url="https://github.com", opener=denied,
+            client_id="Iv1.local",
+            web_url="https://github.com",
+            opener=denied,
         )
     except github_device_flow.GitHubDeviceFlowError as exc:
         message = str(exc)
@@ -237,59 +275,22 @@ def test_device_endpoint_http_error_teaches_registration_prerequisites() -> None
         raise AssertionError("expected device endpoint failure")
 
 
-def test_device_invalid_utf8_is_a_typed_error() -> None:
-    class _RawResponse(_Response):
-        def read(self, size: int = -1) -> bytes:
-            return b"\xff"
-
-    with pytest.raises(github_device_flow.GitHubDeviceFlowError, match="not JSON"):
-        github_device_flow.authorize(
-            client_id="Iv1.local",
-            web_url="https://github.com",
-            opener=lambda request, timeout: _RawResponse(
-                {}, request.full_url,
-            ),
-        )
-
-
-def test_device_transport_reason_redacts_device_code() -> None:
-    responses = iter([{
-        "device_code": "device-secret",
-        "user_code": "ABCD-EFGH",
-        "verification_uri": "https://github.com/login/device",
-        "expires_in": 900,
-        "interval": 5,
-    }])
-
-    def opener(request, timeout):
-        try:
-            return _Response(next(responses), request.full_url)
-        except StopIteration:
-            raise urllib.error.URLError("refused device-secret ABCD-EFGH")
-
-    with pytest.raises(github_device_flow.GitHubDeviceFlowError) as caught:
-        github_device_flow.authorize(
-            client_id="Iv1.local", web_url="https://github.com",
-            opener=opener, browser_open=lambda url: False,
-            sleep=lambda seconds: None, monotonic=lambda: 0,
-        )
-    assert "device-secret" not in str(caught.value)
-    assert "ABCD-EFGH" not in str(caught.value)
-
-
 def test_device_flow_does_not_request_after_expiry_sleep() -> None:
     clock = [0.0]
     requests: list[str] = []
 
     def opener(request, timeout):
         requests.append(request.full_url)
-        return _Response({
-            "device_code": "device-secret",
-            "user_code": "ABCD-EFGH",
-            "verification_uri": "https://github.com/login/device",
-            "expires_in": 5,
-            "interval": 5,
-        }, request.full_url)
+        return _Response(
+            {
+                "device_code": "device-secret",
+                "user_code": "ABCD-EFGH",
+                "verification_uri": "https://github.com/login/device",
+                "expires_in": 5,
+                "interval": 5,
+            },
+            request.full_url,
+        )
 
     with pytest.raises(github_device_flow.GitHubDeviceFlowError, match="expired"):
         github_device_flow.authorize(

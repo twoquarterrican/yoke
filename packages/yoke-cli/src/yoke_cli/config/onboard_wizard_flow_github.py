@@ -7,6 +7,7 @@ from typing import Any, Mapping
 from yoke_contracts import github_origin
 from yoke_cli.config import github_machine
 from yoke_cli.config.github_machine_report import repository_scope_recommendations
+from yoke_cli.config import setup_browser
 from yoke_cli.config import onboard_github_copy
 from yoke_cli.config import onboard_machine_github
 from yoke_cli.config import onboard_wizard_github_progress as github_progress
@@ -76,17 +77,6 @@ class MachineGithubFlow:
         replace_current: bool = False,
         replace_profile: bool = False,
     ) -> None:
-        def _notify(event: Any) -> None:
-            if not isinstance(event, dict):
-                return
-            try:
-                if event.get("phase") == "device_authorization":
-                    self.call_from_thread(github_progress.show_device_code, self, event)
-                elif event.get("phase") == "app_installation":
-                    self.call_from_thread(github_progress.show_install_url, self, event)
-            except RuntimeError:
-                return
-
         def _work() -> dict[str, Any]:
             selected_service = str(self.result.api_url or "").strip() or None
             if reuse:
@@ -102,7 +92,8 @@ class MachineGithubFlow:
                     getattr(self.result, "destination", None) == DESTINATION_LOCAL
                 ),
                 replace_profile=replace_profile,
-                notify=_notify,
+                browser_open=lambda url: setup_browser.open_after_notice(self, url),
+                notify=lambda event: github_progress.notify_from_worker(self, event),
             )
 
         self._run_checking(
@@ -111,7 +102,7 @@ class MachineGithubFlow:
             message=(
                 "Refreshing the saved authorization."
                 if reuse
-                else "A browser will open. Enter the one-time code shown here."
+                else "Opening your browser… Copy the one-time code with Ctrl-Y."
             ),
             detail_lines=[
                 "Authorization happens in GitHub; Yoke never asks you to paste a GitHub secret."
