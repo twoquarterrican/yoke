@@ -9,12 +9,7 @@
  "surface": "Accepted review amendment to FIRST-USER 10",
  "gap": "The saved plan still contains the older TUI question. This map applies the accepted conversation correction. Exact title/body adoption and explicit link repair have candidate implementation; broader duplicate detection remains deferred.",
  "review": "Pending exact recipe proof.",
- "plan_notes": [
-  "FIRST-USER 10",
-  "FIRST-USER 2"
- ],
- "sources": [
-  "docs/public/reference/github-sync.md"
- ],
+ "plan_notes": ["FIRST-USER 10", "FIRST-USER 2"],
+ "sources": ["docs/public/reference/github-sync.md"],
  "position": 3
 }
