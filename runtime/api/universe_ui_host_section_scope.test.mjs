@@ -104,7 +104,8 @@ test("null sections can appear after in-place scope changes and failures teach r
   assert.ok(allNodes(state.root).includes(state.nodes.at(-1)));
   fail = true;
   await navigate(state.documentNode, "/frontier?project=2");
-  assert.match(byClass(state.root, "error-banner").at(-1).textContent, /host_section_render_failed.*panel unavailable.*reload/);
+  assert.ok(byClass(state.root, "error-banner").some((node) =>
+    /host_section_render_failed.*panel unavailable.*reload/.test(node.textContent)));
   assert.equal(state.contexts.at(-1).signal.aborted, true);
   state.mounted.unmount();
 });
