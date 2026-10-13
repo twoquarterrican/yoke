@@ -253,11 +253,8 @@ def wake_eligible_recipients(
                     continue
                 wake_mode = WakeMode.WAITING
             elif escalation:
-                # The stopped-session route is what this envelope needs, and
-                # WAITING is how every relay binary — including one older
-                # than this change — is already told to take it. An expired
-                # injection lease stays claimable here: it is a hook that
-                # started delivering and died, which is the starvation.
+                # WAITING tells every relay to resume the stopped route.
+                # An expired hook lease remains claimable after starvation.
                 wake_mode = WakeMode.WAITING
             elif waiting_pending:
                 if row.get("injection_lease_id") is not None:
@@ -284,14 +281,20 @@ def wake_eligible_recipients(
                 machine_id=row["machine_id"],
                 project_id=row["project_id"],
             )
-            operation = wake_operation(wake_mode.value, liveness)
+            operation = wake_operation(
+                wake_mode.value, liveness, row["executor_surface"]
+            )
+            if operation == "message_stopped":
+                if wake_mode is WakeMode.IDLE_TIMEOUT and liveness == "stale":
+                    escalation = "idle_route_unsupported"
+                wake_mode = WakeMode.WAITING
             if not _native_wake_route_available(
                 conn,
                 row,
                 liveness=liveness,
                 operation=operation,
                 relay_versions=versions,
-                force_stopped_route=explicit_wake or bool(escalation),
+                force_stopped_route=operation == "message_stopped",
             ):
                 record_wake_skip(
                     conn,

@@ -13,6 +13,8 @@ from datetime import timedelta
 
 import pytest
 
+from yoke_contracts.timestamps import format_instant
+
 from yoke_core.domain.session_message_service import send_message
 from yoke_core.domain.session_message_store import message_details, public_recipients
 from yoke_core.domain.session_message_wake import wake_eligible_recipients
@@ -36,7 +38,7 @@ BELOW_FLOOR_CLI = "2.1.200"
 CURSOR_DESKTOP_VERSION = "3.17.8"
 CURSOR_CLI_VERSION = "2026.08.11-e8db854"
 WAKE_TIME = "2026-08-22T16:11:00Z"
-STALE_ACTIVITY = (NOW - timedelta(minutes=120)).isoformat().replace("+00:00", "Z")
+STALE_ACTIVITY = format_instant(NOW - timedelta(minutes=120))
 
 
 def _surface_connection(*, executor: str, surface: str, version: str, ended: bool):
@@ -259,15 +261,6 @@ def test_an_installed_cli_never_wakes_a_desktop_session(
             True,
             "skipped_version",
             "peer_driver_version_below_floor",
-        ),
-        (
-            "codex",
-            "codex-cli",
-            "0.148.0-alpha.15",
-            {"codex-cli": "0.148.0-alpha.15"},
-            False,
-            "skipped_operation",
-            "surface_operation_unsupported",
         ),
         # The one refusal no upgrade and no installed peer can lift.
         (

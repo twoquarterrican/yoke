@@ -74,7 +74,9 @@ def test_an_observed_death_escalates_without_waiting_out_the_window() -> None:
     assert candidate["liveness"] == "active"
     assert candidate["wake_escalation"] == NATIVE_PROCESS_GONE
     assert (
-        wake_operation(candidate["wake_mode"], candidate["liveness"])
+        wake_operation(
+            candidate["wake_mode"], candidate["liveness"], candidate["executor_surface"]
+        )
         == "message_stopped"
     )
 

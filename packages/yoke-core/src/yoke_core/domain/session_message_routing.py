@@ -16,6 +16,7 @@ from yoke_contracts.session_control.surface_versions import (
     surface_version_supported,
 )
 from yoke_core.domain.session_message_types import parse_timestamp
+from yoke_core.domain.session_relay_versions import wake_operation
 
 
 def latest_hook_activity(row: dict[str, Any]) -> datetime | None:
@@ -34,19 +35,6 @@ def latest_observed_activity(row: dict[str, Any]) -> datetime | None:
     ]
     present = [value for value in candidates if value is not None]
     return max(present) if present else None
-
-
-_WAKE_OPERATION_BY_LIVENESS = {
-    "active": "message_active",
-    "stale": "message_idle",
-    "ended": "message_stopped",
-}
-
-
-def _wake_operation(row: dict[str, Any], liveness: str) -> str | None:
-    if row.get("turn_posture") == "waiting":
-        return "message_stopped"
-    return _WAKE_OPERATION_BY_LIVENESS.get(liveness)
 
 
 def _wake_interface(
@@ -124,7 +112,13 @@ def messageability(
         }
     version = str(row.get("executor_version") or "") or None
     operation = (
-        "message_stopped" if force_stopped_route else _wake_operation(row, liveness)
+        "message_stopped"
+        if force_stopped_route
+        else wake_operation(
+            "waiting" if row.get("turn_posture") == "waiting" else "idle_timeout",
+            liveness,
+            surface,
+        )
     )
     wake_interface = _wake_interface(
         surface, version, operation, machine_surface_versions

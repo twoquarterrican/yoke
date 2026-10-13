@@ -190,3 +190,82 @@ def test_an_injected_message_never_reenters_the_wake_queue() -> None:
 
     assert wake_eligible_recipients(conn, now=NOW + timedelta(seconds=299)) == []
     assert wake_eligible_recipients(conn, now=NOW + timedelta(days=30)) == []
+
+
+def test_stale_running_codex_resumes_and_delivers_the_original_receipt(monkeypatch):
+    from yoke_core.domain.session_message_delivery import lease_for_hook
+    from yoke_core.domain.session_message_lease_complete import complete_hook_lease
+    from yoke_core.domain.session_relay import claim_relay_job
+    from yoke_harness.session_relay_runtime import wake_operation as relay_operation
+    from runtime.api.domain.test_session_message_machine_wake_route import (
+        WAKE_TIME,
+        _heartbeat,
+        _register_relay,
+        _send,
+        _snapshot_route,
+        _surface_connection,
+    )
+
+    versions = {"codex-cli": "0.148.0-alpha.15"}
+    conn = _surface_connection(
+        executor="codex",
+        surface="codex-cli",
+        version=versions["codex-cli"],
+        ended=False,
+    )
+    _register_relay(conn, versions)
+    message_id = _send(conn)
+    routing = _snapshot_route(conn, message_id)
+    assert routing["wake_operation"] == "message_stopped"
+    assert routing["wake_interface"] == "supported"
+    candidate = wake_eligible_recipients(conn, now=NOW + timedelta(minutes=11))[0]
+    assert candidate["turn_posture"] == "running"
+    assert candidate["liveness"] == "stale"
+    assert candidate["wake_mode"] == "waiting"
+    outcome = claim_relay_job(
+        conn,
+        _heartbeat(versions),
+        wait_seconds=0,
+        now_provider=lambda: WAKE_TIME,
+    )
+    assert len(outcome.jobs) == 1
+    job = outcome.jobs[0]
+    assert job.message_id == message_id
+    assert job.target_session_id == "s2"
+    assert relay_operation(job.wake_mode, job.target_liveness) == "message_stopped"
+    # The resumed session's hook delivers the original envelope, once.
+    monkeypatch.setattr(
+        "yoke_core.domain.session_message_delivery.utc_now", lambda: NOW
+    )
+    lease = lease_for_hook(conn, session_id="s2", hook_event="SessionStart", limit=10)
+    assert lease["messages"][0]["message_id"] == message_id
+    assert (
+        complete_hook_lease(
+            conn,
+            lease_id=lease["lease_id"],
+            injected=True,
+            result="injected",
+        )
+        == 1
+    )
+    assert wake_eligible_recipients(conn, now=NOW + timedelta(minutes=12)) == []
+    assert (
+        lease_for_hook(conn, session_id="s2", hook_event="PostToolUse", limit=10)
+        is None
+    )
+
+
+def test_idle_route_selection_uses_each_surface_capability():
+    from yoke_contracts.session_control.capabilities import SESSION_SURFACE_CAPABILITIES
+    from yoke_core.domain.session_relay_versions import wake_operation
+
+    for surface, capability in SESSION_SURFACE_CAPABILITIES.items():
+        expected = (
+            "message_stopped" if capability.message_idle == "none" else "message_idle"
+        )
+        assert wake_operation("idle_timeout", "stale", surface) == expected
+        assert wake_operation("idle_timeout", "active", surface) == "message_active"
+        assert wake_operation("waiting", "active", surface) == "message_stopped"
+        assert wake_operation("idle_timeout", "ended", surface) == "message_stopped"
+    assert wake_operation("invalid", "stale", "codex-cli") is None
+    assert wake_operation("idle_timeout", "stale", "unknown") == "message_idle"

@@ -75,7 +75,9 @@ def test_a_starved_envelope_escalates_to_the_stopped_session_route() -> None:
     assert candidate["liveness"] == "active"
     assert candidate["wake_escalation"] == STARVED_HOOK_ROUTE
     assert (
-        wake_operation(candidate["wake_mode"], candidate["liveness"])
+        wake_operation(
+            candidate["wake_mode"], candidate["liveness"], candidate["executor_surface"]
+        )
         == "message_stopped"
     )
 
@@ -196,7 +198,9 @@ def test_a_parked_recipient_without_idle_wake_needs_no_grace_window() -> None:
     assert candidate["liveness"] == "active"
     assert candidate["wake_escalation"] == PARKED_WITHOUT_IDLE_WAKE
     assert (
-        wake_operation(candidate["wake_mode"], candidate["liveness"])
+        wake_operation(
+            candidate["wake_mode"], candidate["liveness"], candidate["executor_surface"]
+        )
         == "message_stopped"
     )
 

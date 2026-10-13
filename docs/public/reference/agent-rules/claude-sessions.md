@@ -111,6 +111,10 @@ transient-signal facts into other harness policy without manifest/source evidenc
 
 Measured clean declared-wait exit immediately qualifies pending mail's same
 native identity resume, including orphan open call; newer activity supersedes.
+A stale recipient whose surface declares no message_idle route uses
+message_stopped through the existing waiting wake mode, even if its recorded
+turn posture is running. Active calls, version floors and operator-only
+surfaces retain their declared wake rules.
 Refused/exhausted wake retains original pending receipt and sends covering-seat
 diagnostic. outcome_unknown/skip notice waits for next completed target call
 without acknowledgement; live call defers, acknowledgement suppresses.
