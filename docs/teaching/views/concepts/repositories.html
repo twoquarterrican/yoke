@@ -123,8 +123,18 @@ permissions</b> <i class="s observed">observed</i>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
 </li>
 <li id="repositories/github/github-app-and-relay-access"><b>GitHub App and relay
-access</b> <i class="s draft-copy">draft-copy</i>
-<span class="gap">unmapped</span>
+access</b> <i class="s observed">observed</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.32">32</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/detail-home.html">detail-home
+  ×1</a></div>
+  <div><b>Text:</b> App access changes arrive through webhooks only in hosted
+  mode. Local and self-hosted access changes are noticed at the next GitHub
+  check.</div>
+  <div><b>Sources:</b> <code>docs/public/github.md</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/project_github_binding.py</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/detail-home.html">detail-home</a></div>
 </li>
 </ul>
 </li>
@@ -193,6 +203,21 @@ pipeline connection</b> <i class="s draft-copy">draft-copy</i>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
   <div><b>Related:</b>
   <a href="merging.html#merging/landing">merging/landing</a></div>
+</li>
+<li id="repositories/actions/ci-verdict-wake"><b>CI verdict wake-ups on the
+session machine</b> <i class="s observed">observed</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.32">32</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/detail-home.html">detail-home
+  ×1</a></div>
+  <div><b>Text:</b> Every mode needs a healthy relay on the waiting session
+  machine. The observer queues the verdict after the turn ends; wake candidates
+  match that machine and the harness surface.</div>
+  <div><b>Sources:</b> <code>docs/public/github.md</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/session_relay.py</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/session_relay_wake_claim.py</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/detail-home.html">detail-home</a></div>
 </li>
 </ul>
 </li>

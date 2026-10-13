@@ -104,6 +104,45 @@ The link identifies the owning personal or organization installation. A failed
 identity or repository-list check reports access as unknown and asks you to
 restore the connection and retry; cached repository lists do not prove access.
 
+## GitHub access changes by mode
+
+```bash
+yoke github status
+```
+
+Run this check after changing App permissions or repository access. **Hosted**
+Yoke receives App webhooks for authorization, installation and repository
+access changes. **Local and self-hosted** Yoke do not receive those webhooks;
+they notice access changes at the next GitHub check, rather than immediately.
+When setup asks you to return from App settings, choose **Check repositories**
+to refresh access before continuing. Issue mirroring remains a separate setting.
+
+## CI verdicts and session wake-ups
+
+On the **machine running the waiting session**, with that session's Yoke
+connection selected:
+
+```bash
+yoke relay status
+```
+
+The relay must be running and healthy there for CI verdict wake-ups in **every
+mode: local, self-hosted and hosted**. A relay on the control-plane server or
+another computer does not replace the session machine's relay. Repair the
+named status refusal; `yoke relay install` repairs missing service setup.
+Keep the machine awake and connected while waiting.
+
+Yoke records the session that dispatched a CI run. Relay upkeep checks pending
+runs and queues the verdict when that session's turn has ended; the session
+machine's relay delivers the supported wake. A session still watching the run
+receives its result through that watcher. Wake support depends on the harness
+and surface; keep following a live watcher's continuation handle until it exits.
+
+On Linux, stay logged in: the systemd user relay stops after the last logout.
+Yoke requires linger to be disabled. If setup reports `relay_linger_enabled`,
+follow the [Linux relay recovery](reference/linux-relay.md) before retrying.
+That page owns the logout and linger procedure.
+
 ## Sync modes
 
 Projects can run backlog-only (DB is authority, no issue sync) or sync with
