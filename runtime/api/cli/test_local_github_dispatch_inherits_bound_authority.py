@@ -27,7 +27,7 @@ from runtime.api.cli.test_github_status_merge_path_binding import (
     _admin_sibling_machine,
 )
 from yoke_cli.commands import merge_item_local_runtime as local_runtime
-from yoke_cli.config import github_app_public_profile
+from yoke_cli.config import github_service_profile_proof
 from yoke_cli.config import github_machine_operation
 from yoke_cli.config import github_oauth_transport
 from yoke_cli.transport import local_github_dispatch
@@ -174,7 +174,7 @@ def _close_out_sync_child(
     *,
     in_process: bool,
 ) -> None:
-    monkeypatch.setattr(github_app_public_profile, "_urlopen", _profile_opener)
+    monkeypatch.setattr(github_service_profile_proof, "_urlopen", _profile_opener)
     monkeypatch.setattr(github_oauth_transport, "_urlopen", _refresh_opener)
     monkeypatch.setattr(
         project_github_auth,

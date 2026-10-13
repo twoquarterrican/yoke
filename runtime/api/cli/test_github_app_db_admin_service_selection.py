@@ -9,7 +9,6 @@ through the one selector and prove the one binding.
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 import json
 from types import SimpleNamespace
 from typing import Any
@@ -28,7 +27,8 @@ from yoke_contracts.machine_config.schema import ENV_OVERRIDE
 
 
 def test_admin_connection_selects_the_https_plane_it_administers(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _admin_sibling_machine(tmp_path, monkeypatch)
     monkeypatch.setenv(ENV_OVERRIDE, ADMIN_ENV)
@@ -43,14 +43,16 @@ def test_admin_connection_selects_the_https_plane_it_administers(
 
 
 def test_admin_connection_without_an_https_sibling_stays_local(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _admin_sibling_machine(tmp_path, monkeypatch)
     payload = json.loads(config.read_text(encoding="utf-8"))
     payload["connections"]["local-db-admin"] = {
         "transport": "local-postgres",
         "credential_source": {
-            "kind": "dsn_file", "path": str(config.parent / "local.dsn"),
+            "kind": "dsn_file",
+            "path": str(config.parent / "local.dsn"),
         },
     }
     config.write_text(json.dumps(payload), encoding="utf-8")
@@ -64,32 +66,17 @@ def test_admin_connection_without_an_https_sibling_stays_local(
 
 
 def test_default_token_read_threads_the_selected_plane_to_the_credential_store(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _admin_sibling_machine(tmp_path, monkeypatch)
     monkeypatch.setenv(ENV_OVERRIDE, ADMIN_ENV)
     seen: dict[str, dict[str, Any]] = {}
 
-    @contextmanager
-    def unlocked(_path):
-        yield
-
-    def prove(_github, **kwargs):
-        seen["profile"] = kwargs
-        return SimpleNamespace()
-
     def refresh(**kwargs):
         seen["token"] = kwargs
         return SimpleNamespace(access_token="transient-user-token")
 
-    monkeypatch.setattr(
-        github_local_user_access.github_machine_operation, "operation_lock", unlocked,
-    )
-    monkeypatch.setattr(
-        github_local_user_access.github_app_public_profile,
-        "resolve_selected_and_match",
-        prove,
-    )
     monkeypatch.setattr(
         github_local_user_access.github_user_tokens,
         "access_token_from_machine_config",
@@ -99,7 +86,6 @@ def test_default_token_read_threads_the_selected_plane_to_the_credential_store(
     token = github_local_user_access.access_token(config)
 
     assert token.access_token == "transient-user-token"
-    assert seen["profile"]["service_api_url"] == SERVICE_API_URL
-    assert seen["profile"]["local_connection_selected"] is False
     assert seen["token"]["_expected_service_api_url"] == SERVICE_API_URL
     assert seen["token"]["_expected_local_connection"] is False
+    assert "_profile_proven" not in seen["token"]
