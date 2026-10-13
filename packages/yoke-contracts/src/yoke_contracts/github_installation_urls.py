@@ -53,4 +53,29 @@ def validated_settings_url(
     return candidate.base_url
 
 
-__all__ = ["validated_settings_url"]
+def installation_settings_url(
+    *,
+    api_url: str,
+    installation_id: int,
+    account_login: str,
+    account_type: str,
+) -> str:
+    """Return the page where an account manages the App's repository access."""
+    web = github_origin.validate_github_web_endpoint(
+        github_origin.github_web_url_from_api(api_url)
+    )
+    if account_type.casefold() == "organization":
+        path = (
+            f"/organizations/{account_login}/settings/installations/{installation_id}"
+        )
+    else:
+        path = f"/settings/installations/{installation_id}"
+    return validated_settings_url(
+        web.url(path),
+        web_url=web.base_url,
+        installation_id=installation_id,
+        account_login=account_login,
+    )
+
+
+__all__ = ["installation_settings_url", "validated_settings_url"]

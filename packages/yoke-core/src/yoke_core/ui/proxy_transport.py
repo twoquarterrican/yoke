@@ -72,4 +72,35 @@ def relay_call(
     )
 
 
-__all__ = ["relay_call", "relays_to_server"]
+#: Admitted calls that ask GitHub on the operator's behalf. In-process they
+#: run under this machine's GitHub App user authorization, the same binding
+#: a CLI call on this machine receives; relayed, the server answers with its
+#: own GitHub App.
+MACHINE_GITHUB_FUNCTIONS = frozenset({"projects.github_binding.check"})
+
+
+def dispatch_in_process(request: Any) -> Any:
+    """Dispatch one admitted call in this process with browser provenance."""
+    from yoke_contracts.ui_browser_origin import ui_browser_origin
+    from yoke_core.domain.yoke_function_dispatch import dispatch
+
+    def run(selected: Any) -> Any:
+        # Browser provenance stays process-local; ambient harness lookup is disabled.
+        with ui_browser_origin():
+            return dispatch(selected, ambient_session_id="")
+
+    if request.function not in MACHINE_GITHUB_FUNCTIONS:
+        return run(request)
+    from yoke_cli.transport.local_github_dispatch import (
+        call_with_machine_github_authorization,
+    )
+
+    return call_with_machine_github_authorization(request, run, core_available=True)
+
+
+__all__ = [
+    "MACHINE_GITHUB_FUNCTIONS",
+    "dispatch_in_process",
+    "relay_call",
+    "relays_to_server",
+]

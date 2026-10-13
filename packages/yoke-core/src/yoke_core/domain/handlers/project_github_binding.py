@@ -60,6 +60,12 @@ class ProjectGithubBindingStatusRequest(BaseModel):
     project: ProjectReference
 
 
+class ProjectGithubBindingCheckRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    project: ProjectReference
+
+
 class ProjectGithubBindingLifecycleRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -196,6 +202,73 @@ def handle_project_github_binding_status(
     return HandlerOutcome(result_payload=result, primary_success=True)
 
 
+def handle_project_github_binding_check(
+    request: FunctionCallRequest,
+) -> HandlerOutcome:
+    try:
+        parsed = ProjectGithubBindingCheckRequest(**(request.payload or {}))
+    except ValidationError as exc:
+        return _payload_invalid(exc)
+
+    from yoke_core.domain.github_app_server_installation import (
+        GitHubServerInstallationVerificationError,
+    )
+    from yoke_core.domain.github_app_token_models import GitHubAppTokenError
+    from yoke_core.domain.github_app_user_verification_transport import (
+        GitHubUserVerificationError,
+    )
+    from yoke_core.domain.project_github_auth_models import ProjectGithubAuthError
+    from yoke_core.domain.project_github_binding_check import (
+        CHECK_RECIPE,
+        ProjectGithubBindingCheckError,
+        cmd_check_project_github_binding,
+    )
+    from yoke_core.domain.project_github_binding_persistence import (
+        ProjectGithubBindingError,
+    )
+
+    try:
+        result = cmd_check_project_github_binding(parsed.project)
+    except ProjectGithubBindingCheckError as exc:
+        return _check_refused(exc.code, str(exc), exc.recovery)
+    except ProjectGithubAuthError as exc:
+        return _check_refused(
+            exc.code,
+            str(exc),
+            exc.repair_hint
+            or CHECK_RECIPE.format(
+                project=parsed.project,
+            ),
+        )
+    except (
+        GitHubUserVerificationError,
+        GitHubServerInstallationVerificationError,
+        GitHubAppTokenError,
+        ProjectGithubBindingError,
+    ) as exc:
+        return _check_refused(
+            "github_check_refused_by_github",
+            f"GitHub did not confirm the binding: {exc}",
+            "Open the installation's repository access on GitHub, confirm "
+            "the App still reaches the repository, then check again",
+        )
+    except LookupError as exc:
+        return _check_refused("not_found", str(exc), "Name an existing project")
+    return HandlerOutcome(result_payload=result, primary_success=True)
+
+
+def _check_refused(code: str, message: str, recovery: str) -> HandlerOutcome:
+    return HandlerOutcome(
+        primary_success=False,
+        error=FunctionError(
+            code=code,
+            message=message,
+            jsonpath="$.payload.project",
+            recovery_hint=f"{recovery}.",
+        ),
+    )
+
+
 def handle_project_github_binding_lifecycle(
     request: FunctionCallRequest,
 ) -> HandlerOutcome:
@@ -244,11 +317,13 @@ def _payload_invalid(exc: ValidationError) -> HandlerOutcome:
 __all__ = [
     "ProjectReference",
     "ProjectGithubBindingBindRequest",
+    "ProjectGithubBindingCheckRequest",
     "ProjectGithubBindingLifecycleRequest",
     "ProjectGithubBindingStatusRequest",
     "ProjectGithubBindingStatusResponse",
     "ProjectGithubBindingUnbindRequest",
     "handle_project_github_binding_bind",
+    "handle_project_github_binding_check",
     "handle_project_github_binding_lifecycle",
     "handle_project_github_binding_status",
     "handle_project_github_binding_unbind",

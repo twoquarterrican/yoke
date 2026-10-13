@@ -71,8 +71,9 @@
     {
      "id": "github",
      "title": "GitHub",
-     "status": "draft-copy",
-     "related": "repositories/github"
+     "status": "observed",
+     "sources": ["packages/yoke-core/src/yoke_core/ui/static/universe_views_github.js"],
+     "related": "repositories/github/workbench-github-page"
     },
     {
      "id": "actors",

@@ -131,14 +131,19 @@ def private_url(
     return f"http://{resolve_ui_host(host)}:{port}/?token={token}"
 
 
-#: The Local view's host capabilities: a local universe trivially has its
-#: machine connected, so this host — not the engine — supplies that fact.
-_LOCAL_CAPABILITIES = {
-    "data": {
-        "portability": {"mode": "local", "sectionOwned": False},
-        "onboarding": {"machineConnected": True},
-    },
-}
+def _local_capabilities() -> Dict[str, Any]:
+    """The Local view's host capabilities: a local universe trivially has its
+    machine connected, and this machine names its own GitHub account, so this
+    host — not the engine — supplies both facts."""
+    from yoke_core.ui.local_github_facts import machine_github_facts
+
+    return {
+        "data": {
+            "portability": {"mode": "local", "sectionOwned": False},
+            "onboarding": {"machineConnected": True},
+            "github": machine_github_facts(),
+        },
+    }
 
 
 def _local_operator_actor_id() -> Optional[int]:
@@ -166,7 +171,7 @@ def _local_host_packet(environment: str) -> Dict[str, Any]:
         build=served_build_identity(),
         environment_label=environment_display_label(environment),
         current_actor_id=_local_operator_actor_id(),
-        capabilities=_LOCAL_CAPABILITIES,
+        capabilities=_local_capabilities(),
     )
 
 

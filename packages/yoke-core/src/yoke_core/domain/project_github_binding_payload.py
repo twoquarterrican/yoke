@@ -10,6 +10,7 @@ from yoke_contracts.github_origin import (
     GitHubApiOriginError,
     normalize_github_repository,
 )
+from yoke_contracts.github_installation_urls import installation_settings_url
 from yoke_contracts.github_app_installation_permissions import (
     ACCESS_READ,
     ACCESS_WRITE,
@@ -133,7 +134,21 @@ def installation_payload(row: Any) -> Optional[dict[str, Any]]:
         if row["last_verified_at"] is not None
         else None,
         "last_error": str(row["last_error"] or ""),
+        "settings_url": _settings_url(row),
     }
+
+
+def _settings_url(row: Any) -> str:
+    """GitHub's repository-access page for the installation, or "" if unknown."""
+    try:
+        return installation_settings_url(
+            api_url=str(row["api_url"] or ""),
+            installation_id=int(str(row["installation_id"])),
+            account_login=str(row["account_login"] or ""),
+            account_type=str(row["account_type"] or ""),
+        )
+    except (GitHubApiOriginError, ValueError):
+        return ""
 
 
 def permissions_text(value: Optional[Mapping[str, Any]]) -> str:

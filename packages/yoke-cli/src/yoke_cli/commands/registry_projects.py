@@ -123,6 +123,10 @@ PROJECTS_SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
         "projects.github_binding.status",
         _adapters.projects_github_binding_status,
     ),
+    ("projects", "github-binding", "check"): (
+        "projects.github_binding.check",
+        _adapters.projects_github_binding_check,
+    ),
     ("projects", "github-sync-mode", "repair"): (
         "projects.github_sync_mode.repair",
         _adapters.projects_github_sync_mode_repair,

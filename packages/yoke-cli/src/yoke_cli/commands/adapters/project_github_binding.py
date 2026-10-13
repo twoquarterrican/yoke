@@ -29,8 +29,10 @@ PROJECTS_GITHUB_BINDING_UNBIND_USAGE = (
     "yoke projects github-binding unbind --project NAME [--json]"
 )
 PROJECTS_GITHUB_BINDING_STATUS_USAGE = (
-    "yoke projects github-binding status --project NAME "
-    "[--field github_repo] [--json]"
+    "yoke projects github-binding status --project NAME [--field github_repo] [--json]"
+)
+PROJECTS_GITHUB_BINDING_CHECK_USAGE = (
+    "yoke projects github-binding check --project NAME [--json]"
 )
 
 
@@ -46,13 +48,14 @@ def projects_github_binding_bind(args: List[str]) -> int:
     add_session_arg(parser)
     add_json_arg(parser)
     parsed = parse_or_usage_error(
-        parser, args, PROJECTS_GITHUB_BINDING_BIND_USAGE,
+        parser,
+        args,
+        PROJECTS_GITHUB_BINDING_BIND_USAGE,
     )
     if parsed is None:
         return 2
     try:
-        with github_binding_auth.locked_profile_bound_access_for_binding(
-        ) as authority:
+        with github_binding_auth.locked_profile_bound_access_for_binding() as authority:
             payload: Dict[str, Any] = {
                 "project": parsed.project,
                 "installation_id": parsed.installation_id,
@@ -74,11 +77,16 @@ def projects_github_binding_bind(args: List[str]) -> int:
             "`yoke github connect` and retry."
         )
         if parsed.json_mode:
-            print(json.dumps({
-                "success": False,
-                "code": "github_user_authorization_unavailable",
-                "message": message,
-            }), file=sys.stderr)
+            print(
+                json.dumps(
+                    {
+                        "success": False,
+                        "code": "github_user_authorization_unavailable",
+                        "message": message,
+                    }
+                ),
+                file=sys.stderr,
+            )
         else:
             print(f"error: {message}", file=sys.stderr)
         return 1
@@ -93,7 +101,9 @@ def projects_github_binding_unbind(args: List[str]) -> int:
     add_session_arg(parser)
     add_json_arg(parser)
     parsed = parse_or_usage_error(
-        parser, args, PROJECTS_GITHUB_BINDING_UNBIND_USAGE,
+        parser,
+        args,
+        PROJECTS_GITHUB_BINDING_UNBIND_USAGE,
     )
     if parsed is None:
         return 2
@@ -115,7 +125,9 @@ def projects_github_binding_status(args: List[str]) -> int:
     add_session_arg(parser)
     add_json_arg(parser)
     parsed = parse_or_usage_error(
-        parser, args, PROJECTS_GITHUB_BINDING_STATUS_USAGE,
+        parser,
+        args,
+        PROJECTS_GITHUB_BINDING_STATUS_USAGE,
     )
     if parsed is None:
         return 2
@@ -125,6 +137,32 @@ def projects_github_binding_status(args: List[str]) -> int:
         parsed.session_id,
         parsed.json_mode,
         field=parsed.field,
+    )
+
+
+def projects_github_binding_check(args: List[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="yoke projects github-binding check",
+        description=(
+            "Re-verify the project's GitHub App binding with GitHub and "
+            "refresh its last-checked time. " + PROJECTS_GITHUB_BINDING_CHECK_USAGE
+        ),
+    )
+    parser.add_argument("--project", required=True)
+    add_session_arg(parser)
+    add_json_arg(parser)
+    parsed = parse_or_usage_error(
+        parser,
+        args,
+        PROJECTS_GITHUB_BINDING_CHECK_USAGE,
+    )
+    if parsed is None:
+        return 2
+    return _dispatch(
+        "projects.github_binding.check",
+        {"project": parsed.project},
+        parsed.session_id,
+        parsed.json_mode,
     )
 
 
@@ -160,10 +198,12 @@ def _dispatch(
 
 __all__ = [
     "PROJECTS_GITHUB_BINDING_BIND_USAGE",
+    "PROJECTS_GITHUB_BINDING_CHECK_USAGE",
     "PROJECTS_GITHUB_BINDING_STATUS_USAGE",
     "PROJECTS_GITHUB_BINDING_UNBIND_USAGE",
     "PROJECTS_GITHUB_SYNC_MODE_REPAIR_USAGE",
     "projects_github_binding_bind",
+    "projects_github_binding_check",
     "projects_github_binding_status",
     "projects_github_binding_unbind",
     "projects_github_sync_mode_repair",

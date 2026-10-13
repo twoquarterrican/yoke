@@ -53,6 +53,26 @@ def register(registry) -> None:
         ambient_session_required=False,
     )
     registry.register(
+        "projects.github_binding.check",
+        _project_github_binding.handle_project_github_binding_check,
+        _project_github_binding.ProjectGithubBindingCheckRequest,
+        _project_github_binding.ProjectGithubBindingStatusResponse,
+        stability="stable",
+        owner_module="yoke_core.domain.handlers.project_github_binding",
+        target_kinds=["global"],
+        side_effects=[
+            "github_app_installations_update",
+            "project_github_repo_bindings_update",
+            "project_capabilities_upsert",
+        ],
+        emitted_event_names=["YokeFunctionCalled"],
+        guardrails=[],
+        adapter_status="live",
+        claim_required_kind=None,
+        ambient_session_required=False,
+        minimum_serving_version="next-release",
+    )
+    registry.register(
         "projects.github_binding.lifecycle",
         _project_github_binding.handle_project_github_binding_lifecycle,
         _project_github_binding.ProjectGithubBindingLifecycleRequest,

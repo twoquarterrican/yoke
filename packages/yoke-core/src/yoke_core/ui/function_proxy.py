@@ -205,6 +205,7 @@ UI_MUTATION_FUNCTION_ALLOWLIST = frozenset(
         "session_control.launch.retry",
         "session_control.surface_policy.disable",
         "session_control.surface_policy.enable",
+        "projects.github_binding.check",
         "machine.retire",
         "machine.settings.set",
         "strategy.revision.restore",
@@ -220,7 +221,6 @@ def proxy_function_call(
     from yoke_contracts.session_control.sender_surface import (
         with_web_form_sender_surface,
     )
-    from yoke_contracts.ui_browser_origin import ui_browser_origin
     from yoke_contracts.api.function_call import (
         ActorContext,
         FunctionCallRequest,
@@ -231,8 +231,7 @@ def proxy_function_call(
         exception_response,
         status_for_response,
     )
-    from yoke_core.domain.yoke_function_dispatch import dispatch
-    from yoke_core.ui.proxy_transport import relay_call, relays_to_server
+    from yoke_core.ui import proxy_transport
 
     function_id = str(envelope.get("function") or "")
     refusal = browser_payload_refusal(envelope)
@@ -258,7 +257,7 @@ def proxy_function_call(
     # Identity follows the transport. Relayed, the server binds the
     # authenticated actor and this process asserts nobody; in-process it
     # resolves the machine operator, the only identity a loopback token stands for.
-    relayed = relays_to_server()
+    relayed = proxy_transport.relays_to_server()
     # Actor-scoped calls act as the machine's operator, resolved
     # server-side. Reads that surface per-actor dismissal state bind the
     # operator when one resolves; mutations refuse without one.
@@ -314,7 +313,7 @@ def proxy_function_call(
         if relayed:
             # The envelope's own actor and session fields never travel: the
             # relay's credential is the identity, and this process adds none.
-            response = relay_call(
+            response = proxy_transport.relay_call(
                 function_id=function_id,
                 target=target,
                 payload=payload,
@@ -331,9 +330,7 @@ def proxy_function_call(
             payload=payload,
             options=dict(envelope.get("options") or {}),
         )
-        # Browser provenance stays process-local; ambient harness lookup is disabled.
-        with ui_browser_origin():
-            response = dispatch(request, ambient_session_id="")
+        response = proxy_transport.dispatch_in_process(request)
         return response.model_dump(mode="json"), 200
     except Exception as exc:
         body = exception_response(envelope, exc).model_dump(mode="json")

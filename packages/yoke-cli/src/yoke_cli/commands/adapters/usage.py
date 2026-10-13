@@ -170,6 +170,7 @@ from yoke_cli.commands.adapters.projects_pulumi_stack_config import (
 )
 from yoke_cli.commands.adapters.project_github_binding import (
     PROJECTS_GITHUB_BINDING_BIND_USAGE,
+    PROJECTS_GITHUB_BINDING_CHECK_USAGE,
     PROJECTS_GITHUB_BINDING_STATUS_USAGE,
     PROJECTS_GITHUB_BINDING_UNBIND_USAGE,
     PROJECTS_GITHUB_SYNC_MODE_REPAIR_USAGE,
@@ -277,6 +278,7 @@ ADAPTER_USAGE: Dict[str, str] = {
     "projects.github_binding.bind": PROJECTS_GITHUB_BINDING_BIND_USAGE,
     "projects.github_binding.unbind": PROJECTS_GITHUB_BINDING_UNBIND_USAGE,
     "projects.github_binding.status": PROJECTS_GITHUB_BINDING_STATUS_USAGE,
+    "projects.github_binding.check": PROJECTS_GITHUB_BINDING_CHECK_USAGE,
     "projects.github_sync_mode.repair": PROJECTS_GITHUB_SYNC_MODE_REPAIR_USAGE,
     **ORGANIZATION_USAGE,
     **IDENTITY_USAGE,
