@@ -95,7 +95,7 @@ PLAN_REMATERIALIZE_EPILOG = """Bringing live rows to the plan's current text
 ---------------------------------------------
 This is the supported way to correct a materialized case. It refreshes
 matching rows in place, retains their QA run history, creates cases the plan
-has gained, and waives cases it has lost. It reaches every executable column,
+has gained, and retires cases it has lost. It reaches every executable column,
 instructions and expected_outcome included -- which `yoke qa requirement
 update` cannot write at all -- because it rewrites the derivation whole rather
 than one allowlisted field. It also carries that body onto every admitted
@@ -104,9 +104,17 @@ reported as corrected_admitted_copy_ids -- otherwise the copy would keep the
 old body and its stage would refuse the case as superseded.
 
 An item transition whose plan a delivery already answered still has its
-existing rows refreshed and its lost cases waived; it gains no new row there,
+existing rows refreshed and its lost cases retired; it gains no new row there,
 because only a run that already finished could answer one. The result's
 plan_ids names every plan the call reached.
+
+On an item transition, a lost post_deploy case that exactly one created row
+replaces -- same item, transition, phase, environment and host baseline -- is
+superseded by that row, reported as superseded_requirement_ids (old id to
+successor id). The successor carries the obligation: a run that already
+admitted the old case answers it through those copies, and later releases
+admit only the successor. A lost case with no single successor is waived as
+removed (waived_requirement_ids).
 
 A deployment subject converges case by case, so one answered sibling never
 blocks the rest: a row nobody has judged is refreshed in place; a case whose
