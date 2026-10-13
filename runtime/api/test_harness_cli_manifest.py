@@ -60,6 +60,7 @@ def test_new_manifest_entry_is_resolved_without_a_hardcoded_cli_list(
         "example",
         "example-cli",
         executable.name,
+        "example_quota",
     )
 
     resolved = resolve_harness_clis(str(tmp_path), manifests=(manifest,))

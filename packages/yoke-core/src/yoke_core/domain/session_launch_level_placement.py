@@ -24,6 +24,7 @@ from yoke_contracts.levels import Level
 from yoke_contracts.session_control.model_selection import SURFACE_EFFORT_LEVELS
 from yoke_core.domain.level_native_selections import (
     NativeLevelSelection,
+    catalog_supports,
     native_selections,
 )
 from yoke_core.domain.session_launch_machine_models import machine_native_models
@@ -154,6 +155,8 @@ def _candidates(
         )
         relays = {relay.machine_id: relay for relay in reversed(snapshot.relays)}
         for index, entry in enumerate(level.options):
+            if not catalog_supports(surface, entry.model, records):
+                continue
             if not relays:
                 weighed.append(
                     LevelCandidate(

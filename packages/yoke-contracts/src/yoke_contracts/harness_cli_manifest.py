@@ -14,6 +14,7 @@ class HarnessCliManifest:
     harness_id: str
     surface_id: str
     executable: str
+    quota_source: str
     minimum_engine_version: str = "0.0.0"
     version_args: tuple[str, ...] = ("--version",)
     bundled_candidates: tuple[str, ...] = ()
@@ -22,6 +23,7 @@ class HarnessCliManifest:
         return {
             "surface_id": self.surface_id,
             "executable": self.executable,
+            "quota_source": self.quota_source,
             "version_args": list(self.version_args),
             "bundled_candidates": list(self.bundled_candidates),
             "project_discovery": {
@@ -40,16 +42,23 @@ class HarnessCliManifest:
 
 HARNESS_CLI_MANIFESTS = (
     HarnessCliManifest(
-        "claude-code", "claude-cli", "claude", CLAUDE_AGENTS_MINIMUM_VERSION
+        "claude-code",
+        "claude-cli",
+        "claude",
+        "anthropic_oauth_usage",
+        CLAUDE_AGENTS_MINIMUM_VERSION,
     ),
     HarnessCliManifest(
         "codex",
         "codex-cli",
         "codex",
+        "codex_account_rate_limits",
         "0.161.0",
         bundled_candidates=("/Applications/ChatGPT.app/Contents/Resources/codex",),
     ),
-    HarnessCliManifest("cursor", "cursor-cli", "cursor-agent", "2026.10.01"),
+    HarnessCliManifest(
+        "cursor", "cursor-cli", "cursor-agent", "cursor_dashboard_usage", "2026.10.01"
+    ),
 )
 
 if tuple(manifest.harness_id for manifest in HARNESS_CLI_MANIFESTS) != (

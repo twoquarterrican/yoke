@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from yoke_contracts.timestamps import format_instant, parse_instant, utc_now
+from yoke_contracts.harness_cli_manifest import HARNESS_CLI_MANIFESTS
 from yoke_harness.session_relay_probe_cache import read_probe_cache, write_probe_cache
 from yoke_contracts.timestamps import iso8601_now as _now_iso
 import json
@@ -205,16 +206,26 @@ def _cursor_tier_from_cli() -> dict[str, Any]:
 
 
 _PROBES: dict[str, Callable[..., dict[str, Any]]] = {
-    "claude-cli": probe_claude_cli,
-    "codex-cli": probe_codex_cli,
-    "cursor-cli": probe_cursor_cli,
+    "anthropic_oauth_usage": probe_claude_cli,
+    "codex_account_rate_limits": probe_codex_cli,
+    "cursor_dashboard_usage": probe_cursor_cli,
 }
 
 
 def _probe_one(surface: str, observed_at: str) -> dict[str, Any]:
-    probe = _PROBES.get(surface)
+    source = next(
+        (
+            manifest.quota_source
+            for manifest in HARNESS_CLI_MANIFESTS
+            if manifest.surface_id == surface
+        ),
+        None,
+    )
+    probe = _PROBES.get(source)
     if probe is None:
-        return unknown_reading(surface, "unsupported_surface", observed_at=observed_at)
+        return unknown_reading(
+            surface, "quota_source_unsupported", observed_at=observed_at
+        )
     try:
         return probe(observed_at=observed_at)
     except Exception as exc:

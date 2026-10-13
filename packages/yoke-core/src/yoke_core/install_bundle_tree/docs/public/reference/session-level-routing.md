@@ -1,7 +1,7 @@
 # Execution levels
 
 Each execution level holds ordered model/minimum-effort rows.
-Sessions take the highest matching threshold; native listings decide launch selectors.
+Sessions take the highest matching threshold; manifests select catalog or native selectors.
 Levels carry presentation and placement; workflow bindings select skills,
 and steering or explicit operator staffing assigns work.
 
@@ -73,13 +73,18 @@ result names its `source` (`project`, `universe`, or `default`).
 
 `yoke universe level-capacity get [--json]` (`universe.level_capacity.get`)
 reports each model row's native launch surfaces and current standing.
-Native model listings supply the selectors and supported efforts, per machine.
+The harness manifest declares the selection source: Claude uses the active
+researched catalog's Anthropic model ids and published efforts; Codex and
+Cursor use native model listings per machine. Impossible provider pairs are
+excluded before weighing. A native listing excludes models it does not offer.
 An unknown listing requires `yoke relay probe-models --surface S`. An unsupported
 listing names the missing adapter; ask the control-plane operator to provide it
 or choose a surface with observed models. Neither invents availability.
 
 Every candidate reads only the quota windows its model draws on. A readable
-zero blocks; missing or unreadable quota is unknown capacity. Claude's 5-hour
+zero blocks; missing or unreadable quota is unknown capacity. Each machine's
+relay reads the manifest's quota source and reports named failures alongside
+recovery guidance in the launch's pool output. Claude's 5-hour
 window remains a separate cap beside its weekly limits. Cursor's two monthly
 pools follow the order below. No level borrows another level's models.
 
@@ -191,7 +196,7 @@ yoke session-control launch preview --project P --level SENIOR [--machine M] --j
 yoke session-control launch create --project P --item PREFIX-N --idempotency-key K
 ```
 
-Placement expands each model row to observed native selectors at its minimum
+Placement expands each model row through its manifest's selection source at its minimum
 effort. Machine access, lane capacity and quota rules remain authoritative.
 Empty/blocked candidates are skipped. Among available Cursor candidates,
 the earlier monthly pool is preferred before headroom; other vendors have

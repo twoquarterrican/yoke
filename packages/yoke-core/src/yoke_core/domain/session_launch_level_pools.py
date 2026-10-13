@@ -28,6 +28,9 @@ from typing import Any, Sequence
 from yoke_contracts.timestamps import parse_instant, temporal_wire
 from yoke_contracts.session_control.model_billing_pools import window_covers_model
 from yoke_core.domain.session_probe import not_probe_session_sql
+from yoke_contracts.session_control.plan_limit_unreadable_guidance import (
+    unreadable_guidance,
+)
 from yoke_core.domain.steering_fleet_plan_capacity import (
     EMPTY,
     compute_plan_limit,
@@ -50,6 +53,7 @@ class PoolCheck:
     resets_at: datetime | None
     status: str
     exhausted: bool
+    reason: str | None = None
 
     def __post_init__(self) -> None:
         if self.resets_at is not None:
@@ -62,7 +66,10 @@ class PoolCheck:
         return None if text == EMPTY else text
 
     def to_dict(self) -> dict[str, Any]:
-        return {**temporal_wire(asdict(self)), "resets_utc": self.resets_utc}
+        out = {**temporal_wire(asdict(self)), "resets_utc": self.resets_utc}
+        if self.status != "ok":
+            out["guidance"] = unreadable_guidance(self.reason)
+        return out
 
 
 def option_pools(
@@ -89,6 +96,7 @@ def option_pools(
                 headroom_percent=computed.headroom_percent,
                 resets_at=row.resets_at,
                 status=row.status,
+                reason=row.reason,
                 exhausted=bool(readable and float(row.remaining_percent or 0) <= 0),
             )
         )
