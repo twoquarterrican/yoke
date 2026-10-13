@@ -102,7 +102,9 @@ def test_registration_refuses_a_claude_id_other_than_the_reported_native_id() ->
 
 
 @pytest.mark.parametrize("early_state", ("launching", "awaiting_registration"))
-def test_registration_retries_until_native_identity_is_bound(early_state: str) -> None:
+def test_registration_attests_native_identity_before_relay_report(
+    early_state: str,
+) -> None:
     conn = launch_connection()
     add_relay(conn, surface="claude-cli", version="2.1.238")
     launch = assigned_launch(conn, key=f"early-{early_state}", surface="claude-cli")
@@ -123,17 +125,17 @@ def test_registration_retries_until_native_identity_is_bound(early_state: str) -
         conn.commit()
     _register_claude(conn, "claude-early-session")
 
-    with pytest.raises(SessionLaunchError) as pending:
-        prepare_launch_registration(
-            conn,
-            launch_id=launch.launch_id,
-            attestation=claim.attestation,
-            session_id="claude-early-session",
-            now="2026-08-22T12:00:02Z",
-        )
-
-    assert pending.value.code == "invalid_state"
-    assert pending.value.launch_state == early_state
+    prepare_launch_registration(
+        conn,
+        launch_id=launch.launch_id,
+        attestation=claim.attestation,
+        session_id="claude-early-session",
+        now="2026-08-22T12:00:02Z",
+    )
+    assert (
+        get_launch(conn, launch.launch_id).registered_session_id
+        == "claude-early-session"
+    )
 
     report_launch_attempt(
         conn,

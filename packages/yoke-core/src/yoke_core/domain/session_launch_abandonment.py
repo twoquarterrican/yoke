@@ -1,7 +1,8 @@
 """Flip a launch whose worker ended without ever entering its mandate.
 
-A launch succeeds at model-visible delivery. A worker that never claims or
-reports can still leave that successful launch while its mandate is untouched.
+Item-assigned launches require acknowledgement and their own item claim before
+success. Itemless launches require acknowledgement; this ending/death backstop
+also detects a delivered session that never performed its claim-free mandate.
 
 So the end of a launch-created session is also the last moment to check
 whether the worker ever participated. A work claim proves it entered the

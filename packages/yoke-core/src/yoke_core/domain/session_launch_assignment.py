@@ -119,7 +119,7 @@ def refuse_held_assigned_item(
         f"WHERE l.project_id={p} AND l.session_name LIKE {p} "
         f"{predecessor_filter}"
         f"AND (l.state IN ({holes}) OR l.state='outcome_unknown' "
-        f"OR (s.session_id IS NOT NULL AND {live_session_sql('s')})) "
+        f"OR (l.state='succeeded' AND s.session_id IS NOT NULL AND {live_session_sql('s')})) "
         "ORDER BY l.created_at, l.launch_id LIMIT 1",
         (project_id, f"{ref}: %", *predecessor_params, *states),
     ).fetchone()

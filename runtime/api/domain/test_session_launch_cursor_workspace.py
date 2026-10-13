@@ -1,9 +1,9 @@
-"""A launched native binds by the workspace its opening hook registered.
+"""Cursor workspace registration and authenticated launch-ending evidence.
 
 Cursor's sessionStart names its workspace in ``workspace_roots`` and carries
 no ``cwd``; Claude and Codex carry ``cwd``. Registration must store the same
-workspace the relay recorded for the launch on every surface, or the launch's
-registration candidate never matches and the native is left unbound.
+workspace on every surface. Launch ownership comes from the opening hook's
+attestation, independently of directory or concurrent registration time.
 """
 
 from __future__ import annotations
@@ -23,15 +23,50 @@ from yoke_core.domain.session_launch_binding_evidence import (
     record_session_ended_unbound,
 )
 from yoke_core.domain.session_launch_store import get_launch
+from yoke_core.domain.session_launch_execution import claim_assigned_launch
+from yoke_core.domain.session_launch_registration import prepare_launch_registration
 from yoke_core.domain.session_relay import report_relay_job
 from yoke_core.hooks.registration_observed import parse_hook_registration_facts
-from runtime.api.domain.test_session_launch_registration_candidate import (
-    SESSION_ID,
-    WORKSPACE,
-    _claimed_launch,
-    _connection,
-    _register_candidate,
+from runtime.api.domain.session_launch_test_support import (
+    NOW,
+    add_relay,
+    assigned_launch,
+    relay_connection,
 )
+
+
+SESSION_ID = "87654321-4321-4321-8321-cba987654321"
+WORKSPACE = "/project"
+
+
+def _connection():
+    conn = relay_connection()
+    conn.execute("ALTER TABLE harness_sessions ADD COLUMN episode_started_at TEXT")
+    conn.commit()
+    return conn
+
+
+def _claimed_launch(conn, key):
+    add_relay(conn, surface="cursor-cli", version="2026.10.01")
+    launch = assigned_launch(conn, key=key, surface="cursor-cli")
+    claim = claim_assigned_launch(
+        conn,
+        launch_id=launch.launch_id,
+        relay_id="relay-1",
+        machine_id="machine-1",
+        now=NOW,
+    )
+    return launch, claim
+
+
+def _register_candidate(conn, *, workspace=WORKSPACE):
+    conn.execute(
+        "INSERT INTO harness_sessions (session_id,project_id,executor_surface,"
+        "executor_version,machine_id,model,workspace,offered_at,episode_started_at) "
+        "VALUES (?,10,'cursor-cli','2026.10.01','machine-1','gpt-5',?,?,?)",
+        (SESSION_ID, workspace, NOW, NOW),
+    )
+    conn.commit()
 
 
 def _workspace(payload: dict) -> str:
@@ -65,12 +100,19 @@ def test_claude_and_codex_cwd_registration_is_unchanged() -> None:
     assert _workspace({}) == ""
 
 
-def test_cursor_registered_workspace_binds_the_launch_candidate() -> None:
+def test_cursor_workspace_session_binds_through_its_launch_attestation() -> None:
     conn = _connection()
     launch, claim = _claimed_launch(conn, "cursor-workspace")
     _register_candidate(
         conn,
         workspace=_workspace({"workspace_roots": [WORKSPACE]}),
+    )
+    prepare_launch_registration(
+        conn,
+        launch_id=launch.launch_id,
+        attestation=claim.attestation,
+        session_id=SESSION_ID,
+        now="2026-08-22T12:00:02Z",
     )
 
     progress = report_relay_job(
@@ -179,7 +221,7 @@ def test_session_end_leaves_a_bound_launch_untouched() -> None:
     assert "registration_refusal_code" not in _evidence(conn, launch.launch_id)
 
 
-@pytest.mark.parametrize("state", ["launching", "cancelled", "failed"])
+@pytest.mark.parametrize("state", ["cancelled", "failed"])
 def test_session_end_leaves_a_launch_binding_cannot_reach_untouched(state) -> None:
     conn = _connection()
     launch, claim = _claimed_launch(conn, f"ended-{state}")
@@ -196,6 +238,12 @@ def test_session_end_still_names_an_outcome_unknown_launch_recovery_could_bind()
     launch, claim = _claimed_launch(conn, "ended-outcome-unknown")
     _set(conn, launch.launch_id, "state='outcome_unknown', native_session_id=NULL")
 
+    assert _end(conn, launch.launch_id, claim.attestation) == SESSION_END_RECORDED
+
+
+def test_session_end_during_native_creation_records_the_unbound_attested_session():
+    conn = _connection()
+    launch, claim = _claimed_launch(conn, "ended-before-opening-bind")
     assert _end(conn, launch.launch_id, claim.attestation) == SESSION_END_RECORDED
 
 

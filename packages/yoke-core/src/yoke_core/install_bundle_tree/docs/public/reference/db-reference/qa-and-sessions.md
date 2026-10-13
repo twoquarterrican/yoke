@@ -191,6 +191,14 @@ Indexes: `idx_harness_sessions_level(execution_level)`, `idx_harness_sessions_he
 
 Shell access: the Python harness-session CLI (`begin|touch|end|get|list|stale|reclaim`). API: `/v1/sessions` endpoints.
 
+**Launch binding.** The opening hook binds its exact session with its launch-specific
+attestation. Folder and time proximity never establish ownership. Relay reports
+preserve that binding and delivery receipt. Item-assigned launches also require
+the worker to claim that exact item before the deadline. Missing entry fails as
+`launch_work_claim_missing`, and the failed launch alone no longer staffs the item.
+Read `yoke session-control launch get LAUNCH-ID --json` for binding, receipt and
+recovery evidence before retrying. Itemless launches need acknowledgement only.
+
 ## Table: work_claims
 
 Tracks active harness-session occupancy through one canonical target pair: `target_kind` names the target vocabulary and `scope` stores the exact kind-specific JSON object. Claims with `released_at IS NULL` are active.

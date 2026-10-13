@@ -29,7 +29,7 @@ where silence would burn the whole registration deadline instead.
 
 Registration is the native's own: cursor-agent runs the installed hook chain
 in print mode, so the launch attestation it inherits registers the
-vendor-created identity and the relay binds that registered candidate.
+vendor-created identity directly to its launch before the relay reads it.
 """
 
 from __future__ import annotations

@@ -33,8 +33,8 @@ def resolve_registered_session(
 
     Cursor assigns a new chat's id, so the relay cannot name it on the native
     command line. The opening hook registers that id; this resolver then asks
-    the existing launch-registration surface for the sole session matching
-    the launch's machine, surface, workspace, and registration window.
+    the existing launch-registration surface for the exact session bound by
+    that launch's authenticated opening hook.
     """
     if resolver is None:
         return CursorRegistrationResolution(None, "registration_lookup_unavailable", 0)
