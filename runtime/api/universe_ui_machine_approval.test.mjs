@@ -20,7 +20,7 @@ function page({ decision = null, failure = null, readError = null, count = 0,
       if (request.function === "machine.list") return ok({ count, machines: [] });
       if (request.function === "machine_authorization.get") {
         if (readError) return { status: 404, envelope: { success: false, error: readError } };
-        return ok({ authorization: { code, machine, machine_id: "4f2c9a1e-more-id", platform: "macOS", expires_at: expires, decision } });
+        return ok({ authorization: { code, machine, machine_id: "4f2c9a1e-80d6-4b2c-a447-123456789abc", platform: "macOS", expires_at: expires, decision } });
       }
       if (refuse) {
         const error = refuse;
@@ -41,7 +41,7 @@ test("approval displays real facts and completes first-run progress", async () =
     const { main, requests, titles, expires } = page();
     await settle();
     assert.equal(titles.at(-1), "Approve this machine");
-    assert.match(main.textContent, /My laptopmacOS · machine 4f2c9a1e/);
+    assert.match(main.textContent, /My laptopmacOS · machine 4f2c9a1e-80d6-4b2c-a447-123456789abc/);
     assert.match(main.textContent, /matches the one in your terminal/);
     assert.match(main.textContent, /OrganizationExample org/);
     assert.match(main.textContent, /in 9 minutes/);

@@ -93,7 +93,7 @@ functions only with the workbench's existing same-origin CSRF protection.
 ## Approval page
 
 The page shows a single card headed **Approve this machine**, with the real
-machine name (omitted when absent), platform and short ID, one-time code,
+machine name (omitted when absent), platform and full machine ID, one-time code,
 organization name, and the viewer's local expiry time and zone. The UTC instant
 stays in the time element. Approve only if the code matches your terminal.
 **Approve machine** is the primary action; **Deny** authorizes nothing.

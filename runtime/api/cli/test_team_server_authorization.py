@@ -23,6 +23,7 @@ def test_shared_client_sends_identity_and_accepts_self_host_authority(monkeypatc
         lambda: MACHINE_ID,
     )
     monkeypatch.setattr(auth, "machine_display_name", lambda: "My laptop")
+    monkeypatch.setattr(auth.platform, "system", lambda: "Linux")
     responses = [
         {
             "device_code": "secret",
@@ -44,7 +45,11 @@ def test_shared_client_sends_identity_and_accepts_self_host_authority(monkeypatc
     pending = auth.start(ORIGIN, self_host=True)
     credential = auth.complete(pending, sleep=lambda _: None, monotonic=lambda: 0)
     assert credential.api_url == ORIGIN
-    assert requests[0][1] == {"machine_id": MACHINE_ID, "machine_name": "My laptop"}
+    assert requests[0][1] == {
+        "machine_id": MACHINE_ID,
+        "machine_name": "My laptop",
+        "platform": "Linux",
+    }
     assert requests[1][1]["device_code"] == "secret"
     assert requests[1][2]["sensitive_values"] == ("secret",)
 

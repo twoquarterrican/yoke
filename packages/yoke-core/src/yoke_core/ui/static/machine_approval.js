@@ -59,7 +59,7 @@ function facts(doc, authorization, org, approved) {
     table.appendChild(group);
   };
   if (authorization.machine) {
-    const detail = [authorization.platform, authorization.machine_id && `machine ${authorization.machine_id.slice(0, 8)}`].filter(Boolean).join(" · ");
+    const detail = [authorization.platform, authorization.machine_id && `machine ${authorization.machine_id}`].filter(Boolean).join(" · ");
     row("Machine", [el(doc, "b", null, authorization.machine),
       ...(detail ? [el(doc, "span", "machine-approval-quiet", detail)] : [])]);
   }
