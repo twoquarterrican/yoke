@@ -119,7 +119,7 @@ class TestInstaller:
             "# Harness-neutral: fires on every commit regardless of source\n"
             "# (agent tool calls, manual git commit, merge, rebase, cherry-pick).\n"
             "exec python3 -m yoke_core.domain.path_snapshots --ensure-head"
-            " \"${YOKE_PROJECT_ID:-yoke}\" >/dev/null 2>&1\n"
+            ' "${YOKE_PROJECT_ID:-yoke}" >/dev/null 2>&1\n'
         )
         hook = _hook_path(fresh_repo)
         hook.parent.mkdir(parents=True, exist_ok=True)
@@ -129,9 +129,7 @@ class TestInstaller:
         install_post_commit_hook(fresh_repo, result)
         assert result.updated == 1
         assert hook.read_text() == POST_COMMIT_SHIM
-        assert "python3 -m yoke_core.domain.path_snapshots" not in (
-            hook.read_text()
-        )
+        assert "python3 -m yoke_core.domain.path_snapshots" not in (hook.read_text())
 
     def test_skips_when_git_hooks_dir_missing(self, tmp_path):
         # No .git/ at all.
@@ -147,11 +145,8 @@ class TestHookShape:
         # (field-note 12957: the module-invocation form requires a Yoke
         # checkout importable by the ambient python3 — external repos
         # died ModuleNotFoundError).
-        assert "exec yoke git post-commit" in POST_COMMIT_SHIM
-        assert (
-            "python3 -m yoke_core.domain.path_snapshots"
-            not in POST_COMMIT_SHIM
-        )
+        assert 'exec "$yoke_bin" git post-commit' in POST_COMMIT_SHIM
+        assert "python3 -m yoke_core.domain.path_snapshots" not in POST_COMMIT_SHIM
 
     def test_shim_carries_marker(self):
         assert POST_COMMIT_MARKER in POST_COMMIT_SHIM
@@ -163,13 +158,12 @@ class TestHookShape:
         assert "runtime.harness" not in POST_COMMIT_SHIM
 
     def test_shim_guards_missing_launcher_without_blocking(self):
-        # Launcher absent from PATH: teach the machine install on stderr
-        # but exit 0 — a completed commit is never blocked or errored by
-        # snapshot sync. (Project resolution moved into the
-        # `yoke git post-commit` adapter.)
+        # Launcher absent: teach the machine install on stderr but exit
+        # 0. (Project resolution lives in the `yoke git post-commit`
+        # adapter.)
         assert "command -v yoke" in POST_COMMIT_SHIM
         assert "exit 0" in POST_COMMIT_SHIM
-        assert "https://api.upyoke.com/install" in POST_COMMIT_SHIM
+        assert "https://upyoke.com/install | sh" in POST_COMMIT_SHIM
         assert "install_yoke_launcher" not in POST_COMMIT_SHIM
 
 

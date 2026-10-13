@@ -202,20 +202,16 @@ class TestShimCliCoupling:
     """The installed shim text and the routed CLI tokens move together."""
 
     def test_shims_exec_the_routed_tokens(self):
-        assert "exec yoke git pre-commit" in PRE_COMMIT_SHIM
-        assert "exec yoke git post-commit" in POST_COMMIT_SHIM
+        assert 'exec "$yoke_bin" git pre-commit' in PRE_COMMIT_SHIM
+        assert 'exec "$yoke_bin" git post-commit' in POST_COMMIT_SHIM
 
-    def test_shims_guard_missing_launcher(self):
-        # Pre-commit fails CLOSED with teaching (a guardrail that
-        # silently allows when the CLI is missing is not a guardrail);
-        # post-commit teaches but exits 0 (commit already completed).
+    def test_shims_route_through_the_machine_launcher(self):
+        # Behavior without a launcher is exercised end to end in
+        # test_managed_git_hook_launcher_lookup.
         assert PRE_COMMIT_SHIM.count("command -v yoke") == 1
-        assert "exit 1" in PRE_COMMIT_SHIM
-        assert "https://api.upyoke.com/install" in PRE_COMMIT_SHIM
         assert "machine-installed `yoke` launcher" in PRE_COMMIT_SHIM
         assert "editable install" in PRE_COMMIT_SHIM
         assert POST_COMMIT_SHIM.count("command -v yoke") == 1
-        assert "exit 0" in POST_COMMIT_SHIM
 
     def test_no_module_invocation_form_remains(self):
         for shim in (PRE_COMMIT_SHIM, POST_COMMIT_SHIM):

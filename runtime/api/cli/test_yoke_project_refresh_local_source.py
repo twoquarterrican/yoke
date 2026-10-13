@@ -119,7 +119,9 @@ def test_source_preview_rejects_malformed_settings_without_mutation(
     )
 
     assert rc == 1
-    assert "not valid JSON" in capsys.readouterr().err
+    # Which preflight refuses first depends on the harness CLIs on PATH;
+    # every refusal names the malformed file.
+    assert str(settings) in capsys.readouterr().err
     assert _project_tree(target) == before
 
 

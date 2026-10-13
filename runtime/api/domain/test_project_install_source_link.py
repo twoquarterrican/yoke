@@ -36,9 +36,7 @@ MANIFEST_SCHEMA = 1
 def _seed_yoke_checkout(root: Path) -> None:
     """Minimal tree satisfying ``is_yoke_source_checkout``."""
     root.mkdir(parents=True, exist_ok=True)
-    (root / "pyproject.toml").write_text(
-        '[project]\nname = "yoke"\n', encoding="utf-8"
-    )
+    (root / "pyproject.toml").write_text('[project]\nname = "yoke"\n', encoding="utf-8")
     (root / "runtime" / "harness").mkdir(parents=True)
     cursor_hooks = root / "runtime" / "harness" / "cursor" / "hooks.json"
     cursor_hooks.parent.mkdir(parents=True)
@@ -121,7 +119,8 @@ class TestModeResolution:
         with pytest.raises(ProjectInstallError):
             source_link.resolve_mode(checkout, MODE_SOURCE_LINK)
         assert source_link.resolve_mode(plain_repo, MODE_COPY) == (
-            MODE_COPY, "explicit --copy"
+            MODE_COPY,
+            "explicit --copy",
         )
 
 
@@ -169,12 +168,13 @@ class TestSourceLinkGitHooks:
         report = source_link.install_source_link(checkout)
         assert report["hooks_installed_or_updated"] == 3
         for name, marker, shim in (
-            ("pre-commit", git_hooks.PRE_COMMIT_MARKER,
-             git_hooks.PRE_COMMIT_SHIM),
-            ("pre-merge-commit", git_hooks.PRE_MERGE_COMMIT_MARKER,
-             git_hooks.PRE_MERGE_COMMIT_SHIM),
-            ("post-commit", git_hooks.POST_COMMIT_MARKER,
-             git_hooks.POST_COMMIT_SHIM),
+            ("pre-commit", git_hooks.PRE_COMMIT_MARKER, git_hooks.PRE_COMMIT_SHIM),
+            (
+                "pre-merge-commit",
+                git_hooks.PRE_MERGE_COMMIT_MARKER,
+                git_hooks.PRE_MERGE_COMMIT_SHIM,
+            ),
+            ("post-commit", git_hooks.POST_COMMIT_MARKER, git_hooks.POST_COMMIT_SHIM),
         ):
             hook = checkout / ".git" / "hooks" / name
             assert hook.is_file(), f"{name} hook must exist"
@@ -188,7 +188,7 @@ class TestSourceLinkGitHooks:
         # checkout's `yoke` is the editable install of the same code,
         # so source-link mode routes through the launcher too — the
         # module-invocation form is gone.
-        assert "exec yoke git pre-commit" in git_hooks.PRE_COMMIT_SHIM
+        assert 'exec "$yoke_bin" git pre-commit' in git_hooks.PRE_COMMIT_SHIM
         assert (
             "python3 -m yoke_core.domain.git_pre_commit"
             not in git_hooks.PRE_COMMIT_SHIM
@@ -252,8 +252,7 @@ class TestSourceLinkContractAndManifest:
     def test_manifest_carries_unknown_keys_forward(self, checkout):
         (checkout / ".yoke").mkdir()
         (checkout / MANIFEST_REL).write_text(
-            json.dumps({"manifest_schema": MANIFEST_SCHEMA,
-                        "future_key": "kept"}),
+            json.dumps({"manifest_schema": MANIFEST_SCHEMA, "future_key": "kept"}),
             encoding="utf-8",
         )
         source_link.install_source_link(checkout)
@@ -276,11 +275,13 @@ class TestInstallDispatch:
         from yoke_core.domain.project_install_test_helpers import make_bundle
 
         monkeypatch.setattr(
-            project_install, "_resolve_bundle",
+            project_install,
+            "_resolve_bundle",
             lambda pid, **kw: (make_bundle(), "test"),
         )
         monkeypatch.setattr(
-            project_install, "_register_in_machine_config",
+            project_install,
+            "_register_in_machine_config",
             lambda *a, **kw: False,
         )
         report = project_install.install(plain_repo, project_id=7)

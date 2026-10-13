@@ -64,7 +64,7 @@
    "title": "11. Yoke's git hooks fail on another computer",
    "status": "approved",
    "scope": "Yoke",
-   "concepts": ["repositories/git", "verification/checks"],
+   "concepts": ["repositories/git", "repositories/git/git-hooks", "verification/checks"],
    "surfaces": ["command-feedback", "detail-home"],
    "scenarios": ["crossplatform-runtime", "merge-integration"]
   },
