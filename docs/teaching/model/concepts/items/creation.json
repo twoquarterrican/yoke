@@ -2,21 +2,10 @@
  "id": "creation",
  "title": "Intake and creation",
  "status": "observed",
- "plan_refs": [
-  "FIRST-USER.13",
-  "FIRST-USER.2",
-  "FIRST-USER.28"
- ],
- "commands": [
-  "yoke items create"
- ],
- "skills": [
-  "idea"
- ],
+ "plan_refs": ["FIRST-USER.13", "FIRST-USER.2", "FIRST-USER.28"],
+ "commands": ["yoke items create"],
+ "skills": ["idea"],
  "page": "items",
  "position": 1,
- "sources": [
-  "packages/yoke-cli/src/yoke_cli/commands/adapters/items_create.py",
-  "runtime/api/cli/test_items_create_spec_sources.py"
- ]
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/items_create.py", "runtime/api/cli/test_items_create_spec_sources.py"]
 }

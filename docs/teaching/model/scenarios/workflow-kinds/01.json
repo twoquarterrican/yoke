@@ -9,18 +9,8 @@
  "surface": "Idea metadata inference; Dash entry; public Workflows and command reference",
  "gap": "Public built-in table omits Task and provides no concise intent comparison. Review question: should the first-work guide teach only the matched choice, with the full comparison on request?",
  "review": "Pending exact recipe proof.",
- "recipes": [
-  "yoke workflows version get --help"
- ],
- "plan_notes": [
-  "JOURNEYS row 11",
-  "outside both"
- ],
- "sources": [
-  ".agents/skills/yoke/idea/infer-and-create.md",
-  ".agents/skills/yoke/dash/SKILL.md",
-  "docs/public/workflows.md",
-  "docs/public/reference/commands.md"
- ],
+ "recipes": ["yoke workflows version get --help"],
+ "plan_notes": ["JOURNEYS row 11", "outside both"],
+ "sources": [".agents/skills/yoke/idea/infer-and-create.md", ".agents/skills/yoke/dash/SKILL.md", "docs/public/workflows.md", "docs/public/reference/commands.md"],
  "position": 0
 }

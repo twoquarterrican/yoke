@@ -3,21 +3,9 @@
  "title": "13. Make filing items one consistent command",
  "status": "approved",
  "scope": "Yoke",
- "concepts": [
-  "items/creation",
-  "items/content",
-  "items/creation/spec-input"
- ],
- "surfaces": [
-  "packets-help",
-  "command-feedback",
-  "skills-roles"
- ],
- "scenarios": [
-  "item-records"
- ],
+ "concepts": ["items/creation", "items/content", "items/creation/spec-input"],
+ "surfaces": ["packets-help", "command-feedback", "skills-roles"],
+ "scenarios": ["item-records"],
  "position": 8,
- "work_items": [
-  "YOK-3946"
- ]
+ "work_items": ["YOK-3946"]
 }

@@ -9,21 +9,8 @@
  "surface": "Onboard handoff; router; Help; Dash, Charge and Steer entry skills",
  "gap": "The handoff names Steer/Charge but explains little; Help prints the full registry. Review question: should FIRST-USER C add a two-sentence intent handoff, with JOURNEYS supplying later depth?",
  "review": "Pending exact recipe proof.",
- "recipes": [
-  "yoke workflows item get --help"
- ],
- "plan_notes": [
-  "FIRST-USER C",
-  "FIRST-USER 8",
-  "JOURNEYS row 11"
- ],
- "sources": [
-  ".agents/skills/yoke/onboard/seed-work.md",
-  ".agents/skills/yoke/SKILL.md",
-  ".agents/skills/yoke/help/SKILL.md",
-  ".agents/skills/yoke/dash/SKILL.md",
-  ".agents/skills/yoke/charge/SKILL.md",
-  ".agents/skills/yoke/steer/SKILL.md"
- ],
+ "recipes": ["yoke workflows item get --help"],
+ "plan_notes": ["FIRST-USER C", "FIRST-USER 8", "JOURNEYS row 11"],
+ "sources": [".agents/skills/yoke/onboard/seed-work.md", ".agents/skills/yoke/SKILL.md", ".agents/skills/yoke/help/SKILL.md", ".agents/skills/yoke/dash/SKILL.md", ".agents/skills/yoke/charge/SKILL.md", ".agents/skills/yoke/steer/SKILL.md"],
  "position": 0
 }
