@@ -59,6 +59,11 @@ exists is the default. The mouse scrolls and clicks normally; on any screen
 showing a URL or a one-time code the footer names a copy key (`^y`) and an
 open-in-browser key (`^o`) instead of a native drag-select.
 
+When a checkout's Yoke files link it to a project that the chosen Yoke install
+doesn't have or that your account can't access — typically left over from an
+earlier install — the wizard says so and offers **Unlink and set up fresh**.
+Nothing is written until you confirm Apply.
+
 For **A team server**, enter its URL first. When company sign-in is configured,
 Yoke opens the workbench with a one-time machine code; sign in and approve your
 own machine. Otherwise paste an API token or select its file. The same flow is
@@ -223,13 +228,19 @@ stops removal and names the recovery. Hosted-only clients see no data warning.
 
 Next, the command lists registered checkouts with a Yoke install manifest.
 Choose all, none, or a selection to also run `yoke project uninstall` on.
-A Git checkout must be on the project's configured default branch before its
-layer is removed. An unset default branch refuses until it is configured.
+A Git checkout must be on the project's default branch before its layer is
+removed. When the Yoke install that owns a project no longer answers, its layer
+is still removed and committed on the current branch, with a warning to merge
+that commit into the default branch.
 It then removes the relay and stops its workers, removes the selected project
-layers, disconnects Yoke's GitHub credentials and checkout helpers, stops the
-local UI and embedded Postgres, tears down local self-host stacks including
-their universe volumes, and deletes the machine home (`~/.yoke` or
-`YOKE_MACHINE_HOME`). No further confirmation is required. Finally a detached
+layers, disconnects Yoke's GitHub credentials and checkout helpers, removes
+Yoke's entries from your Cursor user hooks (`~/.cursor/hooks.json`), reverts the
+approval and folder-trust settings Yoke wrote into Claude Code, Codex, and
+Cursor, stops the local UI and embedded Postgres, tears down local self-host
+stacks including their universe volumes, and deletes the machine home
+(`~/.yoke` or `YOKE_MACHINE_HOME`). A harness setting you changed after Yoke
+wrote it is left in place and reported. Docker is only checked when this
+machine runs a self-host install. No further confirmation is required. Finally a detached
 worker removes the CLI with `uv tool uninstall yoke-cli` after the uninstall
 process exits. Its result log is printed by the command.
 
