@@ -136,7 +136,7 @@ def test_refusal_flood_writes_one_row_per_kind_per_minute(
         route="/api/events",
         origin="https://a.test",
         host="h",
-        now=now + 60,
+        now=now + 1,
     )
     assert len(refusals(database)) == 2
 
