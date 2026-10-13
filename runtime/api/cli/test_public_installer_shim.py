@@ -175,6 +175,10 @@ class _InstallPyRunner:
             return subprocess.CompletedProcess(command, 0, "", "")
         if command[1:] == ["hook", "resident", "restart"]:
             return subprocess.CompletedProcess(command, 0, "Hook evaluator: ready", "")
+        if command[1:] == ["ui", "restart-running", "--json"]:
+            return subprocess.CompletedProcess(
+                command, 0, json.dumps({"ok": True, "restarted": False}), ""
+            )
         if command[1:] == ["github", "credential-helper", "refresh", "--json"]:
             # Every install.py completion calls this unconditionally; nothing
             # is configured to repair on this fixture machine.
