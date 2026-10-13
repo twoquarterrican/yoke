@@ -51,6 +51,7 @@ def test_custom_callable_builds_once_and_restores_seed_rows(tmp_path):
         ("sessions_api_stale_test_helpers", "ownership_conn"),
         ("test_sessions_reactivation_driver_stamp", "conn"),
         ("test_field_note_provenance", "isolated_db"),
+        ("test_work_claim_active_uniques", "_bootstrap_db"),
     ],
 )
 def test_session_consumers_bind_machine_after_cached_checkout(
