@@ -18,7 +18,7 @@ const entry = await readFile(path.join(root, "index.html"), "utf8");
 const styles = [...entry.matchAll(/href="(?:\.\/|\/)assets\/([^\"]+\.css)"/g)].map((match) => match[1]);
 assert(styles.length, "Read the source stylesheet roster.");
 const states = ["waiting", "later", "approved", "denied", "expired", "unavailable", "code"];
-const html = `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width">
+const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 ${styles.map((name) => `<link rel="stylesheet" href="/assets/${name}">`).join("\n")}
 <style>body{margin:0;color:var(--yoke-ink);background:var(--yoke-bg);font-family:var(--yoke-font-sans)}
 .proof-frame{max-width:940px;margin:auto;padding:24px}.proof-footer{margin-top:20px;color:var(--yoke-muted);font-size:11px;overflow-wrap:anywhere}
