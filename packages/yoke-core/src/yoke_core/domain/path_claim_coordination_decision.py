@@ -173,7 +173,7 @@ def _suggested_commands(
         "# fact:merged is correct for trunk ordering; use "
         "fact:deployed:<environment-name> only when the dependent needs "
         "the blocker running in that registered environment",
-        "# option: escalate (operator override, last resort)",
+        "# option: escalate (scope or authority decision)",
         f'yoke say --steering "Overlap decision needed for {cand}: '
         f"holder={other}; conflicting_claim_id={conflicting_claim_id}; "
         f'shared_paths={shared}; evidence=<why independence is uncertain>"',

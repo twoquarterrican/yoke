@@ -191,7 +191,7 @@ def test_worktree_unresolved_denial_embeds_preflight_command() -> None:
     assert "path-claims widen" not in narrative
 
 
-def test_path_claim_register_overlap_denial_routes_runtime_to_refine() -> None:
+def test_path_claim_register_overlap_denial_requires_workflow_evidence() -> None:
     # No connection here, so nothing can resolve a reference; the denial
     # says that plainly rather than assembling one from the internal id.
     body_text = compose_overlap_denial(
@@ -204,10 +204,9 @@ def test_path_claim_register_overlap_denial_routes_runtime_to_refine() -> None:
     assert "BLOCKED: path-claim register overlap on item " in body_text
     assert "unresolved item ref" in body_text
     assert "123" not in body_text
-    assert (
-        "Recovery: /yoke refine <unresolved item ref: no control-plane read>"
-        in body_text
-    )
+    assert "Recovery: Read the item workflow" in body_text
+    assert "yoke say --steering" in body_text
+    assert "/yoke refine" not in body_text
     assert "coordination-decision-build" not in body_text
 
 

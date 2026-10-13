@@ -31,11 +31,12 @@ def test_survey_yield_route_uses_survey_native_actions():
     for required in (
         "wait for the holding work to land",
         "re-run the survey",
-        "release the work claim",
-        "present the overlapping path, holder, and evidence to the operator",
-        "do not continue editing",
+        "A survey contact is advisory",
+        "shared filename alone is no stop condition",
+        "yoke say --steering",
     ):
         assert required in SURVEY_ADVISORY_YIELD
+    assert "release the work claim" not in SURVEY_ADVISORY_YIELD
     for path_claim_remedy in (
         "activation dependency",
         "coordination_only",
