@@ -51,6 +51,25 @@ def _request(function: str, payload: dict) -> FunctionCallRequest:
     )
 
 
+@pytest.mark.parametrize("raw", ["{broken", "[]", '{"machines":[]}', '{"execution_profile":[]}'])
+def test_unreadable_saved_metadata_refuses_without_repairing_it(onboarding_db, raw):
+    from yoke_core.domain.db_helpers import connect
+
+    first = onboard_checklist.handle_onboard_checklist_init(_request(
+        "onboard.checklist.init", {"project_id": 9},
+    )).result_payload
+    run_id = first["run_id"]
+    conn = connect()
+    conn.execute("UPDATE project_onboarding_runs SET metadata_json = %s WHERE run_id = %s", (raw, run_id))
+    conn.commit()
+    for handler in (onboard_checklist.handle_onboard_checklist_get, onboard_checklist.handle_onboard_checklist_run):
+        result = handler(_request("onboard.checklist.get", {"project_id": 9, "run_id": run_id}))
+        assert result.primary_success is False
+        assert result.error.code == "setup_saved_evidence_unreadable"
+    assert conn.execute("SELECT metadata_json FROM project_onboarding_runs WHERE run_id = %s", (run_id,)).fetchone()[0] == raw
+    conn.close()
+
+
 def test_onboard_checklist_init_handler_uses_db_record(onboarding_db) -> None:
     outcome = onboard_checklist.handle_onboard_checklist_init(
         _request(

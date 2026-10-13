@@ -78,6 +78,28 @@ def validate_updates(
         ) from exc
 
 
+def read_saved_metadata(raw: str) -> dict[str, Any]:
+    try:
+        saved = json.loads(raw or "{}")
+        if not isinstance(saved, dict) or not isinstance(saved.get("machines", {}), dict):
+            raise ValueError("invalid saved object")
+        if "execution_profile" in saved and (
+            not isinstance(saved["execution_profile"], dict) or not saved["execution_profile"]
+        ):
+            raise ValueError("invalid saved profile")
+        for machine in saved.get("machines", {}).values():
+            if not isinstance(machine, dict) or not isinstance(machine.get("rows", {}), dict):
+                raise ValueError("invalid machine choices")
+            if any(not isinstance(row, dict) for row in machine.get("rows", {}).values()):
+                raise ValueError("invalid saved row")
+        return saved
+    except (ValueError, TypeError) as exc:
+        raise ProjectOnboardingRunError(
+            "setup_saved_evidence_unreadable: ask the control-plane operator to "
+            "restore this run from its last valid checkpoint, then reread the checklist."
+        ) from exc
+
+
 def validate_observations(
     observations: Mapping[str, Any],
     machine_id: str | None,
@@ -194,6 +216,7 @@ def project_rows(
             row.update(observed)
             if (
                 observed["status"] == STATUS_UNKNOWN
+                and row_id not in REQUIRED_SETUP_ROW_IDS
                 and observed.get("reason") != "setup_owner_unavailable"
                 and row["saved_status"]
                 in (

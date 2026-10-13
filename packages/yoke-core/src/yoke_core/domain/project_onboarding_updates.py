@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from typing import Any, Mapping
 
@@ -30,6 +29,7 @@ from yoke_core.domain.project_onboarding_facts import (
     update_machine_choices,
     validate_updates,
     validate_observations,
+    read_saved_metadata,
 )
 
 
@@ -83,7 +83,7 @@ def persist_run(
         validate_branch(selected_branch)
         now = utc_now()
         p = _p(conn)
-        saved = json.loads(existing["metadata_json"]) if existing is not None else {}
+        saved = read_saved_metadata(existing["metadata_json"]) if existing is not None else {}
         saved.update(metadata)
         saved = update_machine_choices(
             saved,

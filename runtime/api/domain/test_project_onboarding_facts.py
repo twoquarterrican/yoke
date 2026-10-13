@@ -64,6 +64,8 @@ def test_invalid_machine_or_row_update_leaves_saved_choices_unchanged():
             {"machine_id": "not-a-machine", "row_status": {"machine-profile": "verified"}},
             {"row_status": {"strategy-setup": "verified", "unknown-row": "configured"}},
             {"metadata": {"execution_profile": []}},
+            {"machine_id": machine, "observations": {"machine-profile": {"status": "verified", "evidence": []}}},
+            {"machine_id": machine, "observations": {"machine-profile": {"status": "verified", "recovery": 1}}},
         ):
             with pytest.raises(runs.ProjectOnboardingRunError):
                 runs.update_run(conn=conn, run_id=first["run_id"], project_id=7, **payload)
@@ -79,3 +81,17 @@ def test_unknown_optional_capabilities_do_not_become_a_whole_profile_interview()
         rows = _rows(result)
         assert rows["capability-setup"]["status"] == "unknown"
         assert "capability-setup" not in result["setup_readiness"]["unmet_rows"]
+
+
+@pytest.mark.parametrize("choice", ["not-needed", "deferred"])
+def test_saved_choice_cannot_hide_a_missing_required_connection(choice):
+    machine = str(uuid4())
+    with _conn() as conn:
+        result = runs.init_run(
+            conn=conn, machine_id=machine, project_id=7,
+            row_status={"yoke-connection": choice},
+            observations={"yoke-connection": {"status": "unknown"}},
+        )
+        assert _rows(result)["yoke-connection"]["saved_status"] == choice
+        assert _rows(result)["yoke-connection"]["status"] == "unknown"
+        assert "yoke-connection" in result["setup_readiness"]["unmet_rows"]

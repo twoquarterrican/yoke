@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any, Mapping
 from yoke_contracts.timestamps import parse_instant
 
@@ -33,6 +32,7 @@ from yoke_core.domain.project_onboarding_updates import persist_run
 from yoke_core.domain.project_onboarding_facts import (
     project_rows,
     validate_observations,
+    read_saved_metadata,
 )
 from yoke_core.domain.project_onboarding_configuration import project_facts
 
@@ -173,10 +173,16 @@ def get_run(
             f"WHERE run_id = {p} ORDER BY step",
             (run_id,),
         ).fetchall()
-        row_payloads = [row_payload(row) for row in rows]
+        try:
+            row_payloads = [row_payload(row) for row in rows]
+        except (ValueError, TypeError) as exc:
+            raise ProjectOnboardingRunError(
+                "setup_saved_evidence_unreadable: ask the control-plane operator "
+                "to restore this run's checklist evidence, then reread the checklist."
+            ) from exc
         order = {row_id: index for index, row_id in enumerate(ROW_IDS)}
         row_payloads.sort(key=lambda row: order.get(row["row_id"], len(order)))
-        metadata = json.loads(run["metadata_json"] or "{}")
+        metadata = read_saved_metadata(run["metadata_json"])
         facts = project_facts(selected, run["project_id"])
         row_payloads, readiness = project_rows(
             row_payloads,
