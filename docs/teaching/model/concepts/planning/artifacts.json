@@ -1,0 +1,9 @@
+{
+ "id": "artifacts",
+ "title": "Planning artifacts",
+ "status": "draft-copy",
+ "commands": ["yoke shepherd caveat-disposition", "yoke shepherd verdict"],
+ "functions": ["shepherd.caveat_disposition.run", "shepherd.verdict.run"],
+ "page": "planning",
+ "position": 0
+}

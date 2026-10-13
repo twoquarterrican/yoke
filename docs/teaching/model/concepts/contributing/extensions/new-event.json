@@ -1,0 +1,8 @@
+{
+ "id": "new-event",
+ "title": "New event",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "page": "contributing",
+ "position": 6
+}

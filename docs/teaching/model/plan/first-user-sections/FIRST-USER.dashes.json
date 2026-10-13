@@ -1,0 +1,10 @@
+{
+ "id": "FIRST-USER.dashes",
+ "title": "Dashes",
+ "status": "approved",
+ "scope": "Yoke",
+ "concepts": ["documentation/planning"],
+ "surfaces": ["detail-home"],
+ "scenarios": ["help-cascade"],
+ "position": 1
+}

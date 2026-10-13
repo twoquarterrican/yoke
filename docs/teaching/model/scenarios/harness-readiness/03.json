@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Recover unsupported or suppressed native discovery",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Instructions or a skill are absent in a supposedly wired project",
+ "need": "Use the exact discovery refusal/recovery and native verification. Claude instruction suppression, ambiguous old copies, unsupported engines and symlink failures have different fixes. Do not create a duplicate native tree as fallback.",
+ "disclosure": "current cue",
+ "surface": "harness-discovery recovery sections -> native settings/new session and installed-layer refresh.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke project install --help"],
+ "plan_notes": ["FIRST-USER D/E", "FIRST-USER accepted installed context access repair"],
+ "sources": ["docs/public/reference/harness-discovery.md", "packages/yoke-cli/src/yoke_cli/project_install/instruction_discovery.py", "packages/yoke-cli/src/yoke_cli/project_install/skill_discovery.py"],
+ "position": 2
+}

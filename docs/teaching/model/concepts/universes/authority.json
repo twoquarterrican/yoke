@@ -1,0 +1,8 @@
+{
+ "id": "authority",
+ "title": "Connection authority",
+ "status": "draft-copy",
+ "surface_refs": ["global-orientation", "project-native"],
+ "page": "universes",
+ "position": 2
+}

@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Use the audit stream with an honest search scope",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Investigating a past action or unexpected state",
+ "need": "Events holds operational evidence; filter by name/time and understand loaded search versus server filters. An event is evidence of its recorded fact, not a replacement for current domain state.",
+ "disclosure": "current cue",
+ "surface": "Docs index/sidebar -> Events/Doctor/Ouroboros -> documented Events page; Doctor skill points to recent anomalies.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke events anomalies --since \"24 hours ago\""],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/index.md", "docs/public/nav.yaml", "docs/public/events-doctor-ouroboros.md", ".agents/skills/yoke/doctor/SKILL.md"],
+ "position": 0
+}

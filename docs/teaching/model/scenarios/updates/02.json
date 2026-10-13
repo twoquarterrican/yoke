@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Refresh the stale component, not just the page",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "An upgrade succeeded but hooks, dashboard or installed project instructions remain old",
+ "need": "Distinguish installed CLI, server, resident hook process, relay and tracked project layer. Follow the component-specific status/refresh result; a webpage reload does not replace its serving process.",
+ "disclosure": "planned cue",
+ "surface": "Current project orientation warns on older operating-layer receipt; FIRST-USER 6/15 add resident hook/dashboard restart and E checks.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke status", "yoke ui status", "yoke relay status", "yoke project install --help"],
+ "plan_notes": ["FIRST-USER items 6,15", "FIRST-USER E"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/session_orientation.py", "docs/public/install.md"],
+ "position": 1
+}

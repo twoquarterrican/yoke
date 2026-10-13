@@ -1,0 +1,10 @@
+{
+ "id": "FIRST-USER.B",
+ "title": "B. New homepage: \"Tell your agent: install upyoke.com\" (**platform**, frozen, operator launches)",
+ "status": "approved",
+ "scope": "Platform",
+ "concepts": ["basics/model", "installation/entry"],
+ "surfaces": ["docs-landing", "setup-agent"],
+ "scenarios": ["install-entry"],
+ "position": 5
+}

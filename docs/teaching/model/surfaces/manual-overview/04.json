@@ -1,0 +1,10 @@
+{
+ "id": "04",
+ "title": "Staffing a plan and choosing one ready item are separate actions; levels control execution choices.",
+ "status": "draft-copy",
+ "form": "Teach",
+ "verification": "No delivery proof attached.",
+ "topics": ["frontier/entrypoints", "levels/scheme"],
+ "plan_refs": ["FIRST-USER.40"],
+ "position": 3
+}

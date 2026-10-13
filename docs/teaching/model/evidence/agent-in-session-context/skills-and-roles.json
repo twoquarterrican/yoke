@@ -1,0 +1,13 @@
+{
+ "id": "skills-and-roles",
+ "title": "Skills, phase homes and subagent mandates",
+ "status": "observed",
+ "scope": "selected operation and assigned role/lane",
+ "moment": "Skill invocation, next phase, dispatch or task-chain advance",
+ "current": "Root skill routes to selected SKILL.md and reads phases when reached. Canonical runtime/agents bodies generate per-harness adapters. Conduct cold prompts include exact task/project/lane, live read routes, dependency interfaces, project docs, test commands and evidence.",
+ "planned": "Full Yoke skill tree remains per-project; only yoke-global becomes user-level. Previously accepted role/reference navigation repairs remain distinct from docs movement.",
+ "proposed_content": ["Keep operational steps in the skill/phase that owns them and specialized mandates in role bodies/references.", "Dispatch must carry exact assignment and authority/context read paths; never assume parent conversation or startup context reaches a child.", "Route unfamiliar feature knowledge through help/packet/topic homes, then project-owned knowledge for this assignment."],
+ "plan_notes": ["FIRST-USER P4 full-skills boundary", "accepted installed role/Conduct access repair", "JOURNEYS locked principle 4"],
+ "sources": [".agents/skills/yoke/SKILL.md:9", ".agents/skills/yoke/conduct/dispatch-context.md:25", "runtime/agents/engineer.md:1", "packages/yoke-core/src/yoke_core/domain/install_bundle.py:14"],
+ "position": 3
+}

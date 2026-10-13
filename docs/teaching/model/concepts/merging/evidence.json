@@ -1,0 +1,9 @@
+{
+ "id": "evidence",
+ "title": "Landing evidence",
+ "status": "draft-copy",
+ "commands": ["yoke item-landings list", "yoke items merge-provenance operator-correct", "yoke merge-receipt commits attest"],
+ "functions": ["item_landings.list", "item_landings.record", "items.merge_provenance.operator_correct", "merge_receipt.commits.attest", "merge_receipt.get", "merge_receipt.record"],
+ "page": "merging",
+ "position": 2
+}

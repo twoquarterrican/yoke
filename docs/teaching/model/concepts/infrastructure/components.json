@@ -1,0 +1,8 @@
+{
+ "id": "components",
+ "title": "Hosting components",
+ "status": "draft-copy",
+ "commands": ["yoke aws admin-link", "yoke aws admin-status", "yoke aws exec", "yoke aws preflight"],
+ "page": "infrastructure",
+ "position": 1
+}

@@ -1,0 +1,10 @@
+{
+ "id": "path-claims",
+ "title": "Path claims",
+ "status": "draft-copy",
+ "surface_refs": ["project-native", "skills-roles"],
+ "commands": ["yoke claims path activation-run", "yoke claims path amend", "yoke claims path boundary-prove", "yoke claims path coordination-decision-build", "yoke claims path get", "yoke claims path list", "yoke claims path override", "yoke claims path register", "yoke claims path required-gate", "yoke claims path widen", "yoke path-claims conflicts list", "yoke readiness repair-claim-coverage"],
+ "functions": ["claims.path.activation_run", "claims.path.amend", "claims.path.boundary_context", "claims.path.boundary_observe", "claims.path.boundary_prove", "claims.path.coordination_decision_build", "claims.path.get", "claims.path.list", "claims.path.override", "claims.path.register", "claims.path.release", "claims.path.required_gate", "claims.path.survey_ensure", "claims.path.widen", "path_claims.conflicts.list", "readiness.repair_claim_coverage"],
+ "page": "coordination",
+ "position": 4
+}

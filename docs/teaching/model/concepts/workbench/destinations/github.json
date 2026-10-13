@@ -1,0 +1,9 @@
+{
+ "id": "github",
+ "title": "GitHub",
+ "status": "observed",
+ "sources": ["packages/yoke-core/src/yoke_core/ui/static/universe_views_github.js"],
+ "related": "repositories/github/workbench-github-page",
+ "page": "workbench-destinations",
+ "position": 10
+}

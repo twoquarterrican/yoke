@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Choose a bounded applicable health scan",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "A feature seems broken or the user asks for a health report",
+ "need": "Read scope first: quick, full or named checks; source/capability/runtime applicability is explicit. N/A is not pass; timeout is incomplete evidence. Deterministic fix is an intentional separate choice.",
+ "disclosure": "current cue",
+ "surface": "Doctor skill -> run/notes; public health page -> run help.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke doctor run --help", "yoke doctor last-run get --help"],
+ "plan_notes": ["outside both"],
+ "sources": [".agents/skills/yoke/doctor/SKILL.md", "docs/public/events-doctor-ouroboros.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/doctor.py", "packages/yoke-core/src/yoke_core/engines/doctor_applicability.py"],
+ "position": 1
+}

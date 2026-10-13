@@ -1,0 +1,10 @@
+{
+ "id": "JOURNEYS.operator-intent",
+ "title": "Operator Intent",
+ "status": "deferred",
+ "scope": "Yoke",
+ "concepts": ["documentation/planning"],
+ "surfaces": ["detail-home"],
+ "scenarios": ["help-cascade"],
+ "position": 3
+}

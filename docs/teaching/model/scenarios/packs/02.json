@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Reach the Pack-specific instructions",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "After selecting a Pack, before treating it as suitable or ready",
+ "need": "Read the selected Pack README and its application/runbook children; its installed files become project-owned source. A Pack description is not its setup or support contract.",
+ "disclosure": "missing cue",
+ "surface": "Catalog JSON has documentation; installed entry is docs/packs/<slug>/README.md. Plain packs list output prints description/tools but omits that documentation pointer.",
+ "gap": "Proven narrow omission in human list output. Pre-install availability of complete Pack docs and actual workbench link behavior are not established.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke packs list --project P --json"],
+ "plan_notes": ["outside both"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py", "packages/yoke-core/src/yoke_core/domain/pack_projection.py", "packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md"],
+ "position": 1
+}

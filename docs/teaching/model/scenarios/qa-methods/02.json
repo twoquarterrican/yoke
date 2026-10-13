@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Distinguish check, inspection and exploration",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When the expected outcome requires assertions, visual judgment or exploratory observation.",
+ "need": "Command/CI and Browser check use automatic results; Browser inspection captures evidence for agent judgment. Pack-added methods and exploratory missions have additional contracts. A screenshot is not a pass.",
+ "disclosure": "current cue",
+ "surface": "Method definitions; Browser reference; exploratory QA dispatch",
+ "gap": "Review question: should verification planning offer the relevant method in plain language and fetch its reference only after selection?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa method get --help"],
+ "plan_notes": ["JOURNEYS row 13"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/qa_method_definitions.py", "docs/public/reference/browser-scenarios.md", "docs/public/reference/exploratory-qa.md"],
+ "position": 1
+}

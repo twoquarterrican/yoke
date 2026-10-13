@@ -1,0 +1,7 @@
+{
+ "id": "07",
+ "title": "hard-versus-advisory",
+ "status": "observed",
+ "check": "350 hard lines per teaching file/displayed response, display counted at 80-column wrapping. 20k file chars; root 40/2400, category 80/4800, command 120/7200, reply 40/2400 are advisory, not failure gates. Preserve structured/essential content.",
+ "position": 6
+}

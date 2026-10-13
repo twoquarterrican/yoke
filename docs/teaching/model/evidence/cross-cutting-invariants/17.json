@@ -1,0 +1,7 @@
+{
+ "id": "17",
+ "title": "installed-context",
+ "status": "observed",
+ "check": "External/global users need release-matched accessible instructions without Yoke source checkout; preserve Markdown fragments/relative links/old URLs and actual recipient context.",
+ "position": 16
+}

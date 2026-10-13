@@ -1,0 +1,8 @@
+{
+ "id": "preview-recipe",
+ "title": "Finish preview setup teaching",
+ "status": "observed",
+ "text": "Map supported preview Packs, provisioning/connection, access/data, candidate identity, QA binding, expiry and cleanup to executable recipes.",
+ "plan_refs": ["JOURNEYS.situation-16"],
+ "position": 7
+}

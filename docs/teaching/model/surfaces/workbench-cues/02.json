@@ -1,0 +1,10 @@
+{
+ "id": "02",
+ "title": "At a decision, distinguish work approval, QA review and deployment approval.",
+ "status": "draft-copy",
+ "form": "Teach",
+ "verification": "No delivery proof attached.",
+ "topics": ["approvals/types", "qa-evidence/verdicts"],
+ "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"],
+ "position": 1
+}

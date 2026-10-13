@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Preview the registered launch",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Immediately before staffing an item or an itemless mandate",
+ "need": "Use registered launch preview/create; the engine composes item mandates. Read the selected level, machine and blockers. The opening hook binds through its launch-specific attestation, never folder/time proximity. An assigned worker must acknowledge and claim its own item before the deadline. Missing entry names launch_work_claim_missing and releases launch-only staffing. Read launch get for the exact session and recovery evidence.",
+ "disclosure": "current cue",
+ "surface": "Steer worker-launch and model-selection -> launch help/preview.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke session-control launch preview --help", "yoke session-control launch preview --project P --level SENIOR", "yoke session-control launch get LAUNCH_ID"],
+ "plan_notes": ["outside both"],
+ "sources": [".agents/skills/yoke/steer/worker-launch.md", ".agents/skills/yoke/steer/model-selection.md", "docs/public/cli-and-config.md"],
+ "position": 1
+}

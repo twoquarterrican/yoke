@@ -1,0 +1,9 @@
+{
+ "id": "updates",
+ "title": "Pack maintenance",
+ "status": "draft-copy",
+ "commands": ["yoke packs relink", "yoke packs update"],
+ "functions": ["packs.relink.run", "packs.update.run"],
+ "page": "packs",
+ "position": 2
+}

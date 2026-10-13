@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Own the complete narrow recipe, prerequisites, supported limits, expected result and recovery.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["documentation/ownership", "context/disclosure"],
+ "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"],
+ "position": 5
+}

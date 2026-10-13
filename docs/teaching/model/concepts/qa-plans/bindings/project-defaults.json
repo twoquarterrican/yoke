@@ -1,0 +1,9 @@
+{
+ "id": "project-defaults",
+ "title": "Project defaults",
+ "status": "draft-copy",
+ "commands": ["yoke qa project-default set", "yoke qa project-default unset"],
+ "functions": ["qa.project_default.set", "qa.project_default.unset"],
+ "page": "qa-plans",
+ "position": 2
+}

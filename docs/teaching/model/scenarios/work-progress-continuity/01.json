@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Find the next decision without reading the whole dashboard",
+ "status": "draft-copy",
+ "audience": "human",
+ "when": "Once work is active, or when the user asks what needs their attention.",
+ "need": "Frontier explains ready, active and blocked work; Inbox holds specific asks; item pages and Shipping hold evidence. A notice is not a request for approval.",
+ "disclosure": "current cue",
+ "surface": "Existing dashboard surfaces and Steer status replies",
+ "gap": "No dedicated learning situation in the current catalog. Review question: should JOURNEYS add first-running-work and first-human-decision cues with one relevant deep link?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke inbox list --help"],
+ "plan_notes": ["FIRST-USER 8", "JOURNEYS row 11", "outside both"],
+ "sources": ["docs/public/frontier.md", "docs/public/items-and-sessions.md", ".agents/skills/yoke/steer/loop.md"],
+ "position": 0
+}

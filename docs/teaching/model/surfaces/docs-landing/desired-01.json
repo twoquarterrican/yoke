@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Show what Yoke is and route every main concept category into the manual.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["basics/model", "documentation/cascade"],
+ "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"],
+ "position": 5
+}

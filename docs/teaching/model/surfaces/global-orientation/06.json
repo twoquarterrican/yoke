@@ -1,0 +1,10 @@
+{
+ "id": "06",
+ "title": "Deliver the shared connection-authority and message-trust core before action or message handling; do not rely on an optional deeper read.",
+ "status": "draft-copy",
+ "form": "Rule",
+ "verification": "No delivery proof attached.",
+ "topics": ["universes/authority", "security/boundaries", "messaging/messages"],
+ "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"],
+ "position": 5
+}

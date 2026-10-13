@@ -1,0 +1,11 @@
+{
+ "id": "continuity",
+ "title": "Durable continuity",
+ "status": "draft-copy",
+ "surface_refs": ["project-native", "project-orientation", "resume-context", "setup-agent"],
+ "commands": ["yoke session-control evidence get", "yoke sessions checkpoint", "yoke sessions checkpoint-read", "yoke workflow-item epic-progress-note append", "yoke workflow-item epic-progress-note list"],
+ "functions": ["session_control.evidence.get", "sessions.checkpoint", "sessions.checkpoint_read", "workflow_item.epic_progress_note.append", "workflow_item.epic_progress_note.list"],
+ "skills": ["wrapup"],
+ "page": "sessions",
+ "position": 3
+}

@@ -1,0 +1,10 @@
+{
+ "id": "desired-03",
+ "title": "Use the item’s workflow, policies, claim and lane; coordinate required overlapping paths.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["workflows/bindings", "posture/resolution", "coordination/path-claims", "coordination/lanes"],
+ "plan_refs": ["FIRST-USER.8", "FIRST-USER.40", "FIRST-USER.41"],
+ "position": 8
+}

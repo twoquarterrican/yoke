@@ -1,0 +1,9 @@
+{
+ "id": "project",
+ "title": "In a project",
+ "status": "draft-copy",
+ "commands": ["yoke project install"],
+ "functions": ["project.install.run"],
+ "page": "installation",
+ "position": 1
+}

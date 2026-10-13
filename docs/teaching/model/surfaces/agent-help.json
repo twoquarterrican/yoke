@@ -1,83 +1,16 @@
 {
- "surface": {
-  "id": "agent-help",
-  "title": "Help through the agent",
-  "status": "observed",
-  "scope": "Global + project-aware route",
-  "audience": "Human with agent",
-  "encounter": "Question or help invocation",
-  "location": "/yoke help in a project; planned yoke-global outside",
-  "basis": "Existing project skill · global planned",
-  "note": "A human-facing router. It does not become a second copy of every skill or command reference.",
-  "current": "The project Help skill routes product documentation to installed .yoke/docs/index.md; automated external-project install/refresh proof is in test_installed_project_context.py. Live receiving-harness delivery is unproven.",
-  "desired": "General answer: overview. Specific question: complete short recipe. Installed help routes to .yoke/docs/index.md.",
-  "plan_notes": ["FIRST-USER 8/P4", "JOURNEYS progressive guidance"],
-  "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"],
-  "sources": [".agents/skills/yoke/SKILL.md", ".agents/skills/yoke/help/SKILL.md", "docs/public/operating-with-agents.md"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "Interpret the person’s request and explain only the unfamiliar concept needed for it.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["basics/surfaces", "documentation/disclosure"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"]
-  },
-  {
-   "id": "02",
-   "title": "For general help: start/adopt a project, plan work, run work, inspect progress, decide or recover.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["projects/adoption", "strategy", "frontier/entrypoints", "approvals/types", "observability/diagnostics"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"]
-  },
-  {
-   "id": "03",
-   "title": "Say where the action belongs: global session, this folder or another project’s folder.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["projects/identity", "sessions/identity"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"]
-  },
-  {
-   "id": "04",
-   "title": "Route item work from the pinned workflow and live stage; offer the exact skill/manual/help home.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["workflows/versions", "workflows/bindings", "agents/skills"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Answer a specific question with the shortest complete action recipe and exact deeper home.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["context/disclosure", "reference/commands"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"]
-  },
-  {
-   "id": "desired-02",
-   "title": "In a project, route product help to installed .yoke/docs/index.md; project docs retain their own route.",
-   "status": "observed",
-   "form": "Do",
-   "verification": "External target with no runtime source directory: HTTPS transport install and repeated refresh resolve the installed manual; runtime/api/domain/test_installed_project_context.py.",
-   "topics": ["context/docs", "documentation/ownership"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Outside a project, use supported yoke-global discovery and help that needs no project checkout.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["agents/skills", "projects/adoption"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"]
-  }
- ]
+ "id": "agent-help",
+ "title": "Help through the agent",
+ "status": "observed",
+ "scope": "Global + project-aware route",
+ "audience": "Human with agent",
+ "encounter": "Question or help invocation",
+ "location": "/yoke help in a project; planned yoke-global outside",
+ "basis": "Existing project skill · global planned",
+ "note": "A human-facing router. It does not become a second copy of every skill or command reference.",
+ "current": "The project Help skill routes product documentation to installed .yoke/docs/index.md; automated external-project install/refresh proof is in test_installed_project_context.py. Live receiving-harness delivery is unproven.",
+ "desired": "General answer: overview. Specific question: complete short recipe. Installed help routes to .yoke/docs/index.md.",
+ "plan_notes": ["FIRST-USER 8/P4", "JOURNEYS progressive guidance"],
+ "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"],
+ "sources": [".agents/skills/yoke/SKILL.md", ".agents/skills/yoke/help/SKILL.md", "docs/public/operating-with-agents.md"]
 }

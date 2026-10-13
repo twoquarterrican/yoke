@@ -1,0 +1,8 @@
+{
+ "id": "dedup-scope",
+ "title": "Clarify the duplicate-detection boundary",
+ "status": "observed",
+ "text": "FIRST-USER 2 retains title/body matching; 10 says stronger duplicate detection is deferred. Preserve both clauses. Clarify the boundary before expanding or removing either scope.",
+ "plan_refs": ["FIRST-USER.2", "FIRST-USER.10"],
+ "position": 2
+}

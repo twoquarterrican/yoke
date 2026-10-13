@@ -1,0 +1,10 @@
+{
+ "id": "FIRST-USER.planning-research-artifacts",
+ "title": "Planning research artifacts",
+ "status": "approved",
+ "scope": "Yoke",
+ "concepts": ["documentation/planning"],
+ "surfaces": ["detail-home"],
+ "scenarios": ["help-cascade"],
+ "position": 12
+}

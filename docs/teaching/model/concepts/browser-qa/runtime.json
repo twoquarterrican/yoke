@@ -1,0 +1,9 @@
+{
+ "id": "runtime",
+ "title": "Browser runtime",
+ "status": "draft-copy",
+ "commands": ["yoke qa browser setup", "yoke qa browser status", "yoke qa browser stop", "yoke qa browser-context get"],
+ "functions": ["qa.browser_context.get"],
+ "page": "browser-qa",
+ "position": 0
+}

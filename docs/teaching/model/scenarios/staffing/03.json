@@ -1,0 +1,16 @@
+{
+ "id": "03",
+ "title": "Understand hand-back, parking and restaffing",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "A launched turn returns or an existing worker needs a different level",
+ "need": "A tool continuation handle is still running; a returned turn is not completion. Preserve the checkpoint and actual wake/park path. Changing a running worker level requires the supported successor/restaff path, not editing its live model.",
+ "disclosure": "current cue",
+ "surface": "Steer worker-launch -> worker-lifecycle/model-selection; session and launch evidence.",
+ "gap": "Only the guidance chain was traced; individual harness wake and physical termination mechanics belong to runtime verification.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke sessions list --liveness active", "yoke session-control launch get LAUNCH_ID"],
+ "plan_notes": ["outside both"],
+ "sources": [".agents/skills/yoke/steer/worker-launch.md", ".agents/skills/yoke/steer/worker-lifecycle.md", ".agents/skills/yoke/steer/model-selection.md"],
+ "position": 2
+}

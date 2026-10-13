@@ -1,0 +1,9 @@
+{
+ "id": "progress-checkpoint",
+ "title": "Progress checkpoint",
+ "status": "draft-copy",
+ "commands": ["yoke items progress-log append", "yoke items progress-log get"],
+ "functions": ["items.progress_log.append", "items.progress_log.get"],
+ "page": "sessions",
+ "position": 0
+}

@@ -1,0 +1,9 @@
+{
+ "id": "diagnostics",
+ "title": "Diagnostic evidence",
+ "status": "draft-copy",
+ "commands": ["yoke events anomalies", "yoke status"],
+ "functions": ["events.anomalies.run", "status.run"],
+ "page": "observability",
+ "position": 3
+}

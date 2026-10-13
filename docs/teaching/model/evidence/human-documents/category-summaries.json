@@ -1,0 +1,17 @@
+{
+ "id": "category-summaries",
+ "title": "Category and subcategory summaries",
+ "status": "observed",
+ "name": "Category and subcategory summaries",
+ "audience": "Human or agent arriving at one part of the manual",
+ "scope": "Global/static; project-sensitive examples clearly marked",
+ "trigger": "Open a category from contents, a breadcrumb or a contextual help pointer",
+ "proposed_purpose": "Explain the category enough to choose the right deeper page.",
+ "content": ["What this category is for, in two or three sentences.", "The few terms needed to distinguish its children.", "A short relationship sketch where useful: for example QA method → plan/case → bound requirement → attempts/evidence/review.", "Links to immediate children with a one-line reason to read each.", "Prerequisites or support limits that change the user’s choice.", "Related concepts and the next likely action; link exact command help for execution."],
+ "authority_and_reuse": "Author the introduction once in the category landing; generate breadcrumbs and child links from the shared tree. Technical definitions and operation recipes stay in their canonical detail homes. Do not force empty single-child categories.",
+ "proposal_status": "Proposed documentation shape, not a new runtime subsystem",
+ "plan_notes": ["JOURNEYS principle 4", "Documentation organization proposal: outside current locked item details"],
+ "sources": ["docs/public/nav.yaml", "docs/public/qa.md", "docs/public/reference/qa-platform.md"],
+ "private_sources": ["platform"],
+ "position": 0
+}

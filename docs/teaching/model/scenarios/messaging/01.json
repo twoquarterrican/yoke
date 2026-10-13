@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Find and preview the right recipient",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Before sending a work-related request or report",
+ "need": "Address a worker by its held item, a person by registered actor, or a whole session ID. Preview recipient count; steering is a role address resolved from scope. In-process subagents report to their parent, not Fleet.",
+ "disclosure": "current cue",
+ "surface": "Items and Sessions -> Messaging commands; skill-specific report instructions.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke say --preview --item PREFIX-N", "yoke sessions list --liveness active", "yoke messages list --recipient-session CURRENT-SESSION-ID --state unacknowledged"],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/items-and-sessions.md", ".agents/skills/yoke/steer/worker-launch.md"],
+ "position": 0
+}

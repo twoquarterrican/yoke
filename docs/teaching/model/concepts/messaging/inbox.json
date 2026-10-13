@@ -1,0 +1,9 @@
+{
+ "id": "inbox",
+ "title": "Personal Inbox",
+ "status": "draft-copy",
+ "commands": ["yoke inbox list"],
+ "functions": ["inbox.list"],
+ "page": "messaging",
+ "position": 0
+}

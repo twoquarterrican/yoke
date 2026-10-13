@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Inventory is not setup or verification",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Choosing a capability or investigating a capability refusal",
+ "need": "Read the live project capability roster, then its typed settings and feature-specific setup/probe. The Capabilities page is a readiness inventory, not a setup wizard.",
+ "disclosure": "current cue",
+ "surface": "Docs sidebar -> Capabilities -> capability-settings help; project capability roster.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke projects capabilities list --project P --json", "yoke projects capability-settings get --help"],
+ "plan_notes": ["JOURNEYS rows 12-13"],
+ "sources": ["docs/public/nav.yaml", "docs/public/capabilities.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/projects_capabilities_read.py"],
+ "position": 0
+}

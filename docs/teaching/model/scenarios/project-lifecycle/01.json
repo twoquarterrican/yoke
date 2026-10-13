@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Maintain the binding without recreating the work",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When a checkout moves, a project setting changes, a refresh is needed or the project is retired.",
+ "need": "Distinguish local operating-layer removal/refresh from project retirement, repository rebinding and universe deletion; preserve existing work identities and ownership.",
+ "disclosure": "audit needed",
+ "surface": "project install/refresh/snapshot; projects get/update/retire/unretire; checkout mapping",
+ "gap": "Initial adoption and uninstall are covered elsewhere; ongoing project identity lifecycle is only catalogued here. Review question: should JOURNEYS include moved-checkout, retired-project and stale-layer situations?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 1", "FIRST-USER 24", "JOURNEYS row 6", "outside both"],
+ "sources": ["docs/public/projects.md", "docs/project-selection.md", "docs/public/reference/db-reference/functions-project-configuration.md"],
+ "position": 0
+}

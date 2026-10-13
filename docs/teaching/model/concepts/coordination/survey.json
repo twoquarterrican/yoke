@@ -1,0 +1,9 @@
+{
+ "id": "survey",
+ "title": "Path survey",
+ "status": "draft-copy",
+ "commands": ["yoke direct-workflow blitz survey", "yoke direct-workflow conflict-survey status", "yoke direct-workflow dash survey"],
+ "functions": ["direct_workflow.blitz.survey", "direct_workflow.conflict_survey.status", "direct_workflow.dash.survey"],
+ "page": "coordination",
+ "position": 2
+}

@@ -1,0 +1,9 @@
+{
+ "id": "dependencies-and-dispatch-chains",
+ "title": "Dependencies and dispatch chains",
+ "status": "draft-copy",
+ "commands": ["yoke workflow-item epic-dispatch-chain advance", "yoke workflow-item epic-dispatch-chain get", "yoke workflow-item epic-dispatch-chain list", "yoke workflow-item epic-dispatch-chain refresh-activation", "yoke workflow-item epic-dispatch-chain update"],
+ "functions": ["workflow_item.epic_dispatch_chain.advance", "workflow_item.epic_dispatch_chain.get", "workflow_item.epic_dispatch_chain.list", "workflow_item.epic_dispatch_chain.refresh_activation", "workflow_item.epic_dispatch_chain.update"],
+ "page": "planning",
+ "position": 2
+}

@@ -1,60 +1,13 @@
 {
- "scenario": {
-  "id": "harness-readiness",
-  "title": "When the agent actually gains Yoke context",
-  "status": "draft-copy",
-  "situations": ["Yoke is installed during a live agent conversation", "Human opens a harness after terminal setup", "Another supported harness is installed later", "Hooks, permissions or sign-in are incomplete"],
-  "coverage": "traced",
-  "current": "Observed campaign baseline verifies native harness requests as preparation. Current source adds complete approval-URI/code validation, late-harness configuration checks and a real receiving-context mission. Configuration and preparation remain distinct from live hook/orientation delivery proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Which native files load at startup, on first tool use and after installation for each harness?", "Are installation success, session registration and usable agent context separately proved?", "Does each real supported surface load instructions and skill metadata mid-session versus only on restart?", "Which otherwise supported feature refusals include the installed-release capability pointer?"],
-  "related_scenarios": ["agent-context", "crossplatform-runtime", "updates"],
-  "plan_refs": ["FIRST-USER.6", "FIRST-USER.18", "FIRST-USER.23", "FIRST-USER.C", "FIRST-USER.D", "FIRST-USER.E", "FIRST-USER.P2", "JOURNEYS.situation-3"],
-  "sources": ["docs/testing-verification/installer-campaign.md"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Written files are not proof of context pickup",
-   "status": "draft-copy",
-   "audience": "agent",
-   "when": "Install finish and first native Yoke interaction",
-   "need": "Check native instructions, skills, hooks, session identity and usable permissions in the active harness. Restart/open-folder recovery must preserve the original intent.",
-   "disclosure": "planned cue",
-   "surface": "Readiness check, identity read and orientation delivery",
-   "gap": "FIRST-USER C/D/E must prove live pickup, not file presence. Accepted scope is the active harness only; GitHub checks are N/A when skipped.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke sessions identity"],
-   "plan_notes": ["FIRST-USER C", "FIRST-USER D", "FIRST-USER E", "FIRST-USER 6", "FIRST-USER 23", "JOURNEYS 3"],
-   "sources": ["docs/public/reference/harness-discovery.md", "packages/yoke-core/src/yoke_core/domain/session_orientation_delivery.py"]
-  },
-  {
-   "id": "02",
-   "title": "New harnesses and different substrates",
-   "status": "observed",
-   "audience": "both",
-   "when": "Later harness install, upgrade or unsupported operation",
-   "need": "Install/repair only relevant native integration. Capability truth is the manifest for the installed release; do not assume every harness supports the same loading or wake behavior.",
-   "disclosure": "current cue",
-   "surface": "Harness reconcile and release-matched manifest",
-   "gap": "Managed release manifests are published at .yoke/harness/<harness>/manifest.json. Automated install/refresh and byte identity are covered; real receiving-harness proof waits for release.",
-   "review": "runtime/api/domain/test_installed_project_context.py proves external HTTPS transport install and manifest recovery; capability declarations and live pickup remain separate.",
-   "plan_notes": ["FIRST-USER 18", "FIRST-USER D"],
-   "sources": ["docs/public/reference/harness-discovery.md", "runtime/harness/manifest-schema.md"]
-  },
-  {
-   "id": "03",
-   "title": "Recover unsupported or suppressed native discovery",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Instructions or a skill are absent in a supposedly wired project",
-   "need": "Use the exact discovery refusal/recovery and native verification. Claude instruction suppression, ambiguous old copies, unsupported engines and symlink failures have different fixes. Do not create a duplicate native tree as fallback.",
-   "disclosure": "current cue",
-   "surface": "harness-discovery recovery sections -> native settings/new session and installed-layer refresh.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke project install --help"],
-   "plan_notes": ["FIRST-USER D/E", "FIRST-USER accepted installed context access repair"],
-   "sources": ["docs/public/reference/harness-discovery.md", "packages/yoke-cli/src/yoke_cli/project_install/instruction_discovery.py", "packages/yoke-cli/src/yoke_cli/project_install/skill_discovery.py"]
-  }
- ]
+ "id": "harness-readiness",
+ "title": "When the agent actually gains Yoke context",
+ "status": "draft-copy",
+ "situations": ["Yoke is installed during a live agent conversation", "Human opens a harness after terminal setup", "Another supported harness is installed later", "Hooks, permissions or sign-in are incomplete"],
+ "coverage": "traced",
+ "current": "Observed campaign baseline verifies native harness requests as preparation. Current source adds complete approval-URI/code validation, late-harness configuration checks and a real receiving-context mission. Configuration and preparation remain distinct from live hook/orientation delivery proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Which native files load at startup, on first tool use and after installation for each harness?", "Are installation success, session registration and usable agent context separately proved?", "Does each real supported surface load instructions and skill metadata mid-session versus only on restart?", "Which otherwise supported feature refusals include the installed-release capability pointer?"],
+ "related_scenarios": ["agent-context", "crossplatform-runtime", "updates"],
+ "plan_refs": ["FIRST-USER.6", "FIRST-USER.18", "FIRST-USER.23", "FIRST-USER.C", "FIRST-USER.D", "FIRST-USER.E", "FIRST-USER.P2", "JOURNEYS.situation-3"],
+ "sources": ["docs/testing-verification/installer-campaign.md"]
 }

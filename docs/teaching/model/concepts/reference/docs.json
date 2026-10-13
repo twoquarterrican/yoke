@@ -1,0 +1,9 @@
+{
+ "id": "docs",
+ "title": "Documentation ownership",
+ "status": "draft-copy",
+ "surface_refs": ["detail-home", "docs-landing", "manual-contents", "manual-overview"],
+ "related": "documentation/ownership",
+ "page": "reference",
+ "position": 4
+}

@@ -1,0 +1,9 @@
+{
+ "id": "definitions",
+ "title": "Workflow definitions",
+ "status": "draft-copy",
+ "commands": ["yoke workflows definition get"],
+ "functions": ["workflows.definition.get"],
+ "page": "workflows",
+ "position": 1
+}

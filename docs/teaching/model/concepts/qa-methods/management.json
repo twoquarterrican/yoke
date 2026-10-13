@@ -1,0 +1,9 @@
+{
+ "id": "management",
+ "title": "Method lifecycle",
+ "status": "draft-copy",
+ "commands": ["yoke qa project-method register"],
+ "functions": ["qa.project_method.register"],
+ "page": "qa-methods",
+ "position": 3
+}

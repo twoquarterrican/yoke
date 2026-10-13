@@ -1,0 +1,19 @@
+{
+ "id": "docs-landing",
+ "title": "Public documentation landing: upyoke.com/docs",
+ "status": "observed",
+ "name": "Public documentation landing: upyoke.com/docs",
+ "audience": "Visitors, new users, returning operators and agents following a docs link",
+ "scope": "Global/static; no assumed signed-in account or current project",
+ "trigger": "Open /docs or the workbench Docs link",
+ "current": "/docs renders docs/public/index.md, currently What Yoke is, beside a flat Start/Operate/Reference sidebar. There is no separate documentation landing/search/version presentation in that shell.",
+ "proposed_purpose": "Help a reader choose where to read, without making them read the manual first.",
+ "content": ["A brief welcome naming this as the Yoke manual.", "Prominent links: Understand Yoke, Install or connect, Work in an existing project.", "Separate links: Full contents, Command reference, Fix a problem.", "Visible documentation release identity and how to compare it with yoke --version.", "A small route for administrators and contributors, kept accessible without occupying beginner guidance."],
+ "authority_and_reuse": "Keep landing copy in the shared public corpus (root index.md is a suitable existing home). Platform supplies navigation/search/version chrome. Derive chapter links and labels from the maintained navigation tree; do not maintain a second website-only contents list.",
+ "distinct_from": "Overview teaches the operating model; contents lists the complete hierarchy; this page routes readers to them.",
+ "proposal_status": "Proposed future landing using the existing public corpus → installed docs → pinned-wheel website pipeline",
+ "plan_notes": ["FIRST-USER B: homepage handoff (adjacent)", "JOURNEYS principle 4", "Documentation organization proposal: outside current locked item details"],
+ "sources": ["docs/public/index.md", "docs/public/nav.yaml", "packages/yoke-core/src/yoke_core/domain/install_bundle_tree_sync.py"],
+ "private_sources": ["platform"],
+ "position": 2
+}

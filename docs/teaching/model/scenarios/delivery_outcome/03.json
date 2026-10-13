@@ -1,0 +1,16 @@
+{
+ "id": "03",
+ "title": "No default postpones the choice",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "User chooses no default or reconfigures an existing project",
+ "need": "Read per-workflow overrides and project fallback. Omitted item flow does not waive delivery; a later planning/release gate may require a choice.",
+ "disclosure": "current cue",
+ "surface": "Onboard no-default recipe lines 166–180; default rules lines 45–64.",
+ "gap": "Verified recipe gap: no-default clears only the project fallback even though workflow defaults override it. Proposed correction must verify both layers before claiming no default.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke deployment-flows --help"],
+ "plan_notes": ["JOURNEYS row 12", "outside both"],
+ "sources": [".agents/skills/yoke/onboard/hosting-and-environments.md", "docs/public/reference/db-reference/projects-and-flows.md"],
+ "position": 2
+}

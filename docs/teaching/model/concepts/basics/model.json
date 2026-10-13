@@ -1,0 +1,9 @@
+{
+ "id": "model",
+ "title": "The operating model",
+ "status": "draft-copy",
+ "plan_refs": ["FIRST-USER.B"],
+ "surface_refs": ["docs-landing", "global-orientation", "manual-overview", "terminal-help"],
+ "page": "basics",
+ "position": 0
+}

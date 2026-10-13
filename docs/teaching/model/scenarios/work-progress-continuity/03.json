@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Distinguish pause, hold and cancellation",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When the user asks to stop, pause, park, abandon or resume current work.",
+ "need": "Freezing parks an item without changing its lifecycle; blocking records an unmet condition; cancellation abandons work. Stopping a steering session still owes safe handoff of live operations.",
+ "disclosure": "current cue",
+ "surface": "Help helpers; Steer held-work and close-out instructions",
+ "gap": "Review question: should Help translate stop this into the appropriate current subject and consequence instead of requiring users to know the state command?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["outside both"],
+ "sources": [".agents/skills/yoke/help/SKILL.md", ".agents/skills/yoke/steer/loop.md", ".agents/skills/yoke/steer/close-out.md"],
+ "position": 2
+}

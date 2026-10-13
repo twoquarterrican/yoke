@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Preview updates and preserve customization",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Before first apply, a version update, or recovery from a conflict",
+ "need": "Preview first. Installed receipt is the baseline; repeating get is not an update. Read the exact Pack conflict recipe, do not overwrite custom files or rewrite immutable historical versions.",
+ "disclosure": "current cue",
+ "surface": "Onboard profile -> selected installed README; packs get/update help and preview result.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke packs update --help", "yoke packs get --help"],
+ "plan_notes": ["outside both"],
+ "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py", "packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md"],
+ "position": 2
+}

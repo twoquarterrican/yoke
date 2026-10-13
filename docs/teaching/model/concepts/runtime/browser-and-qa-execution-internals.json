@@ -1,0 +1,9 @@
+{
+ "id": "browser-and-qa-execution-internals",
+ "title": "Browser and QA execution internals",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/browser-substrate.md", "docs/browser-substrate/persistent-profile.md", "docs/browser-substrate/snapshot-primitives.md", "docs/browser-substrate/scenario-orchestration.md", "docs/browser-substrate/qa-artifact-integration.md", "docs/qa-platform/execution-target-declaration-rebind.md", "docs/qa-platform/plan-case-currency.md", "docs/qa-platform/deployment-stage-execution.md"],
+ "page": "runtime-execution",
+ "position": 11
+}

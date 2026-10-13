@@ -1,0 +1,8 @@
+{
+ "id": "dedicated-qa-machine",
+ "title": "Dedicated QA machine",
+ "status": "draft-copy",
+ "related": "test-machines",
+ "page": "machines",
+ "position": 2
+}

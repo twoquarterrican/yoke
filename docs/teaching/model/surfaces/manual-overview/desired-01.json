@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Explain the model: humans set direction; agents execute work through policy, proof and completion.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["basics/model", "basics/objects"],
+ "plan_refs": ["FIRST-USER.40"],
+ "position": 6
+}

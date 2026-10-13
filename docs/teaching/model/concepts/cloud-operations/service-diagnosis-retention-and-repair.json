@@ -1,0 +1,9 @@
+{
+ "id": "service-diagnosis-retention-and-repair",
+ "title": "Service diagnosis, retention and repair",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "private_sources": ["platform"],
+ "page": "cloud-operations-services",
+ "position": 10
+}

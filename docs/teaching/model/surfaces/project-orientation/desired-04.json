@@ -1,0 +1,10 @@
+{
+ "id": "desired-04",
+ "title": "Give required guidance before the selected work; offer optional setup only when useful.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["context/disclosure", "context/instructions"],
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.42", "FIRST-USER.43"],
+ "position": 8
+}

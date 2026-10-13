@@ -1,0 +1,9 @@
+{
+ "id": "operating-your-own-github-integration",
+ "title": "Operating your own GitHub integration",
+ "status": "draft-copy",
+ "audience": "Administrators",
+ "sources": ["docs/github-app-operations.md", "docs/github-connections.md", "docs/github-permissions.md", "docs/github-credentialed-git.md", "docs/github-app-ci-custody.md"],
+ "page": "server-admin",
+ "position": 2
+}

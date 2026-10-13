@@ -1,0 +1,9 @@
+{
+ "id": "changes",
+ "title": "Changing posture safely",
+ "status": "draft-copy",
+ "commands": ["yoke workflows item-posture amend"],
+ "functions": ["workflows.item_posture.amend"],
+ "page": "posture",
+ "position": 4
+}

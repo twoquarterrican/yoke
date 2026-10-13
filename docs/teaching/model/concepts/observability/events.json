@@ -1,0 +1,9 @@
+{
+ "id": "events",
+ "title": "Events",
+ "status": "draft-copy",
+ "commands": ["yoke events count", "yoke events emit", "yoke events query", "yoke events tail"],
+ "functions": ["events.count.run", "events.emit", "events.query.run", "events.tail.run"],
+ "page": "observability",
+ "position": 0
+}

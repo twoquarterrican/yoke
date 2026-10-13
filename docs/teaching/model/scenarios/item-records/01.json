@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Find the authoritative record and ask for the needed part",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When locating old/current work or moving from a summary card to its specification or evidence.",
+ "need": "Search/list/detail/section reads answer different questions; item fields and Progress Logs are authoritative records, while board and rendered bodies are views.",
+ "disclosure": "audit needed",
+ "surface": "Items search/list/get/detail/section and Progress Log surfaces",
+ "gap": "Existing operation references do not prove first-use discovery. Review question: should the human Work guide teach search-to-record-to-evidence with one real example?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 35", "outside both"],
+ "sources": ["docs/public/items-and-sessions.md", "docs/public/reference/db-reference/functions-items.md", "docs/public/reference/agent-rules/item-writes.md"],
+ "position": 0
+}

@@ -1,0 +1,8 @@
+{
+ "id": "ordered-capability-bands",
+ "title": "Ordered capability bands",
+ "status": "observed",
+ "text": "A session takes the highest level containing its resolved base model whose minimum effort it meets. Thresholds for the same model strictly increase with level; duplicate or decreasing thresholds refuse level_min_effort_order_invalid.",
+ "page": "levels",
+ "position": 0
+}

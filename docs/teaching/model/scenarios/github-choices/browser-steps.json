@@ -1,0 +1,15 @@
+{
+ "id": "browser-steps",
+ "title": "Browser authorization is presented as data to agents and announced before TUI opening.",
+ "status": "observed",
+ "audience": "both",
+ "when": "Sign-in, device authorization, App installation and repository-access settings",
+ "need": "Copy the code/link; finish human approval and return to the same waiting flow. Reuse valid saved authorization.",
+ "disclosure": "current cue",
+ "surface": "TUI opening notice and copy targets; connect --json and github connect --json",
+ "gap": "Deployed installer-campaign proof remains pending.",
+ "review": "Source and focused tests; no live pass asserted.",
+ "sources": ["docs/public/install.md", "docs/public/github.md", "runtime/api/cli/test_setup_browser_presentation.py"],
+ "plan_refs": ["FIRST-USER.26"],
+ "position": 6
+}

@@ -1,0 +1,10 @@
+{
+ "id": "current-decisions-versus-historical-records",
+ "title": "Current decisions versus historical records",
+ "status": "draft-copy",
+ "audience": "Documentation authors / maintainers",
+ "sources": ["docs/README.md"],
+ "private_sources": ["platform"],
+ "page": "documentation",
+ "position": 1
+}

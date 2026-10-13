@@ -1,0 +1,19 @@
+{
+ "id": "contents-document",
+ "title": "Full manual contents / first lookup index",
+ "status": "observed",
+ "name": "Full manual contents / first lookup index",
+ "audience": "Humans browsing the whole product and agents locating canonical knowledge",
+ "scope": "Global/static, with audience boundaries",
+ "trigger": "Full contents link, unfamiliar feature name, or need to find the authoritative topic",
+ "current": "nav.yaml lists 27 public pages while additional public pages exist; the new concept tree is a proposal, not existing article coverage.",
+ "proposed_purpose": "Make every supported subject discoverable with exactly one canonical home.",
+ "content": ["The complete agreed chapter/topic/subtopic tree.", "One short category description, where it helps distinguish similar names.", "Links to canonical pages and sideways references for concepts used elsewhere.", "Separate user, administrator and contributor areas.", "Clear current versus historical/proposed status; no link should imply an unwritten proposal is shipped behavior."],
+ "authority_and_reuse": "Generate the full contents from the maintained manual navigation/parent metadata. The website sidebar, installed Markdown index/breadcrumbs and this full contents view are projections of that one structure; hand-author only category descriptions and intentional related/next links.",
+ "distinct_from": "No new product tutorial, procedural rules or copied article bodies. An offline installed index remains useful without website search.",
+ "proposal_status": "Proposed generated view; final file name can follow the agreed navigation contract",
+ "plan_notes": ["Documentation organization proposal: outside both locked plans", "JOURNEYS principle 4"],
+ "sources": ["docs/public/nav.yaml", "docs/public/index.md"],
+ "private_sources": ["platform"],
+ "position": 1
+}

@@ -1,43 +1,11 @@
 {
- "scenario": {
-  "id": "merge-integration",
-  "title": "Landing work, merge review and merge queues",
-  "status": "draft-copy",
-  "situations": ["A verified change is ready to land.", "A queued pull request stops, its base changes, or required checks disagree.", "The user asks which commit actually landed and whether it was reviewed."],
-  "coverage": "catalogued",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Audit merge candidate review, human review and queue CI reuse as distinct contracts; current map mentions approvals/QA but does not trace this complete landing family."],
-  "plan_refs": ["FIRST-USER.11", "JOURNEYS.situation-12"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Explain the current landing route",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When an item reaches its merge boundary or the project first enables a merge queue.",
-   "need": "Know whether this item lands locally or through a governed pull request/queue, what proof the route uses, and which result proves landing.",
-   "disclosure": "audit needed",
-   "surface": "Merge item; merge-review candidate; merge receipt/landing reads; GitHub queue readiness",
-   "gap": "Existing sources and commands are present; scenario-to-first-explanation timing has not been traced. Review question: should JOURNEYS add first-landing and first-queue-use situations?",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["JOURNEYS row 12", "outside both"],
-   "sources": ["docs/public/github.md", "docs/public/reference/merge-queue-landings.md", "docs/public/reference/db-reference/item-landings.md", ".agents/skills/yoke/usher/merge-preflight.md"]
-  },
-  {
-   "id": "02",
-   "title": "Resume a stopped landing without inventing success",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When a landing notice reports a stopped queue, failed check or unavailable automatic wake.",
-   "need": "Identify the actual check/protection/ownership problem and the supported same-item recovery; a green check is not itself a merge receipt. Standalone close-out waits only for push-owned checks. A cancelled push follows a proven descendant with replacement push workflows, reports the superseding SHA and retains the original deadline.",
-   "disclosure": "audit needed",
-   "surface": "Landing notice, holder/steering recovery and governed merge re-entry",
-   "gap": "A recovery guide exists. Review question: do each harness notice and FIRST-USER 35 output link the correct recovery without implying universal automatic desktop wake?",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER 35", "JOURNEYS row 12"],
-   "sources": ["docs/public/reference/merge-queue-landings.md", "docs/public/reference/github-sync.md", "packages/yoke-core/src/yoke_core/domain/standalone_post_push_ci.py", ".agents/skills/yoke/usher/merge.md", ".agents/skills/yoke/usher/finalize.md"]
-  }
- ]
+ "id": "merge-integration",
+ "title": "Landing work, merge review and merge queues",
+ "status": "draft-copy",
+ "situations": ["A verified change is ready to land.", "A queued pull request stops, its base changes, or required checks disagree.", "The user asks which commit actually landed and whether it was reviewed."],
+ "coverage": "catalogued",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Audit merge candidate review, human review and queue CI reuse as distinct contracts; current map mentions approvals/QA but does not trace this complete landing family."],
+ "plan_refs": ["FIRST-USER.11", "JOURNEYS.situation-12"]
 }

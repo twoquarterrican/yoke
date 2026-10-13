@@ -1,0 +1,9 @@
+{
+ "id": "hosted-architecture-and-tenant-lifecycle",
+ "title": "Hosted architecture and tenant lifecycle",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "private_sources": ["platform"],
+ "page": "cloud-operations",
+ "position": 4
+}

@@ -1,61 +1,12 @@
 {
- "scenario": {
-  "id": "qa-subjects-targets",
-  "title": "What a QA result proves",
-  "status": "draft-copy",
-  "situations": ["An item has checks before merge and acceptance after delivery.", "One release contains several items and a run-wide check.", "A user runs a saved plan without an item.", "Evidence exists for a different environment or candidate."],
-  "coverage": "traced",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Subject and target contracts/read surfaces inspected; delivery admission and machine configuration are other auditors scopes, not re-proven here.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
-  "related_scenarios": ["environment_flows", "qa-execution-review"],
-  "plan_refs": ["JOURNEYS.situation-13"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Bind evidence to the obligation",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When attaching QA to a workflow transition or composing item-scoped versus run-wide release QA.",
-   "need": "A requirement belongs to an item/task or a deployment run, optionally a stage and member. Item acceptance and run-wide QA are separate; candidate, phase and target matter.",
-   "disclosure": "current cue",
-   "surface": "Case attachment validation; Shipping Item QA/Run QA; QA subject reads",
-   "gap": "Review question: should the first mixed release show a small explanation of item-versus-run QA, with detailed binding rules fetched by the agent?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke qa requirement list --help"],
-   "plan_notes": ["JOURNEYS row 12", "JOURNEYS row 13"],
-   "sources": ["docs/public/reference/qa-platform/case-attachment.md", "docs/public/reference/qa-platform.md", "docs/public/items-and-sessions.md"]
-  },
-  {
-   "id": "02",
-   "title": "Standalone testing does not close unrelated gates",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When the user asks to run a saved plan now without an item or deployment-run subject.",
-   "need": "A standalone plan execution freezes its own roster and owns its evidence. It changes no item transition or release acceptance; an unrelated green result is not substitute proof.",
-   "disclosure": "current cue",
-   "surface": "Standalone plan run help/reference; plan detail outcome",
-   "gap": "Review question: should QA Plans offer distinct explanatory routes for test now and require this for work, before the agent selects scope?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke qa plan get --help"],
-   "plan_notes": ["JOURNEYS row 13", "outside both"],
-   "sources": ["docs/public/reference/qa-platform/standalone-plans.md"]
-  },
-  {
-   "id": "03",
-   "title": "Use the requested target and actual identity",
-   "status": "draft-copy",
-   "audience": "agent",
-   "when": "Before execution or evidence acceptance, when candidate/environment/phase can differ from existing proof.",
-   "need": "Select phase by the obligation, not the URL name. Read the bound candidate/environment; Stage proof cannot stand in for Production and an earlier candidate cannot prove a later one.",
-   "disclosure": "current cue",
-   "surface": "Intake attachment; bound target refusals; standalone environment obligations",
-   "gap": "Review question: should evidence summaries lead with what was checked, where and against which candidate, before implementation identifiers?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke qa requirement list --help", "yoke qa gate-summary --help"],
-   "plan_notes": ["FIRST-USER 35", "JOURNEYS row 12", "JOURNEYS row 13"],
-   "sources": [".agents/skills/yoke/idea/delivery-requirements.md", "docs/public/reference/qa-platform/case-attachment.md", "docs/public/reference/qa-platform/standalone-plans.md"]
-  }
- ]
+ "id": "qa-subjects-targets",
+ "title": "What a QA result proves",
+ "status": "draft-copy",
+ "situations": ["An item has checks before merge and acceptance after delivery.", "One release contains several items and a run-wide check.", "A user runs a saved plan without an item.", "Evidence exists for a different environment or candidate."],
+ "coverage": "traced",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Subject and target contracts/read surfaces inspected; delivery admission and machine configuration are other auditors scopes, not re-proven here.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+ "related_scenarios": ["environment_flows", "qa-execution-review"],
+ "plan_refs": ["JOURNEYS.situation-13"]
 }

@@ -1,0 +1,10 @@
+{
+ "id": "desired-03",
+ "title": "If activation is incomplete, show the next action toward strategy, steering and a meaningful item done.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["strategy/corpus", "frontier/entrypoints", "deployments/outcomes"],
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.42", "FIRST-USER.43"],
+ "position": 7
+}

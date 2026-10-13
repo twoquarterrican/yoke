@@ -1,0 +1,10 @@
+{
+ "id": "04",
+ "title": "Missing setup gets one relevant explanation and repair link; new/empty screens say what the object is for.",
+ "status": "draft-copy",
+ "form": "Link",
+ "verification": "No delivery proof attached.",
+ "topics": ["workbench/onboarding", "documentation/disclosure"],
+ "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"],
+ "position": 3
+}

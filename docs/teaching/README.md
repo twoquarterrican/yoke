@@ -26,20 +26,39 @@ refuses private paths and identifiers.
 
 | Path | Contents |
 |---|---|
-| `model/concepts/` | One top-level concept branch per file, fully nested |
-| `model/surfaces/` | One teaching surface and its teaching outline per file |
-| `model/scenarios/` | One scenario and its lessons per file |
-| `model/plan/` | FIRST-USER and JOURNEYS rows and their mappings |
-| `model/evidence/` | Scoped research evidence, grouped by audit topic |
-| `model/boundaries.json`, `model/gaps.json` | Locked rules and open gaps |
+| `model/concepts/` | One concept per file; child concepts in matching directories |
+| `model/surfaces/` | Surface record plus one teaching record per child file |
+| `model/scenarios/` | Scenario record plus one lesson per child file |
+| `model/plan/` | Collection metadata plus one plan row per child file |
+| `model/evidence/` | Collection metadata plus one evidence record per child file |
+| `model/boundaries/`, `model/gaps/` | One locked rule or open gap per file |
 | `model/docs-graph.json` | Documentation areas for the live docs graph |
 | `views/` | Untracked generated HTML and CSS; build locally to read |
 | `tools/` | The builder and check |
 | `live/` | Untracked live pages, written by `--live` |
 
 Every record has a stable `id`; it is the HTML anchor of the record's view.
-A concept's full id is its path (`context/hooks`). Teaching and lesson ids are
-prefixed by their owner (`setup-agent/desired-01`).
+A concept's full id is its path (`context/hooks`), stored at
+`model/concepts/context/hooks.json`. Teaching and lesson ids are prefixed by
+their owner (`setup-agent/desired-01`), stored at
+`model/surfaces/setup-agent/desired-01.json`. Each filename matches its
+record's local `id`. Add a record by creating its file; claim that concrete
+path without changing or claiming its parent record. Optional `position`
+sets display order (then filename); concept `page` keeps large branches on
+separate generated pages. Plan and evidence collection metadata lives at
+`model/<kind>/<collection>.json`, with records in the matching directory.
+`docs-graph.json` remains the documentation graph configuration.
+
+To reapply the mechanical conversion after taking upstream array files:
+
+```text
+yoke dev run -- python3 docs/teaching/tools/convert_model.py
+```
+
+The converter removes consumed arrays, preserves ids and content, and can be
+rerun safely. An upstream array is authoritative for its converted records;
+existing record files without an array source stay untouched. Rebuild and
+check afterwards.
 
 Commands, functions and skills are never copied here. Concept records name
 them, and the check resolves every name against the live registries. The
@@ -72,7 +91,7 @@ teaches. Review only the topics the work touches.
 2. Edit its record under `model/`. Keep its `id`.
 3. Add missing topics or surfaces beside their peers and link them. Keep
    current state and desired state distinct through `status`. Record
-   unfinished teaching as a `gaps.json` record with its evidence.
+   unfinished teaching as a `gaps/<id>.json` record with its evidence.
 4. Rebuild and check:
 
    ```text
@@ -102,7 +121,8 @@ yoke dev run -- python3 docs/teaching/tools/build.py --check \
 ```
 
 Review the changed entries, update their rows, set each plan file's
-`reconciled_at` to the document's `updated_at`, and rebuild. Delete the saved
+`reconciled_at` in the collection metadata to the document's `updated_at`,
+and rebuild. Delete the saved
 files afterwards when they are temporary reconciliation inputs. Public
 strategy text may be committed after checking it for private material.
 
@@ -123,14 +143,15 @@ inbound and outbound link counts).
 | Code | Repair |
 |---|---|
 | `UNKNOWN_STATUS` | Use one of the seven statuses above |
-| `DUPLICATE_ID`, `DANGLING_PARENT` | Make ids unique; load a branch's own file first |
+| `DUPLICATE_ID`, `DANGLING_PARENT` | Make ids unique; add the missing parent record |
 | `DANGLING_REFERENCE` | Fix the id, or remove a command that no longer exists |
 | `DANGLING_SOURCE` | Cite a tracked repository-relative path |
 | `PLAN_ROW_UNMAPPED` | Map the row, or name an explicit gap |
 | `PLAN_ENTRY_MISSING`, `PLAN_RECONCILIATION_STALE` | Reconcile as above |
 | `DANGLING_ANCHOR`, `DANGLING_LINK` | Fix the target id or path, then rebuild |
 | `MODEL_NOT_CANONICAL` | Rebuild to apply canonical model formatting |
-| `LINE_LIMIT` | Split the model file at a named child, then rebuild |
+| `MODEL_RECORD_ID` | Store one record with an `id` matching its filename |
+| `LINE_LIMIT` | Shorten the record or separate distinct topics, then rebuild |
 | `PRIVATE_MATERIAL` | Remove the private path or id |
 
 Every file here obeys the shared 350-line hard limit, counted at 80 columns;

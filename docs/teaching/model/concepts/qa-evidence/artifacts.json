@@ -1,0 +1,9 @@
+{
+ "id": "artifacts",
+ "title": "Evidence",
+ "status": "draft-copy",
+ "commands": ["yoke direct-workflow dash evidence", "yoke qa artifact add", "yoke qa artifact get", "yoke qa artifact presign", "yoke qa artifact read", "yoke qa artifact rehome", "yoke test-machine screenshot"],
+ "functions": ["direct_workflow.dash.evidence", "qa.artifact.add", "qa.artifact.get", "qa.artifact.presign", "qa.artifact.read", "qa.artifact.rehome", "test_machine.screenshot"],
+ "page": "qa-evidence",
+ "position": 1
+}

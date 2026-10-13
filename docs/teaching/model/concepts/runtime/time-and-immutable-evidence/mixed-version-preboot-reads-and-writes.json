@@ -1,0 +1,8 @@
+{
+ "id": "mixed-version-preboot-reads-and-writes",
+ "title": "Mixed-version preboot reads and writes",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "page": "runtime-evidence",
+ "position": 4
+}

@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Emit the step’s question, allowed answers, guidance and human authorization link/code as structured data.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["installation/entry", "identity/auth"],
+ "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"],
+ "position": 7
+}

@@ -1,43 +1,11 @@
 {
- "scenario": {
-  "id": "ui-navigation",
-  "title": "Opening and navigating the workbench",
-  "status": "draft-copy",
-  "situations": ["A terminal user wants to open the correct dashboard.", "A new user is overwhelmed by pages and raw status.", "A user sees no projects, cannot find an action or follows a stale deep link."],
-  "coverage": "catalogued",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Avoid duplicating work-progress lessons; this family owns opening/orientation/routing only.", "Board art is an optional customization exposed in help, not a readiness gate; FIRST-USER 25 already skips its setup step."],
-  "plan_refs": ["FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.16", "FIRST-USER.25", "FIRST-USER.P5", "FIRST-USER.P7"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Open the right place and preserve sign-in privacy",
-   "status": "draft-copy",
-   "audience": "human",
-   "when": "When setup completes or the user asks to open Yoke.",
-   "need": "Know which universe/project is open and use the supported UI launch path without exposing token-bearing links in chat or screen-share output.",
-   "disclosure": "audit needed",
-   "surface": "UI up/status; active environment; homepage/setup handoff",
-   "gap": "Existing launcher is documented; current discovery and token handling are separate implementation questions. Review question: should FIRST-USER 16 + F proof include handoff from both installation paths?",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER 16 + F", "FIRST-USER C"],
-   "sources": ["docs/public/cli-and-config.md", "docs/public/install.md", "docs/public/modes.md"]
-  },
-  {
-   "id": "02",
-   "title": "Navigate by the task at hand",
-   "status": "draft-copy",
-   "audience": "human",
-   "when": "On first dashboard visit, first running item or an empty/error page.",
-   "need": "Find Strategy, Frontier, Inbox, Shipping and QA when needed; distinguish empty, unavailable and failed reads instead of exploring every page before work.",
-   "disclosure": "audit needed",
-   "surface": "Existing workbench pages, overview activation and board read",
-   "gap": "Progress surfaces are already mapped; first navigation, empty states and deep-link behavior are not independently traced. Review question: should dashboard explanation and JOURNEYS cues share the same task names?",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER P5", "FIRST-USER B", "JOURNEYS row 9", "outside both"],
-   "sources": ["docs/public/concepts.md", "docs/public/items-and-sessions.md", "docs/public/qa.md", "docs/public/frontier.md"]
-  }
- ]
+ "id": "ui-navigation",
+ "title": "Opening and navigating the workbench",
+ "status": "draft-copy",
+ "situations": ["A terminal user wants to open the correct dashboard.", "A new user is overwhelmed by pages and raw status.", "A user sees no projects, cannot find an action or follows a stale deep link."],
+ "coverage": "catalogued",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Avoid duplicating work-progress lessons; this family owns opening/orientation/routing only.", "Board art is an optional customization exposed in help, not a readiness gate; FIRST-USER 25 already skips its setup step."],
+ "plan_refs": ["FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.16", "FIRST-USER.25", "FIRST-USER.P5", "FIRST-USER.P7"]
 }

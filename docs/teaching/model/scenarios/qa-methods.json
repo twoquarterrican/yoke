@@ -1,46 +1,12 @@
 {
- "scenario": {
-  "id": "qa-methods",
-  "title": "QA methods: choosing the kind of proof",
-  "status": "draft-copy",
-  "situations": ["The user asks how a behavior will be verified.", "A change needs deterministic assertions, visual judgment or exploratory investigation.", "An existing suite runs locally or through declared CI."],
-  "coverage": "traced",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Built-in method definitions and current skill/doc consumers were read; Pack methods and live registry availability are delegated to the QA-machine owner.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
-  "related_scenarios": ["qa-plans-cases", "qa_machine_setup", "browser_identities"],
-  "plan_refs": ["JOURNEYS.situation-13"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Choose proof before choosing machinery",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When defining acceptance evidence or binding an existing test suite for the first useful change.",
-   "need": "A method defines the runner, capability needs, evidence and verdict path. Cases select methods; instructions alone do not create a runner.",
-   "disclosure": "current cue",
-   "surface": "QA Methods tab; method list/get; test setup and requirement intake",
-   "gap": "The clearest method introduction is non-public. Review question: should FIRST-USER publish that small explanation with one current first-work example?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke qa method list --help", "yoke qa method get --help"],
-   "plan_notes": ["FIRST-USER C", "JOURNEYS row 13"],
-   "sources": ["docs/public/qa.md", "docs/testing-verification.md", "packages/yoke-core/src/yoke_core/domain/qa_method_definitions.py", ".agents/skills/yoke/onboard/verification-binding.md"]
-  },
-  {
-   "id": "02",
-   "title": "Distinguish check, inspection and exploration",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When the expected outcome requires assertions, visual judgment or exploratory observation.",
-   "need": "Command/CI and Browser check use automatic results; Browser inspection captures evidence for agent judgment. Pack-added methods and exploratory missions have additional contracts. A screenshot is not a pass.",
-   "disclosure": "current cue",
-   "surface": "Method definitions; Browser reference; exploratory QA dispatch",
-   "gap": "Review question: should verification planning offer the relevant method in plain language and fetch its reference only after selection?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke qa method get --help"],
-   "plan_notes": ["JOURNEYS row 13"],
-   "sources": ["packages/yoke-core/src/yoke_core/domain/qa_method_definitions.py", "docs/public/reference/browser-scenarios.md", "docs/public/reference/exploratory-qa.md"]
-  }
- ]
+ "id": "qa-methods",
+ "title": "QA methods: choosing the kind of proof",
+ "status": "draft-copy",
+ "situations": ["The user asks how a behavior will be verified.", "A change needs deterministic assertions, visual judgment or exploratory investigation.", "An existing suite runs locally or through declared CI."],
+ "coverage": "traced",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Built-in method definitions and current skill/doc consumers were read; Pack methods and live registry availability are delegated to the QA-machine owner.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+ "related_scenarios": ["qa-plans-cases", "qa_machine_setup", "browser_identities"],
+ "plan_refs": ["JOURNEYS.situation-13"]
 }

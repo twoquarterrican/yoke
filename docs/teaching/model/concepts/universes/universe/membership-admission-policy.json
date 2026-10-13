@@ -1,0 +1,8 @@
+{
+ "id": "membership-admission-policy",
+ "title": "Membership admission policy",
+ "status": "draft-copy",
+ "sources": ["packages/yoke-contracts/src/yoke_contracts/organization_contract/fleet_keys.py"],
+ "page": "universes",
+ "position": 3
+}

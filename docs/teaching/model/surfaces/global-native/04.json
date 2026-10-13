@@ -1,0 +1,10 @@
+{
+ "id": "04",
+ "title": "Find global help and project selection through the planned yoke-global entry; exact commands through yoke help.",
+ "status": "superseded",
+ "form": "Link",
+ "verification": "Not an approved publisher; use global orientation.",
+ "topics": ["agents/skills", "reference/commands"],
+ "plan_refs": ["FIRST-USER.P4"],
+ "position": 3
+}

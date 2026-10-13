@@ -1,0 +1,8 @@
+{
+ "id": "inbox",
+ "title": "Inbox",
+ "status": "draft-copy",
+ "related": "messaging/inbox",
+ "page": "workbench-destinations",
+ "position": 5
+}

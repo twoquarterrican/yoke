@@ -1,83 +1,16 @@
 {
- "surface": {
-  "id": "packets-help",
-  "title": "Topic packets and exact command help",
-  "status": "observed",
-  "scope": "Global release knowledge + explicit project context",
-  "audience": "Agent; command help also human",
-  "encounter": "Unfamiliar operation or deeper pointer",
-  "location": "yoke packets render --role main_agent --topic <topic>; yoke <command> --help",
-  "basis": "Existing mechanism · discovery repairs proposed",
-  "note": "A schema packet is not a live status report. Source-tree-only paths need installed-release equivalents; outside-project help must remain reachable.",
-  "current": "Startup/core packets and managed rules point to .yoke/harness manifests; Conduct shares the registered project context recipe with Implement. Automated bundle and packet checks cover these source changes; live delivery waits for release.",
-  "desired": "Fetch narrow schema, policy, setup facts and operation recipe through installed and registered access.",
-  "plan_notes": ["Accepted installed help/manifest repair"],
-  "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"],
-  "sources": ["packages/yoke-core/src/yoke_core/domain/main_agent_packet.py:74", "packages/yoke-core/src/yoke_core/domain/schema_api_context.py:1", "packages/yoke-cli/src/yoke_cli/commands/adapters/packets.py:1", "runtime/harness/codex/manifest.json:1"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "Exact operation grammar, required fields, examples and refusal recovery.",
-   "status": "draft-copy",
-   "form": "Do",
-   "verification": "No delivery proof attached.",
-   "topics": ["reference/commands", "reference/schemas"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "02",
-   "title": "Relevant schema, supported kinds and relationships for the installed release.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["context/packets", "reference/schemas"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "03",
-   "title": "The registered read that supplies live project, item, claim, run or capability state.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["items/authoring", "coordination/work-claims", "deployments/runs", "capabilities/capabilities"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "04",
-   "title": "Declared harness capabilities and applicable limits; keep actual readiness and QA proof separate.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["agents/harnesses", "installation/readiness", "qa-evidence/artifacts"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Fetch the relevant role, schema and operation depth; read live state through its authoritative owner.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["context/packets", "reference/schemas", "reference/commands"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-02",
-   "title": "Present relevant scoped setup facts and the next complete action, not the whole catalog.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["projects/onboarding", "context/disclosure"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Use release-matched installed manifests and registered context_routing access.",
-   "status": "observed",
-   "form": "Do",
-   "verification": "Managed manifest byte identity, HTTPS transport install/refresh, skew refusal and shared recipe checked in runtime/api/domain/test_installed_project_context.py; no live harness transcript claimed.",
-   "topics": ["agents/harnesses", "context/docs", "architecture/structure"],
-   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"]
-  }
- ]
+ "id": "packets-help",
+ "title": "Topic packets and exact command help",
+ "status": "observed",
+ "scope": "Global release knowledge + explicit project context",
+ "audience": "Agent; command help also human",
+ "encounter": "Unfamiliar operation or deeper pointer",
+ "location": "yoke packets render --role main_agent --topic <topic>; yoke <command> --help",
+ "basis": "Existing mechanism · discovery repairs proposed",
+ "note": "A schema packet is not a live status report. Source-tree-only paths need installed-release equivalents; outside-project help must remain reachable.",
+ "current": "Startup/core packets and managed rules point to .yoke/harness manifests; Conduct shares the registered project context recipe with Implement. Automated bundle and packet checks cover these source changes; live delivery waits for release.",
+ "desired": "Fetch narrow schema, policy, setup facts and operation recipe through installed and registered access.",
+ "plan_notes": ["Accepted installed help/manifest repair"],
+ "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/main_agent_packet.py:74", "packages/yoke-core/src/yoke_core/domain/schema_api_context.py:1", "packages/yoke-cli/src/yoke_cli/commands/adapters/packets.py:1", "runtime/harness/codex/manifest.json:1"]
 }

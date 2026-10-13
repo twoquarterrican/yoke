@@ -1,0 +1,10 @@
+{
+ "id": "desired-03",
+ "title": "Ship portable rules from canonical public homes; keep installation-specific operating choices private.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["documentation/ownership", "cloud-operations/operations"],
+ "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"],
+ "position": 6
+}

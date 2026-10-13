@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Recover without duplicating the request",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "A message is undelivered, parked or collapsed into an earlier message",
+ "need": "Inspect message/attempt state and the earlier message when collapsed. No steering seat means parked for a successor. A turn ending sends no Fleet message. Cancellation and acknowledgement are separate explicit operations.",
+ "disclosure": "current cue",
+ "surface": "Message receipt/output -> get; Items and Sessions recovery examples.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke messages get MESSAGE-ID --json --full", "yoke messages cancel --help"],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/items-and-sessions.md", "packages/yoke-cli/src/yoke_cli/commands/registry_session_control.py"],
+ "position": 2
+}

@@ -1,0 +1,10 @@
+{
+ "id": "desired-03",
+ "title": "Route to the full concept tree; choose final categories and copy during the docs reorganization.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["documentation/cascade", "reference/docs"],
+ "plan_refs": ["FIRST-USER.40"],
+ "position": 8
+}

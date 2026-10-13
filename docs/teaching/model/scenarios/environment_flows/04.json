@@ -1,0 +1,16 @@
+{
+ "id": "04",
+ "title": "Recover the same run",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Run waits, is interrupted or refuses target occupancy",
+ "need": "Read the named holder, current stage and structured refusal. Runs occupy target origins until QA settles; a live driver owns re-entry. Recover the existing run using its printed command rather than duplicate it.",
+ "disclosure": "current cue",
+ "surface": "Delivery rules opening and run records.",
+ "gap": "Expose one recovery link from the human run page and agent result. Never export Yoke self-deploy db-admin authority as an ordinary project requirement.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke deployment-runs approve --help"],
+ "plan_notes": ["JOURNEYS row 12"],
+ "sources": ["docs/public/reference/agent-rules/delivery.md", "docs/public/reference/db-reference/deployment-run-records.md"],
+ "position": 3
+}

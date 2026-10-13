@@ -1,0 +1,10 @@
+{
+ "id": "desired-02",
+ "title": "Inspect affected prototype nodes when planning and finishing; commit the model and build local views to read them; report remaining gaps with evidence.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["documentation/planning", "documentation/ownership", "learning/notes"],
+ "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"],
+ "position": 5
+}

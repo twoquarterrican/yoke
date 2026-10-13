@@ -1,0 +1,9 @@
+{
+ "id": "starting-state",
+ "title": "Starting state",
+ "status": "draft-copy",
+ "commands": ["yoke test-machine golden-capture", "yoke test-machine reset"],
+ "functions": ["test_machine.golden_capture", "test_machine.reset"],
+ "page": "test-machines",
+ "position": 1
+}

@@ -1,0 +1,10 @@
+{
+ "id": "dash",
+ "title": "Dash",
+ "status": "draft-copy",
+ "commands": ["yoke dash"],
+ "functions": ["items.create"],
+ "skills": ["dash"],
+ "page": "workflows",
+ "position": 0
+}

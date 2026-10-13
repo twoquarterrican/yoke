@@ -1,0 +1,7 @@
+{
+ "id": "15",
+ "title": "github-optional",
+ "status": "observed",
+ "check": "No compulsory GitHub or remote. TUI sync silently off; agent offer only relevant; later setting and deliberate permissioned opt-in. Skipped checks N/A, not fail.",
+ "position": 14
+}

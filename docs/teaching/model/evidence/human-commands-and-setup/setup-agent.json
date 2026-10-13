@@ -1,0 +1,21 @@
+{
+ "id": "setup-agent",
+ "title": "Agent-assisted setup conversation and receipt",
+ "status": "observed",
+ "name": "Agent-assisted setup conversation and receipt",
+ "audience": "Human with an agent operating setup",
+ "scope": "Machine/global until project selection; project onboarding only in the selected folder",
+ "trigger": "User asks the agent to install Yoke or resume installation",
+ "proposed_purpose": "Let the agent handle routine work and explain only the choice the human needs to make.",
+ "content": ["Begin with the person’s practical constraint: just this computer, several computers, or a team.", "Translate each real setup decision into one short recommendation and reason.", "Reuse existing configuration and make consequential replacement/import choices explicit.", "Distinguish GitHub access from optional issue sync; leave sync off unless the user intentionally enables it.", "Explain sign-in, device authorization and harness trust only when the human must act.", "Verify the active harness, registration and hooks; show a plain repair if needed.", "Carry the chosen project and existing-work intent into the correct folder, then start project onboarding there."],
+ "scope_variants": {
+  "global": "Choose/add/open a project via planned yoke-global; do not call project-only onboard as a global chooser.",
+  "matureProject": "Ask what existing plans, local work, issues/PRs or transcripts should be read before synthesizing CURRENT-PLAN.",
+  "otherScm": "Explain the supported GitHub-integration boundary, then continue with it skipped; do not promise another provider integration."
+ },
+ "authority_and_reuse": "Same setup engine and resumable facts as TUI, using planned structured agent-mode responses. Human prose is a short rendering of that state, not a second setup implementation.",
+ "proposal_status": "Depends on planned agent-mode/global-context mechanics; not claimed to be current behavior",
+ "plan_notes": ["FIRST-USER A/C/E/P1/P4/24/26", "JOURNEYS principles 3–6 and rows 1–9"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py", ".agents/skills/yoke/onboard/SKILL.md", ".agents/skills/yoke/onboard/strategy-conversation.md"],
+ "position": 2
+}

@@ -1,0 +1,10 @@
+{
+ "id": "teaching-model-and-local-views",
+ "title": "Teaching model and local views",
+ "status": "observed",
+ "audience": "Yoke source contributors",
+ "note": "Commit the teaching model; build the gitignored views locally to read them. CI validates the model and renders pages in memory without comparing local output.",
+ "sources": ["docs/teaching/README.md", "docs/teaching/tools/build.py", "tests/teaching_prototype/test_teaching_prototype_check.py"],
+ "page": "documentation",
+ "position": 0
+}

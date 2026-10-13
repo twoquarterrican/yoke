@@ -1,0 +1,9 @@
+{
+ "id": "repository-permissions",
+ "title": "Repository permissions",
+ "status": "observed",
+ "note": "Setup checks existing repository access live before binding. Missing access names the exact owner/repo and installation settings link; failed checks report unknown access and retry.",
+ "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_project_github.py", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_github_state.py"],
+ "page": "repositories",
+ "position": 2
+}

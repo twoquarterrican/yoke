@@ -1,0 +1,9 @@
+{
+ "id": "item-migration-preview-and-apply",
+ "title": "Item migration preview and apply",
+ "status": "draft-copy",
+ "commands": ["yoke workflows item migrate"],
+ "functions": ["workflows.item.migrate"],
+ "page": "workflows",
+ "position": 4
+}

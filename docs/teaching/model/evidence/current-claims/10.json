@@ -1,0 +1,7 @@
+{
+ "id": "10",
+ "title": "current_claims_requiring_verification",
+ "status": "observed",
+ "claim": "Historical P1/P2/P3 implementation claims and supported/cloud native discovery must be checked before relying on them.",
+ "position": 9
+}

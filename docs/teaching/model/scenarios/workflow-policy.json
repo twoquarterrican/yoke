@@ -1,60 +1,11 @@
 {
- "scenario": {
-  "id": "workflow-policy",
-  "title": "Effective policy, item choices and shared defaults",
-  "status": "draft-copy",
-  "situations": ["The user wants extra verification or approval for one change.", "A team wants every future change to follow a new rule.", "A posture change is refused because claims or evidence already exist."],
-  "coverage": "traced",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Resolver and guard code plus docs were inspected; individual mutation guards were not executed.", "Which current UI controls explain item scope versus shared-default scope before save?", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
-  "related_scenarios": ["path-claims", "approval-types", "qa-plans-cases"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "One item is different from future defaults",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When the user requests stronger checks or says only this change versus every future change.",
-   "need": "An allowed item posture changes this item. Project testing/delivery defaults, universe workflow approval defaults and publishing a workflow version have wider scope. Existing item pins do not silently move.",
-   "disclosure": "current cue",
-   "surface": "Workflows settings; workflow function reference; item-posture refusal",
-   "gap": "Review question: should JOURNEYS add a change-scope prompt when the user says always or only this time, before choosing the write surface?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke workflows item get --help", "yoke workflows item-posture amend --help"],
-   "plan_notes": ["outside both"],
-   "sources": ["docs/public/workflows.md", "docs/public/reference/db-reference/functions-workflows.md", "packages/yoke-core/src/yoke_core/domain/item_posture_amend_guards.py"]
-  },
-  {
-   "id": "02",
-   "title": "Consume resolved policies",
-   "status": "draft-copy",
-   "audience": "agent",
-   "when": "Before authoring File Budget/path claims or entering a gated work phase.",
-   "need": "Read effective_policies from workflows.item.get. File Budget, path claims and path survey are distinct axes; posture can tighten only permitted choices.",
-   "disclosure": "current cue",
-   "surface": "Agent operation home; intake path closure; central resolver",
-   "gap": "Review question: should public workflow help explain these choices at the moment a policy is proposed, rather than describing them as universal onboarding steps?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke workflows item get --help"],
-   "plan_notes": ["JOURNEYS row 11", "outside both"],
-   "sources": ["docs/public/reference/agent-rules/lanes-and-claims.md", ".agents/skills/yoke/idea/path-closure.md", "packages/yoke-core/src/yoke_core/domain/workflow_effective_policies.py"]
-  },
-  {
-   "id": "03",
-   "title": "Respect existing evidence when changing policy",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When amending or clearing an item posture after a claim, QA result or pending approval exists.",
-   "need": "A selected verification method/plan, live claim or open approval may prevent clearing a choice. Use the named recovery; never erase history to make the change fit.",
-   "disclosure": "current cue",
-   "surface": "Per-key posture guards and composed refusal recovery",
-   "gap": "The technical refusal exists. Review question: should FIRST-USER 35 require a plain affected-record explanation and the exact safe next step?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke workflows item-posture amend --help"],
-   "plan_notes": ["FIRST-USER 35"],
-   "sources": ["packages/yoke-core/src/yoke_core/domain/item_posture_amend_guards.py", "docs/public/reference/db-reference/functions-workflows.md"]
-  }
- ]
+ "id": "workflow-policy",
+ "title": "Effective policy, item choices and shared defaults",
+ "status": "draft-copy",
+ "situations": ["The user wants extra verification or approval for one change.", "A team wants every future change to follow a new rule.", "A posture change is refused because claims or evidence already exist."],
+ "coverage": "traced",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Resolver and guard code plus docs were inspected; individual mutation guards were not executed.", "Which current UI controls explain item scope versus shared-default scope before save?", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+ "related_scenarios": ["path-claims", "approval-types", "qa-plans-cases"]
 }

@@ -1,0 +1,10 @@
+{
+ "id": "bindings",
+ "title": "Skill bindings",
+ "status": "draft-copy",
+ "surface_refs": ["project-native", "skills-roles"],
+ "commands": ["yoke workflows mechanics get"],
+ "functions": ["workflows.mechanics.get"],
+ "page": "workflows",
+ "position": 2
+}

@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Offer governance in plain terms",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Onboard execution profile surveys migrations or user starts database-changing work",
+ "need": "Explain what Yoke governs before choosing: declare now, attach later, no Yoke-governed database, or undecided. External ownership/no DB/unsupported kind is a complete no-governance answer; undecided blocks profile confirmation today.",
+ "disclosure": "current cue",
+ "surface": "Onboard profile governed-database box and governed-database branches.",
+ "gap": "The current offer is buried in the upfront profile. JOURNEYS plans later timing but has no explicit first-database-change offer. Proposed cue should appear then and retain the recorded choice.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke projects capability-settings get --project P --cap-type migration_model --json"],
+ "plan_notes": ["JOURNEYS slimming onboard", "outside both"],
+ "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", ".agents/skills/yoke/onboard/governed-database.md"],
+ "position": 0
+}

@@ -1,0 +1,10 @@
+{
+ "id": "03",
+ "title": "A focused procedure or worked learning example when needed; exact syntax comes from command help.",
+ "status": "draft-copy",
+ "form": "Do",
+ "verification": "No delivery proof attached.",
+ "topics": ["reference/commands"],
+ "plan_refs": ["FIRST-USER.32", "FIRST-USER.40", "FIRST-USER.41"],
+ "position": 2
+}

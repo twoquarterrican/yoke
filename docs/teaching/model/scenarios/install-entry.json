@@ -1,58 +1,12 @@
 {
- "scenario": {
-  "id": "install-entry",
-  "title": "Entering through a terminal or an agent",
-  "status": "draft-copy",
-  "situations": ["A human runs the installer in a terminal", "A human tells an existing agent: install upyoke.com", "Installation stops halfway or changes presentation mode"],
-  "coverage": "traced",
-  "current": "Observed installer campaign baseline: PATH checks passed; the isolated welcome frame displayed the authored identity and uv attempt, then refused its unwritable home. The prior case incorrectly expected successful exit. Full install and live-agent delivery remain unproven.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Can an agent with no Yoke-specific context complete the exact public entry path?", "Does every failure preserve enough context to resume without guessing?"],
-  "related_scenarios": ["universe-choice", "github-choices", "project-adoption", "harness-readiness"],
-  "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.14", "FIRST-USER.17", "FIRST-USER.19", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39", "FIRST-USER.A", "FIRST-USER.B", "FIRST-USER.D", "JOURNEYS.situation-1"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Finding Yoke before Yoke is installed",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Before the first installer command",
-   "need": "The terminal user needs the visible install command. An existing agent needs public instructions before any Yoke hook, skill or packet is available.",
-   "disclosure": "planned cue",
-   "surface": "Public install page; proposed homepage agent entry",
-   "gap": "FIRST-USER B plans the homepage route. The complete first-turn fetch → correct install action still needs real-agent proof.",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER B", "FIRST-USER D", "JOURNEYS 1"],
-   "sources": ["docs/public/install.md"]
-  },
-  {
-   "id": "02",
-   "title": "One setup decision at a time",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "At each setup step",
-   "need": "The TUI teaches the human directly. Agent mode must provide a structured question, allowed answers, links and guidance, which the agent translates for the human.",
-   "disclosure": "planned cue",
-   "surface": "Current TUI/noninteractive setup; FIRST-USER A structured agent steps",
-   "gap": "The audited adapter does not yet expose the planned --agent / --answer contract. A noninteractive flag alone is not the proposed context chain.",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER A", "FIRST-USER 8", "FIRST-USER 35", "JOURNEYS 1"],
-   "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py", "docs/public/guides/terminal-onboarding.md"]
-  },
-  {
-   "id": "03",
-   "title": "Authentication, progress and a recoverable finish",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Browser authorization, Apply, failure and completion",
-   "need": "Show what changed, what is waiting for the human, and one continuation. TUI browser actions and agent-returned links/codes are different channels.",
-   "disclosure": "planned cue",
-   "surface": "Setup screens, step results and resume handoff",
-   "gap": "Trace expiration, denial, partial Apply, Back, reinstall leftovers and mode switching. Preserve original intent, project and run identity. A checkout linked to another install's project offers Unlink and set up fresh before Apply.",
-   "review": "The campaign distinguishes an intentional isolated write refusal from complete installation; its corrected contract still needs live rerun proof.",
-   "plan_notes": ["FIRST-USER 1", "FIRST-USER 7", "FIRST-USER 14", "FIRST-USER 17", "FIRST-USER 19", "FIRST-USER 26", "FIRST-USER 37", "FIRST-USER 38", "FIRST-USER 39", "FIRST-USER D"],
-   "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/config/project_onboarding_handoff.py", "docs/testing-verification/installer-campaign.md"]
-  }
- ]
+ "id": "install-entry",
+ "title": "Entering through a terminal or an agent",
+ "status": "draft-copy",
+ "situations": ["A human runs the installer in a terminal", "A human tells an existing agent: install upyoke.com", "Installation stops halfway or changes presentation mode"],
+ "coverage": "traced",
+ "current": "Observed installer campaign baseline: PATH checks passed; the isolated welcome frame displayed the authored identity and uv attempt, then refused its unwritable home. The prior case incorrectly expected successful exit. Full install and live-agent delivery remain unproven.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Can an agent with no Yoke-specific context complete the exact public entry path?", "Does every failure preserve enough context to resume without guessing?"],
+ "related_scenarios": ["universe-choice", "github-choices", "project-adoption", "harness-readiness"],
+ "plan_refs": ["FIRST-USER.1", "FIRST-USER.7", "FIRST-USER.14", "FIRST-USER.17", "FIRST-USER.19", "FIRST-USER.26", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.39", "FIRST-USER.A", "FIRST-USER.B", "FIRST-USER.D", "JOURNEYS.situation-1"]
 }

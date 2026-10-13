@@ -1,0 +1,10 @@
+{
+ "id": "03",
+ "title": "global-native-proposal",
+ "status": "observed",
+ "research": "yoke-teaching-surfaces.json:surfaces[global-native]",
+ "finding": "Independent native startup publisher remains a research proposal; current P4 explicitly adds none.",
+ "authority": "FIRST-USER:519; JOURNEYS:56",
+ "action": "Keep as unapproved idea outside approved delivery; reuse existing orientation/rules without second project block.",
+ "position": 2
+}

@@ -1,0 +1,10 @@
+{
+ "id": "setup-help",
+ "title": "Installed CLI capture: setup-help",
+ "status": "observed",
+ "observed_at": "2026-10-12",
+ "evidence_scope": "Local installed CLI output, captured once.",
+ "lines": 76,
+ "characters": 3755,
+ "position": 15
+}

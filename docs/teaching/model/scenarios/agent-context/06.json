@@ -1,0 +1,15 @@
+{
+ "id": "06",
+ "title": "Write to the user in one or two short sentences",
+ "status": "observed",
+ "audience": "agent",
+ "when": "Every message to the user",
+ "need": "Keep each message to one or two short, literal sentences unless the user asks for more. Describe every number or ID, explain an unfamiliar name once, and ask one decision at a time with a recommendation. Required instructions and recipes stay complete.",
+ "disclosure": "current cue",
+ "surface": "AGENTS.md managed block (Writing to users)",
+ "gap": "Sessions outside any Yoke project do not receive the rule yet; see gap user-writing-outside-projects.",
+ "review": "Pending real-session proof.",
+ "plan_notes": ["FIRST-USER 8"],
+ "sources": ["AGENTS.md"],
+ "position": 5
+}

@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Written files are not proof of context pickup",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Install finish and first native Yoke interaction",
+ "need": "Check native instructions, skills, hooks, session identity and usable permissions in the active harness. Restart/open-folder recovery must preserve the original intent.",
+ "disclosure": "planned cue",
+ "surface": "Readiness check, identity read and orientation delivery",
+ "gap": "FIRST-USER C/D/E must prove live pickup, not file presence. Accepted scope is the active harness only; GitHub checks are N/A when skipped.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke sessions identity"],
+ "plan_notes": ["FIRST-USER C", "FIRST-USER D", "FIRST-USER E", "FIRST-USER 6", "FIRST-USER 23", "JOURNEYS 3"],
+ "sources": ["docs/public/reference/harness-discovery.md", "packages/yoke-core/src/yoke_core/domain/session_orientation_delivery.py"],
+ "position": 0
+}

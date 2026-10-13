@@ -1,0 +1,7 @@
+{
+ "id": "03",
+ "title": "active-harness-shorthand",
+ "status": "observed",
+ "detail": "Situation 3 says CLIs signed in; FIRST-USER C explicitly makes only active harness block readiness.",
+ "position": 2
+}

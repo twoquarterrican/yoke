@@ -1,0 +1,10 @@
+{
+ "id": "desired-02",
+ "title": "Present relevant scoped setup facts and the next complete action, not the whole catalog.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["projects/onboarding", "context/disclosure"],
+ "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"],
+ "position": 5
+}

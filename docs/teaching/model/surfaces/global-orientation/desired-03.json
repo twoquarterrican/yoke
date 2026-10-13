@@ -1,0 +1,10 @@
+{
+ "id": "desired-03",
+ "title": "Coordinate across accessible projects when useful; preserve message trust and connection authority.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["projects/identity", "messaging/messages", "universes/authority"],
+ "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"],
+ "position": 8
+}

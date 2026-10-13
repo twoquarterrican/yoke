@@ -1,0 +1,10 @@
+{
+ "id": "03",
+ "title": "Recover evidence and unfinished work; recheck facts that can change during absence.",
+ "status": "draft-copy",
+ "form": "State",
+ "verification": "No delivery proof attached.",
+ "topics": ["qa-evidence/artifacts", "deployments/runs", "planning/dependencies"],
+ "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"],
+ "position": 2
+}

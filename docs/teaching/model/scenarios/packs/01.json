@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Find the available and installed choices",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Before proposing new reusable implementation or selecting an Onboard profile",
+ "need": "Use the project-scoped catalog; distinguish available, installed and stale. Read dependencies, tool prerequisites, source catalog and installed version.",
+ "disclosure": "current cue",
+ "surface": "Docs sidebar -> Projects -> Packs; Onboard profile -> yoke packs list; documented workbench Packs page.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke packs list --project P --json", "yoke packs get --help"],
+ "plan_notes": ["JOURNEYS row 12", "outside both"],
+ "sources": ["docs/public/nav.yaml", "docs/public/projects.md", ".agents/skills/yoke/onboard/profile-and-scaffold.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py"],
+ "position": 0
+}

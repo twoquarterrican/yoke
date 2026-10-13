@@ -1,0 +1,15 @@
+{
+ "id": "04",
+ "title": "Defer without pretending readiness",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Known model lacks stack/coordinates or user keeps external schema ownership",
+ "need": "Record known facts and missing coordinates for attach-later; do not write a placeholder capability. No-governance keeps item DB claims at none. A failed write stops with the exact validator requirement.",
+ "disclosure": "current cue",
+ "surface": "governed-database attach-later, no-governance and failure branches.",
+ "gap": "Future timing must reopen a deferred choice when the missing facts exist, while respecting a settled no-governance answer.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["JOURNEYS slimming onboard", "outside both"],
+ "sources": [".agents/skills/yoke/onboard/governed-database.md"],
+ "position": 3
+}

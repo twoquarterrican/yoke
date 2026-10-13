@@ -1,0 +1,10 @@
+{
+ "id": "04",
+ "title": "research-not-complete",
+ "status": "observed",
+ "research": "yoke-teaching-surfaces.json:coverage,edges",
+ "finding": "Retains 1454 topics but only 277 proposed edges across 109 topics; no descendant inference.",
+ "authority": "FIRST-USER:152,157,546; JOURNEYS:64",
+ "action": "Mark uncovered teaching explicitly. Existence of topic, command or parent link is not useful recipe/delivery/proof.",
+ "position": 3
+}

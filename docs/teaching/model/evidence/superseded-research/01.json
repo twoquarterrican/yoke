@@ -1,0 +1,10 @@
+{
+ "id": "01",
+ "title": "missing-new-plan-entries",
+ "status": "observed",
+ "research": "yoke-knowledge-map-data.json:plans[FIRST-USER]",
+ "finding": "Old register lacks 0 and 40-43; its 24/D wording stops short of the now-approved first-item-done path.",
+ "authority": "FIRST-USER:150-157,320-329,445-463,543-570",
+ "action": "Import all new entries and current clauses; retain older mapping as provenance, not current scope.",
+ "position": 0
+}

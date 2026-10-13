@@ -1,0 +1,9 @@
+{
+ "id": "lifecycle",
+ "title": "Session lifecycle",
+ "status": "draft-copy",
+ "commands": ["yoke session-control keepalive hold", "yoke session-control keepalive release", "yoke session-control session terminate", "yoke session-control session wake", "yoke sessions begin", "yoke sessions create", "yoke sessions end-if-empty", "yoke sessions keepalive hold", "yoke sessions keepalive release", "yoke sessions reclaim-stale", "yoke sessions terminate", "yoke sessions touch"],
+ "functions": ["session_control.keepalive.hold", "session_control.keepalive.release", "session_control.relay.claim", "session_control.relay.idle_hosts", "session_control.relay.list", "session_control.relay.liveness", "session_control.relay.report", "session_control.relay.turn_end", "session_control.session.terminate", "session_control.session.wake", "sessions.begin", "sessions.end_if_empty", "sessions.reclaim_stale", "sessions.touch"],
+ "page": "sessions",
+ "position": 1
+}

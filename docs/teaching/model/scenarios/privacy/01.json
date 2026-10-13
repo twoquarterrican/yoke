@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Know who decides local-machine access",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "A privacy guard result appears",
+ "need": "System privacy database reads are refused by Yoke; broad home discovery is advisory. Personal-folder reads and GUI automation remain subject to harness permissions and OS controls. Automated-test isolation is stricter than live policy.",
+ "disclosure": "current cue",
+ "surface": "Local privacy guard diagnosis names authority and a recovery step.",
+ "gap": "The refusal teaching is concrete; proactive human help entry and end-to-end delivery outside project context were not traced.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER P3", "FIRST-USER item 34"],
+ "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/local_privacy_messages.py", "packages/yoke-contracts/src/yoke_contracts/hook_runner/local_privacy_guard.py"],
+ "position": 0
+}

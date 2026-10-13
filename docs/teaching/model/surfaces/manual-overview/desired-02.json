@@ -1,0 +1,10 @@
+{
+ "id": "desired-02",
+ "title": "Orient readers to modes, projects, work, agents, verification and delivery with concise child summaries.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["modes", "projects", "items", "agents", "qa-methods", "deployments"],
+ "plan_refs": ["FIRST-USER.40"],
+ "position": 7
+}

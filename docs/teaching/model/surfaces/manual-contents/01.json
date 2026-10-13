@@ -1,0 +1,10 @@
+{
+ "id": "01",
+ "title": "Every agreed topic and subtopic, each with one primary home and intentional cross-links.",
+ "status": "draft-copy",
+ "form": "Link",
+ "verification": "No delivery proof attached.",
+ "topics": ["documentation/cascade"],
+ "plan_refs": ["FIRST-USER.40"],
+ "position": 0
+}

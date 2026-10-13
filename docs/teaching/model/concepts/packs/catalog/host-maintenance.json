@@ -1,0 +1,8 @@
+{
+ "id": "host-maintenance",
+ "title": "Host Maintenance",
+ "status": "draft-copy",
+ "sources": ["packs/host-maintenance/pack.json"],
+ "page": "packs",
+ "position": 4
+}

@@ -1,0 +1,7 @@
+{
+ "id": "03",
+ "title": "approval-is-not-current",
+ "status": "observed",
+ "check": "Record current evidence, candidate changes, approved intent and unapproved ideas separately. JOURNEYS is desired direction with execution deferred; research retention is not approval.",
+ "position": 2
+}

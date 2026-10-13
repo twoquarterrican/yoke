@@ -1,0 +1,9 @@
+{
+ "id": "verdicts",
+ "title": "Verdicts and reviews",
+ "status": "draft-copy",
+ "commands": ["yoke qa plan review-submit", "yoke qa run complete", "yoke qa run record-verdict"],
+ "functions": ["qa.plan_review.begin", "qa.plan_review.submit", "qa.run.complete", "qa.run.record_verdict"],
+ "page": "qa-evidence",
+ "position": 2
+}

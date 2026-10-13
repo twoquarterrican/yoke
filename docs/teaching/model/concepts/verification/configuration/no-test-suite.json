@@ -1,0 +1,9 @@
+{
+ "id": "no-test-suite",
+ "title": "No test suite",
+ "status": "draft-copy",
+ "commands": ["yoke qa no-tests attest", "yoke qa no-tests clear"],
+ "functions": ["qa.no_tests.attest", "qa.no_tests.clear"],
+ "page": "verification",
+ "position": 2
+}

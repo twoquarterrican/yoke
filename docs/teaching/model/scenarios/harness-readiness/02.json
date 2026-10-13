@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "New harnesses and different substrates",
+ "status": "observed",
+ "audience": "both",
+ "when": "Later harness install, upgrade or unsupported operation",
+ "need": "Install/repair only relevant native integration. Capability truth is the manifest for the installed release; do not assume every harness supports the same loading or wake behavior.",
+ "disclosure": "current cue",
+ "surface": "Harness reconcile and release-matched manifest",
+ "gap": "Managed release manifests are published at .yoke/harness/<harness>/manifest.json. Automated install/refresh and byte identity are covered; real receiving-harness proof waits for release.",
+ "review": "runtime/api/domain/test_installed_project_context.py proves external HTTPS transport install and manifest recovery; capability declarations and live pickup remain separate.",
+ "plan_notes": ["FIRST-USER 18", "FIRST-USER D"],
+ "sources": ["docs/public/reference/harness-discovery.md", "runtime/harness/manifest-schema.md"],
+ "position": 1
+}

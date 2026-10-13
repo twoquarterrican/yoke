@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Retirement differs from disconnecting a shell",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Removing a machine from the usable fleet",
+ "need": "Inspect the machine and ownership before retirement; understand retained history and affected credentials/capacity. Read operation help rather than assuming uninstall or stopping a relay retires the registry row.",
+ "disclosure": "audit needed",
+ "surface": "Machine list/show/detail/retire registered adapter; deeper end-to-end retirement not traced.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke machine show MACHINE-ID", "yoke machine retire --help"],
+ "plan_notes": ["outside both"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/machine.py", "packages/yoke-cli/src/yoke_cli/commands/adapters/machine_uninstall.py"],
+ "position": 2
+}

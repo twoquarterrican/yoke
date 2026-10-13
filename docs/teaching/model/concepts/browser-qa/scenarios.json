@@ -1,0 +1,8 @@
+{
+ "id": "scenarios",
+ "title": "Browser scenarios",
+ "status": "draft-copy",
+ "commands": ["yoke qa browser screenshot", "yoke qa browser step"],
+ "page": "browser-qa",
+ "position": 1
+}

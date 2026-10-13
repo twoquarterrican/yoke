@@ -1,0 +1,9 @@
+{
+ "id": "hosted-qa-artifact-broker",
+ "title": "Hosted QA artifact broker",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "private_sources": ["platform"],
+ "page": "cloud-operations-services",
+ "position": 8
+}

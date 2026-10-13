@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Discover restore before destructive reinstall",
+ "status": "draft-copy",
+ "audience": "human",
+ "when": "Switching deployment mode or reinstalling over old state",
+ "need": "Offer a supported start-from-backup path before the user discards their only work. Distinguish the Yoke universe archive from project repository files, external services and machine-local secrets.",
+ "disclosure": "planned cue",
+ "surface": "FIRST-USER item 9 adds backup adoption to setup; current install documentation teaches uninstall/export.",
+ "gap": "Full archive content coverage, restore qualification and hosted/self-host UI paths were not inspected here; do not claim external project resources are backed up.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER item 9", "FIRST-USER item 1", "FIRST-USER D"],
+ "sources": ["docs/public/install.md", "packages/yoke-core/src/yoke_core/domain/universe_export.py"],
+ "position": 2
+}

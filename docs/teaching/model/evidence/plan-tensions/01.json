@@ -1,0 +1,7 @@
+{
+ "id": "01",
+ "title": "dedup-status",
+ "status": "observed",
+ "detail": "Entry 2/Wave 1 still carries stronger matching; entry 10 explicitly defers stronger duplicate detection. Preserve both clauses and deferral marker; do not silently choose or reopen execution.",
+ "position": 0
+}

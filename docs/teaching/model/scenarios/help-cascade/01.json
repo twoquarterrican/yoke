@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Summary → category overview → article → precise operation",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Proactive pointer, help request or browsing public docs",
+ "need": "Give each level a short explanation, scope and links down and back up. A person should be able to find the right concept without knowing the command name first.",
+ "disclosure": "missing cue",
+ "surface": "Public overview/index, category summaries and article breadcrumbs",
+ "gap": "The cascade is the proposed navigation principle; category boundaries remain open. Current Help’s bare README pointer needs the accepted installed-doc repair.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke --help", "yoke <operation> --help"],
+ "plan_notes": ["FIRST-USER accepted guidance-access amendment", "JOURNEYS principles 2–4"],
+ "sources": ["docs/public/index.md", "docs/public/reference/commands.md", ".agents/skills/yoke/help/SKILL.md"],
+ "position": 0
+}

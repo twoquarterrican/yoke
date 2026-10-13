@@ -1,0 +1,8 @@
+{
+ "id": "separate-listener-and-trust-boundary",
+ "title": "Separate listener and trust boundary",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "page": "cloud-operations-services",
+ "position": 2
+}

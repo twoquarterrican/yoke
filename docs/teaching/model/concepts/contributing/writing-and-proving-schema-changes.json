@@ -1,0 +1,10 @@
+{
+ "id": "writing-and-proving-schema-changes",
+ "title": "Writing and proving schema changes",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/source-dev-doctrine.md", "runtime/agents/engineer/migration-protocol.md", "docs/public/databases-and-migrations.md", "docs/public/operator-data-repair.md"],
+ "private_sources": ["platform"],
+ "page": "contributing-guides",
+ "position": 6
+}

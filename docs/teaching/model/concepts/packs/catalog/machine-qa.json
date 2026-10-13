@@ -1,0 +1,8 @@
+{
+ "id": "machine-qa",
+ "title": "Machine QA",
+ "status": "draft-copy",
+ "sources": ["packs/machine-qa/pack.json"],
+ "page": "packs",
+ "position": 5
+}

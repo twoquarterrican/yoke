@@ -1,0 +1,9 @@
+{
+ "id": "performance",
+ "title": "Performance",
+ "status": "draft-copy",
+ "commands": ["yoke events performance aggregate", "yoke events performance detail", "yoke hook benchmark", "yoke sessions hook-overhead"],
+ "functions": ["events.performance.aggregate", "events.performance.detail", "sessions.hook_overhead"],
+ "page": "observability",
+ "position": 2
+}

@@ -1,0 +1,9 @@
+{
+ "id": "harness-lifecycle-and-session-identity",
+ "title": "Harness lifecycle and session identity",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/harness-substrate.md", "docs/session-identity-contract.md", "docs/session-identity-contract/process-anchor-registry.md", "docs/agents.md"],
+ "page": "runtime-execution",
+ "position": 8
+}

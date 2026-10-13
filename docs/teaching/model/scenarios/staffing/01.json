@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Choose the staffing entrypoint",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "The user wants work staffed from a plan rather than one foreground task",
+ "need": "Steer holds scope and staffs; Charge selects runnable frontier work. A steering session does not implement. Learn the current pinned next skill from the live item rather than a remembered chain.",
+ "disclosure": "current cue",
+ "surface": "Docs index/session loop -> Steer skill -> scope and continuous-pass homes.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke workflows item get PREFIX-N", "yoke steering report get"],
+ "plan_notes": ["JOURNEYS row 11", "JOURNEYS row 7"],
+ "sources": ["docs/public/index.md", "docs/public/operating-with-agents.md", ".agents/skills/yoke/steer/SKILL.md"],
+ "position": 0
+}

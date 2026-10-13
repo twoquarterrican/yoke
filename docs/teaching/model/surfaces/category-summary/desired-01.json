@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Cover every immediate child in a short summary; show parent and child routes.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["documentation/cascade"],
+ "plan_refs": ["FIRST-USER.40"],
+ "position": 4
+}

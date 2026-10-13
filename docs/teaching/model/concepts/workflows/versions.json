@@ -1,0 +1,9 @@
+{
+ "id": "versions",
+ "title": "Versions and pins",
+ "status": "draft-copy",
+ "commands": ["yoke workflows canon-follow set", "yoke workflows canon-status list", "yoke workflows canon-update apply", "yoke workflows canon-update apply-all", "yoke workflows canon-update preview", "yoke workflows current set", "yoke workflows version get", "yoke workflows version list", "yoke workflows version publish"],
+ "functions": ["workflows.canon.get", "workflows.canon_follow.set", "workflows.canon_status.list", "workflows.canon_update.apply", "workflows.canon_update.apply_all", "workflows.canon_update.preview", "workflows.current.set", "workflows.version.get", "workflows.version.list", "workflows.version.publish"],
+ "page": "workflows",
+ "position": 3
+}

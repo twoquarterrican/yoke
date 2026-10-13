@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Prepare only the browser substrate needed",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Before the first local Browser case or headed sign-in",
+ "need": "Use the packaged browser runtime; Linux setup checks system libraries and names missing privilege/dependency recovery. A browser daemon belongs to its project/identity profile; local captures need no Test Machine lease.",
+ "disclosure": "current cue",
+ "surface": "Public QA lines 215–226 and Machine QA README local-capture section.",
+ "gap": "The row 13 pointer should distinguish local runtime repair from host provisioning and from account sign-in.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa browser setup --help"],
+ "plan_notes": ["JOURNEYS row 13"],
+ "sources": ["docs/public/qa.md", "packs/machine-qa/versions/1.3.20/files/docs/packs/machine-qa/README.md"],
+ "position": 0
+}

@@ -1,57 +1,10 @@
 {
- "scenario": {
-  "id": "capabilities",
-  "title": "Capabilities, settings and secrets",
-  "status": "draft-copy",
-  "situations": ["A feature refuses because its project capability is absent.", "An operator needs to change one setting or add a credential.", "A dashboard inventory appears configured but the underlying service is not ready."],
-  "coverage": "partial",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Which capability refusals already point to their exact setup guide and which only name a capability type?", "How are credential materialization and credential readiness verified for each capability outside Onboard?"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Inventory is not setup or verification",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Choosing a capability or investigating a capability refusal",
-   "need": "Read the live project capability roster, then its typed settings and feature-specific setup/probe. The Capabilities page is a readiness inventory, not a setup wizard.",
-   "disclosure": "current cue",
-   "surface": "Docs sidebar -> Capabilities -> capability-settings help; project capability roster.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke projects capabilities list --project P --json", "yoke projects capability-settings get --help"],
-   "plan_notes": ["JOURNEYS rows 12-13"],
-   "sources": ["docs/public/nav.yaml", "docs/public/capabilities.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/projects_capabilities_read.py"]
-  },
-  {
-   "id": "02",
-   "title": "Choose non-secret settings or secret storage",
-   "status": "draft-copy",
-   "audience": "agent",
-   "when": "Before adding or changing provider configuration",
-   "need": "Non-sensitive capability settings are a JSON document; secrets use the capability-owned secret surface. Read before CAS replacement; use merge for one path; never print secret values.",
-   "disclosure": "current cue",
-   "surface": "Capabilities guide -> setting help; mistaken scalar settings flags return the correct merge/read/secret recipes.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke projects capability-settings get --project P --cap-type TYPE", "yoke projects capability-settings set --help", "yoke projects capability-settings merge --help", "yoke projects capability secret set --help"],
-   "plan_notes": ["outside both"],
-   "sources": ["docs/public/capabilities.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/projects_capability_settings.py", "docs/public/reference/agent-rules/delivery.md"]
-  },
-  {
-   "id": "03",
-   "title": "Find the right configuration owner",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "A value could belong to a Pack, project, environment, machine or universe",
-   "need": "Separate install-time Pack specialization, live project capability settings, environment settings, machine connections and universe settings. Use the owning registered read/help, not raw config inspection.",
-   "disclosure": "audit needed",
-   "surface": "Projects and Capabilities guides explain parts; CLI and config covers the machine/universe boundary.",
-   "gap": "No complete scenario-to-owner path was traced for arbitrary feature settings. Do not claim a generic settings UI or validator exists for every capability.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke projects capability-settings get --help", "yoke project-structure get --help", "yoke status"],
-   "plan_notes": ["outside both"],
-   "sources": ["docs/public/projects.md", "docs/public/capabilities.md", "docs/public/cli-and-config.md", "packages/yoke-core/src/yoke_core/domain/project_structure.py"]
-  }
- ]
+ "id": "capabilities",
+ "title": "Capabilities, settings and secrets",
+ "status": "draft-copy",
+ "situations": ["A feature refuses because its project capability is absent.", "An operator needs to change one setting or add a credential.", "A dashboard inventory appears configured but the underlying service is not ready."],
+ "coverage": "partial",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Which capability refusals already point to their exact setup guide and which only name a capability type?", "How are credential materialization and credential readiness verified for each capability outside Onboard?"]
 }

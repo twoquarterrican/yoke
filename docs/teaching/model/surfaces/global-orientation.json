@@ -1,110 +1,16 @@
 {
- "surface": {
-  "id": "global-orientation",
-  "title": "Global orientation",
-  "status": "approved",
-  "scope": "Global",
-  "audience": "Agent → human when useful",
-  "encounter": "First supported context event",
-  "location": "Global hooks + planned yoke-global guidance",
-  "basis": "FIRST-USER planned",
-  "note": "No compulsory GitHub connection or repeated onboarding pitch. The same global baseline remains applicable inside a project, without duplicate delivery.",
-  "current": "Existing source references; delivered content is not yet proved.",
-  "desired": "One bounded orientation plus yoke-global; select/add a project, then open a session in its folder.",
-  "plan_notes": ["FIRST-USER P1–P4", "JOURNEYS 4–8/14"],
-  "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"],
-  "sources": ["packages/yoke-core/src/yoke_core/domain/session_orientation.py:268", "packages/yoke-harness/src/yoke_harness/hooks/cursor_lifecycle_hooks.py:34", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139", "packages/yoke-core/src/yoke_core/domain/main_agent_packet.py", "packages/yoke-contracts/src/yoke_contracts/connection_authority_teaching.py", "packages/yoke-contracts/src/yoke_contracts/session_control/teaching.py"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "Which person, machine, universe and connection this session uses; readiness or an honest unknown.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["identity/actors", "machines/registration", "universes/connections"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "02",
-   "title": "Whether a Yoke project is selected; a relevant project or cross-project status only when useful.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["projects/identity", "sessions/identity", "frontier/frontier"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "03",
-   "title": "Choose an existing project, add an existing folder, create a project, or continue globally.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["projects/adoption", "projects/onboarding"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "04",
-   "title": "Local mode has reachability limits. Explain those only when another computer or remote work makes them relevant.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["modes/local", "modes/cloud", "modes/self-hosted"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "05",
-   "title": "One useful next action, plus machine-reachable help. Carry the user’s intent into a session bound to the selected project.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["context/disclosure", "agents/skills", "sessions/identity"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "06",
-   "title": "Deliver the shared connection-authority and message-trust core before action or message handling; do not rely on an optional deeper read.",
-   "status": "draft-copy",
-   "form": "Rule",
-   "verification": "No delivery proof attached.",
-   "topics": ["universes/authority", "security/boundaries", "messaging/messages"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Yoke is installed. State this session’s scope and one useful next action.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["basics/model", "sessions/identity", "context/startup"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-02",
-   "title": "Use yoke-global to choose or add a project; open a session in its actual folder for item work.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["projects/adoption", "agents/skills"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Coordinate across accessible projects when useful; preserve message trust and connection authority.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["projects/identity", "messaging/messages", "universes/authority"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-04",
-   "title": "Report relevant machine readiness or recovery and an accessible deeper help route.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["installation/readiness", "machines/inspection", "reference/commands"],
-   "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"]
-  }
- ]
+ "id": "global-orientation",
+ "title": "Global orientation",
+ "status": "approved",
+ "scope": "Global",
+ "audience": "Agent → human when useful",
+ "encounter": "First supported context event",
+ "location": "Global hooks + planned yoke-global guidance",
+ "basis": "FIRST-USER planned",
+ "note": "No compulsory GitHub connection or repeated onboarding pitch. The same global baseline remains applicable inside a project, without duplicate delivery.",
+ "current": "Existing source references; delivered content is not yet proved.",
+ "desired": "One bounded orientation plus yoke-global; select/add a project, then open a session in its folder.",
+ "plan_notes": ["FIRST-USER P1–P4", "JOURNEYS 4–8/14"],
+ "plan_refs": ["FIRST-USER.P1", "FIRST-USER.P2", "FIRST-USER.P4", "FIRST-USER.43"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/session_orientation.py:268", "packages/yoke-harness/src/yoke_harness/hooks/cursor_lifecycle_hooks.py:34", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139", "packages/yoke-core/src/yoke_core/domain/main_agent_packet.py", "packages/yoke-contracts/src/yoke_contracts/connection_authority_teaching.py", "packages/yoke-contracts/src/yoke_contracts/session_control/teaching.py"]
 }

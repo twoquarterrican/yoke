@@ -1,0 +1,16 @@
+{
+ "id": "03",
+ "title": "Gather and verify project-owned facts",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "User chooses a supported model now",
+ "need": "Read exact authoritative location, separate validation target/provisioning, migration directory, connection variable and membership/digest/serving-floor ledger. Write the complete capability through the registered surface and read back. Onboarding neither applies nor rehearses migrations.",
+ "disclosure": "current cue",
+ "surface": "governed-database lines 25–34 and 57–68; deep capability contract.",
+ "gap": "Postgres declaration is taught through a reference still heavy with Yoke source-dev examples; add a complete external-project route without copying Yoke defaults or exposing control-plane credentials.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke projects capability-settings get --project P --cap-type migration_model --json", "yoke migration rehearse --help"],
+ "plan_notes": ["JOURNEYS slimming onboard", "outside both"],
+ "sources": [".agents/skills/yoke/onboard/governed-database.md", "docs/public/reference/db-reference/migration-model-capabilities.md"],
+ "position": 2
+}

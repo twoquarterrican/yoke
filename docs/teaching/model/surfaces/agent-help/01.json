@@ -1,0 +1,10 @@
+{
+ "id": "01",
+ "title": "Interpret the person’s request and explain only the unfamiliar concept needed for it.",
+ "status": "draft-copy",
+ "form": "Teach",
+ "verification": "No delivery proof attached.",
+ "topics": ["basics/surfaces", "documentation/disclosure"],
+ "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"],
+ "position": 0
+}

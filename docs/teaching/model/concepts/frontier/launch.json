@@ -1,0 +1,9 @@
+{
+ "id": "launch",
+ "title": "Worker launch",
+ "status": "draft-copy",
+ "commands": ["yoke session-control launch create", "yoke session-control launch get", "yoke session-control launch list", "yoke session-control launch preview"],
+ "functions": ["session_control.launch.create", "session_control.launch.get", "session_control.launch.list", "session_control.launch.preview"],
+ "page": "frontier",
+ "position": 3
+}

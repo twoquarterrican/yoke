@@ -1,0 +1,9 @@
+{
+ "id": "runners",
+ "title": "CI runner fleet",
+ "status": "draft-copy",
+ "commands": ["yoke github-actions runners status", "yoke runner-fleet exec"],
+ "functions": ["github_actions.runners.status"],
+ "page": "infrastructure",
+ "position": 3
+}

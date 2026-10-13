@@ -1,0 +1,8 @@
+{
+ "id": "task",
+ "title": "Task",
+ "status": "draft-copy",
+ "commands": ["yoke task"],
+ "page": "workflows",
+ "position": 4
+}

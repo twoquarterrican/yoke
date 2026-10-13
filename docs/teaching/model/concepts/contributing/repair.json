@@ -1,0 +1,10 @@
+{
+ "id": "repair",
+ "title": "Exceptional repair",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "commands": ["yoke lifecycle repair-status", "yoke operator data-repair"],
+ "functions": ["lifecycle.repair_status.execute", "operator.data_repair.run"],
+ "page": "contributing",
+ "position": 4
+}

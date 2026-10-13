@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Keep continuity separate from chat memory",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Wrapping up, resuming or recovering after compaction",
+ "need": "Use item Progress Log as a current-state checkpoint with evidence links; re-read the current phase and durable artifacts. Wrapup records observations/unfinished work. A UI preference or old transcript is not authoritative work state.",
+ "disclosure": "current cue",
+ "surface": "Wrapup router -> survey/record phases; AGENTS compaction instruction; public learning page.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke items get PREFIX-N"],
+ "plan_notes": ["FIRST-USER item 24", "outside both"],
+ "sources": [".agents/skills/yoke/wrapup/SKILL.md", ".agents/skills/yoke/wrapup/record-and-close.md", "AGENTS.md", "docs/public/events-doctor-ouroboros.md"],
+ "position": 2
+}

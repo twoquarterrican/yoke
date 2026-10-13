@@ -1,0 +1,9 @@
+{
+ "id": "universe",
+ "title": "Universe identity",
+ "status": "draft-copy",
+ "commands": ["yoke organizations settings get", "yoke organizations settings merge"],
+ "functions": ["organizations.settings.catalog", "organizations.settings.get", "organizations.settings.merge"],
+ "page": "universes",
+ "position": 0
+}

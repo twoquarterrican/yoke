@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Issue mirroring stays quietly off in the TUI",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "No TUI question; agent-led explanation only when relevant",
+ "need": "GitHub issue synchronization is another independent setting. The interactive installer silently leaves it off; it can be changed later. In agent-led setup, explain the effect and ask before enabling issue sync.",
+ "disclosure": "planned cue",
+ "surface": "Accepted review amendment to FIRST-USER 10",
+ "gap": "The saved plan still contains the older TUI question. This map applies the accepted conversation correction; stronger dedup work remains deliberately deferred.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 10", "FIRST-USER 2"],
+ "sources": ["docs/public/reference/github-sync.md"],
+ "position": 3
+}

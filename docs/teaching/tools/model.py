@@ -14,8 +14,13 @@ from pathlib import Path
 TEACHING_ROOT = Path(__file__).resolve().parents[1]
 MODEL_ROOT = TEACHING_ROOT / "model"
 STATUSES = (
-    "observed", "verified-live", "candidate", "approved",
-    "deferred", "draft-copy", "superseded",
+    "observed",
+    "verified-live",
+    "candidate",
+    "approved",
+    "deferred",
+    "draft-copy",
+    "superseded",
 )
 PLAN_MAPPING_KEYS = ("concepts", "surfaces", "scenarios", "boundaries", "gaps")
 REBUILD = "yoke dev run -- python3 docs/teaching/tools/build.py"
@@ -87,106 +92,112 @@ def _read(model: Model, path: Path):
         return None
 
 
-def _register(model: Model, table: dict, record_id: str, record: dict,
-              where: str) -> None:
+def _register(
+    model: Model, table: dict, record_id: str, record: dict, where: str
+) -> None:
     if record_id in table:
         model.problem("DUPLICATE_ID", where, f"id {record_id!r} is defined twice")
     record["file"] = where
     table[record_id] = record
 
 
+def _records(model: Model, directory: Path):
+    records = []
+    for path in sorted(directory.glob("*.json")):
+        data = _read(model, path)
+        if data is None:
+            continue
+        if not isinstance(data, dict) or data.get("id") != path.stem:
+            model.problem(
+                "MODEL_RECORD_ID",
+                relative(path),
+                "store one record whose id matches the filename",
+            )
+            continue
+        records.append((path, data))
+    return sorted(records, key=lambda pair: pair[1].get("position", 0))
+
+
 def load() -> Model:
     model = Model()
-    concept_files = [(path, _read(model, path))
-                     for path in sorted((MODEL_ROOT / "concepts").glob("*.json"))]
-    concept_files.sort(key=lambda pair: (pair[1] or {}).get("parent") is not None)
-    for path, data in concept_files:
-        if data is not None:
-            _load_concept_file(model, path, data)
-    for path in sorted((MODEL_ROOT / "surfaces").glob("*.json")):
-        data = _read(model, path)
-        if data is not None:
-            _load_owned(model, path, data, "surface", "teaching")
-    for path in sorted((MODEL_ROOT / "scenarios").glob("*.json")):
-        data = _read(model, path)
-        if data is not None:
-            _load_owned(model, path, data, "scenario", "lessons")
-    for path in sorted((MODEL_ROOT / "plan").glob("*.json")):
-        data = _read(model, path)
-        if data is not None:
-            data["stem"] = path.stem
-            model.plan_files.append(data)
-            for row in data.get("rows", []):
-                _register(model, model.plan_rows, row["id"], row, relative(path))
-    for path in sorted((MODEL_ROOT / "evidence").glob("*.json")):
-        data = _read(model, path)
-        if data is not None:
-            data["stem"] = path.stem
-            model.evidence_files.append(data)
-            for record in data.get("records", []):
-                _register(model, model.evidence, f"{path.stem}/{record['id']}",
-                          record, relative(path))
-    for name, table in (("boundaries", model.boundaries), ("gaps", model.gaps)):
-        data = _read(model, MODEL_ROOT / f"{name}.json")
-        for record in (data or {}).get("records", []):
-            _register(model, table, record["id"], record,
-                      relative(MODEL_ROOT / f"{name}.json"))
+    concept_root = MODEL_ROOT / "concepts"
+    directories = sorted(
+        [concept_root, *[p for p in concept_root.rglob("*") if p.is_dir()]],
+        key=lambda p: (len(p.parts), p.as_posix()),
+    )
+    pages = {}
+    for directory in directories:
+        parent = directory.relative_to(concept_root).as_posix()
+        parent = None if parent == "." else parent
+        for path, record in _records(model, directory):
+            full = f"{parent}/{record['id']}" if parent else record["id"]
+            page = record.get("page", full.split("/")[0])
+            record.update(full_id=full, parent=parent, page=page, children=[])
+            _register(model, model.concepts, full, record, relative(path))
+            if parent is not None:
+                if parent not in model.concepts:
+                    model.problem(
+                        "DANGLING_PARENT",
+                        relative(path),
+                        f"parent {parent!r} is missing; add its record",
+                    )
+                    continue
+                model.concepts[parent]["children"].append(full)
+            if parent is None or model.concepts[parent]["page"] != page:
+                entry = pages.setdefault(
+                    page, {"stem": page, "parent": parent, "roots": []}
+                )
+                entry["roots"].append(full)
+    model.concept_files = sorted(
+        pages.values(), key=lambda p: (p["parent"] is not None, p["stem"])
+    )
+    for kind, owners, parts in (
+        ("surfaces", model.surfaces, model.teaching),
+        ("scenarios", model.scenarios, model.lessons),
+    ):
+        for path, owner in _records(model, MODEL_ROOT / kind):
+            owner.update(page=path.stem, parts=[])
+            _register(model, owners, owner["id"], owner, relative(path))
+            for child_path, record in _records(model, path.with_suffix("")):
+                full = f"{owner['id']}/{record['id']}"
+                record.update(full_id=full, owner=owner["id"], page=path.stem)
+                _register(model, parts, full, record, relative(child_path))
+                owner["parts"].append(full)
+    for kind, groups, table, part in (
+        ("plan", model.plan_files, model.plan_rows, "rows"),
+        ("evidence", model.evidence_files, model.evidence, "records"),
+    ):
+        for path, group in _records(model, MODEL_ROOT / kind):
+            group.update(stem=path.stem)
+            groups.append(group)
+            group[part] = []
+            for child_path, record in _records(model, path.with_suffix("")):
+                record["page"] = path.stem
+                record_id = (
+                    f"{path.stem}/{record['id']}"
+                    if kind == "evidence"
+                    else record["id"]
+                )
+                _register(model, table, record_id, record, relative(child_path))
+                group[part].append(record)
+    for kind, table in (("boundaries", model.boundaries), ("gaps", model.gaps)):
+        for path, record in _records(model, MODEL_ROOT / kind):
+            _register(model, table, record["id"], record, relative(path))
     model.docs_graph = _read(model, MODEL_ROOT / "docs-graph.json") or {}
     return model
-
-
-def _load_concept_file(model: Model, path: Path, data: dict) -> None:
-    parent = data.get("parent")
-    where = relative(path)
-    model.concept_files.append({"stem": path.stem, "parent": parent,
-                                "roots": []})
-    if parent is not None and parent not in model.concepts:
-        model.problem("DANGLING_PARENT", where,
-                      f"parent concept {parent!r} must load first; "
-                      "name the file after its branch")
-        return
-    for node in data.get("nodes", []):
-        full = _add_concept(model, node, parent, path.stem, where)
-        model.concept_files[-1]["roots"].append(full)
-
-
-def _add_concept(model: Model, node: dict, parent, stem: str,
-                 where: str) -> str:
-    full = node["id"] if parent is None else f"{parent}/{node['id']}"
-    children = node.get("children", [])
-    record = {k: v for k, v in node.items() if k != "children"}
-    record.update(full_id=full, parent=parent, page=stem, children=[])
-    _register(model, model.concepts, full, record, where)
-    if parent is not None:
-        model.concepts[parent]["children"].append(full)
-    for child in children:
-        _add_concept(model, child, full, stem, where)
-    return full
-
-
-def _load_owned(model: Model, path: Path, data: dict, kind: str,
-                part: str) -> None:
-    owner = data.get(kind, {})
-    where = relative(path)
-    owner_table = model.surfaces if kind == "surface" else model.scenarios
-    part_table = model.teaching if kind == "surface" else model.lessons
-    owner["page"] = path.stem
-    _register(model, owner_table, owner.get("id", path.stem), owner, where)
-    owner["parts"] = []
-    for record in data.get(part, []):
-        full = f"{owner['id']}/{record['id']}"
-        record.update(full_id=full, owner=owner["id"], page=path.stem)
-        _register(model, part_table, full, record, where)
-        owner["parts"].append(full)
 
 
 def all_records(model: Model):
     """Yield ``(kind, id, record)`` for every record that carries a status."""
     for kind, table in (
-        ("concept", model.concepts), ("surface", model.surfaces),
-        ("teaching", model.teaching), ("scenario", model.scenarios),
-        ("lesson", model.lessons), ("plan", model.plan_rows),
-        ("boundary", model.boundaries), ("gap", model.gaps),
+        ("concept", model.concepts),
+        ("surface", model.surfaces),
+        ("teaching", model.teaching),
+        ("scenario", model.scenarios),
+        ("lesson", model.lessons),
+        ("plan", model.plan_rows),
+        ("boundary", model.boundaries),
+        ("gap", model.gaps),
         ("evidence", model.evidence),
     ):
         for record_id, record in table.items():
@@ -200,42 +211,70 @@ def validate(model: Model, live: dict, repo_files: set) -> None:
     live registries expose; ``repo_files`` is the git-tracked path set.
     """
     targets = {
-        "plan_refs": model.plan_rows, "surface_refs": model.surfaces,
-        "concepts": model.concepts, "topics": model.concepts,
-        "surfaces": model.surfaces, "scenarios": model.scenarios,
-        "related_scenarios": model.scenarios, "boundaries": model.boundaries,
-        "gaps": model.gaps, "related": model.concepts,
-        "commands": live["commands"], "functions": live["functions"],
+        "plan_refs": model.plan_rows,
+        "surface_refs": model.surfaces,
+        "concepts": model.concepts,
+        "topics": model.concepts,
+        "surfaces": model.surfaces,
+        "scenarios": model.scenarios,
+        "related_scenarios": model.scenarios,
+        "boundaries": model.boundaries,
+        "gaps": model.gaps,
+        "related": model.concepts,
+        "commands": live["commands"],
+        "functions": live["functions"],
         "skills": live["skills"],
     }
     for kind, record_id, record in all_records(model):
         where = f"{record.get('file', '?')}:{record_id}"
         status = record.get("status")
         if status not in STATUSES:
-            model.problem("UNKNOWN_STATUS", where,
-                          f"status {status!r} is not one of {', '.join(STATUSES)}")
+            model.problem(
+                "UNKNOWN_STATUS",
+                where,
+                f"status {status!r} is not one of {', '.join(STATUSES)}",
+            )
         for key, table in targets.items():
             values = record.get(key)
             for value in [values] if isinstance(values, str) else values or []:
                 if value not in table:
-                    origin = ("live registry" if key in ("commands", "functions", "skills")
-                              else "model")
-                    model.problem("DANGLING_REFERENCE", where,
-                                  f"{key} names {value!r}, absent from the {origin}")
+                    origin = (
+                        "live registry"
+                        if key in ("commands", "functions", "skills")
+                        else "model"
+                    )
+                    model.problem(
+                        "DANGLING_REFERENCE",
+                        where,
+                        f"{key} names {value!r}, absent from the {origin}",
+                    )
         for source in record.get("sources", []):
-            path = source.rsplit(":", 1)[0] if source.rsplit(":", 1)[-1].isdigit() else source
+            path = (
+                source.rsplit(":", 1)[0]
+                if source.rsplit(":", 1)[-1].isdigit()
+                else source
+            )
             if path not in repo_files:
-                model.problem("DANGLING_SOURCE", where,
-                              f"source {source!r} is not a tracked repository file")
+                model.problem(
+                    "DANGLING_SOURCE",
+                    where,
+                    f"source {source!r} is not a tracked repository file",
+                )
         if kind == "plan" and not any(record.get(k) for k in PLAN_MAPPING_KEYS):
-            model.problem("PLAN_ROW_UNMAPPED", where,
-                          "map it to a concept, surface, scenario or boundary, "
-                          "or name an explicit gap")
+            model.problem(
+                "PLAN_ROW_UNMAPPED",
+                where,
+                "map it to a concept, surface, scenario or boundary, "
+                "or name an explicit gap",
+            )
     for area in model.docs_graph.get("areas", []):
         for concept in area.get("concepts", []):
             if concept not in model.concepts:
-                model.problem("DANGLING_REFERENCE", f"docs-graph.json:{area['id']}",
-                              f"concepts names {concept!r}, absent from the model")
+                model.problem(
+                    "DANGLING_REFERENCE",
+                    f"docs-graph.json:{area['id']}",
+                    f"concepts names {concept!r}, absent from the model",
+                )
 
 
 def coverage(model: Model) -> dict:

@@ -1,0 +1,10 @@
+{
+ "id": "desired-02",
+ "title": "Deliver required orientation, messages and recovery within the combined harness budget.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["context/disclosure", "messaging/messages"],
+ "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"],
+ "position": 5
+}

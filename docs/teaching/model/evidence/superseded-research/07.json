@@ -1,0 +1,10 @@
+{
+ "id": "07",
+ "title": "reminder-suppression",
+ "status": "observed",
+ "research": "JOURNEYS former G and reminder tracking proposals",
+ "finding": "Once-per-situation/session and remembered opt-out text coexists with an explicitly open design question.",
+ "authority": "JOURNEYS:100-103,118",
+ "action": "Label unresolved proposed mechanism, not an approved new tracker; preserve agent judgment and existing preference-store candidate.",
+ "position": 6
+}

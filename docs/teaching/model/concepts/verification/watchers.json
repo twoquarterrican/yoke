@@ -1,0 +1,8 @@
+{
+ "id": "watchers",
+ "title": "Long-command watchers",
+ "status": "draft-copy",
+ "commands": ["yoke watch ci-run", "yoke watch deploy", "yoke watch doctor", "yoke watch fleet", "yoke watch merge", "yoke watch preflight", "yoke watch pytest", "yoke watch qa-case", "yoke watch qa-plan", "yoke watch tail"],
+ "page": "verification",
+ "position": 3
+}

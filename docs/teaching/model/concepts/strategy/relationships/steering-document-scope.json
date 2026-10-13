@@ -1,0 +1,9 @@
+{
+ "id": "steering-document-scope",
+ "title": "Steering document scope",
+ "status": "draft-copy",
+ "commands": ["yoke strategy claim acquire", "yoke strategy claim break-glass-release", "yoke strategy claim release", "yoke strategy doc-claim acquire", "yoke strategy doc-claim list", "yoke strategy doc-claim release"],
+ "functions": ["strategy.claim.acquire", "strategy.claim.break_glass_release", "strategy.claim.release", "strategy.doc_claim.acquire", "strategy.doc_claim.list", "strategy.doc_claim.release"],
+ "page": "strategy",
+ "position": 2
+}

@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Distinguish Yoke telemetry from customer domain data",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Explaining collection, retention or investigating event data",
+ "need": "Read the product telemetry contract and destination. Do not generalize Yoke analytics rules to an application event store installed or built in a customer project. Data provenance, actor attribution and query-time linkage need accurate audience-specific explanation.",
+ "disclosure": "audit needed",
+ "surface": "Public Events article describes universe-local collectors, redaction, attribution and visitor links; sidebar makes article reachable.",
+ "gap": "No full privacy/data-flow audit was performed. Reconcile the broad no-personal-data wording with documented actor/browser linkage rather than repeat an unchecked blanket claim.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/nav.yaml", "docs/public/events-doctor-ouroboros.md"],
+ "position": 1
+}

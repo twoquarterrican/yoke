@@ -1,28 +1,10 @@
 {
- "scenario": {
-  "id": "task-graph-planning",
-  "title": "Decompose, amend and integrate structured work",
-  "status": "draft-copy",
-  "situations": ["An Epic needs independent implementation lanes and integration proof.", "A generated task must be split, moved or changed after planning.", "Planning or integration simulation finds a gap."],
-  "coverage": "catalogued",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Audit the graph amendment and simulator handoff procedure rather than treating 29 workflow-item commands as separate user features."]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Let the structured plan own its generated tasks",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When a selected workflow needs real task decomposition or its planned task graph changes.",
-   "need": "Distinguish the parent item from generated tasks, persisted task scope, dispatch order, review and integration simulation; do not replace these with invented child items.",
-   "disclosure": "audit needed",
-   "surface": "Shepherd/Conduct/Amend/Simulate skills; workflow-item and epic-task operations",
-   "gap": "Workflow-kind choice is mapped; post-planning amendment and integration-gap discovery are not. Review question: should the human see this depth only when their work actually requires multiple lanes or an amendment?",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["JOURNEYS row 11", "outside both"],
-   "sources": [".agents/skills/yoke/shepherd/SKILL.md", ".agents/skills/yoke/conduct/SKILL.md", ".agents/skills/yoke/amend/SKILL.md", ".agents/skills/yoke/simulate/SKILL.md", "docs/public/reference/db-reference/functions-tasks.md"]
-  }
- ]
+ "id": "task-graph-planning",
+ "title": "Decompose, amend and integrate structured work",
+ "status": "draft-copy",
+ "situations": ["An Epic needs independent implementation lanes and integration proof.", "A generated task must be split, moved or changed after planning.", "Planning or integration simulation finds a gap."],
+ "coverage": "catalogued",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Audit the graph amendment and simulator handoff procedure rather than treating 29 workflow-item commands as separate user features."]
 }

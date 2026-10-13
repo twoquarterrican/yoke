@@ -1,0 +1,8 @@
+{
+ "id": "search",
+ "title": "Universe search",
+ "status": "draft-copy",
+ "functions": ["ui_preferences.search_history.list", "ui_preferences.search_history.record"],
+ "page": "workbench",
+ "position": 1
+}

@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Understand the reusable layer",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When the same acceptance checks should apply repeatedly, or the user opens QA Plans to create/attach a plan.",
+ "need": "A plan is an ordered set of case definitions; each case has a stable key, method, instructions and expected result. Attach a plan to a project default or one item when its checks must gate work.",
+ "disclosure": "current cue",
+ "surface": "QA Plans tab; plan authoring/attachment; project command registration",
+ "gap": "Public QA introduces tabs then jumps into binding commands. Review question: should a short worked method/case/plan example replace that conceptual gap?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa plan get --help"],
+ "plan_notes": ["JOURNEYS row 13", "outside both"],
+ "sources": ["docs/testing-verification.md", "docs/public/qa.md", "docs/public/reference/db-reference/functions-qa.md"],
+ "position": 0
+}

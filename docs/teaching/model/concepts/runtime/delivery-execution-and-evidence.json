@@ -1,0 +1,9 @@
+{
+ "id": "delivery-execution-and-evidence",
+ "title": "Delivery execution and evidence",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/state-management/delivery-internals.md", "docs/public/reference/db-reference/deployment-run-records.md"],
+ "page": "runtime-evidence",
+ "position": 5
+}

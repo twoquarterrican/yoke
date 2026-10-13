@@ -1,0 +1,10 @@
+{
+ "id": "desired-02",
+ "title": "Browse one level deeper with yoke <group> --help; get the complete narrow recipe at command --help.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["reference/commands", "documentation/cascade"],
+ "plan_refs": ["FIRST-USER.35"],
+ "position": 6
+}

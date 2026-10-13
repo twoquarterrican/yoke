@@ -1,0 +1,9 @@
+{
+ "id": "cases",
+ "title": "Case definitions",
+ "status": "draft-copy",
+ "commands": ["yoke qa plan-cases replace"],
+ "functions": ["qa.plan_cases.replace"],
+ "page": "qa-plans",
+ "position": 1
+}

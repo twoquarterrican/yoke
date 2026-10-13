@@ -1,0 +1,10 @@
+{
+ "id": "FIRST-USER.E",
+ "title": "E. Focused install health check",
+ "status": "approved",
+ "scope": "Yoke",
+ "concepts": ["installation/readiness", "observability/doctor"],
+ "surfaces": ["setup-agent", "command-feedback", "detail-home"],
+ "scenarios": ["harness-readiness", "health-events"],
+ "position": 8
+}

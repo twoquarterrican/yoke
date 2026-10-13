@@ -1,0 +1,7 @@
+{
+ "id": "08",
+ "title": "current_claims_requiring_verification",
+ "status": "observed",
+ "claim": "Claude/Codex/Cursor permission modes, curl-pipe allowance, mid-session hook pickup, once-only orientation and real user/project hook merge/dedup.",
+ "position": 7
+}

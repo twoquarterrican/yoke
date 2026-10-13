@@ -1,0 +1,10 @@
+{
+ "id": "uninstall",
+ "title": "Uninstall",
+ "status": "draft-copy",
+ "plan_refs": ["FIRST-USER.1"],
+ "commands": ["yoke project uninstall", "yoke self-host teardown", "yoke uninstall"],
+ "functions": ["project.uninstall.run"],
+ "page": "maintenance",
+ "position": 2
+}

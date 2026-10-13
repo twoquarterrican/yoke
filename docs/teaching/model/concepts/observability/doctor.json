@@ -1,0 +1,12 @@
+{
+ "id": "doctor",
+ "title": "Doctor",
+ "status": "draft-copy",
+ "plan_refs": ["FIRST-USER.E", "JOURNEYS.also-owned-here"],
+ "surface_refs": ["project-hub"],
+ "commands": ["yoke doctor last-run get", "yoke doctor run"],
+ "functions": ["doctor.last_run.get", "doctor.run.run"],
+ "skills": ["doctor"],
+ "page": "observability",
+ "position": 1
+}

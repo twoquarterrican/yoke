@@ -1,0 +1,9 @@
+{
+ "id": "infrastructure-and-operational-pack-ownership",
+ "title": "Infrastructure and operational Pack ownership",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "private_sources": ["platform"],
+ "page": "cloud-operations-services",
+ "position": 9
+}

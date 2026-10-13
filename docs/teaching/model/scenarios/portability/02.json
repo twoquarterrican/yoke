@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Import replaces state and changes credential binding",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Before restoring an archive into a local destination",
+ "need": "Import replaces the active local universe and requires explicit consent. Imported remote credentials are revoked; local owner authority is established. A binding warning supplies the exact recovery before session registration.",
+ "disclosure": "current cue",
+ "surface": "universe import help/refusal/result; FIRST-USER proposes the earlier setup entry.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke universe import --help"],
+ "plan_notes": ["FIRST-USER item 9"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/local_universe_import_command.py", "docs/public/install.md"],
+ "position": 1
+}

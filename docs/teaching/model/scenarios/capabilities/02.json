@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Choose non-secret settings or secret storage",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Before adding or changing provider configuration",
+ "need": "Non-sensitive capability settings are a JSON document; secrets use the capability-owned secret surface. Read before CAS replacement; use merge for one path; never print secret values.",
+ "disclosure": "current cue",
+ "surface": "Capabilities guide -> setting help; mistaken scalar settings flags return the correct merge/read/secret recipes.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke projects capability-settings get --project P --cap-type TYPE", "yoke projects capability-settings set --help", "yoke projects capability-settings merge --help", "yoke projects capability secret set --help"],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/capabilities.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/projects_capability_settings.py", "docs/public/reference/agent-rules/delivery.md"],
+ "position": 1
+}

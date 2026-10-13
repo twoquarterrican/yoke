@@ -1,0 +1,8 @@
+{
+ "id": "ci-runner",
+ "title": "CI runner",
+ "status": "draft-copy",
+ "related": "infrastructure/runners",
+ "page": "machines",
+ "position": 3
+}

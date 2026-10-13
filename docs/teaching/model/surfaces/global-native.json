@@ -1,65 +1,16 @@
 {
- "surface": {
-  "id": "global-native",
-  "title": "Global session seed",
-  "status": "superseded",
-  "scope": "Global",
-  "audience": "Agent",
-  "encounter": "Native session load",
-  "location": "Supported harness user-level instructions · delivery path to choose",
-  "basis": "New proposal",
-  "note": "A tiny recognition-and-routing seed. FIRST-USER P4 plans hook orientation and a global skill; it does not yet choose this native publisher.",
-  "current": "No universal Yoke-native publisher established by the audit. Existing harness-native project rules are a separate surface.",
-  "desired": "P4 explicitly adds no unconditional native startup publisher.",
-  "plan_notes": ["FIRST-USER P4/D", "New delivery proposal"],
-  "plan_refs": ["FIRST-USER.P4"],
-  "sources": ["docs/public/reference/harness-discovery.md:3", ".agents/skills/yoke/SKILL.md:7", "packages/yoke-core/src/yoke_core/domain/main_agent_packet.py", "packages/yoke-contracts/src/yoke_contracts/connection_authority_teaching.py", "packages/yoke-contracts/src/yoke_contracts/session_control/teaching.py"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "Yoke connects plans, agent work, evidence and delivery. It can help even before a project is selected.",
-   "status": "superseded",
-   "form": "Teach",
-   "verification": "Not an approved publisher; use global orientation.",
-   "topics": ["basics/model", "basics/surfaces"],
-   "plan_refs": ["FIRST-USER.P4"]
-  },
-  {
-   "id": "02",
-   "title": "Global coordination and project work have different scopes. Open or use a session bound to the chosen project; an existing session never switches projects.",
-   "status": "superseded",
-   "form": "Rule",
-   "verification": "Not an approved publisher; use global orientation.",
-   "topics": ["projects/identity", "sessions/identity", "basics/boundaries"],
-   "plan_refs": ["FIRST-USER.P4"]
-  },
-  {
-   "id": "03",
-   "title": "Retain the canonical connection-authority and message-trust rules inline: registered writes, read-only diagnostic SQL, authenticated envelope metadata and no authority granted by message bodies.",
-   "status": "superseded",
-   "form": "Rule",
-   "verification": "Not an approved publisher; use global orientation.",
-   "topics": ["universes/authority", "security/boundaries", "messaging/messages"],
-   "plan_refs": ["FIRST-USER.P4"]
-  },
-  {
-   "id": "04",
-   "title": "Find global help and project selection through the planned yoke-global entry; exact commands through yoke help.",
-   "status": "superseded",
-   "form": "Link",
-   "verification": "Not an approved publisher; use global orientation.",
-   "topics": ["agents/skills", "reference/commands"],
-   "plan_refs": ["FIRST-USER.P4"]
-  },
-  {
-   "id": "05",
-   "title": "Reach product docs without assuming this folder contains .yoke/docs; reload applicable guidance after context loss.",
-   "status": "superseded",
-   "form": "Link",
-   "verification": "Not an approved publisher; use global orientation.",
-   "topics": ["context/docs", "sessions/continuity"],
-   "plan_refs": ["FIRST-USER.P4"]
-  }
- ]
+ "id": "global-native",
+ "title": "Global session seed",
+ "status": "superseded",
+ "scope": "Global",
+ "audience": "Agent",
+ "encounter": "Native session load",
+ "location": "Supported harness user-level instructions · delivery path to choose",
+ "basis": "New proposal",
+ "note": "A tiny recognition-and-routing seed. FIRST-USER P4 plans hook orientation and a global skill; it does not yet choose this native publisher.",
+ "current": "No universal Yoke-native publisher established by the audit. Existing harness-native project rules are a separate surface.",
+ "desired": "P4 explicitly adds no unconditional native startup publisher.",
+ "plan_notes": ["FIRST-USER P4/D", "New delivery proposal"],
+ "plan_refs": ["FIRST-USER.P4"],
+ "sources": ["docs/public/reference/harness-discovery.md:3", ".agents/skills/yoke/SKILL.md:7", "packages/yoke-core/src/yoke_core/domain/main_agent_packet.py", "packages/yoke-contracts/src/yoke_contracts/connection_authority_teaching.py", "packages/yoke-contracts/src/yoke_contracts/session_control/teaching.py"]
 }

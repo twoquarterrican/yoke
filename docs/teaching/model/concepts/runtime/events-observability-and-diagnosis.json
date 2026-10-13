@@ -1,0 +1,9 @@
+{
+ "id": "events-observability-and-diagnosis",
+ "title": "Events, observability and diagnosis",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/event-contract.md", "docs/event-contract/isolation-and-querying.md", "docs/structured-logging-standard.md", "docs/api-observability.md", "docs/performance-diagnostics.md"],
+ "page": "runtime-evidence",
+ "position": 7
+}

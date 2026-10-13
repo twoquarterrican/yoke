@@ -1,0 +1,9 @@
+{
+ "id": "requests",
+ "title": "Decision requests",
+ "status": "draft-copy",
+ "commands": ["yoke decision-requests dispose-ended", "yoke decision-requests get", "yoke decision-requests resolve"],
+ "functions": ["decision_requests.create", "decision_requests.dispose_ended", "decision_requests.get", "decision_requests.resolve", "decision_requests.withdraw"],
+ "page": "approvals",
+ "position": 2
+}

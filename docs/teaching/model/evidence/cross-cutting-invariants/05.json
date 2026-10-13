@@ -1,0 +1,7 @@
+{
+ "id": "05",
+ "title": "required-teaching",
+ "status": "observed",
+ "check": "Shortest complete action includes needed prerequisites/results before action. Pointers supplement necessary instruction; optional suggestions use judgment.",
+ "position": 4
+}

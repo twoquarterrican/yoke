@@ -1,0 +1,9 @@
+{
+ "id": "project-context-loader",
+ "title": "Project context loader",
+ "status": "draft-copy",
+ "commands": ["yoke projects checkout-context"],
+ "functions": ["projects.checkout_context.run"],
+ "page": "context",
+ "position": 3
+}

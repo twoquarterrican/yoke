@@ -1,0 +1,13 @@
+{
+ "id": "project-knowledge",
+ "title": "Project-owned knowledge lookup",
+ "status": "observed",
+ "scope": "this project’s real docs and installed Pack docs",
+ "moment": "Project-specific planning/implementation or explicit project question",
+ "current": "context_routing has an always entry and named topic entries carrying project-relative docs. Implement reads it through project-structure get, then reads matched files in the claimed lane. Missing config is advisory; a failed read is not empty configuration.",
+ "planned": "Preserve existing project doc structure; add discoverable project-hub routing rather than moving project docs into .yoke/docs.",
+ "proposed_content": ["Product help is .yoke/docs; project architecture/process docs and docs/packs/<slug>/README.md remain project-owned.", "Teach the context_routing read from project native guidance and reuse it in relevant skills/dispatch.", "An empty project may have no hub yet; an established repo maps its existing hubs. Do not fabricate documents or pretend a failed lookup succeeded."],
+ "plan_notes": ["accepted project hub/context-routing proposal", "FIRST-USER item 24", "JOURNEYS project context"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/project_structure.py:119", ".agents/skills/yoke/implement/implementing/project-context.md:6", "packages/yoke-core/src/yoke_core/domain/install_bundle_managed.py:83"],
+ "position": 2
+}

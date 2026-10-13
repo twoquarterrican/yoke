@@ -1,0 +1,8 @@
+{
+ "id": "smoke-testing",
+ "title": "Smoke Testing",
+ "status": "draft-copy",
+ "sources": ["packs/smoke-testing/pack.json"],
+ "page": "packs",
+ "position": 11
+}

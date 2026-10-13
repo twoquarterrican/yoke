@@ -1,0 +1,9 @@
+{
+ "id": "adoption",
+ "title": "Adopt a Pack",
+ "status": "draft-copy",
+ "commands": ["yoke packs get", "yoke packs list"],
+ "functions": ["packs.bundle.get", "packs.bundle.render", "packs.get.run", "packs.list", "packs.project.report"],
+ "page": "packs",
+ "position": 1
+}

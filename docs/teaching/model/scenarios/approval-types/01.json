@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Identify what this yes changes",
+ "status": "draft-copy",
+ "audience": "human",
+ "when": "When the first work-approval, evidence-review or release-approval request appears.",
+ "need": "Work approval, QA evidence review and release approval settle different obligations. Each card should name its subject, evidence, decision and consequence. A delivery notice asks for nothing.",
+ "disclosure": "current cue",
+ "surface": "Inbox, item QA and run pages; workflow approval defaults",
+ "gap": "Current cards carry these distinctions; catalog has no explicit approval-learning situation. Review question: should JOURNEYS add a first-decision explanation that links its exact evidence?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke inbox list --help"],
+ "plan_notes": ["JOURNEYS row 12", "outside both"],
+ "sources": ["docs/public/items-and-sessions.md", "docs/public/workflows.md"],
+ "position": 0
+}

@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Preserve the existing pipeline",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Survey finds deployed app or CI/release files",
+ "need": "Map the existing app and installed Pack receipts. Existing scripts are evidence to inspect, not permission to reinstall infrastructure. Current executor can dispatch a project-owned GitHub Actions workflow.",
+ "disclosure": "current cue",
+ "surface": "Onboard profile lines 9–42; flow runner contract lines 287–312.",
+ "gap": "Onboarding offers no-host projects only merge-only/no-default although the executor supports external-project Actions delivery. Proposed adoption branch needs to separate infrastructure ownership from delivery orchestration.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke deployment-flows stages FLOW-ID", "yoke deployment-flows validate --help"],
+ "plan_notes": ["FIRST-USER 24", "JOURNEYS row 12"],
+ "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", "docs/public/reference/db-reference/projects-and-flows.md"],
+ "position": 0
+}

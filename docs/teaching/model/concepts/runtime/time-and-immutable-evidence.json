@@ -1,0 +1,10 @@
+{
+ "id": "time-and-immutable-evidence",
+ "title": "Time and immutable evidence",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/native-instant-preboot.md"],
+ "private_sources": ["platform"],
+ "page": "runtime-evidence",
+ "position": 6
+}

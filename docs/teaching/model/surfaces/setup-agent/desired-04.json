@@ -1,0 +1,10 @@
+{
+ "id": "desired-04",
+ "title": "Verify this harness is ready; carry intent to a session in the real project folder, then onboard.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["installation/readiness", "projects/adoption"],
+ "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"],
+ "position": 10
+}

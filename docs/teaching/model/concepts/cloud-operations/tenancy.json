@@ -1,0 +1,9 @@
+{
+ "id": "tenancy",
+ "title": "Tenancy",
+ "status": "draft-copy",
+ "audience": "Administrators / maintainers",
+ "plan_refs": ["FIRST-USER.P7"],
+ "page": "cloud-operations",
+ "position": 0
+}

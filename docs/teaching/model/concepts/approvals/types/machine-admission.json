@@ -1,0 +1,8 @@
+{
+ "id": "machine-admission",
+ "title": "Machine admission",
+ "status": "draft-copy",
+ "related": "machines/registration",
+ "page": "approvals",
+ "position": 5
+}
