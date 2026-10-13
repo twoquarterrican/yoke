@@ -11,7 +11,7 @@ PATH_REPAIR_ACTION = "update-shell-path"
 
 
 def steps(plan: dict[str, Any] | None) -> list[dict[str, Any]]:
-    if not plan:
+    if not plan or plan.get("login_verified"):
         return []
     return [
         {
@@ -33,4 +33,10 @@ def friendly_line(step: dict[str, Any]) -> str:
     return path_repair_plan.target_description(target, plan)
 
 
-__all__ = ["PATH_REPAIR_ACTION", "friendly_line", "steps"]
+def shell_change_lines(plan: dict[str, Any] | None) -> list[str]:
+    return [
+        f"Shell file updated: {path}" for path in (plan or {}).get("changed_files", [])
+    ]
+
+
+__all__ = ["PATH_REPAIR_ACTION", "friendly_line", "steps", "shell_change_lines"]

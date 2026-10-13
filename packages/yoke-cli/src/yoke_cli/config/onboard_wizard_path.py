@@ -1,140 +1,89 @@
-"""PATH-readiness flow for the ``yoke setup`` wizard.
-
-The flow diagnoses PATH and delegates shell configuration to uv.
-"""
+"""Automatic Install checks and error recovery for the setup wizard."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol
+import asyncio
+from typing import Any
 
-from textual.widgets import Static
-
-from yoke_cli.config import path_doctor, path_repair_plan
-from yoke_cli.config.onboard_wizard_path_screens import (
-    PATH_FIX_ROWS,
-    PATH_OK_ROWS,
-    path_apply_error_body,
-    path_diagnosis_body,
-    path_preview_body,
-)
+from yoke_cli.config import onboard_apply_path, path_doctor, path_repair_plan
+from yoke_cli.config.onboard_wizard_path_screens import path_apply_error_body
 from yoke_cli.config.onboard_wizard_widgets import STEP_INSTALL
-
-if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
-
-
-class _Shell(Protocol):  # pragma: no cover - structural typing only
-    _post_install: bool
-    _history: list["_View"]
-    result: Any
-
-    def _goto(self, view: "_View") -> None: ...
-    def _selection_view(self, step, title, subtitle, rows, on_select) -> "_View": ...
-    def _render_current(self) -> None: ...
-    def _start_connect(self) -> None: ...
-    def _apply_path_now(self) -> bool: ...
 
 
 class PathFlow:
-    """PATH readiness and repair steps that chain into the Connect flow."""
+    """Run Install off the UI thread; mount a view only when it needs attention."""
 
-    def _start_front(self: _Shell) -> None:
-        """Begin directly at PATH readiness, including after installation."""
-        self._goto_path_diagnosis()
+    def _start_front(self) -> None:
+        self._checking = True
+        self._checking_blocks_quit = True
+        self.run_worker(self._run_install(), exclusive=True, group="onboard-install")
 
-    def _goto_path_diagnosis(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
-        diagnosis = path_doctor.diagnose()
-        self.result.path_repair = path_repair_plan.build(diagnosis)
-
-        def builder() -> list[Static]:
-            return path_diagnosis_body(
-                diagnosis,
-                installed_version=self._post_install,
-            )
-
-        view = _View(STEP_INSTALL, builder, self._on_path_diagnosis)
-        self._path_diagnosis_view = view
-        self._goto(view)
-
-    def _on_path_diagnosis(self: _Shell, choice: str) -> None:
-        if choice == "fix":
-            if self._apply_path_now():
-                self._start_connect()
-            return
-        if choice == "preview":
-            self._goto_path_preview()
-            return
-        # An all-clear diagnosis has only "continue".
-        self._start_connect()
-
-    def _goto_path_preview(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
-        plan = self.result.path_repair or path_repair_plan.build(path_doctor.diagnose())
+    async def _run_install(self) -> None:
+        plan, error = await asyncio.to_thread(self._check_install)
+        self._checking = False
+        self._checking_blocks_quit = False
+        previous = self.result.path_repair or {}
+        plan["changed_files"] = sorted(
+            set([*previous.get("changed_files", []), *plan.get("changed_files", [])])
+        )
         self.result.path_repair = plan
+        if self._history and self._history[-1].step == STEP_INSTALL:
+            self._history.pop()
+        if error:
+            self._goto_path_apply_error(error)
+        else:
+            self._start_connect()
 
-        def builder() -> list[Static]:
-            return path_preview_body(plan)
-
-        self._goto(_View(STEP_INSTALL, builder, self._on_path_preview))
-
-    def _on_path_preview(self: _Shell, choice: str) -> None:
-        if choice == "apply":
-            if self._apply_path_now():
-                self._start_connect()
-            return
-        if choice == "different":
-            self._return_to_path_diagnosis()
-            return
-
-    def _apply_path_now(self: _Shell) -> bool:
-        from yoke_cli.config import onboard_apply_path
-
-        plan = self.result.path_repair
-        if not plan:
-            return True
+    def _check_install(self) -> tuple[dict[str, Any], str]:
+        plan: dict[str, Any] = {}
         report: dict[str, Any] = {}
         try:
-            onboard_apply_path.apply(plan, progress=None, report=report)
-        except OSError as exc:
-            self._goto_path_apply_error(
-                f"uv could not update the shell configuration ({exc}). "
-                "Check permissions, then Apply again or run `yoke path fix`."
+            diagnosis = path_doctor.diagnose()
+            plan = path_repair_plan.build(diagnosis)
+            if plan.get("targets"):
+                onboard_apply_path.apply(plan, progress=None, report=report)
+                plan = report["path_repair"]
+                resolved = plan.get("login_resolved") or {}
+            else:
+                resolved = {row.name: row.path for row in diagnosis.future_resolved}
+                plan = {**plan, "login_verified": True, "login_resolved": resolved}
+            missing = [tool for tool in path_doctor.TOOLS if not resolved.get(tool)]
+            if missing:
+                raise RuntimeError(
+                    "install_required_tool_missing: a fresh login shell cannot find "
+                    + ", ".join(missing)
+                    + ". Run the installer again: curl -fsSL https://upyoke.com/install | sh; "
+                    "then open a new terminal and retry Install."
+                )
+            if not plan.get("login_verified"):
+                raise RuntimeError(
+                    "fresh_login_path_unresolved: shell repair did not verify Yoke. "
+                    "Run `uv tool update-shell`, check shell files that override PATH, "
+                    "then open a new terminal and retry Install."
+                )
+            return plan, ""
+        except Exception as exc:  # noqa: BLE001 - all failures need a recovery view
+            plan = report.get("path_repair") or plan
+            plan = {**plan, "login_verified": False}
+            return plan, (
+                f"install_check_failed: {exc} "
+                "Fix the named cause, then retry Install or run `yoke setup` again."
             )
-            return False
-        outcome = report.get("path_repair") or {}
-        self.result.path_repair = {**plan, **outcome}
-        if outcome.get("login_verified"):
-            return True
-        self._goto_path_apply_error(
-            "fresh_login_path_unresolved: yoke was not found after uv shell setup. "
-            "Run `uv tool update-shell`, check your shell configuration, "
-            "then open a new terminal."
-        )
-        return False
 
-    def _goto_path_apply_error(self: _Shell, message: str) -> None:
+    def _goto_path_apply_error(self, message: str) -> None:
         from yoke_cli.config.onboard_wizard_app import _View
 
-        self._goto(_View(STEP_INSTALL, lambda: path_apply_error_body(message)))
+        self._goto(
+            _View(
+                STEP_INSTALL,
+                lambda: path_apply_error_body(message, self.result.path_repair),
+                self._retry_install,
+            )
+        )
 
-    def _return_to_path_diagnosis(self: _Shell) -> None:
-        target = getattr(self, "_path_diagnosis_view", None)
-        for index in range(len(self._history) - 1, -1, -1):
-            if self._history[index] is target:
-                del self._history[index + 1 :]
-                self._render_current()
-                return
-        self._goto_path_diagnosis()
+    def _retry_install(self, choice: str) -> None:
+        if choice == "retry" and not self._checking:
+            self._start_front()
 
 
-__all__ = [
-    "PATH_FIX_ROWS",
-    "PATH_OK_ROWS",
-    "PathFlow",
-    "path_apply_error_body",
-    "path_diagnosis_body",
-    "path_preview_body",
-]
+__all__ = ["PathFlow"]

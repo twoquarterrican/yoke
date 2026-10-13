@@ -22,7 +22,6 @@ goldens from both gate modules.
 
 from __future__ import annotations
 
-from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -30,16 +29,12 @@ import pytest
 pytest.importorskip("textual")
 
 from runtime.api.cli.onboard_wizard_golden_support import (  # noqa: E402
-    DIAGNOSIS_ALL_CLEAR,
-    DIAGNOSIS_NEEDS_FIX,
-    STARTUP,
     assert_catalog_golden_gate_parity,
     assert_golden,
     make_app,
     render,
 )
 from yoke_cli.config import onboard_wizard_steps as steps  # noqa: E402
-from yoke_cli.config import path_doctor  # noqa: E402
 from yoke_cli.config.onboard_destinations import (  # noqa: E402
     DESTINATION_LOCAL,
     DESTINATION_SERVER,
@@ -47,7 +42,6 @@ from yoke_cli.config.onboard_destinations import (  # noqa: E402
 from yoke_cli.config.onboard_wizard_app import OnboardWizardApp  # noqa: E402
 from yoke_cli.config.onboard_wizard_state import _View  # noqa: E402
 
-_BIN_DIR = "~/.local/bin"
 _GITHUB_CONNECTED = {
     "ok": True,
     "ready": True,
@@ -80,52 +74,21 @@ _GITHUB_CONNECTED = {
 
 
 # --------------------------------------------------------------------------- #
-# PATH step (batch 1 + 2)
+# Install failure recovery
 # --------------------------------------------------------------------------- #
 
 
-def test_path_diagnosis(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(path_doctor, "diagnose", lambda **_: DIAGNOSIS_NEEDS_FIX)
+def test_install_error() -> None:
     app = make_app()
 
     async def drive(a: OnboardWizardApp, _pilot: Any) -> None:
-        a._goto_path_diagnosis()
+        a.result.path_repair = {"changed_files": ["~/.zprofile"]}
+        a._goto_path_apply_error(
+            "install_required_tool_missing: uvx is missing. Run the installer "
+            "again, then open a new terminal and retry Install."
+        )
 
-    assert_golden("path_diagnosis", render(app, drive, title="yoke setup · Install"))
-
-
-def test_path_diagnosis_allclear(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(path_doctor, "diagnose", lambda **_: DIAGNOSIS_ALL_CLEAR)
-    app = make_app()
-
-    async def drive(a: OnboardWizardApp, _pilot: Any) -> None:
-        a._goto_path_diagnosis()
-
-    assert_golden(
-        "path_diagnosis_allclear", render(app, drive, title="yoke setup · Install")
-    )
-
-
-def test_path_preview(monkeypatch: pytest.MonkeyPatch) -> None:
-    # This is a render golden, not a shell-probe test. Pin the complete domain
-    # result so the SVG cannot inherit PATH, startup-file, or subprocess state
-    # from the host or an earlier test in the same xdist worker.
-    diagnosis = replace(
-        DIAGNOSIS_NEEDS_FIX,
-        tool_bin_dir=_BIN_DIR,
-        startup_file=STARTUP,
-        ssh_startup_file="~/.zshenv",
-        ssh_needs_fix=True,
-        login_needs_fix=True,
-        managed_path_dirs=(_BIN_DIR,),
-    )
-    monkeypatch.setattr(path_doctor, "diagnose", lambda **_: diagnosis)
-    app = make_app()
-
-    async def drive(a: OnboardWizardApp, _pilot: Any) -> None:
-        a._goto_path_preview()
-
-    assert_golden("path_preview", render(app, drive, title="yoke setup · Install"))
+    assert_golden("install_error", render(app, drive, title="yoke setup · Install"))
 
 
 # --------------------------------------------------------------------------- #

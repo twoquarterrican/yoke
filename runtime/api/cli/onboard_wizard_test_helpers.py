@@ -227,8 +227,8 @@ def stub_source_branch(
 
 
 async def advance_past_path(pilot) -> None:
-    """From on_mount's PATH-diagnosis view, take the single Continue row."""
-    await pilot.press("enter")  # path: continue (all clear)
+    """Wait for automatic Install checks to finish without a confirmation."""
+    await pilot.app.workers.wait_for_complete()
 
 
 async def skip_hosting(pilot) -> None:

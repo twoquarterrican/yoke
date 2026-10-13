@@ -71,10 +71,10 @@ def test_project_step_renders() -> None:
 
         async with app.run_test(size=(80, 24)) as pilot:
             await pilot.pause()
-            # Clear the front PATH step (all-clear Continue) and the machine
+            # Wait for automatic Install checks, then clear the machine
             # GitHub step (skip), then land on the project-source step and
             # select "Create a new project".
-            await pilot.press("enter")  # path: continue
+            await app.workers.wait_for_complete()
             await pilot.pause()
             await pilot.press("down")  # machine github: Skip for now
             await pilot.press("enter")
