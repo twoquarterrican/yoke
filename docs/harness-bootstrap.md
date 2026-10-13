@@ -4,6 +4,18 @@ Source-maintainer contract for startup rendering, capability ownership and
 adapter integration. Installed projects use their shipped rules and manifests;
 they do not inherit contributor-only source procedures from this reference.
 
+## Guard applicability
+
+The contracts hook_runner.guard_scope owner declares machine, project and
+lane guards; both product-local and engine dispatch filter that inventory.
+The shared project_scope resolver uses registered checkout mappings and Git's
+main-checkout identity, including linked worktrees and excluding independent
+nested repositories. Connection presence and DB files are not project proof.
+Remote RunControls carries authorized_project_id independently of stdin and
+payload_extra. Unmapped relay clients complete machine checks locally.
+See [guard scope](public/reference/harness-discovery.md#guard-scope) for the
+registration, inventory and recovery route.
+
 ## Startup Reads
 
 `runtime/harness/bootstrap-spec.json` is the executable ordered read list:

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 from typing import Any, Optional
 
 from yoke_cli.config import machine_config
@@ -67,28 +66,17 @@ def workspace_path_candidates(payload: dict[str, Any]) -> list[str]:
     workspace directly; the scalar keys follow for payloads that carry
     only a per-event directory.
     """
-    candidates: list[str] = []
-    roots = payload.get("workspace_roots")
-    if isinstance(roots, list):
-        candidates.extend(
-            root for root in roots if isinstance(root, str) and root.strip()
-        )
-    for key in ("cwd", "workspace", "project_dir"):
-        value = payload.get(key)
-        if isinstance(value, str) and value.strip():
-            candidates.append(value)
-    return candidates
+    from yoke_contracts.hook_runner.project_scope import (
+        workspace_path_candidates as candidates,
+    )
+
+    return candidates(payload)
 
 
 def client_project_id(payload: dict[str, Any]) -> Optional[int]:
-    for value in workspace_path_candidates(payload):
-        try:
-            resolved = machine_config.project_id(Path(value))
-        except Exception:
-            continue
-        if resolved is not None:
-            return resolved
-    return None
+    from yoke_contracts.hook_runner.project_scope import project_id_for_payload
+
+    return project_id_for_payload(payload)
 
 
 def client_native_thread_id(

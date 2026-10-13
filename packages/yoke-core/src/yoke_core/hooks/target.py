@@ -88,7 +88,9 @@ def _env_target_root() -> str:
     return ""
 
 
-def resolve_context_target_root(payload: dict[str, Any], cwd: Optional[str]) -> Optional[str]:
+def resolve_context_target_root(
+    payload: dict[str, Any], cwd: Optional[str]
+) -> Optional[str]:
     """Resolve the repo root to store on a ``HookContext`` for policy lookups."""
     for key in ("target_root", "project_dir"):
         value = _str_or(payload.get(key))
@@ -108,9 +110,7 @@ def resolve_hook_script_dir() -> str:
     script_dir = os.environ.get("YOKE_SCRIPT_DIR", "")
     if script_dir:
         return script_dir
-    return str(
-        Path(resolve_repo_root()) / ".agents" / "skills" / "yoke" / "scripts"
-    )
+    return str(Path(resolve_repo_root()) / ".agents" / "skills" / "yoke" / "scripts")
 
 
 def target_service_client_path(target_root: str) -> str:
@@ -129,39 +129,11 @@ def target_service_client_path(target_root: str) -> str:
     return os.path.join(resolve_repo_root(), "runtime", "api", "service_client.py")
 
 
-def _normalize_main_root(path: str) -> str:
-    """Return a worktree-normalized repo root for path matching."""
-    if not path:
-        return ""
-    try:
-        from yoke_core.domain.worktree import resolve_main_root
-
-        return resolve_main_root(cwd=path).rstrip("/")
-    except Exception:
-        try:
-            return str(Path(path).expanduser().resolve()).rstrip("/")
-        except OSError:
-            return path.rstrip("/")
-
-
 def is_yoke_target(root: str, db_path: str) -> bool:
     """Return True when the hook is running inside a Yoke-managed workspace."""
-    if not root:
-        return False
+    from yoke_contracts.hook_runner.project_scope import project_id_for_root
 
-    workspace_root = _normalize_main_root(root)
-    if not workspace_root:
-        return False
-
-    try:
-        from yoke_core.domain import yoke_connected_env
-
-        if yoke_connected_env.find_binding(Path(root)):
-            return True
-    except Exception:
-        pass
-
-    return False
+    return project_id_for_root(root) is not None
 
 
 __all__ = [

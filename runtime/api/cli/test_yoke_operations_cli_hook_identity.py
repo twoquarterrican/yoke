@@ -37,6 +37,10 @@ def local_subset(monkeypatch) -> None:
     from yoke_harness.hooks.local_subset import LocalSubsetEvaluation
 
     monkeypatch.setattr(
+        "yoke_harness.hooks.relay.project_id_for_payload", lambda _payload: 7
+    )
+
+    monkeypatch.setattr(
         "yoke_harness.hooks.relay.evaluate_local_subset",
         lambda *_a, **_k: LocalSubsetEvaluation(stdout="", exit_code=0, denied=False),
     )
@@ -157,6 +161,7 @@ def test_every_lifecycle_surface_sends_checkout_project(
     event_name,
 ) -> None:
     from yoke_harness.hooks import identity_relay, relay
+    from yoke_contracts.hook_runner import project_scope
 
     monkeypatch.setenv("YOKE_SESSION_ID", "wire-project-session")
     monkeypatch.setattr(relay, "detect_executor", lambda: executor)
@@ -166,8 +171,8 @@ def test_every_lifecycle_surface_sends_checkout_project(
     monkeypatch.setattr(identity_relay, "client_usage_facts", lambda *a: {})
     monkeypatch.setattr(identity_relay, "client_executor_version", lambda *a: None)
     monkeypatch.setattr(
-        identity_relay.machine_config,
-        "project_id",
+        project_scope,
+        "project_id_for_root",
         lambda path: 7 if str(path) == "/client/repo" else None,
     )
     captured = {}

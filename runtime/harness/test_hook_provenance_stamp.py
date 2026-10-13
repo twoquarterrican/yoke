@@ -64,6 +64,7 @@ def test_explicit_provenance_probe_uses_supplied_build_revision() -> None:
 def test_hook_provenance_is_printed_only_on_allow(path, denied, monkeypatch, capsys):
     reason = "BLOCKED: policy reason" if denied else ""
     monkeypatch.setattr(relay, "detect_executor", lambda: "claude-code")
+    monkeypatch.setattr(relay, "project_id_for_payload", lambda _payload: 1)
     monkeypatch.setattr(relay, "_client_lint_config_snapshot", lambda _p: {})
     monkeypatch.setattr(relay, "stamp_hook_input", lambda *a: ("{}", None))
     monkeypatch.setattr(relay, "settle_projection", lambda *a: None)

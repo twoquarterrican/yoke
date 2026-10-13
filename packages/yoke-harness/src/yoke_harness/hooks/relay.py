@@ -18,6 +18,7 @@ from yoke_cli.transport.https import HttpsConnection
 from yoke_cli.transport.response_limits import SMALL_JSON_RESPONSE_LIMIT_BYTES
 
 from yoke_contracts.hook_runner import lint_policy
+from yoke_contracts.hook_runner.project_scope import project_id_for_payload
 from yoke_contracts.hook_evaluator_protocol import HOOK_MODEL_CONFIRMATION_FIELD
 from yoke_contracts.hook_runner.chain_registry import SESSION_START_EVENT
 from yoke_contracts.hook_runner.failures import render_failure_warning
@@ -188,7 +189,8 @@ def relay_hook_event(
     )
     if local.denied:
         write_hook_output(local.stdout, local.exit_code, executor)
-        relay_denial_audit(connection, local.denial_audit or {})
+        if local.denial_audit and project_id_for_payload(payload) is not None:
+            relay_denial_audit(connection, local.denial_audit)
         return local.exit_code
 
     allow_stdout = _with_extra_context(
@@ -198,6 +200,14 @@ def relay_hook_event(
         cursor=is_cursor(executor),
         harness_id=canonical_harness_id(executor),
     )
+
+    if project_id_for_payload(payload) is None:
+        # The complete machine guard subset is local; project registration is
+        # neither required nor meaningful for an unrelated workspace.
+        print_execution_provenance()
+        write_hook_output(allow_stdout, local.exit_code, executor)
+        settle_projection(allow_stdout, launch_projection)
+        return local.exit_code
 
     denied = deny_unstamped_relay(parse_hook_payload(stdin_data))
     if denied is not None:

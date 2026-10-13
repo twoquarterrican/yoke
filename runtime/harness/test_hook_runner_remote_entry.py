@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 import sys
 import time
 import types
@@ -22,7 +23,20 @@ from yoke_core.hooks.types import HookContext, HookDecision, Next, Outcome
 @pytest.fixture(autouse=True)
 def _quiet_telemetry(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
-        runner_module._telemetry, "flush_hook_telemetry", lambda *a, **k: None,
+        runner_module._telemetry,
+        "flush_hook_telemetry",
+        lambda *a, **k: None,
+    )
+
+
+@pytest.fixture
+def authorized_project_context(monkeypatch):
+    monkeypatch.setattr(
+        "yoke_core.domain.db_helpers.connect", lambda: nullcontext(None)
+    )
+    monkeypatch.setattr(
+        "yoke_core.domain.project_identity.resolve_project_slug",
+        lambda _conn, _pid: "example",
     )
 
 
@@ -33,18 +47,24 @@ def _module(name: str, evaluate) -> types.ModuleType:
 
 
 def _install_chain(
-    monkeypatch: pytest.MonkeyPatch, modules: dict[str, types.ModuleType],
+    monkeypatch: pytest.MonkeyPatch,
+    modules: dict[str, types.ModuleType],
 ) -> None:
     for name, mod in modules.items():
         monkeypatch.setitem(sys.modules, name, mod)
     monkeypatch.setattr(
-        runner_module, "chain_for", lambda *a, **k: list(modules.keys()),
+        runner_module,
+        "chain_for",
+        lambda *a, **k: list(modules.keys()),
     )
 
 
 def _deny(message: str, *, next_step: Next = Next.STOP) -> HookDecision:
     return HookDecision(
-        outcome=Outcome.DENY, message=message, block=True, next=next_step,
+        outcome=Outcome.DENY,
+        message=message,
+        block=True,
+        next=next_step,
     )
 
 
@@ -52,9 +72,14 @@ def test_executor_from_request_selects_renderer(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The request's executor — not server detection — picks the renderer."""
-    _install_chain(monkeypatch, {
-        "remote_hook.fake_deny": _module("remote_hook.fake_deny", lambda ctx: _deny("nope")),
-    })
+    _install_chain(
+        monkeypatch,
+        {
+            "remote_hook.fake_deny": _module(
+                "remote_hook.fake_deny", lambda ctx: _deny("nope")
+            ),
+        },
+    )
 
     claude = evaluate_remote("PreToolUse", "{}", "claude", None, 2000)
     codex = evaluate_remote("PreToolUse", "{}", "codex-cli", None, 2000)
@@ -74,10 +99,15 @@ def test_agent_type_from_request_reaches_payload_detection(
     seen: list[tuple[Any, Any, bool]] = []
 
     def record(ctx: HookContext) -> HookDecision:
-        seen.append((ctx.payload.get("agent_type"), ctx.payload.get("tool_name"), ctx.remote))
+        seen.append(
+            (ctx.payload.get("agent_type"), ctx.payload.get("tool_name"), ctx.remote)
+        )
         return HookDecision(outcome=Outcome.NOOP, next=Next.CONTINUE)
 
-    _install_chain(monkeypatch, {"remote_hook.fake_record": _module("remote_hook.fake_record", record)})
+    _install_chain(
+        monkeypatch,
+        {"remote_hook.fake_record": _module("remote_hook.fake_record", record)},
+    )
 
     stdin = json.dumps({"tool_name": "Bash", "cwd": "/client/path"})
     result = evaluate_remote("PreToolUse", stdin, "claude", "engineer", 2000)
@@ -90,22 +120,27 @@ def test_agent_type_from_request_reaches_payload_detection(
 
 def test_real_subagent_lint_denies_remotely_via_request_agent_type(
     monkeypatch: pytest.MonkeyPatch,
+    authorized_project_context,
 ) -> None:
     """End-to-end: request agent_type drives the REAL subagent-context deny."""
     lint_id = "yoke_core.domain.lint_subagent_background"
     monkeypatch.setattr(f"{lint_id}.emit_audit_event", lambda *a, **k: None)
     monkeypatch.setattr(runner_module, "chain_for", lambda *a, **k: [lint_id])
-    stdin = json.dumps({
-        "tool_name": "Bash",
-        "tool_input": {
-            "command": "python3 -m yoke_core.tools.watch_pytest -- runtime/",
-            "run_in_background": True,
-        },
-        "cwd": "/client/repo",
-    })
+    stdin = json.dumps(
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": "python3 -m yoke_core.tools.watch_pytest -- runtime/",
+                "run_in_background": True,
+            },
+            "cwd": "/client/repo",
+        }
+    )
 
-    as_subagent = evaluate_remote("PreToolUse", stdin, "claude", "engineer", 2000)
-    as_main = evaluate_remote("PreToolUse", stdin, "claude", None, 2000)
+    as_subagent = evaluate_remote(
+        "PreToolUse", stdin, "claude", "engineer", 2000, project_id=7
+    )
+    as_main = evaluate_remote("PreToolUse", stdin, "claude", None, 2000, project_id=7)
 
     assert as_subagent.exit_code == 2
     assert as_subagent.outcome == "denied"
@@ -115,6 +150,7 @@ def test_real_subagent_lint_denies_remotely_via_request_agent_type(
 
 def test_local_state_policies_self_skip_with_degraded_markers(
     monkeypatch: pytest.MonkeyPatch,
+    authorized_project_context,
 ) -> None:
     invoked = {"local": 0, "safe": 0}
     local_id = "yoke_core.domain.lint_destructive_git"
@@ -128,12 +164,15 @@ def test_local_state_policies_self_skip_with_degraded_markers(
         invoked["safe"] += 1
         return HookDecision(outcome=Outcome.NOOP, next=Next.CONTINUE)
 
-    _install_chain(monkeypatch, {
-        local_id: _module(local_id, local_eval),
-        "remote_hook.fake_safe": _module("remote_hook.fake_safe", safe_eval),
-    })
+    _install_chain(
+        monkeypatch,
+        {
+            local_id: _module(local_id, local_eval),
+            "remote_hook.fake_safe": _module("remote_hook.fake_safe", safe_eval),
+        },
+    )
 
-    result = evaluate_remote("PreToolUse", "{}", "claude", None, 2000)
+    result = evaluate_remote("PreToolUse", "{}", "claude", None, 2000, project_id=7)
 
     assert invoked == {"local": 0, "safe": 1}
     assert result.degraded == (local_id,)
@@ -158,12 +197,16 @@ def test_deny_before_timeout_is_preserved(
         time.sleep(2.0)
         return HookDecision(outcome=Outcome.NOOP, next=Next.CONTINUE)
 
-    _install_chain(monkeypatch, {
-        "remote_hook.fake_deny": _module(
-            "remote_hook.fake_deny", lambda ctx: _deny("blocked", next_step=Next.CONTINUE),
-        ),
-        "remote_hook.fake_slow": _module("remote_hook.fake_slow", slow),
-    })
+    _install_chain(
+        monkeypatch,
+        {
+            "remote_hook.fake_deny": _module(
+                "remote_hook.fake_deny",
+                lambda ctx: _deny("blocked", next_step=Next.CONTINUE),
+            ),
+            "remote_hook.fake_slow": _module("remote_hook.fake_slow", slow),
+        },
+    )
 
     result = evaluate_remote("PreToolUse", "{}", "claude", None, 250)
 
@@ -183,7 +226,9 @@ def test_budget_clamps_to_server_ceiling(
         time.sleep(2.0)
         return HookDecision(outcome=Outcome.NOOP, next=Next.CONTINUE)
 
-    _install_chain(monkeypatch, {"remote_hook.fake_slow": _module("remote_hook.fake_slow", slow)})
+    _install_chain(
+        monkeypatch, {"remote_hook.fake_slow": _module("remote_hook.fake_slow", slow)}
+    )
 
     result = evaluate_remote("PreToolUse", "{}", "claude", None, 60_000)
 

@@ -17,7 +17,6 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from yoke_contracts.session_identity import resolve_env_session_id
@@ -142,14 +141,9 @@ def resolve_yoke_db(root: str) -> str:
 
 def is_yoke_target(root: str, yoke_db: str) -> bool:
     """Return True when the hook should run for this workspace."""
-    try:
-        from yoke_core.hooks.target import (
-            is_yoke_target as _shared_is_yoke_target,
-        )
+    from yoke_core.hooks.target import is_yoke_target as shared_is_yoke_target
 
-        return _shared_is_yoke_target(root, yoke_db)
-    except Exception:
-        return bool(root and yoke_db and Path(yoke_db).is_file())
+    return shared_is_yoke_target(root, yoke_db)
 
 
 # ---------------------------------------------------------------------------

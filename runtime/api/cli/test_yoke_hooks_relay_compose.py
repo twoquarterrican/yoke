@@ -23,7 +23,7 @@ from yoke_harness.hooks.decision_render import HOOK_SPECIFIC_OUTPUT_KEY
 from yoke_harness.hooks.local_subset import LocalSubsetEvaluation
 from yoke_harness.hooks.relay import degrade_to_noop
 
-pytest_plugins = ("runtime.api.cli.test_yoke_operations_cli_hooks",)
+pytest_plugins = ("runtime.api.cli.hook_relay_test_support",)
 
 
 def _context_envelope(body: str, event_name: str = "PreToolUse") -> str:
