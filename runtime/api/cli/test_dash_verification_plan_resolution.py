@@ -69,7 +69,7 @@ def test_dash_filing_resolves_plan_slug_within_item_project(
     )
 
     assert lookup["function_id"] == "qa.plan.list"
-    assert lookup["payload"] == {"project": "yoke"}
+    assert lookup["payload"] == {"project": "yoke", "detail": "full"}
     assert captured["payload"]["workflow_posture"]["verification"] == {
         "kind": "plan",
         "plan_id": 38,

@@ -66,7 +66,7 @@ def add_json_arg(parser: argparse.ArgumentParser) -> None:
         "--json",
         dest="json_mode",
         action="store_true",
-        help="Emit the command's JSON response envelope on stdout.",
+        help="Print the JSON envelope.",
     )
 
 
@@ -181,7 +181,7 @@ def parse_or_usage_error(
         parser.add_argument(
             "--full",
             action="store_true",
-            help="Explicitly permit the complete read output beyond the CLI size limit.",
+            help="Uncapped read output.",
         )
     try:
         return parser.parse_args(args)

@@ -110,7 +110,7 @@ test("ended history is lazy, cursor-paged, and excluded from bulk audiences", as
   // spend read fires beside it, and the steering tint asks its own question
   // rather than a second complete roster.
   assert.deepEqual(requests.filter((request) => request.function === "sessions.list"), [
-    { function: "sessions.list", payload: { open: true, projects: ["1"] } },
+    { function: "sessions.list", payload: { open: true, detail: "full", projects: ["1"] } },
     { function: "sessions.list", payload: { usage_last_24h: true, projects: ["1"] } },
   ]);
   assert.deepEqual(cardIds(root), ["open-active", "open-stale"]);

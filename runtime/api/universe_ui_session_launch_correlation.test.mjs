@@ -221,7 +221,7 @@ test("registered-session drill-in uses the exact session lookup", async (t) => {
   const lookup = requests.find(
     (request) => request.function === "sessions.list" && request.payload?.session_id,
   );
-  assert.deepEqual(lookup.payload, { project: "1", session_id: "session-matched" });
+  assert.deepEqual(lookup.payload, { project: "1", session_id: "session-matched", detail: "full" });
   assert.equal(byClass(root, "session-card").length, 1);
   assert.equal(
     byClass(root, "session-card")[0].getAttribute("data-session-id"),

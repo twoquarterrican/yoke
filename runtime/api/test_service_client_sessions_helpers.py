@@ -87,6 +87,9 @@ _SESSION_SCHEMA_DDL = f"""
         owner_session_id TEXT,
         owner_work_claim_id INTEGER,
         state TEXT,
+        mode TEXT,
+        integration_target TEXT,
+        registered_at TIMESTAMPTZ,
         released_at TIMESTAMPTZ,
         cancelled_at TIMESTAMPTZ,
         release_reason TEXT

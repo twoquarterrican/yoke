@@ -42,7 +42,7 @@ def _request(project_id: int | None = None) -> FunctionCallRequest:
         function="steering.report.get",
         actor=ActorContext(actor_id="2", session_id=SESSION_ALPHA),
         target=TargetRef(kind="global"),
-        payload={},
+        payload={"full": True},
         options=options,
     )
 
@@ -160,7 +160,8 @@ def test_read_delta_is_durable_and_keeps_full_facts(test_db, monkeypatch) -> Non
     second = handle_get(request)
     assert len(second.result_payload["delta_body"]) <= 100
     assert "unchanged" in second.result_payload["delta_body"]
-    assert "## alpha" in second.result_payload["body"]
+    assert "body" not in second.result_payload
+    assert "## alpha" in handle_get(_request()).result_payload["body"]
     assert len(second.result_payload["scopes"]) == 2
     monkeypatch.setattr(
         "yoke_core.domain.steering_fleet_report.compose_report",

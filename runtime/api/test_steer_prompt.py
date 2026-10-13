@@ -168,7 +168,7 @@ class TestSteerSkillContract:
 
     def test_idle_holder_triage_preserves_active_claim_protection(self):
         loop = _words(_read(_STEER_DIR / "loop.md"))
-        assert "yoke sessions list --json" in loop
+        assert "yoke sessions list --full --json" in loop
         assert "effective_stale_ttl_minutes" in loop
         assert "Active work claims protect holders from age-based reclaim" in loop
         assert "no stale TTL countdown releases a live lane" in loop

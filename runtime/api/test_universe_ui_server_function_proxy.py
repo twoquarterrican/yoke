@@ -230,7 +230,10 @@ class TestFunctionProxy:
         test_db.commit()
         response = self._call(
             ui_client,
-            {"function": "sessions.list", "payload": {"project": "1"}},
+            {
+                "function": "sessions.list",
+                "payload": {"project": "1", "detail": "full"},
+            },
         )
         assert response.status_code == 200
         envelope = response.json()

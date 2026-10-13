@@ -61,7 +61,7 @@ test("Frontier is six bands of work under one page heading", async (t) => {
   );
   assert.deepEqual(
     client.requests.find((request) => request.function === "sessions.list").payload,
-    { per_project: true, open: true },
+    { per_project: true, open: true, detail: "full" },
   );
   mounted.unmount();
 });
