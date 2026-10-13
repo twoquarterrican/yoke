@@ -104,6 +104,10 @@ CORE_TABLES: dict[str, dict] = {
             ("created_at", "TIMESTAMPTZ"),
         ],
         "notes": (
+            "Created by the complete environment_bootstrap.run_bootstrap "
+            "initialization chain; schema.cmd_init alone does not create "
+            "item_dependencies. Test a complete control plane with the full "
+            "bootstrap strategy, rather than a core-schema-only template. "
             "Directional edges between items. The dependent waits on "
             "the blocker per gate_point ('activation', 'integration', "
             "'closure', or 'coordination_only' — the last attests "

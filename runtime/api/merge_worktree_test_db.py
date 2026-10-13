@@ -87,7 +87,7 @@ def _seed_yoke_project_with_github_app(
     )
     register_session_actor(conn, MERGE_SESSION_ID)
     register_machine_checkout(
-        Path(repo_path) / f".yoke-test-config-{os.getpid()}-{item_id}",
+        Path(repo_path).parent / f".yoke-test-config-{os.getpid()}-{item_id}",
         Path(repo_path),
         1,
     )

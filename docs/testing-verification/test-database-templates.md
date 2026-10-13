@@ -1,0 +1,32 @@
+# Test database templates
+
+`runtime.api.fixtures.file_test_db.init_test_db` builds each schema callable
+once per pytest worker in an owned Postgres template database. Tests receive
+a reusable clone whose schema, rows and sequences reset after each checkout.
+The template never receives test writes. Nested contexts and replacements
+after schema changes clone the template instead of replaying initialization.
+
+The default strategy and explicit `schema.cmd_init` share the production
+schema flavor, including baseline test-project identities. The fixture DDL
+strategy shares the existing fixture template. Other callables, including
+`apply_fixture_schema_with_human`, have their own flavors by callable identity.
+Different functions with the same name remain separate. Callable objects and
+closures retain their identity for the worker's lifetime. Use a distinct
+callable for different schema or seed inputs; do not change a callable's
+captured inputs between checkouts and expect the template to change.
+
+A failed template build drops its database and restores the prior DSN before
+raising the schema failure. Fix that schema strategy and retry; the failed
+build is never retained. Worker exit drops templates and reusable databases.
+The existing invocation namespace keeps concurrent runs separate.
+
+Merge subprocess tests also copy an origin, repository and linked worktree
+built once per test module. Each copy rewrites its Git pointers and origin
+URL to its own directory. Database setup templates the complete production
+`environment_bootstrap.run_bootstrap` chain, including domain tables such as
+`item_dependencies`; `schema.cmd_init` alone supplies only the shared core.
+per-test project, machine and merge-item seeds still use each test's paths.
+
+Use the watcher for focused checks and record CI's shard wall times when
+comparing performance. A green fixture check proves isolation and reuse;
+it does not establish the full CI runtime reduction.

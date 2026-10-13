@@ -34,13 +34,13 @@ from __future__ import annotations
 
 import atexit
 import contextlib
-from typing import Callable, Iterator, Optional
+from typing import Callable, Hashable, Iterator, Optional
 
 import psycopg
 
 from yoke_core.domain import schema_fingerprint
 
-_STATES: dict[str, dict] = {}
+_STATES: dict[Hashable, dict] = {}
 
 
 class SchemaDriftDetected(Exception):
@@ -134,9 +134,7 @@ def _capture_baseline(name: str) -> dict:
             # is needed to re-insert the seed rows at reset time.
             literals = [
                 row[0]
-                for row in conn.execute(
-                    f"SELECT (t.*)::text FROM {table} t"
-                ).fetchall()
+                for row in conn.execute(f"SELECT (t.*)::text FROM {table} t").fetchall()
             ]
             if literals:
                 overriding = (
@@ -193,7 +191,7 @@ def _reset(state: dict) -> None:
         conn.close()
 
 
-def discard(flavor: str) -> None:
+def discard(flavor: Hashable) -> None:
     """Drop the reusable database for *flavor*; the next checkout rebuilds."""
     state = _STATES.pop(flavor, None)
     if state is not None:
@@ -201,9 +199,7 @@ def discard(flavor: str) -> None:
 
 
 @contextlib.contextmanager
-def checkout(
-    flavor: str, build: Callable[[], str]
-) -> Iterator[Optional[str]]:
+def checkout(flavor: Hashable, build: Callable[[], str]) -> Iterator[Optional[str]]:
     """Yield the reusable database name for *flavor*, or ``None`` to fall back.
 
     ``build`` returns the name of a freshly built database for the flavor
