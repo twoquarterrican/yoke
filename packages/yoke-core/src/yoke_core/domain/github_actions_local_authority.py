@@ -12,7 +12,6 @@ from yoke_contracts.api.function_call import (
 from yoke_contracts.github_workflow_dispatch import (
     GITHUB_ACTIONS_LOCAL_AUTHORITY_ENV,
 )
-from yoke_core.domain.items_constants import DEFAULT_ITEM_ACTOR_ID
 
 
 _ALLOWED_FUNCTIONS = frozenset({
@@ -61,16 +60,18 @@ def dispatch(request: FunctionCallRequest) -> FunctionCallResponse:
         return _denied(request, "local GitHub Actions request omitted project")
     try:
         from yoke_core.domain import db_helpers
+        from yoke_core.domain.actors import first_human_actor_id
         from yoke_core.domain.project_identity import resolve_project_id
 
         with db_helpers.connect() as conn:
             project_id = resolve_project_id(conn, project)
+            local_human_id = first_human_actor_id(conn)
     except Exception as exc:
         return _denied(
             request,
             f"could not resolve local GitHub Actions project scope: {exc}",
         )
-    actor = request.actor.model_copy(update={"actor_id": DEFAULT_ITEM_ACTOR_ID})
+    actor = request.actor.model_copy(update={"actor_id": str(local_human_id)})
     options = dict(request.options or {})
     options["authorized_project_id"] = project_id
     narrowed = request.model_copy(update={"actor": actor, "options": options})

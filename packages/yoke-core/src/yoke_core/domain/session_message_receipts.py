@@ -144,7 +144,7 @@ def cancel_message(
 ) -> dict[str, Any]:
     now = parse_instant(utc_now() if now is None else now)
     details = message_details(conn, message_id)
-    sender = int(details["sender_actor_id"]) == actor_id
+    sender = details["sender_actor_id"] == actor_id
     project_ids = {
         int(recipient["project_id"])
         for recipient in details.get("recipients", [])

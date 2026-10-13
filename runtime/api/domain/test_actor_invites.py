@@ -16,6 +16,7 @@ from yoke_core.domain.actor_invites import (
     InviteNotFound,
     InviteNotPending,
     create_invite,
+    get_invite,
     list_invites,
     mark_invite_accepted,
     pending_invite_for_email,
@@ -139,6 +140,18 @@ def test_accept_requires_pending_and_records_acceptor(conn):
         mark_invite_accepted(
             conn, invite_id=invite.invite_id, accepted_by_actor_id=member,
         )
+
+
+def test_an_invite_with_no_recorded_inviter_reads_as_none(conn):
+    invite = create_invite(
+        conn, email="dev@example.com", org_id=default_org_id(conn),
+        invited_by_actor_id=seed_human_actor(conn),
+    )
+    conn.execute(
+        "UPDATE actor_invites SET invited_by_actor_id = NULL WHERE id = %s",
+        (invite.invite_id,),
+    )
+    assert get_invite(conn, invite.invite_id).invited_by_actor_id is None
 
 
 def test_bad_email_and_missing_invite_are_typed_errors(conn):

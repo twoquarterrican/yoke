@@ -63,7 +63,7 @@ class Invite:
     role_id: Optional[int]
     actor_id: Optional[int]
     status: str
-    invited_by_actor_id: int
+    invited_by_actor_id: Optional[int]
     created_at: datetime
     accepted_at: Optional[datetime]
     accepted_by_actor_id: Optional[int]
@@ -92,7 +92,7 @@ def _row_to_invite(row: Any) -> Invite:
         role_id=int(row[3]) if row[3] is not None else None,
         actor_id=int(row[4]) if row[4] is not None else None,
         status=str(row[5]),
-        invited_by_actor_id=int(row[6]),
+        invited_by_actor_id=int(row[6]) if row[6] is not None else None,
         created_at=row[7],
         accepted_at=row[8],
         accepted_by_actor_id=int(row[9]) if row[9] is not None else None,

@@ -232,7 +232,7 @@ def _write_message_detail(
         return
     recipients = message.get("recipients") or []
     actor_recipients = message.get("actor_recipients") or []
-    sender = message.get("sender_session_id")
+    sender = message.get("sender_session_id") or message.get("sender_actor_label")
     if not sender and message.get("sender_actor_id") is not None:
         sender = f"actor {message['sender_actor_id']}"
     fields = [

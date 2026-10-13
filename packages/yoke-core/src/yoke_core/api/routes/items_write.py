@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from fastapi.routing import APIRouter
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.mutations import (
@@ -25,6 +25,7 @@ from yoke_core.api.routes.item_delivery_binding_update import (
 
 # Module-level import so test patches against ``yoke_core.api.main.*`` take effect.
 import yoke_core.api.main as _main
+from yoke_core.api.http_auth import require_auth_context
 from yoke_core.api.main_route_adapters import resolve_http_item
 from yoke_core.domain.project_attribution import required_project
 
@@ -64,7 +65,7 @@ def _next_project_sequence(conn, project_id: int) -> int:
 
 
 @router.post("/items", response_model=_main.ItemObject, status_code=201)
-def create_item(req: _main.CreateItemRequest) -> _main.ItemObject | JSONResponse:
+def create_item(request: Request, req: _main.CreateItemRequest) -> _main.ItemObject | JSONResponse:
     """Create a new item via the shared mutation layer.
 
     The route is the ``web_form`` entry surface. The selected workflow
@@ -140,6 +141,7 @@ def create_item(req: _main.CreateItemRequest) -> _main.ItemObject | JSONResponse
         )
 
     field_writes = dict(result.field_writes)
+    field_writes["source"] = str(require_auth_context(request).actor_id)
 
     conn = _main.get_db_readwrite()
     try:

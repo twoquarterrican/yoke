@@ -13,6 +13,9 @@ export function senderDescription(message) {
   if (message.sender_session_id) {
     return `${label} via session ${message.sender_session_id}`;
   }
+  if (message.sender_actor_id == null) {
+    return label;
+  }
   const kind = String(message.sender_actor_kind || "actor");
   const surface = String(
     message.sender_surface_label || message.sender_surface || "unknown surface",

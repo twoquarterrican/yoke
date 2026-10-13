@@ -20,7 +20,6 @@ from datetime import datetime
 from typing import Any, Optional
 
 from yoke_core.domain import db_backend
-from yoke_core.domain.actors import SYSTEM_COMPONENT_YOKE_CORE, seed_system_actor
 from yoke_core.domain.deployment_qa_stage_wake import (
     DEPLOYMENT_QA_STAGE_WAIT_PREFIX,
     RUN_SCOPED_WAIT_TOKEN,
@@ -187,7 +186,6 @@ def withdraw_deployment_qa_wait_wakes(
     stamp = now if isinstance(now, datetime) else now
     wanted_run = str(run_id or "")
     wanted_item = None if item_id is None else int(item_id)
-    actor_id: int | None = None
     withdrawn = 0
     for stored_id, key in _pending_wait_rows(conn, message_id=message_id):
         parsed = parse_deployment_qa_wait_key(key)
@@ -203,12 +201,10 @@ def withdraw_deployment_qa_wait_wakes(
         )
         if not cancel_reason:
             continue
-        if actor_id is None:
-            actor_id = seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE)
         cancel_message_rows(
             conn,
             message_id=stored_id,
-            actor_id=actor_id,
+            actor_id=None,
             reason=cancel_reason,
             cancelled_at=stamp,
         )

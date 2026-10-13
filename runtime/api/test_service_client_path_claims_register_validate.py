@@ -26,7 +26,7 @@ from contextlib import redirect_stderr, redirect_stdout
 
 import pytest
 
-from runtime.api.fixtures.backlog import seed_test_canonical_actors
+from runtime.api.fixtures.backlog import seed_test_canonical_human
 from runtime.api.fixtures.file_test_db import (
     connect_test_db,
     init_test_db,
@@ -76,7 +76,7 @@ def path_claims_db_real_repo(tmp_path, monkeypatch):
         monkeypatch.setenv("YOKE_SESSION_ID", session_id)
         conn = connect_test_db(db_path)
         try:
-            _, actor_id = seed_test_canonical_actors(conn)
+            actor_id = seed_test_canonical_human(conn)
             apply_harness_session_columns(conn)
             p = "%s" if db_backend.connection_is_postgres(conn) else "?"
             conn.execute(

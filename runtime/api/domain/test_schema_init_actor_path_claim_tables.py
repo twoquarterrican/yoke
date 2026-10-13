@@ -102,9 +102,9 @@ def test_human_actor_rejects_component(conn):
 
 
 def test_system_component_unique_when_present(conn):
-    _insert_actor(conn, "system", "yoke-core")
+    _insert_actor(conn, "system", "test-component")
     with pytest.raises(_integrity_error_types(conn)):
-        _insert_actor(conn, "system", "yoke-core")
+        _insert_actor(conn, "system", "test-component")
 
 
 def test_human_actors_can_share_null_component(conn):

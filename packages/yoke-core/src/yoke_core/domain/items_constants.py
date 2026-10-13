@@ -28,8 +28,6 @@ from yoke_contracts.items_projection import (
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_ITEM_ACTOR_ID = "2"
-
 # DB-only columns (body excluded — it's virtual).
 _DB_COLUMNS = tuple(c for c in CANONICAL_COLUMNS if c != "body")
 

@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from runtime.api.fixtures.backlog import seed_test_canonical_actors
+from runtime.api.fixtures.backlog import seed_test_canonical_human
 from runtime.api.domain.steering_claim_test_support import (
     seed_session,
     acquire_steering,
@@ -61,7 +61,7 @@ def path_claims_db(tmp_path, monkeypatch):
         monkeypatch.setenv("YOKE_DB", db_path)
         conn = connect_test_db(db_path)
         try:
-            seed_test_canonical_actors(conn)
+            human = seed_test_canonical_human(conn)
             # Seed an item + project + path_targets so register/override have
             # something to operate on.
             conn.execute(
@@ -96,7 +96,7 @@ def path_claims_db(tmp_path, monkeypatch):
             conn.commit()
             seed_roles_and_permissions(conn)
             grant_actor_project_role(
-                conn, actor_id=2, project_id=1, role_name=ROLE_ADMIN
+                conn, actor_id=human, project_id=1, role_name=ROLE_ADMIN
             )
             seed_session(conn, "override-steering", 1)
             acquire_steering(conn, "override-steering", 1)

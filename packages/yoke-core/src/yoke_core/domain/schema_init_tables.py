@@ -18,7 +18,6 @@ from yoke_core.domain.function_call_ledger import FUNCTION_CALL_LEDGER_CREATE_SQ
 from yoke_core.domain.github_workflow_dispatch_intents import (
     GITHUB_WORKFLOW_DISPATCH_INTENTS_CREATE_SQL,
 )
-from yoke_core.domain.items_constants import DEFAULT_ITEM_ACTOR_ID
 from yoke_core.domain.item_worktree_schema import (
     ensure_epic_item_worktree_references,
     ensure_item_worktree_schema,
@@ -69,7 +68,7 @@ def create_core_tables(conn: Any) -> None:
           merge_queue_notified_at TIMESTAMPTZ,
           created_at TIMESTAMPTZ NOT NULL,
           updated_at TIMESTAMPTZ NOT NULL,
-          source TEXT NOT NULL DEFAULT '{DEFAULT_ITEM_ACTOR_ID}',
+          source TEXT NOT NULL DEFAULT '',
           project_id INTEGER NOT NULL REFERENCES projects(id),
           project_sequence INTEGER NOT NULL,
           spec_updated_at TIMESTAMPTZ,

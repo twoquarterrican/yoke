@@ -29,8 +29,8 @@ from yoke_core.domain.work_claim_targets import make_item_target
 HOLDER_A = "sess-holder-a"
 HOLDER_B = "sess-holder-b"
 
-#: The actor id every ``seed_session`` row carries.
-SESSION_ACTOR_ID = 2
+#: The actor id every ``seed_session`` row carries: the born universe's human.
+SESSION_ACTOR_ID = 1
 
 
 def _project(conn: Any) -> None:

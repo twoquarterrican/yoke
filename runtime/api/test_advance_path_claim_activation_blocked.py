@@ -23,7 +23,7 @@ from yoke_core.domain import db_backend
 from yoke_core.domain.advance_path_claim_activation import (
     run_activation_phase,
 )
-from yoke_core.domain.actors import seed_canonical_actors, seed_human_actor
+from yoke_core.domain.actors import seed_canonical_human, seed_human_actor
 from yoke_core.domain.schema_init_actor_path_claim_tables import (
     create_actor_path_claim_tables,
 )
@@ -52,7 +52,7 @@ def conn(tmp_path, monkeypatch):
     converge_builtin_workflows(c)
     create_path_registry_tables(c)
     create_actor_path_claim_tables(c)
-    seed_canonical_actors(c)
+    seed_canonical_human(c)
     c.execute(
         "INSERT INTO projects (id, slug, name, created_at) "
         "VALUES (1, 'yoke', 'yoke', '2026-05-01T00:00:00Z')"

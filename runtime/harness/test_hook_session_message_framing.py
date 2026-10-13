@@ -153,6 +153,25 @@ def test_sender_identity_distinguishes_dashboard_from_harness_session() -> None:
     assert "Authenticated sender: ben via session session-123" in harness_rendered
 
 
+def test_an_engine_notice_names_yoke_as_its_sender_with_no_actor() -> None:
+    notice = LeasedSessionMessage(
+        message_id=MESSAGE_ID,
+        body="Engine notice",
+        sender_actor_id=None,
+        sender_actor_label="Yoke",
+        sender_actor_kind=None,
+    )
+
+    rendered, _ = _render(
+        SessionMessageLease(lease_id="lease-engine", messages=(notice,))
+    )
+
+    (sender_line,) = [
+        line for line in rendered.splitlines() if "Authenticated sender:" in line
+    ]
+    assert sender_line.endswith("Authenticated sender: Yoke")
+
+
 def test_encoded_fake_boundaries_cannot_settle_another_message() -> None:
     from yoke_contracts.hook_context_compose import delivered_message_ids
 

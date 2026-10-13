@@ -44,13 +44,15 @@ def begin_message_mutation(conn: Any) -> None:
 
 
 def _idempotent_message(
-    conn: Any, *, sender_actor_id: int, idempotency_key: str
+    conn: Any, *, sender_actor_id: int | None, idempotency_key: str
 ) -> dict[str, Any] | None:
     marker = _p(conn)
+    engine = sender_actor_id is None
     row = conn.execute(
-        "SELECT message_id FROM session_messages "
-        f"WHERE sender_actor_id={marker} AND idempotency_key={marker}",
-        (sender_actor_id, idempotency_key),
+        "SELECT message_id FROM session_messages WHERE sender_actor_id "
+        + ("IS NULL" if engine else f"={marker}")
+        + f" AND idempotency_key={marker}",
+        (idempotency_key,) if engine else (sender_actor_id, idempotency_key),
     ).fetchone()
     return message_details(conn, str(row[0])) if row else None
 
@@ -87,7 +89,7 @@ def insert_message(
     conn: Any,
     *,
     message_id: str | None = None,
-    sender_actor_id: int,
+    sender_actor_id: int | None,
     sender_session_id: str | None,
     sender_surface: str | None,
     body: str,
@@ -294,7 +296,7 @@ def cancel_message_rows(
     conn: Any,
     *,
     message_id: str,
-    actor_id: int,
+    actor_id: int | None,
     reason: str,
     cancelled_at: datetime,
 ) -> dict[str, Any]:

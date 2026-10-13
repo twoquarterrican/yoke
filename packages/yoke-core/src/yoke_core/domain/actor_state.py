@@ -7,7 +7,6 @@ from typing import Any
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import instant_parameter
-from yoke_core.domain.actors import SYSTEM_COMPONENT_YOKE_CORE
 
 
 class ActorDisabledError(Exception):
@@ -122,11 +121,6 @@ def set_actor_enabled(
             return 0
         if not enabled:
             if kind == "system" or component is not None:
-                if component == SYSTEM_COMPONENT_YOKE_CORE:
-                    raise ActorStateRefused(
-                        "the canonical core actor cannot be disabled; choose "
-                        "a different actor"
-                    )
                 if has_active_deployment_credential(conn, actor_id):
                     raise ActorStateRefused(
                         f"actor {actor_id} has an active deployment credential; "

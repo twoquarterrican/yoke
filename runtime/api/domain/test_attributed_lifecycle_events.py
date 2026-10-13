@@ -47,11 +47,11 @@ class _Response(BaseModel):
 
 
 def _actor_ids(conn) -> tuple[int, int]:
-    system_actor_id, human_actor_id = actors.seed_canonical_actors(
+    human_actor_id = actors.seed_canonical_human(
         conn,
         local_human_name="attribution-test-human",
     )
-    return human_actor_id, system_actor_id
+    return human_actor_id, actors.seed_system_actor(conn, "attribution-test-system")
 
 
 def _insert_session(conn, actor_id: int) -> None:

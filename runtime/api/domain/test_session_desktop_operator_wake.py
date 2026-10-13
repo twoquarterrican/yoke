@@ -206,6 +206,13 @@ def test_the_operator_is_told_which_chat_holds_the_waiting_message() -> None:
     ]
     assert len(notices) == 1
     assert "type anything" in notices[0]
+    senders = conn.execute(
+        "SELECT m.sender_actor_id FROM actor_message_recipients r "
+        "JOIN session_messages m ON m.message_id=r.message_id "
+        "WHERE r.recipient_kind=?",
+        (ACTOR_KIND,),
+    ).fetchall()
+    assert [row[0] for row in senders] == [None]
 
 
 def test_one_waiting_envelope_accepts_a_reworded_operator_notice() -> None:

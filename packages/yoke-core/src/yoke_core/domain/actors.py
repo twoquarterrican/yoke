@@ -3,10 +3,10 @@
 Owns the read/write path for the ``actors`` table created in
 :mod:`schema_init_actor_path_claim_tables`. Three concerns live here:
 
-1. **Seeding.** Idempotent helpers create the canonical system actor
-   (``yoke-core``) and human actors. Seeding is migration-safe: every
-   helper resolves the row that already exists before inserting, then
-   returns its id.
+1. **Seeding.** Idempotent helpers create a universe's first human and
+   named system actors. Seeding is migration-safe: every helper resolves
+   the row that already exists before inserting, then returns its id.
+   Writes the engine makes on its own carry no actor at all.
 2. **Naming.** :func:`actor_name` renders an ``actors.id`` to its stored
    human-readable name and :func:`set_actor_name` writes it. Display-side
    rendering — one-line safety, set disambiguation — lives in
@@ -42,9 +42,7 @@ from typing import Any, List, Optional
 
 from yoke_core.domain import db_backend
 
-SYSTEM_COMPONENT_YOKE_CORE = "yoke-core"
-
-#: Env var that injects the local human actor's name into canonical-actor
+#: Env var that injects the local human actor's name into canonical-human
 #: seeding. The environment-bootstrap init chain invokes each init module
 #: as ``main(["init"])`` with no parameters, so per-universe context rides
 #: pinned env vars (the same idiom as the ``YOKE_PG_DSN`` authority pin);
@@ -235,15 +233,15 @@ def resolve_actors_by_name(
     return [int(row[0]) for row in rows]
 
 
-def seed_canonical_actors(
+def seed_canonical_human(
     conn: Any,
     *,
     local_human_name: Optional[str] = None,
-) -> tuple[int, int]:
-    """Seed the two actors every Yoke install needs and return their ids.
+) -> int:
+    """Seed the human every Yoke universe starts with and return its id.
 
-    Returns ``(yoke_core_id, local_human_id)``. Idempotent: a universe
-    that already carries a human actor keeps it, whatever it is called.
+    Idempotent: a universe that already carries a human actor keeps it,
+    whatever it is called.
     Re-seeding deliberately does not look the human up by name — a
     universe whose owner has since been renamed would otherwise gain a
     second human actor, and the first one holds every claim, role, and
@@ -254,16 +252,15 @@ def seed_canonical_actors(
     chain passes the universe owner's OS login through), then
     :data:`DEFAULT_LOCAL_HUMAN_NAME`.
     """
-    yoke_core = seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE)
     existing = sole_human_actor_id(conn, oldest=True)
     if existing is not None:
-        return yoke_core, existing
+        return existing
     name = (
         local_human_name
         or os.environ.get(LOCAL_HUMAN_NAME_ENV, "").strip()
         or DEFAULT_LOCAL_HUMAN_NAME
     )
-    return yoke_core, seed_human_actor(conn, name)
+    return seed_human_actor(conn, name)
 
 
 def sole_human_actor_id(conn: Any, *, oldest: bool = False) -> Optional[int]:
@@ -284,6 +281,17 @@ def sole_human_actor_id(conn: Any, *, oldest: bool = False) -> Optional[int]:
     if oldest or len(rows) == 1:
         return int(rows[0][0])
     return None
+
+
+def first_human_actor_id(conn: Any) -> int:
+    """The universe's oldest human; raises when birth seeded none."""
+    actor_id = sole_human_actor_id(conn, oldest=True)
+    if actor_id is None:
+        raise ActorNotFound(
+            "universe_has_no_human_actor: no human actor exists to attribute "
+            "this to. Recovery: boot the universe so its birth seeds one."
+        )
+    return actor_id
 
 
 def actor_name_or_passthrough(conn: Any, value: str) -> str:
@@ -325,15 +333,15 @@ __all__ = [
     "ActorNotFound",
     "DEFAULT_LOCAL_HUMAN_NAME",
     "LOCAL_HUMAN_NAME_ENV",
-    "SYSTEM_COMPONENT_YOKE_CORE",
     "actor_name",
     "actor_name_or_passthrough",
     "is_human_actor",
     "resolve_actors_by_name",
-    "seed_canonical_actors",
+    "seed_canonical_human",
     "seed_human_actor",
     "seed_system_actor",
     "set_actor_name",
     "sole_human_actor_id",
+    "first_human_actor_id",
     "validate_actor_id",
 ]

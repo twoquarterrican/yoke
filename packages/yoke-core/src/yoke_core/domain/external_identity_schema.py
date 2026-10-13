@@ -69,7 +69,7 @@ def create_external_identity_tables(conn: Any) -> None:
             actor_id INTEGER REFERENCES actors(id),
             status TEXT NOT NULL DEFAULT 'pending'
                 CHECK(status IN ('pending','accepted','revoked')),
-            invited_by_actor_id INTEGER NOT NULL REFERENCES actors(id),
+            invited_by_actor_id INTEGER REFERENCES actors(id),
             created_at TIMESTAMPTZ NOT NULL,
             accepted_at TIMESTAMPTZ,
             accepted_by_actor_id INTEGER REFERENCES actors(id)

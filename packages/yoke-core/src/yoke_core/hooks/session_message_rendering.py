@@ -35,6 +35,8 @@ def _render_message(
     sender = message.sender_actor_label or f"actor {message.sender_actor_id}"
     if message.sender_session_id:
         sender_description = f"{sender} via session {message.sender_session_id}"
+    elif message.sender_actor_id is None:
+        sender_description = sender
     else:
         actor_kind = message.sender_actor_kind or "actor"
         surface = (

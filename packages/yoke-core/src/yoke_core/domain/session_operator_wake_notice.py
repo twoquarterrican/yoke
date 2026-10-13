@@ -40,7 +40,6 @@ from yoke_core.domain.actor_message_recipients import (
     ResolvedActorRecipient,
 )
 from yoke_core.domain.actor_render import render_actor_name
-from yoke_core.domain.actors import SYSTEM_COMPONENT_YOKE_CORE, seed_system_actor
 from yoke_core.domain.session_message_authorization import project_policy
 from yoke_core.domain.session_message_starvation import (
     awaiting_injection,
@@ -171,7 +170,7 @@ def notify_operator_to_wake(
     policy = project_policy(conn, project_id)
     details, created = insert_message(
         conn,
-        sender_actor_id=seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE),
+        sender_actor_id=None,
         sender_session_id=None,
         sender_surface=None,
         body=_notice_body(
@@ -313,7 +312,7 @@ def settle_operator_wake_notices(
         cancel_message_rows(
             conn,
             message_id=str(notice["message_id"]),
-            actor_id=seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE),
+            actor_id=None,
             reason=reason,
             cancelled_at=current,
         )

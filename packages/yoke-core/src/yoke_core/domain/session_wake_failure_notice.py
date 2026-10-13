@@ -13,7 +13,6 @@ from typing import Any, Mapping
 
 from yoke_contracts.session_control.models import RecipientSelector
 from yoke_contracts.session_control.wake_delivery import delivery_attempt_diagnostic
-from yoke_core.domain.actors import SYSTEM_COMPONENT_YOKE_CORE, seed_system_actor
 from yoke_core.domain.session_item_scope import session_item_scope
 from yoke_core.domain.session_message_authorization import project_policy
 from yoke_core.domain.session_message_steering import (
@@ -107,7 +106,7 @@ def notify_failed_wake(
     )
     details, created = insert_message(
         conn,
-        sender_actor_id=seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE),
+        sender_actor_id=None,
         sender_session_id=None,
         sender_surface=None,
         body=(

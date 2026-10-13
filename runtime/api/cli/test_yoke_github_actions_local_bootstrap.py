@@ -58,14 +58,17 @@ def test_local_bootstrap_routes_through_durable_typed_dispatch(
         rc = cli_main(argv)
         with connect_test_db(db_path) as conn:
             row = conn.execute(
-                "SELECT state, workflow_run_id FROM "
+                "SELECT state, workflow_run_id, actor_id FROM "
                 "github_workflow_dispatch_intents "
                 "WHERE request_id = 'local-bootstrap-1'"
+            ).fetchone()
+            (human,) = conn.execute(
+                "SELECT min(id) FROM actors WHERE kind = 'human'"
             ).fetchone()
 
     assert rc == 0, stderr.getvalue()
     assert stdout.getvalue() == "731\n"
-    assert row == ("completed", "731")
+    assert row == ("completed", "731", str(human))
     assert posts[0][1]["inputs"]["yoke_dispatch_id"].startswith("yd-")
     assert posts[0][3] == 1
 

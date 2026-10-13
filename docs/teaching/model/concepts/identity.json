@@ -23,7 +23,8 @@
       {
        "id": "agent-system-identities",
        "title": "Agent / system identities",
-       "status": "draft-copy"
+       "status": "draft-copy",
+       "related": "messaging/inbox/inbox-sections/notices"
       },
       {
        "id": "enabled-and-retired-actors",

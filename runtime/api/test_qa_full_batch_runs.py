@@ -200,7 +200,7 @@ class TestRunAddBatch:
         conn = _conn(db_path)
         create_actor_identity_tables(conn)
         apply_fixture_ddl(conn, _SESSIONS_FAMILY_DDL)
-        _, actor_id = actors.seed_canonical_actors(
+        actor_id = actors.seed_canonical_human(
             conn,
             local_human_name="qa-batch-event-test-human",
         )

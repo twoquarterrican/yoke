@@ -43,7 +43,7 @@ def create_session_control_tables(conn: Any) -> None:
         f"""
         CREATE TABLE IF NOT EXISTS session_messages (
             message_id TEXT PRIMARY KEY,
-            sender_actor_id INTEGER NOT NULL REFERENCES actors(id),
+            sender_actor_id INTEGER REFERENCES actors(id),
             sender_session_id TEXT REFERENCES harness_sessions(session_id),
             body TEXT NOT NULL,
             body_sha256 TEXT NOT NULL,
@@ -59,6 +59,9 @@ def create_session_control_tables(conn: Any) -> None:
         CREATE UNIQUE INDEX IF NOT EXISTS idx_session_messages_sender_dedupe
             ON session_messages(sender_actor_id, idempotency_key)
             WHERE idempotency_key IS NOT NULL;
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_session_messages_engine_dedupe
+            ON session_messages(idempotency_key)
+            WHERE sender_actor_id IS NULL AND idempotency_key IS NOT NULL;
         CREATE INDEX IF NOT EXISTS idx_session_messages_created
             ON session_messages(created_at);
 

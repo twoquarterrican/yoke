@@ -16,9 +16,8 @@ import json
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from yoke_core.domain import advance_path_claim_activation as _module
 from yoke_core.domain import db_backend
-from yoke_core.domain.actors import seed_canonical_actors, seed_human_actor  # noqa: F401
+from yoke_core.domain.actors import seed_canonical_human, seed_human_actor  # noqa: F401
 from yoke_core.domain.advance_path_claim_activation import (
     run_activation_phase,
 )
@@ -45,7 +44,7 @@ def conn(monkeypatch):
     create_path_registry_tables(c)
     create_actor_path_claim_tables(c)
     _create_events_table(c)
-    seed_canonical_actors(c)
+    seed_canonical_human(c)
     c.execute(
         "INSERT INTO projects "
         "(id, slug, name, public_item_prefix, created_at) "
