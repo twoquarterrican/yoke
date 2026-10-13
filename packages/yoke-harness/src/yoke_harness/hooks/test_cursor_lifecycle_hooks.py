@@ -20,7 +20,6 @@ from yoke_harness.hooks import cursor_lifecycle_hooks
 from yoke_harness.hooks.cursor_lifecycle_hooks import (
     cursor_lifecycle_hook_command,
     ensure_user_lifecycle_hooks,
-    remove_user_lifecycle_hooks,
 )
 
 
@@ -172,24 +171,3 @@ def test_user_hook_refresh_replaces_legacy_invalid_marker(tmp_path: Path) -> Non
     refreshed = path.read_text(encoding="utf-8")
     assert CURSOR_LEGACY_LIFECYCLE_COMMAND_MARKER not in refreshed
     assert CURSOR_LIFECYCLE_COMMAND_MARKER in refreshed
-
-
-def test_user_hook_removal_keeps_operator_hooks(tmp_path: Path) -> None:
-    path = tmp_path / ".cursor" / "hooks.json"
-    path.parent.mkdir(parents=True)
-    operator = {"command": "echo mine"}
-    path.write_text(json.dumps({"version": 1, "hooks": {"stop": [operator]}}))
-    ensure_user_lifecycle_hooks(hooks_path=path)
-
-    assert remove_user_lifecycle_hooks(hooks_path=path).startswith("removed 2")
-    assert json.loads(path.read_text()) == {"version": 1, "hooks": {"stop": [operator]}}
-    assert remove_user_lifecycle_hooks(hooks_path=path) == f"no Yoke hooks in {path}"
-
-
-def test_user_hook_removal_deletes_the_file_yoke_created(tmp_path: Path) -> None:
-    path = tmp_path / ".cursor" / "hooks.json"
-    ensure_user_lifecycle_hooks(hooks_path=path)
-
-    assert remove_user_lifecycle_hooks(hooks_path=path) == f"deleted {path}"
-    assert not path.exists()
-    assert remove_user_lifecycle_hooks(hooks_path=path) == f"no {path}"

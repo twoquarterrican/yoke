@@ -9,10 +9,8 @@ import pytest
 from yoke_cli.config import machine_uninstall_steps as steps
 from yoke_cli.config.machine_uninstall_inventory import Inventory, UninstallError
 from yoke_contracts import harness_settings_ledger as ledger
-from yoke_harness.hooks.cursor_lifecycle_hooks import (
-    ensure_user_lifecycle_hooks,
-    remove_user_lifecycle_hooks,
-)
+from yoke_contracts import harness_settings_revert
+from yoke_harness.hooks.cursor_lifecycle_hooks import ensure_user_lifecycle_hooks
 
 
 @pytest.fixture
@@ -42,10 +40,11 @@ def machine(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(steps.machine_uninstall_detached, "prepare", lambda: handoff)
     cursor_hooks = tmp_path / "cursor" / "hooks.json"
+    remove_hooks = harness_settings_revert.remove_cursor_user_hooks
     monkeypatch.setattr(
-        steps,
-        "remove_user_lifecycle_hooks",
-        lambda: remove_user_lifecycle_hooks(hooks_path=cursor_hooks),
+        harness_settings_revert,
+        "remove_cursor_user_hooks",
+        lambda: remove_hooks(hooks_path=cursor_hooks),
     )
     return value, calls, handoff_events
 

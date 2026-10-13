@@ -21,9 +21,9 @@ from typing import Any, Optional
 from yoke_contracts.hook_runner.config_owner import (
     CONFIG_OWNER_ENV_VAR,
     CURSOR_LIFECYCLE_COMMAND_MARKER,
-    CURSOR_LIFECYCLE_COMMAND_MARKERS,
     CURSOR_PROJECT_CONFIG_OWNER,
     CURSOR_USER_LIFECYCLE_OWNER,
+    is_cursor_lifecycle_entry,
 )
 from yoke_harness.hooks.shell_command import hook_shell_command
 
@@ -124,15 +124,6 @@ def _lifecycle_entry(event_verb: str) -> dict[str, Any]:
     }
 
 
-def _is_yoke_lifecycle_entry(entry: Any) -> bool:
-    if not isinstance(entry, dict):
-        return False
-    command = entry.get("command")
-    return isinstance(command, str) and any(
-        marker in command for marker in CURSOR_LIFECYCLE_COMMAND_MARKERS
-    )
-
-
 def ensure_user_lifecycle_hooks(
     *,
     hooks_path: Optional[Path] = None,
@@ -164,7 +155,7 @@ def ensure_user_lifecycle_hooks(
             kept = [
                 e
                 for e in existing
-                if not _is_yoke_lifecycle_entry(e)
+                if not is_cursor_lifecycle_entry(e)
                 and not (
                     isinstance(e, dict)
                     and isinstance(e.get("command"), str)
@@ -184,42 +175,6 @@ def ensure_user_lifecycle_hooks(
         return False
 
 
-def remove_user_lifecycle_hooks(*, hooks_path: Optional[Path] = None) -> str:
-    """Strip Yoke's entries from ``~/.cursor/hooks.json``; say what happened.
-
-    Operator hooks stay. A file left holding nothing but empty hook lists is
-    deleted, since Yoke created it. Unlike the installer this raises: uninstall
-    must report a file it could not clean rather than claim it did.
-    """
-    path = hooks_path or (Path.home() / ".cursor" / "hooks.json")
-    if not path.is_file():
-        return f"no {path}"
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    hooks = payload.get("hooks") if isinstance(payload, dict) else None
-    if not isinstance(hooks, dict):
-        return f"no Yoke hooks in {path}"
-    removed = 0
-    for event in list(hooks):
-        entries = hooks[event]
-        if not isinstance(entries, list):
-            continue
-        kept = [entry for entry in entries if not _is_yoke_lifecycle_entry(entry)]
-        removed += len(entries) - len(kept)
-        if kept:
-            hooks[event] = kept
-        else:
-            del hooks[event]
-    if not removed:
-        return f"no Yoke hooks in {path}"
-    if not hooks and set(payload) <= {"hooks", "version"}:
-        path.unlink()
-        return f"deleted {path}"
-    path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-    return f"removed {removed} Yoke hook entries from {path}"
-
-
 def ensure_user_lifecycle_hooks_for_executor(executor: str) -> None:
     """No-op unless *executor* is a Cursor family id."""
     from yoke_harness.hooks.identity import is_cursor
@@ -234,5 +189,4 @@ __all__ = [
     "cursor_lifecycle_hook_command",
     "ensure_user_lifecycle_hooks",
     "ensure_user_lifecycle_hooks_for_executor",
-    "remove_user_lifecycle_hooks",
 ]

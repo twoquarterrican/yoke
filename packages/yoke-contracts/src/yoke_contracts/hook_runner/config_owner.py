@@ -65,7 +65,8 @@ CURSOR_DUAL_CONFIG_RUNNER_EVENTS: frozenset[str] = frozenset(
 
 
 def is_cursor_hook_payload(
-    environment: Mapping[str, str], payload: Mapping[str, object],
+    environment: Mapping[str, str],
+    payload: Mapping[str, object],
 ) -> bool:
     """True when process and payload provenance both identify Cursor."""
     session_id = payload.get("session_id")
@@ -79,12 +80,22 @@ def is_cursor_hook_payload(
 
 
 def is_cursor_imported_claude_hook(
-    environment: Mapping[str, str], payload: Mapping[str, object],
+    environment: Mapping[str, str],
+    payload: Mapping[str, object],
 ) -> bool:
     """True when Cursor is invoking a hook owned by Claude project config."""
-    return (
-        environment.get(CONFIG_OWNER_ENV_VAR) == CLAUDE_CONFIG_OWNER
-        and is_cursor_hook_payload(environment, payload)
+    return environment.get(
+        CONFIG_OWNER_ENV_VAR
+    ) == CLAUDE_CONFIG_OWNER and is_cursor_hook_payload(environment, payload)
+
+
+def is_cursor_lifecycle_entry(entry: object) -> bool:
+    """True for a Cursor hooks.json entry whose command Yoke rendered."""
+    if not isinstance(entry, Mapping):
+        return False
+    command = entry.get("command")
+    return isinstance(command, str) and any(
+        marker in command for marker in CURSOR_LIFECYCLE_COMMAND_MARKERS
     )
 
 
@@ -105,4 +116,5 @@ __all__ = [
     "EXECUTOR_ENV_VAR",
     "is_cursor_imported_claude_hook",
     "is_cursor_hook_payload",
+    "is_cursor_lifecycle_entry",
 ]

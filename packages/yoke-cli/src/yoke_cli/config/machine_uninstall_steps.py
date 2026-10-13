@@ -20,7 +20,6 @@ from yoke_cli.config.machine_uninstall_inventory import Inventory, UninstallErro
 from yoke_cli.config.machine_config_file import remove_file
 from yoke_contracts import harness_settings_ledger, harness_settings_revert
 from yoke_contracts.self_host_bootstrap_output import redact_api_tokens
-from yoke_harness.hooks.cursor_lifecycle_hooks import remove_user_lifecycle_hooks
 
 COMMAND_TIMEOUT_SECONDS = 300
 NOT_REMOVED = (
@@ -147,7 +146,9 @@ def remove(
         skipped("GitHub", github_skip)
     attempt(
         "Cursor user hooks",
-        lambda: emit(f"Cursor user hooks: {remove_user_lifecycle_hooks()}"),
+        lambda: emit(
+            f"Cursor user hooks: {harness_settings_revert.remove_cursor_user_hooks()}"
+        ),
     )
     # The record of what Yoke wrote lives in the machine home, so this runs
     # before the home is deleted and a failure keeps both for the retry.
