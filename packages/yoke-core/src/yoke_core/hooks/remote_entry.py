@@ -78,6 +78,7 @@ def evaluate_remote(
         skip_module=remote_skip_marker,
         remote=True,
         actor_id=actor_id,
+        authorized_project_id=project_id,
     )
     if isinstance(payload_extra, dict):
         controls.payload_extra.update(payload_extra)

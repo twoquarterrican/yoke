@@ -156,6 +156,38 @@ def run_event(
         payload=payload,
         remote=controls.remote if controls is not None else False,
     )
+    from yoke_contracts.hook_runner.guard_scope import applicable_chain
+    from yoke_contracts.hook_runner.project_scope import project_id_for_payload
+
+    try:
+        project_id = (
+            controls.authorized_project_id
+            if controls is not None and controls.remote
+            else project_id_for_payload(payload)
+        )
+        chain = applicable_chain(chain, project_id)
+    except (ValueError, OSError, RuntimeError) as exc:
+        reason = (
+            f"hook_scope_unavailable: {exc}; repair the machine project mapping "
+            "or declared guard scope and retry"
+        )
+        if controls is not None:
+            controls.final_outcome = "deny"
+            controls.denial_audit = {
+                "hook": "hook_scope",
+                "check_id": "hook_scope_unavailable",
+                "reason": reason,
+            }
+        return capability.decision_renderer(
+            [
+                HookDecision(
+                    outcome=Outcome.DENY,
+                    next=Next.STOP,
+                    message=reason,
+                )
+            ],
+            event_name,
+        )
     if deduplicated_dispatch(
         event_name,
         context=context,
@@ -203,7 +235,9 @@ def run_event(
         # Apply registered policy mode and denial identity before STOP.
         decision = _mode_gate.apply_mode(decision, module_id, context=context)
         decision = _guard_denial_identity.bind(
-            decision, module_id, command=extract_payload_command(payload),
+            decision,
+            module_id,
+            command=extract_payload_command(payload),
         )
         if (
             controls is not None

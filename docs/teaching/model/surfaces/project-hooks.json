@@ -9,11 +9,11 @@
   "location": "Project/lane policy through the same hook runner",
   "basis": "Existing mechanism · scoped cues proposed",
   "note": "Use the event that actually owns the fact: tool guard, command response, item read or stage entry. JOURNEYS need not put every cue in a hook.",
-  "current": "Existing source references; delivered content is not yet proved.",
+  "current": "Candidate source applies declared machine/project/lane guard scope from one shared checkout resolver; deployed harness delivery still needs proof.",
   "desired": "Retain scoped guards, messages and recovery; deduplicate ownership and budget the combined payload.",
   "plan_notes": ["FIRST-USER P2/P3", "JOURNEYS contextual disclosure"],
   "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"],
-  "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/hook_ordering.py:264", "packages/yoke-core/src/yoke_core/hooks/registration.py:1", "packages/yoke-contracts/src/yoke_contracts/hook_context_compose.py:114", "packages/yoke-core/src/yoke_core/hooks/hook_context_compose.py:14", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139"]
+  "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/hook_ordering.py:264", "packages/yoke-core/src/yoke_core/hooks/registration.py:1", "packages/yoke-contracts/src/yoke_contracts/hook_context_compose.py:114", "packages/yoke-core/src/yoke_core/hooks/hook_context_compose.py:14", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139", "docs/public/reference/harness-discovery.md"]
  },
  "teaching": [
   {
@@ -64,9 +64,9 @@
   {
    "id": "desired-01",
    "title": "Apply project/lane rules at the action; explain a refusal’s real cause and supported recovery.",
-   "status": "candidate",
+   "status": "observed",
    "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "verification": "Candidate source and focused regression tests cover guard applicability; live installed harness proof is pending.",
    "topics": ["context/hooks", "coordination/lanes", "security/boundaries"],
    "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"]
   },

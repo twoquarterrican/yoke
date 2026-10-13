@@ -168,10 +168,17 @@ def _local_modules(
     matcher: Optional[str],
     *,
     defer_main_commit: bool = False,
+    payload: dict | None = None,
 ) -> list[str]:
+    from yoke_contracts.hook_runner.guard_scope import applicable_chain
+    from yoke_contracts.hook_runner.project_scope import project_id_for_payload
+
+    chain = _chain_for(event_name, matcher)
+    if payload is not None:
+        chain = applicable_chain(chain, project_id_for_payload(payload))
     return [
         module_id
-        for module_id in _chain_for(event_name, matcher)
+        for module_id in chain
         if module_id in LOCAL_STATE_POLICIES
         and not (defer_main_commit and module_id == "yoke_core.domain.lint_main_commit")
     ]
@@ -250,11 +257,17 @@ def evaluate_local_subset(
         payload_extra.update(_client_claude_job_tmp_fact())
         payload_extra.update(collect_git_commit_facts(payload))
     contexts: list[str] = []
-    for module_id in _local_modules(
-        event_name,
-        matcher,
-        defer_main_commit=defer_main_commit,
-    ):
+    try:
+        modules = _local_modules(
+            event_name, matcher, defer_main_commit=defer_main_commit, payload=payload
+        )
+    except (ValueError, OSError, RuntimeError) as exc:
+        reason = f"hook_scope_unavailable: {exc}; repair the machine project mapping and retry"
+        stdout, exit_code = deny_stdout(reason, event_name, executor)
+        return LocalSubsetEvaluation(
+            stdout, exit_code, True, payload_extra=payload_extra
+        )
+    for module_id in modules:
         if deadline.expired():
             break
         evaluator = _POLICY_EVALUATORS.get(module_id)

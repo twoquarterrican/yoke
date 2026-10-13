@@ -100,6 +100,7 @@ class RunControls:
     payload_extra: dict[str, Any] = field(default_factory=dict)
     remote: bool = False
     actor_id: Optional[int] = None
+    authorized_project_id: Optional[int] = None
     flush_tail: bool = True
     degraded: list[str] = field(default_factory=list)
     denial_audit: dict[str, str] = field(default_factory=dict)

@@ -132,3 +132,25 @@ Codex and Cursor Agent floors name the native releases verified for this layout;
 older engines receive `instruction_runtime_unsupported`. The installer probes
 installed CLIs. Desktop users must verify their embedded engine separately;
 the outer app version does not prove its discovery capabilities.
+
+## Guard scope
+
+Register a managed checkout with `yoke project register <checkout> --project-id <id>`.
+Its subdirectories and Git worktrees share that project; an unrelated Git
+repository nested inside it does not. A machine connection or a folder named
+`.yoke` alone does not make a checkout managed.
+
+Outside managed projects, hooks apply machine safety rules: privacy-database
+protection, literal search quoting and unmatched path globs. Project rules
+(such as main-commit and destructive-Git checks) apply inside managed projects.
+Lane rules check the real lane and claim authority there, including on main.
+Unmapped HTTPS clients finish machine checks locally without project registration.
+All harnesses use the same applicability declarations.
+
+`yoke hook evaluate PreToolUse --dry-run` shows the registered chain inventory;
+it does not execute guards or prove a workspace is registered. A
+`hook_guard_scope_missing` diagnostic names the undeclared guard; report it
+with `yoke ouroboros field-note append --kind failed --evidence '<diagnostic>'`.
+A `hook_scope_unavailable` diagnostic names the mapping or scope repair needed
+before retrying. Required project messages and lifecycle delivery retain their
+own handlers; guard scope does not redefine session lifecycle.

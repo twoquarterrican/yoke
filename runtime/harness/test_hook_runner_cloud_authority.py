@@ -15,6 +15,7 @@ def _binding(root: Path) -> Path:
         json.dumps(
             {
                 "schema_version": 1,
+                "projects": [{"checkout": str(root), "project_id": 1}],
                 "active_env": "prod-db-admin",
                 "connections": {
                     "prod-db-admin": {
@@ -40,8 +41,9 @@ def _binding(root: Path) -> Path:
     return path
 
 
-def test_connected_env_marks_workspace_as_yoke_without_sqlite_db(
-    tmp_path: Path, monkeypatch,
+def test_registered_checkout_marks_workspace_as_yoke_without_sqlite_db(
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     root = tmp_path / "repo"
     root.mkdir()
@@ -51,8 +53,9 @@ def test_connected_env_marks_workspace_as_yoke_without_sqlite_db(
     assert target.is_yoke_target(str(root), "") is True
 
 
-def test_codex_target_gate_uses_shared_connected_env_detection(
-    tmp_path: Path, monkeypatch,
+def test_codex_target_gate_uses_shared_checkout_detection(
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     monkeypatch.delenv("YOKE_DB", raising=False)
     root = tmp_path / "repo"
@@ -65,7 +68,8 @@ def test_codex_target_gate_uses_shared_connected_env_detection(
 
 
 def test_codex_resolver_ignores_retired_canonical_yoke_db_env(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     root = tmp_path / "repo"
     root.mkdir()
@@ -79,7 +83,8 @@ def test_codex_resolver_ignores_retired_canonical_yoke_db_env(
 
 
 def test_codex_resolver_keeps_noncanonical_fixture_yoke_db_env(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     root = tmp_path / "repo"
     root.mkdir()
