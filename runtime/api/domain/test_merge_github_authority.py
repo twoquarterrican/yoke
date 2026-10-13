@@ -12,6 +12,7 @@ from yoke_core.domain import merge_github_authority as authority_module
 from yoke_core.domain import project_github_auth as project_auth
 from yoke_core.domain import standalone_item_merge as merge_boundary
 from yoke_core.domain import standalone_item_merge_post_push as post_push
+from yoke_core.domain import standalone_post_push_ci as push_ci
 from yoke_core.domain.merge_github_authority import (
     DIRECT_MERGE_ROUTE,
     PULL_REQUEST_MERGE_ROUTE,
@@ -48,7 +49,11 @@ class TestClassification:
         assert classified.route == DIRECT_MERGE_ROUTE
         assert classified.authority == GITHUB_AUTHORITY_INSTALLATION
         assert classified.user_authorization_required is False
-        assert dict(classified.permissions) == {"checks": "read"}
+        assert dict(classified.permissions) == {
+            "actions": "read",
+            "checks": "read",
+            "contents": "read",
+        }
         assert "direct merge" in classified.describe()
 
     def test_pull_request_merge_requires_user_authorization(self) -> None:
@@ -107,12 +112,12 @@ class TestPostPushProofUsesTheMergesAuthority:
             seen["authority"] = required_authority
             return SimpleNamespace(repo="upyoke/yoke", token="tok")
 
-        monkeypatch.setattr(post_push, "resolve_auth", _resolve)
+        monkeypatch.setattr(push_ci, "resolve_auth", _resolve)
         monkeypatch.setattr(
-            post_push,
+            push_ci,
             "request_with_retry",
             lambda _request, **_k: SimpleNamespace(
-                body={"total_count": 0, "check_runs": []},
+                body={"total_count": 0, "workflow_runs": []},
             ),
         )
 
@@ -125,7 +130,7 @@ class TestPostPushProofUsesTheMergesAuthority:
         assert error == ""
         assert runs == ()
         assert seen == {
-            "permissions": {"checks": "read"},
+            "permissions": {"actions": "read", "checks": "read", "contents": "read"},
             "authority": GITHUB_AUTHORITY_INSTALLATION,
         }
 

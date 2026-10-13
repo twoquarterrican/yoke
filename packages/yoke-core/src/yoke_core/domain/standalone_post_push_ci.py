@@ -4,11 +4,7 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
-from yoke_contracts.github_app_installation_permissions import (
-    GITHUB_ACTIONS_READ_PERMISSION_LEVELS,
-    GITHUB_CHECKS_READ_PERMISSION_LEVELS,
-    GITHUB_CONTENTS_READ_PERMISSION_LEVELS,
-)
+from yoke_core.domain.merge_github_authority import DIRECT_MERGE_READ_PERMISSION_LEVELS
 from yoke_core.domain.gh_rest_transport import (
     RestRequest,
     RestTransportError,
@@ -27,11 +23,7 @@ class PushCIUnreadable(ValueError):
 def _auth(project: str, authority: str):
     return resolve_auth(
         MergeContext(args=MergeArgs(branch=""), project=project),
-        required_permissions={
-            **GITHUB_ACTIONS_READ_PERMISSION_LEVELS,
-            **GITHUB_CHECKS_READ_PERMISSION_LEVELS,
-            **GITHUB_CONTENTS_READ_PERMISSION_LEVELS,
-        },
+        required_permissions=DIRECT_MERGE_READ_PERMISSION_LEVELS,
         required_authority=authority,
     )
 
