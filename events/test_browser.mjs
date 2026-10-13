@@ -203,7 +203,7 @@ test('anonymous collector rejects wrong key/origin, honors rate limits and sanit
   assert.equal(isBot('Mozilla/5.0'), false);
 });
 
-test('collector stamps receipt time and records each refusal kind once per minute', async () => {
+test('collector stamps receipt time and records each refusal kind once per minute', async t => {
   const writes = [], refusals = [];
   const handler = createCollector({ ...base, rateLimit: async () => 0,
     writeEvents: async events => { writes.push(events); }, recordRefusal: async refusal => { refusals.push(refusal); } });
@@ -214,6 +214,7 @@ test('collector stamps receipt time and records each refusal kind once per minut
     body: JSON.stringify({ events }),
   }));
   const before = Date.now();
+  t.mock.method(Date, 'now', () => before);
   const forged = event('2020-01-01T00:00:00Z', { received_at: '1999-01-01T00:00:00Z', client_time_skewed: false });
   assert.equal((await send([event(new Date().toISOString()), forged])).status, 200);
   const [current, skewed] = writes[0];
@@ -239,7 +240,6 @@ test('collector stamps receipt time and records each refusal kind once per minut
     assert.ok(warnings.some(line => line.includes('collector_refusal_record_failed')));
   } finally { console.warn = warn; }
 });
-
 
 test('server failures retry while permanent refusals drop with a named recovery', async () => {
   const warn = console.warn, warnings = [];
