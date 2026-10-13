@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import json
 from typing import List
 
 from yoke_cli.commands._helpers import (
+    add_full_arg,
     add_json_arg,
     add_session_arg,
     dispatch_and_emit,
     parse_or_usage_error,
-)
-from yoke_cli.commands.adapters.session_control_human_output import (
-    write_roster_result,
 )
 from yoke_contracts.api.function_call import TargetRef
 from yoke_contracts.session_control.liveness import ENDED_CAUSES, LIVENESS_STATES
@@ -21,9 +20,12 @@ from yoke_contracts.session_control.liveness import ENDED_CAUSES, LIVENESS_STATE
 SESSION_ROSTER_USAGE = (
     "yoke sessions list [--project P] "
     "[--liveness active|waiting|stale|ended] [--ended-cause killed|wound_down] "
-    "[--limit N] [--session S] [--json]"
+    "[--limit N] [--offset N] [--full] [--session S] [--json]"
 )
-SESSION_ROSTER_HELP = """Find registered top-level sessions and their delivery readiness.
+SESSION_ROSTER_HELP = """Find registered top-level sessions in 25-row summary pages.
+
+Use --offset for the next page; --full reads all rows and their stored detail.
+Use --session SESSION-ID --full for one complete session.
 
 Liveness has four states: active, waiting, stale, ended. A parked session
 that still holds a work claim is waiting — quiet on purpose, resumed by the
@@ -65,7 +67,13 @@ def session_control_roster_list(args: List[str]) -> int:
             "terminated session, 'wound_down' for an ordinary end."
         ),
     )
-    parser.add_argument("--limit", type=int, default=None, help="Maximum rows.")
+    parser.add_argument(
+        "--limit", type=int, default=None, help="Page size (default: 25; maximum: 500)."
+    )
+    parser.add_argument("--offset", type=int, default=0, help="Start at this row.")
+    add_full_arg(
+        parser, "all sessions and complete roster details unless --limit is named"
+    )
     parser.add_argument(
         "--session",
         dest="session_filter",
@@ -79,12 +87,32 @@ def session_control_roster_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        write_roster_result(response.result or {}, stdout)
+        result = response.result or {}
+        if parsed.full:
+            print(json.dumps(result, default=str, ensure_ascii=False), file=stdout)
+        else:
+            for row in result.get("rows", []):
+                print(
+                    "|".join(
+                        str(row.get(key) or "") for key in result.get("fields", [])
+                    ),
+                    file=stdout,
+                )
+            print(
+                "Summary rows; --full adds all sessions and complete roster details.",
+                file=stderr,
+            )
+            if result.get("next_offset") is not None:
+                print(
+                    f"More sessions: repeat with --offset {result['next_offset']} and the same filters/limit.",
+                    file=stderr,
+                )
 
     payload = {
         key: value
         for key, value in {
+            "detail": "full" if parsed.full else "summary",
+            "offset": parsed.offset,
             "project": parsed.project,
             "liveness": parsed.liveness,
             "ended_cause": parsed.ended_cause,

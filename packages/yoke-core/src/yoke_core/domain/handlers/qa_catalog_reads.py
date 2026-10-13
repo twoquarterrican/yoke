@@ -22,6 +22,12 @@ class MethodGetRequest(ProjectReadRequest):
     method_id: str = Field(..., min_length=1)
 
 
+class PlanListRequest(ProjectReadRequest):
+    limit: Optional[int] = Field(default=None, ge=1, le=500)
+    offset: int = Field(default=0, ge=0)
+    detail: ReadDetail = DETAIL_SUMMARY
+
+
 class PlanGetRequest(ProjectReadRequest):
     plan_id: int | str
     deployment_run_id: Optional[str] = Field(default=None, min_length=1)
@@ -151,7 +157,7 @@ def handle_method_get(request: FunctionCallRequest) -> HandlerOutcome:
 
 
 def handle_plan_list(request: FunctionCallRequest) -> HandlerOutcome:
-    payload, error = _payload(request, ProjectReadRequest)
+    payload, error = _payload(request, PlanListRequest)
     if error is not None:
         return error
     from yoke_core.domain.db_helpers import connect
@@ -159,10 +165,33 @@ def handle_plan_list(request: FunctionCallRequest) -> HandlerOutcome:
 
     try:
         with connect() as conn:
-            rows = list_plans(conn, project=payload.project)
+            rows = list_plans(
+                conn,
+                project=payload.project,
+                limit=payload.limit,
+                offset=payload.offset,
+                full=payload.detail == DETAIL_FULL,
+            )
     except LookupError as exc:
         return _error("not_found", str(exc), "$.payload.project")
-    return HandlerOutcome(result_payload={"rows": rows}, primary_success=True)
+    from yoke_core.domain.qa_plan_list_reads import DEFAULT_PLAN_LIMIT
+
+    limit = payload.limit or (
+        None if payload.detail == DETAIL_FULL else DEFAULT_PLAN_LIMIT
+    )
+    return HandlerOutcome(
+        result_payload={
+            "rows": rows,
+            "limit": limit,
+            "offset": payload.offset,
+            "next_offset": payload.offset + len(rows)
+            if limit and len(rows) == limit
+            else None,
+            "detail": payload.detail,
+            "detail_read": "yoke qa plan list --project P --full",
+        },
+        primary_success=True,
+    )
 
 
 def handle_plan_get(request: FunctionCallRequest) -> HandlerOutcome:
@@ -188,7 +217,9 @@ def handle_plan_get(request: FunctionCallRequest) -> HandlerOutcome:
                     (project_id, plan_ref),
                 )
                 if row is None:
-                    raise LookupError(f"QA plan {plan_ref!r} not found in project {payload.project}")
+                    raise LookupError(
+                        f"QA plan {plan_ref!r} not found in project {payload.project}"
+                    )
                 plan_ref = str(row["id"])
             plan = get_plan(
                 conn,

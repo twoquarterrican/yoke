@@ -95,7 +95,7 @@ def _request(payload: dict, *, actor_id: int | None = None) -> FunctionCallReque
             session_id="",
         ),
         target=TargetRef(kind="global"),
-        payload=payload,
+        payload={"detail": "full", **payload},
     )
 
 

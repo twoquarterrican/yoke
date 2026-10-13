@@ -61,7 +61,11 @@ def _waive(conn, requirement_id):
 
 
 def _listed(conn, plan_id):
-    return next(row for row in list_plans(conn, project="yoke") if row["id"] == plan_id)
+    return next(
+        row
+        for row in list_plans(conn, project="yoke", full=True)
+        if row["id"] == plan_id
+    )
 
 
 @pytest.mark.parametrize("after_failure", [False, True])

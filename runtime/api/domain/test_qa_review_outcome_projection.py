@@ -33,7 +33,9 @@ def _assert_projection(conn, plan_id, run_id, outcome):
     detail = get_plan(conn, plan_id=plan_id)
     proof = detail["cases"][0]["last_result"]
     listed = next(
-        row for row in list_plans(conn, project="yoke") if row["id"] == plan_id
+        row
+        for row in list_plans(conn, project="yoke", full=True)
+        if row["id"] == plan_id
     )
     assert proof["run_id"] == run_id
     assert proof["outcome"] == listed["last_outcome"] == outcome

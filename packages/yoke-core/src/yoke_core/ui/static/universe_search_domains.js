@@ -123,7 +123,7 @@ async function searchSessions(client, query, needle, sessionWindow) {
     sessionWindow(),
     // A session id typed in full is read by id as well, so it stays findable
     // however far outside the recency window it has fallen.
-    call(client, { function: "sessions.list", payload: { session_id: query } }),
+    call(client, { function: "sessions.list", payload: { session_id: query, detail: "full" } }),
   ]);
   const exactRows = rowsOf(exactResult, "rows") || [];
   if (windowRows === null && !exactRows.length) return null;
@@ -257,7 +257,7 @@ export function createUniverseSearch(client) {
       function: "packs.list", payload: { project: String(project.id) },
     })),
     qaPlans: perProject("rows", (project) => ({
-      function: "qa.plan.list", payload: { project: String(project.id) },
+      function: "qa.plan.list", payload: { project: String(project.id), detail: "full" },
     })),
     strategy: perProject("docs", (project) => ({
       function: "strategy.doc.list",
@@ -266,7 +266,7 @@ export function createUniverseSearch(client) {
     })),
   };
   const sessionWindow = memoize(async () => rowsOf(await call(client, {
-    function: "sessions.list", payload: { limit: SESSION_WINDOW },
+    function: "sessions.list", payload: { limit: SESSION_WINDOW, detail: "full" },
   }), "rows"));
   const eventWindow = memoize(async () => rowsOf(await call(client, {
     function: "events.query.run", payload: { limit: EVENT_WINDOW },

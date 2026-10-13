@@ -80,7 +80,7 @@ def test_plan_cases_and_attachment_reads_are_project_scoped() -> None:
             item_id=int(item["id"]),
             transition_id="reviewing-implementation",
         )
-        rows = list_plans(conn, project="yoke")
+        rows = list_plans(conn, project="yoke", full=True)
         detail = get_plan(conn, plan_id=plan["id"])
         methods = list_methods(conn, project="yoke")
 
@@ -143,7 +143,7 @@ def test_plan_reads_project_an_environmentless_command_target() -> None:
         )
         row = next(
             plan
-            for plan in list_plans(conn, project="yoke")
+            for plan in list_plans(conn, project="yoke", full=True)
             if int(plan["id"]) == int(registered["plan_id"])
         )
         detail = get_plan(conn, plan_id=int(registered["plan_id"]))

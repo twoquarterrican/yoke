@@ -44,7 +44,7 @@ def _request(payload: dict) -> FunctionCallRequest:
         function="sessions.list",
         actor=ActorContext(actor_id=None, session_id=""),
         target=TargetRef(kind="global"),
-        payload=payload,
+        payload={"detail": "full", **payload},
     )
 
 

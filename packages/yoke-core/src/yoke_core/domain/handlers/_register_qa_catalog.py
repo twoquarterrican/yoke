@@ -61,7 +61,7 @@ def register(registry) -> None:
         registry,
         "qa.plan.list",
         _reads.handle_plan_list,
-        _reads.ProjectReadRequest,
+        _reads.PlanListRequest,
         _reads.RowsResponse,
     )
     _read(

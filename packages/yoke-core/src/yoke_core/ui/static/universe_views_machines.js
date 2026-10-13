@@ -163,7 +163,7 @@ export function renderMachinesView(context, main, _scope, chromeArg) {
       paintWork({ status: "loading" });
       try {
         const openRoster = await callFunction(
-          context.client, "sessions.list", { open: true },
+          context.client, "sessions.list", { open: true, detail: "full" },
         );
         if (!context.isMounted()) return;
         if (!openRoster.envelope.success) throw openRoster;

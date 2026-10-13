@@ -2,16 +2,10 @@
 
 from __future__ import annotations
 
-from yoke_core.domain.qa_latest_execution import latest_execution_id_sql
-from yoke_core.domain.qa_obligation_settlement import (
-    unanswered_attempt_sql,
-    unretracted_requirement_sql,
-)
 
 import json
 from typing import Any, Optional
 
-from yoke_contracts.qa_case_starting_state import stored_fan_out
 from yoke_contracts.machine_config.capability_secrets import (
     TEST_MACHINE_CAPABILITY,
 )
@@ -23,22 +17,19 @@ from yoke_core.domain.capability_type_definitions import (
     capability_type_definition,
 )
 from yoke_core.domain.qa_method_definitions import (
-    method_presentations,
     method_read_metadata,
 )
 from yoke_core.domain.qa_method_capabilities import capability_kinds
 from yoke_core.domain.qa_test_machine_capability_context import (
     test_machine_capability_context,
 )
-from yoke_core.domain.db_helpers import query_one, query_rows, query_scalar
+from yoke_core.domain.db_helpers import query_rows, query_scalar
 from yoke_core.domain.project_identity import resolve_project
 from yoke_core.domain.qa_activity_reads import list_activity, read_activity
 from yoke_core.domain.qa_execution_proof import qa_run_outcome
 from yoke_core.domain.qa_method_related_plans import read_method_related_plans
 from yoke_core.domain.qa_plan_attachment_reads import plan_attachment_rows
-from yoke_core.domain.qa_execution_environment_target import (
-    resolve_plan_execution_target,
-)
+from yoke_core.domain.qa_plan_list_reads import list_plans
 
 #: Plan rows carrying a site-qualified target, because an environment name
 #: repeats across the sites one project may reach.
@@ -226,99 +217,6 @@ def get_method(
         project_id=int(identity.id) if identity is not None else None,
     )
     return {**method, "plans": plans}
-
-
-def _latest_requirement_outcome(conn: Any, plan_id: int) -> tuple:
-    marker = _placeholder(conn)
-    row = query_one(
-        conn,
-        "SELECT q.id, q.waived_at, r.verdict, r.verdict_reason, r.case_outcome, "
-        "COALESCE(r.completed_at, r.created_at, q.created_at) AS happened_at "
-        "FROM qa_requirements q "
-        "LEFT JOIN qa_runs r ON r.id=("
-        f"{latest_execution_id_sql('q.id')}"
-        ") "
-        f"WHERE q.plan_id={marker} AND {unretracted_requirement_sql(conn, 'q')} "
-        f"AND {unanswered_attempt_sql(conn, 'q')} "
-        "ORDER BY happened_at DESC, q.id DESC LIMIT 1",
-        (plan_id,),
-    )
-    if row is None:
-        return (None, None, None)
-    return (qa_run_outcome(row), row["happened_at"], row["verdict_reason"])
-
-
-def list_plans(conn: Any, *, project: Optional[str] = None) -> list[dict]:
-    identity = _project_row(conn, project)
-    marker = _placeholder(conn)
-    params: tuple = ()
-    where = "WHERE p.retired_at IS NULL"
-    if identity is not None:
-        where += f" AND p.project_id={marker}"
-        params = (int(identity.id),)
-    rows = query_rows(
-        conn,
-        f"{PLAN_WITH_TARGET_ENVIRONMENT_SELECT} {where} ORDER BY pr.slug, p.slug",
-        params,
-    )
-    result = []
-    for row in rows:
-        plan_id = int(row["id"])
-        cases = query_rows(
-            conn,
-            "SELECT c.method_id, c.host_baselines, c.starting_state, c.target_envs, "
-            "m.display_icon, "
-            "m.display_order, m.display_group "
-            "FROM qa_plan_cases c JOIN qa_methods m ON m.id=c.method_id "
-            f"WHERE c.plan_id={marker} ORDER BY c.position",
-            (plan_id,),
-        )
-        materialized_count = sum(
-            len(fan_out) * max(1, len(_json_value(case["target_envs"], [])))
-            for case, fan_out in zip(
-                cases,
-                stored_fan_out(
-                    [
-                        {
-                            **case,
-                            "host_baselines": _json_value(case["host_baselines"], []),
-                        }
-                        for case in cases
-                    ]
-                ),
-            )
-        )
-        last_outcome, last_at, last_verdict_reason = _latest_requirement_outcome(
-            conn, plan_id
-        )
-        execution_target = resolve_plan_execution_target(
-            conn,
-            plan_id=plan_id,
-            require_runtime_match=False,
-            allow_unbound=True,
-        )
-        result.append(
-            {
-                "id": plan_id,
-                "project": str(row["project"]),
-                "slug": str(row["slug"]),
-                "name": str(row["name"]),
-                "description": str(row["description"]),
-                "target_environment": row["target_environment"],
-                "execution_target": execution_target,
-                "case_count": len(cases),
-                "materialized_requirement_count": materialized_count,
-                "method_ids": list(
-                    dict.fromkeys(str(case["method_id"]) for case in cases)
-                ),
-                "method_presentations": method_presentations(cases),
-                "attachments": plan_attachment_rows(conn, plan_id),
-                "last_outcome": last_outcome,
-                "last_at": last_at,
-                "last_verdict_reason": last_verdict_reason,
-            }
-        )
-    return result
 
 
 __all__ = [

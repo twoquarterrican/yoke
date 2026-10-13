@@ -80,7 +80,8 @@ def list_sessions(
     project_ids: Optional[Sequence[int]] = None,
     liveness: Optional[str] = None,
     ended_cause: Optional[str] = None,
-    limit: int = DEFAULT_SESSIONS_LIST_LIMIT,
+    limit: int | None = DEFAULT_SESSIONS_LIST_LIMIT,
+    offset: int = 0,
     per_project: bool = False,
     session_id: Optional[str] = None,
     open: bool = False,
@@ -140,7 +141,11 @@ def list_sessions(
     if session_id is not None and not normalized_session_id:
         raise ValueError("session_id must be a non-empty string when present")
     bounded_limit = (
-        1 if normalized_session_id else max(1, min(int(limit), MAX_SESSIONS_LIST_LIMIT))
+        1
+        if normalized_session_id
+        else None
+        if limit is None
+        else max(1, min(int(limit), MAX_SESSIONS_LIST_LIMIT))
     )
     windowed = (
         per_project and not project and not project_ids and not normalized_session_id
@@ -187,7 +192,9 @@ def list_sessions(
             params = [*where_params, PER_PROJECT_SESSIONS_LIST_CAP, bounded_limit]
         else:
             params = [*where_params, bounded_limit]
-        rows = conn.execute(query, tuple(params)).fetchall()
+        if offset < 0:
+            raise ValueError("offset must be nonnegative; start at --offset 0")
+        rows = conn.execute(query + " OFFSET %s", (*params, offset)).fetchall()
         session_ids = [str(dict(raw)["session_id"]) for raw in rows]
         claims_by_session, roles_by_session = active_claims_by_session(
             conn,
@@ -211,6 +218,31 @@ def list_sessions(
         )
     finally:
         conn.close()
+
+
+def session_summary_result(rows: list[dict], *, offset: int, limit: int | None) -> dict:
+    """The routine roster omits diagnostics, stored usage and holdings detail."""
+    fields = (
+        "session_id",
+        "actor_label",
+        "project",
+        "executor_surface",
+        "model",
+        "execution_level",
+        "mode",
+        "liveness",
+        "current_item",
+        "current_item_title",
+    )
+    return {
+        "fields": list(fields),
+        "rows": [{key: row.get(key) for key in fields} for row in rows],
+        "offset": offset,
+        "limit": limit,
+        "next_offset": offset + len(rows) if limit and len(rows) == limit else None,
+        "detail": "summary",
+        "detail_read": "yoke sessions list --full",
+    }
 
 
 __all__ = [

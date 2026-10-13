@@ -185,7 +185,7 @@ export function sessionsHistoryLoader(context, scope, filters, onChange) {
     let result;
     try {
       result = await callFunction(context.client, "sessions.list", {
-        open: true,
+        open: true, detail: "full",
         ...(scopeProjects.length ? { projects: scopeProjects } : {}),
       });
     } catch (error) {

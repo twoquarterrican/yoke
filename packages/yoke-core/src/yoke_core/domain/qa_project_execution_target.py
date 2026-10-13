@@ -55,8 +55,7 @@ def registered_command_target_mode(
             )
         if not environment:
             raise ValueError(
-                f"CI-routed {scope} commands require --environment "
-                "SITE/NAME|ENV_ID"
+                f"CI-routed {scope} commands require --environment SITE/NAME|ENV_ID"
             )
         return ENVIRONMENT_TARGET_MODE
     if bool(environment) == local_base_url:
@@ -64,9 +63,7 @@ def registered_command_target_mode(
             f"local {scope} commands require exactly one target: "
             "--environment SITE/NAME|ENV_ID or --requires-base-url"
         )
-    return (
-        ENVIRONMENT_TARGET_MODE if environment else RUNTIME_BASE_URL_TARGET_MODE
-    )
+    return ENVIRONMENT_TARGET_MODE if environment else RUNTIME_BASE_URL_TARGET_MODE
 
 
 def _decode_config(raw: Any) -> dict[str, Any]:
@@ -89,8 +86,7 @@ def _case_rows(conn: Any, plan_id: int) -> list[dict[str, Any]]:
         (int(plan_id),),
     )
     columns = [
-        str(getattr(column, "name", None) or column[0])
-        for column in cursor.description
+        str(getattr(column, "name", None) or column[0]) for column in cursor.description
     ]
     return [
         dict(row) if hasattr(row, "keys") else dict(zip(columns, row, strict=True))
@@ -123,7 +119,22 @@ def resolve_project_execution_target(
     allow_unbound: bool,
 ) -> dict[str, Any] | None:
     """Build a project target when every plan case can run without an environment."""
-    cases = _case_rows(conn, plan_id)
+    return project_execution_target_from_cases(
+        plan_id=plan_id,
+        identity=identity,
+        cases=_case_rows(conn, plan_id),
+        allow_unbound=allow_unbound,
+    )
+
+
+def project_execution_target_from_cases(
+    *,
+    plan_id: int,
+    identity: Mapping[str, Any],
+    cases: list[Mapping[str, Any]],
+    allow_unbound: bool,
+) -> dict[str, Any] | None:
+    """Assemble the same target from an already-read case set."""
     if not _project_target_allowed(cases):
         if allow_unbound:
             return None

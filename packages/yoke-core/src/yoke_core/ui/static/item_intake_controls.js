@@ -120,7 +120,7 @@ export function verificationChoiceSelect(documentNode, catalog, state) {
 export async function loadVerificationCatalog(client, project) {
   const payload = { project: String(project?.slug || project?.id || "") };
   const [plans, methods] = await Promise.all([
-    callFunction(client, "qa.plan.list", payload),
+    callFunction(client, "qa.plan.list", { ...payload, detail: "full" }),
     callFunction(client, "qa.method.list", payload),
   ]);
   const failed = [plans, methods].find(

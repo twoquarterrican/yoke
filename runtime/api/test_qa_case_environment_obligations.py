@@ -204,7 +204,9 @@ def test_inheriting_case_reads_every_environment_and_chain_baseline(test_db):
     assert summary["starting_state_reason"] is None
     assert summary["target_envs"] == ["stage", "prod"]
     listed = next(
-        row for row in list_plans(test_db, project="yoke") if row["id"] == plan["id"]
+        row
+        for row in list_plans(test_db, project="yoke", full=True)
+        if row["id"] == plan["id"]
     )
     assert listed["materialized_requirement_count"] == 8
 
