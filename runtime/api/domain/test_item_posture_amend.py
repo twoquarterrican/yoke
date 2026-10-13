@@ -110,6 +110,46 @@ def test_amend_selects_verification_so_attach_and_materialize_succeed() -> None:
         assert len(materialized["created_requirement_ids"]) == 1
 
 
+def test_selecting_post_deploy_plan_creates_no_review_attachment() -> None:
+    with test_database() as conn:
+        plan = _plan(conn, "amend-post-deploy")
+        item_id = _dash(conn, item_id=2810, posture={})
+        attach_plan_to_item(
+            conn,
+            item_id=item_id,
+            plan_id=int(plan["id"]),
+            transition_id="release",
+            qa_phase="post_deploy",
+        )
+        result = amend_item_posture(
+            conn,
+            item_id=item_id,
+            key="verification",
+            value={"kind": "plan", "plan_id": int(plan["id"])},
+            reason="select the release-bound plan",
+        )
+        assert result["binding"] is None
+        assert not materialize_for_item(conn, item_id=item_id, transition_id=REVIEW)[
+            "created_requirement_ids"
+        ]
+        attachments = conn.execute(
+            "SELECT transition_id, qa_phase FROM qa_plan_item_attachments "
+            "WHERE item_id=%s",
+            (item_id,),
+        ).fetchall()
+        assert [(row["transition_id"], row["qa_phase"]) for row in attachments] == [
+            ("release", "post_deploy"),
+        ]
+        assert (
+            conn.execute(
+                "SELECT 1 FROM qa_requirements WHERE item_id=%s "
+                "AND qa_phase='verification'",
+                (item_id,),
+            ).fetchone()
+            is None
+        )
+
+
 def test_replacing_verification_retires_the_superseded_snapshot() -> None:
     with test_database() as conn:
         first = _plan(conn, "amend-first-plan")

@@ -157,7 +157,9 @@ def validate_item_qa_transition(
         )
     phase = str(qa_phase or "").strip()
     contradiction = post_merge_binding_refusal(
-        workflow, transition=transition, qa_phase=phase,
+        workflow,
+        transition=transition,
+        qa_phase=phase,
     )
     if contradiction:
         raise QaWorkflowBindingError(contradiction)
@@ -173,9 +175,7 @@ def validate_item_qa_transition(
         # this item's own optional attachment, so it never counts as a
         # materialization gate reachable on its own for this policy.
         release_wait = delivery_redirect_stage(workflow)
-        signature = tuple(
-            entry for entry in signature if entry[0] != release_wait
-        )
+        signature = tuple(entry for entry in signature if entry[0] != release_wait)
     if signature:
         return transition, workflow
     if _selected_verification_matches(
@@ -190,13 +190,15 @@ def validate_item_qa_transition(
     )
     if effective.values.get("qa") == WORKFLOW_QA_OPTIONAL_ITEM_ATTACHMENT:
         message += (
-            "; optional item QA accepts only the plan or method selected "
+            "; premerge optional item QA accepts only the plan or method selected "
             "in workflow_posture.verification, attached at "
             f"{ITEM_POSTURE_VERIFICATION_TRANSITION}. Select one on this item "
             "first: yoke workflows item-posture amend <PREFIX-N> "
             '--verification-plan <ID_OR_SLUG> --reason "<why>" '
             "(--help for the decision tree), then retry with "
-            f"--workflow-transition {ITEM_POSTURE_VERIFICATION_TRANSITION}"
+            f"--workflow-transition {ITEM_POSTURE_VERIFICATION_TRANSITION}. "
+            "For post-deploy QA, attach directly at the pinned release stage "
+            "with --qa-phase post_deploy; no verification posture selection is required"
         )
     raise QaWorkflowBindingError(message)
 
