@@ -190,6 +190,7 @@ WRAPPED_ROWS: Tuple[_Row, ...] = (
     _w("yoke projects github-binding bind", "projects.github_binding"),
     _w("yoke projects github-binding unbind", "projects.github_binding"),
     _w("yoke projects github-binding status", "projects.github_binding"),
+    _w("yoke projects github-binding check", "projects.github_binding"),
     _w("yoke projects github-sync-mode repair", "projects.github_sync_mode"),
     # checkout→project identity for the strategize/feed preambles — works over
     # https and from any cwd.
