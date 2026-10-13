@@ -117,10 +117,10 @@ def _harness_line(harness_id: str, cap: HarnessWakeCapability) -> str:
     )
 
 
-def _provenance_lines() -> list[str]:
+def _provenance_lines(manifest_path: str) -> list[str]:
     return [
         "Wake capability is a manifest fact, not prose. Source of truth:",
-        f"`{MANIFEST_FIELD}` in `{MANIFEST_PATH_TEMPLATE}`, rendered from",
+        f"`{MANIFEST_FIELD}` in `{manifest_path}`, rendered from",
         f"`{CANONICAL_MODULE}`. Change the contract and re-render; never",
         "restate one of these facts on a document's own authority.",
     ]
@@ -128,7 +128,7 @@ def _provenance_lines() -> list[str]:
 
 def build_compact_block() -> str:
     """Return the short per-harness list used by working documents."""
-    lines = [*_provenance_lines(), ""]
+    lines = [*_provenance_lines(".yoke/harness/<harness-dir>/manifest.json"), ""]
     for harness_id, cap in HARNESS_WAKE_CAPABILITIES.items():
         lines.append(_harness_line(harness_id, cap))
     return "\n".join(lines) + "\n"
@@ -137,7 +137,7 @@ def build_compact_block() -> str:
 def build_table_block() -> str:
     """Return the full table plus per-harness evidence for reference docs."""
     lines = [
-        *_provenance_lines(),
+        *_provenance_lines(MANIFEST_PATH_TEMPLATE),
         "",
         "| Harness | Idle wake (resume an ended turn) | Timer wake | Verified on |",
         "|---|---|---|---|",

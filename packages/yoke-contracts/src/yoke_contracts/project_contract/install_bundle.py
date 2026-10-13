@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-BUNDLE_SCHEMA = 2
+BUNDLE_SCHEMA = 3
 
 # One authored tree; Claude requires its own native discovery entry. Codex
 # and Cursor read .agents directly and deduplicate this physical target.

@@ -6,6 +6,7 @@ import os
 import sys
 
 import pytest
+from yoke_contracts.project_contract.install_bundle import BUNDLE_SCHEMA
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -56,7 +57,7 @@ def test_install_bundle_serves_files_and_hooks(client) -> None:
 
     assert response.status_code == 200
     bundle = response.json()
-    assert bundle["bundle_schema"] == 2
+    assert bundle["bundle_schema"] == BUNDLE_SCHEMA
     assert bundle["project_id"] == 2
     assert bundle["project_slug"] == "externalwebapp"
     paths = [entry["path"] for entry in bundle["files"]]

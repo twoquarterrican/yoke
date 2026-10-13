@@ -128,6 +128,15 @@
    "status": "observed",
    "text": "The corrected welcome refusal captured successfully but still needs independent inspection. Hosted startup then refused a complete verification URI because the old gate rejected its matching user_code query. Source now validates the URI/code pair and declared origin, with six recovery recipes and the first-work mission. Full campaign, live-session delivery and first-item done evidence remain required; valid coordinates do not establish approval authority. See docs/testing-verification/installer-campaign.md.",
    "plan_refs": ["FIRST-USER.D"]
+  },
+  {
+   "id": "installed-guidance-delivery",
+   "title": "Prove released installed guidance reaches the receiving agent",
+   "status": "observed",
+   "text": "Source and automated HTTPS transport tests cover installed help, managed release manifests, refresh recovery and the shared registered context recipe. After release, rerun the declared installer campaign and capture actual supported-harness context with configured project documents; automated file delivery is not a model transcript.",
+   "plan_refs": ["FIRST-USER.41"],
+   "sources": ["runtime/api/domain/test_installed_project_context.py", ".agents/skills/yoke/conduct/dispatch-context-project.md"],
+   "work_items": ["YOK-3966"]
   }
  ]
 }

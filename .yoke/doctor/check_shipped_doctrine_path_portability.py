@@ -50,7 +50,7 @@ from yoke_core.domain.install_bundle import (
     SKILLS_SOURCE,
     is_bundle_junk_path,
 )
-from yoke_core.domain.install_bundle_managed import INSTALL_BUNDLE_SOURCE_FILES
+from yoke_core.domain.install_bundle_sources import INSTALL_BUNDLE_SOURCE_FILES
 from yoke_contracts.project_contract.installed_layer import CLAUDE_SKILLS_DEST
 from yoke_core.engines.doctor_report import (
     DoctorArgs,
@@ -103,7 +103,10 @@ def _exact_installed_paths() -> Set[str]:
     # control plane — but `bundle_apply` merges Yoke's region into each during
     # a managed install, so an installed project does have them.
     paths.update(CURSOR_CONFIG_RELS)
-    paths.update(INSTALL_BUNDLE_SOURCE_FILES)
+    paths.update(
+        name.replace("runtime/harness/", ".yoke/harness/", 1)
+        for name in INSTALL_BUNDLE_SOURCE_FILES
+    )
     for manifest in (CLAUDE_MANIFEST, CODEX_MANIFEST, CURSOR_MANIFEST):
         config = manifest.get("worktree_hook_enablement", {}).get("config_path")
         if config:

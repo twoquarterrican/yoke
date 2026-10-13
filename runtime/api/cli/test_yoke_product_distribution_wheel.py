@@ -79,6 +79,7 @@ def test_product_wheels_exercise_installer_plan_surfaces(
                 "root = server_tree_root(); "
                 "assert (root / '.agents/skills/yoke/SKILL.md').is_file(); "
                 "assert (root / 'runtime/harness/claude/agents').is_dir(); "
+                "assert all((root / f'runtime/harness/{h}/manifest.json').is_file() for h in ('claude', 'codex', 'cursor')); "
                 "print(local_universe.LOCAL_DBNAME)"
             ),
         ],

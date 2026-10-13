@@ -14,6 +14,7 @@ from yoke_core.domain import install_bundle as bundle_sources
 from yoke_core.domain import install_bundle_managed
 from yoke_core.domain import install_bundle_project
 from yoke_core.domain import project_policy_capabilities
+from yoke_core.domain.install_bundle_sources import HARNESS_MANIFEST_SOURCES
 
 
 class _Connection:
@@ -95,7 +96,8 @@ def test_receipt_reader_ignores_malformed_or_missing_receipts(tmp_path) -> None:
 
 
 def test_project_bundle_receipt_matches_top_level_engine_release(
-    tmp_path, monkeypatch,
+    tmp_path,
+    monkeypatch,
 ) -> None:
     monkeypatch.setattr(
         install_bundle_project,
@@ -118,14 +120,14 @@ def test_project_bundle_receipt_matches_top_level_engine_release(
     monkeypatch.setattr(bundle_sources, "_agent_files", lambda root: [])
     monkeypatch.setattr(bundle_sources, "_rules_files", lambda root: [])
     monkeypatch.setattr(bundle_sources, "_hooks_block", lambda: {})
-    monkeypatch.setattr(
-        bundle_sources, "yoke_version", lambda: "0.1.1+launch.45"
-    )
+    monkeypatch.setattr(bundle_sources, "yoke_version", lambda: "0.1.1+launch.45")
     monkeypatch.setattr(install_bundle_managed, "docs_bundle_files", lambda root: [])
-    monkeypatch.setattr(
-        install_bundle_managed, "managed_bundle_keys", lambda root: {}
-    )
+    monkeypatch.setattr(install_bundle_managed, "managed_bundle_keys", lambda root: {})
 
+    for rel in HARNESS_MANIFEST_SOURCES:
+        source = tmp_path / rel
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text("{}\n")
     bundle = install_bundle_project.build_project_bundle(7, _Connection())
 
     assert bundle["yoke_version"] == "0.1.1+launch.45"

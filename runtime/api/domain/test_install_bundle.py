@@ -80,6 +80,12 @@ def test_build_bundle_is_deterministic(conn) -> None:
     paths = [entry["path"] for entry in first["files"]]
     assert paths == sorted(paths)
     assert len(paths) == len(set(paths)), "bundle paths must be unique"
+    by_path = {entry["path"]: entry["content"] for entry in first["files"]}
+    for harness in ("claude", "codex", "cursor"):
+        assert (
+            by_path[f".yoke/harness/{harness}/manifest.json"]
+            == (REPO_ROOT / f"runtime/harness/{harness}/manifest.json").read_text()
+        )
 
 
 def test_full_skill_suite_has_one_canonical_source(conn) -> None:

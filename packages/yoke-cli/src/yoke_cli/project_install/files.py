@@ -29,8 +29,6 @@ MODE_SOURCE_LINK = "source-link"
 DISCARDED_PRIOR_CONTRACT_RECORDS_KEY = "_discarded_prior_contract_records"
 DISCARDED_PRIOR_STRATEGY_RECORDS_KEY = "_discarded_prior_strategy_records"
 
-# Hook-merge targets — bundle ``files`` must never name these directly;
-# their content flows through the bundle's ``hooks`` subtrees.
 HOOK_MERGE_TARGETS = (
     ".claude/settings.json",
     ".codex/hooks.json",
@@ -167,7 +165,8 @@ def assert_file_targets_plannable(
 
 
 def assert_safe_bundle_paths(paths: Iterable[str]) -> None:
-    """Refuse bundle paths that escape/corrupt the repo; `.yoke/docs/` excepted."""
+    """Admit managed docs/manifests and refuse unsafe or merge-managed paths."""
+    managed = ((".yoke", "docs"), (".yoke", "harness"))
     for raw in paths:
         path = Path(raw)
         bad = (
@@ -175,13 +174,14 @@ def assert_safe_bundle_paths(paths: Iterable[str]) -> None:
             or path.is_absolute()
             or ".." in path.parts
             or raw in HOOK_MERGE_TARGETS + CURSOR_CONFIG_RELS
-            or (path.parts[0] == ".yoke" and path.parts[:2] != (".yoke", "docs"))
+            or (path.parts[0] == ".yoke" and path.parts[:2] not in managed)
         )
         if bad:
             raise ProjectInstallError(
                 f"bundle names an unsafe path {raw!r}: paths must be "
                 "repo-relative, must not traverse '..', must not land under "
-                ".yoke/ (except .yoke/docs/), and merge-managed harness "
+                ".yoke/ (except .yoke/docs/ and .yoke/harness/), and "
+                "merge-managed harness "
                 "config flows through its install pass, not a literal file"
             )
 

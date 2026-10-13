@@ -33,6 +33,7 @@ def _seed_sources(root: Path) -> None:
         d.mkdir(parents=True, exist_ok=True)
         (d / "content.md").write_text(f"# {rel}\n", encoding="utf-8")
     for rel in sync_mod.INSTALL_BUNDLE_SOURCE_FILES:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
         (root / rel).write_text(
             f"# {rel}\n{MANAGED_BLOCK_BEGIN}\nuniversal\n"
             f"{MANAGED_BLOCK_END}\n# Yoke Repo Internals\nprivate\n",
@@ -51,7 +52,7 @@ def test_sync_materializes_a_byte_exact_tree_from_empty(tmp_path) -> None:
     assert len(report["written"]) == (
         len(sync_mod.INSTALL_BUNDLE_SOURCE_DIRS)
         + len(sync_mod.INSTALL_BUNDLE_SOURCE_FILES)
-        + 1
+        + 4
     )
     assert any(w.startswith(".yoke/docs/") for w in report["written"])
     # A second sync is a no-op — idempotent.

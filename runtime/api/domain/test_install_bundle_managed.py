@@ -11,7 +11,7 @@ from runtime.api.fixtures import pg_testdb
 from yoke_contracts.project_contract.managed_block import MANAGED_BLOCK_END
 from yoke_core.domain import (
     install_bundle,
-    install_bundle_managed,
+    install_bundle_sources,
     install_bundle_tree_sync,
 )
 
@@ -60,13 +60,16 @@ def test_packaged_snapshot_carries_root_source_files() -> None:
     # The doctrine files are FILES, not dirs, so the per-dir byte test in the
     # sibling suite never sees them; guard them explicitly so the product wheel
     # carries only the project-agnostic prefix build_bundle extracts blocks from.
-    for rel in install_bundle_managed.INSTALL_BUNDLE_SOURCE_FILES:
+    for rel in install_bundle_sources.INSTALL_BUNDLE_SOURCE_FILES:
         source = REPO_ROOT / rel
         packaged = PACKAGED_ROOT / rel
         source_bytes = source.read_bytes()
-        marker = MANAGED_BLOCK_END.encode("utf-8")
-        boundary = source_bytes.index(marker) + len(marker)
-        expected = source_bytes[:boundary] + b"\n"
+        if rel == "AGENTS.md":
+            marker = MANAGED_BLOCK_END.encode("utf-8")
+            boundary = source_bytes.index(marker) + len(marker)
+            expected = source_bytes[:boundary] + b"\n"
+        else:
+            expected = source_bytes
         assert packaged.is_file(), f"packaged snapshot missing root file {rel}"
         assert packaged.read_bytes() == expected, (
             f"snapshot drift for {rel}: "
@@ -98,7 +101,7 @@ def test_pyproject_package_data_covers_root_source_files() -> None:
     # A root file added to INSTALL_BUNDLE_SOURCE_FILES but not globbed here would
     # be materialized into the snapshot yet omitted from the wheel.
     text = PYPROJECT.read_text("utf-8")
-    for rel in install_bundle_managed.INSTALL_BUNDLE_SOURCE_FILES:
+    for rel in install_bundle_sources.INSTALL_BUNDLE_SOURCE_FILES:
         assert f'"{rel}"' in text, (
             f"pyproject package-data is missing a glob for root file {rel!r}"
         )
@@ -166,12 +169,13 @@ def test_doctrine_block_leaves_generated_packet_to_session_orientation(conn) -> 
     assert "Main-session DB/API packet (main_agent)" not in doctrine
 
 
-def test_bundle_files_stay_out_of_yoke_dir_except_docs(conn) -> None:
+def test_bundle_files_use_only_managed_yoke_subtrees(conn) -> None:
     bundle = install_bundle.build_bundle(1, conn)
     for entry in bundle["files"]:
         p = entry["path"]
-        # Docs are the one yoke-authoritative .yoke/ subtree; all else stays out.
-        assert p.startswith(".yoke/docs/") or not p.startswith(".yoke/")
+        assert p.startswith((".yoke/docs/", ".yoke/harness/")) or not p.startswith(
+            ".yoke/"
+        )
         assert not p.startswith("/")
         assert ".." not in p.split("/")
 

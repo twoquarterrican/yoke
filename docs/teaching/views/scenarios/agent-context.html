@@ -121,7 +121,7 @@ locally <i class="s draft-copy">draft-copy</i></h3>
   <code>docs/public/reference/agent-rules/code-and-cli.md</code>,
   <code>packages/yoke-core/src/yoke_core/domain/main_agent_packet.py</code></div>
 <h3 id="agent-context/03">Load this project’s knowledge and pass it to workers
-<i class="s draft-copy">draft-copy</i></h3>
+<i class="s observed">observed</i></h3>
   <div><b>Audience:</b> agent</div>
   <div><b>When:</b> Implementation, planning, delegation and resumed work</div>
   <div><b>Need:</b> Resolve registered context_routing; read always plus
@@ -130,10 +130,13 @@ locally <i class="s draft-copy">draft-copy</i></h3>
   <div><b>Disclosure:</b> current cue</div>
   <div><b>Surface:</b> Registered project context → project documents → role
   adapter / task prompt</div>
-  <div><b>Gap:</b> Accepted Conduct repair replaces its source-only loader.
-  Conditional role references need harness-correct rendering. Empty
-  configuration and failed reads must remain distinct.</div>
-  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Gap:</b> Shared registered context recipe now distinguishes empty
+  configuration, failed reads and missing configured files. Actual
+  receiving-harness context remains release proof; conditional role-reference
+  rendering has its own owner.</div>
+  <div><b>Review:</b> Source recipe and external installed corpus checked in
+  runtime/api/domain/test_installed_project_context.py; live model delivery is
+  unproven.</div>
   <div><b>Recipes:</b> <code>yoke project-structure get --project P --family
   context_routing --json</code></div>
   <div><b>Plan notes:</b> FIRST-USER accepted guidance-access amendment ·

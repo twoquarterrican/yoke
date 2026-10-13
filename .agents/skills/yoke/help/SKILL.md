@@ -94,5 +94,5 @@ DEPENDENCY INSPECTION
   Full graph, both directions; enforced before implementation and merge.
   /yoke usher --dry-run shows dependency-driven merge order.
 
-For full documentation, see README.md
+For full Yoke documentation, read `.yoke/docs/index.md`.
 ```

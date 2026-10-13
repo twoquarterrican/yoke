@@ -69,19 +69,22 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
   <div><b>Sources:</b> <code>docs/public/reference/harness-discovery.md</code>,
   <code>packages/yoke-core/src/yoke_core/domain/session_orientation_delivery.py</code></div>
 <h3 id="harness-readiness/02">New harnesses and different substrates
-<i class="s draft-copy">draft-copy</i></h3>
+<i class="s observed">observed</i></h3>
   <div><b>Audience:</b> both</div>
   <div><b>When:</b> Later harness install, upgrade or unsupported
   operation</div>
   <div><b>Need:</b> Install/repair only relevant native integration. Capability
   truth is the manifest for the installed release; do not assume every harness
   supports the same loading or wake behavior.</div>
-  <div><b>Disclosure:</b> planned cue</div>
+  <div><b>Disclosure:</b> current cue</div>
   <div><b>Surface:</b> Harness reconcile and release-matched manifest</div>
-  <div><b>Gap:</b> Accepted access repair would ship manifests to
-  .yoke/harness/&lt;harness&gt;/manifest.json. Current teaching still names the
-  source-only runtime/harness path.</div>
-  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Gap:</b> Managed release manifests are published at
+  .yoke/harness/&lt;harness&gt;/manifest.json. Automated install/refresh and
+  byte identity are covered; real receiving-harness proof waits for
+  release.</div>
+  <div><b>Review:</b> runtime/api/domain/test_installed_project_context.py
+  proves external HTTPS transport install and manifest recovery; capability
+  declarations and live pickup remain separate.</div>
   <div><b>Plan notes:</b> FIRST-USER 18 · FIRST-USER D</div>
   <div><b>Sources:</b> <code>docs/public/reference/harness-discovery.md</code>,
   <code>runtime/harness/manifest-schema.md</code></div>

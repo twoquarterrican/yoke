@@ -77,6 +77,9 @@ def build_project_bundle(project_id: int, conn: Any) -> Dict[str, Any]:
     files.extend(bundle_sources._agent_files(root))
     files.extend(bundle_sources._rules_files(root))
     files.extend(managed.docs_bundle_files(root))
+    from yoke_core.domain.install_bundle_sources import harness_manifest_files
+
+    files.extend(harness_manifest_files(root))
     files.append(installed_layer_receipt_entry(source_engine_release))
     files.sort(key=lambda entry: entry["path"])
     return {

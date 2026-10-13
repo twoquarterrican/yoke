@@ -52,12 +52,14 @@ instruction file; code examples do not count as imports.
 
 ## Refresh and ownership
 
-Bundle schema 2 requires a matching CLI. An older bundle/CLI pairing refuses
-and names the public-installer upgrade. Source previews, local/self-hosted
-servers, and hosted servers render the same canonical tree and discovery
+Bundle schema 3 requires a matching CLI. An older CLI refuses and names the
+public-installer upgrade. An older serving bundle refuses as
+`installed_manifest_bundle_unavailable`; ask the control-plane operator to
+serve a matching release, then retry refresh. Source previews, local/self-hosted
+servers and hosted servers render the same canonical tree and discovery
 contract; wheels carry the same authored inputs.
 
-Refresh writes only the canonical skill tree and Claude discovery link. An
+Refresh uses one canonical skill tree and Claude discovery link. An
 unexpected entry at `.claude/skills/yoke` refuses as
 `skill_discovery_entry_conflict`; preserve its contents outside that path and
 rerun refresh. Codex and Cursor discover the canonical tree directly.
@@ -83,6 +85,24 @@ checks links out as links (`core.symlinks=true`). A filesystem without native
 links receives `skill_discovery_link_unavailable` with recovery; Yoke does not
 copy a second discoverable tree. Hooks, subagent adapters, and intra-skill
 references retain their separate owners and canonical relative paths.
+
+## Read installed capabilities
+
+```text
+cat .yoke/harness/codex/manifest.json
+```
+
+Read `.yoke/harness/<harness-dir>/manifest.json` for the installed release.
+Directories are `claude`, `codex`, and `cursor`; `claude-code` uses `claude`.
+`agent_wake` names wake support and its evidence, `session_control` names
+message/launch routes, and `supports` names hook affordances. `unverified`
+means the capability has no proof; it does not authorize guessing.
+The existing install bundle publishes renderer-owned release bytes and
+refresh manages their digests, restores missing files and resumes interrupted
+application. Do not edit managed manifests to change capabilities.
+If a manifest is missing, run `yoke project refresh` from this project.
+If its serving bundle predates schema 3, follow the operator recovery above.
+Local edits use the refresh refusal's recovery.
 
 ## Verify native discovery
 

@@ -108,7 +108,7 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "envelope."
         ),
     },
-    "runtime/harness/<harness-dir>/manifest.json": {
+    ".yoke/harness/<harness-dir>/manifest.json": {
         "columns": [
             ("agent_wake", "object"),
             ("session_control", "object"),
@@ -117,6 +117,9 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
         "notes": (
             "Manifest directories are claude, codex, and cursor; executor "
             "claude-code resolves to claude, not a claude-code directory. "
+            "Missing installed manifest: run `yoke project refresh`; if the "
+            "serving bundle predates schema 3, ask its control-plane operator "
+            "to serve a matching release, then retry. "
             "The harness manifest is where harness capability truth lives — "
             "not any doc, skill, rules file, or agent body. Before stating "
             "what a harness can do, read the field: `agent_wake` answers "
@@ -124,7 +127,7 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "(idle_wake / idle_wake_mechanism / timer_wake, each with the "
             "evidence behind it), `session_control` answers messaging and "
             "launch routes, `supports` answers hook affordances. Schema: "
-            "runtime/harness/manifest-schema.md. Sources: "
+            ".yoke/docs/reference/harness-discovery.md. Sources: "
             "yoke_contracts.harness_wake_capability and "
             "yoke_contracts.session_control; the manifests are rendered, so "
             "never hand-edit one. A capability nobody probed reads "

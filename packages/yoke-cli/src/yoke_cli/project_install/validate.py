@@ -24,6 +24,13 @@ def _validate_bundle(bundle: Dict[str, Any]) -> None:
         raise ProjectInstallError("install bundle must be a JSON object")
     schema = bundle.get("bundle_schema")
     if schema != BUNDLE_SCHEMA:
+        if isinstance(schema, int) and schema < BUNDLE_SCHEMA:
+            raise ProjectInstallError(
+                f"installed_manifest_bundle_unavailable: serving bundle_schema "
+                f"{schema} predates required {BUNDLE_SCHEMA}; ask the control-plane "
+                "operator to serve a release with managed harness manifests, "
+                "then rerun yoke project refresh. No project files were changed."
+            )
         raise ProjectInstallError(
             f"bundle_schema {schema!r} is not the supported {BUNDLE_SCHEMA}; "
             "upgrade this CLI (rerun the public installer) to match the env"

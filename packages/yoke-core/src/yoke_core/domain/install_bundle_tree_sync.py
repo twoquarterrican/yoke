@@ -22,7 +22,6 @@ from yoke_contracts.install_binding import is_yoke_source_checkout
 from yoke_contracts.project_contract.install_manifest import (
     PACKAGED_INSTALL_BUNDLE_TREE_REL,
 )
-from yoke_contracts.project_contract.managed_block import MANAGED_BLOCK_END
 from yoke_core.domain.install_bundle import (
     DOCS_DEST,
     INSTALL_BUNDLE_SOURCE_DIRS,
@@ -33,7 +32,12 @@ from yoke_core.domain.install_bundle_docs_mirror import (
     mirror_docs_dest,
     prune_empty_dirs,
 )
-from yoke_core.domain.install_bundle_managed import INSTALL_BUNDLE_SOURCE_FILES
+from yoke_core.domain.install_bundle_sources import (
+    INSTALL_BUNDLE_SOURCE_FILES,
+    InstallBundleTreeError,
+    harness_manifest_files,
+    source_file_bytes,
+)
 from yoke_core.domain.workspace_authority import (
     assert_target_under_session_work_authority,
 )
@@ -48,22 +52,6 @@ PACKAGED_TREE_REL = Path(PACKAGED_INSTALL_BUNDLE_TREE_REL)
 # the marker that makes ``yoke_core.install_bundle_tree`` an importable
 # package. Everything else outside the declared subtrees is stray.
 PACKAGED_TREE_ALLOWED_EXTRAS = ("__init__.py",)
-
-
-class InstallBundleTreeError(RuntimeError):
-    """The packaged snapshot cannot be materialized; message names the repair."""
-
-
-def _project_agnostic_source_file_bytes(source: Path) -> bytes:
-    """Return the root doctrine prefix that is safe to ship to every project."""
-    data = source.read_bytes()
-    marker = MANAGED_BLOCK_END.encode("utf-8")
-    end = data.find(marker)
-    if end < 0:
-        raise InstallBundleTreeError(
-            f"install-bundle root source lacks managed-block boundary: {source}"
-        )
-    return data[: end + len(marker)] + b"\n"
 
 
 def _relative_files(root: Path) -> List[str]:
@@ -146,12 +134,16 @@ def detect_drift(*, target_root: Path) -> List[str]:
         if not packed_file.is_file():
             drift.append(f"missing packaged file: {rel}")
             continue
-        expected = _project_agnostic_source_file_bytes(source_file)
+        expected = source_file_bytes(source_file)
         if packed_file.read_bytes() != expected:
             drift.append(f"content drift: {rel}")
     for stray in _stray_packaged_files(packaged):
         drift.append(f"stray packaged file (outside declared source dirs): {stray}")
     drift.extend(docs_dest_drift(repo=repo, relative_files=_relative_files))
+    for entry in harness_manifest_files(repo):
+        installed = repo / entry["path"]
+        if not installed.is_file() or installed.read_text() != entry["content"]:
+            drift.append(f"installed harness manifest drift: {entry['path']}")
     return drift
 
 
@@ -180,7 +172,8 @@ def sync(*, target_root: Path, dry_run: bool = False) -> Dict[str, List[str]]:
             raise InstallBundleTreeError(
                 f"install-bundle source file is missing: {repo / rel}"
             )
-        _project_agnostic_source_file_bytes(repo / rel)
+        source_file_bytes(repo / rel)
+    manifests = harness_manifest_files(repo)
     packaged = repo / PACKAGED_TREE_REL
     written: List[str] = []
     removed: List[str] = []
@@ -211,7 +204,7 @@ def sync(*, target_root: Path, dry_run: bool = False) -> Dict[str, List[str]]:
                 os.replace(str(tmp), str(dst))
     for rel in INSTALL_BUNDLE_SOURCE_FILES:
         source_file = repo / rel
-        data = _project_agnostic_source_file_bytes(source_file)
+        data = source_file_bytes(source_file)
         dst = packaged / rel
         if dst.is_file() and dst.read_bytes() == data:
             continue
@@ -222,6 +215,18 @@ def sync(*, target_root: Path, dry_run: bool = False) -> Dict[str, List[str]]:
             tmp = dst.with_suffix(dst.suffix + ".tmp")
             tmp.write_bytes(data)
             os.replace(str(tmp), str(dst))
+    for entry in manifests:
+        target = repo / entry["path"]
+        data = entry["content"].encode("utf-8")
+        if target.is_file() and target.read_bytes() == data:
+            continue
+        written.append(entry["path"])
+        if not dry_run:
+            assert_target_under_session_work_authority(target)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            tmp = target.with_suffix(target.suffix + ".tmp")
+            tmp.write_bytes(data)
+            os.replace(str(tmp), str(target))
     for stray in _stray_packaged_files(packaged):
         removed.append(stray)
         if not dry_run:
