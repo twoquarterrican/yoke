@@ -91,9 +91,11 @@ branch</b> <i class="s draft-copy">draft-copy</i>
   <div><b>Commands:</b> <code>yoke github connect</code>, <code>yoke github
   credential-helper refresh</code>, <code>yoke github disconnect</code>,
   <code>yoke github status</code>, <code>yoke projects github-binding
-  bind</code>, <code>yoke projects github-binding status</code>, <code>yoke
-  projects github-binding unbind</code></div>
+  bind</code>, <code>yoke projects github-binding check</code>, <code>yoke
+  projects github-binding status</code>, <code>yoke projects github-binding
+  unbind</code></div>
   <div><b>Functions:</b> <code>projects.github_binding.bind</code>,
+  <code>projects.github_binding.check</code>,
   <code>projects.github_binding.lifecycle</code>,
   <code>projects.github_binding.status</code>,
   <code>projects.github_binding.unbind</code></div>
@@ -135,6 +137,27 @@ access</b> <i class="s observed">observed</i>
   <code>packages/yoke-core/src/yoke_core/domain/project_github_binding.py</code></div>
   <div><b>Surfaces:</b>
   <a href="../surfaces/detail-home.html">detail-home</a></div>
+</li>
+<li id="repositories/github/workbench-github-page"><b>The workbench GitHub
+page</b> <i class="s observed">observed</i>
+  <div><b>Taught on:</b>
+  <a href="../surfaces/workbench-cues.html">workbench-cues ×1</a></div>
+  <div><b>Text:</b> One page in every mode: App installations with a Manage on
+  GitHub link to repository-access settings, personal authorization when one is
+  known, and project mappings. Hosted marks installation facts live. Local and
+  self-hosted show when each installation was last checked; Check now runs
+  projects.github_binding.check for every bound project in scope and names any
+  refusal&#x27;s reason and recovery. Facts the page cannot read are hidden,
+  never shown as unavailable.</div>
+  <div><b>Sources:</b> <code>docs/public/github.md</code>,
+  <code>packages/yoke-core/src/yoke_core/ui/static/universe_views_github.js</code>,
+  <code>packages/yoke-core/src/yoke_core/ui/static/universe_views_github_access.js</code>,
+  <code>packages/yoke-core/src/yoke_core/ui/contracts/universe-github-host.ts</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/project_github_binding_check.py</code></div>
+  <div><b>Commands:</b> <code>yoke projects github-binding check</code></div>
+  <div><b>Functions:</b> <code>projects.github_binding.check</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/workbench-cues.html">workbench-cues</a></div>
 </li>
 </ul>
 </li>
