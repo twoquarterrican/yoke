@@ -62,8 +62,7 @@ def format_fleet_summary(verdicts: Sequence[Any]) -> str:
 
     Database verdicts stay the pass/fail counts. Distinct retired standing
     invariants are the third count, each named with its reason so a reader
-    who is not following a converge stream still sees them. Copy checks a
-    database had no subject for are named per database after them.
+    who is not following a converge stream still sees them.
     """
     failed = [verdict for verdict in verdicts if not verdict.passed]
     skipped: list[tuple[str, str]] = []
@@ -80,11 +79,6 @@ def format_fleet_summary(verdicts: Sequence[Any]) -> str:
     ]
     lines.extend(
         skipped_standing_invariant_line(name, reason) for name, reason in skipped
-    )
-    lines.extend(
-        f"{verdict.database}: {check.text}"
-        for verdict in verdicts
-        for check in getattr(verdict, "not_applicable", ())
     )
     return "\n".join(lines)
 

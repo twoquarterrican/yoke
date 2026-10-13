@@ -17,12 +17,10 @@ from yoke_core.domain.migration_preflight_receipt import (
 
 #: Project-generic unblock recipe: the one fleet preflight every project's
 #: declared migration-model fleet runs through. Callers that know the project
-#: and environment inject the filled-in command via ``rehearse_command``. An
-#: engine tenant fleet also names the run being released.
+#: and environment inject the filled-in command via ``rehearse_command``.
 _DEFAULT_REHEARSE_COMMAND = (
     "yoke watch preflight -- --project <project> <environment> "
-    "--record-receipt --product-sha <sha> --receipt-env <control-plane> "
-    "[--release-run <run-id>]"
+    "--record-receipt --product-sha <sha> --receipt-env <control-plane>"
 )
 
 

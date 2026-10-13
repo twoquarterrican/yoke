@@ -69,7 +69,6 @@ def _rehearsal_passes(monkeypatch, tmp_path: Path) -> list[str]:
                 passed=True,
                 line="yoke_alpha: PASS",
                 database="yoke_alpha",
-                not_applicable=(),
             )
         ]
 
