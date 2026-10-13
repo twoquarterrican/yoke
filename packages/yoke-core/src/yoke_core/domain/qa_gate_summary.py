@@ -57,6 +57,23 @@ def _is_satisfied(
     return has_pass_run
 
 
+def _post_deploy_answered(conn: Any, row: Any) -> bool:
+    """An item post_deploy row is answered by delivery, as the done gate reads it."""
+    if (
+        str(row["qa_phase"] or "") != "post_deploy"
+        or row["deployment_run_id"]
+        or row["item_id"] is None
+    ):
+        return False
+    from yoke_core.domain.deployment_qa_source_obligation import (
+        source_obligation_consumed,
+    )
+
+    return source_obligation_consumed(
+        conn, item_id=int(row["item_id"]), source_requirement_id=int(row["id"])
+    )
+
+
 def _format_run(row: Optional[Any]) -> Optional[Dict[str, Any]]:
     if row is None:
         return None
@@ -122,7 +139,8 @@ def render_gate_summary(
     conn = connect(db_path)
     try:
         sql = (
-            "SELECT id, qa_kind, method_id, qa_phase, blocking_mode, waived_at, "
+            "SELECT id, item_id, deployment_run_id, qa_kind, method_id, qa_phase, "
+            "blocking_mode, waived_at, "
             f"{requirement_retracted_at_select(conn)}, "
             f"(NOT {settled_obligation_sql(conn)}) AS active "
             f"FROM qa_requirements WHERE {where}"
@@ -167,11 +185,15 @@ def render_gate_summary(
                 requirement_awaits_human_review(conn, req_id) if r["active"] else None
             )
 
-            satisfied = not r["active"] or _is_satisfied(
-                method_id=method_id,
-                waived_at=waived_at,
-                has_substrate_run=substrate_row is not None,
-                has_pass_run=has_current_passing_run(conn, req_id),
+            satisfied = (
+                not r["active"]
+                or _is_satisfied(
+                    method_id=method_id,
+                    waived_at=waived_at,
+                    has_substrate_run=substrate_row is not None,
+                    has_pass_run=has_current_passing_run(conn, req_id),
+                )
+                or _post_deploy_answered(conn, r)
             )
 
             evidence = latest_row

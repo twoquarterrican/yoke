@@ -48,10 +48,9 @@ from yoke_core.domain.db_helpers import (
 from yoke_core.domain.qa_events import emit_qa_requirement_event
 from yoke_core.domain.qa_obligation_settlement import requirement_retracted_at_select
 from yoke_core.domain.qa_requirement_source_retirement import (
-    SOURCE_RETIREMENT_REFUSAL,
     admitted_source_correction,
     is_source_retirement,
-    passing_run_replacement,
+    source_retirement_answer,
     source_retirement_scope,
 )
 
@@ -152,7 +151,8 @@ def record_supersession(
     obligation, the replacement must be a real blocking case that has
     passed, and neither may already be discharged another way. A
     post-deploy item source never runs, so retiring one needs a passing run
-    replacement of its admitted copy instead. Every refusal names what to do
+    replacement of any admitted copy a live membership still holds instead.
+    Every refusal names what to do
     instead. Returns the receipt and the discharged row; the caller commits
     and then emits the event.
     """
@@ -208,14 +208,13 @@ def record_supersession(
                 f"by requirement {corrected[column]}. Name that case directly "
                 "rather than chaining through an earlier attempt."
             )
-    run_answer: dict[str, int] = {}
+    run_answer: dict[str, Any] = {}
     if is_source_retirement(broken):
-        answer_id = passing_run_replacement(conn, broken)
-        if answer_id is None:
-            raise QaSupersessionError(
-                SOURCE_RETIREMENT_REFUSAL.format(source_id=int(requirement_id))
-            )
-        run_answer = {"run_replacement_requirement_id": answer_id}
+        run_answer = source_retirement_answer(
+            conn, broken, corrected_id=int(superseded_by_requirement_id)
+        )
+        if "refusal" in run_answer:
+            raise QaSupersessionError(run_answer["refusal"])
     elif not has_current_passing_run(conn, int(superseded_by_requirement_id)):
         verdict = latest_verdict(conn, int(superseded_by_requirement_id))
         raise QaSupersessionError(

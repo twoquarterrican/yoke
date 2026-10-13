@@ -81,6 +81,11 @@ yoke qa gate-summary --item PREFIX-N --target reviewed-implementation --json
 yoke qa gate-summary --item PREFIX-N --target implemented --json
 ```
 
+In the implemented summary a post_deploy item source also reads satisfied once
+the run answering its environment accepted its admitted copy -- the reading
+done uses. A supplemental QA run (another environment of the same release)
+answers as soon as its final item QA is accepted, before either run settles.
+
 Done settles blocking item and run-member requirements of any phase. A
 run-bound supersession needs the same run/stage/member/target and accepted
 stage. Admitted copies and acceptance rows answer their source/stage once,
@@ -102,8 +107,12 @@ GATE_QA_BYPASS_FORBIDDEN. Unset it and satisfy or explicitly waive obligations.
 
 Item requirements are attached by definition/seeded policy before review.
 materialize converges newly added cases and confirms existing rows unchanged.
-rematerialize refreshes amended rows, waives removed cases, and reports all
+rematerialize refreshes amended rows, retires removed cases, and reports all
 plan_ids reached, including already-answered plans (refresh without new rows).
+On an item, a removed post_deploy case replaced by exactly one created row
+(same item/transition/phase/environment/baseline) is superseded by it
+(superseded_requirement_ids), so the corrected case's run copies close the
+item; a removed case with no single successor is waived.
 Deployment convergence is per case: unjudged refreshes, changed failed gets
 one declared corrected replacement, passed stands. An explicit --replaces
 case gets no second automatic correction. Read both commands' --help.
@@ -278,10 +287,14 @@ yoke qa requirement supersede --requirement-id {SOURCE_ID} --superseded-by-requi
 
 Declare the corrected body through requirement-add's --help contract for the
 same item/transition/phase/resolved environment; snapshot digest may differ.
-Neither source executes. Instead require an admitted source copy replaced or
-superseded through a chain whose terminal case has a current config/target-qualified
-pass. Receipt names run_replacement_requirement_id. That case still answers its
-run; corrected source reads retired source's admitted copies at done. Later
+Neither source executes. While a run the item still belongs to holds an
+admitted source copy, require one replaced or superseded through a chain whose
+terminal case has a current config/target-qualified pass. Receipt names
+run_replacement_requirement_id. That case still answers its run; corrected
+source reads retired source's admitted copies at done. When no live membership
+holds a copy (item removed with `yoke deployment-runs remove-item`, run failed
+or cancelled, or never admitted), retirement records the link and the receipt's
+proof_owed_notice says the corrected source owes its own next-release proof. Later
 admissions skip superseded source and admit corrected one; source is never
 rewritten. Control plane may record an authorized target it cannot execute
 (prod recording stage); execution alone checks runtime observation authority.

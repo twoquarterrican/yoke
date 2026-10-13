@@ -15,6 +15,8 @@ from yoke_core.domain.deployment_member_independent_close_out import (
 )
 from yoke_core.domain.deployment_qa_source_obligation import source_obligation_consumed
 from yoke_core.domain.deployment_run_member_targeting import supplemental_qa_run
+from yoke_core.domain.qa_gate_definitions import GateTarget
+from yoke_core.domain.qa_gate_summary import render_gate_summary
 
 
 def _final_members(conn, *, item_id):
@@ -50,6 +52,15 @@ def test_executing_stage_run_answers_stage_source_beside_executing_prod(test_db)
     assert not source_obligation_consumed(
         test_db, item_id=item_id, source_requirement_id=sources["prod"]
     )
+    # The diagnostic a failed close-out names reads the same answer.
+    summary = render_gate_summary(
+        GateTarget(item_id=item_id),
+        str(test_db.info.dsn),
+        transition_name="implemented",
+    )
+    satisfied = {row["id"]: row["satisfied"] for row in summary["requirements"]}
+    assert satisfied[sources["stage"]] is True
+    assert satisfied[sources["prod"]] is False
 
 
 def test_unaccepted_executing_stage_run_does_not_answer(test_db):

@@ -44,6 +44,10 @@ class QaRequirementSupersedeResponse(BaseModel):
     #: retired in favor of a corrected item requirement: the passing run case
     #: that proved the corrected body and answers for its own run.
     run_replacement_requirement_id: Optional[int] = None
+    #: Present instead when no run the item still belongs to held a copy of
+    #: the retired source: the corrected requirement owes its own proof on
+    #: the next release carrying the item.
+    proof_owed_notice: Optional[str] = None
 
 
 def handle_qa_requirement_supersede(
