@@ -9,6 +9,8 @@ import time
 from typing import Any
 from urllib.parse import urlsplit
 
+from yoke_contracts.machine_approval_coordinates import machine_approval_coordinates
+
 from yoke_core.domain.ssh_mac_terminal_capture import RunRemote
 from yoke_core.domain.ssh_mac_browser_approval import (
     BrowserApprovalResult,
@@ -27,7 +29,6 @@ _DENIAL_MARKERS = (
     "hosted authorization expired",
     "this machine was denied in the browser",
 )
-_APPROVAL_PATHS = frozenset({"/connect", "/machine"})
 
 
 @dataclass(frozen=True)
@@ -51,18 +52,9 @@ def _labeled_value(transcript: str, label: str) -> str | None:
     return None
 
 
-def _approved_origin(url: str, allowed_base_urls: tuple[str, ...]) -> bool:
-    parsed = urlsplit(url)
-    if (
-        parsed.scheme != "https"
-        or not parsed.netloc
-        or parsed.path not in _APPROVAL_PATHS
-        or parsed.query
-        or parsed.fragment
-    ):
-        return False
+def _approved_origin(origin: str, allowed_base_urls: tuple[str, ...]) -> bool:
     return any(
-        (parsed.scheme, parsed.netloc) == (allowed.scheme, allowed.netloc)
+        origin == f"{allowed.scheme}://{allowed.netloc}"
         for allowed in (urlsplit(value) for value in allowed_base_urls)
     )
 
@@ -137,12 +129,27 @@ def run_machine_browser_approval_with_io(
     transcript = read_transcript()
     url = _labeled_value(transcript, "Open:")
     code = _labeled_value(transcript, "One-time code:")
-    if url is None or code is None or not _approved_origin(url, allowed_base_urls):
+    if url is None or code is None:
         return OperatorGateResult(
             False,
             transcript,
             "machine_browser_approval_context_missing",
         )
+    try:
+        coordinates = machine_approval_coordinates(url, code)
+        if not _approved_origin(coordinates.origin, allowed_base_urls):
+            raise ValueError("machine approval origin is outside the declared execution target")
+    except ValueError as exc:
+        return OperatorGateResult(
+            False,
+            transcript,
+            "machine_browser_approval_context_invalid",
+            browser_evidence={
+                "context_refusal": str(exc),
+                "recovery": "Capture the live code and its matching verification URI from the declared target, then rerun the case.",
+            },
+        )
+    url, code = coordinates.complete_uri, coordinates.user_code
     _emit_browser_approval(url, code)
     if not send_keys(action["keys"]):
         return OperatorGateResult(

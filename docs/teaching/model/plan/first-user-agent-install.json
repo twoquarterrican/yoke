@@ -73,7 +73,7 @@
    "scope": "Yoke",
    "concepts": ["installation/readiness", "verification/checks", "context/disclosure", "deployments/outcomes"],
    "surfaces": ["setup-tui", "setup-agent", "project-orientation", "global-orientation"],
-   "scenarios": ["install-entry", "harness-readiness", "project-adoption", "delivery_outcome"]
+   "scenarios": ["install-entry", "harness-readiness", "project-adoption", "delivery_outcome", "work-intent"]
   },
   {
    "id": "FIRST-USER.E",

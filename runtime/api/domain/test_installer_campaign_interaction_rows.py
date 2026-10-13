@@ -29,7 +29,7 @@ INSTALLER_CAMPAIGN_CASES = installer_campaign_cases_for_target(
             "release_channel": "latest",
         },
         "role": {"production": False},
-    }
+    }, primary_machine="primary-test", joining_machine="joining-test",
 )
 
 
@@ -43,7 +43,9 @@ def test_user_facing_terminal_cases_use_the_native_terminal_app_mode() -> None:
             configs = (raw_config,)
         for config in configs:
             expected = (
-                "ssh-command" if case["case_key"] == "path-repair" else "terminal"
+                "ssh-command" if case["case_key"] in {
+                    "path-repair", "stale-reinstall", "uninstall", "late-harness-discovery",
+                } else "terminal"
             )
             assert config["execution_mode"] == expected
 

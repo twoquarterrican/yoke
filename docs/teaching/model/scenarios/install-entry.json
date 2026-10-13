@@ -5,7 +5,7 @@
   "status": "draft-copy",
   "situations": ["A human runs the installer in a terminal", "A human tells an existing agent: install upyoke.com", "Installation stops halfway or changes presentation mode"],
   "coverage": "traced",
-  "current": "Research trace; requirements and source paths need live proof.",
+  "current": "Observed installer campaign baseline: PATH checks passed; the isolated welcome frame displayed the authored identity and uv attempt, then refused its unwritable home. The prior case incorrectly expected successful exit. Full install and live-agent delivery remain unproven.",
   "desired": "Reconciled against current plan records.",
   "questions": ["Can an agent with no Yoke-specific context complete the exact public entry path?", "Does every failure preserve enough context to resume without guessing?"],
   "related_scenarios": ["universe-choice", "github-choices", "project-adoption", "harness-readiness"],
@@ -49,10 +49,10 @@
    "need": "Show what changed, what is waiting for the human, and one continuation. TUI browser actions and agent-returned links/codes are different channels.",
    "disclosure": "planned cue",
    "surface": "Setup screens, step results and resume handoff",
-   "gap": "Trace expiration, denial, partial Apply, Back and mode switching. Preserve original intent, project and run identity. A checkout linked to another install's project offers Unlink and set up fresh before Apply.",
-   "review": "Pending exact recipe proof.",
+   "gap": "Trace expiration, denial, partial Apply, Back, reinstall leftovers and mode switching. Preserve original intent, project and run identity. A checkout linked to another install's project offers Unlink and set up fresh before Apply.",
+   "review": "The campaign distinguishes an intentional isolated write refusal from complete installation; its corrected contract still needs live rerun proof.",
    "plan_notes": ["FIRST-USER 1", "FIRST-USER 7", "FIRST-USER 14", "FIRST-USER 17", "FIRST-USER 19", "FIRST-USER 26", "FIRST-USER 37", "FIRST-USER 38", "FIRST-USER 39", "FIRST-USER D"],
-   "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/config/project_onboarding_handoff.py"]
+   "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/config/project_onboarding_handoff.py", "docs/testing-verification/installer-campaign.md"]
   }
  ]
 }

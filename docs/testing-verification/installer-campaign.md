@@ -13,7 +13,7 @@ export it from the current Yoke source checkout using the plan's own registered
 
 ```text
 yoke qa plan get installer-campaign --project P --full --json > /tmp/installer-plan.json
-yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/installer-plan.json --cases-file /tmp/installer-cases.json
+yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/installer-plan.json --cases-file /tmp/installer-cases.json --primary-machine FIRST --joining-machine SECOND
 yoke qa plan-cases replace --project P --plan-id {plan_id} --cases-file /tmp/installer-cases.json --json
 yoke qa plan get installer-campaign --project P --full --json > /tmp/installer-plan-after.json
 yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/installer-plan-after.json --check
@@ -30,3 +30,76 @@ the registered replacement records the installation in the function-call ledger.
 Existing execution snapshots keep their original definitions and evidence; any
 `requirements_behind_plan` returned by replacement need their named refresh path
 before reuse, rather than being rewritten as part of the installation.
+
+Choose two distinct registered names from `yoke test-machine list --project P`.
+The saved case configurations retain those fixture choices; later source checks
+reuse them. The second-machine case must use a different physical host, not a
+reset of the first one. A deployment member stage runs the separate host rosters:
+
+```text
+yoke watch qa-plan -- --deployment-run-id RUN --stage STAGE --member ITEM --project P
+```
+
+Omit a single-host pin for that scope. Standalone executions retain one host
+lease; use a one-host saved plan for focused iteration, not a claimed full
+multi-host pass. Preserve the baseline and every unperformed case as evidence.
+
+The six recovery cases cover a published predecessor reinstall, local-to-hosted
+with and without a backup, a distinct joining machine, explicit uninstall and
+late harness discovery. Preparation failures preserve their named reason and
+recovery. The late-harness fixture uses a disposable `CODEX_HOME`, preserving
+the executable outside discovery and restoring it even when setup fails.
+It reruns public setup after the harness becomes available. Personal Codex
+home and sign-in files stay in place. Configuration checks do not
+replace the exploration's real
+received-context proof.
+
+## Complete machine approval links
+
+```text
+Open: https://example.invalid/connect?user_code=AB12-CD34
+One-time code: AB12-CD34
+```
+
+The gate binds the complete link to the displayed code and the execution
+target's declared HTTPS origin. Only one matching user_code is accepted;
+unknown parameters, other origins, credentials and fragments refuse as
+machine_browser_approval_context_invalid with recovery. Self-hosted
+machine/code links preserve the exact wizard-opened path. Coordinate validation
+does not grant approval authority; keep the selected human/fixture boundary.
+
+## Isolated welcome frame
+
+The welcome probe uses an unwritable home to keep the real host untouched.
+It proves the authored welcome, automatic uv attempt and diagnosed install
+refusal with recovery; exit 1 is expected only with that exact refusal text.
+A download failure, missing recovery or successful write does not pass this
+probe. Full installation success belongs to the cold-start cases.
+
+## Install the live-session exploration mission
+
+Create the exploration plan for the same declared target as the campaign:
+
+```text
+yoke qa plan create installer-exploration --project P --environment SITE/NAME
+yoke qa plan get installer-exploration --project P --full --json > /tmp/exploration-plan.json
+yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/exploration-plan.json --cases-file /tmp/exploration-cases.json
+yoke qa plan-cases replace --project P --plan-id {plan_id} --cases-file /tmp/exploration-cases.json
+```
+
+Read `plan_id` from the plan receipt. The exporter reads the latest immutable
+Machine QA Pack example, so there is one mission source. Check a fresh plan
+receipt with the same source checker before running it:
+
+```text
+yoke watch qa-plan -- --plan installer-exploration --project P
+```
+
+The mission chooses its route through real Claude, Codex and Cursor sessions,
+permission modes and representative project archetypes. It requires received
+context evidence and meaningful first work reaching its real done state.
+The human opens interactive sessions and handles personal approvals. A missing
+mode, readiness check, context receipt or terminal outcome remains unproven;
+it never passes because configuration files exist. Preserve failed evidence
+and add each new failure to the scripted campaign before rerunning after
+related installer, setup, connection or onboarding changes.
