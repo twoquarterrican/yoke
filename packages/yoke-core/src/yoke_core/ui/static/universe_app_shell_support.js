@@ -25,14 +25,15 @@ export function saveScreenSelection(client, viewId, selection, focus, sort) {
 // "all" — but `markReady()` runs only on a genuine success, so normalization
 // during that degraded render never persists a default over whatever the
 // server actually still holds. The person still needs to know their choices
-// are not being saved this session, so a failure surfaces the same scope
-// notice a failed save does.
+// are not being saved this session, so a failure surfaces the same page-level
+// error a failed save does.
 function readScreenSelections(client) {
   return Promise.resolve().then(() => callFunction(
     client, "ui_preferences.screen_selection.list", {},
   )).then((callResult) => {
     if (!callResult.envelope?.success) {
-      throw new Error(callResult.envelope?.error?.message || "screen selection list failed");
+      throw Object.assign(new Error(callResult.envelope?.error?.message || "screen selection list failed"),
+        { code: callResult.envelope?.error?.code || "screen_selection_read_failed" });
     }
     return callResult.envelope.result || {};
   });
@@ -87,13 +88,7 @@ export function loadScreenSelections(client, scopeSelections) {
 export function createProjectControls(deps) {
   const { documentNode, windowNode, entry, route, scope, projects,
     scopeSelections, onSelectionChange, renderRoute, navigation } = deps;
-  if (scopeForRoute(entry, route) === SCOPE_NONE) {
-    if (!scopeSelections.notice) return null;
-    const note = documentNode.createElement("span");
-    note.className = "scope-context-note";
-    note.textContent = scopeSelections.notice;
-    return note;
-  }
+  if (scopeForRoute(entry, route) === SCOPE_NONE) return null;
   const picker = createScopePicker({
     documentNode, windowNode, entry: { ...entry, scope: SCOPE_MULTI },
     scope: scopeSelections.selectionFor(entry.id), projects, scopeSelections,
@@ -111,12 +106,6 @@ export function createProjectControls(deps) {
     const label = focus.children[0];
     label.textContent = "Focus project";
     picker.appendChild(focus);
-  }
-  if (scopeSelections.notice) {
-    const note = documentNode.createElement("span");
-    note.className = "scope-context-note";
-    note.textContent = scopeSelections.notice;
-    picker.appendChild(note);
   }
   return picker;
 }

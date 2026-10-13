@@ -133,14 +133,19 @@ test("refresh compares every remembered view, its selection and focus, and addit
   assert.equal(await read({ items: { selection: ["2"] }, inbox: { selection: "all" } }), true);
   assert.equal(await read({ inbox: { selection: "all" }, items: { selection: ["2"] } }), false);
 });
-test("refresh read failures retain the selection and report the existing recovery notice", async () => {
+test("refresh read failures log their code without a selector notice and the next read applies", async (t) => {
+  const warnings = t.mock.method(console, "warn", () => {});
   const notice = [];
   const state = createProjectSelection(undefined, () => notice.push(state.notice));
   state.seed("items", ["1"]);
   state.markReady();
-  assert.equal(await state.refreshSelections(async () => { throw new Error("offline"); }), false);
+  assert.equal(await state.refreshSelections(async () => { throw Object.assign(new Error("offline"), { code: "unavailable" }); }), false);
   assert.deepEqual(state.selectionFor("items"), ["1"]);
-  assert.deepEqual(notice, ["Saved projects could not be loaded. Showing the last known selection; return to this tab or reload to retry."]);
+  assert.deepEqual(notice, []);
+  assert.equal(state.notice, "");
+  assert.deepEqual(warnings.mock.calls[0].arguments, ["Saved projects refresh failed", { code: "unavailable" }]);
+  assert.equal(await state.refreshSelections(async () => ({ views: { items: { selection: ["2"] } } })), true);
+  assert.deepEqual(state.selectionFor("items"), ["2"]);
 });
 test("a choice during refresh wins and writes capture each clicked value", async () => {
   const writes = [];

@@ -294,13 +294,13 @@ test("a denied save resolves normally but still surfaces the notice through the 
     return baseCall(request);
   };
   const { root, navigate } = await mountAt(t, "/items", client);
-  // One navigation, one settle — no second navigation to force a repaint.
   // The failed (but resolved, never rejected) save must trigger its own
   // re-render once it settles; if that wiring regresses, this fails instead
   // of a second navigation quietly masking the missing repaint.
   scopeChips(root).find((chip) => chip.textContent === "BET").dispatchEvent(new Event("click"));
   await settle();
-  assert.match(byClass(root, "scope-context-note")[0].textContent, /could not be saved/);
+  assert.ok(byClass(root, "error-banner").some((node) => /could not be saved/.test(node.textContent)));
+  assert.deepEqual(byClass(root, "scope-context-note"), []);
 });
 
 test("an unsuccessful initial read never lets a default clobber the server's real value", async (t) => {
@@ -327,7 +327,7 @@ test("an unsuccessful initial read never lets a default clobber the server's rea
   assert.deepEqual(client.state.views.items, { selection: ["1"], focus: null });
   // The person still sees that their choices are not being saved this
   // session, on the very first render — no extra navigation needed.
-  assert.match(byClass(root, "scope-context-note")[0].textContent,
+  assert.match(byClass(root, "error-banner")[0].textContent,
     /Couldn't load saved projects/);
 });
 

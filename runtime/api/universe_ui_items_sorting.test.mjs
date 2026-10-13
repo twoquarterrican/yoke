@@ -142,18 +142,20 @@ test("a late refresh cannot replace a newer local choice or swallow its save fai
   assert.deepEqual(preferences.sortFor("items"), { column: "title", direction: "asc" });
 });
 
-test("refresh waits for local saves and failed reads preserve order with visible recovery", async () => {
+test("refresh waits for local saves and failed reads preserve order without an error banner", async (t) => {
+  const warnings = t.mock.method(console, "warn", () => {});
   let finishSave;
   const preferences = createProjectSelection(() => {}, null, () => new Promise((resolve) => { finishSave = resolve; }));
   preferences.markReady(["items"]);
   const saving = preferences.saveSortFor("items", { column: "title", direction: "asc" });
   let reads = 0;
-  const refresh = preferences.refreshSortFor("items", async () => { reads += 1; throw new Error("offline"); });
+  const refresh = preferences.refreshSortFor("items", async () => { reads += 1; throw Object.assign(new Error("offline"), { code: "unavailable" }); });
   await settle();
   assert.equal(reads, 0);
   finishSave();
   await saving;
-  assert.match(await refresh, /last known order.*reload to retry/);
+  assert.equal(await refresh, "");
+  assert.deepEqual(warnings.mock.calls[0].arguments, ["Saved sorting refresh failed", { code: "unavailable" }]);
   const document = new FakeDocument(), root = document.createElement("div");
   const context = itemContext(document, async (request) => {
     if (request.function === "ui_preferences.screen_selection.list") return { envelope: { success: false } };
@@ -163,7 +165,9 @@ test("refresh waits for local saves and failed reads preserve order with visible
   context.screenPreferences = preferences;
   renderItemsView(context, root, "all");
   await settle();
-  assert.match(byClass(root, "error-banner")[0].textContent, /Saved sorting could not be loaded/);
+  assert.deepEqual(byClass(root, "error-banner"), []);
+  await preferences.refreshSortFor("items", async () => ({ sorts: { items: { column: "owner", direction: "desc" } } }));
+  assert.deepEqual(preferences.sortFor("items"), { column: "owner", direction: "desc" });
 });
 
 test("an older view's refresh cannot overwrite a newer refresh that found no saved choice", async () => {
