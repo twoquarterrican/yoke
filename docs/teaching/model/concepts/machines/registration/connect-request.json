@@ -1,7 +1,9 @@
 {
  "id": "connect-request",
  "title": "Connect request",
- "status": "draft-copy",
+ "status": "observed",
  "page": "machines",
- "position": 1
+ "position": 1,
+ "text": "Every hosting mode shares the start request. The approval card groups machine identity, code, org and local expiry with its zone; the UTC instant stays on the time element.",
+ "sources": ["packages/yoke-core/src/yoke_core/ui/static/machine_approval.js", "docs/public/reference/machine-authorization.md"]
 }

@@ -113,13 +113,17 @@ def credential_api_url(
     return value.rstrip("/")
 
 
-class MachineAuthorizationStart(BaseModel):
+class MachineAuthorizationIdentity(BaseModel):
     model_config = ConfigDict(extra="forbid")
     machine_id: str = Field(min_length=1, max_length=100)
     machine_name: str = Field(min_length=1, max_length=150)
 
 
-class MachineAuthorizationPoll(MachineAuthorizationStart):
+class MachineAuthorizationStart(MachineAuthorizationIdentity):
+    platform: str = Field(min_length=1, max_length=80)
+
+
+class MachineAuthorizationPoll(MachineAuthorizationIdentity):
     device_code: str = Field(min_length=1, max_length=4096, repr=False)
 
 

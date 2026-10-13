@@ -1,8 +1,7 @@
 # Machine authorization
 
 Cloud and self-hosted servers share the device-code wire contract in
-`yoke_contracts.machine_authorization`. Cloud retains its start/poll wire and
-org selection. Self-host binds a code to its sole organization at start.
+`yoke_contracts.machine_authorization`. Cloud retains its org selection. Self-host binds a code to its sole organization at start.
 
 ## Connect
 
@@ -21,8 +20,12 @@ wizard therefore keeps a teammate without company sign-in on API-token entry.
 
 - `POST /api/machine/authorizations` returns `device_code`, `user_code`,
   `verification_uri`, `verification_uri_complete`, `expires_in`, and `interval`.
-  Cloud's start body stays empty. Self-host sends `machine_id` and `machine_name`
-  so the approval page identifies the machine before its first poll.
+  Every mode sends `machine_id` (the configured UUID), `machine_name` (the
+  operating system display hostname, at most 150 characters), and `platform`
+  (for example `macOS`, `Linux` or `Windows`, at most 80 characters). All three
+  are required by `MachineAuthorizationStart`; the browser reads these facts
+  before the first poll. Start with the current installer against a server
+  serving this request contract; a mismatched contract refuses by name.
 - `POST /api/machine/authorizations/token` sends `device_code`, `machine_id`, and
   `machine_name`. Success returns `token`, `org`, and `api_url`.
 - Retry HTTP 202 `authorization_pending`, HTTP 503
@@ -49,7 +52,7 @@ wizard therefore keeps a teammate without company sign-in on API-token entry.
 The shared `/machine-approval[/CODE]` workbench page calls
 `machine_authorization.get` and `machine_authorization.resolve` through its
 normal function client. The read returns `authorization` with code, machine
-name/ID, expiry, and decision; resolve takes `{code, action: approve|deny}`
+name/ID, platform, expiry, and decision; resolve takes `{code, action: approve|deny}`
 and returns that decision. A host consuming the core wheel supplies its normal
 client and owns its pending-code store; Cloud's companion integration maps
 these calls to its store, where organization selection occurs at approval.
@@ -87,6 +90,32 @@ org membership, or disabled actor refuses with its recovery step. A database
 failure before issuance leaves delivery retryable. Cookies authorize browser
 functions only with the workbench's existing same-origin CSRF protection.
 
+## Approval page
+
+The page shows a single card headed **Approve this machine**, with the real
+machine name (omitted when absent), platform and full machine ID, one-time code,
+organization name, and the viewer's local expiry time and zone. The UTC instant
+stays in the time element. Approve only if the code matches your terminal.
+**Approve machine** is the primary action; **Deny** authorizes nothing.
+
+A first organization connection shows four setup steps, with Connect machine
+active and the preceding steps complete. The same visit shows every step
+complete after approval. Later connections omit the bar. This follows the
+organization's machine registry, without a caller-supplied first-run marker.
+
+Approval shows **Machine connected**, a green success line, and a separate
+orange **Return to your terminal** callout. The approved facts omit expiry
+and the code-matching hint. A denied request says **Nothing was authorized**.
+Expired requests show their local expiry when their stored facts remain
+available; no client promises a replacement code automatically. Start a new
+connection from the terminal. An unavailable code offers code entry again.
+The installer and connect wait stop on expiry; neither rotates codes silently.
+
+Inspection may read an expired or consumed record to display its outcome,
+but resolve and poll still refuse expired or consumed codes. A record removed
+by pending-store expiry cleanup is unavailable; membership and ownership still
+protect reads. Light and dark themes share the same card and narrow layouts.
+
 ## Inspect as the signed-in actor
 
 Run `yoke machine-authorization get CODE` to read a code, then
@@ -101,14 +130,13 @@ for that org. See [Hosted org administration](hosted-org-admin.md).
 
 ## Shared schema
 
-The `yoke-contracts` wheel ships `yoke_contracts/machine_authorization.schema.v1.json`,
+The `yoke-contracts` wheel ships `yoke_contracts/machine_authorization.schema.v2.json`,
 generated from the request and response Pydantic models. Load it with Python's
-`importlib.resources.files("yoke_contracts").joinpath("machine_authorization.schema.v1.json")`,
+`importlib.resources.files("yoke_contracts").joinpath("machine_authorization.schema.v2.json")`,
 or read that path from the pinned wheel in another language. Validate a body
 against its named `$defs` entry while retaining the document's other `$defs`
 for references. The `x-http` section names the endpoint, request model, success
-model, error outcome's HTTP status and body model, and retry policy. Cloud's
-empty start request is explicitly host-specific; poll requests are shared.
+model, error outcome's HTTP status and body model, and retry policy. Start and poll requests are shared across hosting modes.
 
 `MachineAuthorizationStarted` and `MachineAuthorizationApproved` define success.
 `MachineAuthorizationPending`, `MachineAuthorizationDenied`,
@@ -128,7 +156,7 @@ Regenerate after changing models with
 `yoke dev run -- python3 -m yoke_contracts.machine_authorization_schema`.
 Check drift with the same command plus `--check`; the contract test also fails
 on byte drift. A breaking wire change requires a new schema version and the
-linked consumer's tests against the exact candidate wheel. The schema's v1
+linked consumer's tests against the exact candidate wheel. The schema's v2
 identifies its contract independently of the wheel's release version.
 
 Shared client helpers are `authorization_origin`, `same_origin_url`,

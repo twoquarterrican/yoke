@@ -88,6 +88,7 @@ def test_device_code_expiry_and_prune_keep_microseconds(test_db, monkeypatch, zo
             origin="https://team.example",
             machine_id=str(uuid4()),
             machine_name="Workshop",
+            platform="Linux",
             client_key="native-expiry",
         )
 

@@ -20,7 +20,7 @@ from yoke_contracts.machine_authorization import (
     MachineAuthorizationRefused,
 )
 
-SCHEMA_RESOURCE = "machine_authorization.schema.v1.json"
+SCHEMA_RESOURCE = "machine_authorization.schema.v2.json"
 
 
 def generate_schema() -> dict:
@@ -38,15 +38,12 @@ def generate_schema() -> dict:
     schema.update(
         {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "urn:yoke:machine-authorization:v1",
+            "$id": "urn:yoke:machine-authorization:v2",
             "title": "Machine sign-in requests and responses",
             "x-http": {
                 "start": {
                     "path": START_PATH,
-                    "request": {
-                        "self-host": "MachineAuthorizationStart",
-                        "cloud": None,
-                    },
+                    "request": "MachineAuthorizationStart",
                     "success": {"status": 200, "body": "MachineAuthorizationStarted"},
                     "refusal": "MachineAuthorizationRefused",
                 },
