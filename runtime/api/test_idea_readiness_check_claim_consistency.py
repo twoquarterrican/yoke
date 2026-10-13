@@ -13,6 +13,7 @@ import pytest
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 from yoke_core.domain.db_helpers import iso8601_now
 from yoke_core.domain.idea_readiness_check import (
+    verify_effective_file_budget_claim_consistency,
     verify_file_budget_claim_consistency,
 )
 
@@ -85,8 +86,7 @@ class TestVerifyFileBudgetClaimConsistency:
         conn, _ = conn_with_claim
         _seed_item(
             conn,
-            "## File Budget\n\n- `runtime/api/domain/foo.py`\n"
-            "- `docs/foo.md`\n",
+            "## File Budget\n\n- `runtime/api/domain/foo.py`\n- `docs/foo.md`\n",
         )
         _seed_claim(conn)
         _seed_claim_paths(conn, ["runtime/api/domain/foo.py", "docs/foo.md"])
@@ -120,7 +120,8 @@ class TestVerifyFileBudgetClaimConsistency:
         assert any(i.code == "CLAIM_NOT_IN_FILE_BUDGET" for i in issues)
 
     def test_blocked_widened_claim_matches_file_budget(
-        self, conn_with_claim,
+        self,
+        conn_with_claim,
     ):
         """A blocked dependent claim with widened coverage matching
         the File Budget passes consistency even while the upstream claim is
@@ -140,7 +141,8 @@ class TestVerifyFileBudgetClaimConsistency:
         assert issues == []
 
     def test_paths_outside_file_budget_section_are_ignored(
-        self, conn_with_claim,
+        self,
+        conn_with_claim,
     ):
         """Path mentions in Out of Scope, Simplify, or AC sections must not
         leak into File Budget claim-consistency checks."""
@@ -160,3 +162,67 @@ class TestVerifyFileBudgetClaimConsistency:
         conn.commit()
         issues = verify_file_budget_claim_consistency(conn, 1)
         assert issues == []
+
+
+def test_pre_task_epic_defers_readiness_claim_parity(test_db):
+    from runtime.api.domain.path_claim_task_test_support import seed_epic
+    from yoke_core.domain.path_claim_required_gate import evaluate
+
+    item_id = seed_epic(test_db, item_id=22001, status="plan-drafted")
+    test_db.execute(
+        "UPDATE items SET spec = %s WHERE id = %s",
+        ("## File Budget\n\n- `src/future.py`\n", item_id),
+    )
+    test_db.commit()
+
+    assert evaluate(test_db, item_id)["verdict"] == "pass"
+    assert verify_effective_file_budget_claim_consistency(test_db, item_id) == []
+
+
+def test_epic_readiness_reports_only_uncovered_task_paths(test_db, tmp_path):
+    from runtime.api.domain.path_claim_task_test_support import (
+        bind_claim,
+        seed_epic,
+        seed_item_claim,
+        seed_target,
+        seed_worker_task,
+    )
+    from yoke_core.domain.path_claim_task_coverage import evaluate_task_coverage
+
+    item_id = seed_epic(test_db, item_id=22002)
+    test_db.execute(
+        "UPDATE items SET spec = %s WHERE id = %s",
+        ("## File Budget\n\n- `src/parent-only.py`\n", item_id),
+    )
+    for task_num, path in enumerate(("src/covered.py", "src/missing.py"), 1):
+        seed_worker_task(
+            test_db,
+            item_id=item_id,
+            task_num=task_num,
+            lane_path=tmp_path / str(task_num),
+            budget_path=path,
+        )
+    test_db.execute(
+        "INSERT INTO epic_task_files (epic_id, task_num, file_path, action) "
+        "VALUES (%s, 1, 'src/partial.py', 'modify')",
+        (item_id,),
+    )
+    target = seed_target(test_db, item_id=item_id, path="src/covered.py")
+    claim = seed_item_claim(test_db, item_id=item_id, target_ids=(target,))
+    bind_claim(test_db, claim_id=claim, item_id=item_id, task_num=1)
+    # An unbound whole-item claim cannot replace the missing task claim.
+    missing = seed_target(test_db, item_id=item_id, path="src/missing.py")
+    seed_item_claim(test_db, item_id=item_id, target_ids=(missing,))
+
+    coverage = evaluate_task_coverage(test_db, item_id)
+    issues = verify_effective_file_budget_claim_consistency(test_db, item_id)
+
+    assert coverage.missing_tasks == (2,)
+    assert coverage.partial_tasks == (1,)
+    assert [issue.context["path"] for issue in issues] == list(coverage.uncovered_paths)
+    assert {issue.context["path"] for issue in issues} == {
+        "src/missing.py",
+        "src/partial.py",
+    }
+    assert all(issue.code == "FILE_BUDGET_NOT_IN_CLAIM" for issue in issues)
+    assert all("--task-num" in issue.remediation for issue in issues)

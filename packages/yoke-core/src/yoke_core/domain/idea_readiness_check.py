@@ -1,24 +1,8 @@
-"""Pre-handoff readiness checks for idea / refine entry.
+"""Read-only readiness checks for idea and refine.
 
-- ``verify_function_owners``: spec ``module.function`` refs resolve to
-  real ``def``s.
-- ``verify_file_budget_line_counts``: ``wc -l`` matches recorded counts
-  (within ~5%); files >=330 lines need a sibling plan.
-- ``verify_file_budget_claim_consistency``: File Budget paths and
-  path-claim targets agree.
-- ``run_all_checks``: composes them into a ``ReadinessOutcome``; CLI
-  exits 0 on pass, 1 with structured remediation.
-
-Idea calls before "next step: /yoke refine"; refine calls before
-``idea → refining-idea``. Checks are read-only against spec text,
-path-claim DB, and repo files.
-
-Every file-reading check takes an explicit ``repo_root``. The item's
-project checkout is resolved ONCE per run and passed down; when the
-executing host has no checkout for that project those checks are not
-performed and ``run_all_checks`` records one ``UnavailableValidation``
-each instead of guessing at a tree or reporting an unperformed check as
-passed.
+Compose function ownership, File Budget sizing, effective claim coverage and
+artifact checks into one outcome with remediation. Resolve the item's project
+checkout once; unavailable file checks remain explicit rather than passing.
 """
 
 from __future__ import annotations
@@ -33,10 +17,16 @@ from yoke_core.domain.file_budget_paths import (
     extract_file_budget_paths_set,
     has_unresolved_file_budget,
 )
-from yoke_core.domain.attestation_rehearsal_dryrun import verify_attestation_rehearsal_commands
+from yoke_core.domain.attestation_rehearsal_dryrun import (
+    verify_attestation_rehearsal_commands,
+)
 from yoke_core.domain import db_backend
-from yoke_core.domain.idea_readiness_check_architecture import verify_architecture_impact_resolved
-from yoke_core.domain.idea_readiness_acceptance_criteria import verify_refine_acceptance_criteria
+from yoke_core.domain.idea_readiness_check_architecture import (
+    verify_architecture_impact_resolved,
+)
+from yoke_core.domain.idea_readiness_acceptance_criteria import (
+    verify_refine_acceptance_criteria,
+)
 from yoke_core.domain.idea_readiness_check_rg import rg_available
 from yoke_core.domain.idea_readiness_check_refs import (
     function_refs_to_verify as _function_refs_to_verify,
@@ -44,6 +34,10 @@ from yoke_core.domain.idea_readiness_check_refs import (
     module_file_candidates as _module_file_candidates,
 )
 from yoke_core.domain.idea_readiness_checkout import item_project_checkout
+from yoke_core.domain.idea_readiness_file_budget_claims import (
+    verify_effective_file_budget_claim_consistency,
+    verify_file_budget_claim_consistency,
+)
 from yoke_core.domain.idea_readiness_local_inputs import read_spec
 from yoke_core.domain.idea_readiness_results import (
     Issue,
@@ -54,6 +48,7 @@ from yoke_core.domain.idea_readiness_results import (
     VERDICT_PASS,
 )
 from yoke_core.domain.idea_readiness_symlink_advisory import collect_symlink_advisories
+
 _extract_file_budget_paths = extract_file_budget_paths_set
 
 # Idea exit and refine entry both run readiness while status is still
@@ -69,7 +64,8 @@ def _p(conn) -> str:
 def _read_status_for_item(conn: Any, item_id: int) -> str:
     p = _p(conn)
     row = conn.execute(
-        f"SELECT status FROM items WHERE id = {p}", (item_id,),
+        f"SELECT status FROM items WHERE id = {p}",
+        (item_id,),
     ).fetchone()
     if row is None or row[0] is None:
         return ""
@@ -77,14 +73,14 @@ def _read_status_for_item(conn: Any, item_id: int) -> str:
 
 
 def _missing_file_budget_allowed(
-    conn: Any, item_id: int, spec_text: str,
+    conn: Any,
+    item_id: int,
+    spec_text: str,
 ) -> bool:
     """Accept the documented UNRESOLVED File Budget only while at idea."""
-    return (
-        _read_status_for_item(conn, item_id)
-        == _IDEA_STATUS_ALLOWS_UNRESOLVED_BUDGET
-        and has_unresolved_file_budget(spec_text)
-    )
+    return _read_status_for_item(
+        conn, item_id
+    ) == _IDEA_STATUS_ALLOWS_UNRESOLVED_BUDGET and has_unresolved_file_budget(spec_text)
 
 
 def verify_function_owners(
@@ -107,7 +103,8 @@ def verify_function_owners(
     issues: List[Issue] = []
     # Pre-filter: skip package-submodule and planned refs before rg search.
     refs = {
-        (fp, fn) for fp, fn in _function_refs_to_verify(spec_text)
+        (fp, fn)
+        for fp, fn in _function_refs_to_verify(spec_text)
         if fp not in (suppressed_refs or ())
         and not is_module_or_planned_ref(fp, item_id, conn, repo_root)
     }
@@ -119,38 +116,43 @@ def verify_function_owners(
         candidate = next((path for path in candidates if path.exists()), None)
         relative = str((candidate or candidates[0]).relative_to(repo_root))
         if candidate is None:
-            issues.append(Issue(
-                code=UNRESOLVED_MODULE,
-                message=(
-                    f"spec references {full_path} but {relative} does "
-                    f"not exist"
-                ),
-                remediation=(
-                    "verify the module path; if the function lives "
-                    "elsewhere update the spec accordingly"
-                ),
-                context={"reference": full_path, "module_path": relative},
-            ))
+            issues.append(
+                Issue(
+                    code=UNRESOLVED_MODULE,
+                    message=(
+                        f"spec references {full_path} but {relative} does not exist"
+                    ),
+                    remediation=(
+                        "verify the module path; if the function lives "
+                        "elsewhere update the spec accordingly"
+                    ),
+                    context={"reference": full_path, "module_path": relative},
+                )
+            )
             continue
         proc = subprocess.run(
             ["rg", "-n", f"^def {func_name}\\b", str(candidate)],
-            capture_output=True, text=True, check=False,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         if proc.returncode != 0 or not proc.stdout.strip():
-            issues.append(Issue(
-                code=UNRESOLVED_FUNCTION,
-                message=(
-                    f"spec references {full_path} but {relative} has "
-                    f"no `def {func_name}`"
-                ),
-                remediation=(
-                    f"grep `def {func_name}` across the repo to find "
-                    f"the real definition and update the spec; or "
-                    f"replace with a clarification question if the "
-                    f"function is genuinely planned"
-                ),
-                context={"reference": full_path, "module_path": relative},
-            ))
+            issues.append(
+                Issue(
+                    code=UNRESOLVED_FUNCTION,
+                    message=(
+                        f"spec references {full_path} but {relative} has "
+                        f"no `def {func_name}`"
+                    ),
+                    remediation=(
+                        f"grep `def {func_name}` across the repo to find "
+                        f"the real definition and update the spec; or "
+                        f"replace with a clarification question if the "
+                        f"function is genuinely planned"
+                    ),
+                    context={"reference": full_path, "module_path": relative},
+                )
+            )
     return issues
 
 
@@ -165,43 +167,10 @@ def verify_file_budget_line_counts(
     )
 
     return verify_file_budget_sizing(
-        spec_text, repo_root=repo_root, issue_type=Issue,
-    )
-
-
-def verify_file_budget_claim_consistency(
-    conn: Any, item_id: int,
-) -> List[Issue]:
-    """Confirm File Budget paths and path-claim targets agree."""
-    from yoke_core.domain.idea_readiness_file_budget_claims import (
-        verify_claim_consistency,
-    )
-
-    return verify_claim_consistency(
-        conn, item_id,
-        spec_text=read_spec(conn, item_id),
+        spec_text,
+        repo_root=repo_root,
         issue_type=Issue,
     )
-
-
-def verify_effective_file_budget_claim_consistency(
-    conn: Any,
-    item_id: int,
-) -> List[Issue]:
-    """Apply parity only when both effective workflow axes require it."""
-    from yoke_core.domain.file_budget_required_gate import (
-        workflow_policy_schema_available,
-    )
-    from yoke_core.domain.workflow_effective_policies import (
-        load_item_effective_workflow_policies,
-    )
-
-    if not workflow_policy_schema_available(conn):
-        return []
-    effective = load_item_effective_workflow_policies(conn, item_id)
-    if not effective.requires_budget_claim_parity:
-        return []
-    return verify_file_budget_claim_consistency(conn, item_id)
 
 
 def run_all_checks(
@@ -236,29 +205,42 @@ def run_all_checks(
     unavailable: List[UnavailableValidation] = []
     advisories: List[Any] = []
     budget_gate = evaluate_file_budget(conn, item_id)
-    if (
-        budget_gate["verdict"] != "pass"
-        and not _missing_file_budget_allowed(conn, item_id, spec_text)
+    if budget_gate["verdict"] != "pass" and not _missing_file_budget_allowed(
+        conn, item_id, spec_text
     ):
-        issues.append(Issue(
-            code="MISSING_FILE_BUDGET",
-            message=str(budget_gate["reason"]),
-            remediation="Declare the File Budget required by the pinned workflow.",
-        ))
+        issues.append(
+            Issue(
+                code="MISSING_FILE_BUDGET",
+                message=str(budget_gate["reason"]),
+                remediation="Declare the File Budget required by the pinned workflow.",
+            )
+        )
     checkout = item_project_checkout(conn, item_id)
     if checkout is None:
         observed, advisories, unavailable = checkout_absent_findings(
-            conn, item_id, spec_text, local_observations,
+            conn,
+            item_id,
+            spec_text,
+            local_observations,
         )
         issues.extend(observed)
     else:
-        issues.extend(verify_function_owners(
-            spec_text, conn, item_id, repo_root=checkout,
-        ))
+        issues.extend(
+            verify_function_owners(
+                spec_text,
+                conn,
+                item_id,
+                repo_root=checkout,
+            )
+        )
         issues.extend(verify_file_budget_line_counts(spec_text, repo_root=checkout))
-        issues.extend(verify_attestation_rehearsal_commands(
-            conn, item_id, repo_root=checkout,
-        ))
+        issues.extend(
+            verify_attestation_rehearsal_commands(
+                conn,
+                item_id,
+                repo_root=checkout,
+            )
+        )
         if spec_text:
             advisories = collect_symlink_advisories(spec_text, repo_root=checkout)
     issues.extend(verify_effective_file_budget_claim_consistency(conn, item_id))
@@ -267,7 +249,9 @@ def run_all_checks(
     issues.extend(verify_done_means_agent_shape(spec_text))
     issues.extend(verify_refine_acceptance_criteria(conn, item_id, spec_text))
     return ReadinessOutcome(
-        issues=issues, unavailable=unavailable, advisories=advisories,
+        issues=issues,
+        unavailable=unavailable,
+        advisories=advisories,
     )
 
 
@@ -282,7 +266,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     parser.add_argument("item", help="YOK-N or N")
     parser.add_argument(
-        "--skip-readiness-check", action="store_true", default=False,
+        "--skip-readiness-check",
+        action="store_true",
+        default=False,
         help=(
             "Operator override: record a skip in the audit trail and "
             "exit 0. Allowed at idea-time (advisory); refine-entry "
@@ -298,15 +284,21 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(json.dumps({"verdict": "error", "error": str(exc)}))
         return 2
     if args.skip_readiness_check:
-        print(json.dumps({
-            "verdict": "skipped",
-            "issues": [],
-            "skip_reason": "operator-override",
-        }))
+        print(
+            json.dumps(
+                {
+                    "verdict": "skipped",
+                    "issues": [],
+                    "skip_reason": "operator-override",
+                }
+            )
+        )
         return 0
     from yoke_core.domain.schema_common import (
-        _connect_raw, _resolve_db_path,
+        _connect_raw,
+        _resolve_db_path,
     )
+
     conn = _connect_raw(_resolve_db_path())
     try:
         outcome = run_all_checks(conn, item_id)
