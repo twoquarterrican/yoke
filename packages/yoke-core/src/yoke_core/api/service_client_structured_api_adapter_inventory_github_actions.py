@@ -11,6 +11,11 @@ from yoke_core.api.service_client_structured_api_adapter_inventory_types import 
 
 
 GITHUB_ACTIONS_ADAPTERS: Tuple[AdapterEntry, ...] = (
+    _read_entry(
+        function_id="github_actions.dispatch_receipt.get",
+        cli_invocation="yoke github-actions dispatch-receipt get REQUEST-ID --project P --json",
+        notes="Read the durable original inputs and run identity in the authorized project; absent requests return found=false. Rejoin with the original payload.",
+    ),
     AdapterEntry(
         function_id="github_actions.run.rerun_failed",
         cli_invocation="yoke github-actions run rerun-failed ITEM RUN-ID",

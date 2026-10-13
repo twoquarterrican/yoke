@@ -58,7 +58,11 @@ def _apply_schema() -> None:
 
 
 @pytest.fixture
-def conn(tmp_path):
+def conn(tmp_path, monkeypatch):
+    # Registration binds the fixture universe's actor, never the host machine's.
+    # Schema seeding records that binding only in a redirected machine config.
+    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(tmp_path / "machine.json"))
+    monkeypatch.setenv("YOKE_ENV", "local")
     with init_test_db(tmp_path, apply_schema=_apply_schema):
         c = _connect_with_backend_setup(tmp_path)
         try:
