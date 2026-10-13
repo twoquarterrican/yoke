@@ -160,11 +160,14 @@ still locates its own source; the candidate validates the config under its own
 rules. Both direct execute and the deploy watcher use this preparation; failures
 name `DEPLOY-DRIVER-ENVIRONMENT` and the same-run recovery.
 
-The operator's installed CLI follows prod: the prod relay re-execs into each
-release it observes prod serving and, on that start, runs the official
-installer for exactly that release, recording the outcome in the relay log and
-`operator-cli-follow.json` in its state directory. A CLI still behind
-prod warns once per command relayed to prod, naming that command.
+The operator's installed CLI follows the machine's `active_env` — `prod` on an
+operator machine — never the `prod: true` marker, which only `*-db-admin`
+connections carry. That connection's relay re-execs into each release it
+observes its plane serving and, on that start, runs the official installer for
+exactly that release, recording the outcome in the relay log and
+`operator-cli-follow.json` in its state directory; relays for other envs leave
+the CLI alone. A CLI still behind warns once per command sent to the active
+env, naming that command.
 See [deployment start diagnostics](public/reference/deployment-start.md).
 
 Doctor's launcher check excludes only the source runner's temporary `.venv/bin`

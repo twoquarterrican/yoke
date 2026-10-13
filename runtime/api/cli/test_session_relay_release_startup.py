@@ -31,7 +31,7 @@ def test_daemon_runs_from_pin_and_reloads_the_environment_release(
         environment="stage",
         state_dir=tmp_path / "relay",
         follows_served_release=True,
-        prod=False,
+        machine_active=False,
     )
     pins: list[str] = []
     daemon_call = {}
@@ -85,7 +85,7 @@ def test_source_serve_switches_to_the_pinned_executable(monkeypatch, tmp_path) -
         environment="prod",
         state_dir=tmp_path / "relay",
         follows_served_release=True,
-        prod=False,
+        machine_active=False,
     )
     pinned_executable = instance.state_dir / "venv" / "bin" / "yoke"
     replacements: list[tuple[object, object]] = []
@@ -139,7 +139,7 @@ def test_existing_release_entrypoint_converges_before_stable_runtime_restart(
         environment="prod",
         state_dir=tmp_path / "relay",
         follows_served_release=True,
-        prod=False,
+        machine_active=False,
     )
     prior_release = instance.state_dir / "releases" / "prior"
     prior_release.mkdir(parents=True)
@@ -198,7 +198,7 @@ def test_post_deploy_restart_preserves_named_start_failure(
         environment="prod",
         state_dir=tmp_path / "relay",
         follows_served_release=True,
-        prod=False,
+        machine_active=False,
     )
     python = Path(sys.prefix) / "bin" / "python"
     monkeypatch.setattr(
@@ -241,7 +241,7 @@ def test_daemon_refuses_without_a_working_release_pin(monkeypatch, tmp_path) -> 
         environment="prod",
         state_dir=tmp_path / "relay",
         follows_served_release=True,
-        prod=False,
+        machine_active=False,
     )
     monkeypatch.setattr(
         session_relay_instance,
@@ -273,7 +273,7 @@ def test_daemon_preserves_the_recorded_pin_failure(monkeypatch, tmp_path) -> Non
         environment="prod",
         state_dir=tmp_path / "relay",
         follows_served_release=True,
-        prod=False,
+        machine_active=False,
     )
     monkeypatch.setattr(
         session_relay_instance,

@@ -107,12 +107,17 @@ recorded origin; a successful reinstall saves that channel for later updates.
 `yoke update --version VERSION` installs that exact release from the recorded
 origin instead of the channel's current one.
 
-A machine with a prod relay follows prod automatically: each time the relay
-observes prod serving a new release it restarts on that release and installs
-exactly that version as this machine's CLI. Nothing runs on a schedule. When the
-CLI is still older than the release prod serves, commands relayed to prod print
-one warning naming `yoke update --version VERSION`; they never update or refuse
-on their own.
+The installed CLI follows your active connection (`active_env`, set by
+`yoke env use`) automatically, whether that is upyoke.com, a self-hosted server
+or a fork's own plane: each time that connection's relay observes its server
+serving a new release it restarts on that release and installs exactly that
+version as this machine's CLI, recording the outcome in
+`operator-cli-follow.json` in the relay's state directory. Relays for other
+connections never touch the CLI, and nothing runs on a schedule. When the CLI
+is still older than the release the active connection serves, commands sent to
+it print one warning naming `yoke update --version VERSION`; they never update
+or refuse on their own. A local universe needs none of this: its server is the
+installed CLI.
 The installer itself repairs the git credential
 helper a reinstall wipes from site-packages, as the last step of every
 successful run — so re-running the curl installer directly still resolves

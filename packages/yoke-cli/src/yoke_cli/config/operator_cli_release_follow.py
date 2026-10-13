@@ -1,13 +1,16 @@
-"""Keep this machine's installed CLI on the release prod serves.
+"""Keep this machine's installed CLI on the release its active connection serves.
 
-The prod relay re-execs into every release it observes prod serving, so its
-start is the event that says "prod now serves this release". There it compares
-the operator's installed CLI with the release it runs and, whenever the CLI is
-not exactly that release, runs the official installer for exactly that release from the
-machine's recorded distribution origin — the relay's own code, so even a CLI
-too old to know `yoke update --version` is moved. Nothing runs on a schedule. Every outcome is written to the relay log and to
-``operator-cli-follow.json`` in the relay state directory; a CLI left behind
-also warns on each command it relays to prod, naming the same recovery.
+An https relay re-execs into every release it observes its plane serving, so
+its start is the event that says "the plane now serves this release". The relay
+for the machine's ``active_env`` — hosted, self-hosted or a fork's own plane,
+and exactly one per machine — then compares the installed CLI with the release
+it runs and, whenever the CLI is not exactly that release, runs the official
+installer for exactly that release from the machine's recorded distribution
+origin — the relay's own code, so even a CLI too old to know
+`yoke update --version` is moved. Nothing runs on a schedule. Every outcome is
+written to the relay log and to ``operator-cli-follow.json`` in the relay state
+directory; a CLI left behind also warns on each command it relays to the active
+connection, naming the same recovery.
 """
 
 from __future__ import annotations
@@ -85,12 +88,13 @@ def _finish(record: dict[str, Any], state_dir: Path, outcome: str) -> dict[str, 
     record["outcome"] = outcome
     if outcome == "updated":
         print(
-            f"Installed CLI follows prod release {record['release']}.", file=sys.stderr
+            f"Installed CLI follows served release {record['release']}.",
+            file=sys.stderr,
         )
     elif outcome == "update_failed":
         print(
             f"OPERATOR-CLI-FOLLOW-FAILED: installed CLI {record.get('before')!r} "
-            f"could not be moved to prod release {record['release']}: "
+            f"could not be moved to served release {record['release']}: "
             f"{record['error']}. Recovery: {record['recovery']}.",
             file=sys.stderr,
         )

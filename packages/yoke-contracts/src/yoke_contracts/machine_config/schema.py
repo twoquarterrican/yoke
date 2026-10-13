@@ -59,6 +59,7 @@ from yoke_contracts.machine_config.schema_connections import (
     ENV_OVERRIDE as ENV_OVERRIDE,
     MachineConfigContractError as MachineConfigContractError,
     PROD_FLAG_KEY as PROD_FLAG_KEY,
+    configured_active_env as configured_active_env,
     connection_is_prod as connection_is_prod,
     env_override_teaching as env_override_teaching,
     local_postgres_envs as local_postgres_envs,

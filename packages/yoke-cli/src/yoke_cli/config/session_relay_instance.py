@@ -57,6 +57,10 @@ class RelayInstance:
     #: served by the same machine the relay runs on, so the installed Yoke is
     #: already the served build and there is nothing to follow.
     follows_served_release: bool = True
+    #: Whether this relay's environment is the machine config's ``active_env``.
+    #: Exactly one relay per machine can be, so it alone moves the installed
+    #: CLI to the release its plane serves.
+    machine_active: bool = False
 
     @property
     def stdout_log(self) -> Path:
@@ -168,6 +172,9 @@ def resolve_relay_instance(
         label=label,
         state_dir=state_dir,
         follows_served_release=follows_served_release,
+        machine_active=(
+            selected_environment == machine_schema.configured_active_env(payload)
+        ),
     )
 
 
