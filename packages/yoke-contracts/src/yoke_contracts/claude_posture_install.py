@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from yoke_contracts import harness_settings_ledger as ledger
 from yoke_contracts.harness_unattended_posture import (
     CLAUDE_BYPASS_KEY,
     CLAUDE_PERMISSIONS_CONTAINER,
@@ -48,6 +49,7 @@ def configure_claude_app_bypass_permissions(
         return False
     if not isinstance(data, dict):
         return False
+    existing = ledger.existing_depth(data, ["preferences"])
     prefs = data.setdefault("preferences", {})
     if not isinstance(prefs, dict):
         return False
@@ -69,6 +71,13 @@ def configure_claude_app_bypass_permissions(
                 pass
         out.write(f"Could not write Claude desktop config at {target}: {exc}\n")
         return False
+    unrecorded = ledger.record(
+        ledger.json_entry(
+            target, ["preferences", CLAUDE_BYPASS_KEY], True, existing_depth=existing
+        )
+    )
+    if unrecorded:
+        out.write(f"Claude desktop {CLAUDE_BYPASS_KEY}: {unrecorded}\n")
     out.write(
         f"Enabled Claude desktop {CLAUDE_BYPASS_KEY} in {target}.\n"
         f"Quit and relaunch Claude desktop to pick up the change.\n"
@@ -101,6 +110,7 @@ def configure_claude_cli_permission_mode(
         return [f"claude-code: {target} could not be read ({exc})"]
     if not isinstance(data, dict):
         return [f"claude-code: {target} is not a JSON object"]
+    existing = ledger.existing_depth(data, [CLAUDE_PERMISSIONS_CONTAINER])
     permissions = data.get(CLAUDE_PERMISSIONS_CONTAINER)
     permissions = permissions if isinstance(permissions, dict) else {}
     current = permissions.get(CLAUDE_SETTINGS_PERMISSION_MODE_KEY)
@@ -121,8 +131,17 @@ def configure_claude_cli_permission_mode(
     except OSError as exc:
         out.write(f"Could not write Claude CLI settings at {target}: {exc}\n")
         return [f"claude-code: {target} could not be updated ({exc})"]
+    unrecorded = ledger.record(
+        ledger.json_entry(
+            target,
+            [CLAUDE_PERMISSIONS_CONTAINER, CLAUDE_SETTINGS_PERMISSION_MODE_KEY],
+            CLAUDE_SETTINGS_PERMISSION_MODE,
+            existing_depth=existing,
+        )
+    )
     return [
         f"claude-code: enabled unattended mode in {target} "
         f"({CLAUDE_PERMISSIONS_CONTAINER}."
-        f"{CLAUDE_SETTINGS_PERMISSION_MODE_KEY})"
+        f"{CLAUDE_SETTINGS_PERMISSION_MODE_KEY})",
+        *([f"claude-code: {unrecorded}"] if unrecorded else []),
     ]

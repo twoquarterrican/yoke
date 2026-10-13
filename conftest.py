@@ -222,6 +222,23 @@ def _isolate_commit_cache(tmp_path, monkeypatch: pytest.MonkeyPatch):
     _commit_cache._reset_memo_for_tests()
 
 
+@pytest.fixture(autouse=True)
+def _isolate_harness_settings_ledger(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    """Keep the harness-settings record that uninstall reverts off ``~/.yoke``.
+
+    Posture and folder-trust tests write throwaway harness configs; recording
+    those paths in the developer's real record would aim a real uninstall at
+    them. Subprocesses stay isolated through the ``YOKE_MACHINE_HOME`` they set.
+    """
+    from yoke_contracts import harness_settings_ledger
+
+    monkeypatch.setattr(
+        harness_settings_ledger,
+        "ledger_path",
+        lambda: tmp_path / "ledger" / harness_settings_ledger.LEDGER_NAME,
+    )
+
+
 @pytest.fixture(scope="session")
 def product_wheelhouse(tmp_path_factory, pytestconfig: pytest.Config) -> Path:
     """Build the client product wheels once per pytest run."""

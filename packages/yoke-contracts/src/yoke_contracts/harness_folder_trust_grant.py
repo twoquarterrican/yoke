@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from yoke_contracts import harness_settings_ledger as ledger
 from yoke_contracts.timestamps import format_instant, utc_now
 
 from yoke_contracts.harness_folder_trust import (
@@ -63,6 +64,7 @@ def _grant_claude(path: str, state_path: Optional[Path]) -> List[str]:
         return [f"claude-code: {target} could not be read ({exc})"]
     if not isinstance(payload, dict):
         return [f"claude-code: {target} is not a JSON object"]
+    existing = ledger.existing_depth(payload, [CLAUDE_PROJECTS_KEY, path])
     projects = payload.get(CLAUDE_PROJECTS_KEY)
     if not isinstance(projects, dict):
         projects = {}
@@ -77,7 +79,17 @@ def _grant_claude(path: str, state_path: Optional[Path]) -> List[str]:
         _write_json(target, payload)
     except OSError as exc:
         return [f"claude-code: {target} could not be updated ({exc})"]
-    return [f"claude-code: trusted {path}"]
+    unrecorded = ledger.record(
+        ledger.json_entry(
+            target,
+            [CLAUDE_PROJECTS_KEY, path, CLAUDE_TRUST_KEY],
+            True,
+            existing_depth=existing,
+        )
+    )
+    return [f"claude-code: trusted {path}"] + (
+        [f"claude-code: {unrecorded}"] if unrecorded else []
+    )
 
 
 def _grant_codex(path: str, config_path: Optional[Path]) -> List[str]:
@@ -87,6 +99,7 @@ def _grant_codex(path: str, config_path: Optional[Path]) -> List[str]:
         changed,
         plan,
         read_config_text,
+        record_written,
     )
 
     target = config_path if config_path is not None else codex_config_path()
@@ -112,7 +125,7 @@ def _grant_codex(path: str, config_path: Optional[Path]) -> List[str]:
             f"codex: also set {', '.join(record['set_keys'])} "
             f"(approval policy {CODEX_APPROVAL_POLICY!r})"
         )
-    return granted
+    return granted + record_written(target, record)
 
 
 def _grant_cursor(path: str, trust_file: Optional[Path]) -> List[str]:
@@ -130,7 +143,10 @@ def _grant_cursor(path: str, trust_file: Optional[Path]) -> List[str]:
         _write_json(target, payload)
     except OSError as exc:
         return [f"cursor: {target} could not be written ({exc})"]
-    return [f"cursor: trusted {path}"]
+    unrecorded = ledger.record(ledger.created_file_entry(target))
+    return [f"cursor: trusted {path}"] + (
+        [f"cursor: {unrecorded}"] if unrecorded else []
+    )
 
 
 def _write_json(target: Path, payload: Any) -> None:

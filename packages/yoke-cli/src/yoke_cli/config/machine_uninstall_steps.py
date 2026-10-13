@@ -1,4 +1,9 @@
-"""Reuse existing teardown commands and retain recovery state on failure."""
+"""Reuse existing teardown commands and retain recovery state on failure.
+
+Beside the per-project layers, uninstall removes what Yoke wrote into each
+harness's user-level config: its Cursor user hooks, and every approval-posture
+and folder-trust setting :mod:`yoke_contracts.harness_settings_ledger` records.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +18,9 @@ from yoke_cli.config import machine_uninstall_detached, machine_uninstall_worker
 from yoke_cli.config import machine_config
 from yoke_cli.config.machine_uninstall_inventory import Inventory, UninstallError
 from yoke_cli.config.machine_config_file import remove_file
+from yoke_contracts import harness_settings_ledger, harness_settings_revert
 from yoke_contracts.self_host_bootstrap_output import redact_api_tokens
+from yoke_harness.hooks.cursor_lifecycle_hooks import remove_user_lifecycle_hooks
 
 COMMAND_TIMEOUT_SECONDS = 300
 NOT_REMOVED = (
@@ -138,6 +145,16 @@ def remove(
         )
     else:
         skipped("GitHub", github_skip)
+    attempt(
+        "Cursor user hooks",
+        lambda: emit(f"Cursor user hooks: {remove_user_lifecycle_hooks()}"),
+    )
+    # The record of what Yoke wrote lives in the machine home, so this runs
+    # before the home is deleted and a failure keeps both for the retry.
+    if harness_settings_ledger.ledger_path().is_file():
+        attempt("harness settings", lambda: _revert_harness_settings(emit))
+    else:
+        skipped("harness settings", "none recorded as written by Yoke")
     attempt("local UI", lambda: command(["ui", "down"]))
     if inventory.local_universe:
         attempt("local Postgres", lambda: command(["local-postgres", "stop"]))
@@ -210,6 +227,18 @@ def remove(
 
 def _fail(message: str) -> None:
     raise UninstallError(message)
+
+
+def _revert_harness_settings(emit: Callable[[str], None]) -> None:
+    lines, failures = harness_settings_revert.revert_recorded()
+    for line in lines:
+        emit(f"harness settings: {line}")
+    if failures:
+        raise UninstallError(
+            "uninstall_harness_settings_failed: " + "; ".join(failures) + ". "
+            "Repair those files and retry uninstall; the record of what Yoke "
+            "wrote stays in the machine home until then."
+        )
 
 
 def _github_skip_reason(config: Path) -> str | None:

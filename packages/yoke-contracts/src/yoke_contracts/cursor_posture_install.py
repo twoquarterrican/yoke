@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from yoke_contracts import harness_settings_ledger as ledger
 from yoke_contracts.harness_unattended_posture import (
     CURSOR_APPROVAL_MODE,
     CURSOR_APPROVAL_MODE_KEY,
@@ -94,12 +95,31 @@ def configure_cursor_unattended_posture(
             f"cursor: enabled unattended mode in {target} "
             f"({', '.join(record['set_keys'])})"
         )
+        for dotted in record["set_keys"]:
+            keys = dotted.split(".")
+            unrecorded = ledger.record(
+                ledger.json_entry(
+                    target,
+                    keys,
+                    _value_at(updated, keys),
+                    existing_depth=ledger.existing_depth(config, keys[:-1]),
+                )
+            )
+            if unrecorded:
+                actions.append(f"cursor: {unrecorded}")
     for conflict in record["conflicts"]:
         actions.append(
             f"cursor: left your own setting in place — {conflict}; "
             "Cursor will keep asking until you change it"
         )
     return actions
+
+
+def _value_at(config: Dict[str, Any], keys: List[str]) -> Any:
+    node: Any = config
+    for key in keys:
+        node = node[key]
+    return node
 
 
 __all__ = ["configure_cursor_unattended_posture", "plan"]

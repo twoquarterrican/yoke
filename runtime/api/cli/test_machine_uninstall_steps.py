@@ -8,6 +8,11 @@ import pytest
 
 from yoke_cli.config import machine_uninstall_steps as steps
 from yoke_cli.config.machine_uninstall_inventory import Inventory, UninstallError
+from yoke_contracts import harness_settings_ledger as ledger
+from yoke_harness.hooks.cursor_lifecycle_hooks import (
+    ensure_user_lifecycle_hooks,
+    remove_user_lifecycle_hooks,
+)
 
 
 @pytest.fixture
@@ -36,6 +41,12 @@ def machine(tmp_path, monkeypatch):
         steps.machine_uninstall_workers, "stop", lambda envs: calls.append(["workers"])
     )
     monkeypatch.setattr(steps.machine_uninstall_detached, "prepare", lambda: handoff)
+    cursor_hooks = tmp_path / "cursor" / "hooks.json"
+    monkeypatch.setattr(
+        steps,
+        "remove_user_lifecycle_hooks",
+        lambda: remove_user_lifecycle_hooks(hooks_path=cursor_hooks),
+    )
     return value, calls, handoff_events
 
 
@@ -147,6 +158,44 @@ def test_half_setup_skips_github_and_completes_removal(machine, payload):
     assert any(line.startswith("GitHub: skipped (") for line in output)
     assert not value.home.exists()
     assert handoff == ["armed"]
+
+
+def test_harness_hooks_and_recorded_settings_are_removed_before_home(machine, tmp_path):
+    value, _, _ = machine
+    hooks = tmp_path / "cursor" / "hooks.json"
+    ensure_user_lifecycle_hooks(hooks_path=hooks)
+    settings = tmp_path / "cli-config.json"
+    settings.write_text('{"model": "x", "approvalMode": "unrestricted"}')
+    ledger.record(
+        ledger.json_entry(settings, ["approvalMode"], "unrestricted", existing_depth=0)
+    )
+    output = []
+    assert steps.remove(value, value.projects, output.append) == 0
+    assert not hooks.exists()
+    assert json.loads(settings.read_text()) == {"model": "x"}
+    assert f"Cursor user hooks: deleted {hooks}" in output
+    assert "harness settings: done" in output
+    assert not value.home.exists()
+
+
+def test_unrevertable_setting_fails_and_keeps_home(machine, tmp_path):
+    value, _, handoff = machine
+    broken = tmp_path / "cli-config.json"
+    broken.write_text("{not json")
+    ledger.record(
+        ledger.json_entry(broken, ["approvalMode"], "unrestricted", existing_depth=0)
+    )
+    output = []
+    assert steps.remove(value, value.projects, output.append) == 1
+    assert any("uninstall_harness_settings_failed" in line for line in output)
+    assert value.config.is_file() and not handoff
+
+
+def test_no_record_skips_harness_settings(machine):
+    value, _, _ = machine
+    output = []
+    steps.remove(value, value.projects, output.append)
+    assert "harness settings: skipped (none recorded as written by Yoke)" in output
 
 
 def test_configured_github_uses_existing_disconnect(machine):
