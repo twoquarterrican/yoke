@@ -147,10 +147,16 @@ def test_unmapped_https_hook_finishes_locally_without_posting(
 ):
     import json
     from yoke_cli.transport.https import HttpsConnection
-    from yoke_harness.hooks import relay, cursor_lifecycle_hooks
+    from yoke_harness.hooks import relay, cursor_lifecycle_hooks, local_subset
 
     root = tmp_path / "unrelated"
     root.mkdir()
+    monkeypatch.setattr(
+        relay, "evaluate_local_subset", local_subset.evaluate_local_subset
+    )
+    monkeypatch.setattr(
+        relay, "project_id_for_payload", project_scope.project_id_for_payload
+    )
     payload = {
         "cwd": str(root),
         "tool_name": "Bash",

@@ -22,7 +22,7 @@ from runtime.api.cli.test_yoke_operations_cli_hooks import _FakeResponse, cli_ma
 # ``local_subset`` and ``https_connection`` are fixtures, not values: loading
 # the sibling as a plugin registers them for these tests without importing
 # names that every use as a test parameter then shadows.
-pytest_plugins = ("runtime.api.cli.test_yoke_operations_cli_hooks",)
+pytest_plugins = ("runtime.api.cli.hook_relay_test_support",)
 
 
 @pytest.fixture(autouse=True)
@@ -44,7 +44,9 @@ def detached_from_runner_session(monkeypatch):
 
 
 def test_hand_started_codex_exec_uses_its_session_under_a_parent_harness(
-    monkeypatch, https_connection, tmp_path,
+    monkeypatch,
+    https_connection,
+    tmp_path,
 ) -> None:
     """A shell-started Codex reads its own rollout, not its parent's env."""
     transcripts = tmp_path / "sessions"
@@ -67,11 +69,13 @@ def test_hand_started_codex_exec_uses_its_session_under_a_parent_harness(
         "yoke_harness.hooks.identity_codex_runtime.codex_transcript_roots",
         lambda: [transcripts],
     )
-    raw_stdin = json.dumps({
-        "session_id": "codex-thread-1",
-        "transcript_path": "/t/codex.jsonl",
-        "model": "gpt-6-real",
-    })
+    raw_stdin = json.dumps(
+        {
+            "session_id": "codex-thread-1",
+            "transcript_path": "/t/codex.jsonl",
+            "model": "gpt-6-real",
+        }
+    )
     monkeypatch.setattr(sys, "stdin", io.StringIO(raw_stdin))
     monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "parent-claude-session")
     monkeypatch.setenv("CODEX_SESSION_ID", "codex-thread-1")
@@ -80,7 +84,8 @@ def test_hand_started_codex_exec_uses_its_session_under_a_parent_harness(
         lambda: "codex",
     )
     monkeypatch.setattr(
-        "yoke_harness.hooks.relay.detect_executor", lambda: "codex",
+        "yoke_harness.hooks.relay.detect_executor",
+        lambda: "codex",
     )
     cache_writes: list[tuple] = []
     monkeypatch.setattr(
@@ -105,10 +110,18 @@ def test_hand_started_codex_exec_uses_its_session_under_a_parent_harness(
 
     def fake_urlopen(request, timeout=None):
         captured["body"] = json.loads(request.data.decode("utf-8"))
-        return _FakeResponse(json.dumps({
-            "hook_schema": 1, "stdout": "", "exit_code": 0,
-            "wait_ms": 1, "degraded": [], "outcome": "completed",
-        }).encode("utf-8"))
+        return _FakeResponse(
+            json.dumps(
+                {
+                    "hook_schema": 1,
+                    "stdout": "",
+                    "exit_code": 0,
+                    "wait_ms": 1,
+                    "degraded": [],
+                    "outcome": "completed",
+                }
+            ).encode("utf-8")
+        )
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
     assert cli_main(["hook", "evaluate", "SessionStart"]) == 0
@@ -119,15 +132,19 @@ def test_hand_started_codex_exec_uses_its_session_under_a_parent_harness(
 
 
 def test_hook_evaluate_https_codex_unresolved_model_ships_nothing(
-    monkeypatch, https_connection,
+    monkeypatch,
+    https_connection,
 ) -> None:
     # Resolver finds nothing -> wire carries None; a fabricated default
     # must never reach the row (field regression: literal "gpt-5.4").
     monkeypatch.setattr(
-        sys, "stdin", io.StringIO('{"session_id": "codex-thread-2"}'),
+        sys,
+        "stdin",
+        io.StringIO('{"session_id": "codex-thread-2"}'),
     )
     monkeypatch.setattr(
-        "yoke_harness.hooks.relay.detect_executor", lambda: "codex",
+        "yoke_harness.hooks.relay.detect_executor",
+        lambda: "codex",
     )
     monkeypatch.setattr(
         "yoke_harness.model_attestation._codex_facts",
@@ -145,10 +162,18 @@ def test_hook_evaluate_https_codex_unresolved_model_ships_nothing(
 
     def fake_urlopen(request, timeout=None):
         captured["body"] = json.loads(request.data.decode("utf-8"))
-        return _FakeResponse(json.dumps({
-            "hook_schema": 1, "stdout": "", "exit_code": 0,
-            "wait_ms": 1, "degraded": [], "outcome": "completed",
-        }).encode("utf-8"))
+        return _FakeResponse(
+            json.dumps(
+                {
+                    "hook_schema": 1,
+                    "stdout": "",
+                    "exit_code": 0,
+                    "wait_ms": 1,
+                    "degraded": [],
+                    "outcome": "completed",
+                }
+            ).encode("utf-8")
+        )
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
     assert cli_main(["hook", "evaluate", "UserPromptSubmit"]) == 0

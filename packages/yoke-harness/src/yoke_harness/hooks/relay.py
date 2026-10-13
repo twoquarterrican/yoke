@@ -204,6 +204,7 @@ def relay_hook_event(
     if project_id_for_payload(payload) is None:
         # The complete machine guard subset is local; project registration is
         # neither required nor meaningful for an unrelated workspace.
+        print_execution_provenance()
         write_hook_output(allow_stdout, local.exit_code, executor)
         settle_projection(allow_stdout, launch_projection)
         return local.exit_code

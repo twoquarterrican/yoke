@@ -6,61 +6,21 @@ import io
 import json
 import sys
 from contextlib import redirect_stderr, redirect_stdout
-from types import SimpleNamespace
 from unittest.mock import patch
 from uuid import UUID
 
 import pytest
 
+from runtime.api.cli.hook_relay_test_support import (
+    local_subset as local_subset,
+    https_connection as https_connection,
+    _RESOLVE,
+    _HOME_FACT,
+)  # noqa: F401
+
 from yoke_cli.commands.adapters import hooks as hooks_adapter
 from yoke_cli.main import main as cli_main
-from yoke_cli.transport.https import HttpsConnection, TransportError
-
-
-_RESOLVE = "yoke_cli.transport.https.resolve_https_connection"
-_HOME_FACT = {"_yoke_client_machine_home": {"schema": 1, "root": "/home"}}
-
-
-@pytest.fixture(autouse=True)
-def local_subset(monkeypatch):
-    """Pin the relay's client-side half to a deterministic allow."""
-    from yoke_harness.hooks.local_subset import LocalSubsetEvaluation
-
-    holder = SimpleNamespace(
-        result=LocalSubsetEvaluation("", 0, False, _HOME_FACT),
-        calls=[],
-    )
-
-    def fake(
-        event_name,
-        stdin_data,
-        executor,
-        agent_type,
-        deadline,
-        *,
-        defer_main_commit=False,
-        lint_config_snapshot=None,
-    ):
-        holder.calls.append(
-            (
-                event_name,
-                executor,
-                agent_type,
-                defer_main_commit,
-                lint_config_snapshot,
-            )
-        )
-        return holder.result
-
-    monkeypatch.setattr(
-        "yoke_harness.hooks.relay.evaluate_local_subset",
-        fake,
-    )
-    monkeypatch.setattr(
-        "yoke_harness.hooks.relay._client_lint_config_snapshot",
-        lambda _payload: {},
-    )
-    return holder
+from yoke_cli.transport.https import TransportError
 
 
 def test_hook_evaluate_dry_run_delegates_flag_and_skips_transport(
@@ -105,13 +65,6 @@ class _FakeResponse:
 
     def __exit__(self, *args) -> bool:
         return False
-
-
-@pytest.fixture()
-def https_connection(monkeypatch):
-    connection = HttpsConnection(api_url="https://env.example", token="tok")
-    monkeypatch.setattr(_RESOLVE, lambda: connection)
-    return connection
 
 
 def test_hook_evaluate_https_posts_contract_and_relays(

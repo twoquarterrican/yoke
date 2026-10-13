@@ -24,6 +24,7 @@ import json
 from typing import Any, Iterable
 
 import pytest
+from runtime.harness.test_hook_project_scope import project_map as project_map
 
 from yoke_core.domain.file_line_check import LIMIT as FILE_LINE_LIMIT
 from yoke_core.hooks import runner as runner_module
@@ -68,19 +69,24 @@ def test_monitor_relay_through_runner_reaches_claude_output(
 ) -> None:
     """Monitor PreToolUse payload triggers the relay reminder envelope."""
     capability = _capability(
-        monkeypatch, family="claude",
+        monkeypatch,
+        family="claude",
         chain=["yoke_core.domain.hint_monitor_relay"],
     )
     _silence_telemetry(monkeypatch)
 
-    payload = json.dumps({
-        "tool_name": "Monitor",
-        "tool_input": {"pattern": "FAILED|%\\]"},
-        "session_id": "test-session",
-        "cwd": "/tmp",
-    })
+    payload = json.dumps(
+        {
+            "tool_name": "Monitor",
+            "tool_input": {"pattern": "FAILED|%\\]"},
+            "session_id": "test-session",
+            "cwd": "/tmp",
+        }
+    )
     text, exit_code = runner_module.run_event(
-        "PreToolUse", capability=capability, stdin_data=payload,
+        "PreToolUse",
+        capability=capability,
+        stdin_data=payload,
     )
 
     assert exit_code == 0
@@ -95,17 +101,22 @@ def test_monitor_relay_non_monitor_tool_emits_no_envelope(
 ) -> None:
     """Non-Monitor PreToolUse calls do not produce the relay envelope."""
     capability = _capability(
-        monkeypatch, family="claude",
+        monkeypatch,
+        family="claude",
         chain=["yoke_core.domain.hint_monitor_relay"],
     )
     _silence_telemetry(monkeypatch)
 
-    payload = json.dumps({
-        "tool_name": "Bash",
-        "tool_input": {"command": "ls"},
-    })
+    payload = json.dumps(
+        {
+            "tool_name": "Bash",
+            "tool_input": {"command": "ls"},
+        }
+    )
     text, exit_code = runner_module.run_event(
-        "PreToolUse", capability=capability, stdin_data=payload,
+        "PreToolUse",
+        capability=capability,
+        stdin_data=payload,
     )
 
     assert (text, exit_code) == ("", 0)
@@ -117,25 +128,34 @@ def test_monitor_relay_non_monitor_tool_emits_no_envelope(
 
 
 def test_file_line_limit_through_runner_reaches_claude_output(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
+    project_map,
 ) -> None:
     """Write payload over the cap triggers the file-line-approach envelope."""
     monkeypatch.setenv("YOKE_REPO_ROOT", str(tmp_path))
     capability = _capability(
-        monkeypatch, family="claude",
+        monkeypatch,
+        family="claude",
         chain=["yoke_core.domain.hint_file_line_limit_approach"],
     )
     _silence_telemetry(monkeypatch)
 
+    project_map["projects"] = [{"checkout": str(tmp_path), "project_id": 1}]
     over_cap = "x = 1\n" * (FILE_LINE_LIMIT + 5)
     target = tmp_path / "module_under_test.py"
-    payload = json.dumps({
-        "tool_name": "Write",
-        "tool_input": {"file_path": str(target), "content": over_cap},
-    })
+    payload = json.dumps(
+        {
+            "cwd": str(tmp_path),
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(target), "content": over_cap},
+        }
+    )
 
     text, exit_code = runner_module.run_event(
-        "PreToolUse", capability=capability, stdin_data=payload,
+        "PreToolUse",
+        capability=capability,
+        stdin_data=payload,
     )
 
     assert exit_code == 0

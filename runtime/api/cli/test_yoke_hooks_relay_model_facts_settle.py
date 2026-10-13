@@ -25,7 +25,7 @@ from runtime.api.cli.test_yoke_operations_cli_hooks import (  # noqa: F401
 from yoke_contracts.hook_evaluator_protocol import HOOK_MODEL_CONFIRMATION_FIELD
 
 
-pytest_plugins = ("runtime.api.cli.test_yoke_operations_cli_hooks",)
+pytest_plugins = ("runtime.api.cli.hook_relay_test_support",)
 
 SESSION = "s-relay-model"
 MODEL = "claude-opus-5"

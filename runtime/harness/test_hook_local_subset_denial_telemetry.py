@@ -18,6 +18,7 @@ import json
 import subprocess
 
 import pytest
+from runtime.harness.test_hook_project_scope import project_map as project_map
 
 from yoke_harness.hooks import local_subset
 from yoke_harness.hooks.deadline import start_hook_deadline
@@ -28,7 +29,7 @@ def _git(cwd, *args) -> None:
 
 
 @pytest.fixture()
-def dirty_repo(tmp_path):
+def dirty_repo(tmp_path, project_map):
     """A git repo with one tracked file left modified (uncommitted)."""
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -40,6 +41,7 @@ def dirty_repo(tmp_path):
     _git(repo, "add", "tracked.txt")
     _git(repo, "commit", "-q", "-m", "seed")
     tracked.write_text("modified\n")
+    project_map["projects"] = [{"checkout": str(repo), "project_id": 1}]
     return repo
 
 

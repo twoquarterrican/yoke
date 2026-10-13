@@ -2,7 +2,8 @@
 
 Owns the typed-policy SIGALRM timeout, the subprocess carve-out
 exit-zero / exit-nonzero / timeout paths, the dry-run CLI markers, the
-real-chain ``sqlite3`` denial smoke test, and the file-line cap.
+file-line cap. Registered-project policy smoke coverage lives in
+``test_hook_project_policies.py``.
 
 The parity surface (every ``(event, matcher)`` matches the universal
 ordering source modulo each capability's ``apply_patch_chain_omissions``
@@ -25,7 +26,6 @@ from typing import Any
 
 import pytest
 
-from yoke_core.hooks.claude_adapter import CAPABILITY as CLAUDE_CAPABILITY
 from yoke_core.hooks import runner as runner_module
 from yoke_core.hooks import telemetry as telemetry_module
 from yoke_core.hooks import subprocess_policy
@@ -65,13 +65,16 @@ def _capture_telemetry(
         lambda **k: evaluated.append(k),
     )
     monkeypatch.setattr(
-        telemetry_module, "emit_hook_dispatch_telemetry", lambda **k: None,
+        telemetry_module,
+        "emit_hook_dispatch_telemetry",
+        lambda **k: None,
     )
     return failed, evaluated
 
 
 def _patch_typed_modules(
-    monkeypatch: pytest.MonkeyPatch, mapping: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    mapping: dict[str, Any],
 ) -> None:
     """Substitute ``importlib.import_module`` for a closed set of dotted ids."""
     real_import = importlib.import_module
@@ -103,7 +106,10 @@ def _build_capability(
 def _fake_subprocess(stdout_text: str, returncode: int):
     def fake(argv, **kwargs):  # noqa: ARG001
         return subprocess.CompletedProcess(
-            args=argv, returncode=returncode, stdout=stdout_text, stderr="",
+            args=argv,
+            returncode=returncode,
+            stdout=stdout_text,
+            stderr="",
         )
 
     return fake
@@ -135,13 +141,16 @@ def test_timeout_emits_failed_event_and_chain_continues(
 
     chain = ["mod.timeout_offender", "mod.downstream"]
     _patch_typed_modules(
-        monkeypatch, {"mod.timeout_offender": _Slow, "mod.downstream": _Down},
+        monkeypatch,
+        {"mod.timeout_offender": _Slow, "mod.downstream": _Down},
     )
     capability = _build_capability(monkeypatch, chain)
     failed, evaluated = _capture_telemetry(monkeypatch)
 
     text, exit_code = runner_module.run_event(
-        "PreToolUse", capability=capability, stdin_data="",
+        "PreToolUse",
+        capability=capability,
+        stdin_data="",
     )
 
     assert exit_code == 0
@@ -153,6 +162,7 @@ def test_timeout_emits_failed_event_and_chain_continues(
     assert len(evaluated) == 1
     assert evaluated[0]["module"] == "mod.downstream"
 
+
 # ---------------------------------------------------------------------------
 # Subprocess carve-out — exit 0 / exit 1 / timeout, all continue chain
 # ---------------------------------------------------------------------------
@@ -163,16 +173,21 @@ def test_subprocess_exit_zero_emits_evaluated(
 ) -> None:
     """Subprocess exit 0 emits ``HookGuardrailEvaluated``."""
     capability = _build_capability(
-        monkeypatch, ["mod.subproc_ok"],
+        monkeypatch,
+        ["mod.subproc_ok"],
         subprocess_modules=frozenset({"mod.subproc_ok"}),
     )
     monkeypatch.setattr(
-        subprocess_policy.subprocess, "run", _fake_subprocess("stdout-ok", 0),
+        subprocess_policy.subprocess,
+        "run",
+        _fake_subprocess("stdout-ok", 0),
     )
     failed, evaluated = _capture_telemetry(monkeypatch)
 
     text, exit_code = runner_module.run_event(
-        "PreToolUse", capability=capability, stdin_data="",
+        "PreToolUse",
+        capability=capability,
+        stdin_data="",
     )
 
     assert exit_code == 0
@@ -188,10 +203,14 @@ def test_subprocess_exit_nonzero_emits_failed_and_continues(
     """Subprocess exit 1 -> ``HookExecutionFailed`` + downstream still runs."""
     chain = ["mod.subproc_boom", "mod.typed_ok"]
     capability = _build_capability(
-        monkeypatch, chain, subprocess_modules=frozenset({"mod.subproc_boom"}),
+        monkeypatch,
+        chain,
+        subprocess_modules=frozenset({"mod.subproc_boom"}),
     )
     monkeypatch.setattr(
-        subprocess_policy.subprocess, "run", _fake_subprocess("partial-stdout", 1),
+        subprocess_policy.subprocess,
+        "run",
+        _fake_subprocess("partial-stdout", 1),
     )
 
     def downstream(context: HookContext) -> HookDecision:  # noqa: ARG001
@@ -204,7 +223,9 @@ def test_subprocess_exit_nonzero_emits_failed_and_continues(
     failed, evaluated = _capture_telemetry(monkeypatch)
 
     text, exit_code = runner_module.run_event(
-        "PreToolUse", capability=capability, stdin_data="",
+        "PreToolUse",
+        capability=capability,
+        stdin_data="",
     )
 
     assert exit_code == 0
@@ -223,7 +244,9 @@ def test_subprocess_timeout_emits_failed_and_continues(
     monkeypatch.setattr(runner_module, "_resolve_timeout_ms", lambda: 150)
     chain = ["mod.subproc_slow", "mod.typed_ok"]
     capability = _build_capability(
-        monkeypatch, chain, subprocess_modules=frozenset({"mod.subproc_slow"}),
+        monkeypatch,
+        chain,
+        subprocess_modules=frozenset({"mod.subproc_slow"}),
     )
 
     def fake_run(argv, **kwargs):  # noqa: ARG001
@@ -242,7 +265,9 @@ def test_subprocess_timeout_emits_failed_and_continues(
     failed, evaluated = _capture_telemetry(monkeypatch)
 
     text, exit_code = runner_module.run_event(
-        "PreToolUse", capability=capability, stdin_data="",
+        "PreToolUse",
+        capability=capability,
+        stdin_data="",
     )
 
     assert exit_code == 0
@@ -279,7 +304,8 @@ def test_cli_dry_run_pretooluse_lists_typed_and_subproc_markers() -> None:
     )
     assert completed.returncode == 0, completed.stderr
     marker_lines = [
-        line for line in completed.stdout.splitlines()
+        line
+        for line in completed.stdout.splitlines()
         if line.startswith("[typed]") or line.startswith("[subproc]")
     ]
     assert marker_lines, f"dry-run produced no marker lines:\n{completed.stdout}"
@@ -290,36 +316,6 @@ def test_cli_dry_run_pretooluse_lists_typed_and_subproc_markers() -> None:
 # ---------------------------------------------------------------------------
 # Real-chain smoke — sqlite3 invocation denies via lint_db_cmd
 # ---------------------------------------------------------------------------
-
-
-def test_real_chain_pretool_bash_sqlite3_denies(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The real PreToolUse Bash chain denies a raw ``sqlite3`` invocation."""
-    _silence_telemetry(monkeypatch)
-    payload = {
-        "tool_name": "Bash",
-        "tool_input": {"command": "sqlite3 data/yoke.db \"SELECT 1\""},
-        "session_id": "sess-smoke",
-        "cwd": "/tmp",
-    }
-
-    capability = AdapterCapability(
-        family="claude",
-        payload_parser=lambda raw: payload,
-        decision_renderer=CLAUDE_CAPABILITY.decision_renderer,
-        subprocess_modules=CLAUDE_CAPABILITY.subprocess_modules,
-        apply_patch_chain_omissions=CLAUDE_CAPABILITY.apply_patch_chain_omissions,
-        pretool_omissions=CLAUDE_CAPABILITY.pretool_omissions,
-    )
-
-    text, exit_code = runner_module.run_event(
-        "PreToolUse", capability=capability, stdin_data="{}",
-    )
-
-    # Claude renderer signals deny via exit code 2 with the narrative on stdout.
-    assert exit_code == 2, f"expected deny exit 2, got {exit_code}; text={text!r}"
-    assert "permissionDecision" in text or "deny" in text.lower()
 
 
 # ---------------------------------------------------------------------------

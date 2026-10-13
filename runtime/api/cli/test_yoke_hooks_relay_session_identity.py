@@ -44,6 +44,7 @@ def relay_capture(monkeypatch):
     for name in AMBIENT_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(relay, "detect_executor", lambda: "cursor")
+    monkeypatch.setattr(relay, "project_id_for_payload", lambda _payload: 1)
     monkeypatch.setattr(relay, "_client_lint_config_snapshot", lambda _payload: {})
     monkeypatch.setattr(relay, "_record_client_anchor", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(

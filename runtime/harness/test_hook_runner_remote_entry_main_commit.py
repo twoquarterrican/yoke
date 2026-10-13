@@ -7,6 +7,9 @@ import types
 from typing import Any
 
 import pytest
+from runtime.harness.test_hook_runner_remote_entry import (
+    authorized_project_context as authorized_project_context,
+)
 
 from yoke_contracts.hook_runner.main_commit import (
     CLIENT_GIT_COMMIT_FACTS_KEY,
@@ -21,7 +24,9 @@ from yoke_core.hooks.types import HookContext, HookDecision, Next, Outcome
 @pytest.fixture(autouse=True)
 def _quiet_telemetry(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
-        runner_module._telemetry, "flush_hook_telemetry", lambda *a, **k: None,
+        runner_module._telemetry,
+        "flush_hook_telemetry",
+        lambda *a, **k: None,
     )
 
 
@@ -33,6 +38,7 @@ def _module(name: str, evaluate) -> types.ModuleType:
 
 def test_main_commit_policy_runs_remotely_with_client_facts(
     monkeypatch: pytest.MonkeyPatch,
+    authorized_project_context,
 ) -> None:
     seen: list[tuple[bool, Any]] = []
     module_id = "yoke_core.domain.lint_main_commit"
@@ -63,6 +69,7 @@ def test_main_commit_policy_runs_remotely_with_client_facts(
         "claude",
         None,
         2000,
+        project_id=7,
         payload_extra={CLIENT_GIT_COMMIT_FACTS_KEY: facts},
     )
 

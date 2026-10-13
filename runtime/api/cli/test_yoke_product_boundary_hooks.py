@@ -30,11 +30,12 @@ def _local_config() -> dict:
     }
 
 
-def _https_config(token_file: Path) -> dict:
+def _https_config(token_file: Path, repo: Path) -> dict:
     token_file.write_text("tok\n", encoding="utf-8")
     return {
         "schema_version": 1,
         "active_env": "stage",
+        "projects": [{"checkout": str(repo), "project_id": 1}],
         "connections": {
             "stage": {
                 "transport": "https",
@@ -154,6 +155,7 @@ def test_local_subset_denies_git_commit_on_main_without_authority_imports(
     run = _run_product_cli(
         tmp_path,
         ["hook", "evaluate", "PreToolUse"],
+        config_payload={"projects": [{"checkout": str(repo), "project_id": 1}]},
         stdin_data=_payload(repo, "git commit -m impl"),
         client_cwd=repo,
     )
@@ -175,6 +177,7 @@ def test_local_subset_honors_main_commit_bypass_without_authority_imports(
     run = _run_product_cli(
         tmp_path,
         ["hook", "evaluate", "PreToolUse"],
+        config_payload={"projects": [{"checkout": str(repo), "project_id": 1}]},
         stdin_data=_payload(repo, "git commit -m impl # lint:no-main-check"),
         client_cwd=repo,
     )
@@ -195,7 +198,7 @@ def test_https_relay_defers_main_commit_to_authority_without_imports(
     run = _run_product_cli(
         tmp_path,
         ["hook", "evaluate", "PreToolUse"],
-        config_payload=_https_config(tmp_path / "token.txt"),
+        config_payload=_https_config(tmp_path / "token.txt", repo),
         stdin_data=_payload(repo, "git commit -m impl"),
         client_cwd=repo,
     )
@@ -215,6 +218,7 @@ def test_local_subset_denies_destructive_git_without_authority_imports(
     run = _run_product_cli(
         tmp_path,
         ["hook", "evaluate", "PreToolUse"],
+        config_payload={"projects": [{"checkout": str(repo), "project_id": 1}]},
         stdin_data=_payload(repo, "git reset --hard"),
         client_cwd=repo,
     )
@@ -235,7 +239,7 @@ def test_relay_short_circuits_before_http_when_local_subset_denies(
     run = _run_product_cli(
         tmp_path,
         ["hook", "evaluate", "PreToolUse"],
-        config_payload=_https_config(tmp_path / "token.txt"),
+        config_payload=_https_config(tmp_path / "token.txt", repo),
         stdin_data=_payload(repo, "git reset --hard"),
         client_cwd=repo,
     )
