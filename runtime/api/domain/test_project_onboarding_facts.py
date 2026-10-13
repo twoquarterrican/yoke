@@ -95,3 +95,28 @@ def test_saved_choice_cannot_hide_a_missing_required_connection(choice):
         assert _rows(result)["yoke-connection"]["saved_status"] == choice
         assert _rows(result)["yoke-connection"]["status"] == "unknown"
         assert "yoke-connection" in result["setup_readiness"]["unmet_rows"]
+
+
+@pytest.mark.parametrize("rows", [[], [{"row_id": "package-install", "status": "configured"}]])
+def test_missing_required_rows_cannot_fabricate_readiness(rows):
+    from yoke_core.domain.project_onboarding_facts import project_rows
+
+    _, readiness = project_rows(
+        rows, {}, machine_id=None, observations={}, facts={},
+        project_id=7, project_access=False,
+    )
+    assert readiness["ready"] is False
+    assert "project-identity" in readiness["unmet_rows"]
+    assert "yoke-connection" in readiness["unmet_rows"]
+
+
+def test_incomplete_saved_checklist_refuses_and_init_restores_only_missing_rows():
+    with _conn() as conn:
+        first = runs.init_run(conn=conn, project_id=7, row_status={"hosting-setup": "deferred"})
+        conn.execute("DELETE FROM project_onboarding_checklist_rows WHERE run_id = %s AND row_id = %s", (first["run_id"], "project-identity"))
+        conn.commit()
+        with pytest.raises(runs.ProjectOnboardingRunError, match="setup_checklist_incomplete"):
+            runs.get_run(first["run_id"], conn=conn)
+        resumed = runs.init_run(conn=conn, project_id=7, run_id=first["run_id"])
+        assert _rows(resumed)["hosting-setup"]["saved_status"] == "deferred"
+        assert resumed["setup_readiness"]["ready"] is False

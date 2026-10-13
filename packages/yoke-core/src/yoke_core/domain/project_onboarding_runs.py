@@ -173,6 +173,11 @@ def get_run(
             f"WHERE run_id = {p} ORDER BY step",
             (run_id,),
         ).fetchall()
+        if set(ROW_IDS) - {row["row_id"] for row in rows}:
+            raise ProjectOnboardingRunError(
+                "setup_checklist_incomplete: restore missing rows with yoke onboard "
+                "checklist init --run-id RUN --project P, then reread current facts."
+            )
         try:
             row_payloads = [row_payload(row) for row in rows]
         except (ValueError, TypeError) as exc:

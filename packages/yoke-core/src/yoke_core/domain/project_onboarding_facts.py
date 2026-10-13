@@ -243,11 +243,11 @@ def project_rows(
         if project_id is not None
         else REQUIRED_SETUP_ROW_IDS & MACHINE_ROW_IDS
     )
-    required = [row for row in projected if row["row_id"] in required_ids]
+    required = {row["row_id"]: row for row in projected if row["row_id"] in required_ids}
     unmet = [
-        row["row_id"]
-        for row in required
-        if row["status"]
+        row_id
+        for row_id in ROW_IDS if row_id in required_ids
+        if required.get(row_id, {}).get("status", STATUS_UNKNOWN)
         not in (
             STATUS_CONFIGURED,
             STATUS_VERIFIED,
