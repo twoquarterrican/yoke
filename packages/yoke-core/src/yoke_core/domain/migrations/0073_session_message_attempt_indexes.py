@@ -32,10 +32,10 @@ def invariants(conn) -> None:
                 row
                 and row[0]
                 and row[1]
-                and (
-                    f"ON public.session_message_attempts USING btree ({column})"
-                    in row[2]
-                )
+                and row[2] == "session_message_attempts"
+                and row[3] == column
+                and row[4] == 1
+                and row[5]
             )
         else:
             row = conn.execute(f"PRAGMA index_info({name})").fetchall()
