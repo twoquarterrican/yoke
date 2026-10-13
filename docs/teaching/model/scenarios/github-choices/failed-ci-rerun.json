@@ -1,0 +1,17 @@
+{
+ "id": "failed-ci-rerun",
+ "title": "Rerun failed CI jobs through their item",
+ "status": "observed",
+ "audience": "agent",
+ "when": "Transient infrastructure failure on the item's current PR head",
+ "need": "The work claim holder reruns failed jobs through the item. Project authority comes from the stored item across all function families; a project hint cannot change it. The run must match the current PR head and be newest for its workflow. Intent and outcome persist in the item's Progress Log; a stale or superseded identity names what to inspect.",
+ "disclosure": "current cue",
+ "surface": "Verification rules, registered rerun help and dispatch permission boundary",
+ "review": "Dispatch regression and registry-wide item-target permission tests fail before the fix and pass on candidate source; deployed proof remains pending.",
+ "sources": [
+  "docs/public/reference/agent-rules/verification.md",
+  "packages/yoke-core/src/yoke_core/domain/function_target_resolution.py",
+  "runtime/api/domain/test_item_target_dispatch_project.py"
+ ],
+ "position": 1
+}
