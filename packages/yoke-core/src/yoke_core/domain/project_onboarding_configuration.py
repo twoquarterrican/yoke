@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from hashlib import sha256
 from typing import Any
+from yoke_contracts.hosting_posture import POSTURE_NO_YOKE_MANAGED_HOST
 from yoke_contracts.onboard_checklist import (
     STATUS_CONFIGURED,
     STATUS_UNKNOWN,
@@ -112,7 +113,7 @@ def project_facts(conn: Any, project_id: int | None) -> dict[str, dict[str, Any]
             fact["evidence"]["settings_sha256"] = _digest(payload)
             if (
                 family == "hosting_posture"
-                and payload.get("posture") == "no-yoke-managed-host"
+                and payload.get("posture") == POSTURE_NO_YOKE_MANAGED_HOST
             ):
                 fact["status"] = STATUS_NOT_NEEDED
             facts[row_id] = fact

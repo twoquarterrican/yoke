@@ -246,6 +246,7 @@ WRAPPED_ROWS: Tuple[_Row, ...] = (
     _w("yoke release-pin record", "release_pin"),
     _w("yoke onboard checklist", "onboard"),
     _w("yoke onboard checklist init", "onboard"),
+    _w("yoke onboard checklist get", "onboard"),
     _w("yoke project snapshot sync", "project.snapshot"),
     _w("yoke packs list", "packs"),
     # cross-family-reader: cross-family reader ids — events forensics, path-claim
