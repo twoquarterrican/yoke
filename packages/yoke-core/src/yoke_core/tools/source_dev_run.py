@@ -28,6 +28,7 @@ from yoke_core.tools.source_dev_main_audit import (
 MAIN_CHECKOUT_READ_ONLY_SCRIPTS = frozenset(
     {
         "runtime/api/tools/scan_item_ref_construction.py",
+        "docs/teaching/tools/build.py",
     }
 )
 MAIN_CHECKOUT_CLAIMED_TARGET_PREFIX = tuple(

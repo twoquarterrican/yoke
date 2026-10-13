@@ -185,8 +185,12 @@ def test_build_recreates_html_and_stylesheet(tools, monkeypatch, tmp_path):
     import build
 
     monkeypatch.setattr(build, "VIEWS_ROOT", tmp_path / "views")
-    monkeypatch.setattr(build, "model_files", lambda: [])
+    record = tmp_path / "record.json"
+    original = '{"id":"example"}\n'
+    record.write_text(original)
+    monkeypatch.setattr(build, "model_files", lambda: [record])
     assert build.main([]) == 0
+    assert record.read_text() == original
     assert (tmp_path / "views/index.html").read_text().startswith("<!doctype html>")
     assert (tmp_path / "views/style.css").read_text() == (
         TOOLS / "style.css"

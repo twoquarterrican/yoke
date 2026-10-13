@@ -271,3 +271,28 @@ def isolated_environment_probe(monkeypatch):
         "resolve",
         lambda root, env: SourcePythonEnvironment(sys.executable, dict(env), {}),
     )
+
+
+@pytest.mark.parametrize("args", [[], ["--check"], ["--live"]])
+def test_mapped_main_teaching_build_preserves_git_status(monkeypatch, args):
+    import subprocess
+
+    root = Path(__file__).resolve().parents[3]
+    monkeypatch.setattr(source_dev_run, "_claimed_root", lambda: (root, None, 17))
+    monkeypatch.setattr(
+        source_dev_run.verification_tree_binding,
+        "ambient_session_id",
+        lambda: "session-1",
+    )
+    monkeypatch.setattr(
+        source_dev_run, "_record_main_checkout_fallback", lambda **kwargs: None
+    )
+    before = subprocess.check_output(["git", "status", "--porcelain"], cwd=root)
+
+    assert source_dev_run.run(["python3", "docs/teaching/tools/build.py", *args]) == 0
+
+    assert subprocess.check_output(["git", "status", "--porcelain"], cwd=root) == before
+    if not args or args == ["--live"]:
+        assert (root / "docs/teaching/views/index.html").is_file()
+    if args == ["--live"]:
+        assert (root / "docs/teaching/live/commands.html").is_file()
