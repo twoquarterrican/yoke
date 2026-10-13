@@ -129,10 +129,10 @@ def source_obligation_consumed(
         return False
     if completion["status"] != "succeeded":
         from yoke_core.domain.deployment_member_independent_close_out import (
-            independent_member_delivery_ready,
+            member_qa_answer_ready,
         )
 
-        if not independent_member_delivery_ready(
+        if not member_qa_answer_ready(
             conn, item_id=int(item_id), run_id=str(completion["id"])
         ):
             return False
