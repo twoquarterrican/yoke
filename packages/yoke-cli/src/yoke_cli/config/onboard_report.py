@@ -101,7 +101,13 @@ def build_plan(
     # way whether their control plane is local, a team server, or hosted.
     if harness_posture:
         steps.append(harness_unattended_posture.posture_plan_step())
-    steps.extend(onboard_session_relay.plan_steps(local_destination=local_destination))
+    steps.extend(
+        onboard_session_relay.plan_steps(
+            local_destination=local_destination,
+            config_path=cfg_path,
+            environment=env_name,
+        )
+    )
     steps.extend(onboard_machine_registry.plan_steps())
     if project_mode == PROJECT_MODE_MACHINE_ONLY:
         steps.append({"action": "stop-before-project-or-github", "target": mode})

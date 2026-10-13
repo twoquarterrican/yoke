@@ -18,7 +18,6 @@ from yoke_cli.config.github_response_safety import terminal_safe_text
 from yoke_cli.config.onboard_apply_report_metadata import sanitize_text
 
 
-RELAY_PLIST_TARGET = onboard_relay_supervisor.RELAY_PLIST_TARGET
 RELAY_INSTALL_TIMEOUT_SECONDS = 300
 #: Reading status inspects the user service and shakes hands with the plane.
 RELAY_STATUS_TIMEOUT_SECONDS = 60
@@ -71,7 +70,9 @@ def is_supported(
     return resolved_platform in {"darwin", "linux"}
 
 
-def plan_steps(*, local_destination: bool) -> list[dict[str, str]]:
+def plan_steps(
+    *, local_destination: bool, config_path: str | Path, environment: str
+) -> list[dict[str, str]]:
     if not is_supported(local_destination=local_destination):
         return []
     build_step = (
@@ -79,20 +80,31 @@ def plan_steps(*, local_destination: bool) -> list[dict[str, str]]:
     )
     return [
         {"action": action, "target": target}
-        for action, target in (*onboard_relay_supervisor.lifecycle_steps(), build_step)
+        for action, target in (
+            *onboard_relay_supervisor.lifecycle_steps(
+                config_path=config_path, environment=environment
+            ),
+            build_step,
+        )
     ]
 
 
-def progress_steps(*, local_destination: bool) -> tuple[tuple[str, str], ...]:
+def progress_steps(
+    *, local_destination: bool, config_path: str | Path, environment: str
+) -> tuple[tuple[str, str], ...]:
     """The same steps as ``plan_steps``, shaped for the progress emitter."""
     return tuple(
         (step["action"], step["target"])
-        for step in plan_steps(local_destination=local_destination)
+        for step in plan_steps(
+            local_destination=local_destination,
+            config_path=config_path,
+            environment=environment,
+        )
     )
 
 
 def setup_complete_lines(
-    *, local_destination: bool, reused: bool = False
+    *, local_destination: bool, reused: bool = False, supervisor: Mapping[str, object]
 ) -> tuple[str, ...]:
     """What the Setup-complete screen tells the operator about their relay."""
     build_lines = (
@@ -101,7 +113,11 @@ def setup_complete_lines(
         else _SERVED_RELEASE_COMPLETE_LINES
     )
     reuse_lines = (_REUSED_COMPLETE_LINE,) if reused else ()
-    return (*onboard_relay_supervisor.complete_lines(), *build_lines, *reuse_lines)
+    return (
+        *onboard_relay_supervisor.complete_lines(supervisor),
+        *build_lines,
+        *reuse_lines,
+    )
 
 
 def relay_command(
@@ -247,7 +263,11 @@ def apply(
     """Run the relay step and record what it did in the apply report."""
     if not is_supported(local_destination=local_destination):
         return
-    steps = progress_steps(local_destination=local_destination)
+    steps = progress_steps(
+        local_destination=local_destination,
+        config_path=config_path,
+        environment=environment,
+    )
     onboard_apply_progress.emit_many(progress, steps, "running")
     outcome = install(
         local_destination=local_destination,
@@ -260,6 +280,8 @@ def apply(
         installed=outcome.installed,
         local_destination=local_destination,
         reused=outcome.reused,
+        config_path=config_path,
+        environment=environment,
     )
 
 
@@ -267,13 +289,17 @@ def report_fragment(
     *,
     planned: bool,
     installed: bool,
+    config_path: str | Path,
+    environment: str,
     local_destination: bool = False,
     reused: bool = False,
 ) -> dict[str, Any]:
     return {
         "planned": planned,
         "installed": installed,
-        **onboard_relay_supervisor.report_document(planned=planned),
+        **onboard_relay_supervisor.report_document(
+            planned=planned, config_path=config_path, environment=environment
+        ),
         "local_build": local_destination,
         "reused": reused,
     }
@@ -286,6 +312,7 @@ def report_complete_lines(fragment: Any) -> tuple[str, ...]:
     return setup_complete_lines(
         local_destination=bool(fragment.get("local_build")),
         reused=bool(fragment.get("reused")),
+        supervisor=fragment,
     )
 
 
@@ -294,7 +321,6 @@ __all__ = [
     "RELAY_DETAIL_MAX_CHARS",
     "RELAY_INSTALL_TIMEOUT_SECONDS",
     "RELAY_LOCAL_BUILD_STEP",
-    "RELAY_PLIST_TARGET",
     "RELAY_SERVED_RELEASE_STEP",
     "RELAY_STATUS_TIMEOUT_SECONDS",
     "RelayInstallOutcome",

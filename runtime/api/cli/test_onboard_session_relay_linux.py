@@ -6,10 +6,14 @@ from yoke_cli.config import onboard_session_relay as relay
 from yoke_cli.commands.adapters.session_control_relay_output import relay_status_fields
 
 
-def test_linux_plans_and_installs_both_build_sources(monkeypatch):
+def test_linux_plans_and_installs_both_build_sources(monkeypatch, tmp_path):
     monkeypatch.setattr(relay.sys, "platform", "linux")
     for local in (False, True):
-        steps = relay.plan_steps(local_destination=local)
+        steps = relay.plan_steps(
+            local_destination=local,
+            config_path=tmp_path / "config.json",
+            environment="selected",
+        )
         assert steps[0]["action"] == "install-session-relay-unit"
         assert steps[1]["action"] == "enable-session-relay-user-service"
         calls = []
@@ -27,7 +31,11 @@ def test_linux_plans_and_installs_both_build_sources(monkeypatch):
         assert len(calls) == 2
         assert calls[1][3:] == ["install", "--environment", "selected"]
         fragment = relay.report_fragment(
-            planned=True, installed=True, local_destination=local
+            planned=True,
+            installed=True,
+            local_destination=local,
+            config_path=tmp_path / "config.json",
+            environment="selected",
         )
         assert "unit" in fragment and "plist" not in fragment
         lines = relay.report_complete_lines(fragment)

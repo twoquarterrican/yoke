@@ -38,8 +38,11 @@ Failed npm or Chromium installs report labeled tails of both stdout and stderr
 (up to 20 lines and 4000 characters each), so a warning cannot hide the download
 error. Repair the reported network or permissions cause and retry the same command.
 
-The unit lives at
-`~/.config/systemd/user/com.upyoke.relay[.<environment-id>].service`.
+The unit lives under `~/.config/systemd/user/`. Its filename is
+`com.upyoke.relay.service` for a prod HTTPS connection; other connections use
+`com.upyoke.relay.<instance-id>.service`, where the instance id comes from the
+canonical config path and environment. Setup shows the concrete filename;
+`yoke relay status` reports the installed unit path.
 It starts at login, restarts on failure, and stops after the last login session
 logs out. Yoke does not enable linger. If linger is already enabled, installation
 refuses with `relay_linger_enabled`; disable it for the user with

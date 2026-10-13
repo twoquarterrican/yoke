@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
+from pathlib import Path
 import sys
 
 import pytest
@@ -37,24 +39,36 @@ def _recording_runner(*results):
     return runner, calls
 
 
-def test_review_lists_plist_login_item_and_existing_token(monkeypatch) -> None:
+def test_review_lists_plist_login_item_and_existing_token(
+    monkeypatch, tmp_path
+) -> None:
     monkeypatch.setattr(onboard_session_relay.sys, "platform", "darwin")
-    steps = onboard_session_relay.plan_steps(local_destination=False)
+    config = tmp_path / "config.json"
+    label = (
+        "com.upyoke.relay."
+        + hashlib.sha256(f"{config}\0selected".encode()).hexdigest()[:16]
+    )
+    steps = onboard_session_relay.plan_steps(
+        local_destination=False, config_path=config, environment="selected"
+    )
 
     grouped = classify_plan({"plan": {"steps": steps}})
 
     assert grouped["machine"] == [
-        "Install the machine relay plist at "
-        "~/Library/LaunchAgents/com.upyoke.relay[.<environment-id>].plist",
+        f"Install the machine relay plist at ~/Library/LaunchAgents/{label}.plist",
         "Load the machine relay as a login item",
         "Reuse this machine's existing Yoke API token",
     ]
 
 
-def test_review_plans_the_relay_for_a_local_destination(monkeypatch) -> None:
+def test_review_plans_the_relay_for_a_local_destination(monkeypatch, tmp_path) -> None:
     """A local install plans a relay too; only its build source differs."""
     monkeypatch.setattr(onboard_session_relay.sys, "platform", "darwin")
-    steps = onboard_session_relay.plan_steps(local_destination=True)
+    steps = onboard_session_relay.plan_steps(
+        local_destination=True,
+        config_path=tmp_path / "config.json",
+        environment="local",
+    )
 
     actions = [step["action"] for step in steps]
 
@@ -77,7 +91,9 @@ def test_setup_complete_repeats_all_relay_facts() -> None:
     )
 
     assert "✓ Session relay ready" in rendered
-    for line in onboard_session_relay.setup_complete_lines(local_destination=False):
+    for line in onboard_session_relay.setup_complete_lines(
+        local_destination=False, supervisor=fragment
+    ):
         assert line not in rendered
 
 
@@ -269,7 +285,11 @@ def test_apply_records_what_the_relay_step_did(monkeypatch) -> None:
     assert report["session_relay"] == {
         "planned": True,
         "installed": True,
-        "plist": onboard_session_relay.RELAY_PLIST_TARGET,
+        "plist": "~/Library/LaunchAgents/com.upyoke.relay."
+        + hashlib.sha256(
+            f"{Path('/tmp/machine-config.json').resolve()}\0upyoke".encode()
+        ).hexdigest()[:16]
+        + ".plist",
         "local_build": False,
         "reused": True,
     }
@@ -287,7 +307,12 @@ def test_relay_is_unsupported_off_native_platforms_for_every_destination(
             local_destination=local_destination
         )
         assert (
-            onboard_session_relay.plan_steps(local_destination=local_destination) == []
+            onboard_session_relay.plan_steps(
+                local_destination=local_destination,
+                config_path="/tmp/config.json",
+                environment="selected",
+            )
+            == []
         )
         assert not onboard_session_relay.install(
             local_destination=local_destination

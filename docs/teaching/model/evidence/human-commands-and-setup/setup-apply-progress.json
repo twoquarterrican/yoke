@@ -1,0 +1,9 @@
+{
+ "id": "setup-apply-progress",
+ "title": "Per-operation Apply progress and concrete relay paths",
+ "status": "observed",
+ "scope": "Candidate source rendering; no production-install claim",
+ "current": "Apply uses its existing step model, progress callbacks and step-line renderer. Each operation has a stable indexed widget; updates target only the matching action and target. macOS plist and Linux unit names share the installer’s relay instance label calculation.",
+ "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_apply_steps.py", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_flow_apply.py", "packages/yoke-cli/src/yoke_cli/config/onboard_relay_supervisor.py", "runtime/api/cli/test_onboard_wizard_applying_summary.py", "runtime/api/cli/test_onboard_relay_supervisor.py"],
+ "position": 90
+}
