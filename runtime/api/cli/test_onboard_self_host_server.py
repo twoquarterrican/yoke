@@ -76,7 +76,8 @@ def test_existing_bundle_collision_is_left_untouched(tmp_path, monkeypatch) -> N
     wrote: list[bool] = []
     monkeypatch.setattr(bundle, "write_bundle", lambda **_: wrote.append(True))
     setup = subject.new_setup(
-        config_path=str(tmp_path / "config.json"), directory=str(target)
+        config_path=str(tmp_path / "machine-home" / "config.json"),
+        directory=str(target),
     )
     setup.admin_name = "Ada Lovelace"
 
@@ -114,7 +115,7 @@ def test_success_uses_safe_compose_argv_and_connects_loopback(
     )
     monkeypatch.setattr(server_connect, "connect_server", connect)
     setup = subject.new_setup(
-        config_path=str(tmp_path / "config.json"),
+        config_path=str(tmp_path / "machine-home" / "config.json"),
         directory=str(tmp_path / "server"),
     )
     setup.admin_name = "Ada Lovelace"
@@ -136,7 +137,7 @@ def test_success_uses_safe_compose_argv_and_connects_loopback(
     assert connected[0]["token"] == RAW_TOKEN
     assert connected[0]["env"] == server_connect.DEFAULT_ENV_NAME
     assert connected[0]["activate"] is True
-    assert connected[0]["config_path"] == str(tmp_path / "config.json")
+    assert connected[0]["config_path"] == str(tmp_path / "machine-home" / "config.json")
 
 
 def test_compose_failure_preserves_bundle_and_redacts_diagnostics(
@@ -147,7 +148,7 @@ def test_compose_failure_preserves_bundle_and_redacts_diagnostics(
 
     monkeypatch.setattr(subject.runtime, "start_bundle", refuse)
     setup = subject.new_setup(
-        config_path=str(tmp_path / "config.json"),
+        config_path=str(tmp_path / "machine-home" / "config.json"),
         directory=str(tmp_path / "server"),
     )
     setup.admin_name = "Ada Lovelace"
@@ -196,7 +197,7 @@ def test_token_timeout_retry_reuses_only_this_wizards_bundle(
         lambda url, **kwargs: {"ok": True, "api_url": url},
     )
     setup = subject.new_setup(
-        config_path=str(tmp_path / "config.json"),
+        config_path=str(tmp_path / "machine-home" / "config.json"),
         directory=str(tmp_path / "server"),
     )
     setup.admin_name = "Ada Lovelace"
@@ -240,7 +241,7 @@ def test_connect_failure_retains_token_for_in_memory_retry(
     )
     monkeypatch.setattr(server_connect, "connect_server", connect)
     setup = subject.new_setup(
-        config_path=str(tmp_path / "config.json"),
+        config_path=str(tmp_path / "machine-home" / "config.json"),
         directory=str(tmp_path / "server"),
     )
     setup.admin_name = "Ada Lovelace"
@@ -292,7 +293,8 @@ def test_post_start_health_wait_retries_until_the_server_answers(
         lambda url, **kwargs: connected.append(url) or {"ok": True, "api_url": url},
     )
     setup = subject.new_setup(
-        config_path=str(tmp_path / "config.json"), directory=str(tmp_path / "server")
+        config_path=str(tmp_path / "machine-home" / "config.json"),
+        directory=str(tmp_path / "server"),
     )
     setup.admin_name = "Ada Lovelace"
     result = subject.provision(
@@ -328,7 +330,8 @@ def test_post_start_health_wait_times_out_before_connect(tmp_path, monkeypatch) 
         server_connect, "connect_server", lambda url, **kwargs: connected.append(url)
     )
     setup = subject.new_setup(
-        config_path=str(tmp_path / "config.json"), directory=str(tmp_path / "server")
+        config_path=str(tmp_path / "machine-home" / "config.json"),
+        directory=str(tmp_path / "server"),
     )
     setup.admin_name = "Ada Lovelace"
     with pytest.raises(subject.SelfHostSetupError) as raised:

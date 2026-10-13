@@ -20,6 +20,8 @@ from yoke_core.domain import connected_env_readiness_tunnel as cer_t
 from yoke_core.domain import machine_config
 from yoke_core.domain import yoke_connected_env
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 
 @pytest.fixture(autouse=True)
 def _reset_readiness_cache():
@@ -75,8 +77,8 @@ def https_default_env(tmp_path, monkeypatch):
     monkeypatch.delenv(cer_c.PG_DSN_ENV, raising=False)
     monkeypatch.delenv(cer_c.PG_DSN_FILE_ENV, raising=False)
     binding = _write_https_default_binding(tmp_path)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
-    monkeypatch.setenv(machine_config.HOME_ENV, str(tmp_path / "machine-home"))
+    select_machine_config_file(monkeypatch, str(binding))
+    monkeypatch.setenv(machine_config.HOME_ENV, str(binding.parent))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     return binding
 

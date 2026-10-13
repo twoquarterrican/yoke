@@ -8,9 +8,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from yoke_contracts.machine_config import runtime as machine_config_runtime
 from yoke_contracts.machine_config.schema import ENV_OVERRIDE
 from yoke_core.domain import migration_apply_verify
+
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 
 
 def test_rehearsal_command_replaces_admin_selection_and_keeps_validation_binding(
@@ -33,7 +34,7 @@ def test_rehearsal_command_replaces_admin_selection_and_keeps_validation_binding
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv(machine_config_runtime.CONFIG_FILE_ENV, str(config))
+    select_machine_config_file(monkeypatch, str(config))
     monkeypatch.setenv(ENV_OVERRIDE, "prod-db-admin")
     monkeypatch.setenv("REHEARSAL_PARENT_CONTEXT", "retained")
     captured: dict[str, object] = {}

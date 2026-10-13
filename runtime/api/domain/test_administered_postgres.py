@@ -14,11 +14,14 @@ from yoke_contracts.machine_config.schema import ENV_OVERRIDE
 from yoke_core.domain import administered_postgres
 from yoke_core.domain import scratch_database_authority
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 ADMIN_ENV = "prod-db-admin"
 ADMIN_DSN = "host=127.0.0.1 port=6547 dbname=yoke_prod user=admin"
 
 
 def _configure(monkeypatch, tmp_path, *, selected: str = "local") -> None:
+    monkeypatch.delenv(administered_postgres.ADMINISTERED_TARGETS_ENV, raising=False)
     dsn_file = tmp_path / "prod.dsn"
     dsn_file.write_text(ADMIN_DSN)
     config = tmp_path / "config.json"
@@ -45,7 +48,7 @@ def _configure(monkeypatch, tmp_path, *, selected: str = "local") -> None:
             }
         )
     )
-    monkeypatch.setenv(machine_config_runtime.CONFIG_FILE_ENV, str(config))
+    select_machine_config_file(monkeypatch, str(config))
     monkeypatch.setenv(ENV_OVERRIDE, selected)
 
 
@@ -165,10 +168,7 @@ def test_endpoint_inventory_survives_machine_config_isolation(
     assert "dbname=yoke_prod" not in inventory
 
     monkeypatch.setenv(administered_postgres.ADMINISTERED_TARGETS_ENV, inventory)
-    monkeypatch.setenv(
-        machine_config_runtime.CONFIG_FILE_ENV,
-        str(tmp_path / "isolated" / "config.json"),
-    )
+    select_machine_config_file(monkeypatch, str(tmp_path / "isolated" / "config.json"))
     assert (
         administered_postgres.administering_target(
             dsn="host=127.0.0.1 port=6547 dbname=scratch"

@@ -15,11 +15,13 @@ from yoke_cli.config import distribution, machine_config, self_update
 from yoke_cli.self_host import release_target
 from yoke_contracts.install_binding import KIND_PACKAGED_WHEEL
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 
 @pytest.fixture
 def config_file(monkeypatch, tmp_path):
     path = tmp_path / "config.json"
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(path))
+    select_machine_config_file(monkeypatch, str(path))
     return path
 
 

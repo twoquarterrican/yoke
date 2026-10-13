@@ -18,10 +18,11 @@ import pytest
 
 from runtime.api.domain.migration_boot_test_helpers import connection
 from yoke_contracts import schema_authority
-from yoke_contracts.machine_config import runtime as machine_config_runtime
 from yoke_contracts.machine_config.schema import ENV_OVERRIDE
 from yoke_core.domain import migration_boot_apply, schema_init
 from yoke_core.domain.migration_yoke_ledger import YOKE_LEDGER_CONTRACT
+
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 
 PROD_ENV = "prod-db-admin"
 SERVED_ENV = "prod"
@@ -171,7 +172,7 @@ def _select(
     config.write_text(
         json.dumps({"active_env": active_env, "connections": connections})
     )
-    monkeypatch.setenv(machine_config_runtime.CONFIG_FILE_ENV, str(config))
+    select_machine_config_file(monkeypatch, str(config))
     if override is None:
         monkeypatch.delenv(ENV_OVERRIDE, raising=False)
     else:

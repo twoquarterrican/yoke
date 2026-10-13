@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from yoke_core.domain import machine_config
 from yoke_core.hooks import codex_payload as codex_hooks_payload
 from yoke_core.hooks import target
+
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 
 
 def _binding(root: Path) -> Path:
@@ -48,7 +49,7 @@ def test_registered_checkout_marks_workspace_as_yoke_without_sqlite_db(
     root = tmp_path / "repo"
     root.mkdir()
     binding = _binding(root)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
 
     assert target.is_yoke_target(str(root), "") is True
 
@@ -61,7 +62,7 @@ def test_codex_target_gate_uses_shared_checkout_detection(
     root = tmp_path / "repo"
     root.mkdir()
     binding = _binding(root)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
 
     assert codex_hooks_payload.resolve_yoke_db(str(root)) == ""
     assert codex_hooks_payload.is_yoke_target(str(root), "") is True
@@ -74,7 +75,7 @@ def test_codex_resolver_ignores_retired_canonical_yoke_db_env(
     root = tmp_path / "repo"
     root.mkdir()
     binding = _binding(root)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     canonical = root / "data" / "yoke.db"
     canonical.parent.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("YOKE_DB", str(canonical))
@@ -89,7 +90,7 @@ def test_codex_resolver_keeps_noncanonical_fixture_yoke_db_env(
     root = tmp_path / "repo"
     root.mkdir()
     binding = _binding(root)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     fixture = tmp_path / "fixture.db"
     monkeypatch.setenv("YOKE_DB", str(fixture))
 

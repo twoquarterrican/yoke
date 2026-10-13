@@ -12,6 +12,7 @@ import pytest
 
 from yoke_cli.config import machine_config as client
 from yoke_cli.config import writer
+from yoke_cli.config.project_onboard_support import machine_config_path
 from yoke_contracts.machine_config import runtime
 from yoke_harness.session_relay_environment import native_session_environment
 
@@ -141,3 +142,22 @@ def test_deliberately_selected_shared_config_can_be_written(tmp_path, monkeypatc
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "worker")
     writer.set_active_env("stage", path=shared)
     assert json.loads(shared.read_text())["active_env"] == "stage"
+
+
+def test_explicit_dispatch_read_does_not_authorize_a_foreign_write(
+    tmp_path, monkeypatch
+):
+    steering = tmp_path / "steering" / "custom.json"
+    original = _seed(steering)
+    home = tmp_path / "worker"
+    monkeypatch.setenv("YOKE_MACHINE_HOME", str(home))
+    with machine_config_path(steering):
+        assert client.config_path() == steering
+        assert runtime.config_path() == steering
+        assert client.load_config()["active_env"] == "prod"
+        with pytest.raises(
+            writer.MachineConfigWriteError, match="machine_config_not_owned"
+        ):
+            writer.set_active_env("stage")
+    assert client.config_path() == home / "config.json"
+    assert steering.read_bytes() == original

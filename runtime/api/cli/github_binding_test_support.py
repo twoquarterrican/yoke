@@ -14,7 +14,8 @@ def _two_service_config(tmp_path: Path) -> Path:
     token = tmp_path / "actor.token"
     token.write_text("actor-token\n", encoding="utf-8")
     token.chmod(0o600)
-    config = tmp_path / "config.json"
+    config = tmp_path / "machine-home" / "config.json"
+    config.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
 
     def connection(name: str) -> dict[str, object]:
         return {

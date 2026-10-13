@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.session_actor_binding_write import persist_operating_actor
@@ -203,9 +204,10 @@ def _installed_env(
     # by id. A config naming the connection but no operating actor models a
     # machine no session can register on, which is not the install these
     # tests describe.
-    persist_operating_actor(
-        conn, _operating_human(conn), env="local", config_path=config
-    )
+    with patch.dict(os.environ, {"YOKE_MACHINE_HOME": str(machine_home)}):
+        persist_operating_actor(
+            conn, _operating_human(conn), env="local", config_path=config
+        )
     dsn = os.environ[db_backend.PG_DSN_ENV]
     return {
         "HOME": str(machine_home.parent),

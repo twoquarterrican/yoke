@@ -12,6 +12,8 @@ from yoke_contracts.session_model_facts import SessionModelFacts
 from yoke_core.domain import machine_config, yoke_connected_env
 from yoke_core.hooks import service_client, target
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 _RETIRED_BACKEND_ENV = "YOKE_" + "BACKEND"
 
 
@@ -66,7 +68,7 @@ def test_register_session_child_inherits_target_cwd_and_connected_env(
     service_path.write_text("# service client placeholder\n", encoding="utf-8")
     binding = _write_machine_config(root)
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
 
     calls: list[dict[str, Any]] = []
 
@@ -114,7 +116,7 @@ def test_register_session_child_imports_yoke_code_for_external_target(
     external_root.mkdir()
     binding = _write_machine_config(external_root)
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
 
     calls: list[dict[str, Any]] = []
 
@@ -157,7 +159,7 @@ def test_touch_session_uses_same_target_authority(
     service_path.write_text("# service client placeholder\n", encoding="utf-8")
     binding = _write_machine_config(root)
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     captured: dict[str, Any] = {}
 
     def fake_run(cmd, **kwargs):  # noqa: ANN001

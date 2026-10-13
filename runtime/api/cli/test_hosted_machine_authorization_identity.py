@@ -12,6 +12,8 @@ from yoke_cli.transport.bounded_json_http import (
     BoundedJsonHttpStatusError,
 )
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 
 MACHINE_ID = "8bea37d8-e2d5-4e4d-96c4-cfc53d9dbe5f"
 
@@ -55,7 +57,7 @@ def test_poll_and_reconnect_reuse_canonical_machine_identity(
 ) -> None:
     config_path = tmp_path / "config.json"
     config_path.write_text("{}", encoding="utf-8")
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, str(config_path))
     monkeypatch.setattr(auth, "machine_display_name", lambda: "Build Host")
     responses = deque(
         [
@@ -99,7 +101,7 @@ def test_poll_and_reconnect_reuse_canonical_machine_identity(
 
 def test_fresh_install_bootstraps_identity_before_poll(monkeypatch, tmp_path) -> None:
     config_path = tmp_path / "config.json"
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, str(config_path))
     monkeypatch.setattr(auth, "machine_display_name", lambda: "Build Host")
     monkeypatch.setattr(auth, "request_json", lambda *_args, **_kwargs: _approved())
     clock = _Clock()
@@ -114,7 +116,7 @@ def test_fresh_install_bootstraps_identity_before_poll(monkeypatch, tmp_path) ->
 
 def test_retry_after_fresh_bootstrap_keeps_same_identity(monkeypatch, tmp_path) -> None:
     config_path = tmp_path / "config.json"
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, str(config_path))
     monkeypatch.setattr(auth, "machine_display_name", lambda: "Build Host")
     monkeypatch.setattr(auth, "request_json", lambda *_args, **_kwargs: _approved())
 
@@ -138,7 +140,7 @@ def test_partially_initialized_config_gains_identity_without_losing_fields(
         json.dumps({"schema_version": 1, "settings": {"kept": "value"}}),
         encoding="utf-8",
     )
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, str(config_path))
     monkeypatch.setattr(auth, "machine_display_name", lambda: "Build Host")
     monkeypatch.setattr(auth, "request_json", lambda *_args, **_kwargs: _approved())
     clock = _Clock()
@@ -153,7 +155,7 @@ def test_partially_initialized_config_gains_identity_without_losing_fields(
 
 def test_local_persistence_failure_refuses_before_poll(monkeypatch, tmp_path) -> None:
     config_path = tmp_path / "config.json"
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, str(config_path))
 
     def _boom(*_args, **_kwargs):
         raise auth.machine_config_mutation.MachineConfigWriteError("disk is full")
@@ -177,7 +179,7 @@ def test_local_persistence_failure_refuses_before_poll(monkeypatch, tmp_path) ->
 def test_server_identity_refusal_names_recovery(monkeypatch, tmp_path) -> None:
     config_path = tmp_path / "config.json"
     config_path.write_text(json.dumps({"machine_id": MACHINE_ID}), encoding="utf-8")
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, str(config_path))
     monkeypatch.setattr(auth, "machine_display_name", lambda: "Build Host")
     monkeypatch.setattr(
         auth,

@@ -20,6 +20,8 @@ from yoke_core.domain.connected_env_readiness_connector import (
     PROBE_CONFIRM_ATTEMPTS,
 )
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 
 def _postgres_connection(dsn_file: Path, *, port: int, prod: bool) -> dict:
     return {
@@ -75,10 +77,10 @@ def selected_connections(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dic
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))
+    select_machine_config_file(monkeypatch, str(config))
     # Replacing a forward takes machine-wide coordination state; keep it in
     # tmp_path rather than the operator's own machine home.
-    monkeypatch.setenv(machine_config.HOME_ENV, str(tmp_path / "machine-home"))
+    monkeypatch.setenv(machine_config.HOME_ENV, str(config.parent))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     monkeypatch.setenv("YOKE_ENV", "preexisting-control-plane")
     monkeypatch.setenv(

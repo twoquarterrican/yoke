@@ -143,7 +143,7 @@ def test_writer_refuses_symlink_config_target(tmp_path: Path) -> None:
 
     with pytest.raises(
         writer.MachineConfigWriteError,
-        match="regular file",
+        match="machine_config_not_owned",
     ):
         writer.set_runtime_paths(
             temp_root=tmp_path / "tmp",
