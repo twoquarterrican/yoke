@@ -38,7 +38,7 @@ def _resident_processes(paths: client.ResidentPaths) -> list[tuple[int, str]]:
     # in an unrelated command. ps restricts discovery to this OS user's processes.
     try:
         result = subprocess.run(
-            ["ps", "-u", str(os.getuid()), "-o", "pid=,args="],
+            ["ps", "-ww", "-u", str(os.getuid()), "-o", "pid=,args="],
             capture_output=True,
             text=True,
             timeout=5,

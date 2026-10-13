@@ -7,7 +7,6 @@ every other mention links to that anchor.
 
 from __future__ import annotations
 
-from model import STATUSES
 from render_live import LIVE as LIVE
 from render_live import commands_page, docs_pages
 from render import (
@@ -20,16 +19,6 @@ from render import (
     text_field,
     wrap,
 )
-
-STATUS_MEANING = {
-    "observed": "seen in source or a capture; scope stated, behavior unproven",
-    "verified-live": "proven against running Yoke with recorded evidence",
-    "candidate": "reviewed proposal, not approved scope",
-    "approved": "approved FIRST-USER scope or a locked boundary",
-    "deferred": "approved direction whose execution waits (JOURNEYS)",
-    "draft-copy": "research outline or draft wording; not a shipped recipe",
-    "superseded": "replaced proposal kept for provenance",
-}
 
 
 class Pages:
@@ -248,38 +237,6 @@ class Pages:
     def commands_page(self, views):
         commands_page(self, views)
 
-    def index_page(self, views, intro):
-        counts = (
-            ("Concepts", "concepts.html", self.m.concepts),
-            ("Surfaces", "surfaces.html", self.m.surfaces),
-            ("Teaching rows", "surfaces.html", self.m.teaching),
-            ("Scenarios", "scenarios.html", self.m.scenarios),
-            ("Lessons", "scenarios.html", self.m.lessons),
-            ("Plan rows", "plan-coverage.html", self.m.plan_rows),
-            ("Boundaries", "boundaries.html", self.m.boundaries),
-            ("Gaps", "gaps.html", self.m.gaps),
-            ("Evidence records", "evidence.html", self.m.evidence),
-        )
-        unmapped = sum(1 for ids in self.cov.values() if not ids)
-        recipe = link("index.html", "../README.md", "README")
-        body = (
-            wrap(f"<p>{esc(intro)}</p>")
-            + wrap(
-                f"<p>The {recipe} holds the edit, rebuild and check recipe, the "
-                "Platform route and the live command and docs-graph pages.</p>"
-            )
-            + ["<ul>"]
-        )
-        body += [
-            f"<li>{link('index.html', target, label)}: {len(table)}</li>"
-            for label, target, table in counts
-        ]
-        body.append(
-            f"<li>Concepts with no direct plan or teaching mapping: {unmapped}</li>"
-        )
-        body += ["</ul>", "<h2>Record status</h2>"] + status_legend()
-        views["index.html"] = page("index.html", "Yoke teaching prototype", body)
-
 
 _STRUCTURAL = {
     "file",
@@ -303,10 +260,3 @@ _REF_KEYS = {
     "boundaries",
     "gaps",
 }
-
-
-def status_legend() -> list[str]:
-    out = ["<dl>"]
-    for status in STATUSES:
-        out += wrap(f"<dt>{badge(status)}</dt><dd>{esc(STATUS_MEANING[status])}</dd>")
-    return out + ["</dl>"]

@@ -10,6 +10,8 @@ Build the local views with `yoke dev run -- python3 docs/teaching/tools/build.py
 then open `docs/teaching/views/index.html` in a browser from that checkout.
 Agents read the model JSON directly. If a review tool refuses `file:` URLs,
 serve this directory locally (`python3 -m http.server` from `docs/teaching`).
+The overview links to each record home; aggregate model counts stay out of
+that shared page so independent model edits can land together.
 
 ## Canonical source and access
 

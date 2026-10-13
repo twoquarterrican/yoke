@@ -127,6 +127,8 @@ def _in_process_repair_runner(config: Path, yoke_bin: str):
             return subprocess.CompletedProcess(cmd, 0, "help", "")
         if cmd == [yoke_bin, "wsl", "setup"]:
             return subprocess.CompletedProcess(cmd, 0, "", "")
+        if cmd == [yoke_bin, "hook", "resident", "restart"]:
+            return subprocess.CompletedProcess(cmd, 0, "Hook evaluator: ready", "")
         if cmd == [yoke_bin, "status", "--json"]:
             versions = {
                 p: "2.0.0"
