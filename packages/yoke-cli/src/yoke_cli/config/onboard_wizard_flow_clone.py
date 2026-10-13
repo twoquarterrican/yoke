@@ -104,7 +104,11 @@ class CloneFlow(CheckoutInspectionFlow, CloneSourceFlow):
     def _goto_private_repo_empty(self: _Shell) -> None:
         from yoke_cli.config.onboard_wizard_app import _View
 
-        access_url = github_state.repository_access_url(self.result)
+        try:
+            access_url = github_state.repository_access_url(self.result)
+        except github_origin.GitHubApiOriginError as exc:
+            self._goto_private_repo_picker_error(exc)
+            return
         self._goto(
             _View(
                 STEP_PROJECT,
@@ -127,8 +131,8 @@ class CloneFlow(CheckoutInspectionFlow, CloneSourceFlow):
         if choice == "manage":
             try:
                 open_url(github_state.repository_access_url(self.result))
-            except Exception:
-                pass
+            except Exception as exc:
+                self._goto_private_repo_picker_error(exc)
             return
         if choice == "check":
             self._goto_private_repo_picker(replace_current=True)
@@ -182,10 +186,7 @@ class CloneFlow(CheckoutInspectionFlow, CloneSourceFlow):
     def _validate_clone_folder(self: _Shell, value: str) -> Optional[str]:
         """Validate the clone folder, allowing a matching prior partial clone.
 
-        Generic empty/new + writable-parent validation, except a folder that is
-        already a clone of THIS source is accepted — the resumable-apply path
-        (and the Resume / choose-another-folder screen) handles it instead of the inline
-        "already has files" rejection a foreign non-empty folder gets.
+        Matching clones enter resumable Apply; other nonempty folders refuse.
         """
         target = Path(value).expanduser()
         safety_error = input_validation.validate_clone_resume_target_folder(value)
