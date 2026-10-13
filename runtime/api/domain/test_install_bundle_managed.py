@@ -169,12 +169,13 @@ def test_doctrine_block_leaves_generated_packet_to_session_orientation(conn) -> 
     assert "Main-session DB/API packet (main_agent)" not in doctrine
 
 
-def test_bundle_files_stay_out_of_yoke_dir_except_docs(conn) -> None:
+def test_bundle_files_use_only_managed_yoke_subtrees(conn) -> None:
     bundle = install_bundle.build_bundle(1, conn)
     for entry in bundle["files"]:
         p = entry["path"]
-        # Docs are the one yoke-authoritative .yoke/ subtree; all else stays out.
-        assert p.startswith(".yoke/docs/") or not p.startswith(".yoke/")
+        assert p.startswith((".yoke/docs/", ".yoke/harness/")) or not p.startswith(
+            ".yoke/"
+        )
         assert not p.startswith("/")
         assert ".." not in p.split("/")
 
