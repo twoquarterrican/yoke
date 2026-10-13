@@ -87,7 +87,10 @@ registered worktree. A persisted active work claim keeps its session live
 through stale, idle, parked, process-gone, and startup sweeps. This includes
 release waits; parking records the delivery wait for wake routing and does
 not determine retention. Claim release, completion, cancellation, and
-authorized operator termination free ownership. Logical termination cancels
+authorized operator termination free ownership. Any session holding a live
+steering seat on any project may terminate a session on any project, and
+termination releases every claim the target holds, steering seats and their
+paired document locks included. Logical termination cancels
 messages immediately and queues one physical reap. The relay retains
 identity-bound process/group custody until verified exit: TERM has a 2-second
 grace, followed by KILL and a bounded 2-second exit check. Missing custody,

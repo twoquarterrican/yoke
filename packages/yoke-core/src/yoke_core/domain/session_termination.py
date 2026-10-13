@@ -14,7 +14,7 @@ from yoke_core.domain.session_message_types import utc_now
 from yoke_core.domain.db_helpers import instant_parameter
 from yoke_core.domain.session_resume_in_flight import resume_in_flight
 from yoke_core.domain.session_steering_authority import (
-    require_steering_authority,
+    require_any_steering_seat,
     session_control_target,
 )
 from yoke_core.domain.session_termination_events import emit_session_terminated
@@ -162,10 +162,9 @@ def terminate_session(
             "TERMINATION_REASON_REQUIRED", "Termination reason is required."
         )
     target = session_control_target(conn, target_session_id)
-    require_steering_authority(
+    require_any_steering_seat(
         conn,
         caller_session_id=caller_session_id,
-        project_id=int(target["project_id"]),
         action="Session termination",
         error_code="TERMINATION_AUTHORITY_REQUIRED",
     )

@@ -21,7 +21,10 @@ SESSION_TERMINATE_USAGE = (
 SESSION_TERMINATE_DESCRIPTION = (
     "Permanently end one top-level session, cancel its undelivered "
     "messages, request one bounded verified native-process reap, and release "
-    "the session's held work claims. A session a wake is resuming is "
+    "every claim the session holds, including steering seats and their "
+    "paired strategy-document locks. The caller must hold a live steering "
+    "seat on any project; the target may be on any project. A session a "
+    "wake is resuming is "
     "refused as TERMINATION_RESUME_IN_FLIGHT: a headless worker's process "
     "exits between turns and a message resumes it from its transcript, so "
     "message it instead. Logical termination is immediate; physical exit "

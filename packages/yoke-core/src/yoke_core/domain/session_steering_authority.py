@@ -72,6 +72,34 @@ def require_steering_authority(
     return seat
 
 
+def require_any_steering_seat(
+    conn: Any, *, caller_session_id: str, action: str, error_code: str
+) -> dict[str, Any]:
+    """Require the caller to hold a live steering seat on any project.
+
+    Org-wide session control: a seat on one project acts on sessions in
+    every project, including one holding another project's seat.
+    """
+    from yoke_core.domain.steering_scope_coverage import live_steering_claims
+
+    seat = next(
+        (
+            claim
+            for claim in live_steering_claims(conn)
+            if str(claim["session_id"]) == caller_session_id
+        ),
+        None,
+    )
+    if seat is None:
+        raise SessionError(
+            error_code,
+            f"{action} requires a live steering seat on any project. "
+            "Recovery: yoke claims steering acquire --project PROJECT "
+            '--reason "<intent>", or route via yoke say --steering.',
+        )
+    return seat
+
+
 def require_operator_seat(
     conn: Any, *, caller_session_id: str | None, project_id: int, action: str
 ) -> dict[str, Any]:
@@ -91,6 +119,7 @@ def require_operator_seat(
 
 __all__ = [
     "covering_session_seat",
+    "require_any_steering_seat",
     "require_operator_seat",
     "require_steering_authority",
     "session_control_target",
