@@ -18,8 +18,7 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
     result: Any
 
     def _goto(self, view: "_View") -> None: ...
-    def _goto_project_mode(self) -> None: ...
-    def _render_current(self) -> None: ...
+    def _step_back(self) -> None: ...
 
 
 class ExistingProjectLookupRecoveryFlow:
@@ -34,7 +33,7 @@ class ExistingProjectLookupRecoveryFlow:
 
         rows = [
             SelectionRow("retry", "Try again", "rerun the project check"),
-            SelectionRow("back", "Back", "choose a different project option"),
+            SelectionRow("back", "Back", "previous screen"),
         ]
         hint = onboard_existing_project.lookup_error_hint(
             local_destination=local_destination,
@@ -76,7 +75,7 @@ class ExistingProjectLookupRecoveryFlow:
                 "set this folder up as a new project; Apply replaces the old link",
             ),
             SelectionRow("retry", "Try again", "rerun the project check"),
-            SelectionRow("back", "Back", "choose a different project option"),
+            SelectionRow("back", "Back", "previous screen"),
         ]
 
         def choose(choice: str) -> None:
@@ -104,18 +103,7 @@ class ExistingProjectLookupRecoveryFlow:
                 self._history.pop()
             retry()
             return
-        self._return_to_project_mode()
-
-    def _return_to_project_mode(self: _Shell) -> None:
-        target = getattr(self, "_project_mode_view", None)
-        for index in range(len(self._history) - 1, -1, -1):
-            if self._history[index] is target:
-                del self._history[index + 1 :]
-                self._render_current()
-                return
-        if self._history:
-            self._history.pop()
-        self._goto_project_mode()
+        self._step_back()
 
 
 __all__ = ["ExistingProjectLookupRecoveryFlow"]

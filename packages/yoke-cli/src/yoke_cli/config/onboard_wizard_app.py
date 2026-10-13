@@ -319,12 +319,13 @@ class OnboardWizardApp(
             if self._cancel_checking():
                 await self._apply_pending_swap()
             return
-        if len(self._history) > 1:
-            self._pending_input = None
-            self._pending_form = None
+        self._step_back()
+        await self._apply_pending_swap()
+
+    def _step_back(self) -> None:
+        if not self._applying and len(self._history) > 1:
             self._history.pop()
             self._render_current()
-            await self._apply_pending_swap()
 
     def action_quit_wizard(self) -> None:
         # Apply is an atomic worker-thread transaction that can't be killed mid-

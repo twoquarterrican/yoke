@@ -15,7 +15,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 GIT_INSTALL_ERROR_ROWS = [
     SelectionRow("install", "Try install again", "run installer"),
     SelectionRow("retry", "Try again", "after fixing git"),
-    SelectionRow("back", "Back", "choose another project option"),
+    SelectionRow("back", "Back", "previous screen"),
 ]
 
 
@@ -23,15 +23,19 @@ def _git_missing_rows() -> list[SelectionRow]:
     advice = project_git_prerequisite.install_advice()
     rows: list[SelectionRow] = []
     if advice.run_steps:
-        rows.append(SelectionRow(
-            "install",
-            project_git_prerequisite.install_action_label(advice),
-            project_git_prerequisite.install_action_hint(advice),
-        ))
-    rows.extend((
-        SelectionRow("retry", "Try again", "after installing git"),
-        SelectionRow("back", "Back", "choose another project option"),
-    ))
+        rows.append(
+            SelectionRow(
+                "install",
+                project_git_prerequisite.install_action_label(advice),
+                project_git_prerequisite.install_action_hint(advice),
+            )
+        )
+    rows.extend(
+        (
+            SelectionRow("retry", "Try again", "after installing git"),
+            SelectionRow("back", "Back", "previous screen"),
+        )
+    )
     return rows
 
 
@@ -39,11 +43,13 @@ def _git_install_error_rows() -> list[SelectionRow]:
     advice = project_git_prerequisite.install_advice()
     rows: list[SelectionRow] = []
     if advice.run_steps:
-        rows.append(SelectionRow(
-            "install",
-            "Try install again",
-            project_git_prerequisite.install_action_hint(advice),
-        ))
+        rows.append(
+            SelectionRow(
+                "install",
+                "Try install again",
+                project_git_prerequisite.install_action_hint(advice),
+            )
+        )
     rows.extend(GIT_INSTALL_ERROR_ROWS[1:])
     return rows
 
@@ -52,25 +58,18 @@ def _git_handoff_rows() -> list[SelectionRow]:
     return [
         SelectionRow("retry", "Check again", "after installer finishes"),
         SelectionRow("install", "Open installer again", "if it did not open"),
-        SelectionRow("back", "Back", "choose another project option"),
+        SelectionRow("back", "Back", "previous screen"),
     ]
 
 
 class _Shell(Protocol):  # pragma: no cover - structural typing only
-    _history: list["_View"]
-
     def _goto(self, view: "_View") -> None: ...
-    def _goto_project_mode(self) -> None: ...
+    def _step_back(self) -> None: ...
     def _after_project_git_ready(self, mode: str) -> None: ...
     def _run_checking(self, **kwargs) -> None: ...
 
 
 class ProjectGitFlow:
-    def _discard_project_git_views(self: _Shell) -> None:
-        """Remove the current project recovery chain before going Back."""
-        while self._history and self._history[-1].step == STEP_PROJECT:
-            self._history.pop()
-
     def _check_project_git(
         self: _Shell,
         mode: str,
@@ -95,17 +94,19 @@ class ProjectGitFlow:
     ) -> None:
         from yoke_cli.config.onboard_wizard_state import _View
 
-        self._goto(_View(
-            STEP_PROJECT,
-            lambda: steps.verification_body(
-                "Git is required for project setup.",
-                project_git_prerequisite.required_summary(),
-                project_git_prerequisite.missing_git_detail_lines(),
-                _git_missing_rows(),
-                ok=False,
-            ),
-            lambda choice: self._on_project_git_missing(choice, mode),
-        ))
+        self._goto(
+            _View(
+                STEP_PROJECT,
+                lambda: steps.verification_body(
+                    "Git is required for project setup.",
+                    project_git_prerequisite.required_summary(),
+                    project_git_prerequisite.missing_git_detail_lines(),
+                    _git_missing_rows(),
+                    ok=False,
+                ),
+                lambda choice: self._on_project_git_missing(choice, mode),
+            )
+        )
 
     def _on_project_git_missing(self: _Shell, choice: str, mode: str) -> None:
         if choice == "install":
@@ -114,8 +115,7 @@ class ProjectGitFlow:
         if choice == "retry":
             self._check_project_git(mode, replace_current=True)
             return
-        self._discard_project_git_views()
-        self._goto_project_mode()
+        self._step_back()
 
     def _install_project_git(self: _Shell, mode: str) -> None:
         advice = project_git_prerequisite.install_advice()
@@ -150,17 +150,19 @@ class ProjectGitFlow:
     ) -> None:
         from yoke_cli.config.onboard_wizard_state import _View
 
-        self._goto(_View(
-            STEP_PROJECT,
-            lambda: steps.verification_body(
-                "Finish Apple's installer.",
-                "The Command Line Tools installer should be open.",
-                project_git_prerequisite.install_handoff_detail_lines(advice),
-                _git_handoff_rows(),
-                ok=True,
-            ),
-            lambda choice: self._on_project_git_handoff(choice, mode),
-        ))
+        self._goto(
+            _View(
+                STEP_PROJECT,
+                lambda: steps.verification_body(
+                    "Finish Apple's installer.",
+                    "The Command Line Tools installer should be open.",
+                    project_git_prerequisite.install_handoff_detail_lines(advice),
+                    _git_handoff_rows(),
+                    ok=True,
+                ),
+                lambda choice: self._on_project_git_handoff(choice, mode),
+            )
+        )
 
     def _on_project_git_handoff(self: _Shell, choice: str, mode: str) -> None:
         if choice == "retry":
@@ -188,17 +190,19 @@ class ProjectGitFlow:
         from yoke_cli.config.onboard_wizard_state import _View
 
         detail_lines = project_git_prerequisite.missing_git_detail_lines()
-        self._goto(_View(
-            STEP_PROJECT,
-            lambda: steps.verification_body(
-                "Couldn't install Git automatically.",
-                str(exc),
-                detail_lines,
-                _git_install_error_rows(),
-                ok=False,
-            ),
-            lambda choice: self._on_project_git_missing(choice, mode),
-        ))
+        self._goto(
+            _View(
+                STEP_PROJECT,
+                lambda: steps.verification_body(
+                    "Couldn't install Git automatically.",
+                    str(exc),
+                    detail_lines,
+                    _git_install_error_rows(),
+                    ok=False,
+                ),
+                lambda choice: self._on_project_git_missing(choice, mode),
+            )
+        )
 
 
 __all__ = ["ProjectGitFlow"]

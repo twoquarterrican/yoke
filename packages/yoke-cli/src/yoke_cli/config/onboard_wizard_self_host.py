@@ -34,18 +34,18 @@ _FINISH = "finish-handoff"
 
 PREVIEW_ROWS = [
     SelectionRow(_START, "Start", "create and start the local server"),
-    SelectionRow(_BACK, "Back", "choose another Yoke home"),
+    SelectionRow(_BACK, "Back", "previous screen"),
     SelectionRow(
         "image-repository", "Image repository", "fork, mirror, or private registry"
     ),
 ]
 RETRY_ROWS = [
     SelectionRow(_RETRY, "Try again", "resume this wizard's bundle safely"),
-    SelectionRow(_BACK, "Back", "choose another Yoke home"),
+    SelectionRow(_BACK, "Back", "previous screen"),
 ]
 CONNECT_RETRY_ROWS = [
     SelectionRow(_RETRY, "Retry connection", "reuse the token held in memory"),
-    SelectionRow(_BACK, "Back", "leave the server running"),
+    SelectionRow(_BACK, "Back", "previous screen"),
 ]
 COMPLETE_ROWS = [
     SelectionRow(
@@ -65,16 +65,13 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
     result: Any
     exit_code: int
     cancelled: bool
-    _history: list[Any]
-    _destination_picker_view: Any
     _stored_yoke_token_available: bool
     _self_host_setup: server.SelfHostSetup
 
     def _goto(self, view: "_View") -> None: ...
     def _run_checking(self, **kwargs) -> None: ...
     def _goto_machine_github(self) -> None: ...
-    def _goto_destination_picker(self) -> None: ...
-    def _render_current(self) -> None: ...
+    def _step_back(self) -> None: ...
     def exit(self) -> None: ...
 
 
@@ -108,7 +105,7 @@ def _on_preview(shell: _Shell, setup: server.SelfHostSetup, choice: str) -> None
         images.prompt(shell, setup)
         return
     if choice == _BACK:
-        _back_to_destination(shell)
+        shell._step_back()
         return
     admin_name.ask_for_server(shell, setup, lambda: _run_preflight(shell, setup))
 
@@ -214,7 +211,7 @@ def _on_failure(
     connect_failure: bool,
 ) -> None:
     if choice == _BACK:
-        _back_to_destination(shell)
+        shell._step_back()
         return
     if connect_failure:
         _run_connect_retry(shell, setup)
@@ -308,16 +305,6 @@ def _on_complete(shell: _Shell, choice: str) -> None:
     shell.cancelled = False
     shell.exit_code = 0
     shell.exit()
-
-
-def _back_to_destination(shell: _Shell) -> None:
-    target = getattr(shell, "_destination_picker_view", None)
-    for index in range(len(shell._history) - 1, -1, -1):
-        if shell._history[index] is target:
-            del shell._history[index + 1 :]
-            shell._render_current()
-            return
-    shell._goto_destination_picker()
 
 
 def _safe_error(exc: BaseException) -> server.SelfHostSetupError:

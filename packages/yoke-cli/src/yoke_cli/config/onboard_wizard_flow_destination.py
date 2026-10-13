@@ -81,6 +81,7 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
     def _start_hosted_machine_authorization(self) -> None: ...
     def _after_api_url(self, value: str) -> None: ...
     def _render_current(self) -> None: ...
+    def _step_back(self) -> None: ...
 
 
 class DestinationFlow:
@@ -282,7 +283,7 @@ class DestinationFlow:
         self: _Shell, choice: str, state: dict[str, Any]
     ) -> None:
         if choice == "back":
-            self._return_to_destination_picker()
+            self._step_back()
             return
         status = state.get("state") or local_universe_setup.LOCAL_UNIVERSE_CREATE
         if status != local_universe_setup.LOCAL_UNIVERSE_CREATE:

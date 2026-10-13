@@ -133,6 +133,7 @@ def test_clone_existing_yoke_project_access_error_blocks_setup(monkeypatch) -> N
             await pick_mode(pilot, onboard_project.PROJECT_MODE_CLONE_REMOTE)
             await pilot.press("enter")  # visibility: Public
             await type_text(pilot, "git@github.com:example-org/externalwebapp.git")
+            source_view = app._history[-1]
             await pilot.press("enter")
             await pilot.pause()
             title = next(
@@ -149,11 +150,13 @@ def test_clone_existing_yoke_project_access_error_blocks_setup(monkeypatch) -> N
             await pilot.press("down")  # Back
             await pilot.press("enter")
             await pilot.pause()
-            assert "Set up a project." in _body_text(app)
-            assert len(app._history) < error_depth
+            assert app._history[-1] is source_view
+            assert "Clone a project from GitHub." in _body_text(app)
+            assert len(app._history) == error_depth - 1
             await pilot.press("escape")
             await pilot.pause()
             assert "Can't use that Yoke project." not in _body_text(app)
+            assert len(app._history) == error_depth - 2
 
     asyncio.run(scenario())
 

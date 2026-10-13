@@ -64,10 +64,9 @@ class ApplyFlow:
     def _goto_applying(self) -> None:
         from yoke_cli.config.onboard_wizard_app import _View
 
-        # Replace (not push) the Review view: the Applying screen is non-
-        # interactive, so leaving it in history would let Esc land on a dead
-        # screen. Replacing keeps "Change answers" landing one real step back.
-        self._replace_current(_View(STEP_FINISH, self._build_applying, None))
+        # Keep the preceding interactive view. Completion replaces Applying,
+        # so Back can return there without ever revisiting the worker screen.
+        self._goto(_View(STEP_FINISH, self._build_applying, None))
 
     def _build_applying(self) -> list:
         return steps.apply_progress_body(self._apply_steps)
@@ -187,8 +186,6 @@ class ApplyFlow:
             self._goto_apply_different_folder()
             return
         if choice == "back":
-            # The Applying screen replaced Review in history, so one step back
-            # lands on the step before Review where answers can be changed.
             self._resume_run_id = None
             self._resume_payload = None
             import asyncio

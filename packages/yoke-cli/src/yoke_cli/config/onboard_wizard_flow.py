@@ -72,7 +72,6 @@ class WizardFlow(
             self._goto_stored_project_picker()
             return
         view = _View(STEP_PROJECT, steps.project_mode_body, self._on_project_mode)
-        self._project_mode_view = view
         self._goto(view)
 
     def _on_project_mode(self: _Shell, mode: str) -> None:

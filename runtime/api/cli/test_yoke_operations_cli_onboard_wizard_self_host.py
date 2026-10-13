@@ -204,14 +204,18 @@ def test_prerequisite_refusal_names_docker_and_allows_back(
 
     async def scenario() -> None:
         async with app.run_test() as pilot:
-            await _start(pilot)
+            await _open_preview(pilot)
+            await pilot.press("enter")
+            await type_text(pilot, "Ada Lovelace")
+            admin_view = app._history[-1]
+            await pilot.press("enter")
             text = await _wait_for_text(app, pilot, "engine is not running")
             assert "Open Docker Desktop" in text
             assert app.query_one(SelectionList).rows[0].label == "Try again"
             assert not bundle_directory.exists()
             await pilot.press("down", "enter")
             await pilot.pause()
-            assert "Where should this Yoke universe live?" in _body_text(app)
+            assert app._history[-1] is admin_view
 
     asyncio.run(scenario())
 

@@ -34,6 +34,7 @@ class _Shell(Protocol):
         initial_value: str = "",
     ) -> None: ...
     def _goto_hosting(self) -> None: ...
+    def _step_back(self) -> None: ...
     def _run_checking(self, **kwargs) -> None: ...
 
 
@@ -151,7 +152,7 @@ class DevFlow:
                     [SelectionRow("back", "Back", "choose the source again")],
                     ok=False,
                 ),
-                lambda _choice: self._goto_dev_checkout(),
+                lambda _choice: self._step_back(),
             )
         )
 

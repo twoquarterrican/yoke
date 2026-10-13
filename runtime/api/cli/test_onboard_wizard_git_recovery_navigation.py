@@ -44,9 +44,7 @@ def _force_linux(monkeypatch) -> None:
     monkeypatch.setattr(
         project_git_prerequisite,
         "git_available",
-        lambda **kwargs: real_available(
-            **{**kwargs, "platform_name": "linux"}
-        ),
+        lambda **kwargs: real_available(**{**kwargs, "platform_name": "linux"}),
     )
 
 
@@ -72,8 +70,7 @@ def _stub_unreachable_remote(monkeypatch) -> None:
 
 def _title(app) -> str:
     return next(
-        str(widget.render())
-        for widget in app.query(".onboard-title").results(Static)
+        str(widget.render()) for widget in app.query(".onboard-title").results(Static)
     )
 
 
@@ -107,14 +104,15 @@ def test_clone_remote_retry_edit_and_back_keep_history_bounded(
     app, _spy = make_app()
     _force_linux(monkeypatch)
     monkeypatch.setattr(
-        project_git_prerequisite.shutil, "which", _available_git,
+        project_git_prerequisite.shutil,
+        "which",
+        _available_git,
     )
     _stub_unreachable_remote(monkeypatch)
 
     async def scenario() -> None:
         async with app.run_test() as pilot:
             await _skip_machine_github(pilot)
-            project_depth = len(app._history)
             await _pick_clone_mode(pilot)
             await app.workers.wait_for_complete()
             await pilot.pause()
@@ -146,9 +144,9 @@ def test_clone_remote_retry_edit_and_back_keep_history_bounded(
             await pilot.press("down")  # Try again -> Back
             await pilot.press("enter")
             await pilot.pause()
-            assert _title(app) == "Set up a project."
+            assert _title(app) == "Clone a project from GitHub."
             assert "couldn't reach that repo" not in _body_text(app).lower()
-            assert len(app._history) == project_depth
+            assert len(app._history) == error_depth - 1
 
     asyncio.run(scenario())
 
@@ -216,7 +214,9 @@ def test_connected_clone_remote_back_returns_to_visibility_without_stale_error(
     app, _spy = make_app()
     _force_linux(monkeypatch)
     monkeypatch.setattr(
-        project_git_prerequisite.shutil, "which", _available_git,
+        project_git_prerequisite.shutil,
+        "which",
+        _available_git,
     )
     _stub_unreachable_remote(monkeypatch)
 
@@ -238,8 +238,12 @@ def test_connected_clone_remote_back_returns_to_visibility_without_stale_error(
             await pilot.press("down")  # Try again -> Back
             await pilot.press("enter")
             await pilot.pause()
-            assert _title(app) == "Is the repo public or private?"
+            assert _title(app) == "Clone a project from GitHub."
             assert "couldn't reach that repo" not in _body_text(app).lower()
+            assert len(app._history) == project_depth + 2
+            await pilot.press("escape")
+            await pilot.pause()
+            assert _title(app) == "Is the repo public or private?"
             assert len(app._history) == project_depth + 1
             await pilot.press("escape")
             await pilot.pause()
