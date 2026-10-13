@@ -36,7 +36,7 @@ from types import FrameType
 from typing import Sequence
 
 from yoke_contracts.timestamps import format_instant, parse_instant, utc_now
-from yoke_harness.session_relay_environment import strip_relay_owned_python_state
+from yoke_cli.config.session_relay_instance import strip_relay_owned_python_state
 from yoke_harness.session_relay_native_capture_format import (
     STATE_EXITED,
     STATE_RUNNING,

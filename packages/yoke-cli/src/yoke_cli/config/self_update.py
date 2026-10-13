@@ -20,7 +20,7 @@ from __future__ import annotations
 import dataclasses
 import shutil
 import subprocess
-from typing import Any
+from typing import Any, Mapping
 
 from yoke_cli.config import distribution, github_repo_helper_reconnect, install_binding
 from yoke_cli.self_host import release_target
@@ -112,14 +112,23 @@ def resolve_target(
     )
 
 
-def install_release(target: release_target.ReleaseTarget, yoke_bin: str) -> str:
-    """Run the official installer for *target*; return the verified version."""
+def install_release(
+    target: release_target.ReleaseTarget,
+    yoke_bin: str,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> str:
+    """Run the official installer for *target*; return the verified version.
+
+    *env*, when given, is the whole environment of the installer and of the
+    version probe that verifies it.
+    """
     try:
         installer_bytes = release_target.fetch_installer(target)
     except release_target.ReleaseTargetError as exc:
         raise SelfUpdateError(f"could not fetch the Yoke installer: {exc}") from exc
     try:
-        completed = release_target.run_installer(target, installer_bytes)
+        completed = release_target.run_installer(target, installer_bytes, env=env)
     except release_target.ReleaseTargetError as exc:
         raise SelfUpdateError(str(exc)) from exc
     if completed.returncode != 0:
@@ -131,7 +140,7 @@ def install_release(target: release_target.ReleaseTarget, yoke_bin: str) -> str:
             f"the Yoke installer failed (exit {completed.returncode}): "
             f"{diagnostic or 'no diagnostic output'}"
         )
-    new_version = _probe_version(yoke_bin)
+    new_version = _probe_version(yoke_bin, env)
     if new_version != target.version:
         raise SelfUpdateError(
             "the Yoke installer reported success, but the freshly installed "
@@ -167,7 +176,7 @@ def _result(
     }
 
 
-def _probe_version(yoke_bin: str) -> str:
+def _probe_version(yoke_bin: str, env: Mapping[str, str] | None = None) -> str:
     completed = _RUN(
         (yoke_bin, "--version"),
         check=False,
@@ -175,6 +184,7 @@ def _probe_version(yoke_bin: str) -> str:
         stderr=subprocess.PIPE,
         text=True,
         timeout=VERSION_PROBE_TIMEOUT_SECONDS,
+        env=None if env is None else dict(env),
     )
     if completed.returncode != 0:
         raise SelfUpdateError(

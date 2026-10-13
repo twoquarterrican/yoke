@@ -12,7 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from yoke_contracts.api_urls import (
     DISTRIBUTION_BASE_URL_ENV,
@@ -158,6 +158,7 @@ def run_installer(
     *,
     extra_args: tuple[str, ...] = (),
     timeout: float = INSTALLER_RUN_TIMEOUT_SECONDS,
+    env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a previously fetched installer, pinned to *target*'s exact version.
 
@@ -166,7 +167,8 @@ def run_installer(
     installer script has no dependencies beyond the standard library, so it
     runs under the caller's own interpreter rather than a fresh ``uv``
     environment. Callers fetch the bytes separately via :func:`fetch_installer`
-    so a fetch failure and a run failure stay distinguishable.
+    so a fetch failure and a run failure stay distinguishable. *env* replaces
+    the inherited environment when given.
     """
     path = ""
     try:
@@ -195,6 +197,7 @@ def run_installer(
             stderr=subprocess.PIPE,
             text=True,
             timeout=timeout,
+            env=None if env is None else dict(env),
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise ReleaseTargetError(f"the Yoke installer could not run: {exc}") from exc

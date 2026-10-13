@@ -23,6 +23,7 @@ from typing import Any, Callable
 
 from yoke_cli.config import self_update
 from yoke_cli.config.path_state_contract import tool_bin_dir
+from yoke_cli.config.session_relay_instance import strip_relay_owned_python_state
 from yoke_cli.transport.installed_cli_staleness import update_recovery
 from yoke_contracts.timestamps import iso8601_now
 
@@ -40,13 +41,19 @@ def follow_release(
     run: Runner = subprocess.run,
     executable: Path | None = None,
 ) -> dict[str, Any]:
-    """Install exactly *release* as the operator CLI unless it already is."""
+    """Install exactly *release* as the operator CLI unless it already is.
+
+    The installed CLI is probed and installed outside the relay's own Python
+    activation; inside it, the launcher imports the relay's release and
+    reports that version as its own.
+    """
     target = release.strip().removeprefix("v")
     yoke = executable or Path(tool_bin_dir()) / "yoke"
     record: dict[str, Any] = {"release": target, "cli": str(yoke), "at": iso8601_now()}
     if not yoke.is_file():
         return _finish(record, state_dir, "no_installed_cli")
-    before = _version(run, yoke)
+    env = strip_relay_owned_python_state()
+    before = _version(run, yoke, env)
     record["before"] = before
     if before == target:
         return _finish(record, state_dir, "current")
@@ -55,14 +62,14 @@ def follow_release(
         return _finish(record, state_dir, "source_checkout")
     try:
         self_update.install_release(
-            self_update.resolve_target(version=target), str(yoke)
+            self_update.resolve_target(version=target), str(yoke), env=env
         )
         detail = ""
     except self_update.SelfUpdateError as exc:
         detail = str(exc)
     except Exception as exc:  # noqa: BLE001 - the relay keeps serving; the record names it
         detail = f"{type(exc).__name__}: {exc}"
-    record["after"] = _version(run, yoke)
+    record["after"] = _version(run, yoke, env)
     if record["after"] == target:
         return _finish(record, state_dir, "updated")
     record["error"] = detail or "the installer produced no output"
@@ -70,7 +77,7 @@ def follow_release(
     return _finish(record, state_dir, "update_failed")
 
 
-def _version(run: Runner, yoke: Path) -> str:
+def _version(run: Runner, yoke: Path, env: dict[str, str]) -> str:
     try:
         completed = run(
             [str(yoke), "--version"],
@@ -78,6 +85,7 @@ def _version(run: Runner, yoke: Path) -> str:
             text=True,
             timeout=PROBE_TIMEOUT_SECONDS,
             check=False,
+            env=env,
         )
     except (OSError, subprocess.TimeoutExpired):
         return ""
