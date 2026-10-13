@@ -9,13 +9,6 @@
  "surface": "Public shell installer and setup TUI",
  "gap": "Released-installer visual proof in Terminal.app remains required. The operator approved this visible proof combined with the passing PTY tests on 2026-10-13; the tests alone do not close the gap.",
  "review": "POSIX regression executes real curl file URL | sh, foreground ownership, the setup driver and quit binding. Installation/download side effects are stubbed; interruption and suspend/resume verify mouse-mode cleanup and exact stty restoration.",
- "plan_refs": [
-  "FIRST-USER.14"
- ],
- "sources": [
-  "packaging/public-installer/install",
-  "packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py",
-  "tests/installer/test_public_installer_terminal.py",
-  "runtime/api/cli/test_onboard_terminal_ownership.py"
- ]
+ "plan_refs": ["FIRST-USER.14"],
+ "sources": ["packaging/public-installer/install", "packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py", "tests/installer/test_public_installer_terminal.py", "runtime/api/cli/test_onboard_terminal_ownership.py"]
 }
