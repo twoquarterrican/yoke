@@ -32,26 +32,22 @@ def access_token_for_git_request(
     not a failure.
     """
 
-    with credential_store.machine_operation_lock(config_path):
-        config = credential_store.load_config(config_path)
-        github = config.get("github")
-        if not isinstance(github, Mapping) or fields.get("protocol") != "https":
-            return None
-        expected = urllib.parse.urlsplit(
-            credential_store.validated_web_url(
-                str(
-                    github.get("web_url")
-                    or credential_store.DEFAULT_GITHUB_WEB_URL
-                )
-            )
-        ).netloc
-        if fields.get("host", "").casefold() != expected.casefold():
-            return None
-        return credential_store.access_token_from_config(
-            config,
-            config_path=config_path,
-            opener=opener,
+    config = credential_store.load_config(config_path)
+    github = config.get("github")
+    if not isinstance(github, Mapping) or fields.get("protocol") != "https":
+        return None
+    expected = urllib.parse.urlsplit(
+        credential_store.validated_web_url(
+            str(github.get("web_url") or credential_store.DEFAULT_GITHUB_WEB_URL)
         )
+    ).netloc
+    if fields.get("host", "").casefold() != expected.casefold():
+        return None
+    return credential_store.access_token_from_config(
+        config,
+        config_path=config_path,
+        opener=opener,
+    )
 
 
 def main(

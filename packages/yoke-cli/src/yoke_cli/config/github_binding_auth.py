@@ -10,7 +10,7 @@ from typing import Any, Callable, Iterator
 from yoke_cli.config import github_app_public_profile
 from yoke_cli.config import github_user_tokens
 from yoke_cli.config import machine_config
-from yoke_cli.config import github_machine_operation
+from yoke_cli.config import machine_config_file
 
 
 class GitHubBindingAuthError(RuntimeError):
@@ -74,57 +74,51 @@ def locked_profile_bound_access_for_binding(
     profile_opener: Callable[..., Any] | None = None,
     token_opener: Callable[..., Any] | None = None,
 ) -> Iterator[ProfileBoundUserAccess]:
-    """Hold the machine authority lock through a caller's service dispatch."""
-
-    lock = github_machine_operation.operation_lock(config_path)
+    """Prove access before guarding the selected config during binding writes."""
     try:
-        lock.__enter__()
-    except github_machine_operation.GitHubMachineOperationError as exc:
-        raise GitHubBindingAuthError(str(exc)) from exc
-    try:
-        try:
-            github = machine_config.github_config(config_path)
-            if not github:
-                raise GitHubBindingAuthError(
-                    "machine GitHub App authorization is not configured"
-                )
-            profile = github_app_public_profile.resolve_selected_and_match(
-                github,
-                config_path=config_path,
-                service_api_url=service_api_url,
-                local_connection_selected=local_connection_selected,
-                opener=profile_opener,
+        before = machine_config.load_config(config_path)
+        github = machine_config.github_config(config_path)
+        if not github:
+            raise GitHubBindingAuthError(
+                "machine GitHub App authorization is not configured"
             )
-            token = github_user_tokens.access_token_from_machine_config(
-                config_path=config_path,
-                opener=token_opener,
-                profile_opener=profile_opener,
-                _profile_proven=True,
-                _expected_service_api_url=service_api_url,
-                _expected_local_connection=local_connection_selected,
-            )
-            current = machine_config.github_config(config_path)
-            if current != github:
+        profile = github_app_public_profile.resolve_selected_and_match(
+            github,
+            config_path=config_path,
+            service_api_url=service_api_url,
+            local_connection_selected=local_connection_selected,
+            opener=profile_opener,
+        )
+        token = github_user_tokens.access_token_from_machine_config(
+            config_path=config_path,
+            opener=token_opener,
+            profile_opener=profile_opener,
+            _profile_proven=True,
+            _expected_service_api_url=service_api_url,
+            _expected_local_connection=local_connection_selected,
+        )
+        with machine_config_file.exclusive_lock(
+            machine_config.config_path(config_path)
+        ):
+            if machine_config.load_config(config_path) != before:
                 raise GitHubBindingAuthError(
-                    "machine GitHub App profile changed while access was being "
+                    "machine configuration changed while binding access was "
                     "prepared; retry against the current connection"
                 )
-            authority = ProfileBoundUserAccess(
+            yield ProfileBoundUserAccess(
                 token=token,
                 api_url=profile.api_url,
                 web_url=profile.web_url,
                 app_id=profile.app_id,
                 app_slug=profile.app_slug,
             )
-        except (
-            github_app_public_profile.GitHubAppPublicProfileError,
-            github_user_tokens.GitHubUserTokenError,
-            machine_config.MachineConfigError,
-        ) as exc:
-            raise GitHubBindingAuthError(str(exc)) from exc
-        yield authority
-    finally:
-        lock.__exit__(None, None, None)
+    except (
+        github_app_public_profile.GitHubAppPublicProfileError,
+        github_user_tokens.GitHubUserTokenError,
+        machine_config.MachineConfigError,
+        machine_config_file.MachineConfigFileError,
+    ) as exc:
+        raise GitHubBindingAuthError(str(exc)) from exc
 
 
 __all__ = [

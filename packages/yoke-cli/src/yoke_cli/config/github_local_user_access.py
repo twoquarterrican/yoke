@@ -46,44 +46,21 @@ def access_token(
     local_connection_selected: bool = False,
     now: datetime | None = None,
 ) -> github_user_tokens.LocalUserAccessToken:
-    """Validate the saved public profile, then refresh locally against GitHub.
-
-    A caller naming no connection gets the selected one resolved here, once,
-    and carried through both the profile proof and the credential store, so
-    every reader proves the binding the merge child and ``yoke github status``
-    pin explicitly — a reader under an owner-only admin connection included,
-    which proves against the https plane that connection administers.
-    """
+    """Read valid stored access without locking; prove identity before refresh."""
     try:
-        with github_machine_operation.operation_lock(config_path):
-            github = machine_config.github_config(config_path)
-            if not github:
-                raise GitHubLocalUserAccessError(
-                    "machine GitHub App authorization is not configured"
-                )
-            if service_api_url is None and not local_connection_selected:
-                service_api_url = (
-                    github_app_public_profile.selected_https_service_api_url(
-                        config_path
-                    )
-                )
-                local_connection_selected = service_api_url is None
-            github_app_public_profile.resolve_selected_and_match(
-                github,
-                config_path=config_path,
-                service_api_url=service_api_url,
-                local_connection_selected=local_connection_selected,
-                opener=profile_opener,
+        if service_api_url is None and not local_connection_selected:
+            service_api_url = github_app_public_profile.selected_https_service_api_url(
+                config_path
             )
-            return github_user_tokens.access_token_from_machine_config(
-                config_path=config_path,
-                opener=opener,
-                profile_opener=profile_opener,
-                _profile_proven=True,
-                _expected_service_api_url=service_api_url,
-                _expected_local_connection=local_connection_selected,
-                now=now,
-            )
+            local_connection_selected = service_api_url is None
+        return github_user_tokens.access_token_from_machine_config(
+            config_path=config_path,
+            opener=opener,
+            profile_opener=profile_opener,
+            _expected_service_api_url=service_api_url,
+            _expected_local_connection=local_connection_selected,
+            now=now,
+        )
     except (
         github_app_public_profile.GitHubAppPublicProfileError,
         github_user_tokens.GitHubUserTokenError,
@@ -124,18 +101,12 @@ def _is_rate_limit_http_error(error: urllib.error.HTTPError) -> bool:
     remaining = str(headers.get("X-RateLimit-Remaining") or "")
     body = _http_error_body(error)
     reason = str(getattr(error, "reason", "") or "")
-    return (
-        remaining == "0"
-        or is_rate_limit_body(body)
-        or is_rate_limit_body(reason)
-    )
+    return remaining == "0" or is_rate_limit_body(body) or is_rate_limit_body(reason)
 
 
 def _rate_limit_reset_text(error: urllib.error.HTTPError) -> str:
     headers = error.headers or {}
-    return str(
-        headers.get("X-RateLimit-Reset") or headers.get("Retry-After") or ""
-    )
+    return str(headers.get("X-RateLimit-Reset") or headers.get("Retry-After") or "")
 
 
 def _transient_access_message(error: BaseException) -> str:

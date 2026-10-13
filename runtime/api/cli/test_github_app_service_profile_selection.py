@@ -149,8 +149,7 @@ def test_explicit_local_scope_ignores_active_hosted_connection(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     saved = {
-        key: value for key, value in _advertisement().items()
-        if key != "available"
+        key: value for key, value in _advertisement().items() if key != "available"
     }
     saved["profile_source"] = "local_explicit"
     monkeypatch.setattr(
@@ -169,19 +168,22 @@ def test_explicit_local_scope_ignores_active_hosted_connection(
     )
 
     assert resolved.client_id == saved["client_id"]
-    assert github_service_profile_proof.selected_service_api_url(
-        {
-            "active_env": "prod",
-            "connections": {
-                "prod": {
-                    "transport": "https",
-                    "api_url": "https://api.upyoke.com",
+    assert (
+        github_service_profile_proof.selected_service_api_url(
+            {
+                "active_env": "prod",
+                "connections": {
+                    "prod": {
+                        "transport": "https",
+                        "api_url": "https://api.upyoke.com",
+                    },
                 },
             },
-        },
-        saved,
-        expected_local_connection=True,
-    ) is None
+            saved,
+            expected_local_connection=True,
+        )
+        is None
+    )
 
 
 @pytest.mark.parametrize(
@@ -197,8 +199,7 @@ def test_binding_authority_preserves_explicit_connection_scope(
     local_connection_selected: bool,
 ) -> None:
     saved = {
-        key: value for key, value in _advertisement().items()
-        if key != "available"
+        key: value for key, value in _advertisement().items() if key != "available"
     }
     seen: dict[str, dict[str, Any]] = {}
 
@@ -215,8 +216,8 @@ def test_binding_authority_preserves_explicit_connection_scope(
         return SimpleNamespace(access_token="transient-user-token")
 
     monkeypatch.setattr(
-        github_binding_auth.github_machine_operation,
-        "operation_lock",
+        github_binding_auth.machine_config_file,
+        "exclusive_lock",
         unlocked,
     )
     monkeypatch.setattr(
@@ -243,24 +244,21 @@ def test_binding_authority_preserves_explicit_connection_scope(
         assert authority.token.access_token == "transient-user-token"
 
     assert seen["profile"]["service_api_url"] == service_api_url
-    assert seen["profile"]["local_connection_selected"] is (
-        local_connection_selected
-    )
+    assert seen["profile"]["local_connection_selected"] is (local_connection_selected)
     assert seen["token"]["_expected_service_api_url"] == service_api_url
-    assert seen["token"]["_expected_local_connection"] is (
-        local_connection_selected
-    )
+    assert seen["token"]["_expected_local_connection"] is (local_connection_selected)
 
 
 def test_non_https_service_scope_fails_before_profile_fetch() -> None:
     saved = {
-        key: value for key, value in _advertisement().items()
-        if key != "available"
+        key: value for key, value in _advertisement().items() if key != "available"
     }
-    saved.update({
-        "profile_source": "service",
-        "profile_service_api_url": "https://api.upyoke.com",
-    })
+    saved.update(
+        {
+            "profile_source": "service",
+            "profile_service_api_url": "https://api.upyoke.com",
+        }
+    )
     profile_calls: list[str] = []
 
     with pytest.raises(

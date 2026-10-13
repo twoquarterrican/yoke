@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping
 
+from yoke_cli.config import github_machine_operation
 from yoke_cli.config import machine_config_file
 from yoke_cli.config import github_git_credential_document
 from yoke_cli.config import github_git_credential_file
@@ -20,6 +21,7 @@ from yoke_cli.config.machine_config_mutation import (
 )
 
 
+@github_machine_operation.serialized_operation(MachineConfigWriteError)
 @serialized_mutation
 def set_github(
     github: Mapping[str, Any],
@@ -70,6 +72,7 @@ def set_github(
     }
 
 
+@github_machine_operation.serialized_operation(MachineConfigWriteError)
 @serialized_mutation
 def clear_github(
     *,

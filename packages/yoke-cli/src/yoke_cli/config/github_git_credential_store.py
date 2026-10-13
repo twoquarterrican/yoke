@@ -56,19 +56,18 @@ def access_token_from_machine_config(
     expected_service_api_url: str | None = None,
     expected_local_connection: bool = False,
 ) -> dict[str, Any]:
-    with machine_operation_lock(config_path):
-        return access_token_from_config(
-            load_config(config_path),
-            config_path=config_path,
-            opener=opener,
-            now=now,
-            timeout_seconds=timeout_seconds,
-            client_secret=client_secret,
-            profile_opener=profile_opener,
-            profile_proven=profile_proven,
-            expected_service_api_url=expected_service_api_url,
-            expected_local_connection=expected_local_connection,
-        )
+    return access_token_from_config(
+        load_config(config_path),
+        config_path=config_path,
+        opener=opener,
+        now=now,
+        timeout_seconds=timeout_seconds,
+        client_secret=client_secret,
+        profile_opener=profile_opener,
+        profile_proven=profile_proven,
+        expected_service_api_url=expected_service_api_url,
+        expected_local_connection=expected_local_connection,
+    )
 
 
 def access_token_from_config(
@@ -119,6 +118,27 @@ def access_token_from_config(
         )
     except github_service_profile_proof.GitHubServiceProfileProofError as exc:
         raise GitHubCredentialStoreError(str(exc)) from exc
+    client_id = _required_string(github.get("client_id"), "github.client_id")
+    try:
+        endpoint_pair = github_origin.validate_github_endpoint_pair(
+            str(github.get("api_url") or github_origin.DEFAULT_GITHUB_API_URL),
+            str(github.get("web_url") or DEFAULT_GITHUB_WEB_URL),
+        )
+    except github_origin.GitHubApiOriginError as exc:
+        raise GitHubCredentialStoreError(str(exc)) from exc
+    selected_now = (
+        credential_document.clock_contract.utc_now()
+        if now is None
+        else _ensure_utc(now)
+    )
+    current = read_credential_document(path)
+    usable = access_cache.usable_token_state(
+        current,
+        now=selected_now,
+        error_type=GitHubCredentialStoreError,
+    )
+    if usable is not None:
+        return access_cache.result(usable, path=path, cached=True, rotated=False)
     if service_api_url is not None and not profile_proven:
         try:
             github_service_profile_proof.prove(
@@ -137,40 +157,27 @@ def access_token_from_config(
             github_service_profile_proof.prove_local_product(github)
         except github_service_profile_proof.GitHubServiceProfileProofError as exc:
             raise GitHubCredentialStoreError(str(exc)) from exc
-    client_id = _required_string(github.get("client_id"), "github.client_id")
-    try:
-        endpoint_pair = github_origin.validate_github_endpoint_pair(
-            str(github.get("api_url") or github_origin.DEFAULT_GITHUB_API_URL),
-            str(github.get("web_url") or DEFAULT_GITHUB_WEB_URL),
-        )
-    except github_origin.GitHubApiOriginError as exc:
-        raise GitHubCredentialStoreError(str(exc)) from exc
-    selected_now = (
-        credential_document.clock_contract.utc_now()
-        if now is None
-        else _ensure_utc(now)
-    )
-    with _locked(path):
-        current = read_credential_document(path)
-        refresh_expires_at = _parse_timestamp(
-            current.get("refresh_expires_at"), "refresh_expires_at"
-        )
-        if refresh_expires_at <= selected_now:
+    with machine_operation_lock(config_path), _locked(path):
+        if load_config(config_path).get("github") != github:
             raise GitHubCredentialStoreError(
-                "GitHub App refresh credential expired; run `yoke github connect` "
-                "to authorize again"
+                "machine GitHub App profile changed before refresh; retry "
+                "against the current connection"
             )
+        current = read_credential_document(path)
         usable = access_cache.usable_token_state(
             current,
             now=selected_now,
             error_type=GitHubCredentialStoreError,
         )
         if usable is not None:
-            return access_cache.result(
-                usable,
-                path=path,
-                cached=True,
-                rotated=False,
+            return access_cache.result(usable, path=path, cached=True, rotated=False)
+        if (
+            _parse_timestamp(current.get("refresh_expires_at"), "refresh_expires_at")
+            <= selected_now
+        ):
+            raise GitHubCredentialStoreError(
+                "GitHub App refresh credential expired; run `yoke github connect` "
+                "to authorize again"
             )
         refreshed = refresh_credential_document(
             client_id=client_id,
