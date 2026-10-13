@@ -151,7 +151,9 @@ reconnects with `secrets/first-boot-admin-token` without asking anything new.
 The server serves the workbench at its own URL. Run `yoke ui up` on a connected
 CLI: company sign-in opens the server URL; without OIDC, your API token gets a
 single-use sign-in link that expires in two minutes. Both give full read and
-write as your actor. The walkthrough and same-origin cookie protection are in
+write as your actor. Sign-in links go directly to the browser and are never
+printed. For an agent or headless machine, run `yoke ui up` from your own
+terminal on a machine with a display. The cookie protection is in
 [Browser Sign-In](self-host-browser-sign-in.md).
 
 ## GitHub App server automation

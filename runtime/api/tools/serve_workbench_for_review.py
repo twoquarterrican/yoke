@@ -7,8 +7,9 @@ a port it picks and prints, and leaves the daemon alone.
 
     python3 -m runtime.api.tools.serve_workbench_for_review [--port N]
 
-The printed URL carries a token and binds loopback only, exactly as the
-daemon's does.
+The printed URL is token-free. Human terminals open private browser admission
+directly; automated review supplies an explicit fixture token with ``--token``
+and uses it privately. Generated sign-in tokens are never printed.
 """
 
 from __future__ import annotations
@@ -50,13 +51,21 @@ def _free_port() -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=None)
-    parser.add_argument("--token", default=None)
+    parser.add_argument(
+        "--token",
+        default=None,
+        help="Explicit fixture token for automated review; never echoed.",
+    )
     parser.add_argument(
         "--prepare-only",
         action="store_true",
         help="converge the selected local database without starting the view",
     )
     arguments = parser.parse_args()
+    if arguments.token is not None and not arguments.token.strip():
+        parser.error(
+            "review_fixture_token_empty: supply a non-empty fixture token or omit --token for private browser opening"
+        )
     try:
         prepare_review_database()
     except UiServerError as exc:
@@ -66,8 +75,8 @@ def main() -> None:
         return
     port = arguments.port or _free_port()
     token = arguments.token or secrets.token_urlsafe(24)
-    print(f"review url: http://127.0.0.1:{port}/?token={token}", flush=True)
-    serve_ui(port=port, token=token, open_browser=False)
+    print(f"review url: http://127.0.0.1:{port}/", flush=True)
+    serve_ui(port=port, token=token, open_browser=arguments.token is None)
 
 
 if __name__ == "__main__":

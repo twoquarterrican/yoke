@@ -117,6 +117,9 @@ yoke ui up           # local daemon, or the connected self-host workbench
 On a team server, `yoke ui up` opens company sign-in when configured. Otherwise
 it uses the connection's API token to open a single-use browser sign-in link
 for that actor. The link expires in two minutes; rerun the command if needed.
+Sign-in links are never printed, including in JSON. If a browser cannot open
+or an agent runs the command, run `yoke ui up` from your own terminal on a
+machine with a display.
 
 Upgrade later with `yoke update` — it reruns the official installer with
 onboarding disabled, honors this machine's already-configured distribution

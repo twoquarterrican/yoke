@@ -51,6 +51,9 @@ Run Yoke core and Postgres on your own server.
 Open its workbench with `yoke ui up` on a connected machine: company sign-in
 opens the server URL; without OIDC, the API token gets a single-use browser
 sign-in link valid for two minutes. Rerun the command if the link expires.
+Sign-in links are never printed, including in JSON. If a browser cannot open
+or an agent runs the command, run `yoke ui up` from your own terminal on a
+machine with a display.
 
 - Wizard on the host: pick **Set this machine up as a self-hosting server** to
   preview the loopback URL, bundle directory, port, Docker requirement, and

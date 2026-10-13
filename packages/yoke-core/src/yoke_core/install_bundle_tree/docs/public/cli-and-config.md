@@ -255,7 +255,7 @@ A connection is how this machine reaches a universe:
 
 ```bash
 yoke ui up       # open self-host workbench, or start the local view detached
-yoke ui          # same as `yoke ui status` — running or stopped, plus the URL
+yoke ui          # same as `yoke ui status` — running or stopped, without sign-in tokens
 yoke ui down     # stop it
 ```
 
@@ -264,6 +264,9 @@ company sign-in opens its URL; without OIDC, the API token gets a single-use
 link valid for two minutes. Rerun to replace an expired link. On Local
 (typically `http://127.0.0.1:8688`), it starts a machine daemon: closing the
 terminal leaves it serving; macOS brings it back after reboot until `ui down`.
+Sign-in links go straight to the browser and never appear in text or JSON.
+Agents, headless callers and `--no-browser` get a named browser reason: run
+`yoke ui up` from your own terminal on a machine with a display to sign in.
 
 The view serves a database this machine holds — a non-prod local-postgres
 connection — and names the environment that answered in the page footer.

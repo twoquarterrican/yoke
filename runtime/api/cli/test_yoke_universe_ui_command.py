@@ -214,7 +214,7 @@ class TestStatusSurface:
         assert "yoke ui up" in out
         assert served == {}
 
-    def test_status_json_reports_the_door_when_running(
+    def test_status_json_omits_admission_when_running(
         self,
         monkeypatch,
         machine_home,
@@ -226,9 +226,9 @@ class TestStatusSurface:
         report = json.loads(capsys.readouterr().out)
         assert report["ok"] is True
         assert report["running"] is True
-        assert report["private_url"] == "http://127.0.0.1:9999/?token=stub-token"
+        assert "private_url" not in report
 
-    def test_human_status_prints_the_door(
+    def test_human_status_teaches_browser_opening(
         self,
         monkeypatch,
         machine_home,
@@ -238,8 +238,9 @@ class TestStatusSurface:
 
         assert commands.ui([]) == 0
         out = capsys.readouterr().out
-        assert "http://127.0.0.1:9999/?token=stub-token" in out
-        assert "treat it like a password" in out
+        assert "stub-token" not in out
+        assert "read-only" not in out
+        assert "your own terminal" in out
         assert "yoke ui down" in out
 
 
