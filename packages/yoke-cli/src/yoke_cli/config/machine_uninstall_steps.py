@@ -20,6 +20,7 @@ from yoke_cli.config.machine_uninstall_inventory import Inventory, UninstallErro
 from yoke_cli.config.machine_config_file import remove_file
 from yoke_contracts import harness_settings_ledger, harness_settings_revert
 from yoke_contracts.self_host_bootstrap_output import redact_api_tokens
+from yoke_cli.hook_resident_lifecycle import stop_resident
 
 COMMAND_TIMEOUT_SECONDS = 300
 NOT_REMOVED = (
@@ -156,6 +157,7 @@ def remove(
         attempt("harness settings", lambda: _revert_harness_settings(emit))
     else:
         skipped("harness settings", "none recorded as written by Yoke")
+    attempt("hook evaluator", stop_resident)
     attempt("local UI", lambda: command(["ui", "down"]))
     if inventory.local_universe:
         attempt("local Postgres", lambda: command(["local-postgres", "stop"]))

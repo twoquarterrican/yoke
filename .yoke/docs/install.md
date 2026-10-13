@@ -133,6 +133,11 @@ recorded origin; a successful reinstall saves that channel for later updates.
 `yoke update --version VERSION` installs that exact release from the recorded
 origin instead of the channel's current one.
 
+Install, reinstall and upgrade restart the machine's hook evaluator and check
+that it answers before reporting readiness. If that check fails, inspect the
+named log and run `yoke hook resident restart`, then retry the installer.
+Hook timing details stay in the diagnostics log, outside harness chat.
+
 The installed CLI follows your active connection (`active_env`, set by
 `yoke env use`) automatically, whether that is upyoke.com, a self-hosted server
 or a fork's own plane: each time that connection's relay observes its server
@@ -145,7 +150,7 @@ it print one warning naming `yoke update --version VERSION`; they never update
 or refuse on their own. A local universe needs none of this: its server is the
 installed CLI.
 The installer itself repairs the git credential
-helper a reinstall wipes from site-packages, as the last step of every
+helper a reinstall wipes from site-packages during every
 successful run — so re-running the curl installer directly still resolves
 the same channel version for every Yoke product package and still repairs
 the helper, just without the version-change report. Prior-runtime bundles
@@ -257,8 +262,8 @@ It then removes the relay and stops its workers, removes the selected project
 layers, disconnects Yoke's GitHub credentials and checkout helpers, removes
 Yoke's entries from your Cursor user hooks (`~/.cursor/hooks.json`), reverts the
 approval and folder-trust settings Yoke wrote into Claude Code, Codex, and
-Cursor, stops the local UI and embedded Postgres, tears down local self-host
-stacks including their universe volumes, and deletes the machine home
+Cursor, stops the hook evaluator, local UI and embedded Postgres, tears down
+local self-host stacks including their universe volumes, and deletes the machine home
 (`~/.yoke` or `YOKE_MACHINE_HOME`). A harness setting you changed after Yoke
 wrote it is left in place and reported. Docker is only checked when this
 machine runs a self-host install. No further confirmation is required. Finally a detached

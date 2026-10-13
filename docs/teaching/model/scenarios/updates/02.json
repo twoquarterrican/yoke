@@ -4,12 +4,24 @@
  "status": "draft-copy",
  "audience": "both",
  "when": "An upgrade succeeded but hooks, dashboard or installed project instructions remain old",
- "need": "Distinguish installed CLI, server, resident hook process, relay and tracked project layer. Follow the component-specific status/refresh result; a webpage reload does not replace its serving process.",
+ "need": "Distinguish installed CLI, server, resident hook process, relay and tracked project layer. Follow the component-specific status/refresh result; a webpage reload does not replace its serving process. Every public install, reinstall and upgrade restarts and dry-evaluates the installed hook evaluator before readiness. Recover through yoke hook resident restart and the named evaluator log; phase timing is never printed in chat.",
  "disclosure": "planned cue",
- "surface": "Current project orientation warns on older operating-layer receipt; FIRST-USER 6/15 add resident hook/dashboard restart and E checks.",
+ "surface": "Installer readiness and named recovery; project orientation and component status own other stale layers.",
  "review": "Pending exact recipe proof.",
- "recipes": ["yoke status", "yoke ui status", "yoke relay status", "yoke project install --help"],
- "plan_notes": ["FIRST-USER items 6,15", "FIRST-USER E"],
- "sources": ["packages/yoke-core/src/yoke_core/domain/session_orientation.py", "docs/public/install.md"],
+ "recipes": [
+  "yoke status",
+  "yoke ui status",
+  "yoke relay status",
+  "yoke project install --help"
+ ],
+ "plan_notes": [
+  "FIRST-USER items 6,15",
+  "FIRST-USER E"
+ ],
+ "sources": [
+  "packages/yoke-core/src/yoke_core/domain/session_orientation.py",
+  "docs/public/install.md",
+  "packages/yoke-cli/src/yoke_cli/hook_resident_lifecycle.py"
+ ],
  "position": 1
 }
