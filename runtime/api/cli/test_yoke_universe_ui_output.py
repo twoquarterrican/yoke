@@ -13,7 +13,8 @@ from yoke_cli.config.hosted_machine_browser import BrowserOpenResult
 @pytest.mark.parametrize("json_mode", [False, True])
 @pytest.mark.parametrize("mode", ["local", "self-host"])
 @pytest.mark.parametrize(
-    "outcome", ["opened", "disabled", "agent", "headless", "exception"]
+    "outcome",
+    ["opened", "disabled", "agent", "unregistered-agent", "headless", "exception"],
 )
 def test_admission_only_reaches_human_browser(
     monkeypatch, capsys, json_mode, mode, outcome
@@ -38,6 +39,11 @@ def test_admission_only_reaches_human_browser(
         "_resolve_session_id",
         lambda: "agent-session" if outcome == "agent" else None,
     )
+    monkeypatch.setattr(
+        commands,
+        "nearest_harness_family",
+        lambda: "codex" if outcome == "unregistered-agent" else None,
+    )
     seen = []
 
     def open_browser(admission):
@@ -60,7 +66,9 @@ def test_admission_only_reaches_human_browser(
     assert url not in output
     assert "private_url" not in output
     assert "read-only" not in output
-    assert seen == ([] if outcome in {"disabled", "agent"} else [url])
+    assert seen == (
+        [] if outcome in {"disabled", "agent", "unregistered-agent"} else [url]
+    )
     if outcome != "opened":
         assert "your own terminal" in output
         assert "browser_" in output

@@ -38,6 +38,7 @@ class TestUp:
     def local_connection(self, machine_home, monkeypatch):
         write_local_connection()
         monkeypatch.setattr(commands, "_resolve_session_id", lambda: None)
+        monkeypatch.setattr(commands, "nearest_harness_family", lambda: None)
 
     def test_up_starts_the_daemon_without_printing_admission(
         self,

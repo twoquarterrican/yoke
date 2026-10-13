@@ -21,6 +21,7 @@ from yoke_contracts.api_urls import HOSTED_PROD_API_URL, HOSTED_STAGE_API_URL
 @pytest.fixture()
 def setup(monkeypatch, tmp_path):
     monkeypatch.setattr(commands, "_resolve_session_id", lambda: None)
+    monkeypatch.setattr(commands, "nearest_harness_family", lambda: None)
     token_path = tmp_path / "token"
     token_path.write_text("test-token")
     connection = {

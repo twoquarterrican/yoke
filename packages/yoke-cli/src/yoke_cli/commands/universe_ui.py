@@ -9,6 +9,7 @@ headless callers and ``--no-browser`` receive the human-terminal recovery.
 from __future__ import annotations
 
 from yoke_contracts.timestamps import InvalidInstant
+from yoke_contracts.harness_family_identity import nearest_harness_family
 
 import argparse
 import json
@@ -139,7 +140,7 @@ def ui_up(args: List[str]) -> int:
 
     url = str(report.pop("private_url", "") or "")
     reason = "browser_open_disabled" if parsed.no_browser else ""
-    if not reason and _resolve_session_id():
+    if not reason and (_resolve_session_id() or nearest_harness_family()):
         reason = "browser_agent_mode"
     opened = False
     if not reason:
