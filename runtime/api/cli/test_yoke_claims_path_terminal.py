@@ -7,9 +7,15 @@ import pytest
 from runtime.api.cli.test_yoke_operations_cli_claims import _CAPTURED, _run
 
 
+@pytest.fixture(autouse=True)
+def clean_capture():
+    _CAPTURED.clear()
+    yield
+    _CAPTURED.clear()
+
+
 @pytest.mark.parametrize("action", ["release", "cancel"])
 def test_terminal_dispatch(action):
-    _CAPTURED.clear()
     code, _, _ = _run(
         "claims",
         "path",
