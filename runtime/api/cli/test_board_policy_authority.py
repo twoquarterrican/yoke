@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import io
 import json
 from contextlib import redirect_stderr, redirect_stdout
@@ -29,7 +30,7 @@ def test_cli_machine_config_ignores_retired_board_entry(
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))
+    select_machine_config_file(monkeypatch, config)
 
     assert machine_config.board_scope(checkout) == "7"
     assert machine_config.board_render_path(checkout) == (

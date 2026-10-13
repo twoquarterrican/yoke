@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import io
 import json
 import sys
@@ -57,7 +58,7 @@ class TestMachineSetupRouting:
         monkeypatch,
     ) -> None:
         config = _write_usable_machine_config(tmp_path)
-        monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config))
+        select_machine_config_file(monkeypatch, config)
 
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -70,10 +71,7 @@ class TestMachineSetupRouting:
         tmp_path: Path,
         monkeypatch,
     ) -> None:
-        monkeypatch.setenv(
-            "YOKE_MACHINE_CONFIG_FILE",
-            str(tmp_path / "missing.json"),
-        )
+        select_machine_config_file(monkeypatch, tmp_path / "missing.json")
         monkeypatch.setattr(sys, "stdin", _TtyInput(True))
 
         err = io.StringIO()
@@ -92,10 +90,7 @@ class TestMachineSetupRouting:
         tmp_path: Path,
         monkeypatch,
     ) -> None:
-        monkeypatch.setenv(
-            "YOKE_MACHINE_CONFIG_FILE",
-            str(tmp_path / "missing.json"),
-        )
+        select_machine_config_file(monkeypatch, tmp_path / "missing.json")
         monkeypatch.setattr(sys, "stdin", _TtyInput(False))
 
         err = io.StringIO()

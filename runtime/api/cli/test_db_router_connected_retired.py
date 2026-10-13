@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import io
 import json
 import os
@@ -7,7 +8,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from yoke_core.cli import db_router
-from yoke_core.domain import machine_config, yoke_connected_env
+from yoke_core.domain import yoke_connected_env
 
 
 def _binding(root: Path, dsn_file: Path) -> Path:
@@ -56,7 +57,7 @@ def test_retired_yoke_db_env_does_not_warn_or_create(tmp_path, monkeypatch):
     for key in ("YOKE_DB_INIT_DONE", "YOKE_DB_INIT_ALLOW"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, binding)
     monkeypatch.setenv("YOKE_DB", str(main_db))
     monkeypatch.chdir(repo)
     monkeypatch.setattr(db_router, "__file__", str(fake_file))

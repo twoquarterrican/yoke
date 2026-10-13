@@ -231,7 +231,7 @@ def test_product_wheels_exercise_installer_plan_surfaces(
         install = _assert_command(
             yoke,
             install_project,
-            env,
+            {**env, "YOKE_MACHINE_HOME": str(config.parent)},
             [
                 "project",
                 "install",

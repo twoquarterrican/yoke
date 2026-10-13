@@ -12,6 +12,7 @@ Direct runtime-owner tests live in
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 from unittest import mock
 
 import pytest
@@ -62,7 +63,7 @@ class TestResolveNamedPathSplit:
         from yoke_core.domain.worktree import resolve_named_path
 
         machine_cfg = fake_repo["main_root"] / ".machine-config.json"
-        monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(machine_cfg))
+        select_machine_config_file(monkeypatch, machine_cfg)
         with mock.patch(
             "yoke_core.domain.worktree_paths.resolve_main_root",
             return_value=str(fake_repo["main_root"]),

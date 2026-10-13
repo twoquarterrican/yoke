@@ -234,6 +234,9 @@ def _core_less_env(tmp_path: Path) -> dict[str, str]:
         )
     )
     env["PYTHONNOUSERSITE"] = "1"
+    env["HOME"] = str(tmp_path)
+    env["USERPROFILE"] = str(tmp_path)
+    env.pop("YOKE_MACHINE_HOME", None)
     env.pop("YOKE_MACHINE_CONFIG_FILE", None)
     env.pop("YOKE_ENV", None)
     return env

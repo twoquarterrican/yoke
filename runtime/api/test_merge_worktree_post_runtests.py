@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import json
 import shlex
 import subprocess
@@ -11,7 +12,6 @@ from types import SimpleNamespace
 import pytest
 
 from yoke_contracts import schema_authority
-from yoke_contracts.machine_config import runtime as machine_config_runtime
 from yoke_contracts.machine_config.schema import ENV_OVERRIDE
 from yoke_core.engines import merge_worktree_tests
 
@@ -32,19 +32,31 @@ def _resolved(scope, command, covering_runs=()):
 def _git(repo, *args):
     subprocess.run(
         ["git", "-C", str(repo), *args],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     )
 
 
 def _commit_all(repo, message):
     _git(repo, "add", "-A")
     _git(
-        repo, "-c", "user.email=verify@example.com", "-c", "user.name=Verify",
-        "commit", "-q", "--allow-empty", "-m", message,
+        repo,
+        "-c",
+        "user.email=verify@example.com",
+        "-c",
+        "user.name=Verify",
+        "commit",
+        "-q",
+        "--allow-empty",
+        "-m",
+        message,
     )
     proc = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "HEAD"],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     return proc.stdout.strip()
 
@@ -104,7 +116,8 @@ def test_run_tests_blocks_when_registered_command_fails(
         lambda _command, **_kwargs: (1, "runtime arity failure"),
     )
     assert merge_worktree_tests.run_tests(_ctx(tmp_path)) == (
-        1, "tests failed",
+        1,
+        "tests failed",
     )
 
 
@@ -244,14 +257,18 @@ def test_registered_verification_converges_a_schema_under_an_administering_env(
     converge a schema could merge at all.
     """
     config = tmp_path / "config.json"
-    config.write_text(json.dumps({
-        "active_env": "prod",
-        "connections": {
-            "prod": {"transport": "https"},
-            "prod-db-admin": {"transport": "local-postgres", "prod": True},
-        },
-    }))
-    monkeypatch.setenv(machine_config_runtime.CONFIG_FILE_ENV, str(config))
+    config.write_text(
+        json.dumps(
+            {
+                "active_env": "prod",
+                "connections": {
+                    "prod": {"transport": "https"},
+                    "prod-db-admin": {"transport": "local-postgres", "prod": True},
+                },
+            }
+        )
+    )
+    select_machine_config_file(monkeypatch, config)
     monkeypatch.setenv(ENV_OVERRIDE, "prod-db-admin")
     # The discriminator: this selection genuinely refuses, so a completed run
     # below is the environment change and not an inert guard.

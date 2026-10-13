@@ -15,6 +15,7 @@ from yoke_core.tools._impacted_contract_tests_migration_evidence import (
     MIGRATION_EVIDENCE_CONTRACTS,
 )
 from yoke_core.tools._impacted_contract_tests_path_claims import PATH_CLAIM_CONTRACTS
+from yoke_core.tools._impacted_machine_config_contracts import MACHINE_CONFIG_CONTRACTS
 from yoke_core.tools._impacted_contract_prefix_families import (
     AGENT_SKILL_CONTRACT_TESTS,
     AGENT_SKILL_SOURCE_PREFIXES,
@@ -152,6 +153,7 @@ CURSOR_SESSION_IDENTITY_DISPATCH_TESTS = (
 )
 
 PATH_CONTRACT_TESTS = (
+    *MACHINE_CONFIG_CONTRACTS,
     *CI_WORKFLOW_CONTRACTS,
     *PATH_CLAIM_CONTRACTS,
     *MIGRATION_EVIDENCE_CONTRACTS,

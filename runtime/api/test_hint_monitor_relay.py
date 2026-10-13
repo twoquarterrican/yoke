@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import io
 import json
 from contextlib import redirect_stdout
@@ -54,7 +55,7 @@ def _write_machine_config(tmp_path, monkeypatch, value: str) -> None:
         json.dumps({"settings": {hint_monitor_relay.CONFIG_KEY: value}}) + "\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, config_path)
 
 
 def test_monitor_payload_emits_pretooluse_hookspecificoutput() -> None:

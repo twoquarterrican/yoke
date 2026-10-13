@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import json
 import os
 from pathlib import Path
@@ -10,7 +11,6 @@ import sys
 
 import pytest
 
-from yoke_contracts.machine_config import runtime as machine_config_runtime
 from yoke_contracts.machine_config.schema import ENV_OVERRIDE
 from yoke_core.tools import _source_pythonpath, source_dev_run
 
@@ -39,7 +39,7 @@ def _select_administering_connection(
             }
         )
     )
-    monkeypatch.setenv(machine_config_runtime.CONFIG_FILE_ENV, str(config))
+    select_machine_config_file(monkeypatch, config)
     monkeypatch.setenv(ENV_OVERRIDE, ADMIN_ENV)
 
 
