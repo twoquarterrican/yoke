@@ -265,3 +265,21 @@ test("an existing item draft is converted to spec without losing authored text",
   assert.equal(converted.spec, "Multiline spec\nSecond line.");
   assert.equal(Object.hasOwn(converted, "instruction"), false);
 });
+
+
+test("existing draft text remains editable when browser storage writes are denied", async () => {
+  const { main, entries, mount, document } = fixture();
+  await mount();
+  fill(main);
+  const [key, value] = [...entries][0];
+  const saved = JSON.parse(value);
+  saved.instruction = saved.spec;
+  delete saved.spec;
+  const original = JSON.stringify(saved);
+  entries.set(key, original);
+  document.defaultView.sessionStorage.setItem = () => { throw new Error("Storage denied"); };
+  await mount();
+  assert.equal(input(main, "INPUT").value, "Fix layout");
+  assert.equal(input(main, "TEXTAREA").value, "Preserve the useful draft.");
+  assert.equal(entries.get(key), original);
+});

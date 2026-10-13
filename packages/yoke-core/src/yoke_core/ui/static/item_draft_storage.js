@@ -41,11 +41,10 @@ export async function itemDraftStorage(context) {
           let saved = JSON.parse(storage.getItem(key) || "null");
           if (!saved || !projects.some((row) => String(row.id) === saved.projectId)) return null;
           if (initialProjectId && initialProjectId !== "all" && String(initialProjectId) !== saved.projectId) return null;
-          // Convert the stored draft once; API creation accepts only spec.
+          // Restore authored draft text as spec. Only save writes browser storage.
           if (typeof saved.instruction === "string" && saved.spec == null) {
             const { instruction, ...record } = saved;
             saved = { ...record, spec: instruction };
-            storage.setItem(key, JSON.stringify(saved));
           }
           if (typeof saved.title !== "string" || typeof saved.spec !== "string") return null;
           return {
