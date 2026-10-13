@@ -105,18 +105,14 @@ def test_fresh_install_bootstraps_identity_before_poll(monkeypatch, tmp_path) ->
     clock = _Clock()
 
     assert not config_path.exists()
-    credential = auth.complete(
-        _pending(), sleep=clock.sleep, monotonic=clock.monotonic
-    )
+    credential = auth.complete(_pending(), sleep=clock.sleep, monotonic=clock.monotonic)
 
     assert credential.token == "machine-token"
     configured = json.loads(config_path.read_text(encoding="utf-8"))
     assert str(uuid.UUID(configured["machine_id"])) == configured["machine_id"]
 
 
-def test_retry_after_fresh_bootstrap_keeps_same_identity(
-    monkeypatch, tmp_path
-) -> None:
+def test_retry_after_fresh_bootstrap_keeps_same_identity(monkeypatch, tmp_path) -> None:
     config_path = tmp_path / "config.json"
     monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
     monkeypatch.setattr(auth, "machine_display_name", lambda: "Build Host")
@@ -147,9 +143,7 @@ def test_partially_initialized_config_gains_identity_without_losing_fields(
     monkeypatch.setattr(auth, "request_json", lambda *_args, **_kwargs: _approved())
     clock = _Clock()
 
-    credential = auth.complete(
-        _pending(), sleep=clock.sleep, monotonic=clock.monotonic
-    )
+    credential = auth.complete(_pending(), sleep=clock.sleep, monotonic=clock.monotonic)
 
     assert credential.token == "machine-token"
     configured = json.loads(config_path.read_text(encoding="utf-8"))
@@ -199,3 +193,40 @@ def test_server_identity_refusal_names_recovery(monkeypatch, tmp_path) -> None:
         match="machine_identity_required.*yoke status",
     ):
         auth.complete(_pending(), sleep=clock.sleep, monotonic=clock.monotonic)
+
+
+@pytest.mark.parametrize("self_host", [False, True])
+def test_start_sends_identity_and_platform_before_browser_approval(
+    monkeypatch, tmp_path, self_host
+):
+    config_path = tmp_path / "config.json"
+    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    monkeypatch.setattr(auth, "machine_display_name", lambda: "Build Host")
+    monkeypatch.setattr(auth.platform, "system", lambda: "Darwin")
+    requests = []
+
+    def request_json(request, **kwargs):
+        requests.append(json.loads(request.data))
+        return BoundedJsonHttpResponse(
+            {
+                "device_code": "secret",
+                "user_code": "CODE",
+                "verification_uri": "https://team.example/machine-approval",
+                "verification_uri_complete": "https://team.example/machine-approval/CODE",
+                "expires_in": 600,
+                "interval": 2,
+            },
+            200,
+            {},
+        )
+
+    monkeypatch.setattr(auth, "request_json", request_json)
+    auth.start("https://team.example", self_host=self_host)
+    configured = json.loads(config_path.read_text())
+    assert requests == [
+        {
+            "machine_id": configured["machine_id"],
+            "machine_name": "Build Host",
+            "platform": "macOS",
+        }
+    ]

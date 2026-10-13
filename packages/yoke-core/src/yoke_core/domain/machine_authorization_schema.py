@@ -18,6 +18,7 @@ def create_machine_authorization_table(conn: Any) -> None:
             actor_id INTEGER REFERENCES actors(id),
             machine_id TEXT,
             machine_name TEXT,
+            platform TEXT,
             consumed_at TIMESTAMPTZ,
             client_key TEXT
         );
@@ -35,4 +36,5 @@ def create_machine_authorization_table(conn: Any) -> None:
     """,
     )
     _add_column_if_not_exists(conn, "machine_authorization_codes", "client_key", "TEXT")
+    _add_column_if_not_exists(conn, "machine_authorization_codes", "platform", "TEXT")
     conn.commit()

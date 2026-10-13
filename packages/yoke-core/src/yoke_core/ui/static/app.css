@@ -26,6 +26,7 @@
 @import url("./universe_organization_membership.css");
 @import url("./universe_link_underline.css");
 @import url("./wrapping_rows.css");
+@import url("./machine_approval.css");
 
 /* A destination with no live surface yet is explicit, not a blank page. */
 .universe-app-root .stub-panel {

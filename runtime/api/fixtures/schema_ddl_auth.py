@@ -158,6 +158,7 @@ CREATE INDEX IF NOT EXISTS idx_actor_visitor_links_actor
             actor_id INTEGER,
             machine_id TEXT,
             machine_name TEXT,
+            platform TEXT,
             consumed_at TIMESTAMPTZ,
             client_key TEXT
         );

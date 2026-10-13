@@ -44,7 +44,7 @@ where = ["src"]
 "yoke_contracts.project_contract.board_art.data" = ["*.txt"]
 
 "yoke_contracts" = [
-    "machine_authorization.schema.v1.json",
+    "machine_authorization.schema.v2.json",
     "browser_step_schema.json",
     # Exact compiled UI contract bytes, importable by standalone Node consumers.
     "timestamps.mjs",

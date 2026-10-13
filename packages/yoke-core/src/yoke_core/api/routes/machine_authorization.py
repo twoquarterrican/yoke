@@ -136,7 +136,7 @@ async def start(request: Request) -> JSONResponse:
     except (ValidationError, ValueError):
         return _error(
             "machine_identity_required",
-            "send this machine's configured id and name to start connection",
+            "send this machine's configured id, name and platform using the current installer; upgrade the server if its request contract differs",
             400,
         )
     return await run_in_threadpool(_start, model, client_key, request)

@@ -36,6 +36,7 @@ def pending(conn, client_key="client"):
         origin=ORIGIN,
         machine_id=MACHINE_ID,
         machine_name="Pat's laptop",
+        platform="macOS",
         client_key=client_key,
     )
 
@@ -57,6 +58,9 @@ def test_member_approves_own_machine_and_delivery_consumes_code(conn):
     ).fetchone()
     assert authorization["device_code"] not in row[0]
     assert row[1] == 1
+    before_poll = codes.inspect(conn, code=authorization["user_code"], actor_id=1)
+    assert before_poll["machine"] == "Pat's laptop"
+    assert before_poll["platform"] == "macOS"
     with pytest.raises(codes.MachineAuthorizationError, match="authorization_pending"):
         poll(conn, authorization)
     details = codes.inspect(conn, code=authorization["user_code"], actor_id=1)
@@ -161,6 +165,7 @@ def test_one_client_cannot_fill_the_server_by_changing_machine_identity(conn):
             origin=ORIGIN,
             machine_id=OTHER_MACHINE_ID,
             machine_name="new id",
+            platform="Linux",
             client_key="attacker",
         )
     conn.rollback()
@@ -176,3 +181,30 @@ def test_consumed_codes_free_client_capacity(conn):
     codes.resolve(conn, code=values[0]["user_code"], actor_id=1, action="approve")
     poll(conn, values[0])
     assert pending(conn)["device_code"]
+
+
+def test_inspection_retains_expired_facts_but_decision_refuses(conn):
+    authorization = pending(conn)
+    conn.execute(
+        "UPDATE machine_authorization_codes SET expires_at='2000-01-01T00:00:00Z'"
+    )
+    details = codes.inspect(conn, code=authorization["user_code"], actor_id=1)
+    assert details["expires_at"] == "2000-01-01T00:00:00.000000Z"
+    with pytest.raises(codes.MachineAuthorizationError, match="authorization_expired"):
+        codes.resolve(
+            conn, code=authorization["user_code"], actor_id=1, action="approve"
+        )
+
+
+def test_inspection_retains_approved_facts_after_delivery(conn):
+    authorization = pending(conn)
+    codes.resolve(conn, code=authorization["user_code"], actor_id=1, action="approve")
+    poll(conn, authorization)
+    assert (
+        codes.inspect(conn, code=authorization["user_code"], actor_id=1)["decision"]
+        == "approve"
+    )
+    with pytest.raises(
+        codes.MachineAuthorizationError, match="authorization_unavailable"
+    ):
+        codes.inspect(conn, code="UNKNOWN", actor_id=1)

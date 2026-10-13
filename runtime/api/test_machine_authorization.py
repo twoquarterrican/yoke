@@ -35,7 +35,7 @@ def test_oidc_member_approves_machine_without_host_minted_token(
         "device_code": True,
         "company_sign_in": True,
     }
-    started = client.post(START_PATH, json=IDENTITY)
+    started = client.post(START_PATH, json={**IDENTITY, "platform": "macOS"})
     assert started.status_code == 200, started.text
     _validate_wire(started, "MachineAuthorizationStarted")
     pending = started.json()
@@ -52,6 +52,14 @@ def test_oidc_member_approves_machine_without_host_minted_token(
     assert signed_in.headers["location"].endswith(pending["user_code"])
     assert not client.cookies.get(APPROVAL_RETURN_COOKIE)
     assert "mountUniverseApp" in client.get(signed_in.headers["location"]).text
+    before_poll = _call(
+        client, "machine_authorization.get", {"code": pending["user_code"]}
+    )
+    assert (
+        before_poll.json()["result"]["authorization"]["machine"]
+        == IDENTITY["machine_name"]
+    )
+    assert before_poll.json()["result"]["authorization"]["platform"] == "macOS"
     polled = client.post(
         POLL_PATH, json={"device_code": pending["device_code"], **IDENTITY}
     )
@@ -111,7 +119,7 @@ def test_without_company_sign_in_a_connected_machine_can_still_approve(client):
         "device_code": True,
         "company_sign_in": False,
     }
-    started = client.post(START_PATH, json=IDENTITY)
+    started = client.post(START_PATH, json={**IDENTITY, "platform": "macOS"})
     assert started.status_code == 200, started.text
     _validate_wire(started, "MachineAuthorizationStarted")
     pending = started.json()
@@ -136,7 +144,8 @@ def test_partial_oidc_config_is_named(client, monkeypatch):
 
 def test_invalid_machine_identity_and_unknown_device_code_are_named(client, door_env):
     invalid = client.post(
-        START_PATH, json={"machine_id": "invalid", "machine_name": "laptop"}
+        START_PATH,
+        json={"machine_id": "invalid", "machine_name": "laptop", "platform": "macOS"},
     )
     assert invalid.status_code == 400
     assert invalid.json()["error"] == "machine_identity_required"
@@ -148,7 +157,7 @@ def test_invalid_machine_identity_and_unknown_device_code_are_named(client, door
 def _validate_wire(response, model):
     schema = json.loads(
         files("yoke_contracts")
-        .joinpath("machine_authorization.schema.v1.json")
+        .joinpath("machine_authorization.schema.v2.json")
         .read_text()
     )
     Draft202012Validator({**schema, "$ref": f"#/$defs/{model}"}).validate(

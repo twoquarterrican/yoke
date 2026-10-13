@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import platform
 import time
 from email.utils import parsedate_to_datetime
 from typing import Any, Callable, Mapping
@@ -52,7 +53,12 @@ def start(
     try:
         payload, status, _headers = _post_json(
             f"{origin}{START_PATH}",
-            _machine_identity() if self_host else {},
+            {
+                **_machine_identity(),
+                "platform": "macOS"
+                if platform.system() == "Darwin"
+                else platform.system(),
+            },
             opener=opener,
             timeout_seconds=timeout_seconds,
         )

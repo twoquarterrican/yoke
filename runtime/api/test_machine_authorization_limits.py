@@ -51,9 +51,9 @@ def test_malformed_requests_count_and_headers_cannot_reset_budget(
 
 def test_start_limit_does_not_consume_poll_budget(client, monkeypatch, door_env):
     monkeypatch.setattr(limits, "START_REQUESTS", 1)
-    started = client.post(START_PATH, json=IDENTITY).json()
+    started = client.post(START_PATH, json={**IDENTITY, "platform": "Linux"}).json()
     assert (
-        client.post(START_PATH, json=IDENTITY).json()["error"]
+        client.post(START_PATH, json={**IDENTITY, "platform": "Linux"}).json()["error"]
         == "authorization_start_rate_limited"
     )
     pending = client.post(
@@ -72,12 +72,16 @@ def test_start_pending_capacity_is_bound_to_peer_even_with_new_machine_ids(
     for _ in range(limits.CLIENT_PENDING_CODES):
         assert (
             client.post(
-                START_PATH, json={**IDENTITY, "machine_id": str(uuid4())}
+                START_PATH,
+                json={**IDENTITY, "machine_id": str(uuid4()), "platform": "Linux"},
             ).status_code
             == 200
         )
-    limited = client.post(START_PATH, json=IDENTITY)
+    limited = client.post(START_PATH, json={**IDENTITY, "platform": "Linux"})
     assert limited.status_code == 429
     assert limited.json()["error"] == "authorization_client_capacity"
     with TestClient(client.app, client=("192.0.2.44", 1234)) as other:
-        assert other.post(START_PATH, json=IDENTITY).status_code == 200
+        assert (
+            other.post(START_PATH, json={**IDENTITY, "platform": "Linux"}).status_code
+            == 200
+        )

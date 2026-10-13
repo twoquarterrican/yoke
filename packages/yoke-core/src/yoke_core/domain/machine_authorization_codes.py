@@ -49,7 +49,13 @@ def _hash(code: str) -> str:
 
 
 def start(
-    conn: Any, *, origin: str, machine_id: str, machine_name: str, client_key: str
+    conn: Any,
+    *,
+    origin: str,
+    machine_id: str,
+    machine_name: str,
+    platform: str,
+    client_key: str,
 ) -> dict[str, Any]:
     try:
         machine_id = str(UUID(machine_id))
@@ -92,8 +98,8 @@ def start(
     code = code[:5] + "-" + code[5:]
     expires = now + timedelta(seconds=CODE_TTL_SECONDS)
     conn.execute(
-        "INSERT INTO machine_authorization_codes (device_hash,user_code,org_id,expires_at,machine_id,machine_name,client_key) "
-        f"VALUES ({p},{p},{p},{p},{p},{p},{p})",
+        "INSERT INTO machine_authorization_codes (device_hash,user_code,org_id,expires_at,machine_id,machine_name,platform,client_key) "
+        f"VALUES ({p},{p},{p},{p},{p},{p},{p},{p})",
         (
             _hash(device),
             code,
@@ -101,6 +107,7 @@ def start(
             instant_parameter(conn, expires),
             machine_id,
             machine_name,
+            platform,
             client_key,
         ),
     )
@@ -116,7 +123,9 @@ def start(
     }
 
 
-def _row(conn: Any, key: str, value: str, *, lock: bool = False) -> dict[str, Any]:
+def _row(
+    conn: Any, key: str, value: str, *, lock: bool = False, inspect_closed: bool = False
+) -> dict[str, Any]:
     # The key is selected by our two callers, never by request data.
     suffix = " FOR UPDATE" if lock and db_backend.connection_is_postgres(conn) else ""
     names = (
@@ -128,16 +137,23 @@ def _row(conn: Any, key: str, value: str, *, lock: bool = False) -> dict[str, An
         "machine_id",
         "machine_name",
         "consumed_at",
+        "platform",
     )
     row = conn.execute(
         f"SELECT {','.join(names)} FROM machine_authorization_codes WHERE {key}={_p(conn)}{suffix}",
         (value,),
     ).fetchone()
-    if row is None or parse_instant(row[3]) <= _now():
+    if row is None and inspect_closed:
+        raise MachineAuthorizationError(
+            "authorization_unavailable",
+            "check the code in your terminal and try again",
+            404,
+        )
+    if row is None or (not inspect_closed and parse_instant(row[3]) <= _now()):
         raise MachineAuthorizationError(
             "authorization_expired", "start a fresh connection code", 410
         )
-    if row[7]:
+    if row[7] and not inspect_closed:
         raise MachineAuthorizationError(
             "authorization_consumed",
             "this code was already delivered; start a fresh connection",
@@ -172,7 +188,7 @@ def _require_member(conn: Any, org_id: int, actor_id: int) -> None:
 
 
 def inspect(conn: Any, *, code: str, actor_id: int) -> dict[str, Any]:
-    row = _row(conn, "user_code", code.strip().upper())
+    row = _row(conn, "user_code", code.strip().upper(), inspect_closed=True)
     _require_member(conn, row["org_id"], actor_id)
     if row["actor_id"] and row["actor_id"] != actor_id:
         raise MachineAuthorizationError(
@@ -184,6 +200,7 @@ def inspect(conn: Any, *, code: str, actor_id: int) -> dict[str, Any]:
         "code": row["user_code"],
         "machine": row["machine_name"],
         "machine_id": row["machine_id"],
+        "platform": row["platform"],
         "expires_at": format_instant(row["expires_at"]),
         "decision": machine_approval_decision(conn, auth_request_id=row["device_hash"]),
     }

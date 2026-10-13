@@ -242,3 +242,23 @@ else:
     assert result.returncode == 0, result.stderr
     assert "authorization_response_invalid" in result.stdout
     assert "reconnect" in result.stdout
+
+
+def test_every_mode_start_requires_the_same_machine_identity_and_platform():
+    schema = json.loads(files("yoke_contracts").joinpath(SCHEMA_RESOURCE).read_text())
+    assert schema["x-http"]["start"]["request"] == "MachineAuthorizationStart"
+    validator = Draft202012Validator(
+        {**schema, "$ref": "#/$defs/MachineAuthorizationStart"}
+    )
+    payload = {"machine_id": "machine", "machine_name": "host", "platform": "Linux"}
+    validator.validate(payload)
+    for field in payload:
+        assert list(
+            validator.iter_errors(
+                {key: value for key, value in payload.items() if key != field}
+            )
+        )
+    poll = wire.MachineAuthorizationPoll(
+        machine_id="machine", machine_name="host", device_code="secret"
+    )
+    assert "platform" not in poll.model_dump()

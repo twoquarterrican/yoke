@@ -80,6 +80,7 @@ def test_concurrent_starts_serialize_the_pending_client_cap():
                         origin="https://team.example",
                         machine_id=str(uuid4()),
                         machine_name="laptop",
+                        platform="Linux",
                         client_key="one-peer",
                     )
                 except codes.MachineAuthorizationError as error:
@@ -113,10 +114,12 @@ def test_boot_restores_legacy_pending_client_column(tmp_path, monkeypatch):
             conn.execute(
                 "ALTER TABLE machine_authorization_codes DROP COLUMN client_key"
             )
+            conn.execute("ALTER TABLE machine_authorization_codes DROP COLUMN platform")
             conn.commit()
             converge_core_schema(conn)
             converge_core_schema(conn)
             assert "client_key" in boot._column_map(conn)["machine_authorization_codes"]
+            assert "platform" in boot._column_map(conn)["machine_authorization_codes"]
             lookups = boot._record_boot_column_lookups(conn, monkeypatch)
             assert ("machine_authorization_codes", "client_key") in lookups
             assert {
