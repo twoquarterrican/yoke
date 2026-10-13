@@ -83,10 +83,14 @@ def test_binding_wraps_config_lock_flock_failure(tmp_path, monkeypatch):
         lambda **k: SimpleNamespace(access_token="stored"),
     )
 
-    def fail_flock(*args, **kwargs):
+    def fail_lock(*args, **kwargs):
         raise OSError("raw flock detail")
 
-    monkeypatch.setattr(credential_file.fcntl, "flock", fail_flock)
+    monkeypatch.setattr(
+        credential_file.platform_file_lock,
+        "acquire_exclusive_nonblocking",
+        fail_lock,
+    )
     with pytest.raises(github_binding_auth.GitHubBindingAuthError) as caught:
         github_binding_auth.profile_bound_access_for_binding(tmp_path / "config.json")
     assert "machine-config lock failed" in str(caught.value)

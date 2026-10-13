@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 if __package__:
+    from yoke_contracts import platform_file_lock
+    from yoke_contracts import platform_file_sync
+    from yoke_contracts import windows_private_directory
     from yoke_contracts.designed_wait import announce_designed_wait
     from yoke_contracts.machine_config.directories import create_private_directory
 else:
+    import _yoke_platform_file_lock as platform_file_lock
+    import _yoke_platform_file_sync as platform_file_sync
+    import _yoke_windows_private_directory as windows_private_directory
     from _yoke_designed_wait import announce_designed_wait
     from _yoke_private_directories import create_private_directory
 
 from contextlib import contextmanager
-import fcntl
 import json
 import os
 from pathlib import Path
@@ -111,7 +116,7 @@ def write_json_document(path: str | Path, payload: Mapping[str, Any]) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(tmp_path, selected)
-        _fsync_directory(selected.parent)
+        platform_file_sync.sync_directory(selected.parent)
     except BaseException:
         if descriptor >= 0:
             os.close(descriptor)
@@ -128,7 +133,7 @@ def delete_json_document(path: str | Path) -> bool:
             selected.unlink()
         except FileNotFoundError:
             return False
-        _fsync_directory(selected.parent)
+        platform_file_sync.sync_directory(selected.parent)
         return True
 
 
@@ -165,7 +170,7 @@ def _move_under_lock(
             return False
         try:
             os.replace(source, target)
-            _fsync_directory(source.parent)
+            platform_file_sync.sync_directory(source.parent)
         except OSError as exc:
             raise CredentialFileError(
                 f"GitHub App credential could not be {done}"
@@ -217,7 +222,7 @@ def exclusive_lock(
             raise
         finally:
             try:
-                fcntl.flock(descriptor, fcntl.LOCK_UN)
+                platform_file_lock.release_exclusive(descriptor)
             except OSError as exc:
                 if not body_failed:
                     raise CredentialFileError(
@@ -263,7 +268,7 @@ def _wait_for_exclusive_lock(
     delay = _LOCK_POLL_SECONDS
     while True:
         try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            platform_file_lock.acquire_exclusive_nonblocking(descriptor)
             return
         except BlockingIOError:
             remaining = deadline - monotonic()
@@ -302,7 +307,11 @@ def _assert_secure_parent(
             f"GitHub App credential directory is not owned by the current user: {path}"
         )
     forbidden_mode = 0o077 if require_private else 0o022
-    if stat.S_IMODE(info.st_mode) & forbidden_mode:
+    if os.name == "nt" and not windows_private_directory.is_private_directory(path):
+        raise CredentialFileError(
+            f"GitHub App credential directory Windows permissions are unsafe: {path}"
+        )
+    if os.name != "nt" and stat.S_IMODE(info.st_mode) & forbidden_mode:
         raise CredentialFileError(
             f"GitHub App credential directory permissions are unsafe: {path}; "
             "set directory permissions to 700, then retry"
@@ -318,19 +327,14 @@ def _assert_owner_only_file(info: os.stat_result, path: Path) -> None:
         raise CredentialFileError(
             f"GitHub App credential is not owned by the current user: {path}"
         )
-    if stat.S_IMODE(info.st_mode) & 0o077:
+    if os.name == "nt" and not windows_private_directory.is_private_file(path):
+        raise CredentialFileError(
+            f"GitHub App credential Windows permissions are unsafe: {path}"
+        )
+    if os.name != "nt" and stat.S_IMODE(info.st_mode) & 0o077:
         raise CredentialFileError(
             f"GitHub App credential permissions must be 0600: {path}"
         )
-
-
-def _fsync_directory(path: Path) -> None:
-    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-    descriptor = os.open(path, flags)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
 
 
 __all__ = [
