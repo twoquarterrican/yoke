@@ -41,7 +41,8 @@ from yoke_core.domain.backlog_github_item_render import (
 )
 from yoke_core.domain import project_label_policy
 from yoke_core.domain.github_constraints import (
-    clamp_label_name, github_attribution_name,
+    clamp_label_name,
+    github_attribution_name,
 )
 from yoke_core.domain.github_dedup import search_existing_issue
 from yoke_core.domain.project_github_auth import (
@@ -165,12 +166,31 @@ def sync_item(
             )
             return 1
 
-        # Dedup: search for existing issue with exact public-ref title prefix.
-        # GitHub's title search is fuzzy on bracketed/numeric tokens, so the
-        # shared helper post-filters by exact-prefix match before reuse.
-        search_prefix = f"[{public_ref}]"
+        title = fields["title"]
+        status = fields["status"]
+        from yoke_core.domain.render_body import build_body
+
+        body = build_body(conn, int(item_pk)) or ""
+        # Select full body or compact mirror via the in-memory selector —
+        # The typed REST surface accepts the body string directly, no
+        # temp-file dance required.
+        body_item_fields = {
+            "title": title,
+            "status": status,
+            "workflow_id": workflow_id,
+            "project": gh_project,
+            "identity": public_ref,
+        }
+        selected_body, body_mode = _budget.select_body_for_github(
+            body,
+            item_fields=body_item_fields,
+            conn=conn,
+            item_id=int(item_pk),
+        )
+
         found = search_existing_issue(
-            search_prefix,
+            f"[{public_ref}] {title}",
+            selected_body,
             project=gh_project,
             stderr=stderr,
         )
@@ -185,10 +205,13 @@ def sync_item(
                 f"UPDATE items SET github_issue = {p} WHERE id = {p}",
                 (f"#{reuse_num}", item_pk),
             )
+            _compact_flag.record_sync_mode(conn, int(item_pk), body_mode)
             conn.commit()
             _bgs()._regenerate_md(item_pk)
+            _budget.emit_compact_notice(body_mode, public_ref, stderr)
             print(
-                f"Synced: {public_ref} → GitHub issue #{reuse_num} (reused)", file=stdout
+                f"Synced: {public_ref} → GitHub issue #{reuse_num} (reused)",
+                file=stdout,
             )
             return _bgs()._sync_task_children(
                 item_pk,
@@ -201,28 +224,17 @@ def sync_item(
         # Read field values for labels. Source and owner store actor
         # ids on current rows and legacy text labels on
         # pre-migration rows; the central helper bridges both shapes.
-        title = fields["title"]
         priority = fields["priority"]
-        status = fields["status"]
         source = fields["source"]
         owner = fields["owner"]
         from yoke_core.domain.item_worktrees import primary_item_worktree
 
         active_lane = primary_item_worktree(conn, int(item_pk))
         worktree = str(active_lane["branch"]) if active_lane else ""
-        # Render body on demand from structured fields.
-        from yoke_core.domain.render_body import build_body
-
-        body = build_body(conn, int(item_pk)) or ""
-
         colors = _label_colors()
 
-        source_token = github_attribution_name(
-            actor_name_or_passthrough(conn, source)
-        )
-        owner_token = github_attribution_name(
-            actor_name_or_passthrough(conn, owner)
-        )
+        source_token = github_attribution_name(actor_name_or_passthrough(conn, source))
+        owner_token = github_attribution_name(actor_name_or_passthrough(conn, owner))
 
         # Ensure labels exist
         status_label = f"status:{_status_display_label(status)}"
@@ -231,9 +243,7 @@ def sync_item(
         source_label = (
             clamp_label_name(f"source:{source_token}") if source_token else ""
         )
-        owner_label = (
-            clamp_label_name(f"owner:{owner_token}") if owner_token else ""
-        )
+        owner_label = clamp_label_name(f"owner:{owner_token}") if owner_token else ""
 
         pri_color = project_label_policy.get_color(
             f"label_color_priority_{priority}",
@@ -264,23 +274,6 @@ def sync_item(
                 description=f"Worktree: {worktree}",
             )
             create_labels.append(wt_label)
-
-        # Select full body or compact mirror via the in-memory selector —
-        # The typed REST surface accepts the body string directly, no
-        # temp-file dance required.
-        body_item_fields = {
-            "title": title,
-            "status": status,
-            "workflow_id": workflow_id,
-            "project": gh_project,
-            "identity": public_ref,
-        }
-        selected_body, body_mode = _budget.select_body_for_github(
-            body,
-            item_fields=body_item_fields,
-            conn=conn,
-            item_id=int(item_pk),
-        )
 
         print(f"Creating GitHub issue for {public_ref}: {title}", file=stdout)
         try:

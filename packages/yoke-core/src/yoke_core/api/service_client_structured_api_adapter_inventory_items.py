@@ -208,6 +208,14 @@ ITEMS_ADAPTERS = [
         ),
     ),
     AdapterEntry(
+        function_id="items.github_link",
+        cli_invocation=(
+            "yoke items github-link <PREFIX-N> (--issue NUMBER | --unlink) "
+            "[--task-num N] [--json]"
+        ),
+        notes="Claim-scoped item/task link repair; verifies the bound repository and leaves remote issues untouched.",
+    ),
+    AdapterEntry(
         function_id="items.github_sync",
         cli_invocation="yoke items github-sync YOK-N",
         notes=(

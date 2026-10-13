@@ -243,8 +243,6 @@ def sync_epic_tasks(
             else:
                 task_issue_num = _etsg._dedup_or_create_task_issue(
                     backlog_id=backlog_id,
-                    task_num_str=task_num_str,
-                    task_title=task_title,
                     issue_title=issue_title,
                     task_body=task_body,
                     labels=labels,

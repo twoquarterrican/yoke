@@ -1,7 +1,9 @@
 {
  "id": "issue-identity-and-binding",
  "title": "Issue identity and binding",
- "status": "draft-copy",
+ "status": "observed",
  "page": "repositories",
- "position": 2
+ "position": 2,
+ "description": "Candidate adoption requires full title and outgoing body after whitespace normalization. Link repair verifies the chosen issue in the project repository and leaves remote content unchanged.",
+ "sources": ["docs/public/reference/github-sync.md", "packages/yoke-core/src/yoke_core/domain/github_dedup.py", "packages/yoke-core/src/yoke_core/domain/handlers/items_github_link.py"]
 }

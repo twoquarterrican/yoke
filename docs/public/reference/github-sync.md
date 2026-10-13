@@ -21,6 +21,30 @@ repository is unavailable, or required permissions are missing; GitHub
 authentication never falls back to a project capability secret or host
 credential.
 
+## Issue identity and link repair
+
+Before creating a backlog item, epic parent or task issue, Yoke adopts an
+existing issue only when its complete title and outgoing body match after
+whitespace normalization. Matching remains case-sensitive; a matching item
+prefix alone is insufficient. Oversized bodies compare the compact mirror
+that creation would send. A search failure skips adoption and creation makes
+a new issue, with a warning naming the failed search.
+
+```bash
+yoke claims work acquire --item PREFIX-N --reason "repair GitHub issue link"
+yoke items github-link PREFIX-N --issue 123
+yoke items github-link PREFIX-N --unlink
+```
+
+Choose the intended issue number in the project's bound repository; use
+`--task-num N` for an epic task. The command requires the item's work claim,
+verifies replacement issues, and rejects pull requests. It changes only the
+stored link and clears item compact-mirror state; it does not close, relabel,
+or comment on either issue. Read `yoke items github-link --help` for options.
+The next sync uses the new link; after unlinking it can adopt an exact content
+match or create an issue. Unlinking does not disable mirroring. Release the
+work claim after repair if no other item work is in progress.
+
 ## The per-project switch: `projects.github_sync_mode`
 
 One column is the authority for whether a project's backlog mirrors to

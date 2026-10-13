@@ -153,8 +153,6 @@ def test_dedup_or_create_task_issue_compacts_oversized_body(monkeypatch):
 
     num = _dedup_or_create_task_issue(
         backlog_id="YOK-4242",
-        task_num_str="007",
-        task_title="oversized task",
         issue_title="[YOK-4242] 007 oversized task",
         task_body=_OVER_BUDGET,
         labels=["type:task", "status:planned"],
@@ -229,8 +227,6 @@ def test_dedup_or_create_task_issue_keeps_full_body_under_budget(monkeypatch):
     stderr = io.StringIO()
     _dedup_or_create_task_issue(
         backlog_id="YOK-4242",
-        task_num_str="001",
-        task_title="small task",
         issue_title="[YOK-4242] 001 small task",
         task_body=body,
         labels=["type:task"],

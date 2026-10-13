@@ -46,6 +46,7 @@ WRAPPED_ROWS: Tuple[_Row, ...] = (
     # replaces the local-only `db_router items add` fallback.
     _w("yoke items create", "items.create"),
     _w("yoke items progress-log append", "items.progress_log"),
+    _w("yoke items github-link", "items.github_link"),
     _w("yoke items github-sync", "items.github_sync"),
     _w("yoke items structured-field replace", "items.structured_field"),
     _w("yoke claims work acquire", "claims.work"),

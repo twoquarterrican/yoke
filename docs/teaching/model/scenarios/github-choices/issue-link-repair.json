@@ -1,0 +1,15 @@
+{
+ "id": "issue-link-repair",
+ "title": "Adopt only matching issue content and repair links explicitly",
+ "status": "observed",
+ "audience": "both",
+ "when": "Issue creation or discovery of a wrong item or task link",
+ "need": "Automatic adoption compares the complete outgoing title and body, ignoring whitespace only. Explicit link repair can unlink or choose an issue in the project's bound repository without changing either issue.",
+ "disclosure": "current cue",
+ "surface": "GitHub sync reference and registered link command help",
+ "gap": "Candidate source and regression tests require deployed proof before verified-live status.",
+ "review": "Source implementation uses the compact body actually sent by creation; old task title fallback is removed.",
+ "plan_notes": ["FIRST-USER 2"],
+ "sources": ["docs/public/reference/github-sync.md", "packages/yoke-core/src/yoke_core/domain/github_dedup.py", "packages/yoke-core/src/yoke_core/domain/handlers/items_github_link.py"],
+ "position": 50
+}

@@ -11,6 +11,7 @@ from yoke_cli.commands import flag_adapters as _adapters
 from yoke_cli.commands.adapters.items_merge_provenance import (
     items_merge_provenance_operator_correct,
 )
+from yoke_cli.commands.adapters.items_github_sync import items_github_link
 from yoke_cli.commands.adapters.lifecycle_repair import lifecycle_repair_status
 from yoke_cli.commands.adapters.migration_content_identity import (
     migration_content_identity_verify,
@@ -54,6 +55,7 @@ SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
     ("items", "get"): ("items.get.run", _adapters.items_get),
     ("items", "list"): ("items.list.run", _adapters.items_list),
     ("items", "search"): ("items.search.run", _adapters.items_search),
+    ("items", "github-link"): ("items.github_link", items_github_link),
     ("items", "github-sync"): ("items.github_sync", _adapters.items_github_sync),
     ("items", "progress-log", "append"): (
         "items.progress_log.append",

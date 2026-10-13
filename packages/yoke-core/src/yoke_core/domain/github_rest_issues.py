@@ -39,7 +39,9 @@ def _parse_issue(payload: Any):
     from yoke_core.domain.github_rest import Issue
 
     if not isinstance(payload, dict):
-        raise ValueError(f"unexpected GitHub issue payload shape: {type(payload).__name__}")
+        raise ValueError(
+            f"unexpected GitHub issue payload shape: {type(payload).__name__}"
+        )
     labels_raw = payload.get("labels") or []
     label_names: list[str] = []
     for lab in labels_raw:
@@ -55,11 +57,15 @@ def _parse_issue(payload: Any):
         labels=tuple(label_names),
         html_url=str(payload.get("html_url", "")),
         user_login=user_login,
+        is_pull_request="pull_request" in payload,
     )
 
 
 def _target_for(
-    project: str, *, required_permissions, db_path: Optional[str] = None,
+    project: str,
+    *,
+    required_permissions,
+    db_path: Optional[str] = None,
 ):
     """Resolve the typed REST target — small wrapper so call sites stay tight."""
     from yoke_core.domain.github_rest import resolve_target
@@ -72,8 +78,12 @@ def _target_for(
 
 
 def create_issue(
-    *, project: str, title: str, body: str = "",
-    labels: Sequence[str] = (), db_path: Optional[str] = None,
+    *,
+    project: str,
+    title: str,
+    body: str = "",
+    labels: Sequence[str] = (),
+    db_path: Optional[str] = None,
 ):
     """POST /repos/{owner}/{repo}/issues. Returns the typed Issue."""
     tgt = _target_for(
@@ -86,7 +96,8 @@ def create_issue(
         payload["labels"] = list(labels)
     resp = request_with_retry(
         RestRequest(
-            method="POST", path=f"/repos/{tgt.owner}/{tgt.repo}/issues",
+            method="POST",
+            path=f"/repos/{tgt.owner}/{tgt.repo}/issues",
             body=payload,
         ),
         token=tgt.token,
@@ -95,8 +106,12 @@ def create_issue(
 
 
 def update_issue(
-    *, project: str, number: int, title: Optional[str] = None,
-    body: Optional[str] = None, db_path: Optional[str] = None,
+    *,
+    project: str,
+    number: int,
+    title: Optional[str] = None,
+    body: Optional[str] = None,
+    db_path: Optional[str] = None,
     timeout_seconds: Optional[float] = None,
     max_attempts: Optional[int] = None,
 ):
@@ -131,8 +146,12 @@ def update_issue(
 
 
 def set_issue_state(
-    *, project: str, number: int, state: str,
-    comment: Optional[str] = None, db_path: Optional[str] = None,
+    *,
+    project: str,
+    number: int,
+    state: str,
+    comment: Optional[str] = None,
+    db_path: Optional[str] = None,
 ):
     """PATCH issue state to ``"open"`` or ``"closed"``.
 
@@ -150,6 +169,7 @@ def set_issue_state(
     if comment:
         # Lazy import to avoid umbrella-init circular binding.
         from yoke_core.domain.github_rest_comments import post_comment
+
         post_comment(project=project, number=number, body=comment, db_path=db_path)
     resp = request_with_retry(
         RestRequest(
@@ -164,7 +184,10 @@ def set_issue_state(
 
 
 def get_issue(
-    *, project: str, number: int, db_path: Optional[str] = None,
+    *,
+    project: str,
+    number: int,
+    db_path: Optional[str] = None,
     timeout_seconds: Optional[float] = None,
     max_attempts: Optional[int] = None,
 ):
@@ -196,7 +219,8 @@ def get_issue(
 
 
 def _transport_budget_kwargs(
-    timeout_seconds: Optional[float], max_attempts: Optional[int],
+    timeout_seconds: Optional[float],
+    max_attempts: Optional[int],
 ) -> dict[str, object]:
     kwargs: dict[str, object] = {}
     if timeout_seconds is not None:
@@ -207,8 +231,13 @@ def _transport_budget_kwargs(
 
 
 def list_issues(
-    *, project: str, state: str = "all", label: str = "",
-    search: str = "", limit: int = 100, db_path: Optional[str] = None,
+    *,
+    project: str,
+    state: str = "all",
+    label: str = "",
+    search: str = "",
+    limit: int = 100,
+    db_path: Optional[str] = None,
 ):
     """GET /repos/{owner}/{repo}/issues or /search/issues.
 
@@ -231,7 +260,8 @@ def list_issues(
         while len(items) < limit:
             resp = request_with_retry(
                 RestRequest(
-                    method="GET", path="/search/issues",
+                    method="GET",
+                    path="/search/issues",
                     query={"q": query, "per_page": str(per_page), "page": str(page)},
                 ),
                 token=tgt.token,
@@ -255,7 +285,9 @@ def list_issues(
         per_page = min(100, max(1, limit))
         while len(items) < limit:
             query_args: dict[str, str] = {
-                "state": state, "per_page": str(per_page), "page": str(page),
+                "state": state,
+                "per_page": str(per_page),
+                "page": str(page),
             }
             if label:
                 query_args["labels"] = label
@@ -279,7 +311,10 @@ def list_issues(
 
 
 def delete_issue(
-    *, project: str, number: int, db_path: Optional[str] = None,
+    *,
+    project: str,
+    number: int,
+    db_path: Optional[str] = None,
 ) -> None:
     """DELETE an issue via the GraphQL mutation (REST has no delete endpoint).
 
