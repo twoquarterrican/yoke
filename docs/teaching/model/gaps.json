@@ -121,6 +121,13 @@
    "text": "Machine uninstall reverts every harness setting recorded in the machine home's harness-settings-written.json and strips Yoke's Cursor user hooks. The machine-wide light hooks and the yoke-global skill do not exist yet; when they land they must record their writes in that file so uninstall removes them.",
    "plan_refs": ["FIRST-USER.1"],
    "work_items": ["YOK-3973", "YOK-3975"]
+  },
+  {
+   "id": "installer-campaign-live-proof",
+   "title": "Complete the installer and first-work campaign proof",
+   "status": "observed",
+   "text": "The fresh campaign baseline stopped after its safe welcome-frame probe rejected the expected unwritable-home exit. Source corrects the named refusal contract with regression checks; a corrected live run and agent-install/first-item completion evidence remain required. See docs/testing-verification/installer-campaign.md. Preserve failed QA evidence and do not infer full installation or delivered context from file presence.",
+   "plan_refs": ["FIRST-USER.D"]
   }
  ]
 }

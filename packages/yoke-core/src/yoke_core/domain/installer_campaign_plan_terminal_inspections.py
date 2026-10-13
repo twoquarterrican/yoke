@@ -27,18 +27,22 @@ WELCOME_FRAME = terminal_case(
         "Open the public {{environment_display_name}} installer in Terminal and inspect the authored "
         "welcome frame with a process-local minimal macOS system PATH that "
         "intentionally excludes user-installed uv/uvx, capturing the automatic "
-        "uv install status line (no confirmation prompt to accept)."
+        "uv install status line and the diagnosed refusal to write the "
+        "read-only home (no confirmation prompt to accept)."
     ),
     expected_outcome=(
         "The real installer deterministically presents Yoke's authored identity "
-        "and starts installing uv automatically with text evidence and a "
-        "screenshot or an explicit capture-degraded reason."
+        "and attempts uv installation, then exits 1 with the named uv "
+        "installation failure and its manual-install recovery. Capture text "
+        "and a screenshot or an explicit capture-degraded reason."
     ),
     method_config=terminal_recipe(
         actions=(action("welcome-frame", wait_seconds=3),),
         expected_text=(
             "Your operating system for software delivery",
             "Installing uv",
+            "uv installation failed. Install uv manually",
+            "then rerun: curl -fsSL https://upyoke.com/install | sh",
         ),
         capture_checkpoints=("welcome-frame",),
         notes=(
@@ -46,8 +50,11 @@ WELCOME_FRAME = terminal_case(
             "minimal macOS system PATH, excluding both ~/.local/bin and "
             "Homebrew; uv installs automatically with no confirmation, so the "
             "isolated /var/empty home (not a stopped-before-consent gate) is "
-            "what keeps this case from mutating the real host."
+            "what keeps this case from mutating the real host. The expected "
+            "exit 1 must include the diagnosed uv failure and recovery; an "
+            "unrelated download or installer failure is not a passing frame."
         ),
+        expected_return_codes=(1,),
         start_delay=0.5,
     ),
     entry_surface=PUBLIC_WELCOME,

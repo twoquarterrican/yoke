@@ -30,3 +30,11 @@ the registered replacement records the installation in the function-call ledger.
 Existing execution snapshots keep their original definitions and evidence; any
 `requirements_behind_plan` returned by replacement need their named refresh path
 before reuse, rather than being rewritten as part of the installation.
+
+## Isolated welcome frame
+
+The welcome probe uses an unwritable home to keep the real host untouched.
+It proves the authored welcome, automatic uv attempt and diagnosed install
+refusal with recovery; exit 1 is expected only with that exact refusal text.
+A download failure, missing recovery or successful write does not pass this
+probe. Full installation success belongs to the cold-start cases.
