@@ -20,16 +20,17 @@ GIT_HOOK_NAMES = ("pre-commit", "post-commit", "pre-merge-commit")
 # launcher home, as the harness hooks do; with no launcher the commit goes
 # through with one line of teaching, and CI plus the merge-queue preflight
 # re-run the same authored-file checks. No absolute path is ever written in.
-_LAUNCHER_LOOKUP = (
-    "yoke_bin=$(command -v yoke 2>/dev/null) "
-    '|| yoke_bin="${XDG_BIN_HOME:-$HOME/.local/bin}/yoke"\n'
-    'if [ ! -x "$yoke_bin" ]; then\n'
-    '    echo "Yoke is not installed on this computer ($(uname -n));'
-    " Yoke checks skipped. Install:"
-    ' \\`curl -fsSL https://upyoke.com/install | sh\\`" >&2\n'
-    "    exit 0\n"
-    "fi\n"
-)
+def _launcher_lookup(hook_name: str) -> str:
+    return (
+        "yoke_bin=$(command -v yoke 2>/dev/null) "
+        '|| yoke_bin="${XDG_BIN_HOME:-$HOME/.local/bin}/yoke"\n'
+        'if [ ! -x "$yoke_bin" ]; then\n'
+        f'    echo "yoke ({hook_name}): Yoke is not installed on this computer ($(uname -n));'
+        " Yoke checks skipped. Install:"
+        ' \\`curl -fsSL https://upyoke.com/install | sh\\`" >&2\n'
+        "    exit 0\n"
+        "fi\n"
+    )
 
 PRE_COMMIT_SHIM = (
     "#!/bin/sh\n"
@@ -38,7 +39,7 @@ PRE_COMMIT_SHIM = (
     "# install or editable install) so hooked commits work without a Yoke\n"
     "# checkout importable by the ambient python3.\n"
     "# Hard-fails on gate violations.\n"
-    + _LAUNCHER_LOOKUP
+    + _launcher_lookup("pre-commit")
     + 'exec "$yoke_bin" git pre-commit "$@"\n'
 )
 
@@ -51,7 +52,7 @@ POST_COMMIT_SHIM = (
     "# (agent tool calls, manual git commit, merge, rebase, cherry-pick).\n"
     "# Routes through the machine-installed `yoke` launcher; never\n"
     "# blocks — a completed commit must not fail on snapshot sync trouble.\n"
-    + _LAUNCHER_LOOKUP
+    + _launcher_lookup("post-commit")
     + 'exec "$yoke_bin" git post-commit "$@"\n'
 )
 
@@ -63,7 +64,7 @@ PRE_MERGE_COMMIT_SHIM = (
     "# no direct commit could. This runs the same staged-file gate before\n"
     "# the merge commit is written.\n"
     "# Hard-fails on gate violations.\n"
-    + _LAUNCHER_LOOKUP
+    + _launcher_lookup("pre-merge-commit")
     + 'exec "$yoke_bin" git pre-commit "$@"\n'
 )
 

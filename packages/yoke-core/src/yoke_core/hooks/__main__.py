@@ -47,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     failure_warning = render_failure_warning(controls.degraded)
     if failure_warning:
         sys.stderr.write(failure_warning)
-    write_hook_output(stdout_text, exit_code, executor)
+    write_hook_output(stdout_text, exit_code, executor, event_name=args.event_name)
     return exit_code
 
 

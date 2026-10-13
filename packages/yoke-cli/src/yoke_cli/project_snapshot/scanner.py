@@ -93,12 +93,7 @@ def scan_ref(
     root = Path(repo_root)
     commit_sha = expected_sha or _rev_parse(root, ref)
     name = label or ref
-    progress = ScanProgress()
     if not include_contents:
-        progress.emit(
-            f"{name} {commit_sha[:12]} identity only; no file contents",
-            force=True,
-        )
         return PathSnapshotPayload(
             ref=name,
             commit_sha=commit_sha,
@@ -106,6 +101,7 @@ def scan_ref(
             warnings=_dirty_warnings(root),
             contents_included=False,
         )
+    progress = ScanProgress()
     progress.emit(f"scanning {name}", force=True)
     entries = _ls_tree(root, ref)
     blobs = [(sha, path) for _mode, kind, sha, path in entries if kind == "blob"]

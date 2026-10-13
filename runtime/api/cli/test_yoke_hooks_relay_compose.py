@@ -1,11 +1,4 @@
-"""Verdict composition across the hook-relay split.
-
-The relay client evaluates the LOCAL_STATE_POLICIES subset itself and
-composes with the server verdict: any deny wins regardless of side, two
-allows merge stdouts, and transport degradation never discards the client
-half. Shares the wire fixtures of ``test_yoke_operations_cli_hooks.py``
-(the ``local_subset`` holder is autouse there and here via import).
-"""
+"""Hook relay denies remain visible; allow contexts compose within budget."""
 
 from __future__ import annotations
 
@@ -86,6 +79,8 @@ def test_client_local_deny_short_circuits_without_post(
     out = capsys.readouterr()
     assert rc == 2
     expected = "BLOCKED: destructive git verb" + ("\n" if executor == "claude" else "")
+    if executor == "claude":
+        expected = "yoke (PreToolUse): " + expected
     assert (out.err if executor == "claude" else out.out) == expected
     assert local_subset.calls == [("PreToolUse", executor, None, True, {})]
 
@@ -212,6 +207,8 @@ def test_server_deny_relays_verbatim_and_drops_client_advisory(
     out = capsys.readouterr()
     assert rc == 2
     expected = "DENY: server policy" + ("\n" if executor == "claude" else "")
+    if executor == "claude":
+        expected = "yoke (PreToolUse): " + expected
     assert (out.err if executor == "claude" else out.out) == expected
     assert (out.out if executor == "claude" else out.err) == ""
 

@@ -20,7 +20,7 @@ def test_claude_local_envelope_emits_reason_on_stderr(executor, ending, capsys) 
 
     output = capsys.readouterr()
     assert exit_code == 2
-    assert output.err == "BLOCKED: reason and recovery\n"
+    assert output.err == "yoke (hook evaluate): BLOCKED: reason and recovery\n"
     assert output.out == ""
 
 
@@ -47,7 +47,7 @@ def test_relayed_denial_preserves_version_notice_on_stderr(capsys) -> None:
 
     output = capsys.readouterr()
     assert output.out == ""
-    assert output.err == f"{text}\n"
+    assert output.err == f"yoke (hook evaluate): {text}\n"
     assert "server revision" in output.err
 
 

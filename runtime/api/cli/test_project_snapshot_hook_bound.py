@@ -66,7 +66,8 @@ def test_hook_cli_defers_without_reading_file_contents(tmp_path: Path) -> None:
     )
     assert rc == 0
     assert out == ""
-    assert "identity only" in err
+    assert "identity only" not in err
+    assert err.startswith("yoke (post-commit): ")
     assert "deferred" in err
     assert [call["payload"]["operation"] for call in CALLS] == ["begin", "abort"]
     assert CALLS[0]["payload"]["snapshot"]["file_count"] == 0

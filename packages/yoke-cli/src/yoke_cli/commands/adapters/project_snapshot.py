@@ -29,6 +29,7 @@ from yoke_cli.transport.dispatcher import (
     emit_response,
 )
 from yoke_contracts.api.function_call import TargetRef
+from yoke_contracts.hook_diagnostics import format_hook_diagnostic
 from yoke_contracts.path_snapshot import (
     PathSnapshotSyncPayload,
 )
@@ -92,7 +93,10 @@ def project_snapshot_sync(args: List[str]) -> int:
         )
     except ProjectSnapshotScanError as exc:
         label = "warning" if parsed.hook_mode else "error"
-        print(f"{label}: {exc}", file=sys.stderr)
+        message = f"{label}: {exc}"
+        if parsed.hook_mode:
+            message = format_hook_diagnostic("post-commit", message)
+        print(message, file=sys.stderr)
         return 0 if parsed.hook_mode else 1
     try:
         if parsed.hook_mode or needs_https_chunking(payload):
@@ -113,13 +117,16 @@ def project_snapshot_sync(args: List[str]) -> int:
         if parsed.hook_mode:
             message = str(exc) or type(exc).__name__
             print(
-                _failure_warning(
-                    message,
-                    _write_repair(
+                format_hook_diagnostic(
+                    "post-commit",
+                    _failure_warning(
                         message,
-                        code="",
-                        retry_command="",
-                        snapshot_repair="yoke project snapshot sync",
+                        _write_repair(
+                            message,
+                            code="",
+                            retry_command="",
+                            snapshot_repair="yoke project snapshot sync",
+                        ),
                     ),
                 ),
                 file=sys.stderr,
@@ -128,7 +135,10 @@ def project_snapshot_sync(args: List[str]) -> int:
         raise
     if parsed.hook_mode:
         if not response.success:
-            print(_sync_outcome_line(response), file=sys.stderr)
+            print(
+                format_hook_diagnostic("post-commit", _sync_outcome_line(response)),
+                file=sys.stderr,
+            )
         return 0
     return emit_response(
         response,

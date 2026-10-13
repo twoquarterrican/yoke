@@ -7,7 +7,13 @@ import subprocess
 import sys
 from typing import Iterable
 
+from yoke_contracts.hook_diagnostics import format_hook_diagnostic
+
 from yoke_harness.git_hooks import file_line_check
+
+
+def _write_diagnostic(text: str) -> None:
+    sys.stderr.write(format_hook_diagnostic("pre-commit", text))
 
 
 def _git_name_only(args: Iterable[str]) -> list[str]:
@@ -53,7 +59,7 @@ def _emit_diverged_warning() -> None:
         return
     warn_files = find_diverged(diverged, staged)
     if warn_files:
-        sys.stderr.write(_format_warning(warn_files))
+        _write_diagnostic(_format_warning(warn_files))
 
 
 def _resolve_repo_root() -> str | None:
@@ -83,16 +89,13 @@ def _format_file_line_summary(
     for change in verdict.hard_fails:
         removal = change.new_line_count - limit
         if change.old_line_count == 0:
-            detail = (
-                "NEW authored file; "
-            )
+            detail = "NEW authored file; "
         elif change.old_line_count > limit:
             detail = f"existing {change.old_line_count}-line file grew; "
         else:
             detail = f"grew from {change.old_line_count} lines; "
         detail += (
-            f"current {change.new_line_count}, limit {limit}, "
-            f"remove {removal} line(s)"
+            f"current {change.new_line_count}, limit {limit}, remove {removal} line(s)"
         )
         lines.append(f"  - {change.path}: {detail}")
     lines.append("")
@@ -116,15 +119,13 @@ def _run_file_line_check_or_block() -> int:
     if verdict.ok:
         return 0
     if not verdict.hard_fails:
-        sys.stderr.write(
+        _write_diagnostic(
             "ERROR: file-line-limit gate could not inspect staged files: "
             f"{verdict.summary}\n"
             "Use `git commit --no-verify` to bypass this check.\n"
         )
         return 1
-    sys.stderr.write(
-        _format_file_line_summary(verdict, limit=policy.limit)
-    )
+    _write_diagnostic(_format_file_line_summary(verdict, limit=policy.limit))
     return 1
 
 

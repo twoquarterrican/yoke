@@ -6,13 +6,16 @@ import json
 import sys
 
 from yoke_contracts.executor_labels import canonical_harness_id
+from yoke_contracts.hook_diagnostics import format_hook_diagnostic
 from yoke_contracts.hook_context_compose import compose_context_list
 
 
 HOOK_SPECIFIC_OUTPUT_KEY = "hookSpecificOutput"
 
 
-def write_hook_output(text: str, exit_code: int, executor: str) -> None:
+def write_hook_output(
+    text: str, exit_code: int, executor: str, *, event_name: str = "hook evaluate"
+) -> None:
     """Emit Claude blocking reasons on stderr; other wire output on stdout."""
     if not text:
         return
@@ -29,6 +32,7 @@ def write_hook_output(text: str, exit_code: int, executor: str) -> None:
                 reason = inner.get("permissionDecisionReason")
                 if isinstance(reason, str) and reason:
                     text = reason
+        text = format_hook_diagnostic(event_name, text)
         sys.stderr.write(text if text.endswith("\n") else f"{text}\n")
     else:
         sys.stdout.write(text)

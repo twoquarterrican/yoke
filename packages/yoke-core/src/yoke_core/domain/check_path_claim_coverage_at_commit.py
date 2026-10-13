@@ -10,9 +10,11 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+
 from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence
 
+from yoke_contracts.hook_diagnostics import format_hook_diagnostic
 from yoke_core.domain import db_backend, db_helpers
 from yoke_core.domain.lint_worktree_path_invariants import (
     WorktreeInvariantContext,
@@ -329,7 +331,7 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         conn.close()
     if message:
-        sys.stderr.write(message)
+        sys.stderr.write(format_hook_diagnostic("pre-commit", message))
     return rc
 
 

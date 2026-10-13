@@ -46,6 +46,12 @@ import subprocess
 import sys
 from typing import Iterable
 
+from yoke_contracts.hook_diagnostics import format_hook_diagnostic
+
+
+def _write_diagnostic(text: str) -> None:
+    sys.stderr.write(format_hook_diagnostic("pre-commit", text))
+
 
 def _git_name_only(args: Iterable[str]) -> list[str]:
     try:
@@ -92,7 +98,7 @@ def _emit_diverged_warning() -> None:
     warn_files = find_diverged(diverged, staged)
     if not warn_files:
         return
-    sys.stderr.write(_format_warning(warn_files))
+    _write_diagnostic(_format_warning(warn_files))
 
 
 def _resolve_repo_root() -> str | None:
@@ -128,14 +134,11 @@ def _format_file_line_summary(verdict, *, limit: int) -> str:
         else:
             detail = f"grew from {change.old_line_count} lines; "
         detail += (
-            f"current {change.new_line_count}, limit {limit}, "
-            f"remove {removal} line(s)"
+            f"current {change.new_line_count}, limit {limit}, remove {removal} line(s)"
         )
         lines.append(f"  - {change.path}: {detail}")
     lines.append("")
-    lines.append(
-        "Run `yoke check file-line --staged` to re-inspect."
-    )
+    lines.append("Run `yoke check file-line --staged` to re-inspect.")
     lines.append(
         "Split the file into smaller modules, or use "
         "`git commit --no-verify` to bypass."
@@ -148,7 +151,7 @@ def _run_file_line_check_or_block() -> int:
     try:
         from yoke_core.domain import file_line_check
     except ImportError:
-        sys.stderr.write(
+        _write_diagnostic(
             "ERROR: file-line-limit checker module not available — "
             "install/repair yoke_core.domain.file_line_check.\n"
             "Use `git commit --no-verify` to bypass this check.\n"
@@ -169,7 +172,7 @@ def _run_file_line_check_or_block() -> int:
     if verdict.ok:
         return 0
 
-    sys.stderr.write(_format_file_line_summary(verdict, limit=policy.limit))
+    _write_diagnostic(_format_file_line_summary(verdict, limit=policy.limit))
     return 1
 
 
@@ -186,9 +189,9 @@ def _run_generated_block_renders_or_block() -> int:
         pathlib.Path(repo_root) if repo_root is not None else None
     )
     if summary:
-        sys.stderr.write(summary)
+        _write_diagnostic(summary)
     if rc != 0 and summary.startswith("ERROR:"):
-        sys.stderr.write("Use `git commit --no-verify` to bypass this check.\n")
+        _write_diagnostic("Use `git commit --no-verify` to bypass this check.\n")
     return rc
 
 
@@ -202,7 +205,7 @@ def _run_harness_capability_render_or_block() -> int:
         from yoke_core.tools import harness_continuation_coherence as hcc
         from yoke_core.tools import render_harness_capability_inline as rhc
     except ImportError:
-        sys.stderr.write(
+        _write_diagnostic(
             "ERROR: harness capability renderer not available — install/"
             "repair yoke_core.tools.render_harness_capability_inline.\n"
             "Use `git commit --no-verify` to bypass this check.\n"
@@ -221,9 +224,9 @@ def _run_harness_capability_render_or_block() -> int:
         return 0
 
     # Both formatters return "" when they have nothing to report.
-    sys.stderr.write(rhc.format_render_drift(result, check=True))
-    sys.stderr.write(rhc.format_uncited_summary(findings))
-    sys.stderr.write(hcc.format_continuation_summary(continuations))
+    _write_diagnostic(rhc.format_render_drift(result, check=True))
+    _write_diagnostic(rhc.format_uncited_summary(findings))
+    _write_diagnostic(hcc.format_continuation_summary(continuations))
     return 1
 
 
@@ -245,7 +248,7 @@ def _run_agent_render_check_or_block() -> int:
     try:
         from yoke_core.domain import agents_render
     except ImportError:
-        sys.stderr.write(
+        _write_diagnostic(
             "ERROR: agent renderer not available — "
             "install/repair yoke_core.domain.agents_render.\n"
             "Use `git commit --no-verify` to bypass this check.\n"
@@ -264,12 +267,12 @@ def _run_agent_render_check_or_block() -> int:
         return 0
     blocking = [d for d in drifted if not d.startswith("render-error:")]
     if not blocking:
-        sys.stderr.write(
+        _write_diagnostic(
             "WARNING: agent render drift could not be evaluated:\n"
             + "".join(f"  {entry}\n" for entry in drifted)
         )
         return 0
-    sys.stderr.write(
+    _write_diagnostic(
         "ERROR: rendered harness adapters disagree with their canonical "
         "sources:\n"
         + "".join(f"  {entry}\n" for entry in drifted)
@@ -293,7 +296,7 @@ def _run_worktree_status_check_or_block() -> int:
     verdict = check_worktree_status_invariant.evaluate()
     if verdict.ok:
         return 0
-    sys.stderr.write(verdict.message)
+    _write_diagnostic(verdict.message)
     return 1
 
 
