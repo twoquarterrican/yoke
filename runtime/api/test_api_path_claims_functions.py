@@ -96,17 +96,28 @@ class TestClaimsPath(_ClaimsHandlerSuite):
     def test_release_routes_to_path_claims_release(self):
         mock_conn = MagicMock()
         mock_conn.__enter__.return_value = mock_conn
-        mock_conn.execute.return_value.fetchone.return_value = {
-            "state": "released",
-            "released_at": "2026-05-13T07:00:00Z",
-        }
+        mock_conn.execute.return_value.fetchone.return_value = {"actor_id": "op"}
         with (
             self._hold_item_claim(),
             patch(
                 "yoke_core.domain.db_helpers.connect",
                 return_value=mock_conn,
             ),
-            patch("yoke_core.domain.path_claims.release"),
+            patch("yoke_core.domain.path_claims.release") as release,
+            patch(
+                "yoke_core.domain.workflow_item_binding_lock.lock_path_claim_workflow_binding"
+            ),
+            patch(
+                "yoke_core.domain.path_claims.get_claim",
+                side_effect=[
+                    {"owner_kind": "item", "owner_item_id": 1665, "state": "active"},
+                    {"state": "released", "released_at": "2026-05-13T07:00:00Z"},
+                ],
+            ),
+            patch("yoke_core.domain.path_claims_events.emit_released"),
+            patch(
+                "yoke_core.domain.path_claims_dependency_propagation.propagate_release_unblock"
+            ),
         ):
             resp = dispatch(
                 _envelope(
@@ -118,6 +129,9 @@ class TestClaimsPath(_ClaimsHandlerSuite):
         self.assertTrue(resp.success, msg=resp.error)
         self.assertEqual(resp.result["claim_id"], 116)
         self.assertEqual(resp.result["state"], "released")
+        release.assert_called_once_with(
+            mock_conn, claim_id=116, reason="done", commit=False
+        )
 
     def test_override_rejected_for_non_operator(self):
         """Non-operator session => steering_seat_required."""

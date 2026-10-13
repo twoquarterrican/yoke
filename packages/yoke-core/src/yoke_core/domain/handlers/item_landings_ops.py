@@ -8,7 +8,8 @@ that boundary as a registered call exactly as the merge receipt does.
 done-transition finalize writes are: the item claim and the merge lock are
 enforced upstream by the merge boundary, and a landing record that could be
 refused here would take the audit trail down with the merge it describes.
-Recording a landing also releases the item's ``LIVE_DB_MIGRATION:<model>``
+Recording a landing releases its open item-owned path claims with reason
+``landed`` and also releases its ``LIVE_DB_MIGRATION:<model>``
 territory in the same transaction: the entry is now in the base branch's
 history, so the next migration item may rehearse on top of it.
 ``item_landings.list`` is an ordinary read — the item page and the operator
@@ -127,6 +128,10 @@ def handle_record_item_landing(request: FunctionCallRequest) -> HandlerOutcome:
                     landed_at=body.landed_at,
                 ),
             )
+            from yoke_core.domain.path_claims_landing import release_landed_claims
+
+            if appended:
+                release_landed_claims(conn, item_id=item_id)
             territory = release_for_landed_item(
                 conn, item_id=item_id, merge_sha=body.merge_sha
             )

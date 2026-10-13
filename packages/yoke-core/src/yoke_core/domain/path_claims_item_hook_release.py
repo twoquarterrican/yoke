@@ -1,39 +1,10 @@
-"""Item-lifecycle release hook for path claims.
+"""Status-write backstop for path-claim release.
 
-Sibling of :mod:`path_claims_item_hook` that owns the *release*
-counterpart to its sibling's *cancel* behaviour. The canonical status-write
-path runs it before commit on the same connection.
-
-Why a sibling instead of expanding ``path_claims_item_hook.py``?
-The cancel hook is small but the release path adds structural
-parallelism that the spec wants surfaced as its own
-module: terminal-release semantics differ from cancellation
-semantics, the reason strings are distinct (``item-release`` /
-``item-done`` versus ``item-cancelled`` / ``item-stopped``), and
-the emitted event is :func:`emit_released` rather than
-:func:`emit_cancelled`. Keeping the two hooks in their own files
-also keeps each at a comfortable distance from the 350-line cap.
-
-Behaviour:
-
-* When the new status is ``release`` or ``done``, every non-
-  non-terminal item-owned claim is *released* (not
-  cancelled) with ``release_reason='item-release'`` /
-  ``release_reason='item-done'``. Each release emits the
-  ``PathClaimReleased`` event through
-  :mod:`yoke_core.domain.path_claims_events`.
-* Each successful release re-runs downstream unblock propagation so
-  serial claims blocked on the released claim can move back to
-  ``planned`` when no live overlap remains.
-* The caller chooses the transaction boundary. Canonical status writes pass
-  ``commit=False`` so item status and claim release commit together.
-* ``release`` is the merge-boundary trigger: it marks merge-complete and
-  is the moment item-linked work has actually landed in the
-  ``integration_target``. ``done`` is a backstop so a fast-path
-  done transition (or any flow that bypasses ``release``) cannot
-  leave a non-terminal claim behind.
-* Pinned workflow terminal ids are accepted dynamically; ``done`` has no
-  privileged meaning when a version declares a different terminal stage.
+Recorded landing owns normal release with reason ``landed`` through
+:mod:`path_claims_landing`. Exceptional completion paths still release any
+remaining claims on the status writer's transaction. Delivery redirects and
+pinned terminal stages use their status-specific reasons; this backstop
+does not replace recording a landing or authorize editing released coverage.
 """
 
 from __future__ import annotations

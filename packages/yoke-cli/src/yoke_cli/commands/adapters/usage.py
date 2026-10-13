@@ -13,6 +13,7 @@ from yoke_cli.commands.adapters.claims import (
     CLAIM_WORK_ACQUIRE_USAGE,
     CLAIM_WORK_RELEASE_USAGE,
 )
+from yoke_cli.commands.adapters.claims_path_terminal import terminal_usage
 from yoke_cli.commands.adapters.claims_path_change import (
     CLAIM_PATH_AMEND_USAGE,
     CLAIM_PATH_WIDEN_USAGE,
@@ -224,6 +225,8 @@ ADAPTER_USAGE: Dict[str, str] = {
     "claims.path.register": CLAIM_PATH_REGISTER_USAGE,
     "claims.path.widen": CLAIM_PATH_WIDEN_USAGE,
     "claims.path.amend": CLAIM_PATH_AMEND_USAGE,
+    "claims.path.release": terminal_usage("release"),
+    "claims.path.cancel": terminal_usage("cancel"),
     "claims.path.list": CLAIMS_PATH_LIST_USAGE,
     "claims.path.get": CLAIMS_PATH_GET_USAGE,
     "claims.path.override": CLAIMS_PATH_OVERRIDE_USAGE,

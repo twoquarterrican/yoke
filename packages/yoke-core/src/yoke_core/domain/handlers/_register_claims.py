@@ -7,6 +7,7 @@ from __future__ import annotations
 from yoke_core.domain.handlers import (
     _register_coordination_claims,
     claims_path as _cp,
+    claims_path_terminal as _cpt,
     claims_path_activation as _cpa,
     claims_path_amend as _cpam,
     claims_path_reads as _cpr,
@@ -163,17 +164,32 @@ def register(registry) -> None:
     )
     registry.register(
         "claims.path.release",
-        _cp.handle_release,
+        _cpt.handle_release,
         _cp.ReleaseRequest,
         _cp.ReleaseResponse,
         stability="stable",
-        owner_module="yoke_core.domain.handlers.claims_path",
+        owner_module="yoke_core.domain.handlers.claims_path_terminal",
         target_kinds=["item"],
         side_effects=["path_claims_update_released_at"],
         emitted_event_names=["PathClaimReleased"],
         guardrails=["actor_holds_item_claim"],
         adapter_status="live",
         claim_required_kind="item",
+    )
+    registry.register(
+        "claims.path.cancel",
+        _cpt.handle_cancel,
+        _cp.ReleaseRequest,
+        _cpt.CancelResponse,
+        stability="stable",
+        owner_module="yoke_core.domain.handlers.claims_path_terminal",
+        target_kinds=["item"],
+        side_effects=["path_claims_update_cancelled_at"],
+        emitted_event_names=["PathClaimCancelled"],
+        guardrails=["actor_holds_item_claim"],
+        adapter_status="live",
+        claim_required_kind="item",
+        minimum_serving_version="next-release",
     )
     registry.register(
         "claims.path.amend",

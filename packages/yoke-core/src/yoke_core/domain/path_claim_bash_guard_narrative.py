@@ -38,14 +38,11 @@ from yoke_core.domain.path_claim_target_resolver import (
 )
 
 
-def worktree_preflight_template(
-    item_id: int, public_ref: Optional[str] = None
-) -> str:
+def worktree_preflight_template(item_id: int, public_ref: Optional[str] = None) -> str:
     """Return the canonical worktree_preflight CLI line for an item."""
     ref = public_ref or unresolved_item_ref()
     return (
-        "  yoke dev run -- python3 -m yoke_core.domain.worktree_preflight "
-        f"--item {ref}"
+        f"  yoke dev run -- python3 -m yoke_core.domain.worktree_preflight --item {ref}"
     )
 
 
@@ -77,12 +74,24 @@ def target_under_active_worktree(
 
 
 def format_narrative(
-    *, mut: Mutation, failure: Failure, ctx: ClaimContext,
+    *,
+    mut: Mutation,
+    failure: Failure,
+    ctx: ClaimContext,
 ) -> str:
     """Render the deny narrative for a concrete-target failure."""
+    from yoke_core.domain.path_claims_rework_guard import (
+        REWORK_COVERAGE_REQUIRED,
+        recovery,
+    )
+
+    if failure.mode == REWORK_COVERAGE_REQUIRED:
+        return recovery(ctx.public_ref or "<item>")
     if failure.mode == WORKTREE_UNRESOLVED:
         return worktree_unresolved_narrative(
-            tool_kind=mut.verb, target_path=mut.target_path, ctx=ctx,
+            tool_kind=mut.verb,
+            target_path=mut.target_path,
+            ctx=ctx,
         )
     if failure.mode == WRONG_CWD:
         return _wrong_cwd_narrative(mut=mut, failure=failure, ctx=ctx)
@@ -91,14 +100,15 @@ def format_narrative(
         ctx,
         effective_worktree_path=failure.effective_worktree_path,
     ):
-        return _current_item_worktree_narrative(
-            mut=mut, ctx=ctx, failure=failure
-        )
+        return _current_item_worktree_narrative(mut=mut, ctx=ctx, failure=failure)
     return _out_of_claim_narrative(mut=mut, ctx=ctx)
 
 
 def worktree_unresolved_narrative(
-    *, tool_kind: str, target_path: str, ctx: ClaimContext,
+    *,
+    tool_kind: str,
+    target_path: str,
+    ctx: ClaimContext,
 ) -> str:
     """Render the WORKTREE_UNRESOLVED deny body (shared by Bash+Edit guards).
 
@@ -145,7 +155,10 @@ def ambiguous_narrative(*, mut: Mutation, ctx: ClaimContext) -> str:
 
 
 def _wrong_cwd_narrative(
-    *, mut: Mutation, failure: Failure, ctx: ClaimContext,
+    *,
+    mut: Mutation,
+    failure: Failure,
+    ctx: ClaimContext,
 ) -> str:
     template = widen_template(
         claim_id=ctx.claim_id,
@@ -169,7 +182,10 @@ def _wrong_cwd_narrative(
 
 
 def _current_item_worktree_narrative(
-    *, mut: Mutation, ctx: ClaimContext, failure: Failure,
+    *,
+    mut: Mutation,
+    ctx: ClaimContext,
+    failure: Failure,
 ) -> str:
     """Pivot the OOC narrative when the target is under the bound worktree.
 

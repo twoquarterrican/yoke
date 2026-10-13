@@ -106,6 +106,10 @@ the command does not clean or declare corrections delivered.
 
 For steering-requested rework, refresh the exact pin. Verify REWORK_STAGE
 exists, precedes LIVE_STAGE and belongs to Dash's interval.
+Landing released the item-owned path claims. Before the rework transition or
+any lane edits, register the complete fresh touch set through
+`yoke claims path register --item ITEM --paths ... --allow-planned`, then
+prepare the lane to activate it. Released claims cannot be reactivated or widened.
 Backward rework need not have a forward transition edge; ordinary claim,
 frozen-item, source and target checks remain:
 

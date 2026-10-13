@@ -47,6 +47,13 @@ yoke claims path register --item PREFIX-N --task-num <task-number> --paths <task
 - **Claims coordinate on physical files, not path strings.** For an in-repo symlink (e.g. `CLAUDE.md → AGENTS.md`), the symlink resolver pairs the symlink target_id with its canonical target_id so the claim covers both — a claim on only `CLAUDE.md` and one on only `AGENTS.md` overlap at registration (one coordination unit). External-target/dangling symlinks emit `PathTargetSymlinkSkipped` and stay symlink-name-only. `HC-path-claim-symlink-coverage` flags any non-terminal claim covering a symlink-source without its canonical target. `/yoke idea`/`refine` advise listing the canonical name; the claim covers both either way.
 - **Typed owner separates authority from provenance.** Each `path_claims` row carries `owner_kind` ∈ (`item`,`session`,`process`) + the matching `owner_item_id`/`owner_session_id`/`owner_work_claim_id`. Registration provenance lives on `registered_by_actor_id`/`registered_by_session_id`; readers use typed owner fields for authority, so an item-owned claim survives the registering session ending. `HC-path-claim-owner-kind` validates only the typed owner shape. The board shows item-owned claims as item file counts and only true session/process claims in the orphan form.
 
+Item-owned path claims release when the merge landing is recorded (`landed`);
+the work claim remains through delivery. Before rework edits, register fresh
+coverage with `yoke claims path register --item PREFIX-N --paths ... --allow-planned`
+and prepare the lane. Holder-only manual ending uses `yoke claims path release`
+or `yoke claims path cancel` with `--item`, `--claim-id`, and `--reason`; see
+[path claims](../db-reference/path-claims.md#ending-coverage-and-reopening-work).
+
 ## Project scoping
 
 - **One work item = one project.** The `project` field = where code deploys (`project=external-webapp` → External webapp repo, `project=yoke` → Yoke repo); scope is defined by where changes land, not where the idea came from. Never mix deploy targets in one item or its generated task graph. All work items live in the Yoke backlog regardless of target.

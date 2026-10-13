@@ -53,11 +53,7 @@ def widen_template(
     action is one mechanical paste.
     """
     cid = claim_id if claim_id is not None else "<claim_id>"
-    item = public_ref or (
-        unresolved_item_ref()
-        if item_id is not None
-        else "YOK-N"
-    )
+    item = public_ref or (unresolved_item_ref() if item_id is not None else "YOK-N")
     return (
         "yoke claims path widen "
         f"--claim-id {cid} --add-paths {target_path} "
@@ -170,6 +166,11 @@ def evaluate_target(
         target_path=target_path, cwd=cwd, ctx=ctx, effective_worktree=effective_wt
     ):
         return None
+
+    from yoke_core.domain.path_claims_rework_guard import REWORK_COVERAGE_REQUIRED
+
+    if ctx.state == REWORK_COVERAGE_REQUIRED:
+        return Failure(mode=REWORK_COVERAGE_REQUIRED, target_path=target_path)
 
     rel_root = domain_root_for_absolute_target(
         target_path=target_path,

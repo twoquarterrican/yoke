@@ -94,6 +94,7 @@ class TestClaimsHandlersRegistration(_ClaimsHandlerSuite):
             "claims.path.register": "item",
             "claims.path.widen": "item",
             "claims.path.release": "item",
+            "claims.path.cancel": "item",
             "claims.path.amend": "item",
             "claims.path.override": "steering",
             "claims.coordination_claim.operator_release": "steering",

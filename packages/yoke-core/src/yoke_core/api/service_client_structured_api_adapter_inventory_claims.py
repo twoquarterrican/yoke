@@ -50,7 +50,11 @@ CLAIMS_ADAPTERS = [
     ),
     AdapterEntry(
         "claims.path.release",
-        "python3 -m yoke_core.api.service_client path-claim-release",
+        "yoke claims path release --item PREFIX-N --claim-id N --reason TEXT",
+    ),
+    AdapterEntry(
+        "claims.path.cancel",
+        "yoke claims path cancel --item PREFIX-N --claim-id N --reason TEXT",
     ),
     AdapterEntry(
         function_id="claims.path.override",

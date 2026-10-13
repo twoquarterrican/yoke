@@ -1,22 +1,17 @@
-"""Bash file-mutation parser — pure function, fail-closed on ambiguity.
+"""Resolve Bash mutation targets for shared path-claim enforcement.
 
-Given a Bash command string, return a list of ``(verb, target_path)``
-tuples covering file mutations. Mutating verbs: ``rm``, ``mv``, ``cp``,
-``tee``, ``truncate``; ``>``/``>>`` redirects; ``git rm`` /
-``git restore`` / ``git checkout --``; ``find ... -delete``. Read-only
-inspection commands return no targets so path claims do not blind
-agents during orientation. Heredocs with a clean ``>`` redirect to a
-free path or claim-covered worktree path emit a real ``Mutation``;
-heredocs with no redirect and no leading write verb fall through with
-zero mutations (S3 / Class B). Opaque shells (``eval``, ``bash -c``,
-heredoc + write verb without parseable target) emit one synthetic
-``("ambiguous", "<command-snippet>")`` so the guard fails closed.
-The ``# lint:no-worktree-path-check`` suppression token short-circuits
-with a single ``("suppressed", token)`` tuple. Public surface:
-:class:`Mutation`, :func:`extract_mutations`.
+File verbs, redirects and Git file mutations yield concrete targets; reads
+yield none. Parseable heredoc redirects yield their target. Opaque executable
+shells yield an ambiguous sentinel and fail closed. The suppression token
+yields an auditable sentinel. ``Mutation`` and ``extract_mutations`` are pure.
 """
 
 from __future__ import annotations
+
+from yoke_core.domain.path_claim_bash_splitter import (
+    has_unquoted_heredoc as _has_unquoted_heredoc,
+    split_pipeline as _split_pipeline,
+)
 
 import shlex
 from dataclasses import dataclass
@@ -36,9 +31,16 @@ SUPPRESSION_TOKEN = "# lint:no-worktree-path-check"
 
 # Mutating verbs that take positional file arguments (last positional is
 # the destination for cp/mv; rm/tee accept multiple).
-_MUTATE_TARGET_VERBS = frozenset({
-    "rm", "mv", "cp", "tee", "truncate",
-})
+_MUTATE_TARGET_VERBS = frozenset(
+    {
+        "rm",
+        "mv",
+        "cp",
+        "tee",
+        "truncate",
+        "touch",
+    }
+)
 
 # git subcommands that modify specific files. Read-only git inspection
 # (``status``, ``log``, ``show``, ``diff``) intentionally emits no targets.
@@ -54,6 +56,7 @@ _FAIL_CLOSED_BASH_C_RE = "bash -c"
 # Heredoc detection lives in :func:`_has_unquoted_heredoc` so quoted
 # search literals like ``grep -n "python3 - <<" file`` no longer
 # misclassify as heredoc syntax.
+
 
 # Tokens that look like flag args; everything else is a candidate path.
 def _is_flag(token: str) -> bool:
@@ -91,12 +94,6 @@ class Mutation:
 
     verb: str
     target_path: str
-
-
-from yoke_core.domain.path_claim_bash_splitter import (
-    has_unquoted_heredoc as _has_unquoted_heredoc,
-    split_pipeline as _split_pipeline,
-)
 
 
 def _extract_redirect_paths(segment: str) -> List[Mutation]:
@@ -160,7 +157,7 @@ def _extract_git_paths(args: List[str]) -> List[Mutation]:
     rest = args[1:]
     if "--" in rest:
         idx = rest.index("--")
-        paths = [p for p in rest[idx + 1:] if p and not _is_flag(p)]
+        paths = [p for p in rest[idx + 1 :] if p and not _is_flag(p)]
     else:
         paths = [p for p in rest if p and not _is_flag(p)]
 
@@ -274,7 +271,8 @@ def _classify_segment(segment: str) -> List[Mutation]:
 
 
 def _extract_heredoc_aware_redirects(
-    stripped: str, has_heredoc: bool,
+    stripped: str,
+    has_heredoc: bool,
 ):
     """Extract redirects for a segment that may have a heredoc.
 
@@ -289,6 +287,7 @@ def _extract_heredoc_aware_redirects(
         from yoke_core.domain.path_claim_bash_parser_redirect import (
             extract_heredoc_redirect_target,
         )
+
         target = extract_heredoc_redirect_target(stripped)
     except Exception:
         target = None
@@ -329,8 +328,7 @@ def extract_mutations(command: str) -> List[Mutation]:
     for segment in _split_pipeline(command):
         out.extend(_classify_segment(segment))
     filtered = [
-        mut for mut in out
-        if not is_temp_file_var_ref(mut.target_path, tmp_vars)
+        mut for mut in out if not is_temp_file_var_ref(mut.target_path, tmp_vars)
     ]
     # Planning-phase carve-out: drop session-scratch redirects when the
     # session's item is pre-implementation. Local import avoids a
@@ -338,6 +336,7 @@ def extract_mutations(command: str) -> List[Mutation]:
     from yoke_core.domain.path_claim_bash_parser_planning_phase import (
         drop_planning_scratch_mutations,
     )
+
     return drop_planning_scratch_mutations(filtered)
 
 

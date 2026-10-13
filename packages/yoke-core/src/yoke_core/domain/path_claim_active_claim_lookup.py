@@ -149,7 +149,11 @@ def _resolve_active_claim(
         except db_backend.database_error_types(conn):
             return None
     if row is None:
-        return None
+        from yoke_core.domain.path_claims_rework_guard import missing_rework_claim
+
+        return missing_rework_claim(
+            conn, item_id=item_id, paths=_paths_for_item(conn, item_id)
+        )
 
     claim_id = int(row[0] if not hasattr(row, "keys") else row["id"])
     item_id = row[1] if not hasattr(row, "keys") else row["item_id"]
@@ -160,9 +164,7 @@ def _resolve_active_claim(
 
     parsed_item_id = _coerce_int(item_id)
     public_ref = (
-        render_item_ref(conn, parsed_item_id)
-        if parsed_item_id is not None
-        else None
+        render_item_ref(conn, parsed_item_id) if parsed_item_id is not None else None
     )
     covered_targets = _covered_targets_for_claim(conn, claim_id)
     if parsed_item_id is not None:
