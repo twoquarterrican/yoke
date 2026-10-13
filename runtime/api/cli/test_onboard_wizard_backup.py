@@ -15,7 +15,6 @@ from runtime.api.cli.onboard_wizard_test_helpers import (  # noqa: E402
     make_app,
     stub_path_doctor,
     type_text,
-    complete_board_art,
     skip_hosting,
 )
 
@@ -91,7 +90,6 @@ def test_local_backup_waits_for_apply_and_offers_projects(tmp_path, monkeypatch)
             await pilot.pause()
             assert "Existing project found: Demo." in text(app)
             await pilot.press("enter")
-            await complete_board_art(pilot)
             await skip_hosting(pilot)
             await pilot.press("enter")
             await app.workers.wait_for_complete()
