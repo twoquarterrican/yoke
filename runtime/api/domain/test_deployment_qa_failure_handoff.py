@@ -93,7 +93,7 @@ def test_failure_notice_is_inline_and_skips_its_verdict_producer(
         deployment_run_id=run_id,
         deployment_stage="item-qa",
         deployment_member_item_id=member,
-        actor_id="2",
+        actor_id="1",
         session_id=producer,
     )
     requirement_id = int(execution["roster"][0]["requirement_id"])
@@ -150,7 +150,7 @@ def test_failure_notice_is_inline_and_skips_its_verdict_producer(
                 lease_id="inline-notice",
                 messages=(
                     LeasedSessionMessage(
-                        message_id=str(message_id), body=body, sender_actor_id=2
+                        message_id=str(message_id), body=body, sender_actor_id=1
                     ),
                 ),
             ),
@@ -163,7 +163,7 @@ def test_failure_notice_is_inline_and_skips_its_verdict_producer(
         deployment_run_id=run_id,
         deployment_stage="item-qa",
         deployment_member_item_id=member,
-        actor_id="2",
+        actor_id="1",
         session_id=HOLDER_A,
     )
     assert _complete_case(test_db, retry) == requirement_id
@@ -190,7 +190,7 @@ def test_missing_holder_uses_member_project_steering_and_can_retry(
         ).fetchone()[0]
     )
     grant_actor_project_role(
-        test_db, actor_id=2, project_id=other_project_id, role_name=ROLE_OWNER
+        test_db, actor_id=1, project_id=other_project_id, role_name=ROLE_OWNER
     )
     requirement = insert_qa_requirement(test_db, item_id=member)
     verdict = insert_qa_run(

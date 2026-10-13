@@ -60,6 +60,24 @@ def seed_test_canonical_human(conn: Any) -> int:
     return seed_canonical_human(conn)
 
 
+def apply_fixture_schema_with_human() -> None:
+    """``apply_schema`` strategy: the fixture schema plus the born human.
+
+    Item writers attribute an unsourced item to the universe's human, so a
+    fixture universe without one refuses those writes.
+    """
+    from yoke_core.domain import db_backend
+    from runtime.api.fixtures.file_test_db import apply_fixture_schema_ddl
+
+    apply_fixture_schema_ddl()
+    conn = db_backend.connect()
+    try:
+        seed_test_canonical_human(conn)
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def seed_fixture_operating_actor(conn: Any) -> int:
     """Seed the operating actor session registration binds, when absent.
 

@@ -44,15 +44,15 @@ def test_approval_defaults_are_normalized_and_publish_a_new_version(test_db):
         approval_defaults={
             "done": {
                 "roles": ["admin", "owner", "owner"],
-                "actors": [2, 2],
+                "actors": [1, 1],
             },
         },
-        published_by_actor_id=2,
+        published_by_actor_id=1,
     )
 
     assert published["version"] == converged + 1
     assert published["approval_defaults"] == {
-        "done": {"roles": ["owner", "admin"], "actors": [2]},
+        "done": {"roles": ["owner", "admin"], "actors": [1]},
     }
     # Publishing appends; the version that was current keeps its own content.
     before = get_workflow_version(
@@ -63,7 +63,7 @@ def test_approval_defaults_are_normalized_and_publish_a_new_version(test_db):
     )
     assert before["definition"]["policies"].get("approval_defaults", {}) == {}
     assert edited["definition"]["policies"]["approval_defaults"] == {
-        "done": {"roles": ["owner", "admin"], "actors": [2]},
+        "done": {"roles": ["owner", "admin"], "actors": [1]},
     }
 
 
@@ -74,7 +74,7 @@ def test_file_budget_default_publishes_independently(test_db):
         workflow_id="dash",
         expected_current_version=converged,
         file_budget_default=True,
-        published_by_actor_id=2,
+        published_by_actor_id=1,
     )
 
     assert published["version"] == converged + 1
@@ -140,7 +140,7 @@ def test_testing_default_covers_each_workflow_qa_checkpoint(test_db):
         project="yoke",
         workflow_id="issue",
         plan_id=plan["id"],
-        actor_id=2,
+        actor_id=1,
     )
 
     expected = [

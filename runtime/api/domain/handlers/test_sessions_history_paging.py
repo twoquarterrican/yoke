@@ -56,9 +56,9 @@ def _insert_session(
 
 def _prepare(conn) -> None:
     create_session_control_tables(conn)
-    actor_id = int(dict(conn.execute(
-        "SELECT id FROM actors WHERE kind = 'system' LIMIT 1"
-    ).fetchone())["id"])
+    from yoke_core.domain.actors import seed_system_actor
+
+    actor_id = seed_system_actor(conn, "test-component")
     conn.execute(
         "INSERT INTO session_relays ("
         "relay_id, machine_id, first_seen_at, last_seen_at, connected_until, "

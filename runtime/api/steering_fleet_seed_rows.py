@@ -27,7 +27,8 @@ PLAN_LIMIT_HOST = "beebauman-macbook-pro-16"
 #: The host name the seeded relay reports — what an unregistered machine
 #: falls back to on any row that carries the relay's own hostname.
 RELAY_HOSTNAME = "relay-host"
-ACTOR_ID = 2
+#: The born universe's human, which every seeded session and relay acts as.
+ACTOR_ID = 1
 
 
 def _clock(conn, value, *, optional=False):

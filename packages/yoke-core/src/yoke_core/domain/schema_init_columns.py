@@ -128,6 +128,11 @@ def apply_additive_schema(conn: Any) -> None:
     )
     conn.commit()
 
+    # items.source stores the stringified actors.id for the item originator;
+    # every writer names it, and '' marks a row with no recorded source.
+    _add_column_if_not_exists(conn, "items", "source", "TEXT NOT NULL DEFAULT ''")
+    conn.commit()
+
     # Numeric project authority must be explicitly attributed. Adding this
     # column to populated unattributed data refuses instead of guessing.
     # project_sequence

@@ -48,8 +48,8 @@ def _issue_pin(conn) -> tuple[str, int]:
 class TestAddColumnMigrations:
     """ADD COLUMN migrations are idempotent and land on fresh DBs."""
 
-    def test_source_column_actor_default(self, tmp_path: Path) -> None:
-        """Items without an explicit source receive the canonical actor id."""
+    def test_source_column_defaults_to_no_recorded_source(self, tmp_path: Path) -> None:
+        """A raw insert that names no source records none, never a literal actor id."""
         with init_test_db(tmp_path) as db_path:
             conn = _connect(db_path)
             workflow_id, workflow_version_id = _issue_pin(conn)
@@ -63,7 +63,7 @@ class TestAddColumnMigrations:
             )
             conn.commit()
             row = conn.execute("SELECT source FROM items WHERE id=1").fetchone()
-            assert row[0] == "2"
+            assert row[0] == ""
             conn.close()
 
     def test_explicit_project_identity_is_preserved(self, tmp_path: Path) -> None:

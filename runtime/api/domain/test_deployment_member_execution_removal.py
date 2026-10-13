@@ -63,7 +63,7 @@ def _execution(
         "INSERT INTO qa_plan_executions(id,deployment_run_id,deployment_stage,"
         "deployment_member_item_id,session_id,actor_id,roster_digest,roster_json,"
         "cursor_ordinal,state,created_at,heartbeat_at,release_reason) "
-        "VALUES(%s,%s,%s,%s,%s,'2',%s,'[]',0,%s,%s,%s,%s)",
+        "VALUES(%s,%s,%s,%s,%s,'1',%s,'[]',0,%s,%s,%s,%s)",
         (
             execution,
             RUN,
@@ -157,7 +157,7 @@ def test_removal_is_atomic_and_cannot_regrant_another_cursor_of_removed_member(
 def _request(execution, *, function="qa.plan_execution.abort", session="removed-qa"):
     return FunctionCallRequest(
         function=function,
-        actor=ActorContext(actor_id="2", session_id=session),
+        actor=ActorContext(actor_id="1", session_id=session),
         target=TargetRef(
             kind="deployment_run", deployment_run_id=RUN, project_id="yoke"
         ),
@@ -174,7 +174,7 @@ def test_removed_holder_can_abort_legacy_residue_but_cannot_continue_it(test_db)
         (RUN, REMOVED),
     )
     record_membership_removal(
-        test_db, RUN, REMOVED, reason="old removal", session_id=None, actor_id=2
+        test_db, RUN, REMOVED, reason="old removal", session_id=None, actor_id=1
     )
     test_db.commit()
     request = _request(execution)
@@ -224,7 +224,7 @@ def test_member_admission_serializes_with_removal_and_refuses_after_commit(test_
                 deployment_run_id=RUN,
                 deployment_stage="item-qa",
                 deployment_member_item_id=REMOVED,
-                actor_id="2",
+                actor_id="1",
                 session_id="removed-qa",
             )
         other.rollback()
@@ -235,7 +235,7 @@ def test_member_admission_serializes_with_removal_and_refuses_after_commit(test_
                 deployment_run_id=RUN,
                 deployment_stage="item-qa",
                 deployment_member_item_id=REMOVED,
-                actor_id="2",
+                actor_id="1",
                 session_id="removed-qa",
             )
 

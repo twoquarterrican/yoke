@@ -16,7 +16,7 @@ from yoke_core.domain.db_helpers import instant_parameter, utc_now
 
 
 def seed_qa_session(
-    conn: Any, *session_ids: str, actor_id: int = 2, messageable: bool = False
+    conn: Any, *session_ids: str, actor_id: int = 1, messageable: bool = False
 ) -> None:
     """Register the sessions a host-control execution claims the host as.
 

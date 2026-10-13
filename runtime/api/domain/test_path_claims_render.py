@@ -93,7 +93,8 @@ class TestRenderPathClaimsSection:
         assert "`runtime/api/domain`" in rendered
         assert "`docs/path-claims.md`" in rendered
         # Registrar identity is intentionally kept out of the body view.
-        assert f"`{actor}`" not in rendered
+        body = [line for line in rendered.splitlines() if not line.startswith("### Claim")]
+        assert all(f"`{actor}`" not in line for line in body)
 
     def test_does_not_render_registrar_session_for_item_owner(self, conn):
         actor = local_human(conn)
