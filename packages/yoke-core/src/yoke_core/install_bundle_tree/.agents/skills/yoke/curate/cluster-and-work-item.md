@@ -101,8 +101,14 @@ contract, the same contract `/yoke idea` uses. After the full instruction read,
 create once:
 
 ```sh
-yoke items create "{title}" issue --project {project} --priority {priority} --entry-surface harness_skill --execution-instructions-considered --spec-file /tmp/item-spec.md
+yoke items create "{title}" issue --project {project} --priority {priority} --entry-surface harness_skill --execution-instructions-considered
 ```
+
+For an already agreed initial spec, check `yoke items create --help` first,
+then add `--spec-file PATH` or `--stdin` when that CLI advertises it.
+The planned draft remains valid without that optional input. The selected
+workflow supplies its full spec through authoring. `--title-file PATH` reads
+title only.
 
 Immediately write the spec through `items.structured_field.replace`:
 target `{kind: "item", public_ref: "PREFIX-N"}`, payload

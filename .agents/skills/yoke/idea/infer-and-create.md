@@ -105,10 +105,16 @@ create-anyway yes/no decision; no means use existing item, no matches proceed.
 
 ## 5. Create The Item
 
-Write the agreed initial spec to /tmp/item-spec.md, then invoke items.create:
+Invoke items.create for the planned draft:
 ```bash
-yoke items create "<title>" "$_workflow" --entry-surface harness_skill --execution-instructions-considered --project "$_project" --priority <priority> --json --spec-file /tmp/item-spec.md
+yoke items create "<title>" "$_workflow" --entry-surface harness_skill --execution-instructions-considered --project "$_project" --priority <priority> --json
 ```
+
+For an already agreed initial spec, check `yoke items create --help` first,
+then add `--spec-file PATH` or `--stdin` when that CLI advertises it.
+The planned draft remains valid without that optional input. The selected
+workflow supplies its full spec through authoring. `--title-file PATH` reads
+title only.
 
 Include --deployment-flow only for a valid nonempty assignment; never none.
 Dry-run adds --dry-run and performs no later writes. Read the original receipt

@@ -26,6 +26,8 @@ def resolve_create_text(parsed: argparse.Namespace, shortcut: str | None):
         title = None
     if title is None and not parsed.title_file:
         raise ValueError("TITLE_REQUIRED: add TITLE or --title-file PATH")
+    if not workflow:
+        raise ValueError("WORKFLOW_REQUIRED: add WORKFLOW after TITLE")
     try:
         title = resolve_text_file(title, parsed.title_file, "--title-file")
         spec = None
@@ -44,8 +46,6 @@ def resolve_create_text(parsed: argparse.Namespace, shortcut: str | None):
         ) from exc
     if not title or not title.strip():
         raise ValueError("TITLE_REQUIRED: add a nonblank TITLE or --title-file PATH")
-    if not workflow:
-        raise ValueError("WORKFLOW_REQUIRED: add WORKFLOW after TITLE")
     if workflow in ("dash", "task") and not (spec or "").strip():
         raise ValueError(
             "SPEC_REQUIRED: add --spec-file PATH or --stdin with a nonblank spec"
