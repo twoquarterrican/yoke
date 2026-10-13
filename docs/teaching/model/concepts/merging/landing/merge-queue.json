@@ -3,5 +3,6 @@
  "title": "Merge queue",
  "status": "draft-copy",
  "page": "merging",
- "position": 1
+ "position": 1,
+ "description": "A queue entry marked UNMERGEABLE stops the landing even before GitHub removes it. The landing notice names rebase onto the base, verification, and governed merge re-entry."
 }

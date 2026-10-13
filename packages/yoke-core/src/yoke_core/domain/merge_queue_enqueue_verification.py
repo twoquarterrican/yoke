@@ -23,7 +23,7 @@ answered than the one it asked:
   same clothes, and reading only the first three fields held a worker
   thirteen minutes on a pull request that could never enqueue.
 
-So admission is a queue entry, or else armed, still eligible, and not
+So admission is a mergeable queue entry, or else armed, still eligible, and not
 already red, and a refusal names which of the four failed. The read-back
 is confirmed once before refusing: arming has just been asked for rather
 than being a run in progress, so it settles in seconds and the confirm is
@@ -133,10 +133,9 @@ class LandingReadback:
     def admitted(self) -> bool:
         """True when GitHub is holding this landing.
 
-        A queue entry settles it on its own: whatever the other fields
-        report, the queue is driving a pull request it still holds, and
-        GitHub removes an entry it can no longer merge. Without an entry
-        the landing has to be armed, still eligible, and not already
+        A queue entry settles it unless its state is UNMERGEABLE.
+        GitHub can retain unmergeable entries, but cannot land them.
+        Without an entry the landing must be armed, eligible, and not already
         refused by its own required checks — which together are the
         ordinary armed-and-waiting state before those checks pass.
 
@@ -145,6 +144,8 @@ class LandingReadback:
         callers distinguish the two.
         """
         if self.state is None or self.membership is None:
+            return False
+        if self.membership.entry_state == "UNMERGEABLE":
             return False
         if self.membership.in_queue:
             return True
@@ -194,8 +195,11 @@ class LandingReadback:
         if failed:
             return regate_instruction(failed)
         merge_state = (state.merge_state_status if state is not None else "").strip()
-        if self.membership is not None and self.membership.mergeable == "CONFLICTING":
-            merge_state = merge_state or "dirty"
+        if self.membership is not None:
+            if self.membership.entry_state == "UNMERGEABLE":
+                merge_state = "dirty"
+            elif self.membership.mergeable == "CONFLICTING":
+                merge_state = merge_state or "dirty"
         template = _ABSENCE_REASONS.get(merge_state.lower(), _DEFAULT_ABSENCE_REASON)
         return template.format(target=target)
 

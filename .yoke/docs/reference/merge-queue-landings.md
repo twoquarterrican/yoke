@@ -15,10 +15,12 @@ Before replacing that held observation, the observer retains its episode in
 the existing item landing marker until the stopped notice reaches its holder.
 This keeps a failed notice transport retryable on the next observation.
 
-When GitHub holds neither arming nor a queue entry, the observer sends one
-stopped-landing notice to the item's claim holder through the existing wake
+When GitHub holds neither arming nor a viable queue entry, or the entry state
+is `UNMERGEABLE`, the observer sends one stopped-landing notice to the item's claim holder through the existing wake
 route. Required checks that failed or were cancelled appear in the notice;
 the stop is still reported if a later rerun passed without restoring arming.
+An `UNMERGEABLE` entry reports a conflict even while GitHub retains it behind
+other entries: rebase onto the base and re-run verification before merge re-entry.
 An unreadable queue membership proves no stop and is retried on the next
 observation. A merged pull request receives the normal completion notice.
 

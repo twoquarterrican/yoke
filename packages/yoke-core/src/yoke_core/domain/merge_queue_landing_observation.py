@@ -6,7 +6,8 @@ silence to the holder. Reading only ``merged`` is therefore not enough:
 a pull request GitHub stops driving — because the base moved underneath
 it and it went dirty, because it was closed, because its arming was
 cleared without a merge, because one of its own required checks has
-concluded red — will never report merged, and its holder waits for a
+concluded red, or its queue entry is UNMERGEABLE — will never report merged,
+and its holder waits for a
 notification that cannot arrive.
 
 What it must not do is mistake the ordinary wait for that. GitHub creates
@@ -14,7 +15,7 @@ the queue entry only once the pull request's own required checks pass, so
 an armed, eligible pull request whose checks are still running is a
 landing in progress. The observation reads the same four fields the
 admission check reads — armed, queued, eligible, entry-gated — and
-reaches the holder only when GitHub is holding none of them.
+reports a stop when admission is lost, including a retained UNMERGEABLE entry.
 """
 
 from __future__ import annotations
@@ -50,7 +51,8 @@ def classify_pending_landing(
     An unreadable pull request or an unreadable membership cannot prove an
     ejection, so both stay ``WAITING`` — the next poll asks again. So does
     a pull request GitHub is still holding, whether it has reached the
-    queue yet or is armed and waiting for its own checks.
+    queue yet or is armed and waiting for its own checks. An UNMERGEABLE
+    entry is an ejection even before GitHub removes it from the queue.
     """
     if readback.state is None:
         return LandingObservation(WAITING)
