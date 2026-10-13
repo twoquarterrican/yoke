@@ -335,6 +335,7 @@ __all__ = [
     "LOCAL_HUMAN_NAME_ENV",
     "actor_name",
     "actor_name_or_passthrough",
+    "first_human_actor_id",
     "is_human_actor",
     "resolve_actors_by_name",
     "seed_canonical_human",
@@ -342,6 +343,5 @@ __all__ = [
     "seed_system_actor",
     "set_actor_name",
     "sole_human_actor_id",
-    "first_human_actor_id",
     "validate_actor_id",
 ]
