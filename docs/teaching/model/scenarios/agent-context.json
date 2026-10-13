@@ -89,6 +89,20 @@
    "plan_notes": ["FIRST-USER accepted guidance-access amendment"],
    "surface_notes": ["Task-specific dispatch prompt: Carries the actual item/artifacts, registered lane, resolved policies, relevant project/QA facts and role assignment. It is separate from native startup loading."],
    "sources": ["runtime/agents/engineer.md", "runtime/harness/claude/agents/yoke-engineer.md", "runtime/harness/codex/agents/yoke-engineer.toml", "runtime/harness/claude/agents/references/engineer/reflection.md"]
+  },
+  {
+   "id": "06",
+   "title": "Write to the user in one or two short sentences",
+   "status": "observed",
+   "audience": "agent",
+   "when": "Every message to the user",
+   "need": "Keep each message to one or two short, literal sentences unless the user asks for more. Describe every number or ID, explain an unfamiliar name once, and ask one decision at a time with a recommendation. Required instructions and recipes stay complete.",
+   "disclosure": "current cue",
+   "surface": "AGENTS.md managed block (Writing to users)",
+   "gap": "Sessions outside any Yoke project do not receive the rule yet; see gap user-writing-outside-projects.",
+   "review": "Pending real-session proof.",
+   "plan_notes": ["FIRST-USER 8"],
+   "sources": ["AGENTS.md"]
   }
  ]
 }
