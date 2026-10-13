@@ -250,8 +250,8 @@ def agent_mission_dispatch_contract(
         prompt = (
             f"Own exploratory QA bundle {bundle_id} ({digest}) as the main "
             f"agent for immutable environment {authority['environment']} at "
-            f"target digest {target_digest}. Dispatch each informed subagent "
-            "walker one at a time in the listed order: every "
+            f"target digest {target_digest}. Dispatch informed subagents, "
+            "one walker at a time in the listed order: every "
             "mission shares the plan's one Test Machine, and each walk resets "
             "it on walk-start and restores it on walk-end. A walker turn is "
             "atomic and cannot ask the operator or send Fleet mail. "
