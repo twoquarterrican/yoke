@@ -123,11 +123,11 @@ privileged runner lane uses the separate repository webhook described above.
 
 ## Installation And Repository Scope
 
-Prefer **Only select repositories** and add the repositories each project
-actually binds. **All repositories** is an explicit blast-radius decision,
-especially for an App with Administration write. A compromised private key can
-act outside Yoke's token-scoping code, so runtime downscoping does not make an
-all-repository installation equivalent to a selected-repository installation.
+For the product App, choose **All repositories** so new repositories work
+without another settings visit; this grants access to every repository in the
+account. Setup and status recommend switching selected installations through
+their direct settings link. Keep the separate privileged runner App on
+**Only select repositories**; see [public GitHub guidance](public/github.md).
 
 After installation or a permission/repository change:
 

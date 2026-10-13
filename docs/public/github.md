@@ -61,6 +61,17 @@ yoke github connect
 yoke github status
 ```
 
+Choose **All repositories** when installing the product App so new repositories
+are available without another GitHub settings visit. This grants the App access
+to every repository in that account; selected access remains usable. Setup and
+status recommend switching selected installations and show their direct settings
+link. Change the selection there, save, then run `yoke github status` to refresh.
+User authorization alone does not change installation scope.
+
+Yoke opens the plain `/apps/<app>/installations/new` URL without repository
+preselection. GitHub documents all repositories as the default when repository
+IDs are omitted ([GitHub installation documentation](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/migrating-oauth-apps-to-github-apps#prompt-users-to-install-your-github-app)).
+
 Optional during `yoke setup` Account/GitHub steps. The onboard GitHub
 rail stays incomplete until that same `ready` contract is true — skipping
 or moving to Project does not mark GitHub done. A private clone after

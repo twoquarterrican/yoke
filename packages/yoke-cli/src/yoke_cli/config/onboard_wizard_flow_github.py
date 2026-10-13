@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 from yoke_contracts import github_origin
 from yoke_cli.config import github_machine
+from yoke_cli.config.github_machine_report import repository_scope_recommendations
 from yoke_cli.config import onboard_github_copy
 from yoke_cli.config import onboard_machine_github
 from yoke_cli.config import onboard_wizard_github_progress as github_progress
@@ -207,6 +208,7 @@ class MachineGithubFlow:
                 "Then choose Check access; Yoke will not continue as connected until it is ready.",
             ]
         )
+        details.extend(repository_scope_recommendations(report))
         if self.result.machine_github_saved:
             details.append(
                 "The machine GitHub authorization is already saved. Use "

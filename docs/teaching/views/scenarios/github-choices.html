@@ -46,17 +46,26 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
   request</div>
   <div><b>Need:</b> Skip the integration when it is not wanted or available.
   Authorization and repository access need their own checks; skipped GitHub is
-  not a failed readiness check.</div>
+  not a failed readiness check. Recommend All repositories for the product App
+  so future repositories need no settings visit; selected installations show
+  their direct settings link in setup and status. Explain that all repositories
+  grants access across the account and that user authorization does not change
+  installation scope.</div>
   <div><b>Disclosure:</b> current cue</div>
   <div><b>Surface:</b> Connect/skip setup and GitHub help</div>
   <div><b>Gap:</b> Accepted correction: skipped GitHub makes the token check
   N/A. Audit exactly which later operations require GitHub and provide
   alternatives only where supported.</div>
-  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Review:</b> Repository-scope teaching observed in source and
+  regression tests; GitHub documents all repositories selected when repository
+  IDs are omitted. Optional-connection recipe still needs live proof.</div>
   <div><b>Plan notes:</b> FIRST-USER 4 · FIRST-USER 5 · FIRST-USER 22 ·
   FIRST-USER E · JOURNEYS 2</div>
   <div><b>Sources:</b> <code>docs/public/github.md</code>,
-  <code>docs/public/reference/github-sync.md</code></div>
+  <code>docs/public/reference/github-sync.md</code>,
+  <code>packages/yoke-cli/src/yoke_cli/config/github_machine_report.py</code>,
+  <code>packages/yoke-cli/src/yoke_cli/config/onboard_wizard_github_presentation.py</code>,
+  <code>runtime/api/cli/test_github_app_machine_report.py</code></div>
 <h3 id="github-choices/02">Publishing a repository is a separate choice
 <i class="s draft-copy">draft-copy</i></h3>
   <div><b>Audience:</b> both</div>

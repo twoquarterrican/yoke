@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Mapping, Protocol
 
+from yoke_cli.config.github_machine_report import repository_scope_recommendations
 from yoke_cli.config.onboard_wizard_widgets import SelectionRow
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -58,7 +59,12 @@ def installation_scope_lines(access: Mapping[str, Any]) -> list[str]:
             continue
         lines.append(f"{account}: {_installation_scope(item, access)}")
         settings_url = str(item.get("html_url") or "").strip()
-        if settings_url:
+        recommendations = repository_scope_recommendations(
+            {"access": {"installations": [item]}}
+        )
+        if recommendations:
+            lines.extend(recommendations)
+        elif settings_url:
             lines.append(f"  Change repository access on GitHub: {settings_url}")
     if not lines:
         lines.append("Installed for: none")
@@ -130,6 +136,7 @@ def success_summary_lines(report: Mapping[str, Any]) -> list[str]:
         f"Access: {installation_count} installations · {repository_count} repositories",
         f"Required permissions: {'ready' if ready else 'needs attention'}",
         "Credential custody: saved owner-only on this machine.",
+        *repository_scope_recommendations(report),
     ]
 
 

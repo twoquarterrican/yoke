@@ -99,7 +99,7 @@
    "status": "approved",
    "scope": "Yoke",
    "concepts": ["repositories/github"],
-   "surfaces": ["setup-tui", "setup-agent", "detail-home"],
+   "surfaces": ["setup-tui", "setup-agent", "detail-home", "command-feedback"],
    "scenarios": ["github-choices"]
   },
   {
