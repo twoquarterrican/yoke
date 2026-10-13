@@ -12,27 +12,37 @@ from yoke_contracts import github_origin
 
 
 def test_human_report_renders_permission_repair_details() -> None:
-    rendered = github_machine_report.render_human({
-        "configured": True,
-        "ok": False,
-        "ready": False,
-        "permissions": {
+    rendered = github_machine_report.render_human(
+        {
+            "configured": True,
             "ok": False,
-            "items": [{
-                "account_login": "octo-org",
-                "evaluation": {"missing": [{
-                    "key": "workflows",
-                    "required": "write",
-                    "granted": "read",
-                }]},
-            }],
-        },
-        "issues": [{
-            "code": "github_app_installation_permissions_incomplete",
-            "message": "permissions are incomplete",
-            "hint": "Update the App installation permissions.",
-        }],
-    })
+            "ready": False,
+            "permissions": {
+                "ok": False,
+                "items": [
+                    {
+                        "account_login": "octo-org",
+                        "evaluation": {
+                            "missing": [
+                                {
+                                    "key": "workflows",
+                                    "required": "write",
+                                    "granted": "read",
+                                }
+                            ]
+                        },
+                    }
+                ],
+            },
+            "issues": [
+                {
+                    "code": "github_app_installation_permissions_incomplete",
+                    "message": "permissions are incomplete",
+                    "hint": "Update the App installation permissions.",
+                }
+            ],
+        }
+    )
 
     assert "missing_permission: octo-org workflows:write (granted=read)" in rendered
     assert "hint: Update the App installation permissions." in rendered
@@ -43,14 +53,16 @@ def test_json_access_exposes_only_public_repository_metadata() -> None:
         None,
         {
             "api_url": "https://api.github.com",
-            "repositories": [{
-                "repository_id": 456,
-                "full_name": "octo-org/app",
-                "default_branch": "main",
-                "installation_id": 123,
-                "access_token": "must-not-leak",
-                "refresh_credential_ref": "/must/not/leak",
-            }],
+            "repositories": [
+                {
+                    "repository_id": 456,
+                    "full_name": "octo-org/app",
+                    "default_branch": "main",
+                    "installation_id": 123,
+                    "access_token": "must-not-leak",
+                    "refresh_credential_ref": "/must/not/leak",
+                }
+            ],
         },
         authorization={"present": True},
         checked=True,
@@ -61,12 +73,14 @@ def test_json_access_exposes_only_public_repository_metadata() -> None:
     )
 
     assert report["access"]["repos"] == ["octo-org/app"]
-    assert report["access"]["repositories"] == [{
-        "repository_id": 456,
-        "full_name": "octo-org/app",
-        "default_branch": "main",
-        "installation_id": 123,
-    }]
+    assert report["access"]["repositories"] == [
+        {
+            "repository_id": 456,
+            "full_name": "octo-org/app",
+            "default_branch": "main",
+            "installation_id": 123,
+        }
+    ]
     serialized = json.dumps(report)
     assert "must-not-leak" not in serialized
     assert "/must/not/leak" not in serialized
@@ -79,7 +93,8 @@ def test_json_access_exposes_only_public_repository_metadata() -> None:
 
 def test_install_url_rejects_unsafe_app_slug() -> None:
     endpoint_pair = github_origin.validate_github_endpoint_pair(
-        "https://api.github.com", "https://github.com",
+        "https://api.github.com",
+        "https://github.com",
     )
 
     try:
@@ -92,19 +107,24 @@ def test_install_url_rejects_unsafe_app_slug() -> None:
 
 def test_permission_aggregate_accepts_one_healthy_installation() -> None:
     granted = dict(
-        github_app_installation_permissions
-        .REQUIRED_GITHUB_APP_REPOSITORY_PERMISSION_LEVELS
+        github_app_installation_permissions.REQUIRED_GITHUB_APP_REPOSITORY_PERMISSION_LEVELS
     )
-    result = github_machine_state._permission_report([
-        {
-            "installation_id": 1, "account_login": "paused",
-            "suspended": True, "permissions": granted,
-        },
-        {
-            "installation_id": 2, "account_login": "healthy",
-            "suspended": False, "permissions": granted,
-        },
-    ])
+    result = github_machine_state._permission_report(
+        [
+            {
+                "installation_id": 1,
+                "account_login": "paused",
+                "suspended": True,
+                "permissions": granted,
+            },
+            {
+                "installation_id": 2,
+                "account_login": "healthy",
+                "suspended": False,
+                "permissions": granted,
+            },
+        ]
+    )
 
     assert result["ok"] is True
     assert result["usable"] is True
@@ -133,11 +153,9 @@ def test_malformed_cached_fields_return_validation_issues(tmp_path) -> None:
     assert "github_repositories_invalid" in codes
 
 
-def _cached_github(*, html_url: str, app_id: int = 123,
-                   app_slug: str = "yoke") -> dict:
+def _cached_github(*, html_url: str, app_id: int = 123, app_slug: str = "yoke") -> dict:
     granted = dict(
-        github_app_installation_permissions
-        .REQUIRED_GITHUB_APP_REPOSITORY_PERMISSION_LEVELS
+        github_app_installation_permissions.REQUIRED_GITHUB_APP_REPOSITORY_PERMISSION_LEVELS
     )
     return {
         "api_url": "https://api.github.com",
@@ -150,23 +168,27 @@ def _cached_github(*, html_url: str, app_id: int = 123,
             "status": "authorized",
             "refresh_credential_ref": "/private/github-refresh.json",
         },
-        "installations": [{
-            "installation_id": 123,
-            "app_id": app_id,
-            "app_slug": app_slug,
-            "account_login": "octo-org",
-            "account_type": "Organization",
-            "repository_selection": "selected",
-            "suspended": False,
-            "permissions": granted,
-            "html_url": html_url,
-        }],
-        "repositories": [{
-            "repository_id": 456,
-            "installation_id": 123,
-            "full_name": "octo-org/app",
-            "default_branch": "main",
-        }],
+        "installations": [
+            {
+                "installation_id": 123,
+                "app_id": app_id,
+                "app_slug": app_slug,
+                "account_login": "octo-org",
+                "account_type": "Organization",
+                "repository_selection": "selected",
+                "suspended": False,
+                "permissions": granted,
+                "html_url": html_url,
+            }
+        ],
+        "repositories": [
+            {
+                "repository_id": 456,
+                "installation_id": 123,
+                "full_name": "octo-org/app",
+                "default_branch": "main",
+            }
+        ],
     }
 
 
@@ -175,8 +197,7 @@ def test_offline_report_drops_control_bearing_cached_identity_fields(
 ) -> None:
     github = _cached_github(
         html_url=(
-            "https://github.com/organizations/octo-org/"
-            "settings/installations/123"
+            "https://github.com/organizations/octo-org/settings/installations/123"
         ),
     )
     github["authorization"]["login"] = "octocat\x1b]2;spoof"
@@ -198,18 +219,23 @@ def test_offline_report_drops_control_bearing_cached_identity_fields(
     assert all(ord(char) >= 32 or char == "\n" for char in rendered)
 
 
-@pytest.mark.parametrize("unsafe_url", [
-    "https://attacker.example/settings/installations/123",
-    "javascript:alert(1)",
-    "https://github.com/settings/installations/999",
-])
+@pytest.mark.parametrize(
+    "unsafe_url",
+    [
+        "https://attacker.example/settings/installations/123",
+        "javascript:alert(1)",
+        "https://github.com/settings/installations/999",
+    ],
+)
 def test_offline_report_omits_unsafe_cached_installation_url(
-    tmp_path, unsafe_url: str,
+    tmp_path,
+    unsafe_url: str,
 ) -> None:
     report = github_machine_state.connected_report(
         config_path=tmp_path / "config.json",
         github=_cached_github(html_url=unsafe_url),
-        progress=[], checked=False,
+        progress=[],
+        checked=False,
     )
 
     assert "settings_url" not in report["permissions"]["items"][0]
@@ -217,25 +243,35 @@ def test_offline_report_omits_unsafe_cached_installation_url(
     assert unsafe_url not in github_machine_report.render_human(report)
 
 
-@pytest.mark.parametrize("app_id,app_slug", [
-    (999, "yoke"),
-    (123, "Yoke"),
-])
+@pytest.mark.parametrize(
+    "app_id,app_slug",
+    [
+        (999, "yoke"),
+        (123, "Yoke"),
+    ],
+)
 def test_offline_status_rejects_cached_installation_for_different_app(
-    tmp_path, app_id: int, app_slug: str,
+    tmp_path,
+    app_id: int,
+    app_slug: str,
 ) -> None:
     config = tmp_path / "config.json"
-    config.write_text(json.dumps({
-        "schema_version": 1,
-        "github": _cached_github(
-            html_url=(
-                "https://github.com/organizations/octo-org/"
-                "settings/installations/123"
-            ),
-            app_id=app_id,
-            app_slug=app_slug,
+    config.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "github": _cached_github(
+                    html_url=(
+                        "https://github.com/organizations/octo-org/"
+                        "settings/installations/123"
+                    ),
+                    app_id=app_id,
+                    app_slug=app_slug,
+                ),
+            }
         ),
-    }), encoding="utf-8")
+        encoding="utf-8",
+    )
 
     report = github_machine.status(config_path=config, check=False)
 
@@ -245,3 +281,18 @@ def test_offline_status_rejects_cached_installation_for_different_app(
     assert "github_cached_installation_app_mismatch" in {
         item["code"] for item in report["issues"]
     }
+
+
+def test_unsafe_settings_url_is_not_reintroduced_by_scope_recommendation(tmp_path):
+    report = github_machine_state.connected_report(
+        config_path=tmp_path / "config.json",
+        github=_cached_github(
+            html_url="https://attacker.example/settings/installations/123"
+        ),
+        progress=[],
+        checked=False,
+    )
+    rendered = "\n".join(github_machine_report.repository_scope_recommendations(report))
+    assert 'We recommend "All repositories"' in rendered
+    assert "attacker.example" not in rendered
+    assert "Run `yoke github connect`" in rendered

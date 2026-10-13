@@ -22,7 +22,8 @@ _BINDING_LABELS = (
 
 
 def not_configured(
-    config_path: str | Path | None, api_url: str | None,
+    config_path: str | Path | None,
+    api_url: str | None,
 ) -> dict[str, Any]:
     return {
         **_base(config_path, api_url),
@@ -33,31 +34,34 @@ def not_configured(
         "identity": {"checked": False, "ok": None},
         "access": _empty_access(),
         "permissions": {
-            "ok": None, "usable": None, "mode": "github_app_installation",
+            "ok": None,
+            "usable": None,
+            "mode": "github_app_installation",
         },
         "bindings": {
             **{
                 name: {
                     "verdict": merge_path_binding.VERDICT_BROKEN,
-                    "message": (
-                        "machine GitHub App authorization is not configured"
-                    ),
+                    "message": ("machine GitHub App authorization is not configured"),
                     "hint": (
-                        "Run `yoke github connect` against the active Yoke "
-                        "service."
+                        "Run `yoke github connect` against the active Yoke service."
                     ),
                 }
                 for name in merge_path_binding.READINESS_BINDINGS
             },
             "git_access_token": merge_path_binding.git_access_token_binding(
-                expires_at=None, stale=False,
+                expires_at=None,
+                stale=False,
             ),
         },
-        "issues": [issue(
-            "error", "github_not_configured",
-            "machine GitHub App authorization is not configured",
-            "Run `yoke github connect` against the active Yoke service.",
-        )],
+        "issues": [
+            issue(
+                "error",
+                "github_not_configured",
+                "machine GitHub App authorization is not configured",
+                "Run `yoke github connect` against the active Yoke service.",
+            )
+        ],
     }
 
 
@@ -75,7 +79,8 @@ def connected(
     auth = github.get("authorization")
     auth = auth if isinstance(auth, Mapping) else {}
     installations = [
-        dict(item) for item in github.get("installations") or []
+        dict(item)
+        for item in github.get("installations") or []
         if isinstance(item, Mapping)
     ]
     repositories = []
@@ -92,7 +97,8 @@ def connected(
         except github_app_snapshot.GitHubAppSnapshotError:
             continue
         normalized = {
-            key: value for key, value in item.items()
+            key: value
+            for key, value in item.items()
             if key in GITHUB_REPOSITORY_ALLOWED_KEYS
         }
         normalized["full_name"] = full_name
@@ -111,7 +117,8 @@ def connected(
         login = ""
     try:
         app_slug = github_app_snapshot.app_slug(
-            github.get("app_slug"), "github.app_slug",
+            github.get("app_slug"),
+            "github.app_slug",
         )
     except github_app_snapshot.GitHubAppSnapshotError:
         app_slug = ""
@@ -152,6 +159,33 @@ def connected(
     }
 
 
+def repository_scope_recommendations(report: Mapping[str, Any]) -> list[str]:
+    """Recommend future-repository access without making it a readiness gate."""
+    access = report.get("access")
+    if not isinstance(access, Mapping):
+        return []
+    lines = []
+    for item in access.get("installations") or []:
+        if (
+            not isinstance(item, Mapping)
+            or item.get("repository_selection") != "selected"
+        ):
+            continue
+        account = item.get("account_login") or "This account"
+        lines.append(
+            f'{account}: We recommend "All repositories" so new repositories '
+            "are available without another GitHub settings visit. "
+            "This grants the App access to every repository in this account."
+        )
+        url = str(item.get("html_url") or "").strip()
+        lines.append(
+            f"Change repository access on GitHub: {url}"
+            if url
+            else "Run `yoke github connect` to refresh the installation settings link."
+        )
+    return lines
+
+
 def render_human(report: Mapping[str, Any]) -> str:
     lines = [
         "Yoke GitHub",
@@ -188,7 +222,8 @@ def render_human(report: Mapping[str, Any]) -> str:
     if isinstance(access, Mapping):
         lines.append(f"  access_snapshot: {access.get('snapshot_source')}")
         installations = [
-            item for item in access.get("installations") or []
+            item
+            for item in access.get("installations") or []
             if isinstance(item, Mapping)
         ]
         if installations:
@@ -211,12 +246,15 @@ def render_human(report: Mapping[str, Any]) -> str:
         for repo in repos[:_HUMAN_LIST_LIMIT]:
             lines.append(f"    - {repo}")
         _append_omitted(lines, len(repos), "repositories")
+    lines.extend(f"  {line}" for line in repository_scope_recommendations(report))
     permissions = report.get("permissions")
     if isinstance(permissions, Mapping) and permissions.get("ok") is not None:
         lines.append(f"  permissions: {str(permissions.get('ok')).lower()}")
         for item in permissions.get("items") or []:
             evaluation = item.get("evaluation") if isinstance(item, Mapping) else None
-            missing = evaluation.get("missing") if isinstance(evaluation, Mapping) else []
+            missing = (
+                evaluation.get("missing") if isinstance(evaluation, Mapping) else []
+            )
             for permission in missing or []:
                 lines.append(
                     "  missing_permission: "
@@ -224,16 +262,12 @@ def render_human(report: Mapping[str, Any]) -> str:
                     f"{permission.get('key')}:{permission.get('required')} "
                     f"(granted={permission.get('granted') or 'none'})"
                 )
-            if item.get("settings_url") and (
-                item.get("suspended") or missing
-            ):
+            if item.get("settings_url") and (item.get("suspended") or missing):
                 lines.append(f"  repair_url: {item.get('settings_url')}")
     progress = report.get("progress") or []
     for event in progress:
         if event.get("phase") == "device_authorization":
-            lines.append(
-                f"  verification_url: {event.get('verification_uri')}"
-            )
+            lines.append(f"  verification_url: {event.get('verification_uri')}")
     if report.get("install_url"):
         lines.append(f"  install_url: {report.get('install_url')}")
     if report.get("issues"):
@@ -269,8 +303,20 @@ def _base(config_path: str | Path | None, api_url: str | None) -> dict[str, Any]
 
 
 def _empty_access() -> dict[str, Any]:
-    return {"owners": [], "repos": [], "repositories": [], "repo_count": 0,
-            "repo_listing_ok": None, "org_listing_ok": None}
+    return {
+        "owners": [],
+        "repos": [],
+        "repositories": [],
+        "repo_count": 0,
+        "repo_listing_ok": None,
+        "org_listing_ok": None,
+    }
 
 
-__all__ = ["connected", "issue", "not_configured", "render_human"]
+__all__ = [
+    "connected",
+    "issue",
+    "not_configured",
+    "render_human",
+    "repository_scope_recommendations",
+]

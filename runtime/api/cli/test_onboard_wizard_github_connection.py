@@ -65,6 +65,8 @@ def test_machine_github_connect_uses_browser_app_flow() -> None:
             assert "GitHub user: machine-user · App: yoke-product" in text
             assert "Access: 2 installations · 2 repositories" in text
             assert "Required permissions: ready" in text
+            assert 'We recommend "All repositories"' in text
+            assert "https://github.com/settings/installations/1" in text
             assert "machine-user/private-tool" not in text
             await pilot.press("down", "enter")
             await pilot.pause()
