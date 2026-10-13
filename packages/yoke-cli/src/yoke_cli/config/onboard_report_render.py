@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoke_cli.config.onboard_path_plan import shell_change_lines
+
 from typing import Any, Dict
 
 from yoke_cli.config import (
@@ -43,6 +45,7 @@ def render_human(report: Dict[str, Any]) -> str:
                 continue
             lines.append(f"  {label}:")
             lines.extend(f"    - {line}" for line in grouped_lines)
+    lines.extend(shell_change_lines(report.get("path_repair")))
     identity = report["identity"]
     if identity.get("checked"):
         lines.extend(["", f"Identity check: {identity.get('status')}"])

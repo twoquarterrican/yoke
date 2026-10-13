@@ -41,6 +41,7 @@ def _body(app):
 @pytest.mark.parametrize("has_projects", [True, False])
 def test_machine_only_finish_shows_account_scope(screen, has_projects):
     app = _connected_app(None if has_projects else [])
+    app._start_front = lambda: None  # This test mounts finish views directly.
 
     async def scenario():
         with golden_color_env():

@@ -15,7 +15,6 @@ from yoke_core.domain.installer_campaign_plan_common import (
     HOSTED_ONBOARD,
     MACHINE_GITHUB_TEXT,
     PARENT_HANDOFF_TEXT,
-    PATH_READY_TEXT,
     PATH_REPAIR_COMMAND,
     PUBLIC_INSTALL,
     PUBLIC_INSTALL_LOCAL,
@@ -32,7 +31,11 @@ from yoke_core.domain.installer_campaign_plan_common import (
 
 def _browser_approval_actions() -> list[dict[str, Any]]:
     return [
-        action("browser-approval"),
+        action(
+            "browser-approval",
+            ready_text=BROWSER_APPROVAL_TEXT,
+            ready_timeout_seconds=180,
+        ),
         transition(
             "operator-browser-approval",
             "Enter",
@@ -44,27 +47,8 @@ def _browser_approval_actions() -> list[dict[str, Any]]:
     ]
 
 
-def _hosted_completion_actions(
-    *,
-    path_needs_repair: bool,
-    uv_needs_install: bool,
-) -> list[dict[str, Any]]:
-    actions: list[dict[str, Any]] = []
-    if uv_needs_install:
-        actions.append(transition("uv-consent", "Enter", wait_seconds=90))
-    else:
-        actions.append(transition("installer-running", wait_seconds=45))
-    actions.append(action("path-diagnosis"))
-    if path_needs_repair:
-        actions.extend(
-            [
-                transition("apply-path-fix", "Enter", wait_seconds=5),
-                action("path-verified"),
-                transition("continue-path-verified", "Enter"),
-            ]
-        )
-    else:
-        actions.append(transition("continue-path", "Enter"))
+def _hosted_completion_actions() -> list[dict[str, Any]]:
+    actions = [transition("installer-running", wait_seconds=90)]
     actions.extend(
         [
             *_browser_approval_actions(),
@@ -88,22 +72,11 @@ def _hosted_completion_actions(
 def _cold_start_config(
     *,
     baseline: str,
-    path_needs_repair: bool,
-    uv_needs_install: bool,
 ) -> dict[str, Any]:
-    path_text = (
-        ("Add Yoke to your PATH.", "Added Yoke to your PATH.")
-        if path_needs_repair
-        else PATH_READY_TEXT
-    )
     return terminal_recipe(
-        actions=_hosted_completion_actions(
-            path_needs_repair=path_needs_repair,
-            uv_needs_install=uv_needs_install,
-        ),
+        actions=_hosted_completion_actions(),
         expected_text=(
             "Starting Yoke setup",
-            *path_text,
             *BROWSER_APPROVAL_TEXT,
             *MACHINE_GITHUB_TEXT,
             *REVIEW_TEXT,
@@ -148,13 +121,9 @@ COLD_START_HOSTED = terminal_case(
         "baseline_configs": {
             FRESH_HOST: _cold_start_config(
                 baseline=FRESH_HOST,
-                path_needs_repair=True,
-                uv_needs_install=True,
             ),
             SHELL_PRECONFIGURED: _cold_start_config(
                 baseline=SHELL_PRECONFIGURED,
-                path_needs_repair=False,
-                uv_needs_install=False,
             ),
         }
     },
@@ -180,13 +149,8 @@ HOSTED_CONNECT = terminal_case(
         "without asking for a pasted token."
     ),
     method_config=terminal_recipe(
-        actions=(
-            action("path-ready", ready_text=PATH_READY_TEXT),
-            transition("continue-path", "Enter", wait_seconds=10),
-            *_browser_approval_actions(),
-        ),
+        actions=(*_browser_approval_actions(),),
         expected_text=(
-            "Yoke is already on your PATH.",
             *BROWSER_APPROVAL_TEXT,
             *MACHINE_GITHUB_TEXT,
         ),
@@ -259,9 +223,11 @@ APPLY_HANDOFF = terminal_case(
     method_config=terminal_recipe(
         actions=(
             transition("installer-running", wait_seconds=45),
-            action("path-diagnosis"),
-            transition("continue-path", "Enter"),
-            action("local-universe"),
+            action(
+                "local-universe",
+                ready_text=("Your Yoke lives on this machine.",),
+                ready_timeout_seconds=180,
+            ),
             transition("continue-local-universe", "Enter"),
             transition("machine-github", *CHOOSE_BACKLOG_KEYS),
             transition(
@@ -277,7 +243,6 @@ APPLY_HANDOFF = terminal_case(
         ),
         expected_text=(
             "Starting Yoke setup",
-            "Yoke is already on your PATH.",
             "Your Yoke lives on this machine.",
             *REVIEW_TEXT,
             *APPLY_SUCCESS_TEXT,

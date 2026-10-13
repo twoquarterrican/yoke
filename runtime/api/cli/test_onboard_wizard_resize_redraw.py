@@ -151,16 +151,17 @@ def test_every_view_change_erases_the_terminal_before_repainting() -> None:
 
     async def scenario() -> None:
         async with app.run_test(headless=False, size=NARROW) as pilot:
-            await pilot.pause()
-            writes.clear()
             await advance_past_path(pilot)
+            writes.clear()
+            app._goto_path_apply_error("Install failed; retry after repair.")
             await pilot.pause()
+            assert "Retry Install" in terminal.text
 
     asyncio.run(scenario())
 
     output = "".join(writes)
     assert RESET_AND_ERASE_SCREEN in output
-    assert "Connect GitHub?" in output.split(RESET_AND_ERASE_SCREEN)[-1]
+    assert "Retry Install" in output.split(RESET_AND_ERASE_SCREEN)[-1]
 
 
 def test_frame_dropped_inside_a_batch_is_repainted() -> None:

@@ -160,10 +160,8 @@ def stub_token_verifiers(monkeypatch) -> None:
 def stub_preflight_clear(monkeypatch) -> None:
     """Make the Review pre-flight report no problems (offline, deterministic).
 
-    Stubbed at the wizard's seam so flow scenarios that reach the Review screen
-    never run the network probes (token verify / repo-exists). Scenarios that
-    exercise the pre-flight itself stub this differently or drive the pure
-    ``preflight`` helper directly.
+    Flow scenarios skip network probes (token verify / repo-exists); pre-flight
+    tests exercise the pure helper or provide their own stub.
     """
     from yoke_cli.config.onboard_wizard_flow import WizardFlow
     from yoke_cli.config.onboard_preflight import PreflightResult
@@ -227,8 +225,9 @@ def stub_source_branch(
 
 
 async def advance_past_path(pilot) -> None:
-    """From on_mount's PATH-diagnosis view, take the single Continue row."""
-    await pilot.press("enter")  # path: continue (all clear)
+    """Wait for automatic Install checks to finish without a confirmation."""
+    await pilot.app.workers.wait_for_complete()
+    await pilot.pause()
 
 
 async def skip_hosting(pilot) -> None:

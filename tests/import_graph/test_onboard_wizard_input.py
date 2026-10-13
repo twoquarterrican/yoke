@@ -20,14 +20,16 @@ from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
 
 
 def test_first_tilde_reaches_new_input_after_view_swap(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     asyncio.run(_assert_first_tilde_reaches_new_input())
 
 
 def test_plain_glyph_body_accepts_input_focus_handoff(
-    tmp_path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     asyncio.run(_assert_plain_glyph_body_accepts_input_focus_handoff())
@@ -82,6 +84,7 @@ async def _assert_first_tilde_reaches_new_input() -> None:
         defaults=WizardDefaults(),
         apply_report=lambda _kwargs: {},
     )
+    app._start_front = lambda: None  # Exercise input independently of startup.
     async with app.run_test() as pilot:
         app._goto_input(
             STEP_PROJECT,
@@ -104,6 +107,7 @@ async def _assert_plain_glyph_body_accepts_input_focus_handoff() -> None:
         apply_report=lambda _kwargs: {},
     )
     app._plain_glyphs = True
+    app._start_front = lambda: None  # Exercise input independently of startup.
     async with app.run_test() as pilot:
         app._goto_input(
             STEP_PROJECT,
@@ -132,7 +136,10 @@ def _write_plan_with_many_review_lines() -> dict[str, object]:
             "project": {"name": "My Project"},
             "steps": [
                 {"action": "set-active-env", "target": "stage"},
-                {"action": "set-https-api-url", "target": "https://api.stage.upyoke.com"},
+                {
+                    "action": "set-https-api-url",
+                    "target": "https://api.stage.upyoke.com",
+                },
                 {"action": "store-token-reference", "target": "~/.yoke/secrets/token"},
                 {"action": "machine-github-connection", "target": "GitHub"},
                 {"action": "create-runtime-dir", "target": "~/.yoke/tmp"},

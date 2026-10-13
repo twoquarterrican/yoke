@@ -37,6 +37,7 @@ def _text(widget: Static) -> str:
 
 def test_long_picker_starts_at_top_and_scrolls_without_typing() -> None:
     app = make_app()
+    app._start_front = lambda: None  # The picker is mounted directly below.
 
     async def scenario() -> None:
         async with app.run_test(size=(80, 24)) as pilot:
@@ -61,6 +62,7 @@ def test_long_picker_starts_at_top_and_scrolls_without_typing() -> None:
 
 def test_typing_filters_and_clear_restores_the_complete_list() -> None:
     app = make_app()
+    app._start_front = lambda: None  # The picker is mounted directly below.
 
     async def scenario() -> None:
         async with app.run_test(size=(80, 24)) as pilot:
@@ -90,6 +92,7 @@ def test_typing_filters_and_clear_restores_the_complete_list() -> None:
 
 def test_no_match_state_is_bounded_and_explains_how_to_recover() -> None:
     app = make_app()
+    app._start_front = lambda: None  # The picker is mounted directly below.
 
     async def scenario() -> None:
         async with app.run_test(size=(80, 24)) as pilot:

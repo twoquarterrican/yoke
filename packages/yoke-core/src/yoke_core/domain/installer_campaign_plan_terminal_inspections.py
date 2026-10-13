@@ -8,7 +8,6 @@ from yoke_core.domain.installer_campaign_plan_common import (
     CHOOSE_BACKLOG_KEYS,
     HOSTED_ONBOARD,
     MACHINE_GITHUB_TEXT,
-    PATH_READY_TEXT,
     PUBLIC_WELCOME,
     REVIEW_TEXT,
     action,
@@ -81,14 +80,13 @@ CONNECT_WAIT = terminal_case(
     ),
     method_config=terminal_recipe(
         actions=(
-            action("path-ready", ready_text=PATH_READY_TEXT),
-            transition("continue-path", "Enter", wait_seconds=10),
-            action("connect-wait"),
+            action(
+                "connect-wait",
+                ready_text=BROWSER_APPROVAL_TEXT,
+                ready_timeout_seconds=180,
+            ),
         ),
-        expected_text=(
-            "Yoke is already on your PATH.",
-            *BROWSER_APPROVAL_TEXT,
-        ),
+        expected_text=(*BROWSER_APPROVAL_TEXT,),
         capture_checkpoints=("connect-wait",),
         notes=(
             "Stop at the current browser-approval wait frame; do not fabricate "
@@ -124,9 +122,11 @@ REVIEW_FRAME = terminal_case(
     ),
     method_config=terminal_recipe(
         actions=(
-            action("path-ready", ready_text=PATH_READY_TEXT),
-            transition("continue-path", "Enter", wait_seconds=10),
-            action("browser-approval"),
+            action(
+                "browser-approval",
+                ready_text=BROWSER_APPROVAL_TEXT,
+                ready_timeout_seconds=180,
+            ),
             transition(
                 "operator-browser-approval",
                 "Enter",

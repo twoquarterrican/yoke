@@ -76,7 +76,7 @@ def onboard(args: List[str]) -> int:
         "--post-install",
         dest="post_install",
         action="store_true",
-        help="launched straight after install; show version status on PATH readiness",
+        help="launched straight after install; run Install checks automatically",
     )
     parser.add_argument(
         "--skip-harness-permissions",

@@ -160,10 +160,13 @@ def test_forced_reuse_machine_without_app_degrades_to_skip() -> None:
     app, _spy = make_app()
 
     async def scenario() -> None:
-        async with app.run_test():
+        async with app.run_test() as pilot:
+            await advance_past_path(pilot)
             app.result.machine_github_verification = None
             app.result.project_github_repo = "acme/widgets"
             app._on_project_github(PROJECT_GITHUB_REUSE_MACHINE)
+            await app.workers.wait_for_complete()
+            await pilot.pause()
 
     asyncio.run(scenario())
 
@@ -183,11 +186,14 @@ def test_skip_after_app_binding_clears_stale_binding_choice() -> None:
     app, _spy = make_app()
 
     async def scenario() -> None:
-        async with app.run_test():
+        async with app.run_test() as pilot:
+            await advance_past_path(pilot)
             app.result.project_github_repo = "acme/widgets"
             # A prior visit left App-binding state.
             app.result.project_github_adoption = GITHUB_ADOPTION_APP_BINDING
             app._on_project_github("skip")
+            await app.workers.wait_for_complete()
+            await pilot.pause()
 
     asyncio.run(scenario())
 
@@ -205,12 +211,15 @@ def test_declined_publish_clears_app_binding_adoption() -> None:
     app, _spy = make_app()
 
     async def scenario() -> None:
-        async with app.run_test():
+        async with app.run_test() as pilot:
+            await advance_past_path(pilot)
             # Prior connected-repo visit set adoption, then the user
             # back-navigated to the publish prompt and declined.
             app.result.project_github_repo = "acme/widgets"
             app.result.project_github_adoption = GITHUB_ADOPTION_APP_BINDING
             app._after_repo("")
+            await app.workers.wait_for_complete()
+            await pilot.pause()
 
     asyncio.run(scenario())
 

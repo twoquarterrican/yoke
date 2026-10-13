@@ -1,0 +1,15 @@
+{
+ "id": "setup-install",
+ "title": "Setup Install checks",
+ "status": "observed",
+ "scope": "Required tools and shell PATH readiness",
+ "audience": "Human",
+ "encounter": "Setup startup and retry after an Install failure",
+ "location": "Automatic setup Install checks, recovery view and shell-change receipts",
+ "basis": "FIRST-USER automatic Install behavior",
+ "note": "Healthy checks advance automatically. Missing optional harnesses do not block setup.",
+ "current": "Source and scripted tests cover checks and recovery; deployed campaign proof remains release-bound.",
+ "desired": "Required tools work in a fresh login shell, with named recovery on failure and visible shell-file changes.",
+ "plan_refs": ["FIRST-USER.39"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_path.py", "runtime/api/cli/test_onboard_install_checks.py", "runtime/api/domain/test_installer_campaign_interaction_rows.py"]
+}

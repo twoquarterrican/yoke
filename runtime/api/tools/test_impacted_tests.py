@@ -244,6 +244,10 @@ def test_repo_cleanliness_contract_is_always_selected(tmp_path):
     )
 
     assert set(impacted_tests.REPO_CLEANLINESS_TESTS) <= set(selection.files)
+    assert (
+        "runtime/api/engines/test_doctor_obsoleted_scan_equivalence.py"
+        in selection.files
+    )
 
 
 def test_item_worktree_schema_change_runs_fixture_consumers(tmp_path):

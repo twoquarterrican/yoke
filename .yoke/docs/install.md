@@ -44,7 +44,10 @@ home, use the exact directory and `chmod` command named in the refusal.
 
 `yoke setup` is a full-screen wizard:
 
-1. **Install / PATH** — confirm the CLI
+1. **Install / PATH** — checks required tools and repairs PATH automatically,
+   then opens Account. Install appears only when a check fails or a required
+   tool is missing; fix the named cause and choose **Retry Install**. Review
+   and the final summary list any shell files changed by uv.
 2. **Account** — where Yoke lives (this machine / team server / upyoke.com)
 3. **GitHub** — optional App connect for product GitHub commands
 4. **Project** — create, clone, import, or bind a checkout. A clone is

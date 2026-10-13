@@ -300,7 +300,7 @@ def test_wizard_local_apply_lands_config_like_yoke_init_local(
     async def scenario() -> None:
         async with app.run_test() as pilot:
             await pilot.pause()
-            await pilot.press("enter")  # PATH all clear: continue
+            await advance_past_path(pilot)
             await pilot.press("enter")
             await pilot.press("enter")  # universe summary: Continue
             await enter_admin_name(pilot)

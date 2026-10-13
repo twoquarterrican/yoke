@@ -12,7 +12,7 @@ from textual.widgets import Rule, Static  # noqa: E402
 from textual.containers import VerticalScroll  # noqa: E402
 
 from yoke_cli import main as yoke_operations_cli  # noqa: E402
-from yoke_cli.config import onboard_wizard_path_screens, path_doctor  # noqa: E402
+from yoke_cli.config import path_doctor  # noqa: E402
 from yoke_cli.config.onboard_terminal import plain_text  # noqa: E402
 from yoke_cli.config.onboard_wizard import WizardDefaults  # noqa: E402
 from yoke_cli.config.onboard_wizard_app import OnboardWizardApp  # noqa: E402
@@ -64,7 +64,7 @@ def stub_path(monkeypatch):
         report["path_repair"] = {
             **plan,
             "login_verified": True,
-            "ssh_verified": True,
+            "login_resolved": {tool: f"/bin/{tool}" for tool in path_doctor.TOOLS},
         }
 
     monkeypatch.setattr("yoke_cli.config.onboard_apply_path.apply", apply)
@@ -111,6 +111,10 @@ def test_screen_terminal_uses_ascii_visible_glyphs(monkeypatch, stub_path) -> No
     monkeypatch.setenv("YOKE_ONBOARD_FORCE_PLAIN", "1")
     monkeypatch.setenv("TERM", "screen-256color")
     monkeypatch.setenv("STY", "1234.yoke-test")
+    monkeypatch.setattr(
+        "yoke_cli.config.onboard_apply_path.apply",
+        lambda *a, **k: (_ for _ in ()).throw(OSError("uv_shell_update_failed")),
+    )
     app = _app(
         WizardDefaults(
             config_path="/tmp/cfg.json",
@@ -123,6 +127,7 @@ def test_screen_terminal_uses_ascii_visible_glyphs(monkeypatch, stub_path) -> No
 
     async def scenario() -> None:
         async with app.run_test() as pilot:
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert app.screen.has_class("plain-glyphs")
             body = app.query_one("#onboard-body")
@@ -130,9 +135,7 @@ def test_screen_terminal_uses_ascii_visible_glyphs(monkeypatch, stub_path) -> No
             text = _visible_static_text(app)
             assert "* Yoke" in text
             assert "up/down navigate" in text
-            assert "x uv" in text
-            assert "x yoke" in text
-            assert ">  Add to PATH and continue" in text
+            assert "Retry Install" in text
             assert not (UNSAFE_SCREEN_GLYPHS & set(text))
 
             app._goto_project_mode()
@@ -148,6 +151,10 @@ def test_dumb_terminal_uses_ascii_visible_glyphs(monkeypatch, stub_path) -> None
     monkeypatch.setenv("YOKE_ONBOARD_FORCE_PLAIN", "1")
     monkeypatch.setenv("TERM", "dumb")
     monkeypatch.delenv("STY", raising=False)
+    monkeypatch.setattr(
+        "yoke_cli.config.onboard_apply_path.apply",
+        lambda *a, **k: (_ for _ in ()).throw(OSError("uv_shell_update_failed")),
+    )
     app = _app(
         WizardDefaults(
             config_path="/tmp/cfg.json",
@@ -160,6 +167,7 @@ def test_dumb_terminal_uses_ascii_visible_glyphs(monkeypatch, stub_path) -> None
 
     async def scenario() -> None:
         async with app.run_test() as pilot:
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert app.screen.has_class("plain-glyphs")
             assert not app._screen_compat
@@ -173,126 +181,73 @@ def test_dumb_terminal_uses_ascii_visible_glyphs(monkeypatch, stub_path) -> None
     asyncio.run(scenario())
 
 
-def test_wizard_opens_on_path_diagnosis(stub_path) -> None:
-    app = _app()
-
-    async def scenario() -> None:
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            assert app.query_one(Stepper).active == STEP_INSTALL
-
-    asyncio.run(scenario())
-
-
-def test_preview_back_returns_to_path_diagnosis(stub_path) -> None:
-    app = _app()
-
-    async def scenario() -> None:
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            diagnosis_view = app._history[-1]
-            diagnosis_depth = len(app._history)
-            for _ in range(3):
-                await pilot.press("down")  # See exactly what changes
-                await pilot.press("enter")
-                await pilot.pause()
-                await pilot.press("down")  # preview: Apply -> Back
-                await pilot.press("enter")
-                await pilot.pause()
-
-                assert app._history[-1] is diagnosis_view
-                assert len(app._history) == diagnosis_depth
-                assert app.query_one(Stepper).active == STEP_INSTALL
-                assert "Put Yoke on PATH" in (_visible_static_text(app))
-
-    asyncio.run(scenario())
-
-
-def test_add_path_reviews_both_files_then_applies(monkeypatch, stub_path) -> None:
-    applied: dict = {}
-
-    def fake_apply(plan, *, progress, report):
-        applied["ok"] = True
-        report["path_repair"] = {**plan, "login_verified": True, "ssh_verified": True}
-
-    monkeypatch.setattr("yoke_cli.config.onboard_apply_path.apply", fake_apply)
-    app = _app()
-
-    async def scenario() -> None:
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            text = _visible_static_text(app)
-            assert "uv tool update-shell" in text
-            await pilot.press("enter")  # Add to PATH and continue
-            await pilot.pause()
-            assert applied["ok"]
-            assert app.query_one(Stepper).active != STEP_INSTALL
-
-    asyncio.run(scenario())
-
-
-def test_path_continue_accepts_ctrl_j(monkeypatch) -> None:
-    monkeypatch.setattr(path_doctor, "diagnose", lambda **_: _all_clear_diagnosis())
-    monkeypatch.setattr(
-        path_doctor,
-        "verify_fresh_login",
-        lambda shell=None, **_: _all_clear_diagnosis().future_resolved,
-    )
-    monkeypatch.setattr(
-        path_doctor,
-        "verify_ssh_command",
-        lambda shell=None, **_: _all_clear_diagnosis().ssh_resolved,
-    )
-    app = _app()
-
-    async def scenario() -> None:
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            await pilot.press("ctrl+j")  # path diagnosis: "Continue"
-            await pilot.pause()
-            # Continue advances out of the Install/PATH segment into onboarding.
-            assert app.query_one(Stepper).active != STEP_INSTALL
-
-    asyncio.run(scenario())
-
-
-def test_post_install_opens_on_path_readiness_with_version_status(stub_path) -> None:
+@pytest.mark.parametrize("post_install", [False, True])
+def test_install_runs_without_confirmation_and_has_no_history(stub_path, post_install):
     app = _app(
         WizardDefaults(
             config_path="/tmp/cfg.json",
             env_name="prod",
             api_url="https://api.test",
             token="actor-token",
-            post_install=True,
+            post_install=post_install,
         )
     )
 
-    async def scenario() -> None:
+    async def scenario():
         async with app.run_test() as pilot:
+            await app.workers.wait_for_complete()
             await pilot.pause()
-            assert app.query_one(Stepper).active == "install"
-            await pilot.press("enter")  # Add to PATH and continue
+            assert app.query_one(Stepper).active != STEP_INSTALL
+            assert all(view.step != STEP_INSTALL for view in app._history)
+            assert app.result.path_repair["login_verified"]
+
+    asyncio.run(scenario())
+
+
+def test_all_clear_install_does_not_write(monkeypatch):
+    monkeypatch.setattr(path_doctor, "diagnose", _all_clear_diagnosis)
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("Healthy Install must not run shell repair")
+
+    monkeypatch.setattr("yoke_cli.config.onboard_apply_path.apply", unexpected)
+    app = _app()
+
+    async def scenario():
+        async with app.run_test() as pilot:
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert app.query_one(Stepper).active != STEP_INSTALL
 
     asyncio.run(scenario())
 
 
-def test_post_install_status_uses_the_installed_source_version(monkeypatch) -> None:
-    monkeypatch.setattr(
-        onboard_wizard_path_screens.install_binding,
-        "distribution_version",
-        lambda *, source_value: source_value,
-    )
-    rendered = "\n".join(
-        str(widget.render())
-        for widget in onboard_wizard_path_screens.path_diagnosis_body(
-            _diagnosis(needs_fix=True),
-            installed_version=True,
-        )
-    )
+def test_failed_install_stays_on_install_and_retry_advances(monkeypatch):
+    monkeypatch.setattr(path_doctor, "diagnose", _all_clear_diagnosis)
+    app = _app()
 
-    assert "Yoke source checkout installed." in rendered
+    def fail():
+        raise OSError("shell-file permissions")
+
+    monkeypatch.setattr(path_doctor, "diagnose", fail)
+
+    async def scenario():
+        async with app.run_test() as pilot:
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert app.query_one(Stepper).active == STEP_INSTALL
+            text = _visible_static_text(app)
+            assert "install_check_failed" in text
+            assert "shell-file permissions" in text
+            assert "Retry Install" in text
+            monkeypatch.setattr(path_doctor, "diagnose", _all_clear_diagnosis)
+            await pilot.press("enter")
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert app.query_one(Stepper).active != STEP_INSTALL
+            assert all(view.step != STEP_INSTALL for view in app._history)
+
+    asyncio.run(scenario())
 
 
 def test_onboard_post_install_flag_parses(monkeypatch, capsys) -> None:
@@ -327,3 +282,36 @@ def test_onboard_post_install_flag_parses(monkeypatch, capsys) -> None:
 
     assert rc == 0
     assert captured["post_install"] is True
+
+
+def test_repeated_retry_keeps_history_until_check_completes(monkeypatch):
+    import threading
+
+    app = _app()
+    release = threading.Event()
+    calls = []
+    monkeypatch.setattr(
+        app, "_check_install", lambda: ({}, "install_check_failed: retry")
+    )
+
+    def slow_check():
+        calls.append(True)
+        assert release.wait(5)
+        return {"login_verified": True}, ""
+
+    async def scenario():
+        async with app.run_test() as pilot:
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            monkeypatch.setattr(app, "_check_install", slow_check)
+            try:
+                await pilot.press("enter", "enter")
+                assert len(app._history) == 1
+            finally:
+                release.set()
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert calls == [True]
+            assert all(view.step != STEP_INSTALL for view in app._history)
+
+    asyncio.run(scenario())

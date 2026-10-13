@@ -25,7 +25,10 @@ def test_review_names_uv_shell_setup():
     assert "uv tool update-shell" in grouped["machine"][0]
 
 
-def test_apply_delegates_and_reports_real_login(monkeypatch):
+def test_apply_delegates_and_reports_real_login(monkeypatch, tmp_path):
+    monkeypatch.setattr(onboard_apply_path.Path, "home", lambda: tmp_path)
+    monkeypatch.delenv("ZDOTDIR", raising=False)
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
     calls = []
     monkeypatch.setattr(
         path_doctor,

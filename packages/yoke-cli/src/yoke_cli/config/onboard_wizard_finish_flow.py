@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import yoke_token_verify
+from yoke_cli.config.onboard_path_plan import shell_change_lines
+from rich.markup import escape
+from textual.widgets import Static
 from yoke_cli.config.onboard_wizard_machine_finish import (
     machine_finish_lines,
     machine_finish_widgets,
@@ -26,10 +29,14 @@ class FinishBodyFlow:
         grouped = classify_plan(self._review_plan)
         if not any(grouped.get(key) for _label, _css, key in _PLAN_GROUPS):
             widgets[-1:-1] = machine_finish_widgets(self.result)
+        widgets[-1:-1] = [
+            Static(escape(line), classes="onboard-plan-line")
+            for line in shell_change_lines(self.result.path_repair)
+        ]
         return widgets
 
     def _review_status_lines(self) -> list[str]:
-        lines: list[str] = []
+        lines: list[str] = shell_change_lines(self.result.path_repair)
         verification = self.result.yoke_token_verification
         machine_lines = machine_finish_lines(self.result)
         if machine_lines:
@@ -59,6 +66,10 @@ class FinishBodyFlow:
             board_art_committed=getattr(self, "_board_art_committed", False),
         )
         widgets[-1:-1] = machine_finish_widgets(self.result)
+        widgets[-1:-1] = [
+            Static(escape(line), classes="onboard-plan-line")
+            for line in shell_change_lines(self.result.path_repair)
+        ]
         return widgets
 
 

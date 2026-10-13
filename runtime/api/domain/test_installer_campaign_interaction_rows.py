@@ -29,7 +29,9 @@ INSTALLER_CAMPAIGN_CASES = installer_campaign_cases_for_target(
             "release_channel": "latest",
         },
         "role": {"production": False},
-    }, primary_machine="primary-test", joining_machine="joining-test",
+    },
+    primary_machine="primary-test",
+    joining_machine="joining-test",
 )
 
 
@@ -43,9 +45,15 @@ def test_user_facing_terminal_cases_use_the_native_terminal_app_mode() -> None:
             configs = (raw_config,)
         for config in configs:
             expected = (
-                "ssh-command" if case["case_key"] in {
-                    "path-repair", "stale-reinstall", "uninstall", "late-harness-discovery",
-                } else "terminal"
+                "ssh-command"
+                if case["case_key"]
+                in {
+                    "path-repair",
+                    "stale-reinstall",
+                    "uninstall",
+                    "late-harness-discovery",
+                }
+                else "terminal"
             )
             assert config["execution_mode"] == expected
 
@@ -70,7 +78,7 @@ def test_terminal_cases_use_current_stage_and_browser_approval_surfaces() -> Non
     )
     assert (
         cold_configs["fresh-host"]["expected_text"]
-        != cold_configs["shell-preconfigured"]["expected_text"]
+        == cold_configs["shell-preconfigured"]["expected_text"]
     )
     for config in cold_configs.values():
         actions = {action["step"]: action for action in config["actions"]}
@@ -176,8 +184,6 @@ def test_hosted_actions_pin_send_before_capture_transitions() -> None:
 
     hosted_config = cases["hosted-connect"]["method_config"]
     assert action_signature(hosted_config) == [
-        ("path-ready", ()),
-        ("continue-path", ("Enter",)),
         ("browser-approval", ()),
         ("operator-browser-approval", ("Enter",)),
         ("machine-github", ()),
@@ -188,9 +194,8 @@ def test_hosted_actions_pin_send_before_capture_transitions() -> None:
         == "machine_browser_approval"
     )
     assert "wait_seconds" not in hosted_actions["operator-browser-approval"]
-    assert hosted_actions["path-ready"]["ready_text"] == [
-        "Yoke is already on your PATH.",
-    ]
+    assert hosted_actions["browser-approval"]["ready_timeout_seconds"] == 180
+    assert "One-time code:" in hosted_actions["browser-approval"]["ready_text"]
 
     handoff_actions = {
         action["step"]: action
@@ -202,21 +207,16 @@ def test_hosted_actions_pin_send_before_capture_transitions() -> None:
 
     connect_wait_config = cases["connect-wait"]["method_config"]
     assert action_signature(connect_wait_config) == [
-        ("path-ready", ()),
-        ("continue-path", ("Enter",)),
         ("connect-wait", ()),
     ]
     connect_wait_actions = {
         action["step"]: action for action in connect_wait_config["actions"]
     }
-    assert connect_wait_actions["path-ready"]["ready_text"] == [
-        "Yoke is already on your PATH.",
-    ]
+    assert connect_wait_actions["connect-wait"]["ready_timeout_seconds"] == 180
+    assert "One-time code:" in connect_wait_actions["connect-wait"]["ready_text"]
 
     review_config = cases["review-frame"]["method_config"]
     assert action_signature(review_config) == [
-        ("path-ready", ()),
-        ("continue-path", ("Enter",)),
         ("browser-approval", ()),
         ("operator-browser-approval", ("Enter",)),
         ("machine-github", ()),
@@ -228,9 +228,8 @@ def test_hosted_actions_pin_send_before_capture_transitions() -> None:
         for step, _keys in action_signature(review_config)
     )
     review_actions = {action["step"]: action for action in review_config["actions"]}
-    assert review_actions["path-ready"]["ready_text"] == [
-        "Yoke is already on your PATH.",
-    ]
+    assert review_actions["browser-approval"]["ready_timeout_seconds"] == 180
+    assert "One-time code:" in review_actions["browser-approval"]["ready_text"]
     assert review_actions["review-frame"]["ready_text"] == [
         "Review what Yoke will save.",
         "Apply",
@@ -317,3 +316,15 @@ def test_product_rows_and_action_boundaries_select_the_intended_targets() -> Non
         "Enter",
     ]
     assert handoff_actions["review"].get("keys", []) == []
+
+
+def test_successful_install_has_no_confirmation_keystroke():
+    cases = {case["case_key"]: case for case in INSTALLER_CAMPAIGN_CASES}
+    for config in cases["cold-start-hosted"]["method_config"][
+        "baseline_configs"
+    ].values():
+        actions = config["actions"]
+        assert actions[0]["step"] == "installer-running"
+        assert actions[1]["step"] == "browser-approval"
+        assert all(not action.get("keys") for action in actions[:2])
+        assert actions[1]["ready_timeout_seconds"] == 180
