@@ -19,6 +19,7 @@ from yoke_core.domain.steering_fleet_report_delivery import (
     claim_report_composition,
     steering_report_candidate,
     confirm_steering_report_delivery,
+    record_report_delivery,
 )
 from yoke_core.domain.steering_fleet_report_watcher import watcher_dict
 from yoke_core.domain.fleet_delta_disappearances import shown_rows, disappeared_lines
@@ -87,6 +88,15 @@ def test_hook_and_watcher_reserve_one_composition_and_old_candidate_cannot_stamp
         is not None
     )
     assert confirm_steering_report_delivery(steering_scope, candidate) is False
+    assert (
+        record_report_delivery(
+            steering_scope,
+            session_id=STEERING_SESSION,
+            fingerprint=candidate.fingerprint,
+            now=candidate.claimed_at,
+        )
+        is False
+    )
 
 
 def test_session_labels_preserve_commands_and_json_identity():

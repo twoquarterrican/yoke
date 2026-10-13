@@ -10,6 +10,7 @@ from runtime.api.fixtures.backlog import insert_item
 from yoke_core.domain.steering_claims import acquire as acquire_steering
 from yoke_core.domain.strategy_docs_defaults import seed_default_docs
 from yoke_core.domain.steering_fleet_report_delivery import (
+    claim_report_composition,
     confirm_steering_report_delivery,
     record_report_delivery,
     steered_project_id,
@@ -311,6 +312,14 @@ def test_hook_and_watcher_share_one_delivery_record(steering_scope):
         )
 
     assert watcher(candidate.fingerprint) is False
+    assert (
+        claim_report_composition(
+            steering_scope,
+            session_id=STEERING_SESSION,
+            now="2026-08-26T12:05:00.000000Z",
+        )
+        is not None
+    )
     assert watcher("changed-content") is True
     assert watcher("changed-content") is False
     assert _last_report(steering_scope, STEERING_SESSION)[1] == "changed-content"

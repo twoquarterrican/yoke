@@ -138,10 +138,10 @@ def steering_report_candidate(
 ) -> SteeringReportCandidate | None:
     """Reserve composition before building; siblings and the watcher skip it."""
     current = utc_now() if now is None else parse_instant(now)
-    _, last_fingerprint = _last_report(conn, session_id)
     not_after = claim_report_composition(conn, session_id=session_id, now=current)
     if not_after is None:
         return None
+    _, last_fingerprint = _last_report(conn, session_id)
 
     combined = compose_held_reports(
         conn,
@@ -216,15 +216,15 @@ def record_report_delivery(
     now = parse_instant(now)
     marker = _p(conn)
     cursor = conn.execute(
-        "UPDATE harness_sessions SET last_steering_report_at = "
-        + marker
-        + ", last_steering_report_fingerprint = "
+        "UPDATE harness_sessions SET last_steering_report_fingerprint = "
         + marker
         + " WHERE session_id = "
         + marker
+        + " AND last_steering_report_at = "
+        + marker
         + " AND COALESCE(last_steering_report_fingerprint, '') <> "
         + marker,
-        (instant_parameter(conn, now), fingerprint, session_id, fingerprint),
+        (fingerprint, session_id, instant_parameter(conn, now), fingerprint),
     )
     conn.commit()
     return cursor.rowcount == 1
