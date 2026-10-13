@@ -52,7 +52,7 @@ def test_deployment_plan_machine_case_uses_durable_serial_lease_and_evidence(
     execution = begin_plan_execution(
         test_db,
         deployment_run_id=RUN_ID,
-        actor_id="2",
+        actor_id="1",
         session_id="deployment-machine",
     )
     requirement_id = materialized["created_requirement_ids"][0]
@@ -61,7 +61,7 @@ def test_deployment_plan_machine_case_uses_durable_serial_lease_and_evidence(
         return FunctionCallRequest(
             function=function,
             actor=ActorContext(
-                actor_id="2",
+                actor_id="1",
                 session_id="deployment-machine",
             ),
             target=TargetRef(

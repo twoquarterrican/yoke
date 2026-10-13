@@ -45,7 +45,7 @@ from yoke_core.domain.qa_terminal_settlement import find_unsettled_records
 from yoke_core.domain.schema_init_tables import create_governed_tables
 
 
-ACTOR = ActorContext(actor_id="2", session_id="settlement-session")
+ACTOR = ActorContext(actor_id="1", session_id="settlement-session")
 
 
 def _request(
