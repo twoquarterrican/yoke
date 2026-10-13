@@ -105,10 +105,66 @@ def _late_fixture(monkeypatch, tmp_path, setup_returncode):
 
 def test_failed_setup_restores_the_preserved_harness(monkeypatch, tmp_path):
     executable = _late_fixture(monkeypatch, tmp_path, 1)
+    home = tmp_path / ".codex"
+    home.mkdir()
+    marker = home / "preserved-file"
+    marker.write_text("preserve without reading during the fixture")
     with pytest.raises(SystemExit, match="late_harness_setup_failed"):
         exec(compile(_LATE_HARNESS_SCRIPT, "late_fixture", "exec"), {})
     assert executable.read_text() == "fixture binary"
     assert not executable.with_name("codex.installer-qa-saved").exists()
+    assert marker.is_file()
+    assert not home.with_name(".codex.installer-qa-saved").exists()
+
+
+def test_late_discovery_runs_setup_with_absent_then_restored_home(monkeypatch, tmp_path):
+    executable = _late_fixture(monkeypatch, tmp_path, 0)
+    home = tmp_path / ".codex"
+    home.mkdir()
+    observed = []
+
+    def run(argv, **kwargs):
+        if kwargs.get("shell"):
+            observed.append((executable.exists(), home.exists()))
+        return CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(subprocess, "run", run)
+    with pytest.raises(SystemExit, match="late_harness_permissions_missing"):
+        exec(compile(_LATE_HARNESS_SCRIPT, "late_fixture", "exec"), {})
+    assert observed == [(False, False), (True, True)]
+
+
+def test_home_restore_failure_still_restores_the_executable(monkeypatch, tmp_path):
+    executable = _late_fixture(monkeypatch, tmp_path, 1)
+    home = tmp_path / ".codex"
+    home.mkdir()
+    saved = home.with_name(".codex.installer-qa-saved")
+    rename = Path.rename
+
+    def restore(path, target):
+        if path == saved:
+            raise OSError("fixture restoration refusal")
+        return rename(path, target)
+
+    monkeypatch.setattr(Path, "rename", restore)
+    with pytest.raises(SystemExit, match="late_harness_home_restore_failed"):
+        exec(compile(_LATE_HARNESS_SCRIPT, "late_fixture", "exec"), {})
+    assert executable.exists()
+    assert saved.is_dir()
+
+
+def test_native_probe_timeout_names_recovery_after_restoration(monkeypatch, tmp_path):
+    executable = _late_fixture(monkeypatch, tmp_path, 0)
+
+    def run(argv, **kwargs):
+        if not kwargs.get("shell"):
+            raise subprocess.TimeoutExpired(argv, 60)
+        return CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(subprocess, "run", run)
+    with pytest.raises(SystemExit, match="late_harness_discovery_failed"):
+        exec(compile(_LATE_HARNESS_SCRIPT, "late_fixture", "exec"), {})
+    assert executable.exists()
 
 
 def test_configured_permissions_without_trusted_hooks_do_not_pass(monkeypatch, tmp_path):

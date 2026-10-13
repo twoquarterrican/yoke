@@ -47,8 +47,10 @@ multi-host pass. Preserve the baseline and every unperformed case as evidence.
 The six recovery cases cover a published predecessor reinstall, local-to-hosted
 with and without a backup, a distinct joining machine, explicit uninstall and
 late harness discovery. Preparation failures preserve their named reason and
-recovery. The late-harness fixture restores its preserved executable even when
-setup fails; configuration checks do not replace the exploration's real
+recovery. The late-harness fixture preserves its executable and configuration
+home outside discovery, restores both even when setup fails, then reruns public
+setup to discover the newly available harness. Configuration checks do not
+replace the exploration's real
 received-context proof.
 
 ## Complete machine approval links
