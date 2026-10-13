@@ -36,6 +36,7 @@ Encode sequencing as item dependency edges. Before announcing live, confirm the 
 
 Standing invariants:
 
+- For every defect or friction, first establish its root cause, using a subagent if needed: why it happened, why it didn't happen before, and what changed. Then propose the minimal right fix set for operator approval.
 - One atomic steering acquire pairs a steering-scope claim and document lock;
   the document and linked items are durable state. Scope/links/overlap and role
   mail are governed by scope-and-authority. No doc-less continuation.

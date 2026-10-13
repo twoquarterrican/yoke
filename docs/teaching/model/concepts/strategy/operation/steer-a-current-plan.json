@@ -1,7 +1,10 @@
 {
  "id": "steer-a-current-plan",
  "title": "Steer a current plan",
- "status": "draft-copy",
+ "status": "observed",
+ "current": "Steering's standing rules require establishing the root cause of every defect or friction before proposing the minimal right fix set for operator approval: why it happened, why it did not happen before, and what changed. Use a subagent if needed.",
+ "sources": [".agents/skills/yoke/steer/SKILL.md"],
+ "skills": ["steer"],
  "page": "strategy",
  "position": 2
 }
