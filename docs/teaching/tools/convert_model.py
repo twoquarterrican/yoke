@@ -12,7 +12,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from docs.teaching.tools.model import MODEL_ROOT, dump
+if __package__:
+    from .model import MODEL_ROOT, dump
+else:
+    from model import MODEL_ROOT, dump
 
 
 def convert(root: Path) -> int:

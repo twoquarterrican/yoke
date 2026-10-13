@@ -2,15 +2,26 @@
 
 from fnmatch import fnmatch
 
-from docs.teaching.tools.render import (
-    code_field,
-    esc,
-    link,
-    links_field,
-    page,
-    text_field,
-    wrap,
-)
+if __package__:
+    from .render import (
+        code_field,
+        esc,
+        link,
+        links_field,
+        page,
+        text_field,
+        wrap,
+    )
+else:
+    from render import (
+        code_field,
+        esc,
+        link,
+        links_field,
+        page,
+        text_field,
+        wrap,
+    )
 
 LIVE = "../live/"
 LIVE_DOCS = f"{LIVE}docs-graph.html"

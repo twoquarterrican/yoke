@@ -24,16 +24,23 @@ def tools(monkeypatch):
     return model, inventory, privacy, render
 
 
-def test_model_builds_valid_views():
+@pytest.mark.parametrize(
+    "script, args, expected",
+    [
+        ("build.py", ["--check"], "check passed"),
+        ("convert_model.py", [], "wrote 0 record files"),
+    ],
+)
+def test_standalone_model_tools(script, args, expected):
     result = subprocess.run(
-        [sys.executable, str(TOOLS / "build.py"), "--check"],
+        [sys.executable, "-E", str(TOOLS / script), *args],
         cwd=REPO,
         capture_output=True,
         text=True,
         timeout=300,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "check passed" in result.stdout
+    assert expected in result.stdout
 
 
 def test_validate_names_dangling_references_and_unmapped_plan_rows(tools):
