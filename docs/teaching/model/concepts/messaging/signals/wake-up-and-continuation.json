@@ -4,6 +4,6 @@
  "status": "observed",
  "page": "messaging",
  "position": 4,
- "sources": ["packages/yoke-core/src/yoke_core/domain/session_relay_versions.py", "docs/public/reference/agent-rules/claude-sessions.md"],
- "summary": "Stale recipients without a declared idle message route use stopped-session resume through the waiting wake mode. Active calls, version floors and operator wake authority still govern eligibility."
+ "sources": ["packages/yoke-core/src/yoke_core/domain/session_relay_versions.py", "docs/public/reference/agent-rules/claude-sessions.md", "packages/yoke-core/src/yoke_core/domain/session_manual_wake.py"],
+ "summary": "Stale recipients without a declared idle message route use stopped-session resume through the waiting wake mode. Active calls, version floors and operator wake authority still govern eligibility. Manual wake preserves all unrelated unread envelopes; grace limits wake blocking, not message retention."
 }

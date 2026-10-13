@@ -1,14 +1,9 @@
-"""One-shot explicit wake requests over the durable message relay.
+"""Explicit stopped-route wakes preserve every unrelated pending message.
 
-A request refuses while an earlier wake for the same session is still
-moving, and releases one that demonstrably is not. The second half is what
-keeps the refusal honest: the delivery plane can decline to attempt a queued
-wake — the route it needs is gone, the recipient still reads as a turn in
-flight — and that receipt then blocks every later wake for the session it
-was meant to recover. Past the acknowledgement grace window such a receipt
-is cancelled as superseded and this request takes its own route decision, so
-the caller reads the actual obstacle with its own recovery step rather than
-an opaque ``wake_in_flight``.
+A moving wake blocks another native resume for the same session. An
+unattempted queued receipt stops blocking after acknowledgement grace, but
+stays available for delivery: a new wake does not carry its content and
+cannot cancel it. Idempotent retries reuse only uncancelled messages.
 """
 
 from __future__ import annotations
@@ -18,7 +13,7 @@ from yoke_contracts.timestamps import parse_instant
 from datetime import datetime
 from time import monotonic, sleep
 from typing import Any
-from uuid import NAMESPACE_URL, uuid4, uuid5
+from uuid import uuid4
 
 from yoke_contracts.session_control.capabilities import (
     native_wake_supported,
@@ -36,7 +31,7 @@ from yoke_core.domain.session_message_selectors import resolve_recipients
 from yoke_core.domain.session_message_service import send_message
 from yoke_core.domain.session_message_store import (
     begin_message_mutation,
-    cancel_message_rows,
+    idempotent_message,
     message_details,
 )
 from yoke_core.domain.session_message_types import (
@@ -53,7 +48,6 @@ from yoke_core.domain.session_relay_machine_versions import (
 )
 from yoke_core.domain.session_wake_idempotency import (
     recent_wake_blocker,
-    stale_queued_wakes,
 )
 from yoke_core.domain.session_wake_meter import refuse_exhausted_wake
 
@@ -61,24 +55,12 @@ from yoke_core.domain.session_wake_meter import refuse_exhausted_wake
 SESSION_WAKE_RESULT_WAIT_SECONDS = 10.0
 _RESULT_POLL_SECONDS = 0.25
 
-#: Why a queued wake nothing ever attempted was cancelled. It travels on the
-#: superseded envelope, so its sender reads why its wake stopped rather than
-#: finding a receipt that silently disappeared.
-QUEUED_WAKE_RELEASE_REASON = "superseded_by_wake_retry"
-
 
 def _selector(*, session_id: str | None, public_ref: str | None) -> RecipientSelector:
     return RecipientSelector(
         session_ids=[session_id] if session_id else [],
         public_refs=[public_ref] if public_ref else [],
     )
-
-
-def _message_id(actor_id: int, idempotency_key: str | None) -> str:
-    if idempotency_key:
-        intent = f"yoke:session-wake:{actor_id}:{idempotency_key}"
-        return str(uuid5(NAMESPACE_URL, intent))
-    return str(uuid4())
 
 
 def _one_recipient(recipients: list[ResolvedRecipient]) -> ResolvedRecipient:
@@ -146,7 +128,6 @@ def _wake_result(
     target_liveness: str,
     routing: dict[str, Any],
     deduplicated: bool,
-    released_queued_wakes: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     wake_attempts = [
         attempt
@@ -176,7 +157,6 @@ def _wake_result(
         "evidence": evidence,
         "recovery": recovery,
         "deduplicated": deduplicated,
-        "released_queued_wakes": list(released_queued_wakes),
         "wake_attempt_count": int(recipient.get("wake_attempt_count") or 0),
         "last_wake_at": recipient.get("last_wake_at"),
     }
@@ -238,7 +218,7 @@ def request_session_wake(
     now = parse_instant(utc_now() if now is None else now)
     current = now
     target_selector = _selector(session_id=session_id, public_ref=public_ref)
-    message_id = _message_id(actor_id, idempotency_key)
+    message_id = str(uuid4())
     begin_message_mutation(conn)
     try:
         recipient = _one_recipient(
@@ -252,29 +232,12 @@ def request_session_wake(
         exhausted = refuse_exhausted_wake(conn, recipient.session_id, current)
         if exhausted:
             raise exhausted
-        # A wake the plane was owed and never attempted is not in flight, and
-        # leaving it to refuse this request is the deadlock: the receipt that
-        # cannot be delivered would block the only move that recovers the
-        # session. Release it here, then let this request take its own route
-        # refusal by name if the route really is gone.
-        released = tuple(
-            str(stale["message_id"])
-            for stale in stale_queued_wakes(
-                conn,
-                session_id=recipient.session_id,
-                now=current,
-                grace_seconds=policy.wake_ack_grace_seconds,
-                exclude_message_id=message_id,
+        if idempotency_key:
+            existing = idempotent_message(
+                conn, sender_actor_id=actor_id, idempotency_key=idempotency_key
             )
-        )
-        for stale_message_id in released:
-            cancel_message_rows(
-                conn,
-                message_id=stale_message_id,
-                actor_id=actor_id,
-                reason=QUEUED_WAKE_RELEASE_REASON,
-                cancelled_at=current,
-            )
+            if existing is not None:
+                message_id = str(existing["message_id"])
         blocker = recent_wake_blocker(
             conn,
             session_id=recipient.session_id,
@@ -332,12 +295,10 @@ def request_session_wake(
         target_liveness=recipient.liveness,
         routing=routing,
         deduplicated=bool(created["deduplicated"]),
-        released_queued_wakes=released,
     )
 
 
 __all__ = [
-    "QUEUED_WAKE_RELEASE_REASON",
     "SESSION_WAKE_RESULT_WAIT_SECONDS",
     "request_session_wake",
     "wait_for_session_wake_result",

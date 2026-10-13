@@ -36,7 +36,7 @@ RUN_SCOPED_WAIT_TOKEN = "run"
 def stage_wait_idempotency_key(
     run_id: str, stage_name: str, item_id: int, target_digest: str = ""
 ) -> str:
-    """One notice per run/stage/item/attempt.
+    """One uncancelled notice per run/stage/item/attempt.
 
     ``target_digest`` is the stage's own pinned-target identity
     (:func:`deployment_qa_stage_gate.deployment_qa_stage_status`'s
@@ -56,7 +56,7 @@ def stage_wait_idempotency_key(
 def run_stage_wait_idempotency_key(
     run_id: str, stage_name: str, target_digest: str = ""
 ) -> str:
-    """One notice per run/stage/attempt, mirroring the item-scoped key."""
+    """One uncancelled notice per run/stage/attempt, mirroring the item key."""
     return (
         f"{DEPLOYMENT_QA_STAGE_WAIT_PREFIX}{run_id}:{stage_name}:"
         f"{RUN_SCOPED_WAIT_TOKEN}:{target_digest}"
@@ -189,9 +189,9 @@ def notify_item_scoped_qa_wait(
     ``""`` means nobody was addressable, ``"undelivered"`` means queued but
     not yet reached, ``"delivered"`` means it reached the recipient —
     matching :func:`push_notice`'s own contract. The idempotency key is
-    stable per (run, stage, item, target_digest), so a stage rechecked on
-    every pipeline retry sends exactly one notice per distinct wait; a new
-    deploy attempt (a new ``run_id``) or a distinct pinned target within
+    stable per (run, stage, item, target_digest). Pipeline retries deduplicate
+    an uncancelled notice; a cancelled notice is sent again on the next
+    check. A new deploy attempt (a new ``run_id``) or a distinct pinned target within
     the stage's own existing retry/requirement contract (a new
     ``target_digest``) is always a fresh key.
     """

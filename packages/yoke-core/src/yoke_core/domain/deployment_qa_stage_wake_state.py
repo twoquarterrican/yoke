@@ -36,7 +36,13 @@ from yoke_core.domain.session_message_types import parse_timestamp
 
 #: Recipient states best-first, so one message with several receipts reads
 #: as the furthest any recipient got; ties break on session id.
-_STATE_RANK = {"acknowledged": 0, "injected": 1, "pending": 2, "expired": 3}
+_STATE_RANK = {
+    "acknowledged": 0,
+    "injected": 1,
+    "pending": 2,
+    "expired": 3,
+    "cancelled": 4,
+}
 
 _FAILURE_HANDOFF = "QA failure handoff"
 _WAIT = "wake"
@@ -71,8 +77,8 @@ def _latest_notices(
 ) -> dict[int, tuple[str, datetime | None, str, str]]:
     """Per member: notice kind, sent time, recipient state, wake escalation.
 
-    The newest uncancelled notice of either kind is the one the owner would
-    act on. A notice with no recipient row reads as state ``""``.
+    The newest notice of either kind describes current wake state, including
+    cancellation. A notice with no recipient row reads as state ``""``.
     """
     if not (
         _table_exists(conn, "session_messages")
@@ -87,13 +93,13 @@ def _latest_notices(
     rows = conn.execute(
         "SELECT m.message_id AS message_id, m.idempotency_key AS idempotency_key, "
         "m.created_at AS sent_at, COALESCE(r.session_id, '') AS session_id, "
-        "COALESCE(r.state, '') AS state, "
+        "CASE WHEN m.cancelled_at IS NOT NULL THEN 'cancelled' "
+        "ELSE COALESCE(r.state, '') END AS state, "
         "COALESCE(r.wake_escalation, '') AS escalation "
         "FROM session_messages m "
         "LEFT JOIN session_message_recipients r ON r.message_id = m.message_id "
-        "WHERE m.cancelled_at IS NULL "
-        f"AND (m.idempotency_key LIKE {marker} OR m.idempotency_key LIKE {marker}) "
-        "ORDER BY m.created_at DESC, m.message_id",
+        f"WHERE (m.idempotency_key LIKE {marker} OR m.idempotency_key LIKE {marker}) "
+        "ORDER BY m.created_at DESC, (m.cancelled_at IS NULL) DESC, m.message_id",
         tuple(f"{prefix}%" for prefix in prefixes),
     ).fetchall()
     newest: dict[int, str] = {}

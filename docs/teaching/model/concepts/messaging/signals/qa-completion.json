@@ -1,7 +1,9 @@
 {
  "id": "qa-completion",
  "title": "QA completion",
- "status": "draft-copy",
+ "status": "observed",
  "page": "messaging",
- "position": 1
+ "position": 1,
+ "summary": "Deployment QA wake reports distinguish cancelled notices from wake pending. The next driver check resends a cancelled notice through the same intent key.",
+ "sources": ["packages/yoke-core/src/yoke_core/domain/deployment_qa_stage_wake_state.py"]
 }

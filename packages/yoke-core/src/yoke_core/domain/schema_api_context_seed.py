@@ -156,6 +156,7 @@ TOPIC_TABLES: dict[str, tuple[str, ...]] = {
     ),
     "claims": (
         "harness_sessions",
+        "yoke_core.domain.session_control_schema",
         "runtime.api.domain.test_session_native_turn_end",
         "session_tool_calls",
         "work_claims",

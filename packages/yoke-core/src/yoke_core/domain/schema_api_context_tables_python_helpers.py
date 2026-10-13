@@ -23,6 +23,16 @@ from __future__ import annotations
 
 
 PYTHON_HELPERS_TABLES: dict[str, dict] = {
+    "yoke_core.domain.session_control_schema": {
+        "columns": [("create_session_control_tables", "callable")],
+        "notes": (
+            "Message cancellation is session_messages.cancelled_at. Its sender "
+            "and engine dedupe indexes reserve only uncancelled keys. Wrong "
+            "guess: session_launches has the same cancellation column. It does "
+            "not; leave the requester launch dedupe predicate unchanged when "
+            "altering message intent indexes."
+        ),
+    },
     "runtime.api.domain.test_session_native_turn_end": {
         "columns": [("_pending", "test helper")],
         "notes": (

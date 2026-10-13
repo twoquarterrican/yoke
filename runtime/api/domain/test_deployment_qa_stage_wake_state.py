@@ -105,11 +105,12 @@ def test_no_notice_without_a_driver_names_the_redrive(scoped) -> None:
     )
 
 
-def test_cancelled_and_other_member_notices_do_not_count(scoped) -> None:
+def test_cancelled_notice_is_named_and_other_members_remain_independent(scoped) -> None:
     _notice(scoped, "wake-cancelled", state="pending", cancelled_at=JUST_NOW)
     _notice(scoped, "wake-other", state="acknowledged", member=OTHER_MEMBER)
 
-    assert _state(scoped).startswith("not woken: driver gone or stale")
+    assert _state(scoped) == "not woken: the wake sent 11:58Z was cancelled"
+    assert _state(scoped, driver_live=True) == _state(scoped)
     assert _state(scoped, member=OTHER_MEMBER) == "woken 11:58Z, acknowledged"
 
 
@@ -166,3 +167,9 @@ def test_one_batched_read_answers_every_member(scoped) -> None:
         MEMBER: "woken 11:58Z, acknowledged",
         OTHER_MEMBER: f"not woken: driver gone or stale; re-drive {RUN_ID} to send it",
     }
+
+
+def test_fresh_notice_replaces_cancelled_history_even_at_the_same_send_time(scoped):
+    _notice(scoped, "wake-cancelled", state="pending", cancelled_at=JUST_NOW)
+    _notice(scoped, "wake-fresh", state="pending")
+    assert _state(scoped, driver_live=True) == "woken 11:58Z, not yet delivered"

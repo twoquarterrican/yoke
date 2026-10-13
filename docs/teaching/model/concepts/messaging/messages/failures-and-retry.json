@@ -1,7 +1,9 @@
 {
  "id": "failures-and-retry",
  "title": "Failures and retry",
- "status": "draft-copy",
+ "status": "observed",
  "page": "messaging",
- "position": 5
+ "position": 5,
+ "summary": "Cancelled envelopes keep their history and release their idempotency key. A retry creates a new message; uncancelled retries keep one immutable recipient snapshot.",
+ "sources": ["packages/yoke-core/src/yoke_core/domain/session_message_store.py"]
 }

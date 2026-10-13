@@ -115,6 +115,10 @@ A stale recipient whose surface declares no message_idle route uses
 message_stopped through the existing waiting wake mode, even if its recorded
 turn posture is running. Active calls, version floors and operator-only
 surfaces retain their declared wake rules.
+Manual wake preserves other pending messages, including stale queued wakes.
+Cancelled envelopes no longer reserve an idempotency key; a repeated intent
+creates a fresh message while preserving the cancelled history. Deployment
+QA reports name cancelled notices until a newer wake replaces them.
 Refused/exhausted wake retains original pending receipt and sends covering-seat
 diagnostic. outcome_unknown/skip notice waits for next completed target call
 without acknowledgement; live call defers, acknowledgement suppresses.
