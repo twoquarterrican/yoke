@@ -1,0 +1,8 @@
+{
+ "id": "dash-overlap-delivery",
+ "title": "Dash overlap and selection recipes need deployed proof",
+ "status": "observed",
+ "topics": ["coordination/path-claims/attested-coordination", "coordination/path-claims/collision-recovery"],
+ "description": "Source now teaches workflow-owned Dash attestation and selection amendment. Live proof awaits the orchestrator release; do not label source tests verified-live.",
+ "sources": [".agents/skills/yoke/dash/survey-and-isolate.md", "packages/yoke-core/src/yoke_core/domain/path_claim_register.py"]
+}

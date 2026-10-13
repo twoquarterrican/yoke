@@ -6,7 +6,8 @@ maps to one verification predicate:
 
 - ``"item"`` / ``"epic"`` — consult the canonical session-claim lookup
   for the target item / epic id; require the actor's ``session_id`` to
-  match the active claim row.
+  match the active claim row. Path-claim posture amendments also accept a
+  covering live steering seat.
 - ``"self_only"`` — read ``work_claims`` by id; require the actor to own
   the claim row.
 - ``"steering"`` — require a live steering seat covering the target scope.
@@ -15,8 +16,6 @@ maps to one verification predicate:
   which accepts a live item claim or the claim a long gate run bound at
   its start.
 
-Tests monkeypatch :func:`who_claims_for_item` and :func:`steering_seat_for_request`
-to inject synthetic rows without touching the live DB.
 """
 
 from __future__ import annotations
@@ -198,6 +197,19 @@ def verify_claim(
         row = who_claims_for_item(int(target_id))
         claim_session = str((row or {}).get("session_id") or "")
         if not row or claim_session != actor_session:
+            if (
+                fid == "workflows.item_posture.amend"
+                and request.payload.get("key") == "path_claims"
+            ):
+                seat, _ = steering_seat_for_request(entry, request)
+                if seat is not None:
+                    allow_claim_verification(
+                        evidence,
+                        authority="steering",
+                        claim_id=seat["claim_id"],
+                        holder_session_id=actor_session,
+                    )
+                    return None
             public_ref = (
                 _claim_recovery_item_ref(int(target_id)) if kind == "item" else None
             )

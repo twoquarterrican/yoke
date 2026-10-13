@@ -4,13 +4,13 @@
  "status": "draft-copy",
  "audience": "agent",
  "when": "At a claim registration/widening/boundary refusal or an irreducible overlap requiring escalation.",
- "need": "Read both specs and overlap evidence; use authoring classification and sanctioned scope amendment. Resolve the current override authority before teaching or taking a last-resort collision override.",
+ "need": "Read both specs and overlap evidence. Dash work holders attest independent edits during survey/isolation; ordered edits wait for proven landing. A survey contact alone is advisory. Amend mistaken selection through the registered posture surface; release live coverage first.",
  "disclosure": "current cue",
- "surface": "Claim conflict procedure; override implementation; older internal operator guide",
+ "surface": "Claim conflict procedure; Dash survey/isolation; posture amendment help; operator override",
  "gap": "Internal guide labels override human-only and includes old direct-client recipes; current override implementation describes a covering live steering seat. Review question: which current authority governs, and which public/private producers must be reconciled before promoting this guide?",
- "review": "Pending exact recipe proof.",
+ "review": "Source and regression evidence cover Dash recovery and selection amendment; deployed recipe proof is still pending.",
  "recipes": ["yoke claims path coordination-decision-build --help"],
  "plan_notes": ["FIRST-USER 35", "outside both"],
- "sources": [".agents/skills/yoke/idea/path-claim-blocking.md", ".agents/skills/yoke/idea/path-closure.md", "packages/yoke-core/src/yoke_core/domain/path_claims_override.py", "docs/path-claims.md"],
+ "sources": [".agents/skills/yoke/idea/path-claim-blocking.md", ".agents/skills/yoke/idea/path-closure.md", "packages/yoke-core/src/yoke_core/domain/path_claims_override.py", "docs/path-claims.md", ".agents/skills/yoke/dash/survey-and-isolate.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/workflows_item_posture.py"],
  "position": 1
 }

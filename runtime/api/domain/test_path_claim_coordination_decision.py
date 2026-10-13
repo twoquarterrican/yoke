@@ -222,16 +222,16 @@ def test_build_coordination_context_suggested_commands_include_all_decision_opti
     has_activation = any(
         "--gate-point activation" in c and "fact:merged" in c for c in cmds
     )
-    has_escalate = any("path-claim-override" in c for c in cmds)
+    has_escalate = any("yoke say --steering" in c for c in cmds)
     assert has_coordination
     assert has_activation
     assert has_escalate
     # The dependency-add commands name both items and include the candidate id.
-    dep_add_lines = [c for c in cmds if "dependency-add" in c]
+    dep_add_lines = [c for c in cmds if "yoke items dependency add" in c]
     assert all(cand_token in c for c in dep_add_lines)
     assert all(other_token in c for c in dep_add_lines)
     # Escalate line names the candidate.
-    override_lines = [c for c in cmds if "path-claim-override" in c]
+    override_lines = [c for c in cmds if "yoke say --steering" in c]
     assert all(cand_token in c for c in override_lines)
 
 

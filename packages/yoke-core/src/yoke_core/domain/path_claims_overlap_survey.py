@@ -25,10 +25,10 @@ SURVEY_ADVISORY_PROCEED = (
 SURVEY_ADVISORY_YIELD = (
     "Yield when the edits are order-dependent: wait for the holding work to "
     "land (merge receipt, merged_at, or git ancestry of the merge sha — not "
-    "the peer's status field), then re-run the survey. If the contact cannot "
-    "be resolved from the surfaced evidence, release the work claim and "
-    "present the overlapping path, holder, and evidence to the operator; "
-    "do not continue editing."
+    "the peer's status field), then re-run the survey. A survey contact is "
+    "advisory: read both scopes and record the independence or ordering "
+    "evidence. Route an actual unresolved scope or authority decision via "
+    "yoke say --steering; a shared filename alone is no stop condition."
 )
 
 # ``classify_overlap`` is exercised against deliberately minimal schemas

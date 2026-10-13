@@ -7,8 +7,7 @@ next. The denial body embeds:
 
 1. The conflicting claim id(s).
 2. The overlapping repo-relative path strings.
-3. The holder item and a route back to ``/yoke refine``. Coordination
-   attestation belongs to the authoring phase, not a runtime caller.
+3. The holder item and the workflow-owned coordination recovery.
 
 This module owns the body string so the
 :mod:`yoke_core.domain.path_claims_dispatch` ``cmd_register`` handler
@@ -30,7 +29,30 @@ from yoke_core.domain.project_identity import (
 )
 
 
-_RESOLUTION_CMD = "/yoke refine {public_ref}"
+def _overlap_recovery(conn: Optional[Any], item_id: int, public_ref: str) -> str:
+    from yoke_core.domain.schema_common import _column_exists
+
+    if conn is None or not _column_exists(conn, "items", "workflow_id"):
+        return (
+            "Read the item workflow before choosing its overlap repair; "
+            "route unavailable workflow evidence via yoke say --steering."
+        )
+    row = conn.execute(
+        f"SELECT workflow_id FROM items WHERE id = {_p(conn)}", (int(item_id),)
+    ).fetchone()
+    if row is None:
+        return "Item workflow unavailable; route via yoke say --steering."
+    if str(row[0]) != "dash":
+        return f"/yoke refine {public_ref}"
+    return (
+        f"Continue /yoke dash {public_ref}: for independent edits, read both "
+        "specs and `yoke claims path coordination-decision-build --help`, "
+        "record an evidence-backed coordination_only edge using "
+        "`yoke items dependency add` with source dash, then retry complete "
+        "registration. For ordered edits, wait for the holder's landing "
+        "proof and re-survey. If independence cannot be attested, route the "
+        "holder, shared paths and evidence via yoke say --steering."
+    )
 
 
 def _p(conn: Any) -> str:
@@ -66,12 +88,12 @@ def compose_overlap_denial(
     The body opens with ``base_message`` (the underlying error text from
     :class:`yoke_core.domain.path_claims.IncompatibleOverlap`),
     enumerates each conflicting claim id with its overlapping paths,
-    and routes the caller to Refine for an authoring-phase decision.
+    and routes the caller to its workflow-owned coordination decision.
 
     When ``conn`` is ``None`` or the conflict lookup yields zero rows
     (e.g. classifier said INCOMPATIBLE but the per-claim scan came back
     empty under test fixtures), the body still includes the ``item_id``
-    + ``integration_target`` header and the Refine route.
+    + ``integration_target`` header and a workflow-evidence recovery.
     """
     target_ids = [int(t) for t in candidate_target_ids]
     conflicts = _resolve_conflicts(conn, integration_target, target_ids)
@@ -86,7 +108,7 @@ def compose_overlap_denial(
         for claim_id, overlap_paths, holder_ref in conflicts:
             paths_str = ", ".join(overlap_paths) or "(no path strings)"
             lines.append(f"    claim {claim_id}, holder {holder_ref}: {paths_str}")
-    lines.append("Recovery: " + _RESOLUTION_CMD.format(public_ref=public_ref))
+    lines.append("Recovery: " + _overlap_recovery(conn, item_id, public_ref))
     return "\n".join(lines)
 
 

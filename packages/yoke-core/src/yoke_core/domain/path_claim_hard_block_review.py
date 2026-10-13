@@ -43,7 +43,7 @@ TERMINAL_STATUSES: frozenset[str] = frozenset({"done", "cancelled"})
 # Sources commonly authored by the idea/refine path-claim conflict
 # workflow. Activation rows from these sources, lacking directional
 # evidence, are the cleanup target.
-PATH_CLAIM_AUTHORING_SOURCES: frozenset[str] = frozenset({"idea", "refine"})
+PATH_CLAIM_AUTHORING_SOURCES: frozenset[str] = frozenset({"idea", "refine", "dash"})
 
 # Heuristic markers in rationale text. A rationale must include concrete
 # path evidence — a repo file path/root file, or a structured shared_paths
@@ -152,7 +152,7 @@ def review_activation_row(
             ),
         )
 
-    # Path-claim-driven authoring intent: source is idea/refine and
+    # Path-claim-driven authoring intent: source is idea/refine/dash and
     # rationale mentions concrete path evidence. Without directional
     # evidence, this is the cleanup-pass over-hard shape.
     source_normalized = (source or "").lower()

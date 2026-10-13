@@ -59,6 +59,8 @@ Which form to use
 
       yoke workflows item-posture amend PREFIX-N --key path_claims \\
         --value true --reason "coordinating a shared path"
+      yoke workflows item-posture amend PREFIX-N --key path_claims \\
+        --clear --reason "path coverage was selected by mistake"
       yoke workflows item-posture amend PREFIX-N --key deployment \\
         --clear --reason "delivery moved to the batch run"
 
@@ -68,6 +70,14 @@ Which form to use
       yoke workflows item-posture amend PREFIX-N --key level \\
         --value '{"max": "SENIOR", "reason": "well-specified change"}' \\
         --reason "steering staffing default"
+
+Path-claim selection
+  The item holder or a live steering seat covering the item may amend it.
+  --clear restores the pinned workflow default; it does not turn off a
+  required workflow policy. Live coverage must first be released by the
+  holder; read `yoke claims path list --item PREFIX-N` and
+  `yoke claims path release --help`. If release is not served, report the
+  claim ids via `yoke say --steering` for the control-plane operator.
 
 What it refuses, and why
   * A key the item's pinned workflow does not allow. The refusal names the

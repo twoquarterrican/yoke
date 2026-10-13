@@ -2,10 +2,12 @@
 
 The overlap-denial body embeds the conflicting claim
 id(s), the overlapping path strings, and the
-holder item and the Refine route, where authoring-phase coordination belongs.
+holder item and workflow-owned recovery.
 """
 
 from __future__ import annotations
+
+import pytest
 
 from yoke_contracts.public_ref import unresolved_item_ref
 from yoke_core.domain.path_claim_register import compose_overlap_denial
@@ -36,7 +38,8 @@ class TestComposeOverlapDenialNoConflicts:
         assert str(UNREADABLE_INTERNAL_ID) not in body
         assert "integration_target='main'" in body
         assert "overlap reason text" in body
-        assert f"/yoke refine {unresolved_item_ref(consulted=False)}" in body
+        assert "Read the item workflow" in body
+        assert "/yoke refine" not in body
         assert "coordination-decision-build" not in body
 
     def test_no_conflicts_uses_placeholder_claim_id(self) -> None:
@@ -49,7 +52,7 @@ class TestComposeOverlapDenialNoConflicts:
         )
         # No live claim id -> placeholder shown so the operator knows
         # what to substitute.
-        assert "Recovery: /yoke refine" in body
+        assert "Recovery: Read the item workflow" in body
         assert "coordination-decision-build" not in body
 
 
@@ -66,7 +69,8 @@ class TestComposeOverlapDenialWithConflicts:
     the body enumerates each conflicting claim id with its overlapping
     paths and emits the resolution command pointed at the first conflict."""
 
-    def test_enumerates_conflicts_and_paths(self, tmp_path) -> None:
+    @pytest.mark.parametrize("workflow", ["issue", "dash"])
+    def test_enumerates_conflicts_and_paths(self, tmp_path, workflow) -> None:
         from runtime.api.fixtures import pg_testdb
         from runtime.api.fixtures.schema_ddl import apply_fixture_ddl
         from yoke_core.domain.path_claims_overlap import (
@@ -117,7 +121,8 @@ class TestComposeOverlapDenialWithConflicts:
             CREATE TABLE items (
                 id INTEGER PRIMARY KEY,
                 project_id INTEGER NOT NULL,
-                project_sequence INTEGER
+                project_sequence INTEGER,
+                workflow_id TEXT
             );
         """,
         )
@@ -129,9 +134,9 @@ class TestComposeOverlapDenialWithConflicts:
             (PROJECT_ID, "yoke", ITEM_PREFIX),
         )
         conn.execute(
-            "INSERT" + " INTO items (id, project_id, project_sequence) "
-            "VALUES (%s, %s, %s)",
-            (OVERLAP_INTERNAL_ID, PROJECT_ID, OVERLAP_SEQUENCE),
+            "INSERT" + " INTO items (id, project_id, project_sequence, workflow_id) "
+            "VALUES (%s, %s, %s, %s)",
+            (OVERLAP_INTERNAL_ID, PROJECT_ID, OVERLAP_SEQUENCE, workflow),
         )
         conn.execute(
             "INSERT" + " INTO items (id, project_id, project_sequence) "
@@ -188,5 +193,12 @@ class TestComposeOverlapDenialWithConflicts:
         assert "claim 200" in body
         assert "a.py" in body and "b.py" in body
         assert f"holder {ITEM_PREFIX}-{OVERLAP_SEQUENCE + 1}" in body
-        assert f"/yoke refine {ITEM_PREFIX}-{OVERLAP_SEQUENCE}" in body
-        assert "coordination-decision-build" not in body
+        if workflow == "dash":
+            assert "/yoke refine" not in body
+            assert "coordination_only" in body
+            assert "source dash" in body
+            assert "holder's landing" in body
+            assert "yoke say --steering" in body
+        else:
+            assert f"/yoke refine {ITEM_PREFIX}-{OVERLAP_SEQUENCE}" in body
+            assert "coordination-decision-build" not in body

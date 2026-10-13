@@ -7,7 +7,7 @@ agent's job. The packet carries both specs, the conflicting claim's state,
 shared-path metadata, and three ready-to-paste command lines (one per
 decision option). Callers: ``runtime/agents/architect.md`` (intra-epic),
 ``.agents/skills/yoke/idea/path-claim-blocking.md`` (cross-item overlap
-resolution), and ``.agents/skills/yoke/refine/readiness-repair.md``.
+resolution), ``.agents/skills/yoke/refine/readiness-repair.md``, and Dash survey.
 """
 
 from __future__ import annotations
@@ -146,6 +146,10 @@ def _suggested_commands(
     co = GatePoint.COORDINATION_ONLY.value
     merged = Satisfaction.FACT_MERGED.value
     dep_add = "yoke items dependency add"
+    row = conn.execute(
+        f"SELECT workflow_id FROM items WHERE id = {_p(conn)}", (cand_id,)
+    ).fetchone()
+    source = "dash" if row and str(row[0]) == "dash" else "<source>"
     shared = ",".join(shared_paths) if shared_paths else "<shared-paths>"
     coord_rationale = (
         f"decision=coordination_only. shared_paths={shared}. "
@@ -160,19 +164,19 @@ def _suggested_commands(
     return [
         "# option: coordination_only (independent same-file edits, "
         "path-claim mutex with no lifecycle gate)",
-        f"{dep_add} {cand} {other} <source> --gate-point {co} "
+        f"{dep_add} {cand} {other} {source} --gate-point {co} "
         f'--rationale "{coord_rationale}"',
         "# option: directional activation (order-dependent edits, "
         "lifecycle gate + path-claim mutex)",
-        f"{dep_add} {cand} {other} <source> --gate-point activation "
+        f"{dep_add} {cand} {other} {source} --gate-point activation "
         f'--satisfaction {merged} --rationale "{dir_rationale}"',
         "# fact:merged is correct for trunk ordering; use "
         "fact:deployed:<environment-name> only when the dependent needs "
         "the blocker running in that registered environment",
         "# option: escalate (operator override, last resort)",
-        "python3 -m yoke_core.api.service_client path-claim-override "
-        f'--item {cand} --reason "<operator-authored rationale per '
-        'AGENTS.md ## Path Claims — Hard Rule>"',
+        f'yoke say --steering "Overlap decision needed for {cand}: '
+        f"holder={other}; conflicting_claim_id={conflicting_claim_id}; "
+        f'shared_paths={shared}; evidence=<why independence is uncertain>"',
     ]
 
 
