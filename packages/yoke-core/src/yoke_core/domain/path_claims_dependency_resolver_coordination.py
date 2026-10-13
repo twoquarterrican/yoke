@@ -1,8 +1,7 @@
 """Coordination-only awareness for path-claim overlap classification.
 
-Sibling helper of :mod:`path_claims_dependency_resolver`. Lives in its
-own module because the resolver is at the file-line cap and this slice
-adds a new predicate, not a new variant of an existing helper.
+Dependency direction and persisted satisfaction govern the live claim mutex.
+Satisfied ordering remains stored as ordering, but no longer serializes claims.
 
 A ``coordination_only`` ``item_dependencies`` edge declares the two
 items touch overlapping files but no lifecycle ordering is required.
@@ -10,7 +9,7 @@ The path-claim overlap classifier consults this module to decide
 whether a candidate / blocker pair with a dep edge between them should
 serialize (the candidate is the DEPENDENT side of a non-coordination
 edge to the blocker) or activate in parallel (every linking edge is
-``coordination_only``).
+``coordination_only`` or its satisfaction has already been met).
 
 The classifier walks ``item_dependencies`` **directionally**: an edge
 where the candidate is the DEPENDENT party drives the candidate to
@@ -28,13 +27,15 @@ from __future__ import annotations
 import enum
 from typing import Any, Optional, Sequence
 
-from yoke_core.domain.dependency_types import is_coordination_only
+from yoke_core.domain.dependency_types import GatePoint, is_coordination_only
 from yoke_core.domain.db_optional_queries import fetch_optional_rows
 from yoke_core.domain.path_claims_dependency_resolver import (
     _claim_owning_item,
     _placeholder,
 )
 from yoke_core.domain.schema_common import _column_exists
+
+
 class CoordinationClassification(enum.Enum):
     """Edge-shape between a candidate and a blocker's owning items."""
 
@@ -52,14 +53,16 @@ def _direct_pair_filter(
     """Build an indexable predicate for one dependency direction."""
     placeholder = _placeholder(conn)
     return (
-        f"dependent_item_id = {placeholder} "
-        f"AND blocking_item_id = {placeholder}",
+        f"dependent_item_id = {placeholder} AND blocking_item_id = {placeholder}",
         (dependent_item_id, blocking_item_id),
     )
 
 
 def _inter_item_gate_points(
-    conn: Any, *, item_a_id: int, item_b_id: int,
+    conn: Any,
+    *,
+    item_a_id: int,
+    item_b_id: int,
 ) -> list[str]:
     """Return every ``item_dependencies.gate_point`` whose row links the
     two items in either direction. Missing table → ``[]``.
@@ -76,16 +79,39 @@ def _inter_item_gate_points(
     )
     rows = fetch_optional_rows(
         conn,
-        "SELECT gate_point FROM item_dependencies "
+        "SELECT gate_point, dependent_item_id, blocking_item_id FROM item_dependencies "
         f"WHERE ({forward_sql}) OR ({reverse_sql})",
         forward_params + reverse_params,
         savepoint="_yoke_item_dependencies_pair_probe",
     )
-    return [str(row[0] or "") for row in rows]
+    return _effective_gate_points(conn, rows)
+
+
+def _effective_gate_points(conn: Any, rows: Sequence[Any]) -> list[str]:
+    """Satisfied ordering contributes coordination, not a live mutex."""
+    if not rows or all(is_coordination_only(str(row[0])) for row in rows):
+        return [str(row[0] or "") for row in rows]
+    from yoke_core.domain.dependency_satisfaction import unsatisfied_dependency_pairs
+
+    pending = {
+        (dependent, blocker)
+        for dependent, blocker, _verdict in unsatisfied_dependency_pairs(
+            conn, sorted({int(row[1]) for row in rows})
+        )
+    }
+    return [
+        str(row[0] or "")
+        if is_coordination_only(str(row[0])) or (int(row[1]), int(row[2])) in pending
+        else GatePoint.COORDINATION_ONLY.value
+        for row in rows
+    ]
 
 
 def _direct_gate_points(
-    conn: Any, *, dependent_item_id: int, blocking_item_id: int,
+    conn: Any,
+    *,
+    dependent_item_id: int,
+    blocking_item_id: int,
 ) -> list[str]:
     """Return gate points for candidate -> blocker rows only."""
     pair_sql, pair_params = _direct_pair_filter(
@@ -95,18 +121,21 @@ def _direct_gate_points(
     )
     rows = fetch_optional_rows(
         conn,
-        "SELECT gate_point FROM item_dependencies "
+        "SELECT gate_point, dependent_item_id, blocking_item_id FROM item_dependencies "
         f"WHERE {pair_sql}",
         pair_params,
         savepoint="_yoke_item_dependencies_direct_probe",
     )
-    return [str(row[0] or "") for row in rows]
+    return _effective_gate_points(conn, rows)
 
 
 def has_forward_serial_edge(
-    conn: Any, *, dependent_item_id: int, blocking_item_id: int,
+    conn: Any,
+    *,
+    dependent_item_id: int,
+    blocking_item_id: int,
 ) -> bool:
-    """Return True for candidate -> blocker non-coordination edges."""
+    """Return True for candidate -> blocker unsatisfied non-coordination edges."""
     return any(
         not is_coordination_only(gp)
         for gp in _direct_gate_points(
@@ -114,6 +143,33 @@ def has_forward_serial_edge(
             dependent_item_id=dependent_item_id,
             blocking_item_id=blocking_item_id,
         )
+    )
+
+
+def upstream_ordering_satisfied(
+    conn: Any, *, dependent_item_id: Optional[int], upstream_claim_id: Optional[int]
+) -> bool:
+    """Clear a named upstream only when its actual ordering has completed."""
+    if dependent_item_id is None or upstream_claim_id is None:
+        return False
+    blocker = _claim_owning_item(conn, upstream_claim_id)
+    if blocker is None:
+        return False
+    pair_sql, pair_params = _direct_pair_filter(
+        conn,
+        dependent_item_id=dependent_item_id,
+        blocking_item_id=blocker,
+    )
+    rows = fetch_optional_rows(
+        conn,
+        "SELECT gate_point, dependent_item_id, blocking_item_id FROM item_dependencies "
+        f"WHERE {pair_sql}",
+        pair_params,
+        savepoint="_yoke_upstream_ordering_probe",
+    )
+    ordering = [row for row in rows if not is_coordination_only(str(row[0]))]
+    return bool(ordering) and all(
+        is_coordination_only(gp) for gp in _effective_gate_points(conn, ordering)
     )
 
 
@@ -161,11 +217,16 @@ def has_active_serial_claim_dependency(
 
 
 def items_are_coordination_only(
-    conn: Any, *, item_a_id: int, item_b_id: int,
+    conn: Any,
+    *,
+    item_a_id: int,
+    item_b_id: int,
 ) -> bool:
-    """Return whether every dependency edge between two items is coordination-only."""
+    """Return whether every linking edge permits overlap now."""
     gate_points = _inter_item_gate_points(
-        conn, item_a_id=item_a_id, item_b_id=item_b_id,
+        conn,
+        item_a_id=item_a_id,
+        item_b_id=item_b_id,
     )
     return bool(gate_points) and all(is_coordination_only(gp) for gp in gate_points)
 
@@ -191,12 +252,13 @@ def classify_inter_item_edges(
       identifies the attested-upstream sub-case so the candidate is
       allowed to activate.
     * ``COORDINATION_ONLY`` — at least one edge links the pair and every
-      linking edge in either direction is ``coordination_only``. No
+      linking edge is coordination-only or its ordering is satisfied. No
       path-claim mutex; parallel activation allowed; merge-time conflict
       resolution only.
     * ``HAS_SERIAL`` — at least one edge has the candidate as DEPENDENT,
       the other party as BLOCKER, and a non-coordination ``gate_point``
-      (``activation`` / ``integration`` / ``closure``). The caller
+      (``activation`` / ``integration`` / ``closure``) whose satisfaction
+      is still unmet. Satisfied ordering contributes coordination. The caller
       serializes the candidate behind the blocker.
 
     Same-item overlaps return ``NO_EDGE``: there is no
@@ -220,7 +282,9 @@ def classify_inter_item_edges(
         return CoordinationClassification.HAS_SERIAL
 
     gate_points = _inter_item_gate_points(
-        conn, item_a_id=candidate_item_id, item_b_id=blocking_item_id,
+        conn,
+        item_a_id=candidate_item_id,
+        item_b_id=blocking_item_id,
     )
     if not gate_points:
         return CoordinationClassification.NO_EDGE
@@ -235,4 +299,5 @@ __all__ = [
     "has_active_serial_claim_dependency",
     "has_forward_serial_edge",
     "items_are_coordination_only",
+    "upstream_ordering_satisfied",
 ]

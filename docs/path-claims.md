@@ -31,7 +31,7 @@ Break-glass activation, amendment, release, and override surfaces remain command
 
 | Subcommand | Purpose |
 |---|---|
-| `yoke claims path register --item YOK-N --paths a,b,c [--allow-planned] [--tentative-paths a]` | Declare a path claim for an item. Resolves paths to canonical `path_targets` rows, runs overlap classification, transitions to `planned` (or `blocked` when a serial-via-dep upstream is named). `--integration-target` defaults to the project trunk (`projects.default_branch`, fallback `main`). With `--allow-planned`, missing paths mint as `planned`; `--tentative-paths` (subset of `--paths`, requires `--allow-planned`) mints that subset as `tentative`. Every path is validated before any is resolved or planned; the whole call refuses with a named code and recovery step: `path_set_empty` (no paths), `path_malformed` (quote, wildcard `*`/`?`, backslash or control characters; brackets stay legal for routed files such as `app/[slug]/page.tsx`), `path_not_project_relative` (absolute, or `.`, `..` or empty segments), `path_target_unknown` (unregistered without `--allow-planned`). The CLI refuses malformed and non-project-relative paths before any network call. Registration is one transaction: a refused call stores no claim and no planned path target; widen returns the same codes. |
+| `yoke claims path register --item YOK-N --paths a,b,c [--allow-planned] [--tentative-paths a]` | Declare a path claim for an item. Resolves paths to canonical `path_targets` rows, runs overlap classification, transitions to `planned` (or `blocked` while a serial-via-dep ordering remains unmet). `--integration-target` defaults to the project trunk (`projects.default_branch`, fallback `main`). With `--allow-planned`, missing paths mint as `planned`; `--tentative-paths` (subset of `--paths`, requires `--allow-planned`) mints that subset as `tentative`. Every path is validated before any is resolved or planned; the whole call refuses with a named code and recovery step: `path_set_empty` (no paths), `path_malformed` (quote, wildcard `*`/`?`, backslash or control characters; brackets stay legal for routed files such as `app/[slug]/page.tsx`), `path_not_project_relative` (absolute, or `.`, `..` or empty segments), `path_target_unknown` (unregistered without `--allow-planned`). The CLI refuses malformed and non-project-relative paths before any network call. Registration is one transaction: a refused call stores no claim and no planned path target; widen returns the same codes. |
 | `yoke claims path register --item YOK-N --paths "" --mode exception --exception-reason "<why>" [--integration-target T]` | Record a no-claim exception for items that legitimately touch no repo surface (validation work items, evidence-only items). Pass non-empty `--exception-reason` text so the rendered body can surface the operator's justification verbatim. `--integration-target` defaults to project trunk. |
 | `yoke claims path get <claim-id>` | Rich projection: state, declared coverage as readable paths, amendment history, current blocking conflicts. |
 | `yoke claims path list --item YOK-N [--state X]` | Same projection, every claim attached to the item, filterable by state. |
@@ -226,7 +226,8 @@ next.
    coverage is wider than they need.
 2. **Add or verify serial dependency ordering** — register with
    `--upstream-claim-id <holder-id>`; the candidate lands in
-   `blocked` and unblocks once the upstream releases.
+   `blocked` only while ordering is unmet; a satisfied `fact:merged`, status
+   or deployment condition permits overlap without rewriting the edge.
 3. **Wait for release / cancel** — the holder's `release` (or
    recorded landing) emits `PathClaimReleased` automatically (see
    "Landing and terminal transitions" above).

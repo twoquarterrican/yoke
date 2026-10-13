@@ -155,7 +155,7 @@ def classify_overlap(
 
     * **Candidate-as-DEPENDENT.** Even without an explicit
       ``--upstream-claim-id``, if the candidate's owning item is the
-      DEPENDENT party of a non-coordination ``item_dependencies`` edge
+      DEPENDENT party of an unmet non-coordination ``item_dependencies`` edge
       to the other claim's owning item, the pair is classified as
       ``SERIAL_VIA_DEPENDENCY``. ``widen`` callers (``phase='register'``)
       inherit the same posture so a claim that registered with a dep
@@ -207,6 +207,7 @@ def classify_overlap(
         CoordinationClassification,
         classify_inter_item_edges,
         has_forward_serial_edge,
+        upstream_ordering_satisfied,
     )
     from yoke_core.domain.path_claims_dependency_resolver import (
         _claim_owning_item,
@@ -221,6 +222,8 @@ def classify_overlap(
     if candidate_item_id is None and exclude_claim_id is not None:
         candidate_item_id = _claim_owning_item(conn, exclude_claim_id)
 
+    if candidate_item_id is None and exclude_claim_id is not None:
+        candidate_item_id = _claim_owning_item(conn, exclude_claim_id)
     matched_upstream = False
     for row in rows:
         other_id = int(row[0])
@@ -240,7 +243,13 @@ def classify_overlap(
             other_claim_id=other_id,
         ):
             continue
-        if upstream_claim_id is not None and int(upstream_claim_id) == other_id:
+        if (
+            upstream_claim_id is not None
+            and int(upstream_claim_id) == other_id
+            and not upstream_ordering_satisfied(
+                conn, dependent_item_id=candidate_item_id, upstream_claim_id=other_id
+            )
+        ):
             upstream_row = conn.execute(
                 f"SELECT integration_target FROM path_claims WHERE id = {_p(conn)}",
                 (upstream_claim_id,),
@@ -258,8 +267,8 @@ def classify_overlap(
             matched_upstream = True
             continue
         # Directional dep-graph classification: candidate-as-DEPENDENT of
-        # a non-coordination edge serializes; a pair linked only by
-        # coordination_only edges activates in parallel; candidate-as-
+        # an unmet non-coordination edge serializes; satisfied ordering and
+        # coordination_only edges permit overlap; candidate-as-
         # BLOCKER of a non-coordination edge means the candidate is
         # upstream and does not wait (the reverse-side caller serializes
         # correctly). True NO_EDGE (no item_dependencies row at all)

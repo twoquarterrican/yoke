@@ -130,3 +130,12 @@ yoke claims path register --item PREFIX-N --paths path/to/file,path/to/other --a
 The lifecycle rework gate and shared Bash/edit guards refuse missing fresh
 coverage as `path_claim_rework_coverage_required`; the merge boundary still
 checks the committed touched files. Use `--help` for release/cancel variants.
+
+## Satisfied ordering
+
+An ordering edge serializes overlapping claims only while its persisted
+`satisfaction` is unmet. The classifier uses the same satisfaction evaluator
+as lifecycle dependencies: recorded `fact:merged`, pinned status conditions
+and attributed deployment facts all count. A satisfied edge permits overlap
+without changing the stored `gate_point`; another unmet edge still serializes
+the dependent. Unknown or unproven satisfaction never clears ordering.

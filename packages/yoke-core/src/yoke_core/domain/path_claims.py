@@ -7,7 +7,6 @@ from yoke_core.domain.db_helpers import instant_parameter
 from typing import Any, Optional, Sequence
 
 from yoke_core.domain import db_backend, workflow_item_binding_lock
-from yoke_core.domain import path_claims_dependency_resolver_coordination as dep_edges
 from yoke_core.domain.actors import validate_actor_id
 from yoke_core.domain.path_claim_owner import (
     derive_owner_from_signals,
@@ -205,108 +204,6 @@ def register(
     return claim_id
 
 
-def activate(
-    conn: Any,
-    *,
-    claim_id: int,
-    base_commit_sha: str,
-    upstream_claim_id: Optional[int] = None,
-) -> None:
-    """Acquire the door lock on a planned/blocked claim.
-
-    Idempotent re-activation is a no-op. Same-target overlap is
-    re-classified at activate time. ``blocked`` claims require their
-    named upstream to be in state ``released``.
-    """
-    workflow_item_binding_lock.lock_path_claim_workflow_binding(
-        conn,
-        int(claim_id),
-    )
-    row = _fetch_claim(conn, claim_id)
-    owner_kind = row["owner_kind"]
-    owner_item_id = row["owner_item_id"] if owner_kind == "item" else None
-    if owner_item_id is not None:
-        from yoke_core.domain.workflow_item_binding_validation import (
-            WorkflowItemBindingError,
-            item_binding_runtime_state,
-        )
-
-        try:
-            item_binding_runtime_state(conn, int(owner_item_id))
-        except WorkflowItemBindingError as exc:
-            raise InvalidWorkflowBinding(str(exc)) from exc
-    state = row["state"]
-    if state == "active":
-        return  # idempotent — door lock already held
-    if state in _TERMINAL_STATES:
-        raise IllegalTransition(
-            f"cannot activate claim {claim_id} from terminal state {state!r}"
-        )
-    if state not in ("planned", "blocked"):
-        raise IllegalTransition(f"cannot activate claim {claim_id} from {state!r}")
-
-    targets = [
-        int(t[0])
-        for t in conn.execute(
-            f"SELECT target_id FROM path_claim_targets WHERE claim_id = {_p(conn)}",
-            (claim_id,),
-        )
-    ]
-    classification = classify_overlap(
-        conn,
-        target_ids=targets,
-        integration_target=row["integration_target"],
-        upstream_claim_id=upstream_claim_id,
-        exclude_claim_id=claim_id,
-        phase="activate",
-    )
-    if classification is OverlapClassification.INCOMPATIBLE:
-        raise IncompatibleOverlap(
-            f"claim {claim_id}: another active claim now owns overlapping "
-            f"coverage on {row['integration_target']!r}"
-        )
-    if (
-        state == "planned"
-        and classification is OverlapClassification.SERIAL_VIA_DEPENDENCY
-        and dep_edges.has_active_serial_claim_dependency(
-            conn, owner_item_id, row["integration_target"], targets
-        )
-    ):
-        raise UpstreamNotReleased(
-            f"claim {claim_id} has an active serial dependency; wait for release"
-        )
-    if state == "blocked":
-        if upstream_claim_id is None:
-            raise UpstreamNotReleased(
-                f"claim {claim_id} is blocked; pass upstream_claim_id to activate"
-            )
-        expected_upstream = _blocked_upstream_id(row)
-        if (
-            expected_upstream is not None
-            and int(upstream_claim_id) != expected_upstream
-        ):
-            raise UpstreamNotReleased(
-                f"claim {claim_id} is blocked by upstream claim "
-                f"{expected_upstream}, not {upstream_claim_id}"
-            )
-        upstream_state = conn.execute(
-            f"SELECT state FROM path_claims WHERE id = {_p(conn)}",
-            (upstream_claim_id,),
-        ).fetchone()
-        if upstream_state is None or upstream_state[0] != "released":
-            raise UpstreamNotReleased(
-                f"upstream claim {upstream_claim_id} is not released; "
-                f"current state {upstream_state[0] if upstream_state else 'missing'!r}"
-            )
-
-    conn.execute(
-        f"UPDATE path_claims SET state='active', activated_at={_p(conn)}, "
-        f"base_commit_sha={_p(conn)}, blocked_reason=NULL WHERE id = {_p(conn)}",
-        (instant_parameter(conn, _now()), base_commit_sha, claim_id),
-    )
-    conn.commit()
-
-
 def get_claim(conn: Any, claim_id: int) -> dict:
     """Return a claim row as a dict, including its declared target ids."""
     row = _fetch_claim(conn, claim_id)
@@ -326,6 +223,7 @@ def get_claim(conn: Any, claim_id: int) -> dict:
     return out
 
 
+from yoke_core.domain.path_claims_activation import activate  # noqa: E402
 from yoke_core.domain.path_claims_terminal import cancel, release  # noqa: E402
 
 
