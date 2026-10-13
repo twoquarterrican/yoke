@@ -106,8 +106,8 @@ Local edits use the refresh refusal's recovery.
 
 ## Hook diagnostics
 
-Human diagnostics inside Git and harness tools begin with `yoke (<hook>): `,
-for example `yoke (pre-commit): ERROR: file-line-limit gate blocked this commit.`
+Human diagnostics inside Git and harness tools begin with “yoke (<hook>): ”,
+for example “yoke (pre-commit): ERROR: file-line-limit gate blocked this commit.”
 Follow the repair in that diagnostic. Successful checks and identity-only
 post-commit snapshot scans stay quiet. Required orientation, instructions,
 continuations, handoffs and recovery still arrive through their normal owner.
