@@ -22,10 +22,13 @@ pytestmark = pytest.mark.skipif(os.name != "posix", reason="POSIX job control")
 
 
 def assert_restored(output):
+    # Readline owns this enable at the returned prompt; setup must still emit
+    # its own disable. Job-control cleanup and prompt output can interleave.
+    scope = output.replace(b"\x1b[?2004h" + TerminalShell.prompt, TerminalShell.prompt)
     for mode in (1000, 1003, 1004, 1006, 1015, 1016, 2004, 1049):
         enabled, disabled = f"\x1b[?{mode}h".encode(), f"\x1b[?{mode}l".encode()
-        if enabled in output:
-            assert output.rfind(disabled) > output.rfind(enabled), (mode, output)
+        if enabled in scope:
+            assert scope.rfind(disabled) > scope.rfind(enabled), (mode, output)
     assert b"Traceback" not in output
     assert b"tty input" not in output
 
