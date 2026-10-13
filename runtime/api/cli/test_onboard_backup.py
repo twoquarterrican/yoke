@@ -59,6 +59,7 @@ def test_validation_requires_verified_receipt(tmp_path, monkeypatch):
 def test_local_restore_binds_owner_and_retry_does_not_reimport(tmp_path, monkeypatch):
     calls = []
     app = shell(tmp_path)
+    app._self_host_setup = SimpleNamespace(raw_token="server-credential")
 
     def command(config, *args, **kwargs):
         calls.append((args, kwargs))

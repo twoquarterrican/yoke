@@ -101,7 +101,12 @@ def _confirm(shell, report, setup) -> None:
 
 def _apply(shell, archive, setup) -> None:
     def restore():
-        if not getattr(shell, "_backup_imported", False):
+        imported = (
+            bool(setup.raw_token)
+            if setup
+            else getattr(shell, "_backup_local_imported", False)
+        )
+        if not imported:
             current = backup.validate(shell.result.config_path, archive)
             if current["sha256"] != shell._backup_validation["sha256"]:
                 raise backup.BackupSetupError(

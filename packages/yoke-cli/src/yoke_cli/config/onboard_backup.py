@@ -86,7 +86,7 @@ def validate(config_path: str, value: str) -> dict:
 
 
 def restore_local(shell, archive: str) -> None:
-    if not getattr(shell, "_backup_imported", False):
+    if not getattr(shell, "_backup_local_imported", False):
         command(
             shell.result.config_path,
             "init",
@@ -106,7 +106,7 @@ def restore_local(shell, archive: str) -> None:
             archive,
             "--yes",
         )
-        shell._backup_imported = True
+        shell._backup_local_imported = True
         shell._backup_owner_id = receipt.get("actor_id")
         if not isinstance(shell._backup_owner_id, int) or shell._backup_owner_id <= 0:
             shell._backup_import_uncertain = True
@@ -153,7 +153,6 @@ def restore_server(shell, setup, archive: str) -> None:
                 "self-host import --recover-credential for this bundle."
             )
         setup.raw_token = raw_token
-        shell._backup_imported = True
     runtime.start_bundle(directory=setup.directory, executable=prerequisites.executable)
     server.retry_connection(setup)
     from yoke_cli.config.onboard_wizard_self_host import _select_connection
