@@ -4,7 +4,7 @@
  "status": "draft-copy",
  "situations": ["Two items need the same file.", "Implementation discovers an additional required file.", "A claim/boundary refusal stops an otherwise necessary change."],
  "coverage": "partial",
- "current": "Research trace; requirements and source paths need live proof.",
+ "current": "Source behavior: required-per-task readiness defers before generated tasks exist, then reports uncovered paths from the same task coverage evaluator used by claim gates. Whole-item claims do not substitute for task bindings; regressions cover pre-task, missing and partial coverage. Live proof remains required.",
  "desired": "Reconciled against current plan records.",
  "questions": ["Overlap procedure and current override source were inspected, but collision/authorization scenarios were not executed.", "Verify each scope expansion/refusal routes to current registered commands and never recommends dropping required work.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
  "related_scenarios": ["dependencies", "shared-coordination", "task-graph-planning"],
