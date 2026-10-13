@@ -170,7 +170,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--cases-file",
         type=Path,
-        help="Export clean, merged source cases for qa.plan_cases.replace; sync after merge.",
+        help="Export source-proven cases for qa.plan_cases.sync; sync after merge.",
     )
     parser.add_argument(
         "--primary-machine", help="Registered primary Test Machine for campaign cases."
@@ -196,7 +196,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             joining_machine=args.joining_machine,
         )
         if args.cases_file:
-            args.cases_file.write_text(json.dumps(cases, indent=2) + "\n")
+            args.cases_file.write_text(
+                json.dumps(
+                    {"source_revision": source_revision, "cases": cases}, indent=2
+                )
+                + "\n"
+            )
             report["source_revision"] = source_revision
     except SourceSyncRefused as exc:
         print(str(exc), file=sys.stderr)
@@ -215,7 +220,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "installer_campaign_plan_source_drift: installed cases differ; "
             "sync after merge: export clean merged source with --cases-file, "
             "review the differences, then install "
-            "with yoke qa plan-cases replace and check a fresh plan receipt.",
+            "with yoke qa plan-cases sync and check a fresh plan receipt.",
             file=sys.stderr,
         )
         return 1

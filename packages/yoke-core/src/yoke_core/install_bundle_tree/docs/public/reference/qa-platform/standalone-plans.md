@@ -34,6 +34,17 @@ and preserved host state. Read `yoke qa plan run --help` for the complete requir
 
 ## Function protocol
 
+Source-generated plans record their exporter commit with
+`yoke qa plan-cases sync --project P --plan-id N --cases-file SOURCE_EXPORT`.
+The commit must be on the project's verified default branch. Once bound, a plan
+requires provenance on every replacement and refuses the interactive editor;
+manual one-off correction plans remain separate. Source sync against a serving
+build without this field refuses before writing and names the required release.
+Frozen deployment snapshots retain source provenance. A stage materializes its
+frozen definitions even after the saved plan changes; a selected or refreshed
+source not carried by the run's candidate refuses `qa_plan_source_candidate_mismatch`.
+Sync definitions from that candidate or an ancestor, or deliver the newer source.
+
 Standalone project QA uses `qa.plan_execution.begin` with a project-scoped
 `global` target and payload `plan`, optional `source_revision`, `source_ref`,
 `checkout_path`, `machine`, and `continue_mission`. Adapter:

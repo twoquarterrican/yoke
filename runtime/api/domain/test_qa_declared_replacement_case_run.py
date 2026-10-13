@@ -133,3 +133,105 @@ def test_case_run_non_pass_keeps_the_corrected_obligation_blocking(
     status = _status(test_db, run_id)
     assert not status["accepted"]
     assert any(f"#{corrected_id}" in reason for reason in status["reasons"]), status
+
+
+def test_exact_requirement_correction_materializes_only_its_host_baseline(
+    test_db, tmp_path, monkeypatch
+):
+    from contextlib import nullcontext
+    from runtime.api.domain.machine_qa_host_test_support import configure_test_machine
+    from runtime.api.fixtures.deployment_scoped_qa_run_fixture import (
+        seed_run_standing_on_qa_stage,
+        item_qa_stage_definitions,
+        record_case_verdict,
+    )
+    from yoke_core.domain.qa_plan_management import create_plan, replace_plan_cases
+    from yoke_core.domain.handlers.qa_plan_materialize import handle_materialize
+    from yoke_core.domain.deployment_qa_stage_materialization import (
+        materialize_deployment_qa_stage,
+    )
+    from yoke_core.domain.qa_plan_execution_roster import ordered_plan_requirements
+
+    configure_test_machine(test_db, tmp_path, monkeypatch)
+    case = {
+        "case_key": "command-smoke",
+        "method_id": "machine-state-check",
+        "instructions": "check the host",
+        "expected_outcome": "passes",
+        "method_config": {
+            "machine": "mac-mini-lab",
+            "assertions": [{"argv": ["/usr/bin/true"]}],
+        },
+        "host_baselines": ["fresh-host", "shell-preconfigured"],
+    }
+    original = create_plan(
+        test_db, project="yoke", slug="baseline-check", infer_target_environment=False
+    )
+    replace_plan_cases(test_db, plan_id=original["id"], cases=[case])
+    run_id = "run-exact-baseline-correction"
+    seed_run_standing_on_qa_stage(
+        test_db,
+        run_id=run_id,
+        project="yoke",
+        stages=item_qa_stage_definitions(original["id"]),
+        members=(MEMBER,),
+        lineage="b" * 40,
+    )
+    materialize_deployment_qa_stage(
+        test_db,
+        deployment_run_id=run_id,
+        deployment_stage=ITEM_QA_STAGE,
+        deployment_member_item_id=MEMBER,
+    )
+    rows = test_db.execute(
+        "SELECT id,host_baseline FROM qa_requirements WHERE deployment_run_id=%s ORDER BY id",
+        (run_id,),
+    ).fetchall()
+    by_baseline = {row["host_baseline"]: row["id"] for row in rows}
+    failed, sibling = by_baseline["fresh-host"], by_baseline["shell-preconfigured"]
+    record_case_verdict(test_db, failed, "fail", evidence=True)
+    plan = create_plan(
+        test_db, project="yoke", slug="exact-correction", infer_target_environment=False
+    )
+    replace_plan_cases(
+        test_db,
+        plan_id=plan["id"],
+        cases=[{**case, "instructions": "correct this case"}],
+    )
+    request = FunctionCallRequest(
+        function="qa.plan.materialize",
+        actor=ActorContext(actor_id="2", session_id="member-qa"),
+        target=TargetRef(kind="deployment_run", deployment_run_id=run_id),
+        payload={
+            "deployment_stage": ITEM_QA_STAGE,
+            "deployment_member": f"YOK-{MEMBER}",
+            "plan": "exact-correction",
+            "replacements": [{"requirement_id": failed}],
+        },
+    )
+    with (
+        patch("yoke_core.domain.db_helpers.connect", return_value=nullcontext(test_db)),
+        patch(
+            "yoke_core.domain.deployment_qa_correction_notice.notify_correction",
+            return_value={"delivery": "test"},
+        ),
+    ):
+        outcome = handle_materialize(request)
+    assert outcome.primary_success, outcome.error
+    corrected = test_db.execute(
+        "SELECT id,host_baseline FROM qa_requirements WHERE plan_id=%s AND deployment_run_id=%s",
+        (plan["id"], run_id),
+    ).fetchall()
+    assert len(corrected) == 1 and corrected[0]["host_baseline"] == "fresh-host"
+    assert (
+        requirement_row(test_db, failed)["replacement_requirement_id"]
+        == corrected[0]["id"]
+    )
+    assert requirement_row(test_db, sibling)["replacement_requirement_id"] is None
+    roster = ordered_plan_requirements(
+        test_db,
+        deployment_run_id=run_id,
+        deployment_stage=ITEM_QA_STAGE,
+        deployment_member_item_id=MEMBER,
+    )
+    assert {row["requirement_id"] for row in roster} == {sibling, corrected[0]["id"]}

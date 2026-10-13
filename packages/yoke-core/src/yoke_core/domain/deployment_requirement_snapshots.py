@@ -111,7 +111,7 @@ def _plan_snapshot(
     marker = _p(conn)
     lock = " FOR UPDATE" if db_backend.connection_is_postgres(conn) else ""
     cursor = conn.execute(
-        f"SELECT {','.join(PLAN_FIELDS)},retired_at "
+        f"SELECT {converged_select(conn, 'qa_plans', (*PLAN_FIELDS, 'retired_at'))} "
         f"FROM qa_plans WHERE id={marker}{lock}",
         (int(plan_id),),
     )

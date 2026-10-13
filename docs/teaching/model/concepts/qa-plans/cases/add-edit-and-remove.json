@@ -4,6 +4,6 @@
  "status": "draft-copy",
  "page": "qa-plans",
  "position": 6,
- "summary": "Source-generated shared installer cases sync only from clean source already on the verified repository default branch. Lanes compare without publishing and use item-scoped or run-bound corrections for proof.",
+ "summary": "Source-generated shared cases sync from clean, merged source and retain the full source revision. Deployment QA uses frozen candidate definitions and refuses source newer than the candidate. Exact failed-requirement correction isolates one host baseline; lanes use item-scoped or run-bound proof.",
  "sources": ["docs/testing-verification/installer-campaign.md"]
 }

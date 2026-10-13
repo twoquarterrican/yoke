@@ -33,7 +33,8 @@ AGENT_PLAN_ALREADY_NAMED_REFUSAL = (
     "command without --plan; --plan selects cases only for a stage that "
     "names none, which is the wait that asks you for one by name. To correct "
     "a failed admitted case, use --plan CORRECTED_PLAN with "
-    "--replaces CORRECTED_CASE_KEY=FAILED_REQUIREMENT_ID for every case in "
+    "--replaces CORRECTED_CASE_KEY=FAILED_REQUIREMENT_ID, or "
+    "--replaces-requirement FAILED_ID for its exact host baseline, for every case in "
     "that plan."
 )
 
@@ -82,6 +83,7 @@ def require_correction_only_plan(snapshot: Mapping[str, Any], keys: set[str]) ->
     if not keys or actual != keys or len(cases or []) != len(keys):
         raise QaPlanError(
             "a stage already naming cases accepts --plan only with --replaces "
+            "or --replaces-requirement "
             "for every case in the corrected plan; select a plan containing "
             "exactly those corrected case keys"
         )

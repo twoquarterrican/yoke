@@ -1,0 +1,205 @@
+"""Release QA uses frozen source definitions or refuses a newer saved source."""
+
+import json
+from types import SimpleNamespace
+
+import pytest
+
+from runtime.api.domain.test_installer_campaign_plan_sync import (
+    source_checkout as source_checkout,
+)
+from runtime.api.fixtures.deployment_scoped_qa_run_fixture import (
+    ITEM_QA_STAGE,
+    seed_member_qa_case,
+)
+from yoke_core.domain import qa_plan_source_revision as source_binding
+from yoke_core.domain.deployment_run_carried_work_source import LocalCheckoutSource
+from yoke_core.domain.deployment_qa_stage_materialization import (
+    materialize_deployment_qa_stage,
+)
+from yoke_core.domain.deployment_requirement_snapshots import (
+    snapshot_flow_requirements,
+    _plan_snapshot,
+)
+from yoke_core.domain.qa_plan_management import QaPlanError, replace_plan_cases
+from yoke_core.domain.qa_plan_rematerialize_deployment import (
+    rematerialize_for_deployment_stage,
+)
+
+
+@pytest.fixture
+def bound_plan(test_db, source_checkout, monkeypatch):
+    root, git = source_checkout
+    old = git(root, "rev-parse", "HEAD").stdout.strip()
+    rid = seed_member_qa_case(
+        test_db, run_id="run-source-proof", member_item_id=9811, lineage=old
+    )
+    pid = test_db.execute(
+        "SELECT plan_id FROM qa_requirements WHERE id=%s", (rid,)
+    ).fetchone()[0]
+    test_db.execute("UPDATE projects SET default_branch='stable' WHERE id=1")
+    test_db.execute("UPDATE qa_plans SET source_revision=%s WHERE id=%s", (old, pid))
+    row = test_db.execute(
+        "SELECT r.flow,f.stages FROM deployment_runs r JOIN deployment_flows f ON f.id=r.flow WHERE r.id='run-source-proof'"
+    ).fetchone()
+    frozen = snapshot_flow_requirements(
+        test_db, flow_id=row["flow"], project_id=1, stages=json.loads(row["stages"])
+    )
+    test_db.execute(
+        "UPDATE deployment_runs SET release_lineage=%s,requirement_snapshot=%s WHERE id='run-source-proof'",
+        (old, frozen),
+    )
+    test_db.commit()
+    monkeypatch.setattr(
+        source_binding,
+        "open_carried_work_source",
+        lambda conn, project_id: LocalCheckoutSource(str(root)),
+    )
+    original = _plan_snapshot(test_db, pid, project_id=1)["cases"]
+    (root / "cases.json").write_text('["new behavior"]\n')
+    assert git(root, "commit", "-am", "Change source behavior").returncode == 0
+    new = git(root, "rev-parse", "HEAD").stdout.strip()
+    assert git(root, "push", "origin", "stable").returncode == 0
+    changed = [
+        {
+            **case,
+            "instructions": "expect the newer behavior",
+            "method_config": {"command": "false"},
+        }
+        for case in original
+    ]
+    replace_plan_cases(test_db, plan_id=pid, cases=changed, source_revision=new)
+    return pid, rid, old, new, original
+
+
+def test_frozen_candidate_definitions_survive_a_later_saved_plan_sync(
+    test_db, bound_plan
+):
+    pid, rid, old, new, original = bound_plan
+    test_db.execute("DELETE FROM qa_requirements WHERE id=%s", (rid,))
+    test_db.commit()
+    result = materialize_deployment_qa_stage(
+        test_db,
+        deployment_run_id="run-source-proof",
+        deployment_stage=ITEM_QA_STAGE,
+        deployment_member_item_id=9811,
+    )
+    created = result["created_requirement_ids"]
+    assert len(created) == 1
+    actual = test_db.execute(
+        "SELECT instructions FROM qa_requirements WHERE id=%s", (created[0],)
+    ).fetchone()[0]
+    assert actual == original[0]["instructions"]
+    config = test_db.execute(
+        "SELECT method_config FROM qa_requirements WHERE id=%s", (created[0],)
+    ).fetchone()[0]
+    assert json.loads(config)["command"] == original[0]["method_config"]["command"]
+    assert result["candidate_revision"] == old
+    assert (
+        test_db.execute(
+            "SELECT source_revision FROM qa_plans WHERE id=%s", (pid,)
+        ).fetchone()[0]
+        == new
+    )
+
+
+def test_live_newer_source_refuses_before_deployment_refresh_writes(
+    test_db, bound_plan
+):
+    pid, rid, old, new, original = bound_plan
+    with pytest.raises(
+        QaPlanError, match="qa_plan_source_candidate_mismatch.*Sync definitions"
+    ):
+        rematerialize_for_deployment_stage(
+            test_db,
+            deployment_run_id="run-source-proof",
+            deployment_stage=ITEM_QA_STAGE,
+            deployment_member_item_id=9811,
+        )
+    assert (
+        test_db.execute(
+            "SELECT instructions FROM qa_requirements WHERE id=%s", (rid,)
+        ).fetchone()[0]
+        == original[0]["instructions"]
+    )
+
+
+def test_source_binding_cannot_be_removed_by_raw_replacement(test_db, bound_plan):
+    pid, rid, old, new, original = bound_plan
+    with pytest.raises(QaPlanError, match="qa_plan_source_revision_required"):
+        replace_plan_cases(test_db, plan_id=pid, cases=original)
+    assert (
+        test_db.execute(
+            "SELECT source_revision FROM qa_plans WHERE id=%s", (pid,)
+        ).fetchone()[0]
+        == new
+    )
+
+
+def test_resyncing_candidate_source_reopens_live_materialization(test_db, bound_plan):
+    pid, rid, old, new, original = bound_plan
+    replace_plan_cases(test_db, plan_id=pid, cases=original, source_revision=old)
+    source_binding.require_candidate_plan(
+        test_db,
+        {"id": pid, "project_id": 1, "source_revision": old},
+        "run-source-proof",
+    )
+
+
+def test_old_serving_response_refuses_source_sync_before_write(tmp_path, monkeypatch):
+    from yoke_cli.commands.adapters import qa_plan_source_input as source_input
+
+    cases = tmp_path / "cases.json"
+    cases.write_text("[]")
+    monkeypatch.setattr(source_input, "ensure_handlers_loaded", lambda: None)
+    monkeypatch.setattr(source_input, "build_actor", lambda **kw: None)
+    monkeypatch.setattr(
+        source_input,
+        "call_dispatcher",
+        lambda **kw: SimpleNamespace(success=True, result={"plan": {"id": 1}}),
+    )
+    args = SimpleNamespace(
+        stdin=False,
+        cases_file=str(cases),
+        plan_id=1,
+        project="sample",
+        session_id=None,
+        source_revision="a" * 40,
+    )
+    with pytest.raises(
+        ValueError, match="source_binding_unavailable.*No cases were written"
+    ):
+        source_input.case_payload(args)
+
+
+def test_source_document_uses_version_admitted_sync_endpoint(tmp_path, monkeypatch):
+    from yoke_cli.commands.adapters import (
+        qa_plan_source_input as source_input,
+        qa_catalog,
+    )
+    from unittest.mock import Mock
+
+    document = {"source_revision": "a" * 40, "cases": [{"case_key": "probe"}]}
+    path = tmp_path / "source.json"
+    path.write_text(json.dumps(document))
+    monkeypatch.setattr(source_input, "ensure_handlers_loaded", lambda: None)
+    monkeypatch.setattr(source_input, "build_actor", lambda **kw: None)
+    monkeypatch.setattr(
+        source_input,
+        "call_dispatcher",
+        lambda **kw: SimpleNamespace(
+            success=True, result={"plan": {"source_revision": None}}
+        ),
+    )
+    dispatched = Mock(return_value=0)
+    monkeypatch.setattr(qa_catalog, "dispatch_and_emit", dispatched)
+    args = ["--project", "sample", "--plan-id", "1", "--cases-file", str(path)]
+    assert qa_catalog.qa_plan_cases_sync(args) == 0
+    assert dispatched.call_args.kwargs["function_id"] == "qa.plan_cases.sync"
+    assert (
+        dispatched.call_args.kwargs["payload"]["source_revision"]
+        == document["source_revision"]
+    )
+    dispatched.reset_mock()
+    assert qa_catalog.qa_plan_cases_replace(args) == 2
+    dispatched.assert_not_called()

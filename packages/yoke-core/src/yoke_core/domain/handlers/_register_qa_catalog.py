@@ -6,6 +6,7 @@ from yoke_core.domain.handlers import qa_catalog_reads as _reads
 from yoke_core.domain.handlers import qa_plan_edit as _edit
 from yoke_core.domain.handlers import qa_item_plan_retract as _retract
 from yoke_core.domain.handlers import qa_plan_writes as _writes
+from yoke_core.domain.handlers import qa_plan_source_sync as _source_sync
 from yoke_core.domain.handlers import (
     qa_no_tests_posture_writes as _no_tests_posture,
 )
@@ -43,6 +44,7 @@ def _read(
 
 
 def register(registry) -> None:
+    _source_sync.register(registry)
     _read(
         registry,
         "qa.method.list",

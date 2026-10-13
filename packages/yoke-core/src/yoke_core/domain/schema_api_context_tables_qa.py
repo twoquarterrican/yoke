@@ -4,13 +4,15 @@ Sibling of :mod:`schema_api_context_tables` (which combines per-topic
 dicts into the canonical ``CANONICAL_TABLES``). Holds the ``qa`` topic
 entries: qa_requirements, qa_runs, qa_artifacts.
 
-Pure data only — no I/O, no DB connections, no imports beyond stdlib.
+Pure data only — no I/O or DB connections; composes sibling plan facts.
 """
 
 from __future__ import annotations
+from yoke_core.domain.schema_api_context_tables_qa_plans import QA_PLAN_TABLES
 
 
 QA_TABLES: dict[str, dict] = {
+    **QA_PLAN_TABLES,
     "shepherd_verdicts": {
         "columns": [
             ("id", "INTEGER"),

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
-import sys
 from typing import Any, Callable, List
 
 from yoke_cli.commands._helpers import (
@@ -23,11 +21,14 @@ from yoke_cli.commands.adapters.qa_execution_subjects import (
 )
 from yoke_cli.commands.adapters.qa_catalog_usage import (
     ITEM_PLAN_ATTACH_EPILOG,
-    PLAN_CASES_REPLACE_EPILOG,
     USAGE_BY_FUNCTION_ID,
 )
 from yoke_cli.commands.adapters.qa_plan_listing import qa_plan_list
 from yoke_contracts.api.function_call import TargetRef
+from yoke_cli.commands.adapters.qa_plan_source_input import (
+    case_payload as _case_payload,
+    configure_case_replace as _configure_case_replace,
+)
 from yoke_cli.commands.adapters.qa_catalog_usage import (
     configure_attachment as _configure_attachment,
 )
@@ -60,6 +61,14 @@ def _global(
         built_payload = payload(parsed)
     except (OSError, ValueError) as exc:
         return usage_error(str(exc))
+    if function_id == "qa.plan_cases.replace" and "source_revision" in built_payload:
+        return usage_error(
+            "qa_plan_source_sync_required: replace accepts manual case arrays; use yoke qa plan-cases sync for source exports"
+        )
+    if function_id == "qa.plan_cases.sync" and "source_revision" not in built_payload:
+        return usage_error(
+            "qa_plan_source_revision_required: sync needs a source export document or --source-revision FULL_SHA"
+        )
     return dispatch_and_emit(
         function_id=function_id,
         target=TargetRef(kind="global"),
@@ -256,23 +265,6 @@ def qa_plan_create(args: List[str]) -> int:
     )
 
 
-def _configure_case_replace(parser: argparse.ArgumentParser) -> None:
-    parser.epilog = PLAN_CASES_REPLACE_EPILOG
-    parser.formatter_class = argparse.RawDescriptionHelpFormatter
-    parser.add_argument("--plan-id", type=int, required=True)
-    source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("--cases-file")
-    source.add_argument("--stdin", action="store_true")
-
-
-def _case_payload(parsed: argparse.Namespace) -> dict[str, Any]:
-    raw = sys.stdin.read() if parsed.stdin else Path(parsed.cases_file).read_text()
-    cases = json.loads(raw)
-    if not isinstance(cases, list):
-        raise ValueError("cases input must be a JSON array")
-    return {"plan_id": parsed.plan_id, "cases": cases}
-
-
 def qa_plan_cases_replace(args: List[str]) -> int:
     usage = (
         "yoke qa plan-cases replace --project P --plan-id N "
@@ -283,6 +275,17 @@ def qa_plan_cases_replace(args: List[str]) -> int:
         prog="yoke qa plan-cases replace",
         usage=usage,
         function_id="qa.plan_cases.replace",
+        configure=_configure_case_replace,
+        payload=_case_payload,
+    )
+
+
+def qa_plan_cases_sync(args: List[str]) -> int:
+    return _global(
+        args,
+        prog="yoke qa plan-cases sync",
+        usage="yoke qa plan-cases sync --project P --plan-id N (--cases-file PATH | --stdin) [--source-revision FULL_SHA] [--json]",
+        function_id="qa.plan_cases.sync",
         configure=_configure_case_replace,
         payload=_case_payload,
     )
@@ -330,6 +333,7 @@ __all__ = [
     "qa_method_list",
     "qa_method_register",
     "qa_plan_cases_replace",
+    "qa_plan_cases_sync",
     "qa_plan_create",
     "qa_plan_get",
     "qa_plan_item_attach",

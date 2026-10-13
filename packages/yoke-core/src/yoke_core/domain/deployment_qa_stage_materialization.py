@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import Any
 
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.deployment_run_project_sources import run_delivered_sha
 from yoke_core.domain.deployment_qa_frozen_plan_selection import (
-    frozen_stage_plans,
     member_requirements,
 )
 from yoke_core.domain.qa_deployment_case_content_refresh import (
@@ -21,24 +19,19 @@ from yoke_core.domain.deployment_qa_execution_target import (
     deployment_qa_execution_target,
 )
 from yoke_core.domain.deployment_qa_stage_contract import deployment_qa_stage_subject
-from yoke_core.domain.deployment_qa_stage_named_cases import (
-    AGENT_PLAN_ALREADY_NAMED_REFUSAL,
-    require_correction_only_plan,
-    stage_names_cases,
-)
 from yoke_core.domain.deployment_qa_admission_materialization import (
     materialize_admitted_requirement,
 )
 from yoke_core.domain.deployment_qa_direct_case_target import (
     bind_existing_direct_deployment_cases,
 )
-from yoke_core.domain.deployment_requirement_snapshots import _plan_snapshot
 from yoke_core.domain.post_deploy_verification_answer import (
     cases_not_selected_refusal,
     NOT_REQUIRED,
     member_post_deploy_answer,
 )
 from yoke_core.domain.qa_plan_management import QaPlanError
+from yoke_core.domain.deployment_qa_plan_selection import selected_plans
 from yoke_core.domain.qa_plan_case_definition import snapshot_fan_out
 from yoke_core.domain.qa_execution_environment_target import target_digest
 from yoke_core.domain.qa_plan_requirement_snapshot import (
@@ -62,66 +55,6 @@ class QaCasesNotSelectedError(QaPlanError):
     are real stage failures. Collapsing them would either strand the
     agent or dress a broken definition up as patience.
     """
-
-
-def _selected_plans(
-    conn: Any,
-    subject: Mapping[str, Any],
-    *,
-    agent_plan: str | None,
-    target: Mapping[str, Any],
-    admitted: list[dict[str, Any]],
-    allow_empty: bool = False,
-    replacement_keys: set[str] | None = None,
-) -> list[dict[str, Any]]:
-    frozen = frozen_stage_plans(conn, subject, target=target, admitted=admitted)
-    named = agent_plan is not None and stage_names_cases(
-        conn, subject, frozen_plans=frozen, admitted=admitted
-    )
-    if named and not replacement_keys:
-        raise QaPlanError(AGENT_PLAN_ALREADY_NAMED_REFUSAL)
-    if agent_plan is not None:
-        plan_project_id = int(subject.get("member_project_id") or subject["project_id"])
-        row = conn.execute(
-            "SELECT id FROM qa_plans WHERE project_id=%s "
-            "AND (slug=%s OR CAST(id AS TEXT)=%s) AND retired_at IS NULL",
-            (plan_project_id, str(agent_plan), str(agent_plan)),
-        ).fetchone()
-        if row is None:
-            raise QaPlanError(
-                f"agent-selected QA plan {agent_plan!r} is not active in this project"
-            )
-        agent_plan_id = int(row["id"] if hasattr(row, "keys") else row[0])
-        snapshot = _plan_snapshot(conn, int(agent_plan_id), project_id=plan_project_id)
-        if named:
-            require_correction_only_plan(snapshot, replacement_keys or set())
-        frozen.append(snapshot)
-    unique: dict[tuple[int, tuple[str, ...]], dict[str, Any]] = {}
-    for snapshot in frozen:
-        plan = snapshot.get("plan")
-        cases = snapshot.get("cases")
-        if not isinstance(plan, Mapping) or not isinstance(cases, list):
-            raise QaPlanError("frozen deployment QA plan snapshot is invalid")
-        key = (
-            int(plan["id"]),
-            tuple(str(case["case_key"]) for case in cases if isinstance(case, Mapping)),
-        )
-        unique[key] = snapshot
-    if not unique and not allow_empty:
-        raise QaCasesNotSelectedError(cases_not_selected_refusal())
-    from yoke_core.domain.qa_plan_case_targets import case_applies_to_target
-
-    return [
-        {**snapshot, "cases": cases}
-        for snapshot in unique.values()
-        if (
-            cases := [
-                case
-                for case in snapshot["cases"]
-                if case_applies_to_target(case, target)
-            ]
-        )
-    ]
 
 
 def _existing_rows(
@@ -160,6 +93,7 @@ def materialize_deployment_qa_stage(
     commit: bool = True,
     replacement_keys: set[str] | None = None,
     replaced_requirement_ids: frozenset[int] = frozenset(),
+    replacement_scopes: dict[str, list[dict]] | None = None,
 ) -> dict[str, Any]:
     """Create concrete scoped cases from the run's immutable snapshots."""
     subject = deployment_qa_stage_subject(
@@ -170,7 +104,7 @@ def materialize_deployment_qa_stage(
     )
     target = deployment_qa_execution_target(conn, subject)
     admitted = member_requirements(conn, subject, target=target)
-    snapshots = _selected_plans(
+    snapshots = selected_plans(
         conn,
         subject,
         agent_plan=agent_plan,
@@ -178,6 +112,7 @@ def materialize_deployment_qa_stage(
         admitted=admitted,
         allow_empty=True,
         replacement_keys=replacement_keys,
+        replacement_scopes=replacement_scopes,
     )
     created: list[int] = []
     existing: list[int] = []
@@ -274,6 +209,13 @@ def materialize_deployment_qa_stage(
                     elif str(case["case_key"]) in materialized_keys:
                         continue
                 for position, baseline in enumerate(baselines, start=1):
+                    scopes = snapshot.get("replacement_scopes", {}).get(
+                        str(case_value["case_key"])
+                    )
+                    if scopes and not any(
+                        scope["host_baseline"] == baseline for scope in scopes
+                    ):
+                        continue
                     requirement_id = insert_requirement(
                         conn,
                         deployment_run_id=str(deployment_run_id),

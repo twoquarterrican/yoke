@@ -66,6 +66,7 @@ QA_CATALOG_SUBCOMMAND_REGISTRY = {
         "qa.plan_cases.replace",
         qa_catalog.qa_plan_cases_replace,
     ),
+    ("qa", "plan-cases", "sync"): ("qa.plan_cases.sync", qa_catalog.qa_plan_cases_sync),
     ("qa", "registered-command", "set"): (
         "qa.registered_command.set",
         qa_catalog_defaults.qa_registered_command_set,

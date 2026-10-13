@@ -320,16 +320,15 @@ def replace_plan_cases(
     *,
     plan_id: int,
     cases: list[dict],
+    source_revision: str | None = None,
 ) -> dict:
     """Replace the future case specification; materialized rows stay intact."""
     plan = _plan_row(conn, plan_id)
     cases = _validated_plan_cases(conn, plan=plan, cases=cases)
-    marker = _placeholder(conn)
     now = _next_updated_at()
-    conn.execute(
-        f"UPDATE qa_plans SET updated_at={marker} WHERE id={marker}",
-        (instant_parameter(conn, now), plan_id),
-    )
+    from yoke_core.domain.qa_plan_source_revision import update_plan_source
+
+    update_plan_source(conn, plan, source_revision, now)
     from yoke_core.domain.qa_plan_case_store import insert_plan_cases
 
     insert_plan_cases(conn, plan_id=plan_id, cases=cases, stamp=now)

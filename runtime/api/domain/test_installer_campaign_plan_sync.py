@@ -65,7 +65,10 @@ def test_export_uses_bound_environment_and_check_refuses_drift(
     snapshot.write_text(json.dumps({"success": True, "result": {"plan": plan}}))
     args = ["--plan-file", str(snapshot), "--cases-file", str(exported)]
     assert main(args + ["--check"]) == 1
-    assert json.loads(exported.read_text()) == expected
+    assert json.loads(exported.read_text()) == {
+        "source_revision": "a" * 40,
+        "cases": expected,
+    }
     assert "installer_campaign_plan_source_drift" in capsys.readouterr().err
     plan["cases"] = expected
     snapshot.write_text(json.dumps({"success": True, "result": {"plan": plan}}))
@@ -149,7 +152,10 @@ def test_export_refuses_unmerged_commit_preserves_output_and_accepts_after_merge
     capsys.readouterr()
     assert git(root, "push", "origin", "HEAD:stable").returncode == 0
     assert main(args) == 0
-    assert json.loads(output.read_text()) == _plan()["cases"]
+    assert json.loads(output.read_text()) == {
+        "source_revision": revision,
+        "cases": _plan()["cases"],
+    }
     assert json.loads(capsys.readouterr().out)["source_revision"] == revision
 
 

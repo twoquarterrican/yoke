@@ -151,6 +151,11 @@ def get_plan(
         "success_policy_params": _decode(row["success_policy_params"], {}),
         "created_at": format_instant(row["created_at"]),
         "updated_at": format_instant(row["updated_at"]),
+        **(
+            {"source_revision": row["source_revision"]}
+            if "source_revision" in row
+            else {}
+        ),
         "retired_at": format_instant(row["retired_at"])
         if row["retired_at"] is not None
         else None,

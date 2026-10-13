@@ -47,7 +47,7 @@ and names this command instead of exiting zero with an uncredited pass.
 When the stage names no concrete cases, --plan records the executor's
 project-owned selection -- and only then. A stage already naming its own cases
 (pinned, frozen, member-attached, admitted, or directly authored) refuses
---plan unless --replaces names every case in a correction-only plan. This
+--plan unless --replaces or --replaces-requirement names every corrected case. This
 atomic correction binds each case to the same run, stage, member and target;
 it does not add an unrelated second set of obligations.
 Materialization stamps the member project's deployed target for member QA,
@@ -94,6 +94,9 @@ that pass supersedes the old row and resumes the run driver. A missing sibling
 case still blocks. Retries reuse the declaration. To correct a failed
 correction, name its requirement id. For an item subject, pass --replaces to
 `yoke qa plan materialize --item PREFIX-N --transition T` before this run.
+If a case key expands across host baselines, use --replaces-requirement FAILED_ID
+instead. Keep the same case key in the corrected plan; only the named row's
+baseline is materialized and linked, while sibling baselines remain unchanged.
 If the corrected direct requirement already exists, declare it with `yoke qa
 requirement supersede --requirement-id FAILED_ID
 --superseded-by-requirement-id CORRECTED_ID --rationale 'corrected case'
