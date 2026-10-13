@@ -196,3 +196,31 @@ def test_error_back_keeps_the_screen_that_requested_the_check(
             assert len(app._history) == 2
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("key", ["escape", "ctrl+[", "enter"])
+def test_apply_outcome_back_returns_to_the_preceding_interactive_view(key: str) -> None:
+    app, _spy = make_app()
+
+    async def scenario() -> None:
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            review = _View(STEP_PROJECT, lambda: [Static("Review setup")])
+            app._goto(review)
+            app._goto_applying()
+            app._replace_current(
+                _View(
+                    STEP_PROJECT,
+                    lambda: [
+                        SelectionList([SelectionRow("back", "Change answers", "")])
+                    ],
+                    app._on_apply_failure,
+                )
+            )
+            await pilot.pause()
+            await pilot.press(key)
+            await pilot.pause()
+            assert app._history[-1] is review
+            assert len(app._history) == 2
+
+    asyncio.run(scenario())
