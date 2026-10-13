@@ -81,10 +81,10 @@ Create the exploration plan for the same declared target as the campaign:
 yoke qa plan create installer-exploration --project P --environment SITE/NAME
 yoke qa plan get installer-exploration --project P --full --json > /tmp/exploration-plan.json
 yoke dev run -- python3 -m yoke_core.tools.installer_campaign_plan --plan-file /tmp/exploration-plan.json --cases-file /tmp/exploration-cases.json
-yoke qa plan-cases replace --project P --plan-id PLAN_ID --cases-file /tmp/exploration-cases.json
+yoke qa plan-cases replace --project P --plan-id {plan_id} --cases-file /tmp/exploration-cases.json
 ```
 
-Read PLAN_ID from the plan receipt. The exporter reads the latest immutable
+Read `plan_id` from the plan receipt. The exporter reads the latest immutable
 Machine QA Pack example, so there is one mission source. Check a fresh plan
 receipt with the same source checker before running it:
 
