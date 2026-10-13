@@ -8,7 +8,7 @@ import sys
 from unittest import mock
 
 from yoke_core.domain import qa_plan_execution_cli, qa_plan_review_cli
-from yoke_core.domain.qa_plan_review import _dispatch_contract
+from yoke_core.domain.qa_plan_review_dispatch import dispatch_contract
 from yoke_core.domain.qa_review_verdict_modes import (
     ALL_REVIEW_VERDICTS,
     CONCLUSIVE_REVIEW_VERDICTS,
@@ -244,7 +244,7 @@ class TestDispatchOffersOnlyWhatTheStageAccepts:
             "subject": {"public_ref": _FIXTURE_ITEM_REF, "deployment_run_id": None},
             "cases": [{"requirement_id": 41, "capture_runner": "browser_substrate"}],
         }
-        dispatch = _dispatch_contract(
+        dispatch = dispatch_contract(
             bundle, allowed_verdicts=CONCLUSIVE_REVIEW_VERDICTS
         )
         schema_verdict = dispatch["result_schema"]["verdicts"][0]["verdict"]
