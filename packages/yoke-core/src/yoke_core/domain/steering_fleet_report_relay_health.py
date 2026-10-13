@@ -60,9 +60,9 @@ def _serves(value: object, project_id: int) -> bool:
 def relay_health_conditions(
     conn: Any,
     *,
-    project_id: int,
+    project_id: int | None,
     now: str,
-) -> tuple[RelayHealthCondition, ...]:
+) -> tuple[RelayHealthCondition | tuple[frozenset[str], RelayHealthCondition], ...]:
     """Return quarantine immediately and retry failures once sustained."""
     p = marker(conn)
     rows = conn.execute(
@@ -74,7 +74,7 @@ def relay_health_conditions(
     ).fetchall()
     result = []
     for row in rows:
-        if not _serves(row["project_checkouts"], project_id):
+        if project_id is not None and not _serves(row["project_checkouts"], project_id):
             continue
         health = sanitize_relay_health(_document(row["relay_health"], {}))
         if retained_settled_reports_only(health):
@@ -100,24 +100,26 @@ def relay_health_conditions(
             ),
             0,
         )
-        result.append(
-            RelayHealthCondition(
-                relay_id=str(row["relay_id"]),
-                machine_id=str(row["machine_id"]),
-                hostname=str(row["hostname"]),
-                state=str(health["state"]),
-                pending_reports=int(health["pending_reports"]),
-                quarantine_count=int(health["quarantine_count"]),
-                error_code=error_code,
-                failure_count=int(failure.get("failure_count") or attempts or 0),
-                first_failed_at=first_failed_at,
-                last_failed_at=parse_stamp(failure.get("last_failed_at")),
-                refusal_reason=str(refusal.get("reason") or ""),
-                local_revision=str(refusal.get("local_revision") or ""),
-                server_revision=str(refusal.get("server_revision") or ""),
-                recovery=str(refusal.get("recovery") or ""),
-            )
+        entry = RelayHealthCondition(
+            relay_id=str(row["relay_id"]),
+            machine_id=str(row["machine_id"]),
+            hostname=str(row["hostname"]),
+            state=str(health["state"]),
+            pending_reports=int(health["pending_reports"]),
+            quarantine_count=int(health["quarantine_count"]),
+            error_code=error_code,
+            failure_count=int(failure.get("failure_count") or attempts or 0),
+            first_failed_at=first_failed_at,
+            last_failed_at=parse_stamp(failure.get("last_failed_at")),
+            refusal_reason=str(refusal.get("reason") or ""),
+            local_revision=str(refusal.get("local_revision") or ""),
+            server_revision=str(refusal.get("server_revision") or ""),
+            recovery=str(refusal.get("recovery") or ""),
         )
+        projects = frozenset(
+            str(value) for value in _document(row["project_checkouts"], [])
+        )
+        result.append((projects, entry) if project_id is None else entry)
     return tuple(result)
 
 

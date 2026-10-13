@@ -3,7 +3,7 @@
  "title": "Read summaries, page deliberately, then select full detail",
  "status": "observed",
  "when": "A QA plan catalog, session roster or steering report is large",
- "need": "QA and session lists serve 25-row summary pages. JSON chooses format and obeys the same 28,000-byte CLI bound. A refused read prints no partial answer and names narrowing or --full. Steering JSON serves scope counts.",
+ "need": "QA and session lists serve 25-row summary pages. JSON chooses format and obeys the same 28,000-byte CLI bound. A refused read prints no partial answer and names narrowing or --full. Steering JSON computes complete facts; --json --full permits the full reply. Hook and watcher digests compose alarm inputs and return compact disappearance identities.",
  "surface": "CLI help, command results and refusals",
  "topics": ["context/bounded-command-reads"],
  "recipes": ["yoke qa plan list --project P --limit 25 --offset 25", "yoke sessions list --session SESSION-ID --full --json", "yoke steering report get --full --json"],

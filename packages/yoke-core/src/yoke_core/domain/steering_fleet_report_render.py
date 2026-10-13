@@ -12,6 +12,7 @@ from yoke_contracts.timestamps import format_instant
 from yoke_core.domain.steering_fleet_report_test_machines import test_machine_lines
 
 from yoke_core.domain.machine_registry import display_name
+from yoke_core.domain.steering_fleet_report_labels import label_text
 from yoke_core.domain.steering_fleet_report import ClaimHolder, FleetReport
 from yoke_core.domain.steering_fleet_report_balance import launch_balance_lines
 from yoke_core.domain.steering_fleet_report_levels import (
@@ -279,7 +280,7 @@ def scope_actionable_digest(
     claims = _section(CLAIMS_HEADING, _holder_lines(unlisted_holders(report)))
     if claims:
         work = work[: -len(claims)]
-    return "\n".join(work).strip()
+    return label_text("\n".join(work).strip(), report.session_labels)
 
 
 def scope_inner_body(
@@ -292,7 +293,7 @@ def scope_inner_body(
     work.extend(level_override_lines(report.level_overrides))
     if include_header:
         work = [_project_header(report), "", *work]
-    return "\n".join(work).strip()
+    return label_text("\n".join(work).strip(), report.session_labels)
 
 
 def report_body(report: FleetReport) -> str:
@@ -317,7 +318,7 @@ def report_body(report: FleetReport) -> str:
         *native_model_lines(report.native_models),
         REPORT_END,
     ]
-    return "\n".join(lines)
+    return label_text("\n".join(lines), report.session_labels)
 
 
 __all__ = [

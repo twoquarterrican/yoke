@@ -39,6 +39,8 @@ class SteeringReportGetResponse(BaseModel):
     actionable: bool = False
     fingerprint: str = ""
     delivered: Optional[bool] = None
+    composition_skipped: bool = False
+    digest: str = ""
     body: str = ""
     delta_body: str = ""
     project_id: Optional[int] = None
@@ -120,15 +122,42 @@ def handle_get(request: FunctionCallRequest) -> HandlerOutcome:
                 project_id = resolve_project_id(conn, ref)
             except LookupError as exc:
                 return _error("not_found", str(exc))
+        now = utc_now()
+        if payload.deliver:
+            from yoke_core.domain.steering_fleet_report_delivery import (
+                claim_report_composition,
+                _held_project_ids,
+            )
+
+            held_projects = _held_project_ids(conn, session_id)
+            if not held_projects or (
+                project_id is not None and project_id not in held_projects
+            ):
+                return _claim_required(project_id)
+            if claim_report_composition(conn, session_id=session_id, now=now) is None:
+                return HandlerOutcome(
+                    result_payload={"composition_skipped": True, "delivered": False}
+                )
         combined = compose_held_reports(
             conn,
             session_id=session_id,
-            now=utc_now(),
+            now=now,
             project_id=project_id,
+            include_inventory=payload.full or payload.read_delta,
         )
         if not combined.sections:
             return _claim_required(project_id)
-        if project_id is not None:
+        if payload.deliver:
+            from yoke_core.domain.steering_fleet_report_watcher import watcher_dict
+
+            result = watcher_dict(combined)
+        elif not payload.full and not payload.read_delta:
+            result = {
+                "composed_at": combined.composed_at,
+                "actionable": combined.actionable,
+                "fingerprint": combined.fingerprint(),
+            }
+        elif project_id is not None:
             report = combined.sections[0].report
             result = {**report_dict(report), "body": report_body(report)}
         else:

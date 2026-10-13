@@ -120,6 +120,7 @@ def read_project_facts(
     session_id: str,
     now: str,
     registered_names: Mapping[str, str],
+    reads: FleetReportReads | None = None,
 ) -> ProjectFleetFacts:
     """Read every project-wide fact one report scope is composed from.
 
@@ -128,10 +129,17 @@ def read_project_facts(
     the database itself it got a narrower one that knew nothing about who was
     parked, which is how a healthy wait came to print a close-out command.
     """
+    request = reads if reads is not None else FleetReportReads()
     holders = claim_holders(conn, project_id=project_id, now=now)
-    plan_limits = load_plan_limits(
-        conn, project_id=project_id, now=now, registered_names=registered_names
+    plan_limits = request.machine_facts(
+        conn,
+        "plan_limits",
+        project_id,
+        lambda: load_plan_limits(
+            conn, project_id=None, now=now, registered_names=registered_names
+        ),
     )
+    inventory = request.include_inventory
     return ProjectFleetFacts(
         available=scope_candidates(conn, project_id=project_id, session_id=session_id),
         holders=holders,
@@ -148,20 +156,47 @@ def read_project_facts(
         stranded=stranded_sessions(
             conn, project_id=project_id, now=now, limits=plan_limits
         ),
-        launchable=launchable_surfaces(conn, project_id=project_id, now=now),
-        session_counts=live_session_counts(conn, project_id=project_id),
-        origin_counts=live_launch_origin_counts(conn, project_id=project_id),
+        launchable=launchable_surfaces(conn, project_id=project_id, now=now)
+        if inventory
+        else (),
+        session_counts=live_session_counts(conn, project_id=project_id)
+        if inventory
+        else (),
+        origin_counts=live_launch_origin_counts(conn, project_id=project_id)
+        if inventory
+        else (),
         plan_limits=plan_limits,
-        native_models=load_native_models(
-            conn, project_id=project_id, now=now, registered_names=registered_names
+        native_models=request.machine_facts(
+            conn,
+            "native_models",
+            project_id,
+            lambda: load_native_models(
+                conn, project_id=None, now=now, registered_names=registered_names
+            ),
+        )
+        if inventory
+        else (),
+        machine_capacity=request.machine_facts(
+            conn,
+            "machine_capacity",
+            project_id,
+            lambda: machine_capacities(conn, project_id=None, now=now),
+        )
+        if inventory
+        else (),
+        relay_health=request.machine_facts(
+            conn,
+            "relay_health",
+            project_id,
+            lambda: relay_health_conditions(conn, project_id=None, now=now),
         ),
-        machine_capacity=machine_capacities(conn, project_id=project_id, now=now),
-        relay_health=relay_health_conditions(conn, project_id=project_id, now=now),
         machine_names=registered_names,
-        test_machines=read_test_machines(conn, project_id),
+        test_machines=read_test_machines(conn, project_id) if inventory else (),
         levels=read_level_readout(
             conn, project_id=project_id, session_id=session_id, now=now
-        ),
+        )
+        if inventory
+        else None,
     )
 
 
@@ -169,6 +204,7 @@ def read_project_facts(
 class FleetReportReads:
     """One report request's shared reads, discarded with the request."""
 
+    include_inventory: bool = True
     landings: MergeQueueReads = field(default_factory=MergeQueueReads)
     _memo: dict[tuple[Any, ...], Any] = field(default_factory=dict)
 
@@ -181,6 +217,15 @@ class FleetReportReads:
     def machine_names(self, conn: Any) -> Mapping[str, str]:
         """Registered machine names, which no scope narrows."""
         return self.cached(("machine_names",), lambda: machine_names(conn))
+
+    def machine_facts(self, conn, kind, project_id, factory):
+        """Read machine values once; project membership only filters the result."""
+        rows = self.cached(("machine_facts", kind), factory)
+        return tuple(
+            row
+            for projects, row in rows
+            if str(project_id) in {str(value) for value in projects}
+        )
 
     def project_facts(
         self,
@@ -199,6 +244,7 @@ class FleetReportReads:
                 session_id=session_id,
                 now=now,
                 registered_names=self.machine_names(conn),
+                reads=self,
             ),
         )
 

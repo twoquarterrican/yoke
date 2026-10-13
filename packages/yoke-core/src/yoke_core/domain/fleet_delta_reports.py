@@ -115,6 +115,9 @@ def append_steering_reports(
                 STEERING_REPORT_FUNCTION,
             )
         )
+        if result.get("composition_skipped"):
+            state.checked_at = observed_at
+            return
         fingerprint = str(result.get("fingerprint") or "").strip()
         payload = (
             str(result.get("digest") or "").strip()

@@ -104,26 +104,25 @@ def test_the_steering_seat_receives_the_report(steering_scope):
     assert fingerprint
 
 
-def test_an_unconfirmed_candidate_does_not_take_the_interval(steering_scope):
-    """Peeking a candidate composes it without spending its delivery slot.
-
-    A reply that turns out denied or malformed must not cost the recipient
-    a whole interval's report — the next hook has to see the SAME candidate
-    again rather than a suppressed one, because nothing was ever confirmed.
-    """
+def test_unconfirmed_composition_reserves_interval_and_retries_later(steering_scope):
+    """Failed delivery cannot rebuild on every hook inside the same window."""
     first = steering_report_candidate(
         steering_scope, session_id=STEERING_SESSION, now=NOW
     )
     assert first is not None
     assert "=== BEGIN YOKE FLEET REPORT ===" in first.text
     stamped_at, fingerprint = _last_report(steering_scope, STEERING_SESSION)
-    assert stamped_at is None
+    assert stamped_at == NOW
     assert fingerprint == ""
 
     second = steering_report_candidate(
         steering_scope, session_id=STEERING_SESSION, now=NOW + timedelta(minutes=1)
     )
 
+    assert second is None
+    second = steering_report_candidate(
+        steering_scope, session_id=STEERING_SESSION, now=NOW + timedelta(minutes=30)
+    )
     assert second is not None
     assert second.fingerprint == first.fingerprint
 

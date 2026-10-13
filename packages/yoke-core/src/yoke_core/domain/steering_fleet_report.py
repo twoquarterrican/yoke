@@ -1,8 +1,6 @@
 """What the steering seat cannot see from inside its own turn.
 
-Composes available work, idle holders, five silent failure classes,
-launchable surfaces, level capacity and live session counts into one report.
-It decides nothing and launches nothing.
+Composes only the requested report view; it decides and launches nothing.
 
 The staffing threshold bounds how long runnable work may sit unclaimed.
 It allows the brief claim handoff at lifecycle boundaries.
@@ -145,6 +143,7 @@ class FleetReport:
     #: Each level's launch standing, and items carrying a level override.
     levels: LevelReadout | None = None
     level_overrides: tuple[tuple[str, str], ...] = ()
+    session_labels: tuple[tuple[str, str], ...] = ()
 
     def waited_too_long(self) -> tuple[FrontierEntry, ...]:
         """Available work past the staffing threshold: the alarm, not the list.
@@ -328,7 +327,9 @@ def compose_report(
         test_machines=facts.test_machines,
         relay_health=facts.relay_health,
         levels=facts.levels,
-        level_overrides=read_level_overrides(conn, refs),
+        level_overrides=read_level_overrides(conn, refs)
+        if request.include_inventory
+        else (),
         messages_awaiting_seat=awaiting_seat_count(
             conn,
             project_id=int(project_id),

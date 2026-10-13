@@ -80,7 +80,6 @@ def _claim_interval(
     session_id: str,
     now: datetime,
     not_after: datetime,
-    fingerprint: str,
 ) -> bool:
     """Take this session's report interval, or report that someone else did.
 
@@ -93,15 +92,12 @@ def _claim_interval(
     cursor = conn.execute(
         "UPDATE harness_sessions SET last_steering_report_at = "
         + marker
-        + ", last_steering_report_fingerprint = "
-        + marker
         + " WHERE session_id = "
         + marker
         + " AND (last_steering_report_at IS NULL "
         "OR last_steering_report_at <= " + marker + ")",
         (
             instant_parameter(conn, now),
-            fingerprint,
             session_id,
             instant_parameter(conn, parse_instant(not_after)),
         ),
@@ -122,13 +118,9 @@ def _held_project_ids(conn: Any, session_id: str) -> tuple[int, ...]:
 
 @dataclass(frozen=True)
 class SteeringReportCandidate:
-    """A composed report this session is owed, pending confirmed delivery.
+    """Reserved composition, with content pending confirmed delivery.
 
-    Composition and eligibility are decided at :func:`steering_report_candidate`
-    time; the interval is not spent until :func:`confirm_steering_report_delivery`
-    runs, so a reply that turns out denied or malformed leaves the next hook
-    free to retry instead of losing this session's report for a whole
-    interval to a delivery that never reached the model.
+    Failed delivery keeps the old fingerprint and retries in the next window.
     """
 
     text: str
@@ -144,50 +136,21 @@ def steering_report_candidate(
     session_id: str,
     now: datetime | None = None,
 ) -> SteeringReportCandidate | None:
-    """The report this session is owed right now, without claiming the interval.
-
-    Returns ``None`` for every session that is not steering, for a steering
-    session still inside its report interval, and for a report whose content
-    does not differ from the one that session last saw
-    (that quiet case still takes the interval immediately, exactly as
-    before — there is no reply for a sibling denial to drop, since nothing
-    is being attached). A genuine report defers its claim to the caller
-    confirming the reply actually carried it.
-    """
+    """Reserve composition before building; siblings and the watcher skip it."""
     current = utc_now() if now is None else parse_instant(now)
-    project_ids = _held_project_ids(conn, session_id)
-    if not project_ids:
-        return None
-    interval = min(
-        _policy_minutes(
-            conn,
-            project_id,
-            "steering_report_interval_minutes",
-            DEFAULT_STEERING_REPORT_INTERVAL_MINUTES,
-        )
-        for project_id in project_ids
-    )
-    not_after = current - timedelta(minutes=interval)
-    last_at, last_fingerprint = _last_report(conn, session_id)
-    if last_at and last_at > not_after:
+    _, last_fingerprint = _last_report(conn, session_id)
+    not_after = claim_report_composition(conn, session_id=session_id, now=current)
+    if not_after is None:
         return None
 
     combined = compose_held_reports(
         conn,
         session_id=session_id,
         now=current,
+        include_inventory=False,
     )
     fingerprint = combined.fingerprint()
     if fingerprint == last_fingerprint:
-        # Nothing new to see. Still take the interval so
-        # the next delivery does not pay for the same composition again.
-        _claim_interval(
-            conn,
-            session_id=session_id,
-            now=current,
-            not_after=not_after,
-            fingerprint=fingerprint,
-        )
         return None
     return SteeringReportCandidate(
         text=combined_hook_digest(combined),
@@ -201,32 +164,55 @@ def steering_report_candidate(
 def confirm_steering_report_delivery(
     conn: Any, candidate: SteeringReportCandidate
 ) -> bool:
-    """Claim the interval now that the reply is confirmed to carry the report."""
-    return _claim_interval(
-        conn,
-        session_id=candidate.session_id,
-        now=candidate.claimed_at,
-        not_after=candidate.not_after,
-        fingerprint=candidate.fingerprint,
+    """Stamp content only while the candidate owns its reserved window."""
+    marker = _p(conn)
+    cursor = conn.execute(
+        f"UPDATE harness_sessions SET last_steering_report_fingerprint = {marker} "
+        f"WHERE session_id = {marker} AND last_steering_report_at = {marker} "
+        f"AND COALESCE(last_steering_report_fingerprint, '') <> {marker}",
+        (
+            candidate.fingerprint,
+            candidate.session_id,
+            instant_parameter(conn, candidate.claimed_at),
+            candidate.fingerprint,
+        ),
     )
+    conn.commit()
+    return cursor.rowcount == 1
+
+
+def claim_report_composition(conn, *, session_id, now):
+    """Return the claimed boundary, or None when no composition is due."""
+    project_ids = _held_project_ids(conn, session_id)
+    if not project_ids:
+        return None
+    interval = min(
+        _policy_minutes(
+            conn,
+            project,
+            "steering_report_interval_minutes",
+            DEFAULT_STEERING_REPORT_INTERVAL_MINUTES,
+        )
+        for project in project_ids
+    )
+    not_after = parse_instant(now) - timedelta(minutes=interval)
+    last_at, _ = _last_report(conn, session_id)
+    if last_at and last_at > not_after:
+        return None
+    if not _claim_interval(
+        conn,
+        session_id=session_id,
+        now=now,
+        not_after=not_after,
+    ):
+        return None
+    return not_after
 
 
 def record_report_delivery(
     conn: Any, *, session_id: str, fingerprint: str, now: datetime | str
 ) -> bool:
-    """Stamp a report onto this session's record unless it already carries it.
-
-    The fleet watcher's half of the shared record. True means this caller is
-    the first to deliver this content and should show it; False means the
-    session already received it, from the hook or an earlier watcher pass.
-    Compare-and-set suppresses a later watcher once delivery is recorded.
-    A narrow race remains: a hook can render its provisional candidate before
-    either writer records it, while a watcher records and prints that same
-    content before hook settlement. The interval CAS then rejects the hook's
-    stamp, but cannot retract its rendered reply. This can duplicate one report;
-    the shared fingerprint suppresses subsequent deliveries. Different-content
-    candidates can similarly race; this record is not a rendering lock.
-    """
+    """Record delivered content after the watcher reserved composition."""
     now = parse_instant(now)
     marker = _p(conn)
     cursor = conn.execute(
@@ -252,9 +238,8 @@ def steering_report_for_delivery(
 ) -> str | None:
     """Compose and immediately confirm delivery in one call.
 
-    The synchronous, single-call shape every direct caller wants. The hook
-    delivery port instead defers confirmation until it knows the rendered
-    reply actually carried the candidate (see ``steering_report_candidate``).
+    Both paths reserve composition first; hooks confirm the fingerprint
+    only when their reply carries the candidate.
     """
     candidate = steering_report_candidate(conn, session_id=session_id, now=now)
     if candidate is None:
@@ -267,6 +252,7 @@ def steering_report_for_delivery(
 __all__ = [
     "SteeringReportCandidate",
     "confirm_steering_report_delivery",
+    "claim_report_composition",
     "record_report_delivery",
     "steered_project_id",
     "steering_report_candidate",

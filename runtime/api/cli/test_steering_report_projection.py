@@ -26,7 +26,7 @@ def test_report_delta_full_and_json_select_their_projection(monkeypatch, capsys)
     for flags, payload, output in (
         ([], {"read_delta": True, "full": False}, "unchanged"),
         (["--full"], {"read_delta": True, "full": True}, "complete report"),
-        (["--json"], {"read_delta": False, "full": False}, ""),
+        (["--json"], {"read_delta": False, "full": True}, ""),
         (["--full", "--json"], {"read_delta": False, "full": True}, ""),
     ):
         assert steering_report.steering_report_get(flags) == 0

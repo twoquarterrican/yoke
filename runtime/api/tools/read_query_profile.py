@@ -6,6 +6,7 @@ import argparse
 from collections import Counter
 from datetime import datetime, timezone
 import inspect
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -31,7 +32,7 @@ class CountedConnection:
     def execute(self, sql: str, params: tuple = ()) -> Any:
         frame = inspect.currentframe().f_back
         while frame and frame.f_globals.get("__name__", "").endswith(
-            ("db_helpers", "db_backend")
+            ("db_helpers", "db_backend", "steering_report_read_connection")
         ):
             frame = frame.f_back
         reader = (
@@ -54,6 +55,7 @@ def main() -> None:
     parser.add_argument("--session-id")
     parser.add_argument("--samples", type=int, default=5)
     parser.add_argument("--full", action="store_true")
+    parser.add_argument("--view", choices=("digest", "full"), default="digest")
     parser.add_argument(
         "--baseline-ref",
         help="Compare this exact commit on the same exported read-only snapshot.",
@@ -144,6 +146,8 @@ def main() -> None:
                     snapshot_id,
                     "--now",
                     now.isoformat(),
+                    "--view",
+                    args.view,
                 ]
                 if args.full:
                     command.append("--full")
@@ -169,6 +173,7 @@ def main() -> None:
         for index in range(args.samples):
             counted = CountedConnection(conn)
             started = perf_counter()
+            metrics = {}
             if args.read == "qa":
                 from yoke_core.domain.qa_catalog_reads import list_plans
 
@@ -181,11 +186,53 @@ def main() -> None:
             else:
                 from yoke_core.domain.steering_fleet_report_compose import (
                     compose_held_reports,
+                    combined_dict,
                 )
 
+                options = {}
+                if (
+                    "include_inventory"
+                    in inspect.signature(compose_held_reports).parameters
+                ):
+                    options["include_inventory"] = args.full or args.view == "full"
                 result = compose_held_reports(
-                    counted, session_id=args.session_id, now=now, project_id=project_id
+                    counted,
+                    session_id=args.session_id,
+                    now=now,
+                    **options,
                 )
+                if options and not options["include_inventory"]:
+                    from yoke_core.domain.steering_fleet_report_watcher import (
+                        watcher_dict,
+                    )
+
+                    payload = watcher_dict(result)
+                else:
+                    payload = combined_dict(result)
+                digest_body = payload["digest"]
+                full_body = payload.get("body")
+                # Person/machine annotations are an intentional display addition;
+                # parity still proves every existing alarm and recovery byte.
+                for section in result.sections:
+                    for session, label in getattr(section.report, "session_labels", ()):
+                        digest_body = digest_body.replace(
+                            f"{session} ({label})", session
+                        )
+                        if full_body is not None:
+                            full_body = full_body.replace(
+                                f"{session} ({label})", session
+                            )
+                from yoke_contracts.timestamps import temporal_wire
+
+                metrics = {
+                    "reply_bytes": len(json.dumps(temporal_wire(payload)).encode()),
+                    "digest_sha256": hashlib.sha256(digest_body.encode()).hexdigest(),
+                    "fingerprint": result.fingerprint(),
+                    "actionable": result.actionable,
+                    "body_sha256": hashlib.sha256(full_body.encode()).hexdigest()
+                    if full_body is not None
+                    else None,
+                }
             elapsed = perf_counter() - started
             timings.append(elapsed)
             samples.append(dict(counted.counts))
@@ -197,6 +244,7 @@ def main() -> None:
                         "queries": sum(counted.counts.values()),
                         "readers": dict(counted.counts),
                         "reader_seconds": dict(counted.seconds),
+                        **metrics,
                     },
                     sort_keys=True,
                 ),

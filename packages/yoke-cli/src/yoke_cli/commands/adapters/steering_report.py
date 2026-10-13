@@ -21,8 +21,8 @@ Read the fleet report for every steering scope this session holds.
 
 Default human output shows changed scope, inbox and shared-machine sections
 since this session's last pull read, plus an unchanged count. --full prints
-everything and advances that read checkpoint. --json returns scope counts
-without consuming the human read checkpoint; --json --full returns every fact.
+everything and advances that read checkpoint. --json returns every fact
+without consuming the human read checkpoint.
 Hook/watcher delivery is separate.
 
 Omit --project to compose one report covering each live steering claim, with
@@ -98,7 +98,10 @@ def steering_report_get(args: List[str]) -> int:
             kind="global",
             project_id=client_project_context(explicit) if explicit else None,
         ),
-        payload={"read_delta": not parsed.json_mode, "full": parsed.full},
+        payload={
+            "read_delta": not parsed.json_mode,
+            "full": parsed.full or parsed.json_mode,
+        },
         session_id=None,
         json_mode=parsed.json_mode,
         human_writer=(

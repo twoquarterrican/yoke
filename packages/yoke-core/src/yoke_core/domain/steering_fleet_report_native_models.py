@@ -98,10 +98,10 @@ def _cell(row: Any, key: str, index: int) -> Any:
 def load_native_models(
     conn: Any,
     *,
-    project_id: int,
+    project_id: int | None,
     now: str,
     registered_names: Mapping[str, str] | None = None,
-) -> tuple[MachineNativeModels, ...]:
+) -> tuple[MachineNativeModels | tuple[frozenset[int], MachineNativeModels], ...]:
     """Connected relays' latest availability for machines serving this project.
 
     ``registered_names`` lets a caller that already read the registry pass it
@@ -117,9 +117,13 @@ def load_native_models(
         "ORDER BY hostname, machine_id",
         (instant_parameter(conn, parse_stamp(now)),),
     ).fetchall()
-    found: list[MachineNativeModels] = []
+    found = []
     for row in rows:
-        if int(project_id) not in _projects(_cell(row, "project_checkouts", 2)):
+        projects = frozenset(_projects(_cell(row, "project_checkouts", 2)))
+        values = []
+        if project_id is not None and int(project_id) not in _projects(
+            _cell(row, "project_checkouts", 2)
+        ):
             continue
         readings = sanitize_native_models(
             _document(_cell(row, "surface_native_models", 3))
@@ -133,7 +137,7 @@ def load_native_models(
             if reading is None:
                 continue
             models = available_models(reading)
-            found.append(
+            values.append(
                 MachineNativeModels(
                     machine_id=machine_id,
                     machine_name=machine_name,
@@ -146,6 +150,9 @@ def load_native_models(
                     sample_models=models[:NAMED_MODEL_SAMPLE],
                 )
             )
+        found.extend(
+            (projects, value) if project_id is None else value for value in values
+        )
     return tuple(found)
 
 
