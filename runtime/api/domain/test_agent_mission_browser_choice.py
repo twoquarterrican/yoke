@@ -40,11 +40,8 @@ def _walker(executor: str, identities: list[str] | None = None) -> dict:
     return agent_mission_dispatch_contract(bundle)["walker_dispatches"][0]
 
 
-@pytest.mark.parametrize("executor", ["naive_target_session", "informed_subagent"])
-def test_walker_prompt_uses_yoke_browser_only_when_the_walk_installed_yoke(
-    executor: str,
-) -> None:
-    walker = _walker(executor)
+def test_walker_prompt_uses_yoke_browser_only_when_the_walk_installed_yoke() -> None:
+    walker = _walker("informed_subagent")
     prompt = walker["prompt"]
 
     assert "if Yoke is on the target because this walk installed it" in prompt
@@ -57,12 +54,11 @@ def test_walker_prompt_uses_yoke_browser_only_when_the_walk_installed_yoke(
     assert "Never install Yoke on a Test Machine to get a browser." in prompt
 
 
-@pytest.mark.parametrize("executor", ["naive_target_session", "informed_subagent"])
 @pytest.mark.parametrize("identities", [["operator"], ["operator", "admin"]])
 def test_named_identities_select_managed_browser_without_installing_yoke(
-    executor: str, identities: list[str]
+    identities: list[str],
 ) -> None:
-    walker = _walker(executor, identities)
+    walker = _walker("informed_subagent", identities)
     prompt = walker["prompt"]
 
     assert "For named browser identities, use the managed browser" in prompt

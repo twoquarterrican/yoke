@@ -208,8 +208,8 @@ command. Host contention is a hold, not a verdict: the review-submit owner can
 accept the returned `host_wait` shape to keep requirements open and queue a
 fresh mission. HUMAN_GATE needs the exact action/resume checkpoint; route to
 covering steering or the human owner, verify completion and dispatch a fresh
-walker. Receipt acknowledgement never proves sign-in. Keep target-naive walkers
-free of added project context; preserve declared host-state continuation.
+walker. Receipt acknowledgement never proves sign-in. Use informed walkers from the controller without adding a source checkout
+to the target; preserve declared host-state continuation.
 The execution remains live and the QA gate
 remains unsatisfied until submission. Pending dispatch creates no human work.
 Until then the result carries `review_status="pending"`: the capture is

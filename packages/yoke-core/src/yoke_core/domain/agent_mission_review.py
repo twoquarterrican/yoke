@@ -55,7 +55,11 @@ def _walker_dispatch(
     subject_flag: str,
 ) -> dict[str, Any]:
     descriptor = DispatchDescriptor("qa-walker")
-    executor = str(case["executor"])
+    from yoke_core.domain.qa_method_config_validation import validate_method_config
+
+    executor = validate_method_config(
+        "agent-mission", {"executor": case.get("executor")}
+    )["executor"]
     host_command_base = (
         f"yoke qa mission host-command {subject_flag} "
         f"--execution-id {execution_id} "
@@ -73,30 +77,19 @@ def _walker_dispatch(
     identities, browser_verify_commands, identity_clause = walker_identity_dispatch(
         case, host_command_base
     )
-    walks_on_target = executor != "informed_subagent"
-    artifact_bytes_source = (
-        "--content-file PATH"
-        if walks_on_target
-        else "--content-base64 B64 --filename NAME"
-    )
     artifact_add_command = (
         "yoke qa artifact add "
         f"--requirement-id {int(case['requirement_id'])} "
         f"--run-id {int(case['capture_run_id'])} --artifact-type TYPE "
-        f"{artifact_bytes_source} [--content-type TYPE] [--metadata JSON]"
+        "--content-base64 B64 --filename NAME [--content-type TYPE] [--metadata JSON]"
     )
     artifact_bytes_clause = (
         "attach it with the bytes themselves, never a path on the target: "
         "walk-end restores the host to its declared starting state, so a "
         "recorded path outlives its own file and is refused. "
-    ) + (
-        ""
-        if walks_on_target
-        else (
-            "You are driving the target from another machine, so read the "
-            "bytes back first by running `base64 -i TARGET_PATH` through "
-            "the remote command below and passing its stdout as B64. "
-        )
+        "You are driving the target from another machine, so read the "
+        "bytes back first by running `base64 -i TARGET_PATH` through "
+        "the remote command below and passing its stdout as B64. "
     )
     scratch_path = mission_scratch_path(execution_id)
     walk_flags = (
@@ -178,20 +171,10 @@ def _walker_dispatch(
     )
     return {
         "executor": executor,
-        "dispatch_kind": (
-            descriptor.dispatch_kind
-            if executor == "informed_subagent"
-            else "target_machine_agent_session"
-        ),
+        "dispatch_kind": descriptor.dispatch_kind,
         "role": descriptor.role,
-        "subagent_type": (
-            descriptor.subagent_type if executor == "informed_subagent" else None
-        ),
-        "context_policy": (
-            "project-informed"
-            if executor == "informed_subagent"
-            else "target-naive-no-checkout"
-        ),
+        "subagent_type": descriptor.subagent_type,
+        "context_policy": "project-informed",
         "host_command": host_command,
         "scratch_path": scratch_path,
         "walk_start_command": walk_start_command,
@@ -267,8 +250,8 @@ def agent_mission_dispatch_contract(
         prompt = (
             f"Own exploratory QA bundle {bundle_id} ({digest}) as the main "
             f"agent for immutable environment {authority['environment']} at "
-            f"target digest {target_digest}. Dispatch each case according to "
-            "its executor, one walker at a time in the listed order: every "
+            f"target digest {target_digest}. Dispatch informed subagents, "
+            "one walker at a time in the listed order: every "
             "mission shares the plan's one Test Machine, and each walk resets "
             "it on walk-start and restores it on walk-end. A walker turn is "
             "atomic and cannot ask the operator or send Fleet mail. "
@@ -299,8 +282,8 @@ def agent_mission_dispatch_contract(
             "verify the action, and dispatch a fresh walker with the resume "
             "state. Use the declared continuation when the held host must "
             "keep its state; do not start an ordinary reset run. "
-            "Do not top up "
-            "a target-naive session with project checkout or project context. "
+            "Keep the fresh target free of a source checkout; the informed "
+            "walker uses controller context and installed target guidance. "
             "Review every non-mission case yourself from its transcript and "
             "artifact-read commands. Aggregate each ranked written mission "
             "report, choose every final verdict, and submit exactly one row "

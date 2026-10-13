@@ -211,16 +211,14 @@ def validate_method_config(
                 "host_starting_state",
                 "browser_identities",
             }
-            or executor
-            not in {
-                "informed_subagent",
-                "naive_target_session",
-            }
+            or executor != "informed_subagent"
         ):
             raise QaMethodConfigError(
-                "Agent missions require one executor, may name a driving machine and its simultaneous machines "
-                "and the browser_identities they need signed in: "
-                "informed_subagent or naive_target_session"
+                "agent_mission_executor_invalid: set method_config.executor to "
+                "informed_subagent. Agent missions may also name machine, machines, "
+                "host_starting_state and browser_identities; remove other keys. "
+                "Update the saved plan case and rematerialize affected requirements "
+                "before retrying."
             )
         config["executor"] = str(executor)
         if "browser_identities" in config:

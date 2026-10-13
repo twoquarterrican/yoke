@@ -4,7 +4,7 @@
  "status": "draft-copy",
  "audience": "both",
  "when": "When the expected outcome requires assertions, visual judgment or exploratory observation.",
- "need": "Command/CI and Browser check use automatic results; Browser inspection captures evidence for agent judgment. Pack-added methods and exploratory missions have additional contracts. A screenshot is not a pass.",
+ "need": "Command/CI and Browser check use automatic results; Browser inspection captures evidence for agent judgment. Pack-added methods and exploratory missions have additional contracts. A screenshot is not a pass. Exploratory missions use informed_subagent from the controller; fresh targets stay free of a source checkout. Unsupported executors require a saved-case correction and rematerialization.",
  "disclosure": "current cue",
  "surface": "Method definitions; Browser reference; exploratory QA dispatch",
  "gap": "Review question: should verification planning offer the relevant method in plain language and fetch its reference only after selection?",

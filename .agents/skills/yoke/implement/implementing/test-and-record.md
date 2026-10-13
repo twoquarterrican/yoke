@@ -44,8 +44,8 @@ and capture handle through exit.
 Exit 12 with `state="awaiting_agent_review"` requires immediate continuation:
 dispatch the exact returned descriptor, prompt and complete immutable bundle.
 For `dispatch_kind=subagent`, use its named harness subagent type.
-For `main_agent_mission`, keep ownership here, dispatch each informed or
-target-naive walker, aggregate reports and submit the complete verdict batch
+For `main_agent_mission`, keep ownership here, dispatch each informed
+subagent walker, aggregate reports and submit the complete verdict batch
 through the returned command.
 
 Only a walker HUMAN_GATE requires human action: checkpoint its exact action

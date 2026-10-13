@@ -324,7 +324,7 @@ def test_walker_dispatch_names_the_walk_commands_and_sequential_walks() -> None:
                 "requirement_id": 18152,
                 "capture_runner": "agent_mission",
                 "capture_run_id": 991,
-                "executor": "naive_target_session",
+                "executor": "informed_subagent",
                 "instructions": "Install as a new user.",
                 "expected_outcome": "Ranked findings.",
                 "artifacts": [],
