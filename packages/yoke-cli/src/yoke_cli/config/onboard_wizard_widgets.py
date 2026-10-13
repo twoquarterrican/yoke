@@ -63,11 +63,6 @@ class SelectionRow:
     hint: str
 
 
-# A hint that cannot fit beside its label keeps at least this many cells (the
-# ellipsis included) before it is dropped rather than shown as a stub.
-_MIN_TRUNCATED_HINT_CELLS = 4
-
-
 class Stepper(Static):
     """Fixed progress rail driven by the active step id.
 
@@ -106,7 +101,7 @@ class Stepper(Static):
 
 
 class _OptionRow(Static):
-    """A single selectable line: marker + label + right-aligned dim hint."""
+    """A selectable row with a marker, full label and dim hint."""
 
     def __init__(self, row: SelectionRow) -> None:
         super().__init__()
@@ -127,37 +122,17 @@ class _SelectionDescription(Static):
 
 
 def _option_row_text(row: SelectionRow, *, selected: bool, width: int) -> Text:
-    """Lay one row out on exactly one line of ``width`` cells.
-
-    The hint is right-aligned after at least one cell of gap. A hint that does
-    not fit is cut to the room left and ends in an ellipsis; with fewer than
-    a few cells left it is dropped, so no row ever wraps or leaves its label
-    line half blank.
-    """
+    """Keep short hints aligned; wrap the full label and hint when needed."""
     marks = glyphs()
     plain = plain_glyphs()
     marker = marks.selected if selected else marks.unselected
-    prefix = f"{marker}  "
     label = plain_text(row.label) if plain else row.label
     hint = plain_text(row.hint) if plain else row.hint
-    width = max(width, 0)
-    if not width:
-        return Text()
-    line = Text(prefix + label, no_wrap=True)
-    line.truncate(width, overflow="ellipsis")
-    room = width - cell_len(line.plain) - 1
-    if not hint or room < _MIN_TRUNCATED_HINT_CELLS:
-        # Pad to the row width either way so the selected row's tint is one
-        # span; a hint with no room is dropped rather than shown as a stub.
-        line.append(" " * max(room + 1, 0))
-        return line
-    hint_text = Text(hint)
-    if cell_len(hint) > room:
-        hint_text.truncate(room, overflow="ellipsis")
-        if plain:
-            hint_text = Text(plain_text(hint_text.plain))
-    line.append(" " * (width - cell_len(line.plain) - cell_len(hint_text.plain)))
-    line.append(hint_text.plain, style="" if selected else "dim")
+    line = Text(f"{marker}  {label}", overflow="fold")
+    if hint:
+        room = width - cell_len(line.plain) - cell_len(hint)
+        line.append(" " * room if room > 0 else "\n")
+        line.append(hint, style="" if selected else "dim")
     return line
 
 
