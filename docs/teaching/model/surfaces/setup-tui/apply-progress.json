@@ -2,8 +2,6 @@
  "id": "apply-progress",
  "title": "Follow each Apply operation status.",
  "status": "observed",
- "topics": [
-  "installation/entry/apply-progress"
- ],
+ "topics": ["installation/entry/apply-progress"],
  "position": 90
 }
