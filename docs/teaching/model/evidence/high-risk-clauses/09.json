@@ -1,0 +1,7 @@
+{
+ "id": "09",
+ "title": "FIRST-USER:519",
+ "status": "observed",
+ "text": "- Full Yoke skills remain per-project; `yoke-global` must not shadow one. This adds no second in-project context block or unconditional native-startup publisher. Cloud sessions may not see user-level skills; D verifies supported discovery.",
+ "position": 8
+}

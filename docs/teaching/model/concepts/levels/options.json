@@ -1,0 +1,9 @@
+{
+ "id": "options",
+ "title": "Launch option",
+ "status": "verified-live",
+ "text": "Stored launch options are base model/min_effort rows. Surface, native selector and context are resolved for placement or supplied on an exact launch override.",
+ "evidence": "Production universe.levels.get, 2026-10-13; native expansion mechanics observed in the routing guide.",
+ "page": "levels",
+ "position": 1
+}

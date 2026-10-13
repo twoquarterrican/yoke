@@ -1,59 +1,11 @@
 {
- "scenario": {
-  "id": "strategy",
-  "title": "Strategy, current plans and initiative closeout",
-  "status": "draft-copy",
-  "situations": ["The user describes a large effort without a durable plan.", "The existing CURRENT-PLAN is stale or contains accepted standing decisions.", "Most linked work is done and the user wants to finish the initiative."],
-  "coverage": "partial",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Current skill/doc semantics were read; strategy mutation and archive behavior were not exercised.", "Should a completed Blitz receive the same scope/evidence audit before its existing automatic archive?", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
-  "plan_refs": ["JOURNEYS.situation-9", "JOURNEYS.situation-10", "JOURNEYS.situation-11", "JOURNEYS.situation-15", "JOURNEYS.also-owned-here"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Reuse direction and change only approved strategy",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When strategy is absent, placeholder, stale, or the user asks to change project direction.",
-   "need": "CURRENT-PLAN holds near-term outcomes; strategy rows are authority and local files are renders. Reuse accepted content and propose changes before writing.",
-   "disclosure": "current cue",
-   "surface": "Onboard strategy step; Strategize proposal/approval phases; Strategy page",
-   "gap": "Review question: should JOURNEYS 9-10 distinguish a focused first-work plan from a full five-document strategy review? Current Onboard requires five accepted docs.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke strategy doc get --help"],
-   "plan_notes": ["FIRST-USER 24", "JOURNEYS row 9", "JOURNEYS row 10"],
-   "sources": ["docs/public/strategy.md", ".agents/skills/yoke/onboard/strategy-conversation.md", ".agents/skills/yoke/strategize/propose.md", ".agents/skills/yoke/strategize/approve.md"]
-  },
-  {
-   "id": "02",
-   "title": "Staff a plan through Steer",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When an accepted plan has runnable work with no owner, or the user asks to pursue that plan.",
-   "need": "Read the selected plan, live work state and covering authority before staffing; preserve standing decisions and update the durable checkpoint. Reconcile contradictory teaching about Feed versus Steer rather than inventing an extra mandatory step.",
-   "disclosure": "current cue",
-   "surface": "Steer entry, scope and loop; public Strategy guidance",
-   "gap": "Public Strategy says strategy needs Feed to become runnable work; current Steer says not to invoke Feed, while Strategize attributes staffing to the scheduler. Review question: which shipped owner governs each role, and which producer texts must change together?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke strategy doc get --help"],
-   "plan_notes": ["JOURNEYS row 11", "FIRST-USER 32"],
-   "sources": [".agents/skills/yoke/steer/SKILL.md", ".agents/skills/yoke/steer/scope-and-authority.md", ".agents/skills/yoke/steer/loop.md", "docs/public/strategy.md", ".agents/skills/yoke/strategize/SKILL.md"]
-  },
-  {
-   "id": "03",
-   "title": "Close the initiative separately from ending a session",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When linked work is nearly complete or the user asks whether the initiative can be archived.",
-   "need": "Audit delivered scope, evidence and tracked deferrals before archiving an initiative. A session wrapup or steering-seat release answers a different question.",
-   "disclosure": "planned cue",
-   "surface": "JOURNEYS completion proposal; existing Steer close-out and Wrapup",
-   "gap": "JOURNEYS 15 names no current initiative-audit home. Review question: how should it coexist with Blitz automatically archiving its execution document on successful done?",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["JOURNEYS row 15"],
-   "sources": [".agents/skills/yoke/steer/close-out.md", ".agents/skills/yoke/wrapup/record-and-close.md", "docs/public/workflows.md"]
-  }
- ]
+ "id": "strategy",
+ "title": "Strategy, current plans and initiative closeout",
+ "status": "draft-copy",
+ "situations": ["The user describes a large effort without a durable plan.", "The existing CURRENT-PLAN is stale or contains accepted standing decisions.", "Most linked work is done and the user wants to finish the initiative."],
+ "coverage": "partial",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Current skill/doc semantics were read; strategy mutation and archive behavior were not exercised.", "Should a completed Blitz receive the same scope/evidence audit before its existing automatic archive?", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+ "plan_refs": ["JOURNEYS.situation-9", "JOURNEYS.situation-10", "JOURNEYS.situation-11", "JOURNEYS.situation-15", "JOURNEYS.also-owned-here"]
 }

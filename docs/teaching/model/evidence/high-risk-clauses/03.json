@@ -1,0 +1,7 @@
+{
+ "id": "03",
+ "title": "FIRST-USER:153",
+ "status": "observed",
+ "text": "- **Shared access:** the editable source and its views must be reachable by the relevant Yoke and Platform workers across machines. Use one maintained source behind the views. The iCloud collection is the research input; verify the actual worker access path. Shared-file publication remains the separate thin upload/link helper, with no new artifact records or revisions system.",
+ "position": 2
+}

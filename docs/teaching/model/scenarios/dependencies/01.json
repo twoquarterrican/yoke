@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Name the real wait",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When a user or agent identifies a prerequisite at start, integration, delivery or closeout.",
+ "need": "Dependencies can gate starting, merging or closing; the condition may be item completion, merge or delivery to a named environment. Coordination-only overlap creates no wait.",
+ "disclosure": "current cue",
+ "surface": "Intake dependency inference; Frontier reason text and dependency detail",
+ "gap": "Review question: should JOURNEYS teach the actual wait when the user states it, rather than expose every edge type up front?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke items dependency list --help"],
+ "plan_notes": ["JOURNEYS row 11", "JOURNEYS row 14"],
+ "sources": [".agents/skills/yoke/idea/infer-and-create.md", ".agents/skills/yoke/idea/path-claim-blocking.md", "docs/public/frontier.md", "docs/public/reference/lifecycle-gates.md"],
+ "position": 0
+}

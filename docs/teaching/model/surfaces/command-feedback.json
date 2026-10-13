@@ -1,93 +1,16 @@
 {
- "surface": {
-  "id": "command-feedback",
-  "title": "Command results and refusals",
-  "status": "observed",
-  "scope": "Scope of the attempted operation",
-  "audience": "Human + agent",
-  "encounter": "Every command response; teaching when relevant",
-  "location": "CLI/API operation result, compact projection and exact deeper read",
-  "basis": "Existing mechanism · clearer output planned",
-  "note": "Useful feedback is a high-contact teaching surface. It must agree with the same operation contract used by help and packets.",
-  "current": "Existing source references; delivered content is not yet proved.",
-  "desired": "State actual result or refusal plus supported recovery; preserve data contracts and required facts.",
-  "plan_notes": ["FIRST-USER 35/P6", "JOURNEYS exact recovery links"],
-  "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"],
-  "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/hook_ordering.py:264", "packages/yoke-core/src/yoke_core/hooks/registration.py:1", "packages/yoke-contracts/src/yoke_contracts/hook_context_compose.py:114", "packages/yoke-core/src/yoke_core/hooks/hook_context_compose.py:14", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139", "packages/yoke-cli/src/yoke_cli/main.py", "packages/yoke-cli/src/yoke_cli/commands/group_help.py", "packages/yoke-cli/src/yoke_cli/commands/registry.py", "docs/public/reference/commands.md"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "What happened, its scope, outcome and durable evidence or receipt.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["context/docs", "observability/events"],
-   "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"]
-  },
-  {
-   "id": "02",
-   "title": "What was withheld from compact output and how to read it without repeating a mutation.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["items/authoring", "context/instructions"],
-   "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"]
-  },
-  {
-   "id": "03",
-   "title": "On refusal: the real missing prerequisite or authority, one supported repair and exact help.",
-   "status": "draft-copy",
-   "form": "Do",
-   "verification": "No delivery proof attached.",
-   "topics": ["security/operations", "workflows/gates", "observability/diagnostics"],
-   "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"]
-  },
-  {
-   "id": "04",
-   "title": "Explain the unfamiliar concept only when it caused this result: claims, approval, migration support or QA gate.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["coordination/path-claims", "approvals/types", "databases/model", "qa-evidence/gates"],
-   "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Return the result, useful identifiers and next action; preserve valid structured output.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["reference/commands", "context/disclosure"],
-   "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"]
-  },
-  {
-   "id": "desired-02",
-   "title": "On refusal, preserve the real cause and necessary facts, then teach a supported recovery.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["security/boundaries", "reference/commands"],
-   "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Use projection, pagination or saved evidence for large results; never silently truncate essentials.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["context/disclosure", "reference/commands"],
-   "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"]
-  },
-  {
-   "id": "browser-admission",
-   "title": "Keep workbench sign-in tokens out of command output and teach human-terminal recovery.",
-   "status": "observed",
-   "form": "Do",
-   "verification": "Source and command regression tests cover text/JSON, local/self-host, agent mode, no-browser and opener failures. Source-review regression tests verify generated and explicit fixture tokens never appear in output.",
-   "topics": ["security/credentials/connection-tokens", "workbench/identity"],
-   "plan_refs": ["FIRST-USER.16"],
-   "sources": ["packages/yoke-cli/src/yoke_cli/commands/universe_ui.py", "runtime/api/cli/test_yoke_universe_ui_output.py", "runtime/api/tools/test_review_browser_admission.py"]
-  }
- ]
+ "id": "command-feedback",
+ "title": "Command results and refusals",
+ "status": "observed",
+ "scope": "Scope of the attempted operation",
+ "audience": "Human + agent",
+ "encounter": "Every command response; teaching when relevant",
+ "location": "CLI/API operation result, compact projection and exact deeper read",
+ "basis": "Existing mechanism · clearer output planned",
+ "note": "Useful feedback is a high-contact teaching surface. It must agree with the same operation contract used by help and packets.",
+ "current": "Existing source references; delivered content is not yet proved.",
+ "desired": "State actual result or refusal plus supported recovery; preserve data contracts and required facts.",
+ "plan_notes": ["FIRST-USER 35/P6", "JOURNEYS exact recovery links"],
+ "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"],
+ "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/hook_ordering.py:264", "packages/yoke-core/src/yoke_core/hooks/registration.py:1", "packages/yoke-contracts/src/yoke_contracts/hook_context_compose.py:114", "packages/yoke-core/src/yoke_core/hooks/hook_context_compose.py:14", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139", "packages/yoke-cli/src/yoke_cli/main.py", "packages/yoke-cli/src/yoke_cli/commands/group_help.py", "packages/yoke-cli/src/yoke_cli/commands/registry.py", "docs/public/reference/commands.md"]
 }

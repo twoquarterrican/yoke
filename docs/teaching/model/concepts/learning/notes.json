@@ -1,0 +1,10 @@
+{
+ "id": "notes",
+ "title": "Field-notes",
+ "status": "draft-copy",
+ "surface_refs": ["execution-instructions"],
+ "commands": ["yoke ouroboros field-note append", "yoke ouroboros field-note get", "yoke ouroboros field-note list"],
+ "functions": ["ouroboros.field_note.append", "ouroboros.field_note.get", "ouroboros.field_note.list"],
+ "page": "learning",
+ "position": 0
+}

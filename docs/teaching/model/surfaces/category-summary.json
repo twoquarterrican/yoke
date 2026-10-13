@@ -1,75 +1,17 @@
 {
- "surface": {
-  "id": "category-summary",
-  "title": "Each category’s first page",
-  "status": "approved",
-  "scope": "Public or private, according to its owner",
-  "audience": "Human + agent",
-  "encounter": "Enter a concept category",
-  "location": "Category index page + generated children/breadcrumbs",
-  "basis": "New documentation shape",
-  "note": "Use real concept names as titles. Nest when children form a meaningful group; avoid empty levels and giant catalogs inside every summary.",
-  "current": "Existing source references; delivered content is not yet proved.",
-  "desired": "Explain every immediate child concisely and route to the narrower home. One topic need not mean one file.",
-  "plan_notes": ["New documentation organization proposal"],
-  "plan_refs": ["FIRST-USER.40"],
-  "sources": ["docs/public/nav.yaml", "docs/public/qa.md", "docs/public/reference/qa-platform.md"],
-  "private_sources": ["platform"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "What this category covers, why it matters and the few terms needed to choose a child.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["documentation/cascade"],
-   "plan_refs": ["FIRST-USER.40"]
-  },
-  {
-   "id": "02",
-   "title": "Immediate children, each with a one-line summary; repeat the same pattern at real subcategories.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["documentation/cascade"],
-   "plan_refs": ["FIRST-USER.40"]
-  },
-  {
-   "id": "03",
-   "title": "Show relationships when confusion is likely: for example QA methods, plans, cases, requirements and execution evidence.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["qa-methods/model", "qa-plans/plans", "qa-plans/cases", "qa-plans/requirements", "qa-evidence/runs"],
-   "plan_refs": ["FIRST-USER.40"]
-  },
-  {
-   "id": "04",
-   "title": "Prerequisites and supported limits that affect a choice; point to procedures and exact command help.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["context/docs", "reference/commands"],
-   "plan_refs": ["FIRST-USER.40"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Cover every immediate child in a short summary; show parent and child routes.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["documentation/cascade"],
-   "plan_refs": ["FIRST-USER.40"]
-  },
-  {
-   "id": "desired-02",
-   "title": "Teach the common complete action here and link narrow detail; split by meaning.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["context/disclosure", "documentation/ownership"],
-   "plan_refs": ["FIRST-USER.40"]
-  }
- ]
+ "id": "category-summary",
+ "title": "Each category’s first page",
+ "status": "approved",
+ "scope": "Public or private, according to its owner",
+ "audience": "Human + agent",
+ "encounter": "Enter a concept category",
+ "location": "Category index page + generated children/breadcrumbs",
+ "basis": "New documentation shape",
+ "note": "Use real concept names as titles. Nest when children form a meaningful group; avoid empty levels and giant catalogs inside every summary.",
+ "current": "Existing source references; delivered content is not yet proved.",
+ "desired": "Explain every immediate child concisely and route to the narrower home. One topic need not mean one file.",
+ "plan_notes": ["New documentation organization proposal"],
+ "plan_refs": ["FIRST-USER.40"],
+ "sources": ["docs/public/nav.yaml", "docs/public/qa.md", "docs/public/reference/qa-platform.md"],
+ "private_sources": ["platform"]
 }

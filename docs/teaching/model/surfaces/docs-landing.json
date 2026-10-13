@@ -1,93 +1,17 @@
 {
- "surface": {
-  "id": "docs-landing",
-  "title": "upyoke.com/docs",
-  "status": "approved",
-  "scope": "Public global",
-  "audience": "Human + agent",
-  "encounter": "Documentation visit",
-  "location": "Shared docs/public/index.md body + website navigation",
-  "basis": "Proposed future landing",
-  "note": "The website renders the shared public corpus. Its navigation is a view of the same tree as the installed manual, not a separately maintained hierarchy.",
-  "current": "Existing source references; delivered content is not yet proved.",
-  "desired": "Publish a concept cascade with nested navigation, breadcrumbs, stable links and visible release identity.",
-  "plan_notes": ["New documentation organization proposal"],
-  "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"],
-  "sources": ["docs/public/index.md", "docs/public/nav.yaml", "packages/yoke-core/src/yoke_core/domain/install_bundle_tree_sync.py"],
-  "private_sources": ["platform"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "A brief orientation: this is the Yoke manual; choose a subject or follow a starting route.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["documentation/cascade", "basics"],
-   "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"]
-  },
-  {
-   "id": "02",
-   "title": "Prominent first routes: understand Yoke, install/connect, work in an existing project.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["basics/model", "installation/entry", "projects/adoption"],
-   "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"]
-  },
-  {
-   "id": "03",
-   "title": "The named concept categories, full contents, command reference and troubleshooting.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["documentation/cascade", "reference/commands", "observability/diagnostics"],
-   "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"]
-  },
-  {
-   "id": "04",
-   "title": "Documentation release identity and how to compare it with the installed version.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["maintenance/updates", "documentation/ownership"],
-   "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"]
-  },
-  {
-   "id": "05",
-   "title": "Administrator and contributor knowledge through the same public tree where appropriate.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["server-admin", "contributing"],
-   "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Show what Yoke is and route every main concept category into the manual.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["basics/model", "documentation/cascade"],
-   "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"]
-  },
-  {
-   "id": "desired-02",
-   "title": "Offer the visible install command and approved agent-led entry, with source/release identity.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["installation/entry", "documentation/ownership"],
-   "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Preserve nested navigation, breadcrumbs, heading links and old public URLs.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["documentation/cascade", "reference/docs"],
-   "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"]
-  }
- ]
+ "id": "docs-landing",
+ "title": "upyoke.com/docs",
+ "status": "approved",
+ "scope": "Public global",
+ "audience": "Human + agent",
+ "encounter": "Documentation visit",
+ "location": "Shared docs/public/index.md body + website navigation",
+ "basis": "Proposed future landing",
+ "note": "The website renders the shared public corpus. Its navigation is a view of the same tree as the installed manual, not a separately maintained hierarchy.",
+ "current": "Existing source references; delivered content is not yet proved.",
+ "desired": "Publish a concept cascade with nested navigation, breadcrumbs, stable links and visible release identity.",
+ "plan_notes": ["New documentation organization proposal"],
+ "plan_refs": ["FIRST-USER.40", "FIRST-USER.B"],
+ "sources": ["docs/public/index.md", "docs/public/nav.yaml", "packages/yoke-core/src/yoke_core/domain/install_bundle_tree_sync.py"],
+ "private_sources": ["platform"]
 }

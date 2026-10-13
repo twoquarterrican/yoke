@@ -1,0 +1,21 @@
+{
+ "id": "setup-tui",
+ "title": "Interactive terminal setup",
+ "status": "observed",
+ "name": "Interactive terminal setup",
+ "audience": "Human installing without an agent",
+ "scope": "Machine/universe first; optional project selection later",
+ "trigger": "Run yoke setup interactively",
+ "proposed_purpose": "Complete necessary setup with the fewest decisions and an unambiguous handoff.",
+ "content": ["At the mode choice, say which computers can reach this universe: this machine only, your server, or Yoke Cloud.", "At an identity/browser step, say why the browser opens, what to approve and how to return.", "Allow a project now or later; when chosen, distinguish an existing checkout from a new project.", "Keep GitHub integration optional. Silently keep item-to-issue sync off; no sync-choice screen.", "Run routine checks automatically; show one plain repair step only when something needs attention.", "End with the connected mode/universe, actual project or no project, active-harness readiness, and one concrete next action."],
+ "scope_variants": {
+  "noProject": "Finish machine setup; explain how to ask the agent to choose/add a project later.",
+  "projectChosen": "Open that actual folder in the active harness and continue the existing onboarding handoff.",
+  "githubSkipped": "Report skipped GitHub-dependent checks as not applicable, not setup failure."
+ },
+ "authority_and_reuse": "Use the existing setup state machine and its resumable steps. Longer explanations link to the manual; no workflow/QA/infrastructure course inside the TUI.",
+ "proposal_status": "Proposed post-plan presentation; applies later user corrections over the older captured item 10/C/E wording",
+ "plan_notes": ["FIRST-USER 3/8/9/10/25/26/37–39", "FIRST-USER C/E/P4", "JOURNEYS rows 1–9"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py", "packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py", "packages/yoke-cli/src/yoke_cli/config/onboard_destination_rows.py"],
+ "position": 3
+}

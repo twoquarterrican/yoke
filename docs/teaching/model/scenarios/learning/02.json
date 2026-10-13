@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Curate deliberately rather than auto-file everything",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Repeated notes or observations suggest a system problem",
+ "need": "Curate clusters unreviewed evidence, verifies the current cause, chooses the work shape and archives handled entries. It is operator-invoked, not an automatic background policy.",
+ "disclosure": "current cue",
+ "surface": "Help/native skill catalog -> Curate; public Ouroboros section -> /yoke curate.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke ouroboros field-note list --unreviewed", "yoke ouroboros field-note get --help"],
+ "plan_notes": ["outside both"],
+ "sources": [".agents/skills/yoke/curate/SKILL.md", ".agents/skills/yoke/curate/cluster-and-work-item.md", "docs/public/events-doctor-ouroboros.md"],
+ "position": 1
+}

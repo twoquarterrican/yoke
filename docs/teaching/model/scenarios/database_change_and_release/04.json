@@ -1,0 +1,16 @@
+{
+ "id": "04",
+ "title": "Recover without damaging live or validation state",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Rehearsal, fleet copy or boot refuses",
+ "need": "Follow named authority/identity/restore-point/ledger/fleet failures. Busy fleet copy is a wait with holder details; failed proof earns no receipt. Applied history is immutable, and item receipt cannot substitute for release fleet proof.",
+ "disclosure": "current cue",
+ "surface": "Database and migration fleet references.",
+ "gap": "A human troubleshooting front door should route failures by missing authority, missing declaration and failed proof; do not hide all behind generic database setup.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke migration rehearse --help"],
+ "plan_notes": ["JOURNEYS row 12", "outside both"],
+ "sources": ["docs/public/reference/agent-rules/databases.md", "docs/public/reference/db-reference/migration-model-fleet.md", "docs/public/reference/db-reference/migration-model-capabilities.md"],
+ "position": 3
+}

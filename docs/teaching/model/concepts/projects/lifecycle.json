@@ -1,0 +1,9 @@
+{
+ "id": "lifecycle",
+ "title": "Project lifecycle",
+ "status": "draft-copy",
+ "commands": ["yoke project refresh", "yoke projects retire", "yoke projects unretire"],
+ "functions": ["project.refresh.run", "projects.retire", "projects.unretire"],
+ "page": "projects",
+ "position": 4
+}

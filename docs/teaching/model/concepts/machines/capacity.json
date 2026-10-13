@@ -1,0 +1,9 @@
+{
+ "id": "capacity",
+ "title": "Available capacity",
+ "status": "draft-copy",
+ "commands": ["yoke harness machine-report upsert", "yoke machine settings get", "yoke machine settings set"],
+ "functions": ["harness.machine_report.upsert", "machine.settings.get", "machine.settings.set"],
+ "page": "machines",
+ "position": 2
+}

@@ -1,0 +1,7 @@
+{
+ "id": "03",
+ "title": "current_claims_requiring_verification",
+ "status": "observed",
+ "claim": "CI or merge gate reruns checks skipped on a machine without Yoke.",
+ "position": 2
+}

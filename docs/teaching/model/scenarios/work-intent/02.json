@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Adopt existing work deliberately",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "During mature-project intake, before proposing new items or taking over an open PR or in-flight change.",
+ "need": "Survey accepted docs, repository, open work and permitted external context; identify what Yoke should own now and preserve work it should only observe.",
+ "disclosure": "planned cue",
+ "surface": "FIRST-USER inherited-work intake; existing Onboard survey and duplicate check",
+ "gap": "FIRST-USER 24 adds scanning but not an explicit takeover boundary. Review question: should it record reuse, leave-running and first-owned-outcome choices before seeding?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 24", "FIRST-USER 13", "FIRST-USER 28"],
+ "sources": [".agents/skills/yoke/onboard/strategy-conversation.md", ".agents/skills/yoke/onboard/seed-work.md", ".agents/skills/yoke/onboard/run-and-rows.md"],
+ "position": 1
+}

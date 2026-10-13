@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Resume the durable checkpoint",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "After interruption, compaction, session handoff or return on another machine.",
+ "need": "Preserve item Progress Logs, plan live status, checklist rows and owning run IDs. Reload the live skill phase and state rather than restarting from the transcript or assuming silence means completion.",
+ "disclosure": "current cue",
+ "surface": "Onboard resume; Steer loop/close-out; Wrapup checkpoints",
+ "gap": "Review question: should JOURNEYS add interrupted-work recovery and FIRST-USER D prove a fresh session can continue the handoff without duplicated work?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke strategy doc get --help", "yoke workflows item get --help"],
+ "plan_notes": ["FIRST-USER D", "JOURNEYS row 11", "outside both"],
+ "sources": [".agents/skills/yoke/onboard/run-and-rows.md", ".agents/skills/yoke/steer/loop.md", ".agents/skills/yoke/steer/close-out.md", ".agents/skills/yoke/wrapup/record-and-close.md"],
+ "position": 1
+}

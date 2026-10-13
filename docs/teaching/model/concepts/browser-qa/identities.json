@@ -1,0 +1,8 @@
+{
+ "id": "identities",
+ "title": "Browser identities",
+ "status": "draft-copy",
+ "commands": ["yoke browser authorize", "yoke browser verify"],
+ "page": "browser-qa",
+ "position": 2
+}

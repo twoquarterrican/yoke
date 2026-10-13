@@ -1,0 +1,10 @@
+{
+ "id": "fleet",
+ "title": "Steering fleet",
+ "status": "draft-copy",
+ "commands": ["yoke claims steering acquire", "yoke claims steering list", "yoke claims steering release", "yoke sessions steering-groups list", "yoke steering report get"],
+ "functions": ["claims.steering.acquire", "claims.steering.list", "claims.steering.release", "sessions.steering_groups.list", "steering.report.get"],
+ "skills": ["steer"],
+ "page": "frontier",
+ "position": 4
+}

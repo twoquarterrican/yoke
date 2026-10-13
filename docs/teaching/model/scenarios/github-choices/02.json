@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Publishing a repository is a separate choice",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "New project creation or later publication",
+ "need": "A prepared Git repository can stay local. Connecting a GitHub account does not mean every project must be published there.",
+ "disclosure": "current cue",
+ "surface": "Project source / publish-or-keep-local step",
+ "gap": "JOURNEYS 4–5 currently makes pushing to GitHub sound mandatory. That edge should be reviewed against the supported keep-local path.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["JOURNEYS 4", "JOURNEYS 5"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_project_screens.py"],
+ "position": 2
+}

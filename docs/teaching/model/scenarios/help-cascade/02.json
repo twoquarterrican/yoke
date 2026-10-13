@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "One public source, several delivery surfaces",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Following a source link, updating guidance or diagnosing drift",
+ "need": "Product help is authored under docs/public and delivered to the website and installed .yoke/docs. Project rules/docs and installed Pack files have separate ownership.",
+ "disclosure": "current cue",
+ "surface": "Public source → website / install bundle; project-owned documents remain local",
+ "gap": "A public and installed copy are distribution, not two authorities. Private Yoke/Platform operations should link to public customer guidance; exact build versions can differ.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 32", "FIRST-USER accepted public/private boundary amendment", "JOURNEYS centralize wording later"],
+ "sources": ["docs/public/index.md", "docs/public/reference/execution-instructions.md", "docs/public/capabilities.md"],
+ "position": 1
+}

@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Reuse direction and change only approved strategy",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When strategy is absent, placeholder, stale, or the user asks to change project direction.",
+ "need": "CURRENT-PLAN holds near-term outcomes; strategy rows are authority and local files are renders. Reuse accepted content and propose changes before writing.",
+ "disclosure": "current cue",
+ "surface": "Onboard strategy step; Strategize proposal/approval phases; Strategy page",
+ "gap": "Review question: should JOURNEYS 9-10 distinguish a focused first-work plan from a full five-document strategy review? Current Onboard requires five accepted docs.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke strategy doc get --help"],
+ "plan_notes": ["FIRST-USER 24", "JOURNEYS row 9", "JOURNEYS row 10"],
+ "sources": ["docs/public/strategy.md", ".agents/skills/yoke/onboard/strategy-conversation.md", ".agents/skills/yoke/strategize/propose.md", ".agents/skills/yoke/strategize/approve.md"],
+ "position": 0
+}

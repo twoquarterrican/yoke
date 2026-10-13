@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Use the project topology",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Delivery is being configured or changed",
+ "need": "Name actual environments and final delivery target. A persistent flow has one declared final target; richer stages can name other registered targets. Neither two environments nor stage-before-prod is universal.",
+ "disclosure": "current cue",
+ "surface": "Flow target contract; stage reference validator; target-specific QA rules.",
+ "gap": "Current managed onboarding still gives stage/prod creation and first-stage-deploy recipes. Proposed teaching should derive names/order from the project rather than copy Yoke topology.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke deployment-flows get FLOW-ID --json", "yoke deployment-flows stages FLOW-ID"],
+ "plan_notes": ["JOURNEYS row 12"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/flow_target.py", "packages/yoke-core/src/yoke_core/domain/deployment_flow_stage_references.py", "docs/public/reference/agent-rules/delivery.md", ".agents/skills/yoke/onboard/hosting-and-environments.md"],
+ "position": 0
+}

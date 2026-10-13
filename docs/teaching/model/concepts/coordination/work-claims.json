@@ -1,0 +1,10 @@
+{
+ "id": "work-claims",
+ "title": "Work claims",
+ "status": "draft-copy",
+ "surface_refs": ["resume-context"],
+ "commands": ["yoke claims work acquire", "yoke claims work current", "yoke claims work holder-get", "yoke claims work holder-list", "yoke claims work list", "yoke claims work release", "yoke claims work status", "yoke claims work-claim acquire", "yoke claims work-claim get", "yoke claims work-claim list", "yoke claims work-claim release"],
+ "functions": ["claims.work.acquire", "claims.work.holder_get", "claims.work.holder_list", "claims.work.release", "claims.work.release_session_scoped"],
+ "page": "coordination",
+ "position": 1
+}

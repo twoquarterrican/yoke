@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Keep exact integration contracts discoverable without front-loading them",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "When authored integration data is rejected or a maintainer changes a schema/wire contract.",
+ "need": "Find the canonical field/function/schema contract and its owner; temporal inputs, migrations and generated ownership are precise reference concerns, not new onboarding steps.",
+ "disclosure": "audit needed",
+ "surface": "Function/schema reference and newly added timestamp contract pages",
+ "gap": "The two timestamp pages were added after the earlier public inventory. Review question: which parts belong in product API reference versus source architecture, and what refusal links reach them?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 35", "outside both"],
+ "sources": ["docs/public/reference/timestamps.md", "docs/public/reference/timestamp-owners.md", "docs/public/reference/db-reference.md"],
+ "position": 1
+}

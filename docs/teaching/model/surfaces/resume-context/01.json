@@ -1,0 +1,10 @@
+{
+ "id": "01",
+ "title": "Re-read the live item stage, work claim, lane and latest durable checkpoint.",
+ "status": "draft-copy",
+ "form": "State",
+ "verification": "No delivery proof attached.",
+ "topics": ["sessions/continuity", "sessions/ownership", "items/state"],
+ "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"],
+ "position": 0
+}

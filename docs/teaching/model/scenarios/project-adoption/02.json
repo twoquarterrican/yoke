@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Hand off to an agent in the actual project",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Setup finish or project selection",
+ "need": "TUI completion has no agent yet. Open a session in the chosen checkout. A projectless agent selects/adds the project and carries intent into a project session.",
+ "disclosure": "planned cue",
+ "surface": "Machine/project finish → global guide or project Onboard",
+ "gap": "Accepted correction: never invoke project Onboard from outside that project. A session does not change project identity just because its directory changes.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 24", "FIRST-USER P1", "FIRST-USER P4", "FIRST-USER P5", "FIRST-USER P6", "FIRST-USER P7", "JOURNEYS 6", "JOURNEYS 9"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_machine_finish.py", "packages/yoke-cli/src/yoke_cli/config/project_onboarding_handoff.py", ".agents/skills/yoke/onboard/run-and-rows.md"],
+ "position": 1
+}

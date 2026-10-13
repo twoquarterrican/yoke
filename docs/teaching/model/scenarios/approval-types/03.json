@@ -1,0 +1,16 @@
+{
+ "id": "03",
+ "title": "Apply the actual decision policy",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Before presenting or recording a decision, especially when multiple people or roles must approve.",
+ "need": "Any-one and all-required policies differ. An agent must inspect the typed request and current policy; one generic approve command cannot settle all decision kinds.",
+ "disclosure": "current cue",
+ "surface": "Workflow approval explanation; lifecycle gate; run-only Approve skill",
+ "gap": "Review question: should Help route approve this from the actual pending request instead of leaving the user to guess the command?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke inbox list --help", "yoke workflows version get --help"],
+ "plan_notes": ["FIRST-USER 35", "outside both"],
+ "sources": ["docs/public/workflows.md", "packages/yoke-core/src/yoke_core/domain/approval_gate.py", ".agents/skills/yoke/approve/SKILL.md"],
+ "position": 2
+}

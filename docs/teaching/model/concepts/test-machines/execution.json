@@ -1,0 +1,8 @@
+{
+ "id": "execution",
+ "title": "Remote QA execution",
+ "status": "draft-copy",
+ "commands": ["yoke test-machine exec"],
+ "page": "test-machines",
+ "position": 2
+}

@@ -1,0 +1,12 @@
+{
+ "id": "checks",
+ "title": "Other checks",
+ "status": "draft-copy",
+ "plan_refs": ["FIRST-USER.11", "FIRST-USER.D"],
+ "surface_refs": ["skills-roles"],
+ "commands": ["yoke check file-line", "yoke dev ruff-changed", "yoke lint config show", "yoke session-control acceptance run"],
+ "functions": ["lint.config.show"],
+ "skills": ["simulate"],
+ "page": "verification",
+ "position": 4
+}

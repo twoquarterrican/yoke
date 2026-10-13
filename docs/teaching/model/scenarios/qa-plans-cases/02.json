@@ -1,0 +1,17 @@
+{
+ "id": "02",
+ "title": "Snapshots protect running work",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When editing a plan that already has attached/materialized requirements or an execution in progress.",
+ "need": "Attachment/materialization turns definitions into subject-bound requirements. Later plan edits do not silently rewrite frozen execution or old evidence; explicit convergence and currency rules apply.",
+ "disclosure": "current cue",
+ "surface": "Plan-edit currency output; rematerialization/reference recovery",
+ "gap": "Snapshot and convergence prose is split across public/private pages. Review question: should one canonical plans reference own it and plan-edit output link that owner?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa plan get --help", "yoke qa requirement list --help"],
+ "plan_notes": ["FIRST-USER 35", "JOURNEYS row 13"],
+ "surface_notes": ["Saved QA plan → materialized requirements: Reusable definitions and their subject-bound requirements are distinct records. Later edits follow explicit snapshot/currency rules rather than rewriting old proof."],
+ "sources": ["docs/testing-verification.md", "docs/qa-platform/plan-case-currency.md", "docs/public/reference/qa-platform.md"],
+ "position": 1
+}

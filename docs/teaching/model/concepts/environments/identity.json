@@ -1,0 +1,9 @@
+{
+ "id": "identity",
+ "title": "Environment identity",
+ "status": "draft-copy",
+ "commands": ["yoke projects site create"],
+ "functions": ["projects.site.create"],
+ "page": "environments",
+ "position": 1
+}

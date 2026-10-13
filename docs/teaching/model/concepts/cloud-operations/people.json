@@ -1,0 +1,9 @@
+{
+ "id": "people",
+ "title": "Membership administration",
+ "status": "draft-copy",
+ "audience": "Administrators / maintainers",
+ "related": "identity/accounts",
+ "page": "cloud-operations",
+ "position": 1
+}

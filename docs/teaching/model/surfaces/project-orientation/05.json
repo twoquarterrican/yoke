@@ -1,0 +1,10 @@
+{
+ "id": "05",
+ "title": "Project knowledge route and the next applicable skill or instruction read.",
+ "status": "draft-copy",
+ "form": "Link",
+ "verification": "No delivery proof attached.",
+ "topics": ["architecture/structure", "agents/skills", "context/instructions"],
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.42", "FIRST-USER.43"],
+ "position": 4
+}

@@ -1,0 +1,9 @@
+{
+ "id": "launch-recovery",
+ "title": "Launch recovery",
+ "status": "draft-copy",
+ "commands": ["yoke session-control launch cancel", "yoke session-control launch reconcile", "yoke session-control launch retry"],
+ "functions": ["session_control.launch.cancel", "session_control.launch.reconcile", "session_control.launch.retry"],
+ "page": "frontier",
+ "position": 5
+}

@@ -1,0 +1,10 @@
+{
+ "id": "flows",
+ "title": "Flow definitions",
+ "status": "draft-copy",
+ "surface_refs": ["project-hub"],
+ "commands": ["yoke deployment-flows create", "yoke deployment-flows describe", "yoke deployment-flows get", "yoke deployment-flows list", "yoke deployment-flows reorder", "yoke deployment-flows set-status", "yoke deployment-flows stages", "yoke deployment-flows update", "yoke deployment-flows update-stages", "yoke deployment-flows validate", "yoke deployment-flows version"],
+ "functions": ["deployment_flows.create", "deployment_flows.describe", "deployment_flows.get", "deployment_flows.list", "deployment_flows.reorder", "deployment_flows.set_status", "deployment_flows.stages", "deployment_flows.update", "deployment_flows.update_stages", "deployment_flows.validate", "deployment_flows.version"],
+ "page": "deployments",
+ "position": 1
+}

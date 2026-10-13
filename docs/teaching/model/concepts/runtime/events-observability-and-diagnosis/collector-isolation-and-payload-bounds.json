@@ -1,0 +1,8 @@
+{
+ "id": "collector-isolation-and-payload-bounds",
+ "title": "Collector isolation and payload bounds",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "page": "runtime-evidence",
+ "position": 3
+}

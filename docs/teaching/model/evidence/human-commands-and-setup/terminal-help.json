@@ -1,0 +1,21 @@
+{
+ "id": "terminal-help",
+ "title": "Top-level terminal help: yoke help / yoke --help",
+ "status": "observed",
+ "name": "Top-level terminal help: yoke help / yoke --help",
+ "audience": "Human terminal users and agents discovering commands",
+ "scope": "Global; usable without a project or completed setup",
+ "trigger": "Explicit help request; bare yoke after valid machine configuration",
+ "current": "Both spellings already work and print the same large generated command catalog. Bare yoke first checks machine configuration and may route to setup. yoke help TOPIC is not currently topic routing; yoke <group> --help is.",
+ "proposed_purpose": "Answer what to do next and how to find exact commands in one screen.",
+ "content": ["One sentence: Yoke keeps plans, work, proof and delivery together while agents do the work.", "Set up this machine: yoke setup.", "Check your current connection and checkout: yoke status.", "Open the workbench: yoke ui.", "Work with an agent: distinguish /yoke help in a project from the planned global project chooser.", "Find exact commands with yoke <group> --help and the full generated command reference; link the overview, contents and troubleshooting."],
+ "scope_variants": {
+  "outsideProject": "Name that project selection is separate from universe selection; point to choose/add/open, without failing help.",
+  "insideProject": "Point to project status and the project help route; do not print its full live state or secrets into root help."
+ },
+ "authority_and_reuse": "Keep command names/usages generated from the existing registry. Preserve the exhaustive catalog behind an explicit discoverable route; decide that route rather than inventing a flag in documentation. Keep help usable offline without mandatory server reads.",
+ "proposal_status": "New presentation proposal using existing command/help mechanisms",
+ "plan_notes": ["FIRST-USER 35: short readable output", "FIRST-USER P6: projectless CLI refusals", "JOURNEYS principle 4: exact deep pointers"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/main.py", "packages/yoke-cli/src/yoke_cli/commands/group_help.py", "packages/yoke-cli/src/yoke_cli/commands/registry.py", "docs/public/reference/commands.md"],
+ "position": 4
+}

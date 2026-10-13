@@ -1,0 +1,10 @@
+{
+ "id": "JOURNEYS.situations-catalog",
+ "title": "Situations catalog",
+ "status": "deferred",
+ "scope": "Yoke",
+ "concepts": ["documentation/planning"],
+ "surfaces": ["detail-home"],
+ "scenarios": ["help-cascade"],
+ "position": 8
+}

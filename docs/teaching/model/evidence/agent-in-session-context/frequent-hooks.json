@@ -1,0 +1,13 @@
+{
+ "id": "frequent-hooks",
+ "title": "Pre/post-tool and other recurring hooks",
+ "status": "observed",
+ "scope": "machine, project or lane according to guard authority",
+ "moment": "Relevant tool, prompt, lifecycle or message-delivery event",
+ "current": "Ordered tool chains enforce relevant policies, produce concrete refusals/repairs and deliver messages/launch context/advisories. Registration can recover on any observed nonterminal hook, separately from orientation. Composer caps delivery+hints+fleet report and may omit hints.",
+ "planned": "P2 expands user hooks and dedup; P3 confines project/lane guards to their scope.",
+ "proposed_content": ["Only action-relevant guard/refusal guidance, changed identity/readiness, required message/launch delivery, and recovery when that action needs more context.", "Do not repeat the manual, onboarding pitch or full project orientation on every tool.", "Machine hooks run machine rules outside projects; project and lane policies require their respective context.", "If optional guidance is dropped to fit the channel, keep a reachable full-read path and do not claim it arrived."],
+ "plan_notes": ["FIRST-USER P2/P3", "JOURNEYS locked principle 3", "JOURNEYS open question 4"],
+ "sources": ["packages/yoke-contracts/src/yoke_contracts/hook_runner/hook_ordering.py:264", "packages/yoke-core/src/yoke_core/hooks/registration.py:1", "packages/yoke-contracts/src/yoke_contracts/hook_context_compose.py:114", "packages/yoke-core/src/yoke_core/hooks/hook_context_compose.py:14", "packages/yoke-cli/src/yoke_cli/commands/adapters/hook_config_dedup.py:139"],
+ "position": 0
+}

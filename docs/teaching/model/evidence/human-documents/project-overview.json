@@ -1,0 +1,17 @@
+{
+ "id": "project-overview",
+ "title": "Project overview / initial project handoff",
+ "status": "observed",
+ "name": "Project overview / initial project handoff",
+ "audience": "Human adopting or opening a project; agent consuming the same facts",
+ "scope": "One explicitly identified project, in its actual checkout for item work",
+ "trigger": "Project onboarding handoff, first project visit, or explicit request for an overview",
+ "current": "Projects has a roster and settings detail, while Strategy/Frontier/Shipping carry substantive work. No current combined Overview route exists.",
+ "proposed_purpose": "Explain this project’s operating model and the next useful action, without replaying global setup.",
+ "content": ["Which universe, project and checkout this is.", "What the project is for and the accepted current plan; identify templates or missing direction honestly.", "What existing work is being adopted and what remains outside the agreed intake.", "How this project builds, tests and ships; whether it is merge-only or has configured delivery.", "Where its project guidance lives and which workflow/policies the next item actually uses.", "How to act: ask the agent to plan or run work; use Strategy, Frontier, Sessions and Inbox to inspect or decide.", "One useful next step, with deeper setup offered only when the task needs it."],
+ "authority_and_reuse": "Project facts come from current project/strategy/workflow/capability/checklist reads. An agent can render the concise handoff; a compact Projects detail/onboarding card can link the same facts. Do not create a new monolithic dashboard Overview or copy this snapshot into permanent policy prose.",
+ "proposal_status": "Proposed shared fact projection and human rendering; exact placement remains reviewable",
+ "plan_notes": ["FIRST-USER 24/P5", "JOURNEYS rows 9–14 and slimming onboard"],
+ "sources": [".agents/skills/yoke/onboard/strategy-conversation.md", "packages/yoke-core/src/yoke_core/ui/static/universe_views_projects.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_strategy.js", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_project.js", "packages/yoke-core/src/yoke_core/domain/session_orientation.py"],
+ "position": 4
+}

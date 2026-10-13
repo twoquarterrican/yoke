@@ -1,45 +1,11 @@
 {
- "scenario": {
-  "id": "workflow-kinds",
-  "title": "Workflow kinds and routed stages",
-  "status": "draft-copy",
-  "situations": ["The user asks which workflow to use.", "A change is large but needs one lane; another requires real parallel decomposition.", "An existing item is resumed after its workflow has been updated."],
-  "coverage": "traced",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Traced through current intake/routing instructions and catalog contracts, not runtime end-to-end tests.", "Verify custom workflows and old immutable pins use the same discovery wording as built-ins.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
-  "related_scenarios": ["workflow-policy", "task-graph-planning", "qa-methods"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Choose by work structure",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "At intake before creating an item, when the intended execution structure becomes known.",
-   "need": "Dash executes a stored instruction; Issue supports planned single-lane work; Epic requires structural task decomposition; Blitz executes a linked document; Task is laneless and merge-free. Size alone does not choose.",
-   "disclosure": "current cue",
-   "surface": "Idea metadata inference; Dash entry; public Workflows and command reference",
-   "gap": "Public built-in table omits Task and provides no concise intent comparison. Review question: should the first-work guide teach only the matched choice, with the full comparison on request?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke workflows version get --help"],
-   "plan_notes": ["JOURNEYS row 11", "outside both"],
-   "sources": [".agents/skills/yoke/idea/infer-and-create.md", ".agents/skills/yoke/dash/SKILL.md", "docs/public/workflows.md", "docs/public/reference/commands.md"]
-  },
-  {
-   "id": "02",
-   "title": "Read the existing item pin",
-   "status": "draft-copy",
-   "audience": "agent",
-   "when": "Before resuming, dispatching or handing off an existing item to its next skill.",
-   "need": "Use workflows.item.get and its next binding; do not re-file or convert an item to match a remembered stage sequence.",
-   "disclosure": "current cue",
-   "surface": "Workflow item read; skill routing and lifecycle handoff output",
-   "gap": "Existing exact references are deep. Review question: should named handoffs/refusals include one stable workflow-reference link after documentation moves?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke workflows item get --help", "yoke workflows version get --help"],
-   "plan_notes": ["FIRST-USER 35", "outside both"],
-   "sources": ["docs/public/reference/lifecycle.md", "docs/public/reference/lifecycle-gates.md", "docs/public/reference/db-reference/functions-workflows.md", ".agents/skills/yoke/steer/SKILL.md"]
-  }
- ]
+ "id": "workflow-kinds",
+ "title": "Workflow kinds and routed stages",
+ "status": "draft-copy",
+ "situations": ["The user asks which workflow to use.", "A change is large but needs one lane; another requires real parallel decomposition.", "An existing item is resumed after its workflow has been updated."],
+ "coverage": "traced",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Traced through current intake/routing instructions and catalog contracts, not runtime end-to-end tests.", "Verify custom workflows and old immutable pins use the same discovery wording as built-ins.", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+ "related_scenarios": ["workflow-policy", "task-graph-planning", "qa-methods"]
 }

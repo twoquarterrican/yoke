@@ -1,0 +1,9 @@
+{
+ "id": "capacity",
+ "title": "Level capacity",
+ "status": "draft-copy",
+ "commands": ["yoke universe level-capacity get"],
+ "functions": ["universe.level_capacity.get"],
+ "page": "levels",
+ "position": 3
+}

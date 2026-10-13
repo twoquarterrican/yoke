@@ -1,0 +1,8 @@
+{
+ "id": "webapp-scaffold",
+ "title": "Webapp Scaffold",
+ "status": "draft-copy",
+ "sources": ["packs/webapp-scaffold/pack.json"],
+ "page": "packs",
+ "position": 15
+}

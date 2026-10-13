@@ -1,0 +1,8 @@
+{
+ "id": "model-or-native-selector",
+ "title": "Model or native selector",
+ "status": "observed",
+ "text": "Rows store a base-model ID without native effort/speed suffixes. Placement expands observed native selectors; observed model/effort facts outrank requested launch stamps. Known older catalog models without explicit rows demote exactly one class at the same effort; older bottom-class models and single-class Grok refuse.",
+ "page": "levels",
+ "position": 1
+}

@@ -1,0 +1,10 @@
+{
+ "id": "FIRST-USER.cold-start-context",
+ "title": "Cold-start context",
+ "status": "approved",
+ "scope": "Yoke",
+ "concepts": ["documentation/planning"],
+ "surfaces": ["detail-home"],
+ "scenarios": ["help-cascade"],
+ "position": 0
+}

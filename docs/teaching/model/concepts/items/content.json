@@ -1,0 +1,8 @@
+{
+ "id": "content",
+ "title": "Structured item content",
+ "status": "draft-copy",
+ "plan_refs": ["FIRST-USER.13"],
+ "page": "items",
+ "position": 2
+}

@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Separate facts from staffing policy",
+ "status": "observed",
+ "audience": "both",
+ "when": "Looking up a model or proposing a level change",
+ "need": "Catalog research holds sourced model facts, efforts, successors and effective dates; levels hold ordered model/min_effort thresholds. Catalog updates do not silently change approved preferences. Unknown models or unpublished effort establish no level: item/task claims and work launches refuse session_below_intern; refresh catalog/native facts or select a supported model and effort before retrying. Known older models without explicit rows demote one class at the same effort; bottom-class predecessors and single-class Grok refuse.",
+ "disclosure": "current cue",
+ "surface": "Yoke Help -> Models skill; docs sidebar -> CLI/config -> model reference and execution levels.",
+ "review": "Admission and predecessor behavior observed in the shipped routing guide and source; live 18-row definition reread 2026-10-13.",
+ "recipes": ["yoke models lookup MODEL_ID", "yoke models get", "yoke models revisions", "yoke models level-proposal"],
+ "plan_notes": ["outside both"],
+ "sources": [".agents/skills/yoke/models/SKILL.md", "docs/public/cli-and-config.md", "docs/public/reference/session-level-routing.md"],
+ "position": 0
+}

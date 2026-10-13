@@ -1,0 +1,10 @@
+{
+ "id": "change",
+ "title": "Plan changes",
+ "status": "draft-copy",
+ "commands": ["yoke direct-workflow dash escalate"],
+ "functions": ["direct_workflow.dash.escalate"],
+ "skills": ["amend", "refine"],
+ "page": "planning",
+ "position": 3
+}

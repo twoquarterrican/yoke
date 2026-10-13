@@ -1,0 +1,7 @@
+{
+ "id": "10",
+ "title": "FIRST-USER:561",
+ "status": "observed",
+ "text": "- **Fix:** extend existing configuration reads and onboarding runs/rows to distinguish configured, deferred, not needed and unknown setup. Actual settings remain authoritative; preserve explicit choices and evidence, and recheck them on resume or relevant setup changes. Scope shared facts to the project/universe and local readiness to the machine; resuming one project must not use another project's latest onboarding run. A new machine reuses project choices and checks its own prerequisites.",
+ "position": 9
+}

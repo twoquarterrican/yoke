@@ -24,16 +24,23 @@ def tools(monkeypatch):
     return model, inventory, privacy, render
 
 
-def test_model_builds_valid_views():
+@pytest.mark.parametrize(
+    "script, args, expected",
+    [
+        ("build.py", ["--check"], "check passed"),
+        ("convert_model.py", [], "wrote 0 record files"),
+    ],
+)
+def test_standalone_model_tools(script, args, expected):
     result = subprocess.run(
-        [sys.executable, str(TOOLS / "build.py"), "--check"],
+        [sys.executable, "-E", str(TOOLS / script), *args],
         cwd=REPO,
         capture_output=True,
         text=True,
         timeout=300,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "check passed" in result.stdout
+    assert expected in result.stdout
 
 
 def test_validate_names_dangling_references_and_unmapped_plan_rows(tools):
@@ -53,7 +60,7 @@ def test_validate_names_dangling_references_and_unmapped_plan_rows(tools):
         "status": "approved",
         "file": "p.json",
     }
-    loaded.gaps["g"] = {"id": "g", "status": "open", "file": "gaps.json"}
+    loaded.gaps["g"] = {"id": "g", "status": "open", "file": "gaps/g.json"}
     live = {"commands": {"yoke real"}, "functions": set(), "skills": set()}
     model.validate(loaded, live, {"README.md"})
     codes = sorted(problem.code for problem in loaded.problems)
@@ -90,7 +97,7 @@ def test_privacy_patterns_flag_private_material(tools, line):
 
 def test_privacy_patterns_allow_repository_paths(tools):
     _, _, privacy, _ = tools
-    line = "docs/teaching/model/gaps.json and packages/yoke-core/src"
+    line = "docs/teaching/model/gaps/example.json and packages/yoke-core/src"
     assert not any(pattern.search(line) for _, pattern in privacy.PATTERNS)
 
 
@@ -187,3 +194,117 @@ def test_check_refuses_invalid_model_with_recovery(tools, monkeypatch, capsys):
     assert "UNKNOWN_STATUS" in output
     assert "Fix the model" in output
     assert "--check" in output
+
+
+def test_conversion_preserves_records_and_is_repeatable(tools, monkeypatch, tmp_path):
+    import convert_model
+
+    model, *_ = tools
+    teaching = tmp_path / "docs/teaching"
+    root = teaching / "model"
+    arrays = {
+        "concepts/topic.json": {
+            "parent": None,
+            "nodes": [
+                {
+                    "id": "topic",
+                    "title": "Topic",
+                    "children": [{"id": "child", "title": "Child"}],
+                }
+            ],
+        },
+        "concepts/topic-more.json": {
+            "parent": "topic",
+            "nodes": [{"id": "additional", "title": "More"}],
+        },
+        "surfaces/entry.json": {
+            "surface": {"id": "entry"},
+            "teaching": [{"id": "second"}, {"id": "first"}],
+        },
+        "scenarios/work.json": {
+            "scenario": {"id": "work"},
+            "lessons": [{"id": "lesson"}],
+        },
+        "plan/direction.json": {
+            "plan": "DIRECTION",
+            "title": "Direction",
+            "rows": [{"id": "DIRECTION.a"}],
+        },
+        "evidence/research.json": {"title": "Research", "records": [{"id": "a"}]},
+        "gaps.json": {"records": [{"id": "missing"}]},
+        "boundaries.json": {"records": [{"id": "rule"}]},
+        "docs-graph.json": {},
+    }
+    for name, value in arrays.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(model.dump(value))
+    assert convert_model.convert(root) == 14
+    snapshot = {p.relative_to(root): p.read_bytes() for p in root.rglob("*.json")}
+    assert convert_model.convert(root) == 0
+    assert snapshot == {
+        p.relative_to(root): p.read_bytes() for p in root.rglob("*.json")
+    }
+    assert not (root / "gaps.json").exists()
+    monkeypatch.setattr(model, "TEACHING_ROOT", teaching)
+    monkeypatch.setattr(model, "MODEL_ROOT", root)
+    loaded = model.load()
+    assert not loaded.problems
+    assert loaded.concepts["topic"]["children"] == ["topic/child", "topic/additional"]
+    assert loaded.surfaces["entry"]["parts"] == ["entry/second", "entry/first"]
+    assert loaded.lessons["work/lesson"]["owner"] == "work"
+    assert loaded.plan_rows["DIRECTION.a"]["page"] == "direction"
+    assert loaded.evidence["research/a"]["id"] == "a"
+    assert set(loaded.gaps) == {"missing"}
+    assert set(loaded.boundaries) == {"rule"}
+    # Upstream arrays can be reapplied without touching unrelated record files.
+    source = root / "gaps.json"
+    source.write_text(
+        model.dump({"records": [{"id": "missing", "title": "Updated"}, {"id": "new"}]})
+    )
+    assert convert_model.convert(root) == 2
+    assert model.load().gaps["missing"]["title"] == "Updated"
+    assert model.load().gaps["new"]["id"] == "new"
+    assert (root / "concepts/topic/child.json").read_bytes() == snapshot[
+        Path("concepts/topic/child.json")
+    ]
+
+
+def test_loader_reports_filename_mismatch(tools, monkeypatch, tmp_path):
+    model, *_ = tools
+    root = tmp_path / "docs/teaching/model"
+    (root / "gaps").mkdir(parents=True)
+    (root / "gaps/wrong.json").write_text(model.dump({"id": "different"}))
+    (root / "docs-graph.json").write_text("{}\n")
+    monkeypatch.setattr(model, "MODEL_ROOT", root)
+    monkeypatch.setattr(model, "TEACHING_ROOT", root.parent)
+    loaded = model.load()
+    assert [p.code for p in loaded.problems] == ["MODEL_RECORD_ID"]
+    assert "filename" in loaded.problems[0].message
+
+
+def test_independent_additions_merge_without_shared_file_edits(tmp_path):
+    def git(*args):
+        return subprocess.check_output(["git", "-C", str(tmp_path), *args], text=True)
+
+    git("init", "-b", "base")
+    git("config", "user.email", "test@example.invalid")
+    git("config", "user.name", "Test")
+    owner = tmp_path / "model/surfaces/entry.json"
+    owner.parent.mkdir(parents=True)
+    owner.write_text('{"id": "entry"}\n')
+    git("add", ".")
+    git("commit", "-m", "Collection owner")
+    for branch, record_id in [("left", "alpha"), ("right", "beta")]:
+        git("checkout", "-b", branch, "base")
+        record = owner.with_suffix("") / f"{record_id}.json"
+        record.parent.mkdir(exist_ok=True)
+        record.write_text(json.dumps({"id": record_id}) + "\n")
+        git("add", ".")
+        git("commit", "-m", "Add record")
+        assert git("diff", "--name-only", "base").strip() == (
+            f"model/surfaces/entry/{record_id}.json"
+        )
+    git("merge", "--no-edit", "left")
+    assert {p.stem for p in owner.with_suffix("").glob("*.json")} == {"alpha", "beta"}
+    assert git("status", "--porcelain") == ""

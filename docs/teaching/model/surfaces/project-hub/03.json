@@ -1,0 +1,10 @@
+{
+ "id": "03",
+ "title": "Always-needed project documents and topic-specific documents through context_routing.",
+ "status": "draft-copy",
+ "form": "Link",
+ "verification": "No delivery proof attached.",
+ "topics": ["context/packets", "architecture/structure"],
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"],
+ "position": 2
+}

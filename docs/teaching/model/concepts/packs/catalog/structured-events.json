@@ -1,0 +1,8 @@
+{
+ "id": "structured-events",
+ "title": "Structured Events",
+ "status": "draft-copy",
+ "sources": ["packs/structured-events/pack.json"],
+ "page": "packs",
+ "position": 12
+}

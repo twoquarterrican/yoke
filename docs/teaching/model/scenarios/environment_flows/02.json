@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Validate the executable route",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Before activation, assignment or changing a release policy",
+ "need": "Read the serving validation result, capabilities, registered targets and deployed-identity proof. Current source supports ordered execution and scoped QA; a stored definition is not evidence the serving build can execute it.",
+ "disclosure": "current cue",
+ "surface": "Onboard validate gate; flow schema and identity admission.",
+ "gap": "JOURNEYS needs a short validation/recovery pointer at the moment a flow is adopted. Used definitions are versioned and retained, not overwritten.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke deployment-flows validate --help", "yoke deployment-flows version --help"],
+ "plan_notes": ["JOURNEYS row 12"],
+ "sources": [".agents/skills/yoke/onboard/hosting-and-environments.md", "docs/public/reference/db-reference/projects-and-flows.md", "packages/yoke-core/src/yoke_core/domain/deployment_flow_target_support.py"],
+ "position": 1
+}

@@ -1,0 +1,16 @@
+{
+ "id": "03",
+ "title": "Find the right configuration owner",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "A value could belong to a Pack, project, environment, machine or universe",
+ "need": "Separate install-time Pack specialization, live project capability settings, environment settings, machine connections and universe settings. Use the owning registered read/help, not raw config inspection.",
+ "disclosure": "audit needed",
+ "surface": "Projects and Capabilities guides explain parts; CLI and config covers the machine/universe boundary.",
+ "gap": "No complete scenario-to-owner path was traced for arbitrary feature settings. Do not claim a generic settings UI or validator exists for every capability.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke projects capability-settings get --help", "yoke project-structure get --help", "yoke status"],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/projects.md", "docs/public/capabilities.md", "docs/public/cli-and-config.md", "packages/yoke-core/src/yoke_core/domain/project_structure.py"],
+ "position": 2
+}

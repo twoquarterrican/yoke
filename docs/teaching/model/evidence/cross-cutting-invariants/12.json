@@ -1,0 +1,7 @@
+{
+ "id": "12",
+ "title": "optional-setup",
+ "status": "observed",
+ "check": "Environments/previews/QA machines/plans/governance/test registration/Doctor/architecture are not universal startup gates. Unexamined remains unknown; selected work and existing rules create requirements.",
+ "position": 11
+}

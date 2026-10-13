@@ -1,0 +1,7 @@
+{
+ "id": "14",
+ "title": "scoped-facts",
+ "status": "observed",
+ "check": "Project/universe choices survive new machines; local prerequisites are rechecked. Do not reuse another project latest run. Settings remain authoritative; checklist/profile are views.",
+ "position": 13
+}

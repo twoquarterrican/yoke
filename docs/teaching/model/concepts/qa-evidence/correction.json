@@ -1,0 +1,9 @@
+{
+ "id": "correction",
+ "title": "Correction and recovery",
+ "status": "draft-copy",
+ "commands": ["yoke qa requirement supersede", "yoke qa requirement waive"],
+ "functions": ["qa.requirement.supersede", "qa.requirement.waive"],
+ "page": "qa-evidence",
+ "position": 4
+}

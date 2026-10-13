@@ -1,0 +1,9 @@
+{
+ "id": "generated-references",
+ "title": "Generated references",
+ "status": "draft-copy",
+ "audience": "Documentation authors / maintainers",
+ "sources": ["docs/teaching/README.md", "docs/teaching/tools/build.py"],
+ "page": "documentation",
+ "position": 3
+}

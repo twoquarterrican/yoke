@@ -1,0 +1,10 @@
+{
+ "id": "desired-02",
+ "title": "Resume settled choices: configured, deferred, not needed or unknown, at the correct scope.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["projects/onboarding", "projects/settings", "sessions/continuity"],
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.42", "FIRST-USER.43"],
+ "position": 6
+}

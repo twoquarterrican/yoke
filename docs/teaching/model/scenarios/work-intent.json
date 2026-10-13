@@ -1,59 +1,12 @@
 {
- "scenario": {
-  "id": "work-intent",
-  "title": "Choose the next useful action",
-  "status": "draft-copy",
-  "situations": ["Installation has finished and the user does not know what to ask next.", "The user has one concrete change, existing work to resume, or a plan they want staffed.", "A mature project has open PRs and work already underway."],
-  "coverage": "partial",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["No live install or first-work execution was performed; current cue judgments come from inspected skill text.", "Does projectless coordination preserve intent when the user opens the named project folder?", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
-  "related_scenarios": ["workflow-kinds", "strategy", "item-records", "work-progress-continuity"],
-  "plan_refs": ["FIRST-USER.24", "FIRST-USER.43", "JOURNEYS.situation-7"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Route intent, not a command catalog",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "After project readiness, when the user first asks what to do next or states a concrete work intent.",
-   "need": "One known instruction can enter Dash; Charge selects existing runnable work; Steer staffs work from a strategy document. The human names the outcome; the agent reads the selected skill.",
-   "disclosure": "current cue",
-   "surface": "Onboard handoff; router; Help; Dash, Charge and Steer entry skills",
-   "gap": "The handoff names Steer/Charge but explains little; Help prints the full registry. Review question: should FIRST-USER C add a two-sentence intent handoff, with JOURNEYS supplying later depth?",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke workflows item get --help"],
-   "plan_notes": ["FIRST-USER C", "FIRST-USER 8", "JOURNEYS row 11"],
-   "sources": [".agents/skills/yoke/onboard/seed-work.md", ".agents/skills/yoke/SKILL.md", ".agents/skills/yoke/help/SKILL.md", ".agents/skills/yoke/dash/SKILL.md", ".agents/skills/yoke/charge/SKILL.md", ".agents/skills/yoke/steer/SKILL.md"]
-  },
-  {
-   "id": "02",
-   "title": "Adopt existing work deliberately",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "During mature-project intake, before proposing new items or taking over an open PR or in-flight change.",
-   "need": "Survey accepted docs, repository, open work and permitted external context; identify what Yoke should own now and preserve work it should only observe.",
-   "disclosure": "planned cue",
-   "surface": "FIRST-USER inherited-work intake; existing Onboard survey and duplicate check",
-   "gap": "FIRST-USER 24 adds scanning but not an explicit takeover boundary. Review question: should it record reuse, leave-running and first-owned-outcome choices before seeding?",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER 24", "FIRST-USER 13", "FIRST-USER 28"],
-   "sources": [".agents/skills/yoke/onboard/strategy-conversation.md", ".agents/skills/yoke/onboard/seed-work.md", ".agents/skills/yoke/onboard/run-and-rows.md"]
-  },
-  {
-   "id": "03",
-   "title": "Prove first work, not just registration",
-   "status": "draft-copy",
-   "audience": "human",
-   "when": "At the installer-to-project handoff, including when a new session or folder must be opened.",
-   "need": "A usable handoff names the correct folder, one next action and how to inspect the resulting work.",
-   "disclosure": "missing cue",
-   "surface": "TUI/agent handoff into the project; proposed first-work guide",
-   "gap": "Approved installer campaign scope requires representative first-work proof through actual done, including required checks, approvals and delivery. The expanded mission names that outcome; live proof remains unperformed.",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER C", "FIRST-USER D"],
-   "sources": [".agents/skills/yoke/onboard/SKILL.md", "docs/public/operating-with-agents.md", "docs/testing-verification/installer-campaign.md"]
-  }
- ]
+ "id": "work-intent",
+ "title": "Choose the next useful action",
+ "status": "draft-copy",
+ "situations": ["Installation has finished and the user does not know what to ask next.", "The user has one concrete change, existing work to resume, or a plan they want staffed.", "A mature project has open PRs and work already underway."],
+ "coverage": "partial",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["No live install or first-work execution was performed; current cue judgments come from inspected skill text.", "Does projectless coordination preserve intent when the user opens the named project folder?", "Command nodes, when present, were checked with installed CLI --help only; this proves parser/help availability, not serving-control-plane capability or successful execution."],
+ "related_scenarios": ["workflow-kinds", "strategy", "item-records", "work-progress-continuity"],
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.43", "JOURNEYS.situation-7"]
 }

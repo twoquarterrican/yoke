@@ -1,0 +1,8 @@
+{
+ "id": "shipping",
+ "title": "Shipping",
+ "status": "draft-copy",
+ "related": "deployments/shipping",
+ "page": "workbench-destinations",
+ "position": 2
+}

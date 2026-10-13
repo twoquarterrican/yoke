@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Declare personas before signing in",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Test needs authenticated behavior or more than one account",
+ "need": "A browser identity is a persona profile across declared sites. Declare origins and signed-in probes in browser-control; default exists. Cases choose browser_identity; missions can name several. API/CLI credentials remain separate capability secrets.",
+ "disclosure": "current cue",
+ "surface": "Browser scenario method configuration → browser-identities reference.",
+ "gap": "Feature teaching exists in depth; add an entry from authenticated test authoring rather than teaching every persona at startup.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke projects capability-settings get --project P --cap-type browser-control --json", "yoke browser authorize --help"],
+ "plan_notes": ["JOURNEYS row 13", "outside both"],
+ "sources": ["docs/public/reference/browser-scenarios.md", "docs/public/reference/qa-platform/browser-identities.md"],
+ "position": 1
+}

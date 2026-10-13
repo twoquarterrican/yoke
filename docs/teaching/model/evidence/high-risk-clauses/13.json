@@ -1,0 +1,7 @@
+{
+ "id": "13",
+ "title": "JOURNEYS:60",
+ "status": "observed",
+ "text": "9. **Resolve completion, approval and QA for the work being selected.** Survey existing build/test/merge/release arrangements and establish the required landing, approval, done meaning and QA target before the affected action. Configure/read back the appropriate flow/default when needed. Offer merge-only when it meets those obligations; it removes neither approval nor QA and supplies no deployment run or post-deploy proof. Existing external automation may still deploy after merge. Preserve deliberate no-default/deferred choices; work requiring deployed proof needs that path before it can close. Verify required human approval cannot be bypassed.",
+ "position": 12
+}

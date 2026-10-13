@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Choose a delivery meaning",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Execution-profile confirmation today; when delivery matters in the planned journey",
+ "need": "Persistent delivery, explicit merge-only and no default are three different answers. Host ownership is a separate fact. Read existing declarations before asking.",
+ "disclosure": "current cue",
+ "surface": "Onboard profile lines 44–56; hosting posture and default precedence in projects-and-flows.",
+ "gap": "JOURNEYS row 12 should branch on the recorded answer; absence of environments is not automatically a setup defect. Progressive timing is planned, not current.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke deployment-flows list --project P --json", "yoke projects capability-settings get --help"],
+ "plan_notes": ["JOURNEYS row 12", "JOURNEYS slimming onboard"],
+ "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", "docs/public/reference/db-reference/projects-and-flows.md"],
+ "position": 0
+}

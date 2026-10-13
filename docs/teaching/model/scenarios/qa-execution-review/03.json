@@ -1,0 +1,16 @@
+{
+ "id": "03",
+ "title": "Judge current evidence and preserve history",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When reading a result after retries, edits or a newer attempt, especially when an older attempt passed.",
+ "need": "Current actual attempts and their identity determine satisfaction; old greens remain history. All-pass aggregation does not let historical votes rescue a current failure.",
+ "disclosure": "current cue",
+ "surface": "Requirement state reference; success-policy validation/refusal",
+ "gap": "QA overview still mentions five policy shapes although validation allows all-pass only. Review question: should the first-use documentation repair remove that contradiction before wider discovery links ship?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa gate-summary --help"],
+ "plan_notes": ["FIRST-USER 32", "JOURNEYS row 13"],
+ "sources": ["docs/public/reference/qa-platform/requirement-state-model.md", "docs/public/reference/qa-platform/success-policy-schema.md", "packages/yoke-core/src/yoke_core/domain/qa_requirement_policy_validation.py", "docs/public/reference/qa-platform.md"],
+ "position": 2
+}

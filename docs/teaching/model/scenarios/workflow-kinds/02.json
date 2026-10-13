@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Read the existing item pin",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Before resuming, dispatching or handing off an existing item to its next skill.",
+ "need": "Use workflows.item.get and its next binding; do not re-file or convert an item to match a remembered stage sequence.",
+ "disclosure": "current cue",
+ "surface": "Workflow item read; skill routing and lifecycle handoff output",
+ "gap": "Existing exact references are deep. Review question: should named handoffs/refusals include one stable workflow-reference link after documentation moves?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke workflows item get --help", "yoke workflows version get --help"],
+ "plan_notes": ["FIRST-USER 35", "outside both"],
+ "sources": ["docs/public/reference/lifecycle.md", "docs/public/reference/lifecycle-gates.md", "docs/public/reference/db-reference/functions-workflows.md", ".agents/skills/yoke/steer/SKILL.md"],
+ "position": 1
+}

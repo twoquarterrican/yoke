@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Bind the first download and future updates",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Before installing from a private distribution",
+ "need": "Fetch that distribution installer and bind the same credential-free origin/channel from the first download. The package host may differ from the API host; later updates use the persisted record.",
+ "disclosure": "current cue",
+ "surface": "Public index Read next and CLI/config -> Maintaining a private fork.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke config distribution set --help", "yoke update --help"],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/index.md", "docs/public/cli-and-config.md", "docs/public/private-forks.md", "packages/yoke-cli/src/yoke_cli/config/distribution.py"],
+ "position": 0
+}

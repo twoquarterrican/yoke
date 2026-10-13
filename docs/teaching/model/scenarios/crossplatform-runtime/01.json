@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Teach the active platform path only",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "At platform detection, a named prerequisite refusal, or a move to a different operating system.",
+ "need": "Use the verified OS/harness combination and its filesystem, restart, permissions and login-lifetime rules; do not promise unverified desktop support from CLI support.",
+ "disclosure": "audit needed",
+ "surface": "WSL setup, launcher PATH helpers, terminal onboarding and Linux reference",
+ "gap": "Coverage exists in several references but is not a complete tested scenario matrix. Review question: should FIRST-USER D/E expose per-platform evidence and offer only the active-platform recovery?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 11", "FIRST-USER 14", "FIRST-USER 26", "FIRST-USER D", "FIRST-USER E"],
+ "sources": ["docs/public/windows-wsl.md", "docs/public/guides/terminal-onboarding.md", "docs/public/reference/linux-desktop-apps.md", "docs/public/reference/linux-relay.md"],
+ "position": 0
+}

@@ -1,0 +1,9 @@
+{
+ "id": "gates",
+ "title": "QA gate settlement",
+ "status": "draft-copy",
+ "commands": ["yoke qa gate-summary"],
+ "functions": ["qa.gate_summary.run"],
+ "page": "qa-evidence",
+ "position": 3
+}

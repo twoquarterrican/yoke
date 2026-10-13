@@ -1,0 +1,21 @@
+{
+ "id": "agent-help",
+ "title": "Agent-led help: /yoke help and planned yoke-global help",
+ "status": "observed",
+ "name": "Agent-led help: /yoke help and planned yoke-global help",
+ "audience": "Human asking an agent, with the agent selecting the right deeper instruction",
+ "scope": "Project help inside a wired project; global help outside one",
+ "trigger": "User asks how to use Yoke, invokes help, or needs a missing-project recovery path",
+ "current": "/yoke help exists and prints a broad generated skill table plus terminal recipes. yoke-global is planned in FIRST-USER P4, not established here as shipped.",
+ "proposed_purpose": "Translate the person’s intent into one useful action and its canonical instructions.",
+ "content": ["If the user gave a task, answer that task with one recommended route.", "If they asked generally, offer a short choice: start a project, plan work, run work, check progress, review a decision, or get unstuck.", "Name where the action belongs: this project folder, another project folder, or the global session.", "Explain only the unfamiliar term needed for that action.", "Offer the relevant manual section and exact skill/help pointer when more detail is wanted."],
+ "scope_variants": {
+  "outsideProject": "Show accessible projects or create/add a project; carry the chosen intent into the actual folder before /yoke onboard or item execution.",
+  "insideProject": "Use current project facts and the item’s pinned workflow to route; do not require the user to memorize stage commands."
+ },
+ "authority_and_reuse": "The skill is a router to canonical skill bodies, docs and generated command reference, not another command catalog or a second set of operating rules.",
+ "proposal_status": "Modify existing project help; planned global skill carries the global variant",
+ "plan_notes": ["FIRST-USER 8", "FIRST-USER P1/P4", "JOURNEYS principles 3–6"],
+ "sources": [".agents/skills/yoke/SKILL.md", ".agents/skills/yoke/help/SKILL.md", "docs/public/operating-with-agents.md"],
+ "position": 0
+}

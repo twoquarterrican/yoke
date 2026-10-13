@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Staff a plan through Steer",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When an accepted plan has runnable work with no owner, or the user asks to pursue that plan.",
+ "need": "Read the selected plan, live work state and covering authority before staffing; preserve standing decisions and update the durable checkpoint. Reconcile contradictory teaching about Feed versus Steer rather than inventing an extra mandatory step.",
+ "disclosure": "current cue",
+ "surface": "Steer entry, scope and loop; public Strategy guidance",
+ "gap": "Public Strategy says strategy needs Feed to become runnable work; current Steer says not to invoke Feed, while Strategize attributes staffing to the scheduler. Review question: which shipped owner governs each role, and which producer texts must change together?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke strategy doc get --help"],
+ "plan_notes": ["JOURNEYS row 11", "FIRST-USER 32"],
+ "sources": [".agents/skills/yoke/steer/SKILL.md", ".agents/skills/yoke/steer/scope-and-authority.md", ".agents/skills/yoke/steer/loop.md", "docs/public/strategy.md", ".agents/skills/yoke/strategize/SKILL.md"],
+ "position": 1
+}

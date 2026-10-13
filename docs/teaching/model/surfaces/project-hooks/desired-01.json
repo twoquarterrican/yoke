@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Apply project/lane rules at the action; explain a refusal’s real cause and supported recovery.",
+ "status": "observed",
+ "form": "Do",
+ "verification": "Candidate source and focused regression tests cover guard applicability; live installed harness proof is pending.",
+ "topics": ["context/hooks", "coordination/lanes", "security/boundaries"],
+ "plan_refs": ["FIRST-USER.P2", "FIRST-USER.P3", "FIRST-USER.29"],
+ "position": 5
+}

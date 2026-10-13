@@ -1,0 +1,10 @@
+{
+ "id": "JOURNEYS.execution-boundary",
+ "title": "Execution boundary",
+ "status": "deferred",
+ "scope": "Yoke",
+ "concepts": ["documentation/planning", "context/disclosure", "projects/adoption"],
+ "surfaces": ["global-orientation", "project-orientation", "skills-roles", "execution-instructions"],
+ "scenarios": ["agent-context", "project-adoption"],
+ "position": 0
+}

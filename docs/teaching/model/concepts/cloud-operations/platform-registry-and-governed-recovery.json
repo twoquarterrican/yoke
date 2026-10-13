@@ -1,0 +1,9 @@
+{
+ "id": "platform-registry-and-governed-recovery",
+ "title": "Platform registry and governed recovery",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "private_sources": ["platform"],
+ "page": "cloud-operations-services",
+ "position": 7
+}

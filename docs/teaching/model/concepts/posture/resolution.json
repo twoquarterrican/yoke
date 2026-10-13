@@ -1,0 +1,10 @@
+{
+ "id": "resolution",
+ "title": "Policy resolution",
+ "status": "draft-copy",
+ "surface_refs": ["project-native"],
+ "commands": ["yoke workflows item get", "yoke workflows policy-defaults publish"],
+ "functions": ["workflows.item.get", "workflows.policy_defaults.publish"],
+ "page": "posture",
+ "position": 0
+}

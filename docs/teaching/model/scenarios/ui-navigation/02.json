@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Navigate by the task at hand",
+ "status": "draft-copy",
+ "audience": "human",
+ "when": "On first dashboard visit, first running item or an empty/error page.",
+ "need": "Find Strategy, Frontier, Inbox, Shipping and QA when needed; distinguish empty, unavailable and failed reads instead of exploring every page before work.",
+ "disclosure": "audit needed",
+ "surface": "Existing workbench pages, overview activation and board read",
+ "gap": "Progress surfaces are already mapped; first navigation, empty states and deep-link behavior are not independently traced. Review question: should dashboard explanation and JOURNEYS cues share the same task names?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER P5", "FIRST-USER B", "JOURNEYS row 9", "outside both"],
+ "sources": ["docs/public/concepts.md", "docs/public/items-and-sessions.md", "docs/public/qa.md", "docs/public/frontier.md"],
+ "position": 1
+}

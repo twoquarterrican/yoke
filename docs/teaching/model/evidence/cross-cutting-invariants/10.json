@@ -1,0 +1,7 @@
+{
+ "id": "10",
+ "title": "project-bound-execution",
+ "status": "observed",
+ "check": "Global coordination may remain global; item work uses project-started session. Never switch session project or auto-launch interactive sessions. Only yoke-global is user-level; agent owns project addition.",
+ "position": 9
+}

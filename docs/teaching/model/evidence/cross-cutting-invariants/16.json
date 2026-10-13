@@ -1,0 +1,7 @@
+{
+ "id": "16",
+ "title": "permission-refusals",
+ "status": "observed",
+ "check": "Missing selection alone is project_required. Preserve permission/ambiguity/gate/capability causes, required facts and supported recovery; never reveal inaccessible projects.",
+ "position": 15
+}

@@ -1,0 +1,7 @@
+{
+ "id": "04",
+ "title": "tree-coverage",
+ "status": "observed",
+ "check": "Every topic/command has a home or explicit gap and metadata: audience/scope, moment, teaching/recipe, deeper pointer, owner, proof. Parent coverage never implies child coverage.",
+ "position": 3
+}

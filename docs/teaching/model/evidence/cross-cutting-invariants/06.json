@@ -1,0 +1,7 @@
+{
+ "id": "06",
+ "title": "single-authority",
+ "status": "observed",
+ "check": "One rule/recipe/definition source; preserve live facts and project policy owners. Reuse public release-matched views; never export private topology/state/secrets.",
+ "position": 5
+}

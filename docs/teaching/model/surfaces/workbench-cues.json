@@ -1,104 +1,16 @@
 {
- "surface": {
-  "id": "workbench-cues",
-  "title": "Workbench and return-to-work cues",
-  "status": "approved",
-  "scope": "Global view + selected-project view",
-  "audience": "Human + agent via shared facts",
-  "encounter": "Workbench visit or relevant state change",
-  "location": "Existing Projects, Strategy, Frontier, Sessions, Inbox and Shipping surfaces",
-  "basis": "Existing surfaces · JOURNEYS cues",
-  "note": "Reuse the existing screens and live state owners. A new all-purpose Overview dashboard is not assumed.",
-  "current": "Existing source references; delivered content is not yet proved.",
-  "desired": "Teach scope, project selection, actual readiness and useful next action; detailed dashboard adoption design remains open.",
-  "plan_notes": ["FIRST-USER P5", "JOURNEYS 9–15"],
-  "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"],
-  "sources": ["packages/yoke-core/src/yoke_core/domain/session_orientation.py", "packages/yoke-core/src/yoke_core/ui/static/universe_views_frontier.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_sessions.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_inbox.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_shipping.js", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_control.js", ".agents/skills/yoke/steer/SKILL.md", ".agents/skills/yoke/wrapup/SKILL.md", ".agents/skills/yoke/onboard/strategy-conversation.md", "packages/yoke-core/src/yoke_core/ui/static/universe_views_projects.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_strategy.js", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_project.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_github.js"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "Current universe/project, work in progress, blockers and decisions waiting for this person.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["workbench/navigation", "frontier/frontier", "sessions/ownership", "messaging/inbox"],
-   "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
-  },
-  {
-   "id": "02",
-   "title": "At a decision, distinguish work approval, QA review and deployment approval.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["approvals/types", "qa-evidence/verdicts"],
-   "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
-  },
-  {
-   "id": "03",
-   "title": "Interrupted work has a checkpoint and current holder; show its live next step.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["sessions/continuity", "coordination/work-claims"],
-   "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
-  },
-  {
-   "id": "04",
-   "title": "Missing setup gets one relevant explanation and repair link; new/empty screens say what the object is for.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["workbench/onboarding", "documentation/disclosure"],
-   "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
-  },
-  {
-   "id": "05",
-   "title": "A finishing initiative gets a completion/evidence check and deferred-work review before archival.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["strategy/operation", "qa-evidence/artifacts"],
-   "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Show actual mode, scope and project count; an empty project list routes to the agent.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["modes", "workbench/identity", "projects/adoption"],
-   "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
-  },
-  {
-   "id": "desired-02",
-   "title": "Show truthful GitHub access and live/last-checked state with a usable recovery link.",
-   "status": "observed",
-   "form": "Do",
-   "verification": "Source and page tests show the shared GitHub page; live delivery still needs proof.",
-   "topics": ["repositories/github", "repositories/github/workbench-github-page"],
-   "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Make identity, machine approval, progress and useful next actions understandable.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Standalone hosted setup has a committed candidate with fixture screenshots of beta refusals and organization creation at desktop/375px in light/dark themes. Production captures still show the previous serving baseline; exact deployed proof and timed stage founding acceptance remain pending. Shared machine approval has its own implementation and approval proof; this candidate does not prove that page.",
-   "current": "The hosted candidate removes title eyebrows and the no-invite diagnostic while keeping named invitation failures. Settled URL and Subscription rows are grouped; creation shows one indicator and a quiet line that changes after 45 seconds to explain resumability.",
-   "desired": "Accept the standalone hosted screens against their exact deployed build and real timed founding journey. Verify shared machine approval separately, including its machine identity, local expiry and human approval outcome. These standalone screens do not apply to local or self-hosted setup.",
-   "topics": ["identity/auth", "identity/accounts/beta-access-and-organization-creation", "machines/registration", "workbench/onboarding"],
-   "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"]
-  },
-  {
-   "id": "mode-identity",
-   "title": "Self-hosted mode names the universe correctly and does not label an unavailable actor as local.",
-   "status": "observed",
-   "form": "State",
-   "verification": "Source uses portability mode self-host. DOM regression checks cover local, self-hosted and hosted footer labels and absent-actor identity; deployed proof remains pending.",
-   "topics": ["modes/self-hosted", "workbench/identity"],
-   "plan_refs": ["FIRST-USER.31"],
-   "sources": ["packages/yoke-core/src/yoke_core/ui/static/universe_app_chrome.js", "packages/yoke-core/src/yoke_core/ui/static/universe_shell_footer.js", "runtime/api/universe_ui_mode_identity.test.mjs"]
-  }
- ]
+ "id": "workbench-cues",
+ "title": "Workbench and return-to-work cues",
+ "status": "approved",
+ "scope": "Global view + selected-project view",
+ "audience": "Human + agent via shared facts",
+ "encounter": "Workbench visit or relevant state change",
+ "location": "Existing Projects, Strategy, Frontier, Sessions, Inbox and Shipping surfaces",
+ "basis": "Existing surfaces · JOURNEYS cues",
+ "note": "Reuse the existing screens and live state owners. A new all-purpose Overview dashboard is not assumed.",
+ "current": "Existing source references; delivered content is not yet proved.",
+ "desired": "Teach scope, project selection, actual readiness and useful next action; detailed dashboard adoption design remains open.",
+ "plan_notes": ["FIRST-USER P5", "JOURNEYS 9–15"],
+ "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/session_orientation.py", "packages/yoke-core/src/yoke_core/ui/static/universe_views_frontier.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_sessions.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_inbox.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_shipping.js", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_control.js", ".agents/skills/yoke/steer/SKILL.md", ".agents/skills/yoke/wrapup/SKILL.md", ".agents/skills/yoke/onboard/strategy-conversation.md", "packages/yoke-core/src/yoke_core/ui/static/universe_views_projects.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_strategy.js", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_project.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_github.js"]
 }

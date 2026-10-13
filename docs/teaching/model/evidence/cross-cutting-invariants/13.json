@@ -1,0 +1,7 @@
+{
+ "id": "13",
+ "title": "delivery-obligations",
+ "status": "observed",
+ "check": "Before affected work establish landing, approval, done and QA target; configure/read back required flow. Merge-only does not remove review/QA or create post-deploy proof; preserve no-default/deferred choices and external automation.",
+ "position": 12
+}

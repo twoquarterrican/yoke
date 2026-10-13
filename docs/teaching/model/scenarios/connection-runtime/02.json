@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Name the component that must be running",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When work fails because core/database/relay/UI service is down or a session ends.",
+ "need": "Read the component status, ownership, version and supported restart/resume procedure; distinguish host login lifetime from server reachability.",
+ "disclosure": "audit needed",
+ "surface": "core/local-postgres/relay/ui/self-host operation families; Linux supervision guidance",
+ "gap": "Runtime control commands are exposed, but this census does not decide which are ordinary product operations versus source-development tools. Review question: should existing status/help docs provide a small component-to-recovery map?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["FIRST-USER 6", "FIRST-USER 15", "FIRST-USER 32", "FIRST-USER E", "JOURNEYS row 8"],
+ "sources": ["docs/public/install.md", "docs/public/reference/linux-relay.md", "docs/public/windows-wsl.md", "docs/self-host.md", "docs/source-dev-doctrine.md"],
+ "position": 1
+}

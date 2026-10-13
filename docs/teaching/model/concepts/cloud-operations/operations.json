@@ -1,0 +1,9 @@
+{
+ "id": "operations",
+ "title": "Platform operation",
+ "status": "draft-copy",
+ "audience": "Administrators / maintainers",
+ "surface_refs": ["execution-instructions"],
+ "page": "cloud-operations",
+ "position": 3
+}

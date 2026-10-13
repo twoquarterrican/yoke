@@ -1,0 +1,10 @@
+{
+ "id": "04",
+ "title": "Continue the real next step without replaying completed transitions or restarting onboarding.",
+ "status": "draft-copy",
+ "form": "Do",
+ "verification": "No delivery proof attached.",
+ "topics": ["workflows/bindings", "sessions/lifecycle"],
+ "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"],
+ "position": 3
+}

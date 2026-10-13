@@ -1,0 +1,9 @@
+{
+ "id": "hooks-and-context-delivery",
+ "title": "Hooks and context delivery",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/hooks.md", "docs/hook-parity-map.md", "docs/harness-bootstrap.md"],
+ "page": "runtime-execution",
+ "position": 9
+}

@@ -1,0 +1,10 @@
+{
+ "id": "desired-03",
+ "title": "Teach the supported no-GitHub path; explain and offer issue-sync opt-in only when relevant.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["repositories/github", "repositories/sync"],
+ "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"],
+ "position": 9
+}

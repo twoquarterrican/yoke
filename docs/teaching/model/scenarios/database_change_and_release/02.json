@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Rehearsal requires two different authorities",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Before first rehearsal, especially on Yoke Cloud",
+ "need": "The item/lease/receipt belongs to its control plane; migration code runs on a separate validation DB. Current rehearse command requires local-Postgres/db-admin access to the item universe and refuses HTTPS. If unavailable, it directs the user to the control-plane operator.",
+ "disclosure": "current cue",
+ "surface": "migration rehearse help; databases lines 15 and capability validation-binding reference.",
+ "gap": "Major adoption boundary: hosted users cannot self-serve this with application DB credentials. Proposed discovery must disclose the limit before governance is accepted; the end-to-end external-user provisioning path remains to be designed/verified.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke migration rehearse --help"],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/reference/agent-rules/databases.md", "docs/public/reference/db-reference/migration-model-capabilities.md", "packages/yoke-cli/src/yoke_cli/commands/migration_rehearse.py"],
+ "position": 1
+}

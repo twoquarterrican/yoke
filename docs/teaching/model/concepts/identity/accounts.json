@@ -1,0 +1,9 @@
+{
+ "id": "accounts",
+ "title": "Accounts and organizations",
+ "status": "draft-copy",
+ "commands": ["yoke identity invite create", "yoke identity invite list", "yoke identity invite revoke", "yoke organizations create", "yoke organizations domain set", "yoke organizations get"],
+ "functions": ["identity.invite.create", "identity.invite.list", "identity.invite.revoke", "organizations.create", "organizations.domain.set", "organizations.get"],
+ "page": "identity",
+ "position": 1
+}

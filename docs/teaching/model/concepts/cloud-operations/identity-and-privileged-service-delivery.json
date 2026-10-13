@@ -1,0 +1,10 @@
+{
+ "id": "identity-and-privileged-service-delivery",
+ "title": "Identity and privileged service delivery",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "sources": ["docs/hosted-service-identity.md"],
+ "private_sources": ["platform"],
+ "page": "cloud-operations-services",
+ "position": 5
+}

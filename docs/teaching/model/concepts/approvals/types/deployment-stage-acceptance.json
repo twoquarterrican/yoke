@@ -1,0 +1,8 @@
+{
+ "id": "deployment-stage-acceptance",
+ "title": "Deployment-stage acceptance",
+ "status": "draft-copy",
+ "related": "deployments/runs",
+ "page": "approvals",
+ "position": 3
+}

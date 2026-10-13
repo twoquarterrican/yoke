@@ -1,0 +1,10 @@
+{
+ "id": "FIRST-USER.P7",
+ "title": "P7. Hosted counts real projects (**platform**)",
+ "status": "approved",
+ "scope": "Platform",
+ "concepts": ["projects/identity", "identity/billing", "cloud-operations/tenancy"],
+ "surfaces": ["workbench-cues"],
+ "scenarios": ["ui-navigation", "people-access"],
+ "position": 6
+}

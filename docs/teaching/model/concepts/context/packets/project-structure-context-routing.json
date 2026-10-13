@@ -1,0 +1,13 @@
+{
+ "id": "project-structure-context-routing",
+ "title": "Project Structure context routing",
+ "status": "observed",
+ "plan_refs": ["FIRST-USER.41"],
+ "surface_refs": ["packets-help"],
+ "commands": ["yoke project-structure get"],
+ "functions": ["project_structure.get"],
+ "sources": [".agents/skills/yoke/implement/implementing/project-context.md", ".agents/skills/yoke/conduct/dispatch-context-project.md"],
+ "detail": "Conduct and Implement share the registered entries/payload.docs, topic selection and lane/checkout recipe. Empty configuration differs from failed reads and unread files.",
+ "page": "context",
+ "position": 4
+}

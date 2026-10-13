@@ -1,0 +1,7 @@
+{
+ "id": "06",
+ "title": "FIRST-USER:244",
+ "status": "observed",
+ "text": "- **Fix:** TUI setup silently leaves issue sync off; add no question. Agent-led setup may explain and offer opt-in when relevant. Users can change the project setting later.",
+ "position": 5
+}

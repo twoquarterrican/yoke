@@ -1,0 +1,7 @@
+{
+ "id": "01",
+ "title": "prerequisite",
+ "status": "observed",
+ "check": "Entry 0 BOTH project halves precedes every other entry, including D baseline and frozen prototypes; ordinary dependency edges encode it.",
+ "position": 0
+}

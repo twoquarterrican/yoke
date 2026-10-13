@@ -1,0 +1,10 @@
+{
+ "id": "09",
+ "title": "source-evidence-is-not-shipped-guidance",
+ "status": "observed",
+ "research": "README.md; evidence paths across collection",
+ "finding": "Research links point to local source checkouts; copying HTML does not make them installed/global help or prove worker access.",
+ "authority": "FIRST-USER:153,551,554-557",
+ "action": "Preserve source evidence links as provenance; separately verify actual worker access and installed/public teaching destinations.",
+ "position": 8
+}

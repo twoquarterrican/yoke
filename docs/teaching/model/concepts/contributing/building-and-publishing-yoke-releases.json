@@ -1,0 +1,10 @@
+{
+ "id": "building-and-publishing-yoke-releases",
+ "title": "Building and publishing Yoke releases",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/releases/README.md", "docs/release-pin-recording.md"],
+ "private_sources": ["platform"],
+ "page": "contributing-guides",
+ "position": 8
+}

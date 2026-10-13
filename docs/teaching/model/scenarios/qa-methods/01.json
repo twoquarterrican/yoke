@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Choose proof before choosing machinery",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When defining acceptance evidence or binding an existing test suite for the first useful change.",
+ "need": "A method defines the runner, capability needs, evidence and verdict path. Cases select methods; instructions alone do not create a runner.",
+ "disclosure": "current cue",
+ "surface": "QA Methods tab; method list/get; test setup and requirement intake",
+ "gap": "The clearest method introduction is non-public. Review question: should FIRST-USER publish that small explanation with one current first-work example?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa method list --help", "yoke qa method get --help"],
+ "plan_notes": ["FIRST-USER C", "JOURNEYS row 13"],
+ "sources": ["docs/public/qa.md", "docs/testing-verification.md", "packages/yoke-core/src/yoke_core/domain/qa_method_definitions.py", ".agents/skills/yoke/onboard/verification-binding.md"],
+ "position": 0
+}

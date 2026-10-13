@@ -1,45 +1,12 @@
 {
- "scenario": {
-  "id": "uninstall",
-  "title": "Uninstall and removing the operating layer",
-  "status": "draft-copy",
-  "situations": ["Stop using Yoke on one machine.", "Remove Yoke from selected repositories.", "Cleanup encounters unreachable old state."],
-  "coverage": "partial",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Verify preservation/cleanup across modified managed files and later-installed harnesses; machine-wide light hooks and the global skill have no removal yet."],
-  "related_scenarios": ["portability", "project-lifecycle", "machine-access"],
-  "plan_refs": ["FIRST-USER.1"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Choose data and project removal separately",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Before confirming uninstall",
-   "need": "Local/self-host data may be the only copy. Backup choice and which project layers to remove are distinct; there is no automatic backup. Explicit unattended choices are required.",
-   "disclosure": "current cue",
-   "surface": "Install -> Uninstall -> command help and first prompts.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke uninstall --help", "yoke project uninstall --help"],
-   "plan_notes": ["FIRST-USER item 1", "FIRST-USER item 9"],
-   "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/machine_uninstall.py", "packages/yoke-cli/src/yoke_cli/config/machine_uninstall.py"]
-  },
-  {
-   "id": "02",
-   "title": "Recover leftovers without deleting unknown files",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Uninstall or reinstall reports stale foreign-install state or partial failure",
-   "need": "Setup offers Unlink and set up fresh when a checkout links to a project the chosen install lacks or the account cannot access. Project uninstall still removes the layer when the owning install is gone and warns that the commit belongs on the default branch. Machine uninstall skips Docker without a self-host install, strips Yoke's Cursor user hooks, and reverts only the harness settings it recorded writing while they still hold Yoke's value; changed settings are reported and kept, and a failed revert keeps the machine home for a retry.",
-   "disclosure": "current cue",
-   "surface": "Setup project step stale-link view; uninstall step results and warnings.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke uninstall --help", "yoke project uninstall --help"],
-   "plan_notes": ["FIRST-USER item 1", "FIRST-USER P2/P4", "FIRST-USER D"],
-   "gaps": ["global-hook-skill-removal"],
-   "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/config/machine_uninstall_inventory.py", "packages/yoke-cli/src/yoke_cli/config/machine_uninstall_steps.py", "packages/yoke-cli/src/yoke_cli/project_install/uninstall_commit.py", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_existing_project_recovery.py", "packages/yoke-contracts/src/yoke_contracts/harness_settings_ledger.py", "packages/yoke-contracts/src/yoke_contracts/harness_settings_revert.py"]
-  }
- ]
+ "id": "uninstall",
+ "title": "Uninstall and removing the operating layer",
+ "status": "draft-copy",
+ "situations": ["Stop using Yoke on one machine.", "Remove Yoke from selected repositories.", "Cleanup encounters unreachable old state."],
+ "coverage": "partial",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Verify preservation/cleanup across modified managed files and later-installed harnesses; machine-wide light hooks and the global skill have no removal yet."],
+ "related_scenarios": ["portability", "project-lifecycle", "machine-access"],
+ "plan_refs": ["FIRST-USER.1"]
 }

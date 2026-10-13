@@ -1,0 +1,10 @@
+{
+ "id": "04",
+ "title": "Declared harness capabilities and applicable limits; keep actual readiness and QA proof separate.",
+ "status": "draft-copy",
+ "form": "State",
+ "verification": "No delivery proof attached.",
+ "topics": ["agents/harnesses", "installation/readiness", "qa-evidence/artifacts"],
+ "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"],
+ "position": 3
+}

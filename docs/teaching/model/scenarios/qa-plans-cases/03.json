@@ -1,0 +1,16 @@
+{
+ "id": "03",
+ "title": "A direct case is a valid small entrance",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "When one change needs a specific one-off proof that does not warrant a reusable plan.",
+ "need": "A one-off method-backed requirement can target an item or deployment subject without inventing a reusable plan. Author with the actual claim, phase, transition and target.",
+ "disclosure": "current cue",
+ "surface": "Explicit delivery-proof intake; case attachment authority",
+ "gap": "Review question: should the diagram show direct-case authoring as a side entrance, avoiding an implied mandatory plan-creation step?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa requirement list --help"],
+ "plan_notes": ["JOURNEYS row 13"],
+ "sources": [".agents/skills/yoke/idea/delivery-requirements.md", "docs/public/reference/qa-platform/case-attachment.md"],
+ "position": 2
+}

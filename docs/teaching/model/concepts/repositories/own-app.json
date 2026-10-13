@@ -1,0 +1,10 @@
+{
+ "id": "own-app",
+ "title": "Operating your own GitHub App",
+ "status": "draft-copy",
+ "audience": "Administrators",
+ "sources": ["docs/github-app-operations.md", "docs/github-app-ci-custody.md"],
+ "related": "server-admin/operating-your-own-github-integration",
+ "page": "repositories",
+ "position": 4
+}

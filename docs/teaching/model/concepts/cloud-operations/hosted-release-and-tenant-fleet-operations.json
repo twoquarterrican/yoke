@@ -1,0 +1,9 @@
+{
+ "id": "hosted-release-and-tenant-fleet-operations",
+ "title": "Hosted release and tenant fleet operations",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "private_sources": ["platform"],
+ "page": "cloud-operations-services",
+ "position": 6
+}

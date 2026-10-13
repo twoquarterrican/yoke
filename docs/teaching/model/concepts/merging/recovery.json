@@ -1,0 +1,8 @@
+{
+ "id": "recovery",
+ "title": "Landing recovery",
+ "status": "draft-copy",
+ "commands": ["yoke usher reconcile-github"],
+ "page": "merging",
+ "position": 3
+}

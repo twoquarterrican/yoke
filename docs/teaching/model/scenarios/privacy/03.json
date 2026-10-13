@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Keep secrets out of explanatory output",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Presenting command output, setup recovery or capability evidence",
+ "need": "Use redacted settings/key-presence evidence and secret input channels; never dump raw config/tokens. Human browser authorization and agent explanation should expose only the data required to continue.",
+ "disclosure": "current cue",
+ "surface": "Standing AGENTS rule -> capability/delivery home; secret-versus-settings CLI refusal.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke projects capability secret set --help"],
+ "plan_notes": ["FIRST-USER item 16 + F", "FIRST-USER item 26", "FIRST-USER item 35"],
+ "sources": ["AGENTS.md", "docs/public/capabilities.md", "docs/public/reference/agent-rules/delivery.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/projects_capability_settings.py"],
+ "position": 2
+}

@@ -1,0 +1,15 @@
+{
+ "id": "02",
+ "title": "Know which Pack fits",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Agent proposes new hosting or an infrastructure/deploy Pack",
+ "need": "Shipped hosting path targets AWS. Production Deploy assumes VPS/Compose/CloudFront; preview templates assume FastAPI/Next.js on a Docker host. Preview actual dependencies, prerequisites and resources before approval.",
+ "disclosure": "current cue",
+ "surface": "Onboard profile lines 24–35 and domain-and-deploy lines 36–54; installed Pack README owns adaptation.",
+ "gap": "Public adoption guidance needs these support limits before the user accepts a Pack. Do not present provider prose as an executable adapter.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["JOURNEYS row 12"],
+ "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", ".agents/skills/yoke/onboard/domain-and-deploy.md", "packs/production-deploy/versions/1.1.2/files/docs/packs/production-deploy/README.md"],
+ "position": 1
+}

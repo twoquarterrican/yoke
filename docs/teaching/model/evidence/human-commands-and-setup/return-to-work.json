@@ -1,0 +1,21 @@
+{
+ "id": "return-to-work",
+ "title": "Return-to-work panels / concise session orientation",
+ "status": "observed",
+ "name": "Return-to-work panels / concise session orientation",
+ "audience": "Returning human operator; agent reading live continuity first",
+ "scope": "Global summary outside a project; project/item summary inside one",
+ "trigger": "User returns or asks what to do next; at startup the agent receives facts and surfaces human text only when useful/actionable",
+ "proposed_purpose": "Restore orientation and resume safely without repeating the introductory course.",
+ "content": ["Where you are: universe and selected project or no project.", "What is active, waiting on you, blocked, or recently completed, with titles rather than bare IDs.", "For interrupted work: last durable checkpoint, current holder/lane, evidence state and the live next-step pointer.", "For a decision: say whether it approves work, reviews QA evidence or accepts a deployment.", "For a missing prerequisite: one reason and one action/help link at the point it matters.", "For a nearly finished initiative: offer a completion/evidence audit and deferred-work review before archival."],
+ "scope_variants": {
+  "global": "A short cross-project status plus the right project/folder link. Cross-project coordination does not switch an existing session’s project.",
+  "project": "Current plan, active work, personal Inbox and delivery state; links to their existing pages rather than repeating them all.",
+  "noneActive": "Offer to select ready work or steer the current plan; do not imply Feed must precede Steer."
+ },
+ "authority_and_reuse": "Reuse orientation, durable checkpoints, Frontier/Sessions/Inbox/Shipping, and the existing onboarding panel. No separate progress database or prescribed multi-stage tour. Unreadable facts stay unknown; preference and cue-dedup policy remains an open JOURNEYS decision.",
+ "proposal_status": "Proposed future human rendering of current/planned context facts; archival completion audit is explicitly planned",
+ "plan_notes": ["FIRST-USER P1/P4/P5/8", "JOURNEYS rows 7–15; open questions 1/3/6"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/session_orientation.py", "packages/yoke-core/src/yoke_core/ui/static/universe_views_frontier.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_sessions.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_inbox.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_shipping.js", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_control.js", ".agents/skills/yoke/steer/SKILL.md", ".agents/skills/yoke/wrapup/SKILL.md"],
+ "position": 1
+}

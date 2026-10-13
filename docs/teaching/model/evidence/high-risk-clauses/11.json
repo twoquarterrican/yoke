@@ -1,0 +1,7 @@
+{
+ "id": "11",
+ "title": "FIRST-USER:568",
+ "status": "observed",
+ "text": "- **Fix:** use plan entry 42's facts in existing global orientation, project context, packets and relevant skill/command replies. For activation and first work, state the relevant configured/deferred/not-needed/unknown facts and give the shortest complete next-action recipe plus its deeper home. Respect scope, permissions and current project choices; optional suggestions use agent judgment and required guidance arrives before the affected action. Add no second project startup block, new suggestion engine or required configuration interview.",
+ "position": 10
+}

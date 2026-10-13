@@ -1,0 +1,8 @@
+{
+ "id": "profile",
+ "title": "Profile",
+ "status": "draft-copy",
+ "related": "workbench/profile",
+ "page": "workbench-destinations",
+ "position": 30
+}

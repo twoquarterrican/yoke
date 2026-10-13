@@ -1,28 +1,10 @@
 {
- "scenario": {
-  "id": "project-lifecycle",
-  "title": "Maintain, refresh and retire a project",
-  "status": "draft-copy",
-  "situations": ["A project moves to a new checkout or its repository binding changes.", "The installed project layer or registered snapshot needs refresh.", "A team retires a project and later restores it."],
-  "coverage": "catalogued",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Which rename/move/rebind operations are actually supported and which must refuse?", "Trace preservation and reconciliation rules before teaching a one-command repair."]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Maintain the binding without recreating the work",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "When a checkout moves, a project setting changes, a refresh is needed or the project is retired.",
-   "need": "Distinguish local operating-layer removal/refresh from project retirement, repository rebinding and universe deletion; preserve existing work identities and ownership.",
-   "disclosure": "audit needed",
-   "surface": "project install/refresh/snapshot; projects get/update/retire/unretire; checkout mapping",
-   "gap": "Initial adoption and uninstall are covered elsewhere; ongoing project identity lifecycle is only catalogued here. Review question: should JOURNEYS include moved-checkout, retired-project and stale-layer situations?",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER 1", "FIRST-USER 24", "JOURNEYS row 6", "outside both"],
-   "sources": ["docs/public/projects.md", "docs/project-selection.md", "docs/public/reference/db-reference/functions-project-configuration.md"]
-  }
- ]
+ "id": "project-lifecycle",
+ "title": "Maintain, refresh and retire a project",
+ "status": "draft-copy",
+ "situations": ["A project moves to a new checkout or its repository binding changes.", "The installed project layer or registered snapshot needs refresh.", "A team retires a project and later restores it."],
+ "coverage": "catalogued",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Which rename/move/rebind operations are actually supported and which must refuse?", "Trace preservation and reconciliation rules before teaching a one-command repair."]
 }

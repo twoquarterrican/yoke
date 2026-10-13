@@ -1,92 +1,16 @@
 {
- "surface": {
-  "id": "project-hub",
-  "title": "This project’s knowledge index",
-  "status": "observed",
-  "scope": "Project-owned",
-  "audience": "Human + agent",
-  "encounter": "Project work or a project question",
-  "location": "Existing project docs + Project Structure context_routing",
-  "basis": "Existing routing · clearer entry proposed",
-  "note": "Preserve a mature repository’s useful structure. A new repository can grow this index; neither needs its project docs moved into .yoke/docs.",
-  "current": "Registered project-structure get help is available; end-to-end Conduct delivery in an external project remains to be proved.",
-  "desired": "Reuse project-owned guidance through context_routing; preserve existing docs and settled choices.",
-  "plan_notes": ["FIRST-USER 24", "Project-context routing proposal"],
-  "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"],
-  "sources": ["packages/yoke-core/src/yoke_core/domain/project_structure.py:119", ".agents/skills/yoke/implement/implementing/project-context.md:6", "packages/yoke-core/src/yoke_core/domain/install_bundle_managed.py:83", ".agents/skills/yoke/onboard/strategy-conversation.md", "packages/yoke-core/src/yoke_core/ui/static/universe_views_projects.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_strategy.js", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_project.js", "packages/yoke-core/src/yoke_core/domain/session_orientation.py"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "What this project does, its domain, code structure and where existing documentation lives.",
-   "status": "draft-copy",
-   "form": "Teach",
-   "verification": "No delivery proof attached.",
-   "topics": ["projects/adoption", "architecture/structure", "architecture/model"],
-   "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "02",
-   "title": "Accepted strategy/current plan and the scope of existing work being adopted.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["strategy/corpus", "projects/onboarding"],
-   "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "03",
-   "title": "Always-needed project documents and topic-specific documents through context_routing.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["context/packets", "architecture/structure"],
-   "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "04",
-   "title": "Build/test contract, QA methods, environment topology, delivery flow and database governance for this project.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["verification/configuration", "qa-methods/extended", "environments/topology", "deployments/flows", "databases/setup"],
-   "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "05",
-   "title": "Project policy, owned Pack documentation and maintainer/private runbooks where applicable.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["context/instructions", "packs/adoption", "cloud-operations", "contributing"],
-   "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Preserve the project’s existing docs and register only the routes needed by its workers.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["context/docs", "architecture/structure"],
-   "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-02",
-   "title": "Connect strategy, CURRENT-PLAN and active initiative docs to steering and meaningful work.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["strategy/corpus", "strategy/operation"],
-   "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Keep tests, architecture, local Doctor and delivery policy with their project-owned authorities.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["verification/configuration", "architecture/model", "observability/doctor", "deployments/flows"],
-   "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"]
-  }
- ]
+ "id": "project-hub",
+ "title": "This project’s knowledge index",
+ "status": "observed",
+ "scope": "Project-owned",
+ "audience": "Human + agent",
+ "encounter": "Project work or a project question",
+ "location": "Existing project docs + Project Structure context_routing",
+ "basis": "Existing routing · clearer entry proposed",
+ "note": "Preserve a mature repository’s useful structure. A new repository can grow this index; neither needs its project docs moved into .yoke/docs.",
+ "current": "Registered project-structure get help is available; end-to-end Conduct delivery in an external project remains to be proved.",
+ "desired": "Reuse project-owned guidance through context_routing; preserve existing docs and settled choices.",
+ "plan_notes": ["FIRST-USER 24", "Project-context routing proposal"],
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.41", "FIRST-USER.43"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/project_structure.py:119", ".agents/skills/yoke/implement/implementing/project-context.md:6", "packages/yoke-core/src/yoke_core/domain/install_bundle_managed.py:83", ".agents/skills/yoke/onboard/strategy-conversation.md", "packages/yoke-core/src/yoke_core/ui/static/universe_views_projects.js", "packages/yoke-core/src/yoke_core/ui/static/universe_views_strategy.js", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_project.js", "packages/yoke-core/src/yoke_core/domain/session_orientation.py"]
 }

@@ -1,0 +1,9 @@
+{
+ "id": "rehearsal",
+ "title": "Rehearsal",
+ "status": "draft-copy",
+ "commands": ["yoke db-claim amend", "yoke db-claim prose-check", "yoke migration content-identity verify", "yoke migration rehearse"],
+ "functions": ["db_claim.amend", "db_claim.prose_check", "migration.content_identity.verify"],
+ "page": "databases",
+ "position": 3
+}

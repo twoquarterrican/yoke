@@ -1,0 +1,15 @@
+{
+ "id": "03",
+ "title": "Recognize the source-checkout boundary",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "An updater refuses a source-bound install",
+ "need": "A source checkout is updated through its source process and exact server build, not replaced with packaged wheels. Do not turn a source-maintainer recovery into a general external-user recipe.",
+ "disclosure": "current cue",
+ "surface": "Install/private-fork support limits and updater refusal.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke update --help"],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/install.md", "docs/public/private-forks.md", "packages/yoke-cli/src/yoke_cli/config/self_update.py"],
+ "position": 2
+}

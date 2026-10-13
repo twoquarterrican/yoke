@@ -1,0 +1,9 @@
+{
+ "id": "topology",
+ "title": "Environment topology",
+ "status": "draft-copy",
+ "commands": ["yoke projects environment create", "yoke projects environment list", "yoke projects environment update"],
+ "functions": ["projects.environment.create", "projects.environment.list", "projects.environment.update"],
+ "page": "environments",
+ "position": 0
+}

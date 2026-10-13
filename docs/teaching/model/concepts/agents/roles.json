@@ -1,0 +1,8 @@
+{
+ "id": "roles",
+ "title": "Agent roles",
+ "status": "draft-copy",
+ "surface_refs": ["execution-instructions", "skills-roles"],
+ "page": "agents",
+ "position": 1
+}

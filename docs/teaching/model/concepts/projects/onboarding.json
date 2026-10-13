@@ -1,0 +1,12 @@
+{
+ "id": "onboarding",
+ "title": "Execution-ready onboarding",
+ "status": "draft-copy",
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.42", "FIRST-USER.43", "JOURNEYS.situation-19", "JOURNEYS.situation-9"],
+ "surface_refs": ["packets-help", "project-orientation", "resume-context", "setup-agent", "setup-tui", "skills-roles"],
+ "commands": ["yoke onboard checklist", "yoke onboard checklist init", "yoke onboard project"],
+ "functions": ["onboard.checklist.init", "onboard.checklist.run"],
+ "skills": ["onboard"],
+ "page": "projects",
+ "position": 2
+}

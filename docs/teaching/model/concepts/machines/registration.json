@@ -1,0 +1,11 @@
+{
+ "id": "registration",
+ "title": "Registration and approval",
+ "status": "draft-copy",
+ "plan_refs": ["FIRST-USER.26", "FIRST-USER.27", "FIRST-USER.33"],
+ "surface_refs": ["workbench-cues"],
+ "commands": ["yoke connect", "yoke machine register", "yoke machine retire", "yoke machine-authorization get", "yoke machine-authorization resolve"],
+ "functions": ["machine.register", "machine.retire", "machine_approval.lifecycle.apply", "machine_authorization.get", "machine_authorization.resolve"],
+ "page": "machines",
+ "position": 0
+}

@@ -1,0 +1,8 @@
+{
+ "id": "windows-and-wsl",
+ "title": "Windows and WSL",
+ "status": "draft-copy",
+ "commands": ["yoke wsl setup"],
+ "page": "installation",
+ "position": 2
+}

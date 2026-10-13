@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Choose data and project removal separately",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "Before confirming uninstall",
+ "need": "Local/self-host data may be the only copy. Backup choice and which project layers to remove are distinct; there is no automatic backup. Explicit unattended choices are required.",
+ "disclosure": "current cue",
+ "surface": "Install -> Uninstall -> command help and first prompts.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke uninstall --help", "yoke project uninstall --help"],
+ "plan_notes": ["FIRST-USER item 1", "FIRST-USER item 9"],
+ "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/machine_uninstall.py", "packages/yoke-cli/src/yoke_cli/config/machine_uninstall.py"],
+ "position": 0
+}

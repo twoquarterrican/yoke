@@ -1,0 +1,9 @@
+{
+ "id": "post-deploy-proof",
+ "title": "Post-deploy proof",
+ "status": "draft-copy",
+ "commands": ["yoke qa post-deploy declare-none", "yoke qa post-deploy record-no-obligation"],
+ "functions": ["qa.post_deploy.declare_none", "qa.post_deploy.record_no_obligation"],
+ "page": "qa-evidence",
+ "position": 1
+}

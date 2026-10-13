@@ -1,0 +1,10 @@
+{
+ "id": "FIRST-USER.filing-rules",
+ "title": "Filing rules",
+ "status": "approved",
+ "scope": "Yoke",
+ "concepts": ["documentation/planning"],
+ "surfaces": ["detail-home"],
+ "scenarios": ["help-cascade"],
+ "position": 7
+}

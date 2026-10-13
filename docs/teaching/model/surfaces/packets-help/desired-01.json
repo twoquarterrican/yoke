@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Fetch the relevant role, schema and operation depth; read live state through its authoritative owner.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["context/packets", "reference/schemas", "reference/commands"],
+ "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"],
+ "position": 4
+}

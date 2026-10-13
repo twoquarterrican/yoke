@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Discover the existing project map before changing it",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "During project survey or when a proposed change touches a component boundary or cross-cutting dependency.",
+ "need": "Learn where components, permitted dependencies, entrypoints and project structure facts live; the agent reads the authoritative payload and declares impact.",
+ "disclosure": "audit needed",
+ "surface": "Architecture page/health/draft; project-structure get and patch; architecture rule home",
+ "gap": "These commands/rules exist; initial adoption and maintenance discovery have not been traced. Review question: should JOURNEYS include architecture-impact and project-topology-change scenarios without requiring every new project to model everything?",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["JOURNEYS row 9", "JOURNEYS row 14", "outside both"],
+ "sources": ["docs/public/reference/agent-rules/architecture-model.md", "docs/public/reference/db-reference/functions-project-configuration.md", "docs/public/reference/db-reference/projects-and-flows.md"],
+ "position": 0
+}

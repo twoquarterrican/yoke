@@ -1,0 +1,7 @@
+{
+ "id": "02",
+ "title": "upkeep",
+ "status": "observed",
+ "check": "Workers inspect affected topics at planning AND finish; steering receives itemless guidance. Shared access/instruction delivery must be verified; failed update records exact pending change, not false completion.",
+ "position": 1
+}

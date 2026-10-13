@@ -1,0 +1,9 @@
+{
+ "id": "candidate",
+ "title": "Merge candidate",
+ "status": "draft-copy",
+ "commands": ["yoke merge-review candidate evaluate"],
+ "functions": ["merge_review.candidate.evaluate"],
+ "page": "merging",
+ "position": 0
+}

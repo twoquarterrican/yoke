@@ -1,0 +1,8 @@
+{
+ "id": "reasoning-effort",
+ "title": "Reasoning effort",
+ "status": "observed",
+ "text": "min_effort is the row threshold; actual effort resolves session membership. Effort order is none < minimal < low < medium < high < xhigh (extra-high) < max < ultra. Native embedded effort may fill missing facts; speed suffixes are ignored. Unknown models or unpublished efforts resolve no level and work claims/launches refuse session_below_intern; refresh catalog/native facts or select a supported model and effort before retrying.",
+ "page": "levels",
+ "position": 2
+}

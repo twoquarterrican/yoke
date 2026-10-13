@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Show actual mode, scope and project count; an empty project list routes to the agent.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["modes", "workbench/identity", "projects/adoption"],
+ "plan_refs": ["FIRST-USER.P5", "FIRST-USER.P7", "FIRST-USER.4", "FIRST-USER.12", "FIRST-USER.27"],
+ "position": 5
+}

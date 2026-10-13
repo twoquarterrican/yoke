@@ -1,0 +1,16 @@
+{
+ "id": "01",
+ "title": "Bind evidence to the obligation",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When attaching QA to a workflow transition or composing item-scoped versus run-wide release QA.",
+ "need": "A requirement belongs to an item/task or a deployment run, optionally a stage and member. Item acceptance and run-wide QA are separate; candidate, phase and target matter.",
+ "disclosure": "current cue",
+ "surface": "Case attachment validation; Shipping Item QA/Run QA; QA subject reads",
+ "gap": "Review question: should the first mixed release show a small explanation of item-versus-run QA, with detailed binding rules fetched by the agent?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa requirement list --help"],
+ "plan_notes": ["JOURNEYS row 12", "JOURNEYS row 13"],
+ "sources": ["docs/public/reference/qa-platform/case-attachment.md", "docs/public/reference/qa-platform.md", "docs/public/items-and-sessions.md"],
+ "position": 0
+}

@@ -1,0 +1,10 @@
+{
+ "id": "FIRST-USER.operator-intent",
+ "title": "Operator Intent",
+ "status": "approved",
+ "scope": "Yoke",
+ "concepts": ["documentation/planning"],
+ "surfaces": ["detail-home"],
+ "scenarios": ["help-cascade"],
+ "position": 10
+}

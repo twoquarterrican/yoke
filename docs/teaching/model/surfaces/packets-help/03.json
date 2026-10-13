@@ -1,0 +1,10 @@
+{
+ "id": "03",
+ "title": "The registered read that supplies live project, item, claim, run or capability state.",
+ "status": "draft-copy",
+ "form": "Link",
+ "verification": "No delivery proof attached.",
+ "topics": ["items/authoring", "coordination/work-claims", "deployments/runs", "capabilities/capabilities"],
+ "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.43"],
+ "position": 2
+}

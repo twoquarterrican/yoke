@@ -1,0 +1,17 @@
+{
+ "id": "02",
+ "title": "Fetch the current operation’s depth",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Before the relevant authorized action or during recovery",
+ "need": "Use the skill router, current phase and conditional supplements. Read operation rules, command help and the relevant packet. Live reads establish state; prose is a guide to those reads.",
+ "disclosure": "current cue",
+ "surface": "Skill → phase → operation rules / CLI help / role-topic packet",
+ "gap": "JOURNEYS depth wording should cover already-authorized work and recovery. It should not require a redundant new permission request before reading needed instructions.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke packets render --role main_agent --topic <topic>", "yoke <operation> --help"],
+ "plan_notes": ["FIRST-USER 8", "FIRST-USER 35", "JOURNEYS principles 2–4"],
+ "surface_notes": ["Role/topic packet: main_agent + relevant topic: Fetched through packets render; role and topic choose schema/recipe depth. This is not a saved project README or proof of current domain state."],
+ "sources": [".agents/skills/yoke/SKILL.md", "docs/public/reference/agent-rules/code-and-cli.md", "packages/yoke-core/src/yoke_core/domain/main_agent_packet.py"],
+ "position": 1
+}

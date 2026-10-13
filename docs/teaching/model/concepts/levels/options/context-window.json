@@ -1,0 +1,8 @@
+{
+ "id": "context-window",
+ "title": "Context window",
+ "status": "observed",
+ "text": "Context window is not stored in Levels and does not determine membership. An exact launch may request context only where its receiving surface supports it. Exact surface/model/effort/context knobs and --level are exclusive; preview the observed native availability before launch.",
+ "page": "levels",
+ "position": 3
+}

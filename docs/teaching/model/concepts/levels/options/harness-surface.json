@@ -1,0 +1,9 @@
+{
+ "id": "harness-surface",
+ "title": "Harness surface",
+ "status": "verified-live",
+ "text": "Harness surface is not a stored level-row field. Per-machine native listings determine launchable surfaces; Settings shows Launchable on chips. Unsupported listings name the missing adapter and recovery, rather than inventing availability.",
+ "evidence": "Settings harness chips: QA run 45473 / artifact 32323. Unsupported Claude listing refusal also present in this session launch receipt; other surface mechanics observed in source.",
+ "page": "levels",
+ "position": 0
+}

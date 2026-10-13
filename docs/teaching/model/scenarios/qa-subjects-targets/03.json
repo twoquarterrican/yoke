@@ -1,0 +1,16 @@
+{
+ "id": "03",
+ "title": "Use the requested target and actual identity",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "Before execution or evidence acceptance, when candidate/environment/phase can differ from existing proof.",
+ "need": "Select phase by the obligation, not the URL name. Read the bound candidate/environment; Stage proof cannot stand in for Production and an earlier candidate cannot prove a later one.",
+ "disclosure": "current cue",
+ "surface": "Intake attachment; bound target refusals; standalone environment obligations",
+ "gap": "Review question: should evidence summaries lead with what was checked, where and against which candidate, before implementation identifiers?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa requirement list --help", "yoke qa gate-summary --help"],
+ "plan_notes": ["FIRST-USER 35", "JOURNEYS row 12", "JOURNEYS row 13"],
+ "sources": [".agents/skills/yoke/idea/delivery-requirements.md", "docs/public/reference/qa-platform/case-attachment.md", "docs/public/reference/qa-platform/standalone-plans.md"],
+ "position": 2
+}

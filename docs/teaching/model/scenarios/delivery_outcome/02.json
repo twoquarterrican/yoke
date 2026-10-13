@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Merge-only still has gates",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "User deliberately chooses delivery at merge",
+ "need": "Select an active registered flow with no target tier/environment. Complete the pinned review and workflow gates without creating a deployment run.",
+ "disclosure": "current cue",
+ "surface": "Onboard hosting-and-environments lines 140–164.",
+ "gap": "Keep a short merge-only explanation reachable from the release nudge; do not treat a missing flow as equivalent.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke deployment-flows get FLOW-ID --json"],
+ "plan_notes": ["JOURNEYS row 12"],
+ "sources": [".agents/skills/yoke/onboard/hosting-and-environments.md"],
+ "position": 1
+}

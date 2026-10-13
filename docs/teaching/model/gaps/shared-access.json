@@ -1,0 +1,10 @@
+{
+ "id": "shared-access",
+ "title": "Deliver the checked-in master and verify worker access",
+ "status": "observed",
+ "text": "Deliver one maintained source in checked-in Yoke internal docs. Verify both projects’ worker access; Yoke items update the source and Platform items file linked Yoke updates. Install upkeep only in blocking post-deploy QA.",
+ "detail": "The draft is local; relay iCloud access failed in operator evidence. YOK-3914 and PLAT-220 must deliver one checked-in Yoke source, verify both projects’ actual access, and install upkeep only in post-deploy QA.",
+ "plan_refs": ["FIRST-USER.0"],
+ "work_items": ["YOK-3914", "PLAT-220"],
+ "position": 11
+}

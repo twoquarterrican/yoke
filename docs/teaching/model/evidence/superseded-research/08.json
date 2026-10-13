@@ -1,0 +1,10 @@
+{
+ "id": "08",
+ "title": "docs-upkeep-split",
+ "status": "observed",
+ "research": "Earlier proposals bundling prototype/upkeep into 40",
+ "finding": "Entry 0 now owns shared master/access/upkeep before all other work; 40 is subsequent corpus rewrite.",
+ "authority": "FIRST-USER:117-127,150-157,548; JOURNEYS:47",
+ "action": "Do not make prototype completion depend on full docs rewrite or closure of all gaps.",
+ "position": 7
+}

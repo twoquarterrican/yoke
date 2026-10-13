@@ -1,0 +1,9 @@
+{
+ "id": "capabilities",
+ "title": "Capability declarations",
+ "status": "draft-copy",
+ "commands": ["yoke projects capabilities list", "yoke projects capability has"],
+ "functions": ["projects.capabilities.list", "projects.capability.has"],
+ "page": "capabilities",
+ "position": 0
+}

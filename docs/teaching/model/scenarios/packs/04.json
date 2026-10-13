@@ -1,0 +1,15 @@
+{
+ "id": "04",
+ "title": "Record a project-owned move",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "A customized application file has moved since its Pack baseline",
+ "need": "Use Pack relink to record the move. Relink does not move files; co-owned AGENTS and ignore contributions cannot be relinked. A source-installed version may need its original catalog until served.",
+ "disclosure": "current cue",
+ "surface": "Projects -> Packs catalog contract; relink help; selected Pack README.",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke packs relink --help", "yoke packs update --help"],
+ "plan_notes": ["outside both"],
+ "sources": ["docs/public/projects.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py", "packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md"],
+ "position": 3
+}

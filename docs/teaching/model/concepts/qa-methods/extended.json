@@ -1,0 +1,8 @@
+{
+ "id": "extended",
+ "title": "Project and Pack methods",
+ "status": "draft-copy",
+ "commands": ["yoke qa mission host-command", "yoke qa mission walk-end", "yoke qa mission walk-start"],
+ "page": "qa-methods",
+ "position": 2
+}

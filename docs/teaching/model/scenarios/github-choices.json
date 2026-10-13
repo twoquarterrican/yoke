@@ -1,108 +1,11 @@
 {
- "scenario": {
-  "id": "github-choices",
-  "title": "GitHub access, repository publication and issue sync",
-  "status": "draft-copy",
-  "situations": ["No GitHub account or another Git provider", "Existing repository needs access", "New repository may stay local", "User later asks about issue mirroring or CI"],
-  "coverage": "traced",
-  "current": "Research trace; requirements and source paths need live proof. Source now distinguishes explicit TUI opening from structured agent actions and reuses saved authorization; deployed proof remains pending.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Can users distinguish all three choices without extra setup questions?", "Does general GitHub/relay teaching have one public source, with private operations only linking to it?"],
-  "plan_refs": ["FIRST-USER.2", "FIRST-USER.4", "FIRST-USER.5", "FIRST-USER.10", "FIRST-USER.22", "FIRST-USER.32", "FIRST-USER.A", "JOURNEYS.situation-2", "JOURNEYS.moved-from-first-user-former-dash-g"]
- },
- "lessons": [
-  {
-   "id": "credential-reads",
-   "title": "Valid GitHub access reads do not queue behind credential locks",
-   "status": "observed",
-   "audience": "both",
-   "when": "Concurrent git fetches, local API access, refresh or binding",
-   "need": "Reuse valid stored access without locks or health requests. Validate bundled local App identity without network access on every read. Prove service App identity before refresh or binding; refresh under lock after reading again. A wait cue starts after about two seconds; retry after contention and use yoke github status for persistent failures.",
-   "disclosure": "current cue",
-   "surface": "Public GitHub guide and credential wait/refusal messages",
-   "review": "Source and concurrent regression tests; deployed proof remains pending.",
-   "sources": ["docs/public/github.md", "runtime/api/cli/test_github_credential_read_concurrency.py"]
-  },
-  {
-   "id": "01",
-   "title": "Connecting GitHub is optional",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "GitHub step, access refusal or later integration request",
-   "need": "Skip the integration when it is not wanted or available. Authorization and repository access need their own checks; skipped GitHub is not a failed readiness check. Recommend All repositories for the product App so future repositories need no settings visit; selected installations show their direct settings link in setup and status. Explain that all repositories grants access across the account and that user authorization does not change installation scope.",
-   "disclosure": "current cue",
-   "surface": "Connect/skip setup and GitHub help",
-   "gap": "Accepted correction: skipped GitHub makes the token check N/A. Audit exactly which later operations require GitHub and provide alternatives only where supported.",
-   "review": "Repository-scope teaching observed in source and regression tests; GitHub documents all repositories selected when repository IDs are omitted. Optional-connection recipe still needs live proof.",
-   "plan_notes": ["FIRST-USER 4", "FIRST-USER 5", "FIRST-USER 22", "FIRST-USER E", "JOURNEYS 2"],
-   "sources": ["docs/public/github.md", "docs/public/reference/github-sync.md", "packages/yoke-cli/src/yoke_cli/config/github_machine_report.py", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_github_presentation.py", "runtime/api/cli/test_github_app_machine_report.py"]
-  },
-  {
-   "id": "02",
-   "title": "Publishing a repository is a separate choice",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "New project creation or later publication",
-   "need": "A prepared Git repository can stay local. Connecting a GitHub account does not mean every project must be published there.",
-   "disclosure": "current cue",
-   "surface": "Project source / publish-or-keep-local step",
-   "gap": "JOURNEYS 4–5 currently makes pushing to GitHub sound mandatory. That edge should be reviewed against the supported keep-local path.",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["JOURNEYS 4", "JOURNEYS 5"],
-   "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_project_screens.py"]
-  },
-  {
-   "id": "03",
-   "title": "Issue mirroring stays quietly off in the TUI",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "No TUI question; agent-led explanation only when relevant",
-   "need": "GitHub issue synchronization is another independent setting. The interactive installer silently leaves it off; it can be changed later. In agent-led setup, explain the effect and ask before enabling issue sync.",
-   "disclosure": "planned cue",
-   "surface": "Accepted review amendment to FIRST-USER 10",
-   "gap": "The saved plan still contains the older TUI question. This map applies the accepted conversation correction; stronger dedup work remains deliberately deferred.",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER 10", "FIRST-USER 2"],
-   "sources": ["docs/public/reference/github-sync.md"]
-  },
-  {
-   "id": "existing-repository-access",
-   "title": "An existing repository needs a live access check",
-   "status": "observed",
-   "audience": "both",
-   "when": "Use connected repo in setup",
-   "need": "Always check GitHub live. If absent, add owner/repo using the exact installation settings link and check again. Failed checks mean unknown access; no browser failure is claimed without an attempt.",
-   "disclosure": "current cue",
-   "surface": "Interactive setup repository access",
-   "review": "Scripted stale-cache, settings identity and failed-check cases; live deployment proof pending.",
-   "sources": ["runtime/api/cli/test_onboard_existing_repository_access.py", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_project_github.py"]
-  },
-  {
-   "id": "access-change-timing",
-   "title": "Check GitHub access after changing App settings",
-   "status": "observed",
-   "audience": "both",
-   "when": "After changing App authorization, permissions or repository access.",
-   "need": "Only hosted receives App webhooks. Local and self-hosted notice changes at the next GitHub check; use yoke github status or Check repositories in setup.",
-   "disclosure": "current cue",
-   "surface": "Public GitHub access-change guidance; private operations link to it.",
-   "review": "Source and recipe reviewed; installed and web delivery proof remains pending release.",
-   "plan_refs": ["FIRST-USER.32"],
-   "sources": ["docs/public/github.md", "docs/github-app-operations.md"]
-  },
-  {
-   "id": "browser-steps",
-   "title": "Browser authorization is presented as data to agents and announced before TUI opening.",
-   "status": "observed",
-   "audience": "both",
-   "when": "Sign-in, device authorization, App installation and repository-access settings",
-   "need": "Copy the code/link; finish human approval and return to the same waiting flow. Reuse valid saved authorization.",
-   "disclosure": "current cue",
-   "surface": "TUI opening notice and copy targets; connect --json and github connect --json",
-   "gap": "Deployed installer-campaign proof remains pending.",
-   "review": "Source and focused tests; no live pass asserted.",
-   "sources": ["docs/public/install.md", "docs/public/github.md", "runtime/api/cli/test_setup_browser_presentation.py"],
-   "plan_refs": ["FIRST-USER.26"]
-  }
- ]
+ "id": "github-choices",
+ "title": "GitHub access, repository publication and issue sync",
+ "status": "draft-copy",
+ "situations": ["No GitHub account or another Git provider", "Existing repository needs access", "New repository may stay local", "User later asks about issue mirroring or CI"],
+ "coverage": "traced",
+ "current": "Research trace; requirements and source paths need live proof. Source now distinguishes explicit TUI opening from structured agent actions and reuses saved authorization; deployed proof remains pending.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Can users distinguish all three choices without extra setup questions?", "Does general GitHub/relay teaching have one public source, with private operations only linking to it?"],
+ "plan_refs": ["FIRST-USER.2", "FIRST-USER.4", "FIRST-USER.5", "FIRST-USER.10", "FIRST-USER.22", "FIRST-USER.32", "FIRST-USER.A", "JOURNEYS.situation-2", "JOURNEYS.moved-from-first-user-former-dash-g"]
 }

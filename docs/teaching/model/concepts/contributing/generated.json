@@ -1,0 +1,10 @@
+{
+ "id": "generated",
+ "title": "Generated surfaces",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "commands": ["yoke agents render", "yoke agents render check", "yoke git post-commit", "yoke git pre-commit"],
+ "functions": ["agents.render.check", "agents.render.run", "agents.render_relationships.record"],
+ "page": "contributing",
+ "position": 2
+}

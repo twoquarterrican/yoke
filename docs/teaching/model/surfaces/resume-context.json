@@ -1,83 +1,16 @@
 {
- "surface": {
-  "id": "resume-context",
-  "title": "Resume and context recovery",
-  "status": "draft-copy",
-  "scope": "Current session / assignment",
-  "audience": "Agent",
-  "encounter": "Compaction, resume or replacement worker",
-  "location": "Stable recovery pointer + current skill/phase + durable checkpoint reads",
-  "basis": "Existing partial rules · proof gap",
-  "note": "Compaction, native transcript resume and ended-session reactivation are different cases. A session registration marker does not prove context was restored.",
-  "current": "Existing source references; delivered content is not yet proved.",
-  "desired": "Re-read live scope, stage, claims, progress and setup facts. Compaction is not proof that orientation is replayed.",
-  "plan_notes": ["FIRST-USER D/E validation proposal", "JOURNEYS delivery clarification"],
-  "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"],
-  "sources": ["AGENTS.md:75", ".agents/skills/yoke/steer/loop.md:14", ".agents/skills/yoke/implement/reentry.md:1", "packages/yoke-core/src/yoke_core/domain/sessions_resume_block.py:1", "packages/yoke-core/src/yoke_core/domain/session_orientation_delivery.py:78", "packages/yoke-core/src/yoke_core/hooks/session_dispatch.py:245", "packages/yoke-contracts/src/yoke_contracts/hook_runner/chain_registry.py:29"]
- },
- "teaching": [
-  {
-   "id": "01",
-   "title": "Re-read the live item stage, work claim, lane and latest durable checkpoint.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["sessions/continuity", "sessions/ownership", "items/state"],
-   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"]
-  },
-  {
-   "id": "02",
-   "title": "Reload current skill/phase, relevant operation homes and scoped execution instructions.",
-   "status": "draft-copy",
-   "form": "Link",
-   "verification": "No delivery proof attached.",
-   "topics": ["agents/skills", "context/instructions", "context/docs"],
-   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"]
-  },
-  {
-   "id": "03",
-   "title": "Recover evidence and unfinished work; recheck facts that can change during absence.",
-   "status": "draft-copy",
-   "form": "State",
-   "verification": "No delivery proof attached.",
-   "topics": ["qa-evidence/artifacts", "deployments/runs", "planning/dependencies"],
-   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"]
-  },
-  {
-   "id": "04",
-   "title": "Continue the real next step without replaying completed transitions or restarting onboarding.",
-   "status": "draft-copy",
-   "form": "Do",
-   "verification": "No delivery proof attached.",
-   "topics": ["workflows/bindings", "sessions/lifecycle"],
-   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"]
-  },
-  {
-   "id": "desired-01",
-   "title": "Re-read live session/project, item stage, claim/lane and the current progress checkpoint.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["sessions/continuity", "sessions/identity", "coordination/work-claims"],
-   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"]
-  },
-  {
-   "id": "desired-02",
-   "title": "Reuse project setup choices; recheck this machine and changed settings without restarting the interview.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["projects/onboarding", "machines/inspection"],
-   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"]
-  },
-  {
-   "id": "desired-03",
-   "title": "Verify the harness recovery path; registration alone does not prove teaching arrived.",
-   "status": "candidate",
-   "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
-   "topics": ["agents/harnesses", "context/startup"],
-   "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"]
-  }
- ]
+ "id": "resume-context",
+ "title": "Resume and context recovery",
+ "status": "draft-copy",
+ "scope": "Current session / assignment",
+ "audience": "Agent",
+ "encounter": "Compaction, resume or replacement worker",
+ "location": "Stable recovery pointer + current skill/phase + durable checkpoint reads",
+ "basis": "Existing partial rules · proof gap",
+ "note": "Compaction, native transcript resume and ended-session reactivation are different cases. A session registration marker does not prove context was restored.",
+ "current": "Existing source references; delivered content is not yet proved.",
+ "desired": "Re-read live scope, stage, claims, progress and setup facts. Compaction is not proof that orientation is replayed.",
+ "plan_notes": ["FIRST-USER D/E validation proposal", "JOURNEYS delivery clarification"],
+ "plan_refs": ["FIRST-USER.42", "FIRST-USER.43", "FIRST-USER.D"],
+ "sources": ["AGENTS.md:75", ".agents/skills/yoke/steer/loop.md:14", ".agents/skills/yoke/implement/reentry.md:1", "packages/yoke-core/src/yoke_core/domain/sessions_resume_block.py:1", "packages/yoke-core/src/yoke_core/domain/session_orientation_delivery.py:78", "packages/yoke-core/src/yoke_core/hooks/session_dispatch.py:245", "packages/yoke-contracts/src/yoke_contracts/hook_runner/chain_registry.py:29"]
 }

@@ -1,0 +1,8 @@
+{
+ "id": "private-metrics",
+ "title": "Private hosted diagnostics",
+ "status": "draft-copy",
+ "audience": "Yoke maintainers",
+ "page": "observability",
+ "position": 4
+}

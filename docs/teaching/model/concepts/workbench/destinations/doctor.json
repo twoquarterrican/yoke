@@ -1,0 +1,8 @@
+{
+ "id": "doctor",
+ "title": "Doctor",
+ "status": "draft-copy",
+ "related": "observability/doctor",
+ "page": "workbench-destinations",
+ "position": 28
+}

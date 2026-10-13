@@ -1,72 +1,12 @@
 {
- "scenario": {
-  "id": "updates",
-  "title": "Updates, distribution and stale installed layers",
-  "status": "draft-copy",
-  "situations": ["A newer Yoke version is available.", "CLI, relay, dashboard and project teaching disagree.", "Update cannot find the machine distribution or would replace a source checkout."],
-  "coverage": "partial",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["How are users first notified of version availability across each mode?", "Are component refresh receipts and the source-versus-installed layer version discoverable from one support entry?"],
-  "related_scenarios": ["harness-readiness", "project-lifecycle", "private-forks"],
-  "plan_refs": ["FIRST-USER.6", "FIRST-USER.15"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Update through the recorded distribution",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Updating an ordinary installed client",
-   "need": "yoke update reuses the machine distribution origin/channel, reports verified old/new versions and repairs the credential helper. Distribution is not the active control-plane connection. Missing records need explicit distribution selection.",
-   "disclosure": "current cue",
-   "surface": "Install -> upgrade instructions -> CLI/config -> distribution help.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke update --help", "yoke config distribution set --help", "yoke status"],
-   "plan_notes": ["outside both"],
-   "sources": ["docs/public/install.md", "docs/public/cli-and-config.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/self_update.py", "packages/yoke-cli/src/yoke_cli/config/distribution.py"]
-  },
-  {
-   "id": "02",
-   "title": "Refresh the stale component, not just the page",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "An upgrade succeeded but hooks, dashboard or installed project instructions remain old",
-   "need": "Distinguish installed CLI, server, resident hook process, relay and tracked project layer. Follow the component-specific status/refresh result; a webpage reload does not replace its serving process.",
-   "disclosure": "planned cue",
-   "surface": "Current project orientation warns on older operating-layer receipt; FIRST-USER 6/15 add resident hook/dashboard restart and E checks.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke status", "yoke ui status", "yoke relay status", "yoke project install --help"],
-   "plan_notes": ["FIRST-USER items 6,15", "FIRST-USER E"],
-   "sources": ["packages/yoke-core/src/yoke_core/domain/session_orientation.py", "docs/public/install.md"]
-  },
-  {
-   "id": "03",
-   "title": "Recognize the source-checkout boundary",
-   "status": "draft-copy",
-   "audience": "agent",
-   "when": "An updater refuses a source-bound install",
-   "need": "A source checkout is updated through its source process and exact server build, not replaced with packaged wheels. Do not turn a source-maintainer recovery into a general external-user recipe.",
-   "disclosure": "current cue",
-   "surface": "Install/private-fork support limits and updater refusal.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke update --help"],
-   "plan_notes": ["outside both"],
-   "sources": ["docs/public/install.md", "docs/public/private-forks.md", "packages/yoke-cli/src/yoke_cli/config/self_update.py"]
-  },
-  {
-   "id": "04",
-   "title": "The installed CLI follows the active connection",
-   "status": "observed",
-   "audience": "both",
-   "when": "A connected server ships a new release, or a command warns that this CLI is older than the release its active connection serves",
-   "need": "Only the relay for the machine's active_env moves the installed CLI, to exactly the release that plane serves, on relay start; outcomes land in operator-cli-follow.json in the relay state directory. Commands sent to another env with --env or YOKE_ENV neither follow nor warn. The prod marker on db-admin connections plays no part.",
-   "disclosure": "current cue",
-   "surface": "Install -> upgrade instructions; one stderr warning per command naming yoke update --version.",
-   "review": "Source and unit tests; live proof is the release's post-deploy QA.",
-   "recipes": ["yoke env use --help", "yoke relay status", "yoke update --help"],
-   "plan_notes": ["outside both"],
-   "sources": ["docs/public/install.md", "packages/yoke-cli/src/yoke_cli/config/operator_cli_release_follow.py", "packages/yoke-cli/src/yoke_cli/transport/installed_cli_staleness.py", "packages/yoke-cli/src/yoke_cli/config/session_relay_instance.py"]
-  }
- ]
+ "id": "updates",
+ "title": "Updates, distribution and stale installed layers",
+ "status": "draft-copy",
+ "situations": ["A newer Yoke version is available.", "CLI, relay, dashboard and project teaching disagree.", "Update cannot find the machine distribution or would replace a source checkout."],
+ "coverage": "partial",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["How are users first notified of version availability across each mode?", "Are component refresh receipts and the source-versus-installed layer version discoverable from one support entry?"],
+ "related_scenarios": ["harness-readiness", "project-lifecycle", "private-forks"],
+ "plan_refs": ["FIRST-USER.6", "FIRST-USER.15"]
 }

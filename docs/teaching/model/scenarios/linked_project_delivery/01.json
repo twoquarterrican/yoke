@@ -1,0 +1,15 @@
+{
+ "id": "01",
+ "title": "Related projects are not automatically one release",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "A second related project appears or a change spans repositories",
+ "need": "Keep one item per project with linked companion work. Identify whether the relationship is dependency only or whether one actual build ships both sources; matching names or a general relationship grants no completion authority.",
+ "disclosure": "planned cue",
+ "surface": "JOURNEYS row 14; delivery binding rules and public item-bound delivery.",
+ "gap": "Runtime supports bound sources, but a short guided linking/adoption home is still needed. Do not auto-create shared deployment bindings for every related project.",
+ "review": "Pending exact recipe proof.",
+ "plan_notes": ["JOURNEYS row 14"],
+ "sources": ["docs/public/reference/agent-rules/delivery.md", "docs/public/delivery.md", "AGENTS.md"],
+ "position": 0
+}

@@ -1,0 +1,16 @@
+{
+ "id": "02",
+ "title": "Read the typed continuation",
+ "status": "draft-copy",
+ "audience": "agent",
+ "when": "When case/plan execution returns review-pending, awaiting-agent-review or a mission continuation.",
+ "need": "Run the case through QA once; follow the returned reviewer/mission continuation. An awaiting-agent-review result is not automatically a human decision; actual undetermined evidence may escalate under the stage policy.",
+ "disclosure": "current cue",
+ "surface": "QA plan dispatch and exploratory review continuation; verdict-mode source",
+ "gap": "Review question: should FIRST-USER 35 preserve the exact next action while rendering the review state in plain language?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa plan get --help"],
+ "plan_notes": ["FIRST-USER 35", "JOURNEYS row 13"],
+ "sources": ["docs/testing-verification.md", "docs/public/reference/exploratory-qa.md", "packages/yoke-core/src/yoke_core/domain/qa_review_verdict_modes.py"],
+ "position": 1
+}

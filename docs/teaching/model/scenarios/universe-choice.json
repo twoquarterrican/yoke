@@ -1,44 +1,11 @@
 {
- "scenario": {
-  "id": "universe-choice",
-  "title": "Where Yoke runs and who can reach it",
-  "status": "draft-copy",
-  "situations": ["First installation", "A local user mentions another computer", "Joining an existing team or hosted organization"],
-  "coverage": "traced",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Do prompts distinguish connection reachability, membership and machine permission?", "Do server, hosted and local branches each name the next reachable action?"],
-  "plan_refs": ["FIRST-USER.3", "FIRST-USER.9", "FIRST-USER.31", "JOURNEYS.situation-8"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Local, team server or hosted",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Choosing a destination; later mentions of another machine",
-   "need": "Local means reachable on this machine only. Shared access requires an appropriate server/hosted setup; a second checkout is not a second connection.",
-   "disclosure": "planned cue",
-   "surface": "Installer choice, yoke status and modes guide",
-   "gap": "The modes exist. FIRST-USER 3 adds the missing explanation and recovery; JOURNEYS extends when it is raised.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke status"],
-   "plan_notes": ["FIRST-USER 3", "FIRST-USER 31", "JOURNEYS 8"],
-   "sources": ["docs/public/modes.md", "docs/public/install.md"]
-  },
-  {
-   "id": "02",
-   "title": "Account, organization and machine approval",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Connecting to the selected control plane",
-   "need": "Sign-in, organization membership and authority to use a machine are distinct. The human completes required authorization; the agent needs pending/success/failure state.",
-   "disclosure": "planned cue",
-   "surface": "Hosted/team authorization and human approval UI",
-   "gap": "The standalone hosted beta and organization-creation redesign is implemented in a candidate: plain titles, named invitation failures, settled URL/Subscription rows and one creation indicator. Its quiet wait line changes after 45 seconds to teach resuming after a closed tab. Candidate screenshots do not replace production captures, exact deployed proof or timed real stage founding acceptance. Shared machine approval remains separate unfinished work. Local/self-hosted modes do not use the standalone hosted screens.",
-   "review": "Candidate fixture screenshots and focused checks are recorded separately from pending CI retention, deployed screen proof and real stage acceptance. FIRST-USER 27 covers both standalone hosted setup and shared machine approval; 33 spans membership and machine access across modes.",
-   "plan_notes": ["FIRST-USER 12", "FIRST-USER 27", "FIRST-USER 33"],
-   "sources": ["docs/public/reference/machine-authorization.md", "docs/public/actors-members-billing.md"]
-  }
- ]
+ "id": "universe-choice",
+ "title": "Where Yoke runs and who can reach it",
+ "status": "draft-copy",
+ "situations": ["First installation", "A local user mentions another computer", "Joining an existing team or hosted organization"],
+ "coverage": "traced",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Do prompts distinguish connection reachability, membership and machine permission?", "Do server, hosted and local branches each name the next reachable action?"],
+ "plan_refs": ["FIRST-USER.3", "FIRST-USER.9", "FIRST-USER.31", "JOURNEYS.situation-8"]
 }

@@ -1,57 +1,11 @@
 {
- "scenario": {
-  "id": "people-access",
-  "title": "People, organization roles and project permissions",
-  "status": "draft-copy",
-  "situations": ["Add a teammate or change their authority.", "A member can sign in but cannot act on a project.", "Disable a person or retire a service identity."],
-  "coverage": "partial",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Trace each mode from no account to project access, including who can create project grants.", "Check permission-denied responses for exact role/owner recovery without disclosure beyond authorized scope."],
-  "plan_refs": ["FIRST-USER.12", "FIRST-USER.26", "FIRST-USER.33", "FIRST-USER.P7"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Separate person, membership, role and machine credential",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Before granting access or explaining a permission refusal",
-   "need": "Org roles admin/operator/viewer and project grants are distinct. Cloud membership/billing is platform-fed; machine-only service roles are not human roles. Machine admission does not automatically grant unrelated authority.",
-   "disclosure": "current cue",
-   "surface": "Docs sidebar -> Actors/Members/Billing -> documented Actors and Machines surfaces.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke actors role set --help"],
-   "plan_notes": ["FIRST-USER item 33"],
-   "sources": ["docs/public/nav.yaml", "docs/public/actors-members-billing.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/actors.py"]
-  },
-  {
-   "id": "02",
-   "title": "Understand revocation and recovery",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Before disabling an actor or changing the last admin",
-   "need": "Disabling revokes keys and browser sessions; enabling does not restore keys. Last active admin and protected service identities have restrictions. Recover through the named authorized operation, then sign in/reconnect where necessary.",
-   "disclosure": "current cue",
-   "surface": "Actors confirmation/role refusal documented in public guide; actor CLI help.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke actors state set --help", "yoke actors role set --help"],
-   "plan_notes": ["outside both"],
-   "sources": ["docs/public/actors-members-billing.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/actors.py"]
-  },
-  {
-   "id": "03",
-   "title": "Find the add-person path in every mode",
-   "status": "draft-copy",
-   "audience": "human",
-   "when": "A new teammate needs initial access",
-   "need": "Use the mode-appropriate invitation/account and machine admission route; do not give someone else an own-machine code or infer authority from an existing token.",
-   "disclosure": "planned cue",
-   "surface": "FIRST-USER item 33 proposes one simple add-people/machines route; public guide currently distinguishes Cloud Members and self-host machine authorization.",
-   "gap": "Full invitation, project-grant creation and no-OIDC teammate flows were not traced. These are audit-needed, not claimed unsupported.",
-   "review": "Pending exact recipe proof.",
-   "plan_notes": ["FIRST-USER item 33", "FIRST-USER item 27"],
-   "sources": ["docs/public/actors-members-billing.md", "docs/public/reference/machine-authorization.md"]
-  }
- ]
+ "id": "people-access",
+ "title": "People, organization roles and project permissions",
+ "status": "draft-copy",
+ "situations": ["Add a teammate or change their authority.", "A member can sign in but cannot act on a project.", "Disable a person or retire a service identity."],
+ "coverage": "partial",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Trace each mode from no account to project access, including who can create project grants.", "Check permission-denied responses for exact role/owner recovery without disclosure beyond authorized scope."],
+ "plan_refs": ["FIRST-USER.12", "FIRST-USER.26", "FIRST-USER.33", "FIRST-USER.P7"]
 }

@@ -1,0 +1,10 @@
+{
+ "id": "05",
+ "title": "setup-intake-overreach",
+ "status": "observed",
+ "research": "Earlier scenario/intake proposals across the collection",
+ "finding": "Complete capability census is a planning inventory, not a required initial interview. Some prior wording assigns slim onboarding/setup facts only to JOURNEYS.",
+ "authority": "FIRST-USER:327-329,561-569,588-592; JOURNEYS:49,59",
+ "action": "FIRST-USER now owns minimal activation, first-item proof, scoped facts and first-work context; broader adoption remains deferred JOURNEYS.",
+ "position": 4
+}

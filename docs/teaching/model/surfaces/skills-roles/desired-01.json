@@ -1,0 +1,10 @@
+{
+ "id": "desired-01",
+ "title": "Read the bound workflow and current stage; load the relevant skill and role mandate.",
+ "status": "candidate",
+ "form": "Do",
+ "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "topics": ["workflows/bindings", "agents/skills", "agents/roles"],
+ "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"],
+ "position": 5
+}

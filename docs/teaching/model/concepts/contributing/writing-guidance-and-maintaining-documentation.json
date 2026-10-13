@@ -1,0 +1,9 @@
+{
+ "id": "writing-guidance-and-maintaining-documentation",
+ "title": "Writing guidance and maintaining documentation",
+ "status": "draft-copy",
+ "audience": "Maintainers",
+ "sources": ["docs/prompt-philosophy.md", "docs/README.md", "docs/harness-bootstrap.md", "docs/agents.md"],
+ "page": "contributing-guides",
+ "position": 9
+}

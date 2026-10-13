@@ -1,0 +1,8 @@
+{
+ "id": "billing",
+ "title": "Cloud subscription and billing",
+ "status": "draft-copy",
+ "plan_refs": ["FIRST-USER.P7"],
+ "page": "identity",
+ "position": 5
+}

@@ -1,0 +1,14 @@
+{
+ "id": "access-change-timing",
+ "title": "Check GitHub access after changing App settings",
+ "status": "observed",
+ "audience": "both",
+ "when": "After changing App authorization, permissions or repository access.",
+ "need": "Only hosted receives App webhooks. Local and self-hosted notice changes at the next GitHub check; use yoke github status or Check repositories in setup.",
+ "disclosure": "current cue",
+ "surface": "Public GitHub access-change guidance; private operations link to it.",
+ "review": "Source and recipe reviewed; installed and web delivery proof remains pending release.",
+ "plan_refs": ["FIRST-USER.32"],
+ "sources": ["docs/public/github.md", "docs/github-app-operations.md"],
+ "position": 5
+}

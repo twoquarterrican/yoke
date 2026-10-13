@@ -1,0 +1,10 @@
+{
+ "id": "03",
+ "title": "A precise full read for mandatory text withheld from compact output.",
+ "status": "draft-copy",
+ "form": "Link",
+ "verification": "No delivery proof attached.",
+ "topics": ["context/instructions", "context/docs"],
+ "plan_refs": ["FIRST-USER.0", "FIRST-USER.40", "FIRST-USER.43"],
+ "position": 2
+}

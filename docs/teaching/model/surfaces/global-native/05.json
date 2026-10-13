@@ -1,0 +1,10 @@
+{
+ "id": "05",
+ "title": "Reach product docs without assuming this folder contains .yoke/docs; reload applicable guidance after context loss.",
+ "status": "superseded",
+ "form": "Link",
+ "verification": "Not an approved publisher; use global orientation.",
+ "topics": ["context/docs", "sessions/continuity"],
+ "plan_refs": ["FIRST-USER.P4"],
+ "position": 4
+}

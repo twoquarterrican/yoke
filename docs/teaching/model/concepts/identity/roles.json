@@ -1,0 +1,9 @@
+{
+ "id": "roles",
+ "title": "Roles and permissions",
+ "status": "draft-copy",
+ "commands": ["yoke actors role set"],
+ "functions": ["actors.role.set"],
+ "page": "identity",
+ "position": 3
+}

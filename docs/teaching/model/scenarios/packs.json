@@ -1,72 +1,11 @@
 {
- "scenario": {
-  "id": "packs",
-  "title": "Packs: discover, adopt, customize and update",
-  "status": "draft-copy",
-  "situations": ["A project needs a reusable capability.", "An installed Pack has an update or local customizations.", "Pack-owned application files were moved."],
-  "coverage": "partial",
-  "current": "Research trace; requirements and source paths need live proof.",
-  "desired": "Reconciled against current plan records.",
-  "questions": ["Can a user read each full Pack contract before installing it through a supported external-project route?", "Does the workbench teach stale report versus newer version rather than one undifferentiated stale state?"],
-  "related_scenarios": ["capabilities", "qa_machine_setup", "hosting_providers", "preview_environments"]
- },
- "lessons": [
-  {
-   "id": "01",
-   "title": "Find the available and installed choices",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Before proposing new reusable implementation or selecting an Onboard profile",
-   "need": "Use the project-scoped catalog; distinguish available, installed and stale. Read dependencies, tool prerequisites, source catalog and installed version.",
-   "disclosure": "current cue",
-   "surface": "Docs sidebar -> Projects -> Packs; Onboard profile -> yoke packs list; documented workbench Packs page.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke packs list --project P --json", "yoke packs get --help"],
-   "plan_notes": ["JOURNEYS row 12", "outside both"],
-   "sources": ["docs/public/nav.yaml", "docs/public/projects.md", ".agents/skills/yoke/onboard/profile-and-scaffold.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py"]
-  },
-  {
-   "id": "02",
-   "title": "Reach the Pack-specific instructions",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "After selecting a Pack, before treating it as suitable or ready",
-   "need": "Read the selected Pack README and its application/runbook children; its installed files become project-owned source. A Pack description is not its setup or support contract.",
-   "disclosure": "missing cue",
-   "surface": "Catalog JSON has documentation; installed entry is docs/packs/<slug>/README.md. Plain packs list output prints description/tools but omits that documentation pointer.",
-   "gap": "Proven narrow omission in human list output. Pre-install availability of complete Pack docs and actual workbench link behavior are not established.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke packs list --project P --json"],
-   "plan_notes": ["outside both"],
-   "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py", "packages/yoke-core/src/yoke_core/domain/pack_projection.py", "packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md"]
-  },
-  {
-   "id": "03",
-   "title": "Preview updates and preserve customization",
-   "status": "draft-copy",
-   "audience": "both",
-   "when": "Before first apply, a version update, or recovery from a conflict",
-   "need": "Preview first. Installed receipt is the baseline; repeating get is not an update. Read the exact Pack conflict recipe, do not overwrite custom files or rewrite immutable historical versions.",
-   "disclosure": "current cue",
-   "surface": "Onboard profile -> selected installed README; packs get/update help and preview result.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke packs update --help", "yoke packs get --help"],
-   "plan_notes": ["outside both"],
-   "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py", "packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md"]
-  },
-  {
-   "id": "04",
-   "title": "Record a project-owned move",
-   "status": "draft-copy",
-   "audience": "agent",
-   "when": "A customized application file has moved since its Pack baseline",
-   "need": "Use Pack relink to record the move. Relink does not move files; co-owned AGENTS and ignore contributions cannot be relinked. A source-installed version may need its original catalog until served.",
-   "disclosure": "current cue",
-   "surface": "Projects -> Packs catalog contract; relink help; selected Pack README.",
-   "review": "Pending exact recipe proof.",
-   "recipes": ["yoke packs relink --help", "yoke packs update --help"],
-   "plan_notes": ["outside both"],
-   "sources": ["docs/public/projects.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/packs.py", "packs/webapp-scaffold/versions/1.1.5/files/docs/packs/webapp-scaffold/README.md"]
-  }
- ]
+ "id": "packs",
+ "title": "Packs: discover, adopt, customize and update",
+ "status": "draft-copy",
+ "situations": ["A project needs a reusable capability.", "An installed Pack has an update or local customizations.", "Pack-owned application files were moved."],
+ "coverage": "partial",
+ "current": "Research trace; requirements and source paths need live proof.",
+ "desired": "Reconciled against current plan records.",
+ "questions": ["Can a user read each full Pack contract before installing it through a supported external-project route?", "Does the workbench teach stale report versus newer version rather than one undifferentiated stale state?"],
+ "related_scenarios": ["capabilities", "qa_machine_setup", "hosting_providers", "preview_environments"]
 }

@@ -1,0 +1,17 @@
+{
+ "id": "01",
+ "title": "Keep the two run meanings clear",
+ "status": "draft-copy",
+ "audience": "both",
+ "when": "When a QA execution starts or the user first inspects Activity alongside a deployment run.",
+ "need": "A deployment run ships a candidate. A QA plan execution coordinates cases; individual QA runs are attempts on their requirements, producing artifacts and verdicts. A screenshot or completed capture may still await review.",
+ "disclosure": "current cue",
+ "surface": "QA Activity/case page; plan execution output; reference records",
+ "gap": "Review question: should JOURNEYS give the first QA activity view this short vocabulary instead of calling every layer a run?",
+ "review": "Pending exact recipe proof.",
+ "recipes": ["yoke qa plan get --help", "yoke qa requirement list --help"],
+ "plan_notes": ["JOURNEYS row 13", "outside both"],
+ "surface_notes": ["QA execution / attempt output → evidence and verdict: Continuation state names what happens next. The saved attempt/artifacts/verdict establish only the declared subject, target and candidate; a capture may still await review."],
+ "sources": ["docs/public/qa.md", "docs/testing-verification.md", "docs/public/reference/qa-platform.md", "docs/public/reference/qa-platform/standalone-plans.md"],
+ "position": 0
+}
