@@ -22,7 +22,7 @@ from runtime.api.test_sessions import (
     _register,
     conn,  # noqa: F401  (pytest fixture)
 )
-from runtime.api.fixtures.backlog import insert_item
+from runtime.api.fixtures.backlog import insert_item, seed_fixture_operating_actor
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 from runtime.api.sessions_api_stale_test_helpers import (
     EVENTS_TABLE_FOR_STALE_DETECTION,
@@ -213,6 +213,7 @@ class TestClaimWork:
         ):
             db_path = str(tmp_path / "claim-race.db")
             seed = connect_test_db(db_path)
+            seed_fixture_operating_actor(seed)
             insert_item(seed, id=9999, workflow_id="issue")
             _register(seed, session_id="sess-1")
             _register(seed, session_id="sess-2")

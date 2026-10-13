@@ -2,6 +2,10 @@
 
 import os
 import json
+import contextlib
+import importlib
+import random
+from pathlib import Path
 
 import pytest
 
@@ -35,6 +39,70 @@ def test_custom_callable_builds_once_and_restores_seed_rows(tmp_path):
         assert _rows() == [(7,)]
         with db_backend.connect_psycopg() as conn:
             assert conn.execute("SELECT current_database()").fetchone()[0] == first
+    assert builds == [True]
+
+
+@pytest.mark.parametrize(
+    "module_name,fixture_name",
+    [
+        ("test_sessions", "conn"),
+        ("test_sessions", "ownership_conn"),
+        ("sessions_api_stale_test_helpers", "conn"),
+        ("sessions_api_stale_test_helpers", "ownership_conn"),
+        ("test_sessions_reactivation_driver_stamp", "conn"),
+        ("test_field_note_provenance", "isolated_db"),
+    ],
+)
+def test_session_consumers_bind_machine_after_cached_checkout(
+    tmp_path, monkeypatch, module_name, fixture_name
+):
+    """Reuse each consumer's first callback under fresh homes in shuffled order."""
+    from yoke_contracts.machine_config.schema_connections import operating_actor_binding
+    from yoke_core.domain.universe_identity import universe_fingerprint
+
+    module = importlib.import_module(f"runtime.api.{module_name}")
+    strategy = None
+    builds = []
+
+    def apply():
+        builds.append(True)
+        strategy()
+
+    @contextlib.contextmanager
+    def checkout(path, apply_schema):
+        nonlocal strategy
+        if strategy is None:
+            strategy = apply_schema
+        with file_test_db.init_test_db(path, apply):
+            # A template must contain database state, never machine configuration.
+            assert not (Path(os.environ["YOKE_MACHINE_HOME"]) / "config.json").exists()
+            yield str(path / "yoke.db")
+
+    monkeypatch.setattr(module, "init_test_db", checkout)
+    order = list(range(3))
+    random.Random(23).shuffle(order)
+    for index in order:
+        with monkeypatch.context() as scoped:
+            home = tmp_path / f"machine-{index}"
+            workspace = tmp_path / f"workspace-{index}"
+            workspace.mkdir()
+            scoped.setenv("YOKE_MACHINE_HOME", str(home))
+            scoped.delenv("YOKE_MACHINE_CONFIG_FILE", raising=False)
+            args = (
+                (workspace, scoped) if fixture_name == "isolated_db" else (workspace,)
+            )
+            fixture = getattr(module, fixture_name).__wrapped__(*args)
+            try:
+                next(fixture)
+                payload = json.loads((home / "config.json").read_text())
+                actor_id, universe = operating_actor_binding(payload, "local")
+                with db_backend.connect_psycopg() as conn:
+                    assert universe == universe_fingerprint(conn)
+                    assert conn.execute(
+                        "SELECT kind FROM actors WHERE id = %s", (actor_id,)
+                    ).fetchone() == ("human",)
+            finally:
+                fixture.close()
     assert builds == [True]
 
 
