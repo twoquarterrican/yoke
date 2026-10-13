@@ -6,7 +6,8 @@ JOURNEYS plan coverage, evidence, locked boundaries and gaps. It is internal
 contributor material: it lives only in the Yoke source repository and never
 ships in the install bundle.
 
-Open [`views/index.html`](views/index.html) in a browser from any checkout.
+Build the local views with `yoke dev run -- python3 docs/teaching/tools/build.py`,
+then open `docs/teaching/views/index.html` in a browser from that checkout.
 Agents read the model JSON directly. If a review tool refuses `file:` URLs,
 serve this directory locally (`python3 -m http.server` from `docs/teaching`).
 
@@ -32,7 +33,7 @@ refuses private paths and identifiers.
 | `model/evidence/` | Scoped research evidence, grouped by audit topic |
 | `model/boundaries.json`, `model/gaps.json` | Locked rules and open gaps |
 | `model/docs-graph.json` | Documentation areas for the live docs graph |
-| `views/` | Generated HTML; never edit by hand |
+| `views/` | Untracked generated HTML and CSS; build locally to read |
 | `tools/` | The builder and check |
 | `live/` | Untracked live pages, written by `--live` |
 
@@ -43,8 +44,8 @@ prefixed by their owner (`setup-agent/desired-01`).
 Commands, functions and skills are never copied here. Concept records name
 them, and the check resolves every name against the live registries. The
 command crosswalk and documentation graph read live state, so they are written
-only to the untracked `live/` directory; committed views depend on the model
-alone.
+only to the untracked `live/` directory; generated views depend on the model
+alone and are also untracked. The stylesheet source lives in `tools/style.css`.
 
 ## Record status
 
@@ -79,8 +80,9 @@ teaches. Review only the topics the work touches.
    yoke dev run -- python3 docs/teaching/tools/build.py --check
    ```
 
-5. Commit the model and views in the item's own lane. Report the node links
-   you changed in the item. Route gaps that need a decision to steering.
+5. Commit the model in the item's own lane; build views locally to read them.
+   Report the node links you changed in the item. Route gaps that need a
+   decision to steering.
 
 **Platform items never edit this directory.** When Platform work needs a
 prototype change, file a linked Yoke item (`/yoke idea` in the yoke project)
@@ -127,10 +129,12 @@ inbound and outbound link counts).
 | `PLAN_ROW_UNMAPPED` | Map the row, or name an explicit gap |
 | `PLAN_ENTRY_MISSING`, `PLAN_RECONCILIATION_STALE` | Reconcile as above |
 | `DANGLING_ANCHOR`, `DANGLING_LINK` | Fix the target id or path, then rebuild |
-| `MODEL_NOT_CANONICAL`, `VIEW_STALE`, `VIEW_UNEXPECTED` | Rebuild |
+| `MODEL_NOT_CANONICAL` | Rebuild to apply canonical model formatting |
 | `LINE_LIMIT` | Split the model file at a named child, then rebuild |
 | `PRIVATE_MATERIAL` | Remove the private path or id |
 
 Every file here obeys the shared 350-line hard limit, counted at 80 columns;
-300 is the design target. CI runs the check through
+300 is the design target. `--check` validates the model and builds views in
+memory, checking links, privacy and limits without reading or writing local
+views. CI runs this build validation through
 `tests/teaching_prototype/test_teaching_prototype_check.py`.

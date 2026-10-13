@@ -1,7 +1,8 @@
 """Collector refusals leave bounded server events; accepted events carry receipt time."""
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 
@@ -103,7 +104,13 @@ def test_each_refusal_records_one_named_diagnostic_event(
     assert admitted["X-Events-Key"] not in stored and "xxxx" not in stored
 
 
-def test_refusal_flood_writes_one_row_per_kind_per_minute(client, database):
+def test_refusal_flood_writes_one_row_per_kind_per_minute(
+    client, database, monkeypatch
+):
+    now = int(datetime(2026, 1, 1, tzinfo=timezone.utc).timestamp()) + 59
+    monkeypatch.setattr(
+        frontend_collector_refusals, "time", SimpleNamespace(time=lambda: now)
+    )
     hostile = {**headers(client), "Origin": "https://attacker.test"}
     for index in range(40):
         hostile["Origin"] = f"https://attacker-{index}.test"
@@ -112,7 +119,6 @@ def test_refusal_flood_writes_one_row_per_kind_per_minute(client, database):
         )
         assert response.status_code == 403
     assert len(refusals(database)) == 1
-    later = datetime.now(timezone.utc) + timedelta(minutes=2)
     frontend_collector_refusals._recorded.clear()  # a second process
     for _ in range(2):
         record_refusal(
@@ -121,7 +127,7 @@ def test_refusal_flood_writes_one_row_per_kind_per_minute(client, database):
             route="/api/events",
             origin="https://attacker.test",
             host="workbench.example.test",
-            now=int(datetime.now(timezone.utc).timestamp()),
+            now=now,
         )
     assert len(refusals(database)) == 1
     record_refusal(
@@ -130,7 +136,7 @@ def test_refusal_flood_writes_one_row_per_kind_per_minute(client, database):
         route="/api/events",
         origin="https://a.test",
         host="h",
-        now=int(later.timestamp()),
+        now=now + 60,
     )
     assert len(refusals(database)) == 2
 

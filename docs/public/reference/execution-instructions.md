@@ -70,3 +70,8 @@ scope-only edits preserve the instruction's delivery settings.
 The delivery columns converge additively on boot. Existing instruction rows
 retain their prose and scope and acquire defaults; no data rewrite or separate
 migration entry is required.
+
+For Yoke source work, the teaching-prototype upkeep instruction points to
+`docs/teaching/README.md`: commit the model in the item lane and build views
+locally to read them. `docs/teaching/views/` is generated and gitignored; the
+check validates the model and renders views in memory.
