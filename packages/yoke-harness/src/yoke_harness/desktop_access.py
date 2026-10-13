@@ -120,6 +120,7 @@ def _prepare_desktop(settings, key_path, password):
                 desktop_password=password,
                 secret_values=(password,),
                 desktop_port=int(settings["desktop_port"]),
+                rdp_access=settings["desktop_protocol"] == "rdp",
             )
         )
     except RuntimeError as exc:

@@ -188,11 +188,69 @@ def human_desktop_exists(home, owned=None):
     return owned is not None and rdp_connected(owned["rdp_port"])
 
 
-def ensure_desktop(password, port=RDP_PORT):
+def restart_orphan(session, port):
+    """A desktop older than sesman is absent from its in-memory registry."""
+    manager = subprocess.run(
+        ["systemctl", "show", "xrdp-sesman", "--property", "MainPID", "--value"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    try:
+        pid = int(manager.stdout.strip())
+        process = Path(f"/proc/{pid}")
+        if (
+            manager.returncode
+            or pid <= 0
+            or process.joinpath("comm").read_text().strip() != "xrdp-sesman"
+        ):
+            raise ValueError()
+        started = int(
+            process.joinpath("stat").read_text().rsplit(")", 1)[1].split()[19]
+        )
+    except (OSError, ValueError):
+        raise RuntimeError(
+            "linux_desktop_manager_unknown: repair the xrdp-sesman service and retry desktop-access"
+        ) from None
+    if int(session["start"]) >= started:
+        return False
+    if rdp_connected(port):
+        raise RuntimeError(
+            "linux_desktop_orphan_in_use: close the connected RDP client before retrying desktop-access"
+        )
+    if session not in desktop_sessions():
+        raise RuntimeError(
+            "linux_desktop_session_changed: rerun desktop-access to inspect the current session"
+        )
+    os.kill(session["pid"], signal.SIGTERM)
+    display = session["environment"]["DISPLAY"].split(".", 1)[0].removeprefix(":")
+    deadline = time.monotonic() + DESKTOP_READY_TIMEOUT_SECONDS
+    while (
+        desktop_sessions(active_only=False)
+        or Path(f"/tmp/.X11-unix/X{display}").exists()
+    ):
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                "linux_desktop_orphan_stop_failed: inspect /var/log/xrdp-sesman.log and end the stale fixture desktop before retrying desktop-access"
+            )
+        time.sleep(DESKTOP_POLL_INTERVAL_SECONDS)
+    return True
+
+
+def ensure_desktop(password, port=RDP_PORT, *, rdp_access=False):
     import pwd
 
     with ownership_file() as stream:
         sessions = desktop_sessions()
+        restarted = False
+        if len(sessions) == 1 and rdp_access:
+            if not password:
+                raise RuntimeError(
+                    "desktop_password_missing: store desktop_password before restarting an orphaned desktop"
+                )
+            restarted = restart_orphan(sessions[0], port)
+            if restarted:
+                sessions = []
         if len(sessions) == 1:
             return {
                 "environment": sessions[0]["environment"],
@@ -251,7 +309,7 @@ def ensure_desktop(password, port=RDP_PORT):
                 stream.flush()
                 return {
                     "environment": sessions[0]["environment"],
-                    "desktop_session": "started",
+                    "desktop_session": "restarted" if restarted else "started",
                 }
             if time.monotonic() >= deadline:
                 raise RuntimeError(

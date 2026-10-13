@@ -87,6 +87,7 @@ def test_view_uses_actual_geometry_stdin_and_always_closes_forward(
         events.append(("client", argv, kw))
         assert PASSWORD not in repr(argv) + repr(kw)
         assert "/from-stdin:force" in argv
+        assert "/cert:ignore" in argv and "/cert:tofu" not in argv
         assert "/smart-sizing:1280x1024" in argv and "/bpp:24" in argv
         assert ("/size:2000x1600" if platform == "darwin" else "/size:1000x800") in argv
         assert not any("dynamic-resolution" in arg for arg in argv)
@@ -265,7 +266,7 @@ def test_prepare_uses_registered_xfce_user_port_and_wsl_stdin_frame(
             command = base64.b64decode(command).decode()
         if command == "id -un":
             return subprocess.CompletedProcess(argv, 0, "fixture\n", "")
-        assert command.endswith(" 3390")
+        assert command.endswith(" 3390 1")
         assert supplied == PASSWORD + "\n"
         assert PASSWORD not in repr(argv)
         return subprocess.CompletedProcess(argv, 0, json.dumps(RECEIPT), "")
