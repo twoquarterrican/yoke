@@ -117,6 +117,9 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
         "notes": (
             "Manifest directories are claude, codex, and cursor; executor "
             "claude-code resolves to claude, not a claude-code directory. "
+            "Missing installed manifest: run `yoke project refresh`; if the "
+            "serving bundle predates schema 3, ask its control-plane operator "
+            "to serve a matching release, then retry. "
             "The harness manifest is where harness capability truth lives — "
             "not any doc, skill, rules file, or agent body. Before stating "
             "what a harness can do, read the field: `agent_wake` answers "
