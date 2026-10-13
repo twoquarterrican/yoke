@@ -2,7 +2,7 @@
  "id": "qa_machine_setup",
  "title": "Dedicated Test Machines from zero",
  "status": "draft-copy",
- "situations": ["Terminal/desktop/machine-state QA", "Context-naive installation exploration", "Existing host without a reset baseline", "Several OS targets or multiple simultaneous hosts"],
+ "situations": ["Terminal/desktop/machine-state QA", "Fresh-target installation exploration from an informed controller", "Existing host without a reset baseline", "Several OS targets or multiple simultaneous hosts"],
  "coverage": "traced",
  "current": "Research trace; requirements and source paths need live proof.",
  "desired": "Reconciled against current plan records.",

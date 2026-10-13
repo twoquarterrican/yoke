@@ -155,7 +155,8 @@ Browser integration belongs to full, shallow real-stack smoke to smoke.
 ### QA Walker
 
 Walk one mission sequence chosen at runtime as an informed subagent driving
-the target from the controller without adding a source checkout. Main retains item/Progress Log/human-request/report/final verdict.
+the target from the controller without adding a source checkout. Main retains
+item/Progress Log/human-request/report/final verdict.
 Walker returns ranked findings and unverified areas; its turn is atomic.
 Permission dialog, interactive sign-in or approval returns `WALK_STATUS: HUMAN_GATE`
 with exact needed action/resume state, no Fleet mail. Main records handoff, routes

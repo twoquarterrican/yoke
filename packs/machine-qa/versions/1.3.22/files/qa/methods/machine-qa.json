@@ -67,7 +67,7 @@
       "display_group": "Machine",
       "config_contract_id": "agent-mission",
       "proof_kind": "exploratory-mission",
-      "runner_gloss": "Main-owned mission with an informed or target-naive walker"
+      "runner_gloss": "Main-owned mission with an informed subagent walker"
     }
   ]
 }

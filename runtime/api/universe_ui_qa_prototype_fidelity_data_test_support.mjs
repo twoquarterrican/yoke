@@ -153,7 +153,7 @@ export const methods = [
     source_kind: "pack",
     source_ref: "machine-qa",
     runner_id: "agent_mission",
-    runner_gloss: "Main-owned mission with an informed or target-naive walker",
+    runner_gloss: "Main-owned mission with an informed subagent walker",
     ...missionCapabilities,
     verdict_path: "agent",
     verdict_contract: "pass, fail, or undetermined with a written rationale",

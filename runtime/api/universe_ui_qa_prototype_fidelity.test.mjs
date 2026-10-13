@@ -57,7 +57,7 @@ test("all method details retain the prototype contract anatomy", async () => {
     "terminal-inspection": "SSH + PTY on the capability-named machine",
     "machine-state-check": "shell assertions on the controlled host",
     "exploratory-mission":
-      "Main-owned mission with an informed or target-naive walker",
+      "Main-owned mission with an informed subagent walker",
   };
 
   for (const method of methods) {

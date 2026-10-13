@@ -12,8 +12,8 @@ Machine QA registers four reusable proof contracts:
   the logged-in macOS Terminal.app session so it can use the window server and
   login keychain.
 - Exploratory mission gives one prose mission to a main-owned QA run. A case
-  selects an informed subagent or a context-naive target-machine session as its
-  walker. The walker chooses the sequence; deterministic checks still belong
+  uses an informed subagent on the controller to drive a fresh target without
+  a source checkout. The walker chooses the sequence; deterministic checks still belong
   on Command methods because they are faster, cheaper, and repeatable.
 
 The three scripted methods use Yoke's approved `host_control` runner and
