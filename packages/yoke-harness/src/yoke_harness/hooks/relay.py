@@ -188,7 +188,9 @@ def relay_hook_event(
         lint_config_snapshot=policy_snapshot,
     )
     if local.denied:
-        write_hook_output(local.stdout, local.exit_code, executor, event_name=event_name)
+        write_hook_output(
+            local.stdout, local.exit_code, executor, event_name=event_name
+        )
         if local.denial_audit and project_id_for_payload(payload) is not None:
             relay_denial_audit(connection, local.denial_audit)
         return local.exit_code
@@ -205,7 +207,9 @@ def relay_hook_event(
         # The complete machine guard subset is local; project registration is
         # neither required nor meaningful for an unrelated workspace.
         print_execution_provenance()
-        write_hook_output(allow_stdout, local.exit_code, executor, event_name=event_name)
+        write_hook_output(
+            allow_stdout, local.exit_code, executor, event_name=event_name
+        )
         settle_projection(allow_stdout, launch_projection)
         return local.exit_code
 
