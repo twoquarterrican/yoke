@@ -22,7 +22,9 @@ def _response(body) -> RestResponse:
 
 def _wire(monkeypatch, pages):
     monkeypatch.setattr(
-        files_mod, "resolve_auth_detail", lambda ctx, perms: (_auth(), None),
+        files_mod,
+        "resolve_auth_detail",
+        lambda ctx, perms: (_auth(), None),
     )
     seen: list = []
 
@@ -35,25 +37,39 @@ def _wire(monkeypatch, pages):
 
 
 def _page(paths, *, has_next=False, cursor="") -> dict:
-    return {"data": {"repository": {"pullRequest": {"files": {
-        "pageInfo": {"hasNextPage": has_next, "endCursor": cursor},
-        "nodes": [{"path": path} for path in paths],
-    }}}}}
+    return {
+        "data": {
+            "repository": {
+                "pullRequest": {
+                    "files": {
+                        "pageInfo": {"hasNextPage": has_next, "endCursor": cursor},
+                        "nodes": [{"path": path} for path in paths],
+                    }
+                }
+            }
+        }
+    }
 
 
 def test_pages_until_the_listing_ends(monkeypatch):
     """A branch wider than one page must not report a truncated file set."""
-    seen = _wire(monkeypatch, [
-        _page(["a.py", "b.py"], has_next=True, cursor="cursor1"),
-        _page(["b.py", "c.py"]),
-    ])
+    seen = _wire(
+        monkeypatch,
+        [
+            _page(["a.py", "b.py"], has_next=True, cursor="cursor1"),
+            _page(["b.py", "c.py"]),
+        ],
+    )
 
     paths, err = files_mod.read_pr_changed_files(_ctx(), "42")
 
     assert err is None
     assert paths == ("a.py", "b.py", "c.py")
     assert seen[0] == {
-        "owner": "upyoke", "name": "yoke", "number": 42, "cursor": None,
+        "owner": "upyoke",
+        "name": "yoke",
+        "number": 42,
+        "cursor": None,
     }
     assert seen[1]["cursor"] == "cursor1"
 
@@ -79,7 +95,8 @@ def test_missing_listing_is_named(monkeypatch):
 
 def test_auth_failure_is_surfaced(monkeypatch):
     monkeypatch.setattr(
-        files_mod, "resolve_auth_detail",
+        files_mod,
+        "resolve_auth_detail",
         lambda ctx, perms: (None, "no capability (repair: yoke onboard project)"),
     )
 
@@ -87,3 +104,22 @@ def test_auth_failure_is_surfaced(monkeypatch):
 
     assert paths is None
     assert "yoke onboard project" in err
+
+
+def test_listing_at_githubs_ceiling_is_refused(monkeypatch):
+    """GitHub stops at 3000 files; a listing that reaches it is not complete."""
+    limit = files_mod.PR_FILES_LISTING_LIMIT
+    pages = [
+        _page(
+            [f"f{index}.py" for index in range(start, start + 100)],
+            has_next=start + 100 < limit,
+            cursor=f"c{start}",
+        )
+        for start in range(0, limit, 100)
+    ]
+    _wire(monkeypatch, pages)
+
+    paths, err = files_mod.read_pr_changed_files(_ctx(), "42")
+
+    assert paths is None
+    assert "3000-file ceiling" in err

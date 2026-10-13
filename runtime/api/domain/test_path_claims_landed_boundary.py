@@ -28,6 +28,7 @@ from runtime.api.domain.test_path_claims_gate_boundary import (
 )
 from runtime.api.fixtures.file_test_db import connect_test_db
 from yoke_core.domain import path_claims_landed_boundary as landed
+from yoke_core.domain import path_claims_landed_boundary_github as landed_github
 from yoke_core.domain.gate_satisfier_stamp import read_rungs
 from yoke_core.domain.item_landings import ItemLanding, append_landing
 from yoke_core.domain.path_claim_boundary_gate_proof import BoundaryProofError
@@ -83,22 +84,25 @@ def _land_and_move_main(project_repo, real_db, *, lane_head: str = "") -> str:
 
 
 def _fake_github(project_repo, monkeypatch, *, files=None) -> list:
+    """Serve the commit endpoint's paged file list for a merge."""
     calls: list = []
 
     def _rest_get(path, *, token, query=None):
-        calls.append(path)
+        calls.append((path, dict(query or {})))
         sha = path.rsplit("/", 1)[-1]
-        if "/commits/" in path:
-            parent = _git(project_repo, "rev-parse", f"{sha}^1")
-            return {"sha": sha, "parents": [{"sha": parent}]}
-        base, head = sha.split("...")
-        if files is not None:
-            return {"files": files}
-        names = _git(project_repo, "diff", "--name-only", f"{base}..{head}")
-        return {
-            "files": [
+        parent = _git(project_repo, "rev-parse", f"{sha}^1")
+        listed = files
+        if listed is None:
+            names = _git(project_repo, "diff", "--name-only", f"{parent}..{sha}")
+            listed = [
                 {"filename": name, "status": "modified"} for name in names.splitlines()
             ]
+        size = int((query or {}).get("per_page", 30))
+        start = (int((query or {}).get("page", 1)) - 1) * size
+        return {
+            "sha": sha,
+            "parents": [{"sha": parent}],
+            "files": listed[start : start + size],
         }
 
     monkeypatch.setattr(
@@ -125,7 +129,9 @@ def test_hosted_close_out_proves_landed_item_after_main_moved(
     calls = _fake_github(project_repo, monkeypatch)
 
     assert _gate(real_db) is None
-    assert any("/compare/" in call and merge_sha in call for call in calls)
+    assert calls == [
+        (f"/repos/test/test/commits/{merge_sha}", {"per_page": "100", "page": "1"})
+    ]
     with closing(connect_test_db(real_db)) as conn:
         stamp = read_rungs(conn, 7777)[0]
     assert stamp["rung_id"] == landed.LANDED_MERGE_RUNG
@@ -198,20 +204,54 @@ def test_no_checkout_and_no_github_is_a_named_refusal(
     assert "re-run the same close-out" in result["error"]
 
 
-def test_github_file_list_cap_refuses_instead_of_passing(
+def test_merge_past_the_compare_cap_passes_with_its_full_list(
+    project_repo, real_db, monkeypatch
+):
+    """301 changed files page through in full; none is dropped at 300."""
+    paths = [f"src/f{index:03d}.py" for index in range(301)]
+    _claim(real_db, *paths)
+    _commit_in_worktree(project_repo, name="foo.py")
+    _land_and_move_main(project_repo, real_db)
+    listed = [{"filename": path, "status": "added"} for path in paths]
+    calls = _fake_github(project_repo, monkeypatch, files=listed)
+
+    assert _gate(real_db) is None
+    assert [query["page"] for _path, query in calls] == ["1", "2", "3", "4"]
+    with closing(connect_test_db(real_db)) as conn:
+        fact = json.loads(read_rungs(conn, 7777)[0]["facts"]["observed:landed_merge"])
+    assert fact["touched_paths"] == paths
+
+
+def test_file_past_the_compare_cap_outside_coverage_is_named(
+    project_repo, real_db, monkeypatch
+):
+    paths = [f"src/f{index:03d}.py" for index in range(301)]
+    _claim(real_db, *paths[:300])
+    _commit_in_worktree(project_repo, name="foo.py")
+    _land_and_move_main(project_repo, real_db)
+    listed = [{"filename": path, "status": "added"} for path in paths]
+    _fake_github(project_repo, monkeypatch, files=listed)
+
+    result = _gate(real_db)
+    assert result["error_code"] == "GATE_PATH_CLAIM_BOUNDARY"
+    assert "src/f300.py" in result["error"]
+
+
+def test_github_commit_file_ceiling_refuses_instead_of_passing(
     project_repo, real_db, monkeypatch
 ):
     _claim(real_db, "src/foo.py")
     _commit_in_worktree(project_repo, name="foo.py")
     _land_and_move_main(project_repo, real_db)
     capped = [{"filename": "src/foo.py", "status": "modified"}] * (
-        landed.GITHUB_COMPARE_FILE_LIMIT
+        landed_github.GITHUB_COMMIT_FILE_LIMIT
     )
     _fake_github(project_repo, monkeypatch, files=capped)
 
     result = _gate(real_db)
     assert result["error_code"] == "GATE_PATH_CLAIM_BOUNDARY"
-    assert "300-file" in result["error"]
+    assert "3000-file ceiling" in result["error"]
+    assert "checkout has fetched the merge" in result["error"]
 
 
 def test_caller_proof_cannot_claim_the_landed_rung(project_repo, real_db):
