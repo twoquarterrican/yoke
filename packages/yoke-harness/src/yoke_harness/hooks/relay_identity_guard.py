@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import sys
+
+from yoke_contracts.hook_diagnostics import format_hook_diagnostic
 from typing import Any, Mapping, Optional
 
 from yoke_contracts.execution_provenance import (
@@ -110,7 +112,6 @@ def capture_codex_session(event_name: str, stdin_data: str, executor: str) -> No
         return
 
 
-
 def print_execution_provenance(
     server: Optional[Mapping[str, Any]] = None,
     *,
@@ -118,7 +119,9 @@ def print_execution_provenance(
 ) -> None:
     sys.stderr.write(
         format_provenance_line(
-            collect_execution_provenance(), server, fallback_local=fallback_local,
+            collect_execution_provenance(),
+            server,
+            fallback_local=fallback_local,
         )
         + chr(10)
     )
@@ -129,6 +132,7 @@ def deny_unstamped_relay(payload: Mapping[str, Any]) -> Optional[int]:
     message = refuse_unstamped_relay(payload)
     if message is None:
         return None
+    message = format_hook_diagnostic("hook relay", message)
     sys.stderr.write(message + chr(10))
     print_execution_provenance()
     sys.stdout.write(message + chr(10))

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from yoke_contracts.hook_diagnostics import format_hook_diagnostic
+
 
 FAILURE_PREFIX = "failure:"
 GUARD_FAILURE_MARKER = "YOKE_HOOK_GUARD_FAILURE"
@@ -23,7 +25,9 @@ def render_failure_warning(degraded: Iterable[object]) -> str:
     failures = failure_markers(degraded)
     if not failures:
         return ""
-    return f"WARNING: {GUARD_FAILURE_MARKER}: {'; '.join(failures)}\n"
+    return format_hook_diagnostic(
+        "hook runner", f"WARNING: {GUARD_FAILURE_MARKER}: {'; '.join(failures)}\n"
+    )
 
 
 __all__ = [

@@ -227,7 +227,7 @@ def test_client_deny_is_not_diluted_by_orientation(
 
     out = capsys.readouterr()
     assert rc == 2
-    assert out.err == "BLOCKED: destructive git verb\n"
+    assert out.err == "yoke (UserPromptSubmit): BLOCKED: destructive git verb\n"
     assert out.out == ""
 
 
@@ -253,5 +253,5 @@ def test_server_deny_is_not_diluted_by_orientation(
 
     out = capsys.readouterr()
     assert rc == 2
-    assert out.err == "DENY: server policy\n"
+    assert out.err == "yoke (UserPromptSubmit): DENY: server policy\n"
     assert out.out == ""

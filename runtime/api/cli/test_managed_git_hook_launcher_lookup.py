@@ -112,7 +112,7 @@ class TestLauncherLookup:
         assert proc.returncode == 0
         assert proc.stdout == ""
         assert proc.stderr == (
-            "Yoke is not installed on this computer "
+            f"yoke ({hook_name}): Yoke is not installed on this computer "
             f"({platform.node()}); Yoke checks skipped. Install: "
             "`curl -fsSL https://upyoke.com/install | sh`\n"
         )

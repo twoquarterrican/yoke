@@ -144,7 +144,9 @@ def render_full(root: Path, spec: dict, extra_files: Optional[List[str]] = None)
     for rel_path in required:
         content = read_file(root, rel_path)
         if content is None:
-            print(f"[WARN] Missing: {root / rel_path}", file=sys.stderr)
+            print(
+                f"yoke (bootstrap): [WARN] Missing: {root / rel_path}", file=sys.stderr
+            )
             continue
         parts.append(f"=== {rel_path} ===")
         parts.append(content.rstrip("\n"))
@@ -155,14 +157,16 @@ def render_full(root: Path, spec: dict, extra_files: Optional[List[str]] = None)
         command = command_def.get("command", "")
         parts.append(f"=== {label} ===")
         if not command:
-            print("[WARN] Missing command definition", file=sys.stderr)
+            print(
+                "yoke (bootstrap): [WARN] Missing command definition", file=sys.stderr
+            )
             parts.append("")
             continue
         returncode, output = run_command(command, root)
         if output:
             parts.append(output)
         elif returncode != 0:
-            print(f"[WARN] {label} failed", file=sys.stderr)
+            print(f"yoke (bootstrap): [WARN] {label} failed", file=sys.stderr)
         parts.append("")
 
     for rel_path in recommended:

@@ -99,7 +99,7 @@ def evaluate_local_hook(
             cursor=cursor,
             harness_id=canonical_harness_id(executor),
         )
-    write_hook_output(stdout, exit_code, executor)
+    write_hook_output(stdout, exit_code, executor, event_name=event_name)
     settle_projection(stdout, launch_projection)
     return exit_code
 

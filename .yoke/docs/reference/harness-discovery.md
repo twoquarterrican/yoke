@@ -104,6 +104,17 @@ If a manifest is missing, run `yoke project refresh` from this project.
 If its serving bundle predates schema 3, follow the operator recovery above.
 Local edits use the refresh refusal's recovery.
 
+## Hook diagnostics
+
+Human diagnostics inside Git and harness tools begin with “yoke (<hook>): ”,
+for example “yoke (pre-commit): ERROR: file-line-limit gate blocked this commit.”
+Follow the repair in that diagnostic. Successful checks and identity-only
+post-commit snapshot scans stay quiet. Required orientation, instructions,
+continuations, handoffs and recovery still arrive through their normal owner.
+JSON replies, delivery markers and machine identifiers retain their wire form;
+the shared context composer budgets the combined delivery for each harness.
+Inspect hook configuration with `yoke hook --help`.
+
 ## Verify native discovery
 
 Startup orientation is composed on the client and confirmed only after it

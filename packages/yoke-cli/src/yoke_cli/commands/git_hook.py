@@ -30,6 +30,7 @@ from typing import Callable, Dict, List, Tuple
 
 from yoke_cli.commands.adapters.project_snapshot import project_snapshot_sync
 from yoke_contracts.git_hook_markers import POST_COMMIT_SNAPSHOT_SKIP_ENV
+from yoke_contracts.hook_diagnostics import format_hook_diagnostic
 
 AdapterFn = Callable[[List[str]], int]
 
@@ -58,7 +59,8 @@ Sync committed git tree state for the current checkout through
 identity only and stores no path snapshot, so a routine commit stays
 inside common tool timeouts; file contents reach the path registry through
 a full `yoke project snapshot sync`, which path-claim registration also
-runs. Progress lines go to stderr. Exits 0 even when sync needs
+runs. Routine success stays quiet; diagnostics on stderr start with
+`yoke (post-commit): `. Exits 0 even when sync needs
 manual repair; a completed commit is never blocked.
 Gate-owned rebase replay skips this per-commit sync because the gate binds
 the final lane head after the replay completes.
@@ -146,7 +148,7 @@ def git_pre_commit(args: List[str]) -> int:
         from yoke_harness.git_hooks.pre_commit import run
     except ImportError as exc:
         sys.stderr.write(
-            "ERROR: yoke git pre-commit requires yoke-harness; "
+            "yoke (pre-commit): ERROR: requires yoke-harness; "
             f"install/repair the product hook package ({exc}).\n"
             "Use `git commit --no-verify` to bypass this check.\n"
         )
@@ -155,7 +157,13 @@ def git_pre_commit(args: List[str]) -> int:
 
 
 def _sync_warning(reason: str) -> int:
-    sys.stderr.write(f"yoke git post-commit: snapshot sync skipped ({reason})\n")
+    sys.stderr.write(
+        format_hook_diagnostic(
+            "post-commit",
+            f"snapshot sync skipped ({reason}); "
+            "repair with `yoke project snapshot sync`.\n",
+        )
+    )
     return 0
 
 
