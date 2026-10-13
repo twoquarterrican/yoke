@@ -211,7 +211,7 @@ test("version inspection exposes stable loading, retry, and collapse states", as
   mounted.unmount();
 });
 
-test("a failed registry read renders one honest screen failure", async (t) => {
+test("definition and instruction failures stay in their own panels", async (t) => {
   const client = {
     async call(request) {
       if (request.function === "organizations.get") {
@@ -224,14 +224,18 @@ test("a failed registry read renders one honest screen failure", async (t) => {
         status: 500,
         envelope: {
           success: false,
-          error: { message: "definition read broke" },
+          error: { message: request.function === "workflow.execution_instruction.list"
+            ? "instruction read broke" : "definition read broke" },
         },
       };
     },
   };
   const { root, mounted } = await mountWorkflows(t, client);
-  const errors = byClass(root, "error");
+  const errors = byClass(byClass(root, "workflow-stack")[0], "error");
   assert.equal(errors.length, 1);
   assert.ok(errors[0].textContent.includes("definition read broke"));
+  const instructionErrors = byClass(byClass(root, "workflow-instructions-host")[0], "error");
+  assert.equal(instructionErrors.length, 1);
+  assert.match(instructionErrors[0].textContent, /instruction read broke/);
   mounted.unmount();
 });
