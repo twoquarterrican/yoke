@@ -33,8 +33,8 @@ _ENCODING = {
 
 #: How each surface's selectable models are discovered. The manifest names the
 #: route rather than a list of model ids, because which models an account can
-#: select is a per-machine observation the relay reports and a document
-#: rendered at build time can only be wrong about.
+#: select is a per-machine observation where a native listing exists. Claude
+#: accepts catalog model ids; its published provider and effort facts apply.
 _MODEL_DISCOVERY = {
     "codex-cli": CODEX_LIST_SOURCE,
     "cursor-cli": CURSOR_LIST_SOURCE,
@@ -48,7 +48,14 @@ def launch_model_selection_manifest(surface: str) -> dict[str, object]:
         "source": "yoke_contracts.session_control.model_selection",
         "surface": surface,
         "model_discovery": discovery or "none",
-        "model_catalog": "native_cli" if discovery else "unobserved",
+        "model_catalog": "researched"
+        if surface == "claude-cli"
+        else "native_cli"
+        if discovery
+        else "unobserved",
+        "model_providers": {"claude-cli": ["anthropic"], "codex-cli": ["openai"]}.get(
+            surface
+        ),
         "reasoning_efforts": list(SURFACE_EFFORT_LEVELS.get(surface, ())),
         "context_windows": list(SURFACE_CONTEXT_WINDOWS.get(surface, ())),
         "native_encoding": _ENCODING.get(surface, {}),

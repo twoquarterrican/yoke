@@ -43,6 +43,7 @@ again.
 | Key | Type | Description |
 |-----|------|-------------|
 | `surface_id` | string | Session surface served by this native command (for example, `codex-cli`). |
+| `quota_source` | string | Relay quota adapter: `anthropic_oauth_usage`, `codex_account_rate_limits`, or `cursor_dashboard_usage`. Credentials stay on the executing machine; heartbeat readings carry values and named failure reasons. |
 | `executable` | string | Command name the vendor installs (for example, `cursor-agent`). |
 | `version_args` | list[string] | Arguments used by the bounded version probe. |
 | `bundled_candidates` | list[string] | Optional absolute executable paths inside a vendor application bundle. Empty when no supported bundled command exists. |
@@ -187,13 +188,14 @@ conflicting efforts and unadvertised combinations refuse before spawning.
 Native display labels establish selectable options, never served-session
 context attestation. Missing context remains unknown.
 
-It names no model tokens. Which models a surface can select is a per-machine
-observation rather than a build-time fact, so `model_discovery` names the route
-each surface is listed through — `cursor-agent --list-models`, `codex
-app-server model/list`, or `none` for a surface with no declared adapter — and
-`model_catalog` reports `native_cli` or `unobserved` accordingly. The observed
-answers ride the relay heartbeat; read them from a machine's own reading rather
-than from this manifest.
+It names no model tokens. `model_discovery` names `cursor-agent --list-models`,
+`codex app-server model/list`, or `none`. `model_catalog` is `native_cli` for
+observed selectors, `researched` for Claude's published catalog model ids and
+efforts, or `unobserved` for a surface without a selection source.
+`model_providers` restricts Claude to Anthropic and Codex to OpenAI; null leaves
+provider selection to the native listing. Native observations ride the relay
+heartbeat. Catalog selection uses the control plane's active catalog revision
+and never interprets a missing listing adapter as empty Claude quota.
 
 Its `resume_selection` is `native` when the CLI restores the conversation's
 selection, `explicit` when the relay must replay current session facts, and

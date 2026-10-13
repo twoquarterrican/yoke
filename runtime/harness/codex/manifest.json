@@ -4,6 +4,7 @@
   "cli": {
     "surface_id": "codex-cli",
     "executable": "codex",
+    "quota_source": "codex_account_rate_limits",
     "version_args": [
       "--version"
     ],
@@ -117,6 +118,9 @@
       "surface": "codex-cli",
       "model_discovery": "codex app-server model/list",
       "model_catalog": "native_cli",
+      "model_providers": [
+        "openai"
+      ],
       "reasoning_efforts": [
         "none",
         "minimal",

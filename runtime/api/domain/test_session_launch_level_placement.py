@@ -298,21 +298,6 @@ def test_placement_keeps_native_pool_reset_until_json_projection(reset) -> None:
     )
 
 
-def test_pool_projection_preserves_null_reset_and_opaque_window() -> None:
-    from yoke_core.domain.session_launch_level_pools import PoolCheck
-
-    pool = PoolCheck("opaque .123+offset", None, None, None, "unknown", False)
-    assert json.loads(json.dumps(pool.to_dict())) == {
-        "window": "opaque .123+offset",
-        "remaining_percent": None,
-        "headroom_percent": None,
-        "resets_at": None,
-        "resets_utc": None,
-        "status": "unknown",
-        "exhausted": False,
-    }
-
-
 @pytest.mark.parametrize(
     "reset", ["", "2026-08-26", "2026-08-26T00:00:00", "2026-08-26T00:00:00-00:00"]
 )

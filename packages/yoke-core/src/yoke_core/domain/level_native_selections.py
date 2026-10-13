@@ -3,6 +3,9 @@
 from dataclasses import dataclass
 from yoke_contracts.model_level_resolution import normalized_effort
 from yoke_contracts.model_reference import lookup_model_reference
+from yoke_contracts.session_control.model_selection_manifest import (
+    launch_model_selection_manifest,
+)
 from yoke_contracts.session_control.model_selection import (
     LaunchModelSelection,
     LaunchModelSelectionError,
@@ -19,9 +22,34 @@ class NativeLevelSelection:
     context_window_tokens: int | None = None
 
 
+def catalog_supports(surface, model, records):
+    """Exclude providers the surface's manifest cannot serve."""
+    record = lookup_model_reference(model, records).record
+    providers = launch_model_selection_manifest(surface)["model_providers"]
+    return record is None or providers is None or record.provider in providers
+
+
 def native_selections(entry, *, surface, reading, records):
-    """Return every offered selector at the minimum effort, plus refusal detail."""
+    """Resolve the manifest's catalog or native selection at minimum effort."""
+    if not catalog_supports(surface, entry.model, records):
+        return (), None
+    required = lookup_model_reference(entry.model, records).record
+    if required is None:
+        return (
+            (),
+            f"model_catalog_missing: {entry.model}; publish researched model facts with yoke models publish",
+        )
     reading = reading or {}
+    if launch_model_selection_manifest(surface)["model_catalog"] == "researched":
+        reading = {
+            "status": "ok",
+            "models": [
+                {
+                    "model": required.model_id,
+                    "reasoning_efforts": required.reasoning_efforts,
+                }
+            ],
+        }
     if reading.get("status") == "unsupported":
         return (
             (),
@@ -32,12 +60,12 @@ def native_selections(entry, *, surface, reading, records):
             (),
             f"native_models_{reading.get('status', 'unknown')}: {reading.get('reason') or 'no native listing observed'}; refresh with yoke relay probe-models --surface {surface}",
         )
-    required = lookup_model_reference(entry.model, records).record
-    if required is None:
-        return (
-            (),
-            f"model_catalog_missing: {entry.model}; publish researched model facts with yoke models publish",
-        )
+    if not any(
+        lookup_model_reference(str(model.get("model") or ""), records).record
+        == required
+        for model in reading.get("models", ())
+    ):
+        return (), None
     if entry.min_effort not in {
         normalized_effort(value) for value in required.reasoning_efforts
     }:

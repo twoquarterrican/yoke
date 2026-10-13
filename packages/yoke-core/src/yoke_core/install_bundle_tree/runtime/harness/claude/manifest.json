@@ -4,6 +4,7 @@
   "cli": {
     "surface_id": "claude-cli",
     "executable": "claude",
+    "quota_source": "anthropic_oauth_usage",
     "version_args": [
       "--version"
     ],
@@ -109,7 +110,10 @@
       "source": "yoke_contracts.session_control.model_selection",
       "surface": "claude-cli",
       "model_discovery": "none",
-      "model_catalog": "unobserved",
+      "model_catalog": "researched",
+      "model_providers": [
+        "anthropic"
+      ],
       "reasoning_efforts": [
         "low",
         "medium",

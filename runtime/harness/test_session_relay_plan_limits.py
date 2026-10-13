@@ -279,7 +279,7 @@ def test_a_raising_probe_names_the_class_that_raised(
     def _boom(*, observed_at: str) -> dict:
         raise RuntimeError("vendor client exploded")
 
-    monkeypatch.setitem(limits._PROBES, "claude-cli", _boom)
+    monkeypatch.setitem(limits._PROBES, "anthropic_oauth_usage", _boom)
 
     readings = limits.observe_plan_limits(
         ("claude-cli",), state_dir=tmp_path, now=at(1_000.0), clock=lambda: NOW
@@ -316,3 +316,21 @@ def test_a_cache_written_by_another_shape_is_discarded_not_reported(
 
     assert calls == ["claude-cli"]
     assert readings["claude-cli"]["windows"][0]["reason"] == "stale_credential"
+
+
+def test_quota_probe_dispatches_manifest_source(monkeypatch):
+    from yoke_contracts.harness_cli_manifest import HARNESS_CLI_MANIFESTS
+
+    for manifest in HARNESS_CLI_MANIFESTS:
+        calls = []
+
+        def probe(*, observed_at):
+            calls.append(observed_at)
+            return unknown_reading(
+                manifest.surface_id, "test_read", observed_at=observed_at
+            )
+
+        monkeypatch.setitem(limits._PROBES, manifest.quota_source, probe)
+        result = limits._probe_one(manifest.surface_id, NOW)
+        assert calls == [NOW]
+        assert result["windows"][0]["reason"] == "test_read"

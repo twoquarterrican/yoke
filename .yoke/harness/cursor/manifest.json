@@ -4,6 +4,7 @@
   "cli": {
     "surface_id": "cursor-cli",
     "executable": "cursor-agent",
+    "quota_source": "cursor_dashboard_usage",
     "version_args": [
       "--version"
     ],
@@ -94,6 +95,7 @@
       "surface": "cursor-cli",
       "model_discovery": "cursor-agent --list-models",
       "model_catalog": "native_cli",
+      "model_providers": null,
       "reasoning_efforts": [
         "none",
         "minimal",

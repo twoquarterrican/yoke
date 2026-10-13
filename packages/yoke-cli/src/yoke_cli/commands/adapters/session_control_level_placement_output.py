@@ -41,7 +41,13 @@ def _pool(pool: Mapping[str, Any]) -> str:
         f"headroom {_percent(pool.get('headroom_percent'))}"
     )
     resets = pool.get("resets_utc")
-    return f"{text}, resets {resets} UTC" if resets else text
+    if resets:
+        text += f", resets {resets} UTC"
+    if pool.get("reason"):
+        text += f"; {pool['reason']}"
+        if pool.get("guidance"):
+            text += f"; {pool['guidance']}"
+    return text
 
 
 def _pools_cell(row: Mapping[str, Any]) -> str:

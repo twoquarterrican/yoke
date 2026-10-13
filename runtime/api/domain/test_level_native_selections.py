@@ -47,16 +47,17 @@ def test_codex_uses_model_token_and_effort_flag():
     )
 
 
-def test_unsupported_listing_reports_explicit_deferral():
+def test_claude_uses_declared_catalog_without_native_listing():
     selections, reason = native_selections(
         LevelEntry("claude-opus-5-5", "medium"),
         surface="claude-cli",
         reading={"status": "unsupported", "reason": "no native listing adapter"},
         records=RECORDS,
     )
-    assert selections == ()
-    assert "native_models_unsupported" in reason
-    assert "control-plane operator" in reason
+    assert reason is None
+    assert [
+        (selection.model, selection.reasoning_effort) for selection in selections
+    ] == [("claude-opus-5-5", "medium")]
 
 
 def test_available_model_at_wrong_effort_is_not_invented():
