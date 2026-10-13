@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import glob
 import re
-from pathlib import Path
 
 from yoke_contracts.hook_runner.shell_guard_repairs import (
     RIPGREP_REPLACE_CHECK_ID,
     executing_shell,
+    expanded_glob_path,
+    path_glob_is_unmatched,
     glob_repair,
     ripgrep_replace_repair,
 )
@@ -125,12 +125,8 @@ def _unmatched(command: str, cwd: str) -> str:
                 break
         if "/" not in path or not any(char in path for char in _GLOB_CHARS):
             continue
-        pattern = path if path.startswith("/") else str(Path(cwd) / path)
-        try:
-            if not glob.glob(pattern):
-                return path
-        except (OSError, ValueError):
-            continue
+        if path_glob_is_unmatched(path, cwd):
+            return path
     return ""
 
 
@@ -154,8 +150,10 @@ def lint_unmatched_path_glob(payload: dict) -> PolicyResult:
     if not token:
         return PolicyResult(NOOP)
     reason = (
-        "BLOCKED: unquoted path glob matches no files under the command cwd.\n\n"
-        f"Detected: `{token}`\nChecked tree: `{cwd}`\n\n"
+        "BLOCKED: unquoted path glob matches no files after home and cwd resolution.\n\n"
+        f"Detected: `{token}`\n"
+        f"Checked pattern: `{expanded_glob_path(token, cwd)}`\n"
+        f"Checked tree: `{cwd}`\n\n"
         "zsh NOMATCH aborts the command before the tool runs. Enumerate "
         "candidates with `rg --files`, or quote a pattern the tool consumes."
     )

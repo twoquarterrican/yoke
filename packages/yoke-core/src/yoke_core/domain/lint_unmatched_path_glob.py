@@ -9,16 +9,16 @@ enumeration alternative.
 
 from __future__ import annotations
 
-import glob
 import json
 import sys
-from pathlib import Path
 from typing import List, Optional, Tuple
 
 from yoke_contracts.hook_runner.denial_identity import attach_check_id
 from yoke_contracts.hook_runner.shell_guard_repairs import (
     RIPGREP_REPLACE_CHECK_ID,
     executing_shell,
+    expanded_glob_path,
+    path_glob_is_unmatched,
     glob_repair,
     ripgrep_replace_repair,
 )
@@ -111,19 +111,11 @@ def _unquoted_path_globs(command: str) -> List[str]:
     return found
 
 
-def _glob_is_unmatched(cwd: str, token: str) -> bool:
-    pattern = token if token.startswith("/") else str(Path(cwd) / token)
-    try:
-        return not glob.glob(pattern)
-    except (OSError, ValueError):
-        return False
-
-
 def _find_unmatched(command: str, cwd: str) -> Optional[str]:
     if not cwd:
         return None
     for token in _unquoted_path_globs(command):
-        if _glob_is_unmatched(cwd, token):
+        if path_glob_is_unmatched(token, cwd):
             return token
     return None
 
@@ -138,8 +130,9 @@ def _format_reason(
     command: str = "",
 ) -> str:
     body = (
-        "BLOCKED: unquoted path glob matches no files under the command cwd.\n\n"
+        "BLOCKED: unquoted path glob matches no files after home and cwd resolution.\n\n"
         f"Detected: `{token}`\n"
+        f"Checked pattern: `{expanded_glob_path(token, execution_cwd)}`\n"
     )
     if execution_cwd:
         body += f"Checked tree: `{execution_cwd}`\n"

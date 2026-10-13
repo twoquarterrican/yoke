@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import glob
 import os
 import shlex
 import re
@@ -104,6 +105,20 @@ def ripgrep_replace_repair(command: str) -> str | None:
     return None
 
 
+def expanded_glob_path(token: str, cwd: str) -> Path:
+    """Expand the executing user's home before resolving relative operands."""
+    path = Path(os.path.expanduser(token))
+    return path if path.is_absolute() else Path(os.path.expanduser(cwd)) / path
+
+
+def path_glob_is_unmatched(token: str, cwd: str) -> bool:
+    """Check home, absolute and cwd-relative globs on the executing machine."""
+    try:
+        return not glob.glob(str(expanded_glob_path(token, cwd)))
+    except (OSError, ValueError):
+        return False
+
+
 def glob_repair(command: str, token: str, cwd: str) -> tuple[str, list[str]] | None:
     """Return a quoted rg glob command and nearby files sharing its stem."""
     for segment in shell_segments(command):
@@ -114,9 +129,12 @@ def glob_repair(command: str, token: str, cwd: str) -> tuple[str, list[str]] | N
             or token not in segment
         ):
             continue
-        parent, name = str(Path(token).parent), Path(token).name
+        expanded = expanded_glob_path(token, cwd)
+        parent, name = str(expanded.parent), expanded.name
+        if not token.startswith(("~", "/")):
+            parent = str(Path(token).parent)
         stem = re.split(r"[*?\[]", name, maxsplit=1)[0]
-        directory = Path(cwd) / parent
+        directory = expanded.parent
         local = (
             (path for path in directory.glob(stem + "*") if path.is_file())
             if directory.is_dir()
@@ -172,6 +190,8 @@ __all__ = [
     "NOTHING_RAN",
     "RIPGREP_REPLACE_CHECK_ID",
     "executing_shell",
+    "expanded_glob_path",
+    "path_glob_is_unmatched",
     "glob_repair",
     "is_compound",
     "ripgrep_replace_repair",

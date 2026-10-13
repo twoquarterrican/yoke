@@ -207,3 +207,83 @@ def test_glob_guard_uses_command_shell_on_both_hook_paths(
     with mock.patch.object(lint, "_read_mode", return_value="deny"):
         assert (lint.evaluate_payload(payload) is not None) is denied
     assert (lint_unmatched_path_glob(payload).outcome == DENY) is denied
+
+
+@pytest.mark.parametrize("hook", ["core", "client"])
+@pytest.mark.parametrize("operand", ["home", "absolute", "relative"])
+@pytest.mark.parametrize("matching", [True, False])
+def test_path_globs_use_the_executing_filesystem(
+    tmp_path: Path, monkeypatch, hook: str, operand: str, matching: bool
+) -> None:
+    from yoke_harness.hooks.local_policy_common import DENY
+    from yoke_harness.hooks.unmatched_path_glob import lint_unmatched_path_glob
+
+    home = tmp_path / "home"
+    downloads = home / "Downloads"
+    downloads.mkdir(parents=True)
+    (downloads / "Meeting-notes.txt").write_text("notes")
+    monkeypatch.setenv("HOME", str(home))
+    cwd = tmp_path / "repository"
+    cwd.mkdir()
+    stem = "Meeting" if matching else "Missing"
+    if operand == "home":
+        token = f"~/Downloads/{stem}*"
+    elif operand == "absolute":
+        token = str(downloads / f"{stem}*")
+    else:
+        token = f"../home/Downloads/{stem}*"
+    payload = _payload(f"ls {token}", cwd=str(cwd))
+    if hook == "core":
+        with mock.patch.object(lint, "_read_mode", return_value="deny"):
+            result = lint.evaluate_payload(payload)
+        denied = result is not None
+        reason = result[1] if result else ""
+    else:
+        result = lint_unmatched_path_glob(payload)
+        denied = result.outcome == DENY
+        reason = result.message
+    assert denied is not matching
+    if denied:
+        assert token in reason
+        assert "Checked pattern:" in reason
+        assert "rg --files" in reason
+
+
+@pytest.mark.parametrize("hook", ["core", "client"])
+def test_home_glob_does_not_match_a_literal_tilde_directory(
+    tmp_path: Path, monkeypatch, hook: str
+) -> None:
+    from yoke_harness.hooks.local_policy_common import DENY
+    from yoke_harness.hooks.unmatched_path_glob import lint_unmatched_path_glob
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    literal = tmp_path / "repository" / "~" / "Downloads"
+    literal.mkdir(parents=True)
+    (literal / "Meeting-notes.txt").write_text("notes")
+    cwd = str(tmp_path / "repository")
+    if hook == "core":
+        assert _eval("ls ~/Downloads/Meeting*", cwd=cwd) is not None
+    else:
+        assert (
+            lint_unmatched_path_glob(
+                _payload("ls ~/Downloads/Meeting*", cwd=cwd)
+            ).outcome
+            == DENY
+        )
+
+
+def test_home_glob_repair_enumerates_expanded_parent(tmp_path: Path, monkeypatch):
+    home = tmp_path / "home with spaces"
+    downloads = home / "Downloads"
+    downloads.mkdir(parents=True)
+    notes = downloads / "Meeting-notes.txt"
+    notes.write_text("notes")
+    monkeypatch.setenv("HOME", str(home))
+    cwd = tmp_path / "repository"
+    cwd.mkdir()
+    reason = _eval("ls ~/Downloads/Meeting*.pdf", cwd=str(cwd))[1]
+    assert str(notes) in reason
+    assert f"'{downloads}'" in reason
+    assert "Checked pattern:" in reason
