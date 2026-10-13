@@ -7,7 +7,7 @@ from typing import Any
 
 from yoke_cli.config.hosted_machine_browser import open_url
 
-from yoke_contracts import github_app_installation_permissions
+from yoke_contracts import github_app_installation_permissions, github_origin
 from yoke_cli.config import github_machine
 from yoke_cli.config import machine_config
 from yoke_cli.config import onboard_github_copy
@@ -57,16 +57,8 @@ class ProjectGithubAccessFlow:
     def _on_project_github(self, choice: str) -> None:
         if choice == PROJECT_GITHUB_REUSE_MACHINE and not github_connected(self.result):
             choice = "skip"
-        if choice == PROJECT_GITHUB_REUSE_MACHINE:
-            repository = self._connected_project_repository()
-            if repository is not None:
-                self._show_project_github_access(repository)
-                return
-            self._goto_project_github_access()
-            return
-        if choice == GITHUB_ADOPTION_APP_BINDING:
-            self._open_project_github_access()
-            self._goto_project_github_access()
+        if choice in {PROJECT_GITHUB_REUSE_MACHINE, GITHUB_ADOPTION_APP_BINDING}:
+            self._on_project_github_access("refresh")
             return
         self.result.project_github_adoption = reuse_choice_to_adoption(choice)
         self.result.project_github_adoption_preserve = False
@@ -75,19 +67,6 @@ class ProjectGithubAccessFlow:
         if choice == "skip":
             self._goto_board_art()
 
-    def _connected_project_repository(self) -> dict[str, Any] | None:
-        repo = str(self.result.project_github_repo or "").casefold()
-        if not repo:
-            return None
-        config = machine_config.github_config(self.result.config_path)
-        for raw in config.get("repositories") or []:
-            if (
-                isinstance(raw, dict)
-                and str(raw.get("full_name") or "").casefold() == repo
-            ):
-                return raw
-        return None
-
     def _project_github_access_url(self) -> str:
         owner = str(self.result.project_github_repo or "").split("/", 1)[0]
         return github_state.repository_access_url(self.result, owner=owner)
@@ -95,11 +74,18 @@ class ProjectGithubAccessFlow:
     def _open_project_github_access(
         self, *, owner: str | None = None
     ) -> tuple[str, bool]:
-        url = (
-            github_state.repository_access_url(self.result, owner=owner)
-            if owner
-            else self._project_github_access_url()
-        )
+        try:
+            url = (
+                github_state.repository_access_url(self.result, owner=owner)
+                if owner
+                else self._project_github_access_url()
+            )
+        except github_origin.GitHubApiOriginError as exc:
+            self._project_github_access_error = str(exc)
+            self._project_github_access_opened = False
+            self._project_github_access_opened_url = ""
+            return "", False
+        self._project_github_access_error = ""
         try:
             opened = open_url(url).opened
         except Exception:
@@ -111,23 +97,23 @@ class ProjectGithubAccessFlow:
     def _goto_project_github_access(self) -> None:
         from yoke_cli.config.onboard_wizard_app import _View
 
-        url = str(
-            getattr(self, "_project_github_access_opened_url", "")
-            or self._project_github_access_url()
-        )
-        opened = bool(getattr(self, "_project_github_access_opened", False))
-        details = [
-            f"Repository: {self.result.project_github_repo}",
-            (
-                "GitHub opened the App access page."
-                if opened
-                else "The browser did not open; copy the App access URL below."
-            ),
-            f"GitHub App access URL: {url}",
-        ]
-        repository = self._connected_project_repository()
-        if repository is not None:
-            details.extend(self._project_installation_status(repository)[1])
+        details = [f"Repository: {self.result.project_github_repo}"]
+        error = getattr(self, "_project_github_access_error", "")
+        if error:
+            details.append(error)
+        else:
+            try:
+                url = self._project_github_access_url()
+            except github_origin.GitHubApiOriginError as exc:
+                details.append(str(exc))
+            else:
+                details.extend(
+                    [
+                        f"Your Yoke app can see selected repos only. Add {self.result.project_github_repo} here.",
+                        f"GitHub App access URL: {url}",
+                        "After updating access, choose Check access again.",
+                    ]
+                )
         self._goto(
             _View(
                 STEP_PROJECT,
@@ -144,6 +130,9 @@ class ProjectGithubAccessFlow:
 
     def _on_project_github_access(self, choice: str) -> None:
         if choice == "refresh":
+            self._project_github_access_error = ""
+            self.result.project_github_repository_id = None
+            self.result.project_github_installation_id = None
             self._run_checking(
                 step=STEP_PROJECT,
                 title="Refreshing GitHub App access.",
@@ -154,7 +143,7 @@ class ProjectGithubAccessFlow:
                     **github_state.connection_scope(self.result),
                 ),
                 on_success=self._after_project_github_access_refresh,
-                on_error=lambda _exc: self._goto_project_github_access(),
+                on_error=self._project_github_access_refresh_error,
                 group="onboard-project-github-access",
                 replace_current=True,
                 blocks_quit=True,
@@ -170,13 +159,30 @@ class ProjectGithubAccessFlow:
         asyncio.ensure_future(self.action_back())
 
     def _after_project_github_access_refresh(self, report: Any) -> None:
-        # Global status can be non-green because another account's App
-        # installation is unhealthy. This project depends only on the exact
-        # repository and its owning installation.
+        identity = report.get("identity") if isinstance(report, dict) else None
+        access = report.get("access") if isinstance(report, dict) else None
+        if not (
+            isinstance(identity, dict)
+            and identity.get("checked") is True
+            and identity.get("ok") is True
+            and isinstance(access, dict)
+            and access.get("repo_listing_ok") is True
+        ):
+            self._project_github_access_refresh_error(
+                RuntimeError("GitHub did not confirm identity and repository listing.")
+            )
+            return
         repository = self._live_project_repository(report)
         if repository is not None:
             self._show_project_github_access(repository)
             return
+        self._goto_project_github_access()
+
+    def _project_github_access_refresh_error(self, exc: Exception) -> None:
+        self._project_github_access_error = (
+            f"repository_access_unknown: {exc} "
+            "Restore the GitHub connection, then choose Check access again."
+        )
         self._goto_project_github_access()
 
     def _live_project_repository(self, report: Any) -> dict[str, Any] | None:
@@ -206,6 +212,7 @@ class ProjectGithubAccessFlow:
     def _show_project_github_access(self, repository: dict[str, Any]) -> None:
         usable, details = self._project_installation_status(repository)
         if not usable:
+            self._project_github_access_error = " ".join(details)
             self._goto_project_github_access()
             return
         repository_id = repository.get("repository_id")
@@ -216,6 +223,10 @@ class ProjectGithubAccessFlow:
             and isinstance(installation_id, int)
             and installation_id > 0
         ):
+            self._project_github_access_error = (
+                "repository_identity_incomplete: GitHub did not return usable repository "
+                "and installation ids. Choose Check access again; reconnect the App if it persists."
+            )
             self._goto_project_github_access()
             return
         self.result.project_github_adoption = GITHUB_ADOPTION_APP_BINDING
@@ -240,9 +251,13 @@ class ProjectGithubAccessFlow:
             None,
         )
         if installation is None:
-            return False, ["The repository's App installation metadata is unavailable."]
+            return False, [
+                "github_installation_metadata_unavailable: reconnect the GitHub App, then choose Check access again."
+            ]
         if installation.get("suspended"):
-            return False, ["This repository's GitHub App installation is suspended."]
+            return False, [
+                "github_installation_suspended: restore this repository's GitHub App installation in GitHub, then choose Check access again."
+            ]
         evaluation = github_app_installation_permissions.evaluate_installation_repository_permissions(
             installation.get("permissions") or {}
         )

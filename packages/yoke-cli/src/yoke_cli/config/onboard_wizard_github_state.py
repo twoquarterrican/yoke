@@ -54,8 +54,7 @@ def connection_scope(result: Any) -> dict[str, Any]:
 
     selected_service = str(getattr(result, "api_url", "") or "").strip()
     local_selected = (
-        getattr(result, "destination", None)
-        == onboard_destinations.DESTINATION_LOCAL
+        getattr(result, "destination", None) == onboard_destinations.DESTINATION_LOCAL
     )
     if bool(selected_service) == local_selected:
         raise github_local_user_access.GitHubLocalUserAccessError(
@@ -94,8 +93,7 @@ def repository_access_url(result: Any, *, owner: str | None = None) -> str:
         if not isinstance(installation, dict):
             continue
         if selected_owner and (
-            str(installation.get("account_login") or "").casefold()
-            != selected_owner
+            str(installation.get("account_login") or "").casefold() != selected_owner
         ):
             continue
         try:
@@ -106,25 +104,47 @@ def repository_access_url(result: Any, *, owner: str | None = None) -> str:
                 account_login=str(installation.get("account_login") or ""),
             )
         except github_origin.GitHubApiOriginError:
+            pass
+        installation_id = installation.get("installation_id")
+        login = str(installation.get("account_login") or "")
+        try:
+            url = endpoint.installation_settings_url(installation_id)
+            if str(installation.get("account_type") or "").casefold() == "organization":
+                url = endpoint.web.url(
+                    f"/organizations/{login}/settings/installations/{installation_id}"
+                )
+            return github_installation_urls.validated_settings_url(
+                url,
+                web_url=endpoint.web.base_url,
+                installation_id=installation_id,
+                account_login=login,
+            )
+        except github_origin.GitHubApiOriginError:
             continue
-    slug = str(config.get("app_slug") or "").strip()
-    return endpoint.app_install_url(slug) if slug else endpoint.web.base_url
+    raise github_origin.GitHubApiOriginError(
+        "github_installation_settings_unavailable: no valid installation identity "
+        "for this owner. Reconnect the Yoke GitHub App for this owner, then check access again."
+    )
 
 
 def administration_allowed(result: Any) -> bool:
     """Whether the selected owner has a live optional Administration grant."""
     config = machine_config.github_config(getattr(result, "config_path", None))
     try:
-        if github_origin.validate_github_endpoint_pair(
-            str(config.get("api_url") or github_origin.DEFAULT_GITHUB_API_URL),
-            str(config.get("web_url") or github_origin.DEFAULT_GITHUB_WEB_URL),
-        ).deployment_kind != "github_cloud":
+        if (
+            github_origin.validate_github_endpoint_pair(
+                str(config.get("api_url") or github_origin.DEFAULT_GITHUB_API_URL),
+                str(config.get("web_url") or github_origin.DEFAULT_GITHUB_WEB_URL),
+            ).deployment_kind
+            != "github_cloud"
+        ):
             return False
     except github_origin.GitHubApiOriginError:
         return False
     owner = str(getattr(result, "project_publish_owner", None) or "").casefold()
     return any(
-        isinstance(row, dict) and isinstance(row.get("permissions"), dict)
+        isinstance(row, dict)
+        and isinstance(row.get("permissions"), dict)
         and str(row.get("account_login") or "").casefold() == owner
         and not row.get("suspended")
         and row.get("repository_selection") == "all"
@@ -143,36 +163,38 @@ def fork_ready(result: Any, remote_url: str | None) -> bool:
 
 
 def fork_ready_from_config(
-    config: dict[str, Any], remote_url: str | None,
+    config: dict[str, Any],
+    remote_url: str | None,
 ) -> bool:
     """Whether cached topology satisfies GitHub's fork endpoint permissions."""
 
     if not remote_url:
         return False
     try:
-        if github_origin.validate_github_endpoint_pair(
-            str(config.get("api_url") or github_origin.DEFAULT_GITHUB_API_URL),
-            str(config.get("web_url") or github_origin.DEFAULT_GITHUB_WEB_URL),
-        ).deployment_kind != "github_cloud":
+        if (
+            github_origin.validate_github_endpoint_pair(
+                str(config.get("api_url") or github_origin.DEFAULT_GITHUB_API_URL),
+                str(config.get("web_url") or github_origin.DEFAULT_GITHUB_WEB_URL),
+            ).deployment_kind
+            != "github_cloud"
+        ):
             return False
     except github_origin.GitHubApiOriginError:
         return False
     authorization = config.get("authorization")
     login = str(
-        authorization.get("login")
-        if isinstance(authorization, dict) else ""
+        authorization.get("login") if isinstance(authorization, dict) else ""
     ).casefold()
     try:
         source = github_origin.normalize_github_repository(
             remote_url,
-            web_url=str(
-                config.get("web_url") or github_origin.DEFAULT_GITHUB_WEB_URL
-            ),
+            web_url=str(config.get("web_url") or github_origin.DEFAULT_GITHUB_WEB_URL),
         )
     except github_origin.GitHubApiOriginError:
         return False
     installations = [
-        row for row in config.get("installations") or []
+        row
+        for row in config.get("installations") or []
         if isinstance(row, dict) and not row.get("suspended")
     ]
     personal_all = any(

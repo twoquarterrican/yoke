@@ -271,7 +271,8 @@ def test_project_access_browser_failure_renders_copyable_settings_url(
 
     asyncio.run(scenario())
 
-    assert "browser did not open" in captured["body"]
+    assert "browser did not open" not in captured["body"]
+    assert "Add octo-org/private here." in captured["body"]
     assert settings_url in captured["body"]
 
 

@@ -86,6 +86,13 @@ renews. That one is read locally and rotates nothing, so a status check never
 breaks a push in flight — and it never gates `ready`, because a machine with no
 token cached yet simply mints one on its next command.
 
+Setup also checks existing repositories live before binding them. If a successful
+check cannot see your repository, add the exact `owner/repo` using the displayed
+GitHub App installation settings link, then choose **Check access again**.
+The link identifies the owning personal or organization installation. A failed
+identity or repository-list check reports access as unknown and asks you to
+restore the connection and retry; cached repository lists do not prove access.
+
 ## Sync modes
 
 Projects can run backlog-only (DB is authority, no issue sync) or sync with
