@@ -7,7 +7,10 @@ from yoke_core.domain.qa_latest_execution import latest_execution_id_sql
 from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
 from yoke_core.domain.qa_plan_attachment_retract import retract_requirements
 from yoke_core.domain.qa_plan_execution_lifecycle import finish_plan_execution
-from yoke_core.domain.qa_plan_execution_schema import LIVE_PLAN_EXECUTION_SQL
+from yoke_core.domain.qa_plan_execution_schema import (
+    LIVE_PLAN_EXECUTION_SQL,
+    TERMINAL_PLAN_EXECUTION_STATES,
+)
 from yoke_core.domain.qa_plan_execution_store import lock_plan_execution
 from yoke_core.domain.schema_common import _table_exists
 
@@ -26,6 +29,9 @@ def settle_unsuccessful_run(conn: Any, run_id: str, *, reason: str) -> None:
             if _table_exists(conn, "qa_plan_executions")
             else []
         )
+    ]
+    executions = [
+        e for e in executions if e["state"] not in TERMINAL_PLAN_EXECUTION_STATES
     ]
     # Clear queue intents together before a released host can grant the next
     # cursor from this same closed run.

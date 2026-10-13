@@ -33,6 +33,32 @@ from yoke_core.domain.qa_plan_execution_state import begin_plan_execution
 from yoke_core.domain.qa_terminal_settlement import find_unsettled_records
 
 
+def test_closure_preserves_execution_that_completes_before_its_lock(monkeypatch):
+    from yoke_core.domain import qa_deployment_run_settlement as settlement
+    from unittest.mock import Mock
+
+    conn = Mock()
+    monkeypatch.setattr(settlement, "_table_exists", lambda *args: True)
+    monkeypatch.setattr(
+        settlement,
+        "query_rows",
+        lambda conn, sql, params: (
+            [{"id": "review-finished"}] if "qa_plan_executions" in sql else []
+        ),
+    )
+    monkeypatch.setattr(
+        settlement,
+        "lock_plan_execution",
+        lambda *args: {"id": "review-finished", "state": "completed"},
+    )
+    finish = Mock()
+    monkeypatch.setattr(settlement, "finish_plan_execution", finish)
+    monkeypatch.setattr(settlement, "retract_requirements", Mock())
+    settlement.settle_unsuccessful_run(conn, "run-failed", reason="runner failed")
+    finish.assert_not_called()
+    conn.execute.assert_not_called()
+
+
 def test_failed_run_qa_cleanup_rolls_back_with_the_run(test_db, monkeypatch):
     from yoke_core.domain import deployment_run_terminalization
 
