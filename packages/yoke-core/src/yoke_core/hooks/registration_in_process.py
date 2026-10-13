@@ -18,6 +18,7 @@ from yoke_core.domain.session_level_resolution import (
     routing_effort_of,
     routing_model_of,
 )
+from yoke_core.domain.sessions_analytics import SessionError
 from yoke_core.hooks.registration_identity import project_level_for_session
 
 
@@ -96,6 +97,10 @@ def _register_in_process(
         finally:
             conn.close()
         return ""
+    except SessionError as exc:
+        if exc.code == "SESSION_EXISTS":
+            return ""
+        return f"{exc.code}: {exc}"
     except Exception as exc:  # noqa: BLE001 — best-effort net, mirror the wrapper
         return str(exc)
 

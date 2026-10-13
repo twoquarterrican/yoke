@@ -14,6 +14,65 @@ import pytest
 from yoke_core.hooks import registration as register_module
 
 
+@pytest.mark.parametrize("executor", ["claude", "codex", "cursor"])
+@pytest.mark.parametrize("refusal", [None, "SESSION_TERMINATED", "PROJECT_ID_REQUIRED"])
+def test_repeated_registration_preserves_real_refusals(monkeypatch, executor, refusal):
+    from yoke_contracts.session_model_facts import SessionModelFacts
+    from yoke_core.domain import db_helpers, sessions_lifecycle_registry
+    from yoke_core.domain.sessions_analytics import SessionError
+    from yoke_core.hooks import registration_in_process, session_dispatch_orientation
+
+    registered = set()
+    closed = []
+
+    class Connection:
+        def close(self):
+            closed.append(True)
+
+    def register(_conn, *, session_id, **_kwargs):
+        if refusal:
+            raise SessionError(refusal, "Registration refused; open a new session.")
+        if session_id in registered:
+            raise SessionError("SESSION_EXISTS", "Session is already registered.")
+        registered.add(session_id)
+
+    monkeypatch.setattr(db_helpers, "connect", Connection)
+    monkeypatch.setattr(sessions_lifecycle_registry, "register_session", register)
+    monkeypatch.setattr(
+        registration_in_process, "project_level_for_session", lambda *a, **k: None
+    )
+    monkeypatch.setattr(
+        session_dispatch_orientation, "_orientation_base", lambda *a, **k: []
+    )
+    facts = SessionModelFacts()
+    for _ in range(2):
+        error = registration_in_process._register_in_process(
+            "test-session",
+            executor,
+            "test-provider",
+            facts,
+            "/checkout",
+            None,
+            project_id=1,
+        )
+        orientation = session_dispatch_orientation._render_codex_orientation(
+            "test-session",
+            "/checkout",
+            error,
+            facts,
+            None,
+        )
+        if refusal:
+            assert refusal in error and "open a new session" in error
+            assert refusal in orientation and "Run:" in orientation
+        else:
+            assert error == ""
+            assert "Session registration failed" not in orientation
+            assert "scheduler will not see" not in orientation
+    assert registered == (set() if refusal else {"test-session"})
+    assert closed == [True, True]
+
+
 @pytest.fixture(autouse=True)
 def _no_real_anchor_writes(monkeypatch):
     """These are registrar-branch unit tests; the anchor side has its own.
