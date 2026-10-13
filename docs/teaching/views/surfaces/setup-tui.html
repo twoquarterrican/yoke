@@ -34,6 +34,7 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
   <div><b>Sources:</b>
   <code>packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py</code>,
   <code>packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py</code>,
+  <code>packages/yoke-cli/src/yoke_cli/config/onboard_wizard_redraw.py</code>,
   <code>packages/yoke-cli/src/yoke_cli/config/onboard_destination_rows.py</code></div>
   <div><b>FIRST-USER:</b>
   <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.1">1</a>,
@@ -128,6 +129,18 @@ active-harness readiness and one next action.
   <a href="../concepts/installation.html#installation/readiness">installation/readiness</a>,
   <a href="../concepts/universes.html#universes/universe">universes/universe</a>,
   <a href="../concepts/agents.html#agents/harnesses">agents/harnesses</a></div>
+<h3 id="setup-tui/06">Each screen shows once: every screen change and resize
+erases and repaints the whole terminal at its live size, with the step header
+pinned. <i class="s observed">observed</i></h3>
+  <div><b>Form:</b> Rule</div>
+  <div><b>Verification:</b> Source and
+  runtime/api/cli/test_onboard_wizard_resize_redraw.py replay setup&#x27;s real
+  terminal output through screen changes and resizes; no live-terminal capture
+  yet.</div>
+  <div><b>FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-setup-fixes.html#FIRST-USER.7">7</a></div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/installation.html#installation/entry">installation/entry</a></div>
 <h3 id="setup-tui/desired-01">Choose local, self-hosted or hosted with clear
 reachability; support stale setup and backup recovery.
 <i class="s candidate">candidate</i></h3>

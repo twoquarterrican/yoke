@@ -1,4 +1,4 @@
-"""Setup's POSIX job-control safety around Textual's terminal lifecycle.
+"""Setup's terminal geometry and POSIX job-control safety around Textual.
 
 The input thread blocks SIGTTIN so a racing background read returns EIO
 instead of stopping the process with raw/mouse modes active. Startup and
@@ -19,6 +19,7 @@ from yoke_cli.config.onboard_terminal import (
 )
 
 OWNERSHIP_CHECK_SECONDS = 0.1
+STATIC_GEOMETRY_VARIABLES = ("COLUMNS", "LINES")
 
 
 @contextmanager
@@ -30,7 +31,33 @@ def _blocked(signals):
         signal.pthread_sigmask(signal.SIG_SETMASK, previous)
 
 
+@contextmanager
+def live_terminal_geometry():
+    """Hide exported COLUMNS/LINES so every size read asks the terminal.
+
+    Textual's POSIX driver and Rich's Windows startup size both prefer these
+    variables over the console. A value exported before a window resize pins
+    the wizard to the old geometry: frames taller than the window scroll it,
+    the step header disappears, and earlier screens stay visible.
+    """
+    saved = {
+        name: os.environ.pop(name)
+        for name in STATIC_GEOMETRY_VARIABLES
+        if name in os.environ
+    }
+    try:
+        yield
+    finally:
+        os.environ.update(saved)
+
+
 def run_wizard_app(app) -> None:
+    """Run the wizard against the terminal's live geometry."""
+    with live_terminal_geometry():
+        _run_with_platform_driver(app)
+
+
+def _run_with_platform_driver(app) -> None:
     """Use the native Windows lifecycle or the guarded POSIX driver."""
     if os.name == "nt":
         app.run()
