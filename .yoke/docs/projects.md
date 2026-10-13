@@ -46,7 +46,7 @@ yoke project install ~/path/to/checkout
 ```
 
 Writes skills, agents, hooks, contract seeds, and `.yoke/docs` from the
-engine. The folder must already be a Git checkout; initialize it with
+engine. The folder must already be a Git checkout root; initialize it with
 `git init` before installing, or use project create for a new folder.
 Refresh after upgrades the same way. Both operations require a
 clean checkout on the project default branch, fast-forward it onto its

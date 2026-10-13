@@ -15,29 +15,7 @@ from yoke_contracts.machine_config.schema import (
     ENV_OVERRIDE,
 )
 from yoke_core.domain.yoke_function_registry import RegistryEntry
-
-
-def project_selection_missing(request: FunctionCallRequest) -> bool:
-    """Missing selection differs from an unresolved supplied project or row."""
-    target = request.target.model_dump(exclude={"kind"}, exclude_none=True)
-    if any(str(value).strip() for value in target.values()):
-        return False
-    payload = request.payload
-    if any(
-        str(payload.get(key) or "").strip()
-        for key in (
-            "project",
-            "project_id",
-            "slug",
-            "scope",
-            "entry_id",
-            "path_claim_id",
-            "env_id",
-        )
-    ):
-        return False
-    supplied_target = payload.get("target")
-    return not isinstance(supplied_target, dict) or not supplied_target
+from yoke_core.domain.function_project_selection import project_selection_missing
 
 
 def unresolved_project_response(

@@ -13,6 +13,16 @@ from yoke_cli.board import rebuild as board_rebuild
 from yoke_cli.config import machine_config
 
 
+@pytest.fixture(autouse=True)
+def connected_roster(monkeypatch):
+    monkeypatch.setattr(
+        "yoke_cli.board.rebuild_resolve.missing_project_context",
+        lambda **_kw: (
+            "project_required: pass --repo-root PATH. Accessible projects: mine."
+        ),
+    )
+
+
 def _configured_project(
     checkout: Path, project_id: int
 ) -> machine_config.ConfiguredProject:
@@ -64,7 +74,7 @@ def test_resolve_board_project_rejects_home_machine_yoke_with_multiple_projects(
     )
 
     with pytest.raises(
-        board_rebuild.BoardProjectResolutionError, match="could not choose"
+        board_rebuild.BoardProjectResolutionError, match="project_required"
     ):
         board_rebuild.resolve_main_repo_root()
 
@@ -157,4 +167,6 @@ def test_board_rebuild_fails_cleanly_when_project_is_ambiguous(
 
     assert rc == 2
     assert stdout.getvalue() == ""
-    assert "could not choose a board project" in stderr.getvalue()
+    assert "project_required" in stderr.getvalue()
+    assert "Accessible projects: mine" in stderr.getvalue()
+    assert str(externalwebapp) not in stderr.getvalue()

@@ -84,3 +84,19 @@ def test_default_export_folder_obstruction_teaches_recovery(tmp_path, monkeypatc
     ):
         universe_export_download._destination(None, "demo.tar")
     assert (tmp_path / "exports").read_text() == "preserve this file"
+
+
+def test_install_refuses_a_plain_folder_inside_another_repository(
+    tmp_path, monkeypatch
+):
+    import subprocess
+
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    child = tmp_path / "plain-folder"
+    child.mkdir()
+    monkeypatch.setattr(
+        runner, "_resolve_bundle", lambda *_a, **_k: pytest.fail("bundle read")
+    )
+    with pytest.raises(ProjectInstallError, match="project_git_required"):
+        runner.install(child, project_id=7)
+    assert list(child.iterdir()) == []

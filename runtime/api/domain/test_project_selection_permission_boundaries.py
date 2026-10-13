@@ -16,7 +16,13 @@ from yoke_core.domain.yoke_function_permissions import check_dispatch_permission
 
 @pytest.mark.parametrize(
     "function",
-    ["items.create", "packs.list", "github_actions.secret.set", "doctor.run.run"],
+    [
+        "items.create",
+        "packs.list",
+        "github_actions.secret.set",
+        "doctor.run.run",
+        "qa.plan.create",
+    ],
 )
 def test_missing_selection_names_only_accessible_project(function):
     with _conn() as conn:
@@ -37,6 +43,8 @@ def test_missing_selection_names_only_accessible_project(function):
             payload=(
                 {"quick": True, "project_safe_quick": True}
                 if function == "doctor.run.run"
+                else {"slug": "a-plan-name"}
+                if function == "qa.plan.create"
                 else {}
             ),
         )
