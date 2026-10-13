@@ -219,11 +219,11 @@ class TestSyncItem:
         """A numeric source/owner renders to the actor's name and
         contributes ``source:`` / ``owner:`` labels to the create payload.
         The raw integer must not appear in any label argument."""
-        from yoke_core.domain.actors import resolve_actors_by_name
+        from yoke_core.domain.actors import resolve_actors_by_name, seed_system_actor
 
         db = _make_db()
         (local_human,) = resolve_actors_by_name(db, "ben")
-        (yoke_core,) = resolve_actors_by_name(db, "yoke-core")
+        sync_worker = seed_system_actor(db, "sync-worker")
 
         insert_item(
             db,
@@ -234,7 +234,7 @@ class TestSyncItem:
             project="externalwebapp",
             spec="Owner label test",
             source=str(local_human),
-            owner=str(yoke_core),
+            owner=str(sync_worker),
         )
         stdout = io.StringIO()
 
@@ -255,9 +255,9 @@ class TestSyncItem:
         create_issue.assert_called_once()
         labels = create_issue.call_args.kwargs["labels"]
         assert "source:ben" in labels
-        assert "owner:yoke-core" in labels
+        assert "owner:sync-worker" in labels
         assert f"source:{local_human}" not in labels
-        assert f"owner:{yoke_core}" not in labels
+        assert f"owner:{sync_worker}" not in labels
         db.close()
 
 

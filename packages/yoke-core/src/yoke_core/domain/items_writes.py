@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Optional
 
+from yoke_core.domain.actors import first_human_actor_id
 from yoke_core.domain.db_helpers import connect, instant_parameter
 from yoke_core.domain.items_bulk_writes import update_item_multi as update_item_multi
 from yoke_core.domain.item_field_parameters import item_field_parameter
 from yoke_core.domain.items_constants import (
     CONTENT_FIELDS,
-    DEFAULT_ITEM_ACTOR_ID,
     INTEGER_FIELDS,
     STRUCTURED_FIELDS,
     _map_blocked_write,
@@ -50,7 +50,7 @@ def insert_item(
     body: Optional[str] = None,
     created_at: Optional[str] = None,
     updated_at: Optional[str] = None,
-    source: str = DEFAULT_ITEM_ACTOR_ID,
+    source: Optional[str] = None,
     project: Optional[str] = None,
     project_sequence: Optional[int] = None,
     deployment_flow: Optional[str] = None,
@@ -100,6 +100,8 @@ def insert_item(
             ).stage_ids[0]
         if project_sequence is None:
             project_sequence = allocate_project_sequence(conn, project_identity.id)
+        if source is None:
+            source = str(first_human_actor_id(conn))
         conn.execute(
             """
             INSERT INTO items (

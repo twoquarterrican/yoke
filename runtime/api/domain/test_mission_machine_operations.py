@@ -164,8 +164,8 @@ def test_mission_holder_borrows_lease_and_submit_keeps_it(mission, operation):
 @pytest.mark.parametrize(
     "actor",
     [
-        ActorContext(actor_id="2", session_id="foreign-session"),
-        ActorContext(actor_id="1", session_id=ACTOR.session_id),
+        ActorContext(actor_id="1", session_id="foreign-session"),
+        ActorContext(actor_id="2", session_id=ACTOR.session_id),
     ],
 )
 def test_foreign_session_or_actor_cannot_borrow_mission(mission, operation, actor):
@@ -213,7 +213,7 @@ def test_foreign_submission_or_abort_cannot_settle_mission(mission, handler):
         }
         payload["reason"] = "client_cancelled"
     refused = handler(
-        request(payload, ActorContext(actor_id="2", session_id="foreign-session"))
+        request(payload, ActorContext(actor_id="1", session_id="foreign-session"))
     )
     assert not refused.primary_success
     assert "mission_operation_foreign_holder" in refused.error.message

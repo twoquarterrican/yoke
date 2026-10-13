@@ -47,7 +47,7 @@ def _seed(conn, body=REPORT):
     ref = conn.execute(
         "SELECT public_ref FROM item_refs WHERE item_id=%s", (followup["id"],)
     ).fetchone()[0]
-    _system, actor = actors.seed_canonical_actors(conn, local_human_name="triage-owner")
+    actor = actors.seed_canonical_human(conn, local_human_name="triage-owner")
     insert_item_claim(conn, "simulation-owner", item["id"])
     conn.commit()
     return item["id"], requirement["id"], attempt, str(ref), actor

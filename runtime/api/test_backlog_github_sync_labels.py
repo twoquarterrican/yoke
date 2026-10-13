@@ -165,11 +165,11 @@ class TestSyncLabels:
     def test_renders_source_and_owner_via_actor_name(self):
         """A numeric source/owner renders to the actor's name rather than
         leaking the raw integer into a GitHub label."""
-        from yoke_core.domain.actors import resolve_actors_by_name
+        from yoke_core.domain.actors import resolve_actors_by_name, seed_system_actor
 
         db = _make_db()
         (local_human,) = resolve_actors_by_name(db, "ben")
-        (yoke_core,) = resolve_actors_by_name(db, "yoke-core")
+        sync_worker = seed_system_actor(db, "sync-worker")
 
         insert_item(
             db,
@@ -180,7 +180,7 @@ class TestSyncLabels:
             project="externalwebapp",
             github_issue="#56",
             source=str(local_human),
-            owner=str(yoke_core),
+            owner=str(sync_worker),
         )
         stdout = io.StringIO()
 
@@ -204,13 +204,13 @@ class TestSyncLabels:
         assert rc == 0
         added_flat = [label for _, _, labels in added for label in labels]
         assert "source:ben" in added_flat
-        assert "owner:yoke-core" in added_flat
+        assert "owner:sync-worker" in added_flat
         # The raw numeric ids must not leak into any label payload.
         assert f"source:{local_human}" not in added_flat
-        assert f"owner:{yoke_core}" not in added_flat
+        assert f"owner:{sync_worker}" not in added_flat
         # Status line surfaces both rendered tokens.
         assert "source:ben" in stdout.getvalue()
-        assert "owner:yoke-core" in stdout.getvalue()
+        assert "owner:sync-worker" in stdout.getvalue()
         db.close()
 
 

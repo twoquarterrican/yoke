@@ -248,7 +248,9 @@ evaluator/client-wall coverage, are labelled incomparable.
   from the waiting message, so it settles itself the moment the wait ends —
   the message was delivered, acknowledged, cancelled, or expired, or that
   conversation ended — and the card leaves the Inbox with the reason on
-  record. Nothing else is dismissed for you
+  record. Nothing else is dismissed for you. This notice, like a failed
+  native wake, is sent by Yoke itself rather than by any actor, so its
+  sender reads `Yoke` and no actor id
 
 ## Effective completion flow reads
 

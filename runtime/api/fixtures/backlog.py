@@ -28,7 +28,7 @@ from typing import Any
 
 import pytest
 
-from yoke_core.domain.actors import seed_canonical_actors
+from yoke_core.domain.actors import seed_canonical_human
 from yoke_core.domain.gate_satisfaction_schema import (
     create_gate_satisfaction_tables,
 )
@@ -48,17 +48,34 @@ from runtime.api.fixtures.operating_actor import (
 from runtime.api.fixtures.schema_ddl import SCHEMA_DDL
 
 
-def seed_test_canonical_actors(conn: Any) -> tuple[int, int]:
-    """Seed the canonical yoke-core + local human actors on a fixture DB.
+def seed_test_canonical_human(conn: Any) -> int:
+    """Seed the universe's local human actor on a fixture DB.
 
     Mirrors the post-init shape that production
     ``schema_init.cmd_init`` produces, so writer tests that depend on
     actor resolution have the default human actor available without
-    every caller re-seeding by hand. Returns
-    ``(yoke_core_id, local_human_id)`` exactly like the production
-    helper.
+    every caller re-seeding by hand. Returns the human's actor id
+    exactly like the production helper.
     """
-    return seed_canonical_actors(conn)
+    return seed_canonical_human(conn)
+
+
+def apply_fixture_schema_with_human() -> None:
+    """``apply_schema`` strategy: the fixture schema plus the born human.
+
+    Item writers attribute an unsourced item to the universe's human, so a
+    fixture universe without one refuses those writes.
+    """
+    from yoke_core.domain import db_backend
+    from runtime.api.fixtures.file_test_db import apply_fixture_schema_ddl
+
+    apply_fixture_schema_ddl()
+    conn = db_backend.connect()
+    try:
+        seed_test_canonical_human(conn)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def seed_fixture_operating_actor(conn: Any) -> int:
@@ -109,7 +126,7 @@ def test_db():
 
     with test_database() as conn:
         create_gate_satisfaction_tables(conn)
-        _yoke_core, local_human = seed_test_canonical_actors(conn)
+        local_human = seed_test_canonical_human(conn)
         conn.commit()
         # A born universe also records which actor this machine operates
         # it as; without that, no session in the fixture can register.
@@ -127,6 +144,6 @@ __all__ = (
     "insert_item_worktree",
     "insert_qa_requirement",
     "insert_qa_run",
-    "seed_test_canonical_actors",
+    "seed_test_canonical_human",
     "test_db",
 )

@@ -14,6 +14,8 @@ PROJECT_BETA = 72
 SESSION_ALPHA = "steering-alpha"
 SESSION_BETA = "steering-beta"
 SESSION_GAMMA = "steering-gamma"
+#: The born universe's human, which every seeded session acts as.
+HUMAN_ACTOR_ID = 1
 
 
 def seed_project(conn: Any, project_id: int, slug: str) -> None:
@@ -31,7 +33,7 @@ def seed_strategy_doc(conn: Any, project_id: int, slug: str) -> None:
         project_id,
         slug,
         f"# {slug}\n",
-        actor_id=2,
+        actor_id=HUMAN_ACTOR_ID,
         summary="Strategy document.",
         state="draft",
     )
@@ -44,8 +46,8 @@ def seed_session(conn: Any, session_id: str, project_id: int) -> None:
         "(session_id, executor, provider, model, reasoning_effort, execution_level, workspace, "
         "project_id, mode, offered_at, last_heartbeat, actor_id) "
         "VALUES (%s, 'codex', 'openai', 'gpt-6.1-sol', 'medium', 'primary', %s, %s, "
-        "'wait', %s, %s, 2)",
-        (session_id, f"/tmp/{session_id}", project_id, now, now),
+        "'wait', %s, %s, %s)",
+        (session_id, f"/tmp/{session_id}", project_id, now, now, HUMAN_ACTOR_ID),
     )
     conn.commit()
 
@@ -65,7 +67,7 @@ def acquire_steering(
         reason="steering work",
         document=document,
         plan_document=plan_document,
-        actor_id=2,
+        actor_id=HUMAN_ACTOR_ID,
     )
 
 
@@ -78,6 +80,7 @@ def seed_standard_steering_world(conn: Any) -> None:
 
 
 __all__ = [
+    "HUMAN_ACTOR_ID",
     "PROJECT_ALPHA",
     "PROJECT_BETA",
     "SESSION_ALPHA",

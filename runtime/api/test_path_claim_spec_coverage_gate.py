@@ -10,7 +10,7 @@ import pytest
 
 from runtime.api.fixtures import pg_testdb
 from yoke_core.domain import db_backend
-from yoke_core.domain.actors import seed_canonical_actors, seed_human_actor
+from yoke_core.domain.actors import seed_canonical_human, seed_human_actor
 from yoke_core.domain.path_claim_spec_coverage_gate import (
     CoverageResult,
     _format_block_message,
@@ -36,7 +36,7 @@ def conn(monkeypatch):
     converge_builtin_workflows(c)
     create_path_registry_tables(c)
     create_actor_path_claim_tables(c)
-    seed_canonical_actors(c)
+    seed_canonical_human(c)
     c.execute(
         "INSERT INTO projects "
         "(id, slug, name, public_item_prefix, created_at) "

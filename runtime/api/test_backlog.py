@@ -19,7 +19,6 @@ from runtime.api.conftest import insert_item
 from yoke_core.domain import backlog_rendering
 from yoke_core.domain import backlog_updates
 from yoke_core.domain import db_backend
-from yoke_core.domain.items_constants import DEFAULT_ITEM_ACTOR_ID
 from yoke_core.domain.work_claim_targets import make_item_target
 from runtime.api.fixtures.file_test_db import (
     apply_fixture_schema_ddl,
@@ -43,7 +42,7 @@ def _apply_backlog_fixture_schema() -> None:
     then runs on a fresh backend connection so the same post-init shape lands
     on both engines.
     """
-    from runtime.api.fixtures.backlog import seed_test_canonical_actors
+    from runtime.api.fixtures.backlog import seed_test_canonical_human
     from runtime.api.fixtures.operating_actor import record_fixture_operating_actor
     from yoke_core.domain.actor_permissions import (
         ROLE_OWNER,
@@ -59,7 +58,7 @@ def _apply_backlog_fixture_schema() -> None:
     conn = db_backend.connect()
     try:
         seed_project_identities(conn)
-        _yoke_core, local_human = seed_test_canonical_actors(conn)
+        local_human = seed_test_canonical_human(conn)
         seed_roles_and_permissions(conn)
         grant_actor_project_role(
             conn,
@@ -286,7 +285,7 @@ class _PatchExternals:
         # test_backlog_create_op_actor_resolution.py.
         self._source_actor_patcher = mock.patch(
             "yoke_core.domain.backlog_create_op.resolve_item_source_actor",
-            return_value=int(DEFAULT_ITEM_ACTOR_ID),
+            return_value=1,
         )
         self._rendering_patcher = mock.patch.multiple(
             backlog_rendering,

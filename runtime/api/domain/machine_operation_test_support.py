@@ -29,7 +29,7 @@ from yoke_core.domain.machine_qa_local_execution import (
 )
 
 
-ACTOR = ActorContext(actor_id="2", session_id="session-machine-two-phase")
+ACTOR = ActorContext(actor_id="1", session_id="session-machine-two-phase")
 MACHINE = TEST_MACHINE_SETTINGS["resource_name"]
 
 

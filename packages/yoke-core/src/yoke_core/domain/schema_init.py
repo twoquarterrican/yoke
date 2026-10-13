@@ -1,7 +1,7 @@
 """Schema initialization orchestrator."""
 
 from yoke_core.domain.actor_permissions import seed_roles_and_permissions
-from yoke_core.domain.actors import seed_canonical_actors
+from yoke_core.domain.actors import seed_canonical_human
 from yoke_core.domain.auth_schema import create_auth_tables
 from yoke_core.domain.decision_request_schema import create_decision_request_tables
 from yoke_core.domain.events_schema import ensure_event_schema
@@ -337,12 +337,12 @@ def cmd_init() -> None:
         seed_roles_and_permissions(conn)
         seed_default_org(conn)
         apply_legacy_data_migrations(conn)
-        # Seed the canonical actors after every other table and column
+        # Seed the canonical human after every other table and column
         # exists. Idempotent on re-run: a universe that already carries a
         # human keeps that actor whatever it is called, so re-init never
         # creates a duplicate human row. The name for one this call has to
         # create resolves from the YOKE_LOCAL_HUMAN_NAME injection, pinned
         # by the local-universe birth path to the OS login.
-        seed_canonical_actors(conn)
+        seed_canonical_human(conn)
     finally:
         conn.close()

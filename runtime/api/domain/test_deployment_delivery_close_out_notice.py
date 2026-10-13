@@ -50,7 +50,7 @@ def _project(conn: Any) -> None:
     seed_project(conn, PROJECT_YOKE, "yoke")
     seed_roles_and_permissions(conn)
     grant_actor_project_role(
-        conn, actor_id=2, project_id=PROJECT_YOKE, role_name=ROLE_OWNER
+        conn, actor_id=1, project_id=PROJECT_YOKE, role_name=ROLE_OWNER
     )
 
 

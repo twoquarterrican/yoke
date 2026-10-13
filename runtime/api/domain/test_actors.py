@@ -15,7 +15,6 @@ from runtime.api.fixtures import pg_testdb
 
 from yoke_core.domain.actors import (
     ActorNotFound,
-    SYSTEM_COMPONENT_YOKE_CORE,
     actor_name,
     actor_name_or_passthrough,
     resolve_actors_by_name,
@@ -31,6 +30,8 @@ from yoke_core.domain.schema_init_actor_path_claim_tables import (
 )
 from yoke_core.domain.schema_init_path_tables import create_path_registry_tables
 from yoke_core.domain.schema_init_tables import create_core_tables
+
+SYSTEM_COMPONENT = "test-component"
 
 
 @pytest.fixture
@@ -49,9 +50,9 @@ def conn() -> Iterator[Any]:
 
 
 def test_seed_system_actor_is_idempotent(conn):
-    first = seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE)
-    assert seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE) == first
-    assert actor_name(conn, first) == SYSTEM_COMPONENT_YOKE_CORE
+    first = seed_system_actor(conn, SYSTEM_COMPONENT)
+    assert seed_system_actor(conn, SYSTEM_COMPONENT) == first
+    assert actor_name(conn, first) == SYSTEM_COMPONENT
 
 
 def test_seed_human_actor_creates_distinct_rows(conn):
@@ -101,7 +102,7 @@ def test_renaming_an_actor_moves_no_identity(conn):
 
 def test_resolve_actors_by_name_returns_every_match(conn):
     """A list, not an id: the shape refuses to let a caller guess."""
-    seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE)
+    seed_system_actor(conn, SYSTEM_COMPONENT)
     one = seed_human_actor(conn, "Chris")
     two = seed_human_actor(conn, "Chris")
 
@@ -112,11 +113,11 @@ def test_resolve_actors_by_name_returns_every_match(conn):
 
 
 def test_resolve_actors_by_name_can_narrow_to_humans(conn):
-    system = seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE)
+    system = seed_system_actor(conn, SYSTEM_COMPONENT)
 
-    assert resolve_actors_by_name(conn, SYSTEM_COMPONENT_YOKE_CORE) == [system]
+    assert resolve_actors_by_name(conn, SYSTEM_COMPONENT) == [system]
     assert (
-        resolve_actors_by_name(conn, SYSTEM_COMPONENT_YOKE_CORE, kind="human") == []
+        resolve_actors_by_name(conn, SYSTEM_COMPONENT, kind="human") == []
     )
 
 
@@ -144,57 +145,52 @@ def test_sole_human_actor_id_answers_only_for_one_human(conn):
     assert sole_human_actor_id(conn, oldest=True) == first
 
 
-def test_seed_canonical_actors_keeps_the_human_a_universe_already_has(conn):
+def test_seed_canonical_human_keeps_the_human_a_universe_already_has(conn):
     """Re-seeding never forks an existing owner into a second actor."""
-    from yoke_core.domain.actors import (
-        DEFAULT_LOCAL_HUMAN_NAME,
-        LOCAL_HUMAN_NAME_ENV,
-        seed_canonical_actors,
-    )
+    from yoke_core.domain.actors import seed_canonical_human
 
-    system, human = seed_canonical_actors(conn, local_human_name="Ada Lovelace")
+    human = seed_canonical_human(conn, local_human_name="Ada Lovelace")
     assert actor_name(conn, human) == "Ada Lovelace"
-    assert actor_name(conn, system) == SYSTEM_COMPONENT_YOKE_CORE
 
     # A rename must not make the next seed create a second human.
     set_actor_name(conn, human, "Ada King")
-    assert seed_canonical_actors(conn, local_human_name="Ada Lovelace") == (
-        system,
-        human,
-    )
+    assert seed_canonical_human(conn, local_human_name="Ada Lovelace") == human
     assert actor_name(conn, human) == "Ada King"
-    assert DEFAULT_LOCAL_HUMAN_NAME
-    assert LOCAL_HUMAN_NAME_ENV
 
 
-def test_seed_canonical_actors_name_precedence_for_a_new_universe(
+def test_seed_canonical_human_seeds_no_system_actor(conn):
+    from yoke_core.domain.actors import seed_canonical_human
+
+    seed_canonical_human(conn)
+    assert conn.execute("SELECT kind FROM actors").fetchall() == [("human",)]
+
+
+def test_seed_canonical_human_name_precedence_for_a_new_universe(
     conn, monkeypatch
 ):
     from yoke_core.domain.actors import (
         DEFAULT_LOCAL_HUMAN_NAME,
         LOCAL_HUMAN_NAME_ENV,
-        seed_canonical_actors,
+        seed_canonical_human,
     )
 
     monkeypatch.delenv(LOCAL_HUMAN_NAME_ENV, raising=False)
-    _, default_human = seed_canonical_actors(conn)
-    assert actor_name(conn, default_human) == DEFAULT_LOCAL_HUMAN_NAME
+    assert actor_name(conn, seed_canonical_human(conn)) == DEFAULT_LOCAL_HUMAN_NAME
 
 
-def test_seed_canonical_actors_takes_the_env_injected_name(conn, monkeypatch):
-    from yoke_core.domain.actors import LOCAL_HUMAN_NAME_ENV, seed_canonical_actors
+def test_seed_canonical_human_takes_the_env_injected_name(conn, monkeypatch):
+    from yoke_core.domain.actors import LOCAL_HUMAN_NAME_ENV, seed_canonical_human
 
     monkeypatch.setenv(LOCAL_HUMAN_NAME_ENV, "env-owner")
-    _, human = seed_canonical_actors(conn)
-    assert actor_name(conn, human) == "env-owner"
+    assert actor_name(conn, seed_canonical_human(conn)) == "env-owner"
 
 
 def test_render_actor_name_is_fail_open(conn):
     human = seed_human_actor(conn, "Ada Lovelace")
     assert render_actor_name(conn, human) == "Ada Lovelace"
 
-    system = seed_system_actor(conn, SYSTEM_COMPONENT_YOKE_CORE)
-    assert render_actor_name(conn, system) == SYSTEM_COMPONENT_YOKE_CORE
+    system = seed_system_actor(conn, SYSTEM_COMPONENT)
+    assert render_actor_name(conn, system) == SYSTEM_COMPONENT
 
     # Fail-open: a null id, an unnamed actor, and a nonexistent actor all
     # yield None so the view omits the field rather than breaking.

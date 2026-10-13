@@ -39,20 +39,30 @@ def _decode(value: Any, fallback: Any) -> Any:
         return fallback
 
 
+#: How every surface names the sender of a message the engine itself sent,
+#: which is stored with no sender actor.
+ENGINE_SENDER_LABEL = "Yoke"
+
+
 def sender_identity_projection(
     conn: Any,
-    actor_id: int,
+    actor_id: int | None,
     *,
     sender_surface: str | None = None,
 ) -> dict[str, Any]:
-    marker = _p(conn)
-    row = conn.execute(
-        f"SELECT kind FROM actors WHERE id={marker}", (actor_id,)
-    ).fetchone()
-    projection = {
-        "sender_actor_label": render_actor_name(conn, actor_id),
-        "sender_actor_kind": str(row[0]) if row is not None else None,
-    }
+    if actor_id is None:
+        projection: dict[str, Any] = {
+            "sender_actor_label": ENGINE_SENDER_LABEL,
+            "sender_actor_kind": None,
+        }
+    else:
+        row = conn.execute(
+            f"SELECT kind FROM actors WHERE id={_p(conn)}", (actor_id,)
+        ).fetchone()
+        projection = {
+            "sender_actor_label": render_actor_name(conn, actor_id),
+            "sender_actor_kind": str(row[0]) if row is not None else None,
+        }
     if sender_surface is not None:
         projection["sender_surface_label"] = sender_surface_label(sender_surface)
     return projection
@@ -93,7 +103,7 @@ def message_details(conn: Any, message_id: str) -> dict[str, Any]:
     message.update(
         sender_identity_projection(
             conn,
-            int(message["sender_actor_id"]),
+            message["sender_actor_id"],
             sender_surface=message.get("sender_surface"),
         )
     )
@@ -132,7 +142,7 @@ def message_summary(conn: Any, message_id: str) -> dict[str, Any]:
     message.update(
         sender_identity_projection(
             conn,
-            int(message["sender_actor_id"]),
+            message["sender_actor_id"],
             sender_surface=message.get("sender_surface"),
         )
     )
@@ -299,6 +309,7 @@ def public_recipients(details: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 __all__ = [
+    "ENGINE_SENDER_LABEL",
     "list_message_ids",
     "message_details",
     "message_recipient_match_clause",

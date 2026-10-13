@@ -36,7 +36,7 @@ from yoke_core.domain.qa_plan_execution_state import (
     select_plan_execution,
 )
 
-MISSION_ACTOR = ActorContext(actor_id="2", session_id="session-agent-mission")
+MISSION_ACTOR = ActorContext(actor_id="1", session_id="session-agent-mission")
 MISSION_TRANSITION = "reviewing-implementation"
 LONG_AGO = "2026-01-01T00:00:00Z"
 
@@ -106,7 +106,7 @@ def test_a_parked_owner_keeps_its_execution_and_an_unparked_one_loses_it(
         test_db,
         item_id=4901,
         transition_id="implemented",
-        actor_id="2",
+        actor_id="1",
         session_id=session_id,
     )
     execution_id = str(execution["id"])
@@ -130,7 +130,7 @@ def test_a_parked_session_that_has_ended_shields_nothing(test_db: Any) -> None:
         test_db,
         item_id=4902,
         transition_id="implemented",
-        actor_id="2",
+        actor_id="1",
         session_id=session_id,
     )
     execution_id = str(execution["id"])

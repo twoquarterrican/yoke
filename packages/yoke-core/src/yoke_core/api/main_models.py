@@ -20,7 +20,6 @@ from yoke_contracts.github_app_public import (
     GitHubAppUnavailable,
 )
 from yoke_contracts.project_contract.project_keys import DEFAULT_WIP_CAP
-from yoke_core.domain.items_constants import DEFAULT_ITEM_ACTOR_ID
 
 
 # ---------------------------------------------------------------------------
@@ -132,7 +131,7 @@ class ItemObject(BaseModel):
     project: Optional[str] = None
     deployment_flow: Optional[str] = None
     deploy_stage: Optional[str] = None
-    source: str = DEFAULT_ITEM_ACTOR_ID
+    source: str
     created_at: str
     updated_at: str
     merged_at: Optional[str] = None

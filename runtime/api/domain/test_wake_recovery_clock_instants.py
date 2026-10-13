@@ -47,7 +47,7 @@ def _seed(conn):
     )
     message, inserted = insert_message(
         conn,
-        sender_actor_id=2,
+        sender_actor_id=1,
         sender_session_id=None,
         sender_surface="cli",
         body=OPAQUE,

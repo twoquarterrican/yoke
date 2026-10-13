@@ -34,6 +34,7 @@ def diverged_item(test_db):
         id=INTERNAL_ID,
         title="Divergent identity",
         project_sequence=SEQUENCE,
+        source="ben",
     )
     test_db.commit()
     return test_db
@@ -103,8 +104,8 @@ class TestItemsListProjection:
         outcome = items_listing.handle_items_list(request_for("items.list.run", {}))
         assert outcome.primary_success
         row = _find(outcome.result_payload["rows"], "Divergent identity")
-        # The fixture seeds a default human actor ("ben"); a non-numeric
-        # stored source is legacy text and passes through untouched.
+        # A non-numeric stored source is legacy text and passes through
+        # untouched.
         assert row["source"] == "ben"
         assert row["id"] == f"YOK-{SEQUENCE}"
 

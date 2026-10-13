@@ -44,7 +44,7 @@ from yoke_core.domain.machine_qa_local_execution import (
     execute_machine_case_contract,
 )
 
-ACTOR = ActorContext(actor_id="2", session_id="session-machine-two-phase")
+ACTOR = ActorContext(actor_id="1", session_id="session-machine-two-phase")
 
 
 def _verify_request(function: str, payload: dict[str, Any]) -> FunctionCallRequest:

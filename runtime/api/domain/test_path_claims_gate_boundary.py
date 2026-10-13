@@ -71,7 +71,7 @@ def _apply_boundary_schema(project_repo):
 
     def _apply() -> None:
         from yoke_core.domain import db_backend
-        from yoke_core.domain.actors import seed_canonical_actors
+        from yoke_core.domain.actors import seed_canonical_human
         from yoke_core.domain.events_schema import _create_events_table
         from yoke_core.domain.gate_satisfaction_schema import (
             create_gate_satisfaction_tables,
@@ -100,7 +100,7 @@ def _apply_boundary_schema(project_repo):
             create_path_registry_tables(c)
             create_actor_path_claim_tables(c)
             create_gate_satisfaction_tables(c)
-            seed_canonical_actors(c)
+            seed_canonical_human(c)
             register_machine_checkout(project_repo.parent, project_repo, 1)
             c.execute(
                 "INSERT INTO projects "

@@ -27,7 +27,7 @@ from typing import Any, Optional
 import pytest
 
 from yoke_core.domain import db_backend, events_schema
-from yoke_core.domain.actors import seed_canonical_actors, seed_human_actor
+from yoke_core.domain.actors import seed_canonical_human, seed_human_actor
 from yoke_core.domain.schema_common import _column_exists
 from yoke_core.domain.schema_init_actor_path_claim_tables import (
     create_actor_path_claim_tables,
@@ -107,7 +107,7 @@ def _apply_path_claim_schema() -> None:
             "evidence_json TEXT NOT NULL DEFAULT '{}', "
             "created_at TIMESTAMPTZ NOT NULL DEFAULT '1970-01-01T00:00:00Z')"
         )
-        seed_canonical_actors(c)
+        seed_canonical_human(c)
         c.commit()
     finally:
         c.close()

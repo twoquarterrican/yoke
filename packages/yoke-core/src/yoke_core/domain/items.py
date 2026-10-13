@@ -37,7 +37,6 @@ from typing import Any, Dict, Optional, Sequence
 from yoke_core.domain.items_constants import (
     CANONICAL_COLUMNS,
     CONTENT_FIELDS,
-    DEFAULT_ITEM_ACTOR_ID,
     INTEGER_FIELDS,
     LARGE_TEXT_FIELDS,
     LIST_COLUMNS,
@@ -111,7 +110,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ins.add_argument("--body-file", default=None, help="Read body from file")
     p_ins.add_argument("--created-at", default=None)
     p_ins.add_argument("--updated-at", default=None)
-    p_ins.add_argument("--source", default=DEFAULT_ITEM_ACTOR_ID)
+    p_ins.add_argument("--source", default=None)
     p_ins.add_argument("--project", default=None)
     p_ins.add_argument("--deployment-flow", default=None)
 

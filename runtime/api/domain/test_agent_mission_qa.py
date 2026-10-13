@@ -52,7 +52,7 @@ from yoke_core.domain.qa_plan_review_submission import submit_plan_review
 from yoke_core.domain.schema_init_tables import create_governed_tables
 
 
-ACTOR = ActorContext(actor_id="2", session_id="session-agent-mission")
+ACTOR = ActorContext(actor_id="1", session_id="session-agent-mission")
 
 
 class _CommandHostControl(FakeHostControl):

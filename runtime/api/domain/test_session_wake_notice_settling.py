@@ -56,7 +56,8 @@ def _standing_notice_count(conn, *, actor_id: int = 10) -> int:
 
 def _notice_settlement(conn):
     row = conn.execute(
-        "SELECT cancelled_at, cancellation_reason FROM session_messages "
+        "SELECT cancelled_at, cancellation_reason, cancelled_by_actor_id "
+        "FROM session_messages "
         "WHERE idempotency_key LIKE ?",
         (f"{NOTICE_IDEMPOTENCY_PREFIX}:%",),
     ).fetchone()
@@ -88,6 +89,7 @@ def test_a_notice_settles_once_its_message_reaches_the_conversation() -> None:
     settlement = _notice_settlement(conn)
     assert settlement["cancelled_at"]
     assert settlement["cancellation_reason"] == "original_acknowledged"
+    assert settlement["cancelled_by_actor_id"] is None
 
 
 def test_a_notice_settles_when_its_conversation_ends() -> None:

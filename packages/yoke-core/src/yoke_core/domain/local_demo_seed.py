@@ -82,7 +82,7 @@ def _local_human_actor_id() -> int:
 
     conn = connect()
     try:
-        _system_actor, local_human = actors.seed_canonical_actors(conn)
+        local_human = actors.seed_canonical_human(conn)
         conn.commit()
         return int(local_human)
     finally:

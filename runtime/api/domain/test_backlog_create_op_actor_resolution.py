@@ -19,8 +19,9 @@ from typing import Any, Optional
 import pytest
 
 from yoke_core.domain.actors import (
-    seed_canonical_actors,
+    seed_canonical_human,
     seed_human_actor,
+    seed_system_actor,
 )
 from yoke_core.domain.item_source_actor import (
     ItemSourceActorResolutionError,
@@ -66,14 +67,14 @@ def _seed_session(conn: Any, session_id: str, actor_id: Optional[int]) -> None:
 
 class TestResolveItemSourceActor:
     def test_session_bound_actor_resolves(self, seeded_conn):
-        yoke_core, _ = seed_canonical_actors(seeded_conn)
-        _seed_session(seeded_conn, "sess-src-bound", yoke_core)
+        system = seed_system_actor(seeded_conn, "source-test-system")
+        _seed_session(seeded_conn, "sess-src-bound", system)
         assert (
             resolve_item_source_actor(
                 seeded_conn,
                 "sess-src-bound",
             )
-            == yoke_core
+            == system
         )
 
     def test_session_without_actor_fails_closed(self, seeded_conn):
@@ -82,13 +83,13 @@ class TestResolveItemSourceActor:
             resolve_item_source_actor(seeded_conn, "sess-src-null")
 
     def test_terminal_without_session_resolves_operating_human(self, seeded_conn):
-        _, local_human = seed_canonical_actors(seeded_conn)
+        local_human = seed_canonical_human(seeded_conn)
         assert resolve_item_source_actor(seeded_conn, None) == local_human
 
 
 class TestCoerceExplicitSource:
     def test_numeric_id_for_existing_actor_passes(self, seeded_conn):
-        _, local_human = seed_canonical_actors(seeded_conn)
+        local_human = seed_canonical_human(seeded_conn)
         assert coerce_explicit_item_source(seeded_conn, str(local_human)) == local_human
 
     def test_mechanism_label_rejected(self, seeded_conn):

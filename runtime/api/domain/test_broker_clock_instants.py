@@ -85,7 +85,7 @@ def _prepare(conn):
     )
     message, inserted = insert_message(
         conn,
-        sender_actor_id=2,
+        sender_actor_id=1,
         sender_session_id="broker-clock",
         sender_surface="cli",
         body=BODY,
@@ -109,7 +109,7 @@ def _prepare(conn):
     conn.commit()
     heartbeat = RelayHeartbeat(
         "machine:" + machine_id,
-        2,
+        1,
         machine_id,
         "clock-test",
         "0.1.1",

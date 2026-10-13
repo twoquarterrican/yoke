@@ -26,7 +26,6 @@ from yoke_core.domain.schema_harness_session_columns import (
     apply_harness_session_columns,  # noqa: F401
 )
 from yoke_core.domain.schema_migrations import _migrate_qa_execution_status
-from yoke_core.domain.items_constants import DEFAULT_ITEM_ACTOR_ID
 from yoke_core.domain.projects_github_sync_mode_schema import (
     github_sync_mode_column_sql,
     normalize_github_sync_modes,
@@ -129,12 +128,9 @@ def apply_additive_schema(conn: Any) -> None:
     )
     conn.commit()
 
-    # items.source stores the stringified actors.id for the item originator.
-    # NOT NULL DEFAULT populates existing rows at ADD time; the legacy-NULL
-    # normalization lives in apply_legacy_data_migrations.
-    _add_column_if_not_exists(
-        conn, "items", "source", f"TEXT NOT NULL DEFAULT '{DEFAULT_ITEM_ACTOR_ID}'"
-    )
+    # items.source stores the stringified actors.id for the item originator;
+    # every writer names it, and '' marks a row with no recorded source.
+    _add_column_if_not_exists(conn, "items", "source", "TEXT NOT NULL DEFAULT ''")
     conn.commit()
 
     # Numeric project authority must be explicitly attributed. Adding this
@@ -271,13 +267,6 @@ def apply_legacy_data_migrations(conn: Any) -> None:
     placeholder = "%s" if db_backend.connection_is_postgres(conn) else "?"
 
     normalize_github_sync_modes(conn)
-
-    # items.source — normalize any legacy NULL row to the default actor.
-    conn.execute(
-        f"UPDATE items SET source = {placeholder} WHERE source IS NULL",
-        (DEFAULT_ITEM_ACTOR_ID,),
-    )
-    conn.commit()
 
     # items.project_sequence — add the column, backfill it from the id, and
     # create its unique index. project_sequence has no DB default so its ADD is

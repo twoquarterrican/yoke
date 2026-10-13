@@ -75,7 +75,7 @@ def test_red_member_removal_retracts_only_its_outstanding_run_qa(
     )
     release_seeded_driver(test_db, RUN)
     message = cmd_remove_item(
-        RUN, ITEM, reason=REASON, session_id="remover", actor_id=2
+        RUN, ITEM, reason=REASON, session_id="remover", actor_id=1
     )
     assert test_db.execute(
         "SELECT status FROM deployment_runs WHERE id=%s", (RUN,)
@@ -101,7 +101,7 @@ def test_red_member_removal_retracts_only_its_outstanding_run_qa(
     )
     (removal,) = membership_removals(test_db, RUN)
     assert removal["item_id"] == ITEM and removal["reason"] == REASON
-    assert removal["session_id"] == "remover" and removal["actor_id"] == 2
+    assert removal["session_id"] == "remover" and removal["actor_id"] == 1
     assert (
         test_db.execute("SELECT status FROM items WHERE id=%s", (ITEM,)).fetchone()[
             "status"

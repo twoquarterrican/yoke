@@ -38,7 +38,7 @@ from runtime.api.domain.machine_qa_session_seed import seed_qa_session
 from yoke_core.domain.work_claim_targets import make_qa_admission_target
 
 
-ACTOR = ActorContext(actor_id="2", session_id="session-machine-plan")
+ACTOR = ActorContext(actor_id="1", session_id="session-machine-plan")
 
 
 def _request(

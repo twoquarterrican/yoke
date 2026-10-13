@@ -25,7 +25,7 @@ from yoke_core.domain import (
 )
 from yoke_core.domain.project_seed_test_helpers import SEED_PROJECT_IDS
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.backlog import seed_test_canonical_actors
+from runtime.api.fixtures.backlog import seed_test_canonical_human
 from runtime.api.fixtures.schema_ddl import apply_fixture_schema
 
 
@@ -44,7 +44,7 @@ def _make_db() -> Any:
     name = pg_testdb.create_test_database()
     conn = pg_testdb.connect_test_database(name)
     apply_fixture_schema(conn)
-    seed_test_canonical_actors(conn)
+    seed_test_canonical_human(conn)
     conn.execute(
         "UPDATE projects SET github_repo = %s, github_sync_mode = %s WHERE id = %s",
         ("org/externalwebapp", "enabled", SEED_PROJECT_IDS["externalwebapp"]),

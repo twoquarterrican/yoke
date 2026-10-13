@@ -229,7 +229,7 @@ def machine_case_request(
     return FunctionCallRequest(
         function=function,
         actor=ActorContext(
-            actor_id="2",
+            actor_id="1",
             session_id=GROUP_ACTOR_SESSION,
         ),
         target=TargetRef(

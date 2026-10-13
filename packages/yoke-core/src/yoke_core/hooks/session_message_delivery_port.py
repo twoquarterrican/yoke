@@ -19,7 +19,7 @@ class LeasedSessionMessage:
 
     message_id: str
     body: str
-    sender_actor_id: int
+    sender_actor_id: int | None
     sender_actor_label: str | None = None
     sender_actor_kind: str | None = None
     sender_session_id: str | None = None
@@ -120,7 +120,9 @@ def _coerce_messages(raw_messages: Any) -> tuple[LeasedSessionMessage, ...]:
             LeasedSessionMessage(
                 message_id=message_id,
                 body=body,
-                sender_actor_id=int(sender_actor_id),
+                sender_actor_id=(
+                    None if sender_actor_id is None else int(sender_actor_id)
+                ),
                 sender_actor_label=row.get("sender_actor_label"),
                 sender_actor_kind=row.get("sender_actor_kind"),
                 sender_session_id=row.get("sender_session_id"),

@@ -29,8 +29,8 @@ tabs, browsers, and reloads rather than staying in one browser. An org admin
 can disable or enable a human actor other than themselves. The last active
 org admin cannot be disabled. A retired system actor can be disabled through
 `yoke actors state set ACTOR-ID --disable --confirm-system-retirement` after
-checking its live workflow and service references. The canonical core actor
-cannot be disabled. A deployment actor with an active deployment credential
+checking its live workflow and service references. A deployment actor with an
+active deployment credential
 must have its release dependency retired and credential revoked first.
 Disabling immediately blocks
 the actor's browser sessions and other authority and revokes all its API keys,

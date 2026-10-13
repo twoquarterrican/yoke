@@ -117,7 +117,7 @@ def execute_member_stage(
         deployment_run_id=run_id,
         deployment_stage=MEMBER_QA_STAGE,
         deployment_member_item_id=item_id,
-        actor_id="2",
+        actor_id="1",
         session_id=f"qa-{run_id}",
     )
     for ordinal, entry in enumerate(execution["roster"]):

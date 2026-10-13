@@ -169,10 +169,9 @@ class TestClaimsAndAttribution:
         assert targets["epic_task"] == "YOK-910 task 3"
 
     def test_system_actor_attribution_is_honest(self, test_db):
-        row = test_db.execute(
-            "SELECT id FROM actors WHERE kind = 'system' LIMIT 1"
-        ).fetchone()
-        system_actor_id = int(dict(row)["id"])
+        from yoke_core.domain.actors import seed_system_actor
+
+        system_actor_id = seed_system_actor(test_db, "test-component")
         _insert_session(
             test_db, "s-system", last_heartbeat=_iso(), actor_id=system_actor_id
         )

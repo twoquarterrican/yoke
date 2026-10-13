@@ -117,14 +117,15 @@ def test_resume_refused_notifies_the_covering_document_seat_once() -> None:
     wake_eligible_recipients(conn, now=SWEEP + timedelta(seconds=1))
     wake_eligible_recipients(conn, now=SWEEP + timedelta(seconds=2))
     notices = conn.execute(
-        "SELECT m.body,r.seat_session_id,r.sender_item_id FROM session_messages m "
+        "SELECT m.body,r.seat_session_id,r.sender_item_id,m.sender_actor_id "
+        "FROM session_messages m "
         "JOIN actor_message_recipients r ON r.message_id=m.message_id "
         "WHERE r.recipient_kind='steering'",
     ).fetchall()
     assert len(notices) == 1
     assert "native_transcript_missing" in notices[0][0]
     assert message_id in notices[0][0]
-    assert notices[0][1:] == ("s2", 101)
+    assert notices[0][1:] == ("s2", 101, None)
     original = conn.execute(
         "SELECT state,wake_attempt_count FROM session_message_recipients "
         "WHERE message_id=?",

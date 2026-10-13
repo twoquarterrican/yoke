@@ -18,24 +18,27 @@ from contextlib import redirect_stderr, redirect_stdout
 import pytest
 
 from yoke_core.domain import db_backend
-from yoke_core.domain.actors import seed_human_actor, set_actor_name
-from runtime.api.fixtures.backlog import seed_test_canonical_actors
+from yoke_core.domain.actors import seed_human_actor, seed_system_actor, set_actor_name
+from runtime.api.fixtures.backlog import seed_test_canonical_human
 from runtime.api.fixtures.file_test_db import apply_fixture_schema_ddl, init_test_db
 from yoke_core.api.service_client_actors import cmd_actors_get, cmd_actors_list
 
+SYSTEM_COMPONENT = "test-component"
+
 
 def _apply_actors_fixture_schema() -> None:
-    """``apply_schema`` strategy: fixture ``SCHEMA_DDL`` + canonical actors.
+    """``apply_schema`` strategy: fixture ``SCHEMA_DDL`` + seeded actors.
 
     :func:`apply_fixture_schema_ddl` reproduces the DDL apply (installing the
-    Postgres introspection shims); the canonical yoke-core + local human
-    actor seed then runs on a fresh backend connection so the same post-init
+    Postgres introspection shims); the local human actor seed and one
+    system actor then run on a fresh backend connection so the same post-init
     shape the ``cmd_actors_*`` lookups read lands on both engines.
     """
     apply_fixture_schema_ddl()
     conn = db_backend.connect()
     try:
-        seed_test_canonical_actors(conn)
+        seed_test_canonical_human(conn)
+        seed_system_actor(conn, SYSTEM_COMPONENT)
         conn.commit()
     finally:
         conn.close()
@@ -75,12 +78,12 @@ class TestActorsList:
         rc, stdout = _capture_stdout(cmd_actors_list, [])
         assert rc == 0
         payload = json.loads(stdout)
-        # Canonical actors are seeded by the fixture: yoke-core (system) + ben (human).
+        # The fixture seeds the local human (ben) and one system actor.
         kinds = sorted(a["kind"] for a in payload)
         assert kinds == ["human", "system"]
         names = sorted(a["name"] for a in payload if a["name"])
         assert "ben" in names
-        assert "yoke-core" in names
+        assert SYSTEM_COMPONENT in names
 
     def test_list_rejects_extra_args(self, actors_db):
         rc, stderr = _capture_stderr(cmd_actors_list, ["unexpected"])
@@ -128,14 +131,14 @@ class TestActorsGet:
     def test_get_returns_system_actor(self, actors_db):
         _, list_out = _capture_stdout(cmd_actors_list, [])
         actors = json.loads(list_out)
-        yoke_core = next(a for a in actors if a["name"] == "yoke-core")
+        system = next(a for a in actors if a["name"] == SYSTEM_COMPONENT)
 
-        rc, stdout = _capture_stdout(cmd_actors_get, [str(yoke_core["id"])])
+        rc, stdout = _capture_stdout(cmd_actors_get, [str(system["id"])])
         assert rc == 0
         payload = json.loads(stdout)
         assert payload["kind"] == "system"
-        assert payload["system_component"] == "yoke-core"
-        assert payload["name"] == "yoke-core"
+        assert payload["system_component"] == SYSTEM_COMPONENT
+        assert payload["name"] == SYSTEM_COMPONENT
 
     def test_get_unknown_id_returns_not_found(self, actors_db):
         rc, stderr = _capture_stderr(cmd_actors_get, ["424242"])

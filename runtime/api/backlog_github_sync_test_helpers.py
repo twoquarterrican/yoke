@@ -49,7 +49,7 @@ def make_db():
     different fixture build their own connection inline (see
     ``test_missing_projects_table_fails_open_to_default_repo``).
     """
-    from runtime.api.fixtures.backlog import seed_test_canonical_actors
+    from runtime.api.fixtures.backlog import seed_test_canonical_human
     from runtime.api.fixtures.pg_testdb import (
         connect_test_database,
         create_test_database,
@@ -75,7 +75,7 @@ def make_db():
             "2026-01-01T00:00:00Z",
         ),
     )
-    seed_test_canonical_actors(conn)
+    seed_test_canonical_human(conn)
     conn.commit()
     return drop_database_on_close(conn, db_name)
 

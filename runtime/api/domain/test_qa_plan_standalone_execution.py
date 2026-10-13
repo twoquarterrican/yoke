@@ -187,7 +187,7 @@ def _plan_case_request(
     execution,
     ordinal,
     function="test_machine.plan_case.begin",
-    actor=("2", "session-machine-plan"),
+    actor=("1", "session-machine-plan"),
 ):
     from yoke_contracts.api.function_call import (
         ActorContext,
@@ -287,7 +287,7 @@ def test_standalone_machine_chain_resets_once_and_restores_after_its_last_case(
         test_db,
         plan="manual-proof",
         project="yoke",
-        actor_id="2",
+        actor_id="1",
         session_id="session-machine-plan",
         source_revision=SHA,
     )

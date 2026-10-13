@@ -30,7 +30,6 @@ from yoke_core.domain.actor_state import (
     set_actor_enabled,
 )
 from yoke_core.domain.actors import (
-    SYSTEM_COMPONENT_YOKE_CORE,
     seed_human_actor,
     seed_system_actor,
 )
@@ -203,9 +202,8 @@ def test_disable_retires_personal_and_machine_keys_and_blocks_browser_and_keyles
     assert mint_web_session(test_db, actor_id=subject).actor_id == subject
 
 
-def test_disable_rejects_self_core_and_last_active_admin(test_db):
+def test_disable_rejects_self_and_last_active_admin(test_db):
     caller, subject, _ = _people(test_db)
-    system = seed_system_actor(test_db, SYSTEM_COMPONENT_YOKE_CORE)
     with pytest.raises(ActorStateRefused, match="own actor"):
         set_actor_enabled(
             test_db,
@@ -213,15 +211,6 @@ def test_disable_rejects_self_core_and_last_active_admin(test_db):
             caller_actor_id=caller,
             enabled=False,
             now=utc_now(),
-        )
-    with pytest.raises(ActorStateRefused, match="canonical core actor"):
-        set_actor_enabled(
-            test_db,
-            actor_id=system,
-            caller_actor_id=caller,
-            enabled=False,
-            now=utc_now(),
-            confirm_system_retirement=True,
         )
     set_actor_enabled(
         test_db,

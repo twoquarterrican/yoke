@@ -30,7 +30,7 @@ def message_visible(
     actor_id: int,
     session_id: str | None,
 ) -> bool:
-    if int(details["sender_actor_id"]) == actor_id:
+    if details["sender_actor_id"] == actor_id:
         return True
     if any(
         int(row["actor_id"]) == actor_id for row in details.get("actor_recipients", [])

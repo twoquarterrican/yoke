@@ -47,6 +47,16 @@ class TestCreateItem:
         assert data["priority"] == "medium"
         assert data["project"] == "yoke"
         assert "id" in data
+        from yoke_core.domain import db_backend
+
+        conn = db_backend.connect()
+        try:
+            (token_actor,) = conn.execute(
+                "SELECT actor_id FROM api_tokens ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+        finally:
+            conn.close()
+        assert data["source"] == str(token_actor)
 
     def test_create_item_without_a_project_is_refused(self, client, test_db):
         """The server stands in no checkout, so only the caller can say.

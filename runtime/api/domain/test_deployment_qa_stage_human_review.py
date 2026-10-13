@@ -81,7 +81,7 @@ def test_required_human_request_waits_for_exact_case_evidence(test_db) -> None:
         test_db,
         deployment_run_id="run-human-stage",
         deployment_stage="item-qa",
-        actor_id="2",
+        actor_id="1",
         session_id="run-qa",
     )
     before = deployment_qa_stage_status(
@@ -172,7 +172,7 @@ def test_human_if_unsure_waits_for_authorized_case_decision(test_db) -> None:
         test_db,
         deployment_run_id="run-unsure-stage",
         deployment_stage="item-qa",
-        actor_id="2",
+        actor_id="1",
         session_id="unsure-run-qa",
     )
     requirement_id = int(execution["roster"][0]["requirement_id"])
@@ -229,7 +229,7 @@ def test_human_if_unsure_waits_for_authorized_case_decision(test_db) -> None:
                 "rationale": "The captured release state needs human judgment.",
             }
         ],
-        reviewer_actor_id="2",
+        reviewer_actor_id="1",
         reviewer_session_id="unsure-run-qa",
     )
     request_id = int(result["verdicts"][0]["decision_request_id"])

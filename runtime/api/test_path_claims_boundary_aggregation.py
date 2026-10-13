@@ -166,7 +166,7 @@ class TestAggregationGitignoreFilter:
 
         def _apply() -> None:
             from yoke_core.domain import db_backend
-            from yoke_core.domain.actors import seed_canonical_actors
+            from yoke_core.domain.actors import seed_canonical_human
             from yoke_core.domain.events_schema import _create_events_table
             from yoke_core.domain.path_claims import register
             from yoke_core.domain.schema_init_actor_path_claim_tables import (
@@ -192,7 +192,7 @@ class TestAggregationGitignoreFilter:
                 _create_events_table(conn)
                 create_path_registry_tables(conn)
                 create_actor_path_claim_tables(conn)
-                seed_canonical_actors(conn)
+                seed_canonical_human(conn)
                 actor_row = conn.execute(
                     "SELECT id FROM actors WHERE kind='human' LIMIT 1"
                 ).fetchone()

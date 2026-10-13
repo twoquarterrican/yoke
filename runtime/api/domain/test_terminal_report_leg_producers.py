@@ -40,7 +40,7 @@ SEAT = "seat-session"
 NOW = datetime(2026, 9, 15, 16, 0, tzinfo=timezone.utc)
 STAMP = "2026-09-15T16:00:00Z"
 RESUMED_STAMP = "2026-09-15T16:31:00Z"
-ACTOR_ID = 2
+ACTOR_ID = 1
 #: At or above the hook-route floor: an unroutable seat is no recipient at all.
 ROUTABLE_VERSION = "2.1.269"
 

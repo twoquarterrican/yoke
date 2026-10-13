@@ -12,6 +12,7 @@ from yoke_core.domain.decision_request_schema import (
 from yoke_core.domain.deployment_approval_requests import (
     evaluate_deployment_stage_approval,
 )
+from yoke_core.domain.actors import first_human_actor_id, seed_system_actor
 from yoke_core.domain.deployment_run_gates import run_gates
 from yoke_core.domain.deployment_run_list_read import list_deployment_runs
 from yoke_core.domain.qa_catalog_schema import create_qa_catalog_tables
@@ -38,12 +39,8 @@ def _seed_run_awaiting_approval(conn) -> tuple[int, int]:
             "SELECT id FROM environments WHERE project_id=1 AND name='prod'"
         ).fetchone()[0]
     )
-    originator = int(
-        conn.execute("SELECT id FROM actors ORDER BY id LIMIT 1").fetchone()[0]
-    )
-    owner = int(
-        conn.execute("SELECT id FROM actors ORDER BY id DESC LIMIT 1").fetchone()[0]
-    )
+    owner = first_human_actor_id(conn)
+    originator = seed_system_actor(conn, "gate-originator")
     role = int(
         conn.execute(
             "INSERT INTO roles (id, name, description, created_at) "

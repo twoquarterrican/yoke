@@ -37,7 +37,7 @@ from yoke_core.domain.machine_qa_local_execution import (
 )
 
 
-VERIFY_ACTOR = ActorContext(actor_id="2", session_id="session-machine-submit-atomicity")
+VERIFY_ACTOR = ActorContext(actor_id="1", session_id="session-machine-submit-atomicity")
 _ACTIVE_LEASE_COUNT_SQL = (
     "SELECT COUNT(*) FROM work_claims "
     "WHERE released_at IS NULL AND target_kind = 'qa_admission'"

@@ -129,7 +129,7 @@ def _begin(conn, **kwargs):
         deployment_run_id=RUN,
         deployment_stage="item-qa",
         deployment_member_item_id=MEMBER,
-        actor_id="2",
+        actor_id="1",
         session_id=SESSION,
         **kwargs,
     )
@@ -139,7 +139,7 @@ def _case_begin(execution):
     return handle_plan_case_begin(
         FunctionCallRequest(
             function="test_machine.plan_case.begin",
-            actor=ActorContext(actor_id="2", session_id=SESSION),
+            actor=ActorContext(actor_id="1", session_id=SESSION),
             target=TargetRef(kind="deployment_run", deployment_run_id=RUN),
             payload={
                 "execution_id": execution["id"],
