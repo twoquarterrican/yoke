@@ -5,6 +5,13 @@ substantive stage is item QA, can discharge one member while its run remains
 executing. Trailing no-op auto stages carry no further delivery obligation.
 The QA acceptance reader verifies the current deployment receipt, candidate,
 cases, and verdict for that member.
+
+A supplemental QA run -- the same release proving the item on another
+persistent environment, beside the completion run that delivers it -- never
+delivers, so it is never the item's completion run. Its accepted final item
+QA still answers that environment's source obligations while the run is
+executing: :func:`member_qa_answer_ready` reads it on its own terms instead
+of asking whether it is the delivery.
 """
 
 from __future__ import annotations
@@ -26,11 +33,37 @@ def independent_member_delivery_ready(conn: Any, *, item_id: int, run_id: str) -
     failed or cancelled run never qualifies. The selected-flow membership and
     frozen final intent are required even if another run carries the item.
     """
-    from yoke_core.domain.deployment_run_composition_freeze import DELIVERY_INTENT_FINAL
-
     run = latest_completion_run(conn, int(item_id))
     if run is None or run["id"] != str(run_id) or run["status"] != "executing":
         return False
+    return final_item_qa_accepted(conn, item_id=int(item_id), run_id=str(run_id))
+
+
+def member_qa_answer_ready(conn: Any, *, item_id: int, run_id: str) -> bool:
+    """Whether an executing member run's item QA answers its sources now.
+
+    The completion run answers only once it has independently delivered the
+    member. A supplemental QA run of the same release answers as soon as its
+    final item QA is accepted; delivery stays the completion run's own gate.
+    """
+    from yoke_core.domain.deployment_run_member_targeting import supplemental_qa_run
+
+    if not supplemental_qa_run(conn, run_id=str(run_id), item_id=int(item_id)):
+        return independent_member_delivery_ready(
+            conn, item_id=int(item_id), run_id=str(run_id)
+        )
+    status = conn.execute(
+        "SELECT status FROM deployment_runs WHERE id=%s", (str(run_id),)
+    ).fetchone()
+    if status is None or str(status["status"] or "") != "executing":
+        return False
+    return final_item_qa_accepted(conn, item_id=int(item_id), run_id=str(run_id))
+
+
+def final_item_qa_accepted(conn: Any, *, item_id: int, run_id: str) -> bool:
+    """The run's last substantive stage is this member's accepted item QA."""
+    from yoke_core.domain.deployment_run_composition_freeze import DELIVERY_INTENT_FINAL
+
     row = conn.execute(
         "SELECT dri.delivery_intent,e.name AS target_name "
         "FROM deployment_run_items dri "
@@ -75,4 +108,8 @@ def independent_member_delivery_ready(conn: Any, *, item_id: int, run_id: str) -
     )
 
 
-__all__ = ["independent_member_delivery_ready"]
+__all__ = [
+    "final_item_qa_accepted",
+    "independent_member_delivery_ready",
+    "member_qa_answer_ready",
+]

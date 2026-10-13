@@ -10,9 +10,19 @@ admitted copy has already frozen a copy of the rows it would refresh.
 
 One call converges the transition on its plans: a case added since the last
 materialization gets its row, an amended case's row is refreshed, and a row
-whose case left the plan is waived. A plan a delivery has already answered
-still has its existing rows refreshed and waived, but gains no new row -- a
+whose case left the plan is retired. A plan a delivery has already answered
+still has its existing rows refreshed and retired, but gains no new row -- a
 fresh obligation there could only be answered by a run that already finished.
+
+Retiring a ``post_deploy`` row whose case was replaced records the replacement
+rather than waiving it: when exactly one row this call created answers the
+same obligation (same item, transition, phase, environment and baseline), the
+old row is superseded by it. The corrected row is then the obligation, and a
+run that already admitted the old case answers it through those copies
+(:func:`~yoke_core.domain.qa_requirement_source_retirement.admitted_source_lineage`).
+A waiver would claim nobody needs the proof; the supersession says which row
+now carries it. A row with no single successor -- its case was dropped, or
+several new cases could each claim it -- is waived as removed.
 """
 
 from __future__ import annotations
@@ -33,6 +43,7 @@ from yoke_core.domain.qa_plan_execution_target_snapshot import (
     rebind_unresolvable_targets,
 )
 from yoke_core.domain.qa_plan_case_definition import case_baselines, plan_cases
+from yoke_core.domain.qa_obligation_settlement import obligation_settled
 from yoke_core.domain.qa_plan_management import QaPlanError, _placeholder, _plan_row
 from yoke_core.domain.qa_plan_refresh_safety import (
     correct_admitted_copies,
@@ -53,6 +64,10 @@ from yoke_core.domain.workflow_item_binding_lock import (
 
 
 REPLACEMENT_RATIONALE = "Removed from the current QA plan definition."
+SUCCESSOR_RATIONALE = (
+    "Replaced in the current QA plan definition by requirement {successor_id}; "
+    "it carries this post_deploy obligation."
+)
 
 
 @rollback_workflow_binding_write_errors
@@ -63,7 +78,7 @@ def rematerialize_for_item(
     transition_id: str,
     commit: bool = True,
 ) -> dict:
-    """Refresh current plan snapshots and waive cases no longer in the plan."""
+    """Refresh current plan snapshots and retire cases no longer in the plan."""
     lock_item_workflow_bindings(conn, (int(item_id),))
     transition_id = str(transition_id or "").strip()
     attached = _attached_plans(conn, item_id=int(item_id), transition_id=transition_id)
@@ -77,8 +92,7 @@ def rematerialize_for_item(
     marker = _placeholder(conn)
     rows = query_rows(
         conn,
-        "SELECT id, plan_id, plan_case_key, host_baseline, target_env, waived_at, "
-        "execution_target_json, execution_target_digest FROM qa_requirements "
+        "SELECT * FROM qa_requirements "
         f"WHERE item_id={marker} AND workflow_transition_id={marker} "
         "AND plan_id IS NOT NULL ORDER BY id",
         (int(item_id), transition_id),
@@ -104,6 +118,7 @@ def rematerialize_for_item(
             "plan_ids": [],
             "created_requirement_ids": [],
             "refreshed_requirement_ids": [],
+            "superseded_requirement_ids": {},
             "waived_requirement_ids": [],
         }
     subject = f"{render_item_ref(conn, item_id)} transition {transition_id!r}"
@@ -207,10 +222,15 @@ def rematerialize_for_item(
                         )
                     )
                 retained_requirement_ids.add(requirement_id)
-    waived_requirement_ids = [
-        int(row["id"])
+    retired = [
+        dict(row)
         for row in rows
-        if row["waived_at"] is None and int(row["id"]) not in retained_requirement_ids
+        if not obligation_settled(row)
+        and int(row["id"]) not in retained_requirement_ids
+    ]
+    superseded = _supersede_replaced(conn, retired, created_requirement_ids)
+    waived_requirement_ids = [
+        int(row["id"]) for row in retired if int(row["id"]) not in superseded
     ]
     for requirement_id in waived_requirement_ids:
         conn.execute(
@@ -233,8 +253,55 @@ def rematerialize_for_item(
         "created_requirement_ids": created_requirement_ids,
         "refreshed_requirement_ids": refreshed_requirement_ids,
         "corrected_admitted_copy_ids": sorted(set(corrected_admitted_copy_ids)),
+        "superseded_requirement_ids": superseded,
         "waived_requirement_ids": waived_requirement_ids,
     }
 
 
-__all__ = ["REPLACEMENT_RATIONALE", "rematerialize_for_item"]
+def _supersede_replaced(
+    conn: Any, retired: list[dict[str, Any]], created_ids: list[int]
+) -> dict[int, int]:
+    """Supersede each retired post_deploy row by its one created successor."""
+    from yoke_core.domain.qa_replacement_scope_guard import link_mismatches
+
+    if not created_ids:
+        return {}
+    marker = _placeholder(conn)
+    created = [
+        dict(row)
+        for row in query_rows(
+            conn,
+            "SELECT * FROM qa_requirements WHERE id IN "
+            f"({','.join(marker for _ in created_ids)}) ORDER BY id",
+            tuple(created_ids),
+        )
+    ]
+    superseded: dict[int, int] = {}
+    for row in retired:
+        if str(row.get("qa_phase") or "") != "post_deploy":
+            continue
+        successors = [
+            new
+            for new in created
+            if new["plan_id"] == row["plan_id"] and not link_mismatches(row, new)
+        ]
+        if len(successors) != 1:
+            continue
+        successor_id = int(successors[0]["id"])
+        conn.execute(
+            "UPDATE qa_requirements SET superseded_by_requirement_id="
+            f"{marker}, superseded_at={marker}, supersession_rationale={marker}, "
+            f"supersession_source={marker} WHERE id={marker}",
+            (
+                successor_id,
+                instant_parameter(conn, utc_now()),
+                SUCCESSOR_RATIONALE.format(successor_id=successor_id),
+                "system",
+                int(row["id"]),
+            ),
+        )
+        superseded[int(row["id"])] = successor_id
+    return superseded
+
+
+__all__ = ["REPLACEMENT_RATIONALE", "SUCCESSOR_RATIONALE", "rematerialize_for_item"]

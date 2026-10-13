@@ -10,16 +10,26 @@ release admits it again.
 Retirement is the step that makes the correction stick. The operator
 records the corrected body as a new item requirement for the same item,
 transition, phase and resolved environment, then supersedes the source with
-it. Neither
-item row has a verdict to show (post-deploy sources are never run), so the
-proof is the run's: at least one admitted copy of the source must already be
-replaced or superseded by a run case whose terminal successor passed. That
-passing case stays the answer
-for its run -- :func:`admitted_source_lineage` lets the corrected
-requirement read the retired source's copies on a run that admitted the
-source -- and later releases admit only the corrected body, because
-admission skips a superseded source. Nothing rewrites the source row; the
-supersession link is the whole record.
+it. Neither item row has a verdict to show (post-deploy sources are never
+run), so the proof comes from a run, and which run depends on where the
+source's copies are:
+
+* A run the item still belongs to holds a copy. That run will grade the
+  corrected requirement through the copy, so the copy must already be
+  replaced or superseded by a run case whose terminal successor passed. That
+  passing case stays the answer for its run -- :func:`admitted_source_lineage`
+  lets the corrected requirement read the retired source's copies on a run
+  that admitted the source.
+* No live membership holds a copy: the item was removed from the run that
+  admitted it (or that run failed or was cancelled), or no run admitted it
+  yet. A failed copy left there is history that grades nothing, and no run
+  can correct it any more. Retirement records the supersession and the
+  corrected requirement owes its own proof: the next release carrying the
+  item admits only the corrected body, and done waits for that copy.
+
+Later releases admit only the corrected body, because admission skips a
+superseded source. Nothing rewrites the source row; the supersession link
+is the whole record.
 """
 
 from __future__ import annotations
@@ -55,16 +65,29 @@ NEXT_ADMISSION_NOTICE = (
     "--rationale '<why the corrected body answers it>'"
 )
 
-#: Refused when no admitted copy of the source was answered by a passing run
-#: case: neither item row ever executes, so nothing else proves the new body.
+#: Refused when a run the item still belongs to holds a copy of the source
+#: and no copy was answered by a passing run case: that run grades the
+#: corrected requirement through the copy, so the copy must be corrected first.
 SOURCE_RETIREMENT_REFUSAL = (
-    "source_retirement_unproven: requirement {source_id} is a post_deploy item source: neither it nor a "
-    "corrected item requirement ever executes, so the proof that the "
-    "corrected body is right comes from a run. Correct one of its admitted "
-    "copies first -- materialize the corrected case with --replaces "
+    "source_retirement_unproven: requirement {source_id} is a post_deploy item source "
+    "whose admitted copies {copy_ids} sit on runs the item still belongs to "
+    "({run_ids}), and none was answered by a passing corrected case. Those runs "
+    "grade the corrected requirement through the copies, so correct one first "
+    "-- materialize the corrected case with --replaces "
     "CASE_KEY=<failed copy id> on that run's stage and record its passing "
     "current configuration-and-target-qualified verdict on its terminal successor "
-    "-- then re-run this supersede."
+    "-- then re-run this supersede. If the item is leaving that run instead, "
+    "remove it (yoke deployment-runs remove-item RUN-ID ITEM --reason TEXT), then "
+    "re-run this supersede: "
+    "the corrected requirement then owes its own proof on the next release."
+)
+
+#: Receipt note when no live membership holds a copy of the source.
+PROOF_OWED_NOTICE = (
+    "No run the item belongs to holds a copy of requirement {source_id}. "
+    "Requirement {corrected_id} carries the obligation and owes its own proof: "
+    "the next release carrying the item admits only its body, and done waits "
+    "for that copy to pass."
 )
 
 _LINEAGE_COLUMNS = "id,item_id,plan_id,plan_case_key"
@@ -120,6 +143,59 @@ def passing_run_replacement(conn: Any, source: Mapping[str, Any]) -> int | None:
         if has_current_passing_run(conn, replacement_id):
             return replacement_id
     return None
+
+
+def live_member_copies(conn: Any, source: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Copies of *source* on runs the item still belongs to that can still grade.
+
+    A run the item was removed from, or one that failed or was cancelled,
+    keeps its copies as history; no gate reads them for this item again.
+    """
+    identity, params = admitted_requirement_identity_clause(source, marker="%s")
+    environment = source_retirement_scope(source)["target_env"]
+    rows = query_rows(
+        conn,
+        "SELECT qr.id,qr.deployment_run_id,qr.target_env,qr.execution_target_json "
+        "FROM qa_requirements qr "
+        "JOIN deployment_run_items dri ON dri.run_id=qr.deployment_run_id "
+        "AND dri.item_id=qr.deployment_member_item_id "
+        "JOIN deployment_runs dr ON dr.id=qr.deployment_run_id "
+        "WHERE qr.deployment_member_item_id=%s "
+        "AND dr.status NOT IN ('failed','cancelled') "
+        f"AND {identity} ORDER BY qr.id",
+        (int(source["item_id"]), *params),
+    )
+    return [
+        dict(row)
+        for row in rows
+        if not environment
+        or source_retirement_scope(dict(row))["target_env"] == environment
+    ]
+
+
+def source_retirement_answer(
+    conn: Any, source: Mapping[str, Any], *, corrected_id: int
+) -> dict[str, Any]:
+    """The proof that lets *source* retire, or the named refusal."""
+    answer_id = passing_run_replacement(conn, source)
+    if answer_id is not None:
+        return {"run_replacement_requirement_id": answer_id}
+    copies = live_member_copies(conn, source)
+    if copies:
+        return {
+            "refusal": SOURCE_RETIREMENT_REFUSAL.format(
+                source_id=int(source["id"]),
+                copy_ids=", ".join(f"#{int(row['id'])}" for row in copies),
+                run_ids=", ".join(
+                    dict.fromkeys(str(row["deployment_run_id"]) for row in copies)
+                ),
+            )
+        }
+    return {
+        "proof_owed_notice": PROOF_OWED_NOTICE.format(
+            source_id=int(source["id"]), corrected_id=int(corrected_id)
+        )
+    }
 
 
 def admitted_source_lineage(
@@ -198,11 +274,14 @@ def admitted_source_correction(conn: Any, broken: Mapping[str, Any]) -> dict[str
 
 __all__ = [
     "NEXT_ADMISSION_NOTICE",
+    "PROOF_OWED_NOTICE",
     "SOURCE_RETIREMENT_REFUSAL",
     "admitted_source_correction",
     "admitted_source_lineage",
     "is_source_retirement",
     "lineage_identity_clause",
+    "live_member_copies",
     "passing_run_replacement",
+    "source_retirement_answer",
     "source_retirement_scope",
 ]

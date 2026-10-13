@@ -59,10 +59,16 @@ _EPILOG = (
     "item requirement for the same item, transition, phase and resolved environment "
     "(--target-env names the source snapshot destination; its digest need not match) "
     "('yoke qa requirement add --item ...'), then supersede the source with "
-    "it. Neither item row ever executes, so this needs one admitted copy of "
-    "the source replaced or superseded along a chain whose terminal case has a "
-    "current configuration-and-target-qualified pass; that case answers "
-    "its own run, and later releases admit only the corrected requirement. "
+    "it. Neither item row ever executes, so the proof comes from a run. "
+    "While a run the item still belongs to holds an admitted copy of the "
+    "source, one such copy must be replaced or superseded along a chain whose "
+    "terminal case has a current configuration-and-target-qualified pass; "
+    "that case answers its own run. When no live membership holds a copy -- "
+    "the item was removed from that run (yoke deployment-runs remove-item), "
+    "the run failed or was cancelled, or nothing admitted the source yet -- "
+    "the supersession is recorded and the receipt's proof_owed_notice says "
+    "the corrected requirement owes its own proof on the next release. "
+    "Either way later releases admit only the corrected requirement. "
     "Successor links must converge on the named terminal case; supersession "
     "updates an existing replacement link to that same case. To repair "
     "inconsistent links, an operator or project steering holder runs this "
@@ -108,6 +114,9 @@ def _write_supersede_result(
                 "later releases admit the corrected item requirement.",
                 file=stdout,
             )
+        proof_owed = result.get("proof_owed_notice")
+        if proof_owed:
+            print(f"Source retired: {proof_owed}", file=stdout)
     else:
         print(json.dumps(result, sort_keys=True), file=stdout)
 
