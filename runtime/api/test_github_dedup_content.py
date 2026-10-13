@@ -43,8 +43,6 @@ def test_old_task_title_format_is_not_adopted(monkeypatch):
     assert (
         epic._dedup_or_create_task_issue(
             backlog_id="TEST-1",
-            task_num_str="001",
-            task_title="Task",
             issue_title="[TEST-1] 001 Task",
             task_body="Body",
             labels=[],
