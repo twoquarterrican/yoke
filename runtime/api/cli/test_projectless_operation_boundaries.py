@@ -67,3 +67,20 @@ def test_project_mapping_is_the_same_warning_in_cli_and_core(tmp_path, monkeypat
         assert issue["code"] == "project_mapping_missing"
         assert issue["severity"] == "warning"
         assert "yoke project register" in issue["hint"]
+
+
+def test_default_export_folder_obstruction_teaches_recovery(tmp_path, monkeypatch):
+    from yoke_core.domain.universe_export_destination import UniverseExportError
+
+    monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path))
+    (tmp_path / "exports").write_text("preserve this file")
+    with pytest.raises(
+        UniverseExportError, match="universe_export_destination_unavailable.*--out"
+    ):
+        resolve_export_destination(None, "demo")
+    with pytest.raises(
+        universe_export_download.UniverseExportDownloadError,
+        match="universe_export_destination_unavailable.*--out",
+    ):
+        universe_export_download._destination(None, "demo.tar")
+    assert (tmp_path / "exports").read_text() == "preserve this file"

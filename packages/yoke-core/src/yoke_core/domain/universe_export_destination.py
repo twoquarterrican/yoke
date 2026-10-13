@@ -14,6 +14,10 @@ from yoke_core.domain.universe_archive import ARTIFACT_SUFFIX
 _FILENAME_SAFE_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
+class UniverseExportError(RuntimeError):
+    """The universe could not be exported safely."""
+
+
 def default_artifact_name(
     org_slug: str,
     now: Optional[datetime] = None,
@@ -35,6 +39,16 @@ def resolve_export_destination(
     normalizes the separator away; without it a not-yet-created
     ``--out ~/backups/`` would silently become a file named ``backups``.
     """
+    try:
+        return _resolve_destination(out, org_slug)
+    except OSError as exc:
+        raise UniverseExportError(
+            f"universe_export_destination_unavailable: {exc}; "
+            "repair the destination folder or pass --out with a writable archive path."
+        ) from exc
+
+
+def _resolve_destination(out: Optional[Union[str, Path]], org_slug: str) -> Path:
     if out is None:
         from yoke_core.domain.machine_config import yoke_home
 

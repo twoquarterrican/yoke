@@ -37,6 +37,7 @@ from yoke_core.domain import runtime_settings
 from yoke_core.domain import universe_archive
 from yoke_core.domain import universe_portability
 from yoke_core.domain.universe_export_destination import (
+    UniverseExportError,
     default_artifact_name,
     resolve_export_destination,
 )
@@ -49,10 +50,6 @@ ARTIFACT_SUFFIX = universe_archive.ARTIFACT_SUFFIX
 #: Machine-settings key capping the dump subprocess runtime.
 EXPORT_TIMEOUT_SETTING = "universe_export_timeout_seconds"
 DEFAULT_EXPORT_TIMEOUT_S = 600
-
-
-class UniverseExportError(RuntimeError):
-    """The universe could not be exported (authority, connection, or dump)."""
 
 
 def resolve_export_dsn() -> str:

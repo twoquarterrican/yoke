@@ -145,7 +145,13 @@ def _destination(out: str | None, filename: str) -> Path:
         raise UniverseExportDownloadError(
             f"the self-host export destination must not be a symlink: {target}"
         )
-    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise UniverseExportDownloadError(
+            f"universe_export_destination_unavailable: {exc}; "
+            "repair the destination folder or pass --out with a writable archive path."
+        ) from exc
     return target
 
 

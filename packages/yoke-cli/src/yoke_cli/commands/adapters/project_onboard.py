@@ -28,13 +28,13 @@ from yoke_cli.project_install.files import ProjectInstallError
 GITHUB_ADOPTION_FLAGS = "[--github-adoption app-binding|disabled]"
 PROJECT_CREATE_USAGE = (
     "yoke project create CHECKOUT --slug SLUG --name NAME "
-    "[--org ORG] --github-repo OWNER/REPO --default-branch BRANCH "
+    "[--org ORG] [--github-repo OWNER/REPO] --default-branch BRANCH "
     f"--public-item-prefix PREFIX {GITHUB_ADOPTION_FLAGS} [--config PATH] "
     "[--yes | --dry-run] [--json]"
 )
 PROJECT_IMPORT_USAGE = (
     "yoke project import REMOTE_URL CHECKOUT --slug SLUG --name NAME "
-    "[--org ORG] --github-repo OWNER/REPO --default-branch BRANCH "
+    "[--org ORG] [--github-repo OWNER/REPO] --default-branch BRANCH "
     f"--public-item-prefix PREFIX {GITHUB_ADOPTION_FLAGS} "
     "[--existing-yoke-layer keep|remove] [--config PATH] "
     "[--yes | --dry-run] [--json]"
