@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any, Collection
 
 from yoke_contracts.api.function_call import (
     FunctionCallRequest,
@@ -37,6 +38,32 @@ def project_selection_missing(request: FunctionCallRequest) -> bool:
         return False
     supplied_target = payload.get("target")
     return not isinstance(supplied_target, dict) or not supplied_target
+
+
+def unresolved_project_response(
+    conn: Any,
+    request: FunctionCallRequest,
+    entry: RegistryEntry,
+    visible_project_ids: Collection[int] | None,
+) -> FunctionCallResponse:
+    if project_selection_missing(request):
+        from yoke_core.domain.project_selection import missing_project_on_connection
+
+        return permission_error_response(
+            request,
+            entry,
+            "project_required",
+            missing_project_on_connection(
+                conn, visible_project_ids=visible_project_ids
+            ),
+        )
+    return permission_error_response(
+        request,
+        entry,
+        "permission_denied",
+        "could not resolve a target project for project-scoped function; "
+        "name a registered project with --project P or repair the supplied target",
+    )
 
 
 class ProjectNotRegisteredError(LookupError):
@@ -81,7 +108,7 @@ def permission_error_response(
 
 
 __all__ = [
-    "project_selection_missing",
+    "unresolved_project_response",
     "ProjectNotRegisteredError",
     "control_plevel_label",
     "permission_error_response",

@@ -15,7 +15,8 @@ from yoke_core.domain.yoke_function_permissions import check_dispatch_permission
 
 
 @pytest.mark.parametrize(
-    "function", ["items.create", "packs.list", "github_actions.secret.set"]
+    "function",
+    ["items.create", "packs.list", "github_actions.secret.set", "doctor.run.run"],
 )
 def test_missing_selection_names_only_accessible_project(function):
     with _conn() as conn:
@@ -33,7 +34,11 @@ def test_missing_selection_names_only_accessible_project(function):
             function=function,
             actor=ActorContext(actor_id=str(actor_id), session_id="test"),
             target=TargetRef(kind="global"),
-            payload={},
+            payload=(
+                {"quick": True, "project_safe_quick": True}
+                if function == "doctor.run.run"
+                else {}
+            ),
         )
         refusal = check_dispatch_permission(conn, entry, request).error.error
         assert refusal.code == "project_required"
@@ -71,3 +76,31 @@ def test_unresolved_item_does_not_become_missing_selection():
             check_dispatch_permission(conn, entry, request).error.error.code
             == "permission_denied"
         )
+
+
+@pytest.mark.parametrize("reason", ["ambiguous_project", "permission_denied"])
+def test_resolver_refusals_keep_their_causes(monkeypatch, reason):
+    from yoke_core.domain import yoke_function_permissions
+    from yoke_core.domain.function_unresolved_project import ProjectNotRegisteredError
+    from yoke_core.domain.project_identity import AmbiguousProjectRefError
+
+    def refuse(*_args, **_kwargs):
+        if reason == "ambiguous_project":
+            raise AmbiguousProjectRefError(
+                "project name is ambiguous; name its organization"
+            )
+        raise ProjectNotRegisteredError("missing", plane="test")
+
+    monkeypatch.setattr(yoke_function_permissions, "resolve_project_context", refuse)
+    with _conn() as conn:
+        actor_id = seed_human_actor(conn)
+        entry = _entry("github_actions.secret.set")
+        request = FunctionCallRequest(
+            function=entry.function_id,
+            actor=ActorContext(actor_id=str(actor_id), session_id="test"),
+            target=TargetRef(kind="global"),
+            payload={"project": "supplied"},
+        )
+        refusal = check_dispatch_permission(conn, entry, request).error.error
+        assert refusal.code == reason
+        assert "Accessible projects" not in refusal.message
