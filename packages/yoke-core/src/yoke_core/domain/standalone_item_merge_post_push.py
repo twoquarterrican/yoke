@@ -6,12 +6,13 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Callable, Optional, Sequence
 
-from yoke_contracts.github_app_installation_permissions import (
-    GITHUB_CHECKS_READ_PERMISSION_LEVELS as CHECKS_READ,
-)
 from yoke_contracts.designed_wait import announce_designed_wait, poll_every
 from yoke_contracts.machine_config.settings_keys import machine_setting_default
-from yoke_core.domain import gh_rest_transport, runtime_settings
+from yoke_core.domain import runtime_settings
+from yoke_core.domain.standalone_post_push_ci import (
+    read_push_checks,
+    superseding_push_sha,
+)
 from yoke_core.domain import standalone_item_merge_git as git
 from yoke_core.domain.merge_github_authority import github_merge_enabled
 from yoke_core.domain.standalone_item_merge_publication_message import (
@@ -20,23 +21,12 @@ from yoke_core.domain.standalone_item_merge_publication_message import (
 )
 from yoke_core.domain import item_merge_receipts as receipts
 from yoke_core.domain.merge_landing_proof import LandingUnverified, verified_target_sha
-from yoke_core.domain.gh_rest_transport import (
-    RestRequest,
-    RestTransportError,
-    request_with_retry,
-)
 from yoke_core.domain.github_poll_schedule import MINIMUM_POLL_INTERVAL_SECONDS
-from yoke_core.engines.merge_worktree_pr_rest import (
-    AuthResolutionFailed,
-    resolve_auth,
-)
-from yoke_core.engines.merge_worktree_prepare import MergeArgs, MergeContext
 from yoke_core.engines.main_checkout_sync import fast_forward_main_checkout
 
 DISCOVERY_TIMEOUT_KEY = "standalone_post_push_ci_discovery_timeout"
 CONCLUSION_TIMEOUT_KEY = "standalone_post_push_ci_timeout"
 _GREEN_CONCLUSIONS = frozenset({"success", "neutral", "skipped"})
-CHECK_RUNS_PER_PAGE = 100
 _MALFORMED_PAGINATION = "post-push check-runs pagination is incomplete or malformed"
 
 
@@ -111,57 +101,23 @@ def read_check_runs(
     merge_sha: str,
     authority: str,
 ) -> tuple[Optional[tuple[CheckRun, ...]], str]:
-    ctx = MergeContext(args=MergeArgs(branch=""), project=project)
-    try:
-        auth = resolve_auth(
-            ctx,
-            required_permissions=CHECKS_READ,
-            required_authority=authority,
-        )
-    except AuthResolutionFailed as exc:
-        hint = f" Repair: {exc.hint}" if exc.hint else ""
-        return None, f"post-push check auth resolution failed: {exc}.{hint}"
-    owner, repo = gh_rest_transport.split_repo(auth.repo)
-    collected: list[CheckRun] = []
-    expected: Optional[int] = None
-    page = 1
-    while True:
-        request = RestRequest(
-            method="GET",
-            path=f"/repos/{owner}/{repo}/commits/{merge_sha}/check-runs",
-            query={
-                "per_page": str(CHECK_RUNS_PER_PAGE),
-                "page": str(page),
-            },
-        )
-        try:
-            response = request_with_retry(request, token=auth.token)
-        except RestTransportError as exc:
-            return None, f"post-push check-runs read failed: {exc}"
-        payload = response.body if isinstance(response.body, dict) else None
-        page_runs, total_count, error = _decode_check_runs_page(payload)
-        if error or page_runs is None or total_count is None:
-            return None, error
-        if expected is None:
-            expected = total_count
-        elif total_count != expected:
-            return None, _MALFORMED_PAGINATION
-        collected.extend(page_runs)
-        if len(collected) == expected:
-            return tuple(collected), ""
-        if (
-            len(collected) > expected
-            or not page_runs
-            or len(page_runs) < CHECK_RUNS_PER_PAGE
-        ):
-            return None, _MALFORMED_PAGINATION
-        page += 1
+    raw, error = read_push_checks(project, merge_sha, authority)
+    if raw is None:
+        return None, error
+    runs, _, error = _decode_check_runs_page(
+        {"check_runs": raw, "total_count": len(raw)}
+    )
+    return (tuple(runs) if runs is not None else None), error
 
 
 def _terminal_kind(runs: tuple[CheckRun, ...]) -> str:
     completed = tuple(run for run in runs if run.status == "completed")
-    if any(run.conclusion not in _GREEN_CONCLUSIONS for run in completed):
+    if any(
+        run.conclusion not in _GREEN_CONCLUSIONS | {"cancelled"} for run in completed
+    ):
         return "failed"
+    if any(run.conclusion == "cancelled" for run in completed):
+        return "cancelled"
     if len(completed) == len(runs):
         return "passed"
     return "pending"
@@ -175,6 +131,7 @@ def await_post_push_checks(
     read: Callable[
         [str, str, str], tuple[Optional[tuple[CheckRun, ...]], str]
     ] = read_check_runs,
+    supersede: Callable[[str, str, str], tuple[str, str]] = superseding_push_sha,
     sleep: Callable[[float], None] = time.sleep,
     monotonic: Callable[[], float] = time.monotonic,
 ) -> PostPushVerdict:
@@ -199,17 +156,47 @@ def await_post_push_checks(
             return PostPushVerdict("no_checks")
         sleep(min(remaining, MINIMUM_POLL_INTERVAL_SECONDS))
 
+    detail = ""
     while True:
         kind = _terminal_kind(runs)
+        if kind == "cancelled":
+            successor, error = supersede(project, merge_sha, authority)
+            if error:
+                return PostPushVerdict(
+                    "unreadable", runs=runs, detail=f"{detail}; {error}".strip("; ")
+                )
+            if not successor:
+                return PostPushVerdict("failed", runs=runs, detail=detail)
+            notice = f"post-push CI on {merge_sha} superseded by {successor}"
+            print(notice, flush=True)
+            detail = f"{detail}; {notice}".strip("; ")
+            merge_sha = successor
+            refreshed, error = read(project, merge_sha, authority)
+            if error or not refreshed:
+                reason = (
+                    error
+                    or "post_push_ci_unreadable: superseding push checks disappeared; retry merge close-out"
+                )
+                return PostPushVerdict(
+                    "unreadable", runs=runs, detail=f"{detail}; {reason}"
+                )
+            runs = refreshed
+            kind = _terminal_kind(runs)
         if kind in {"failed", "passed"}:
-            return PostPushVerdict(kind, runs=runs)
+            return PostPushVerdict(kind, runs=runs, detail=detail)
         remaining = conclusion_timeout - (monotonic() - started)
         if remaining <= 0:
-            return PostPushVerdict("timed_out", runs=runs)
+            return PostPushVerdict("timed_out", runs=runs, detail=detail)
         sleep(min(remaining, MINIMUM_POLL_INTERVAL_SECONDS))
         refreshed, error = read(project, merge_sha, authority)
-        if error or refreshed is None:
-            return PostPushVerdict("unreadable", runs=runs, detail=error)
+        if error or not refreshed:
+            error = (
+                error
+                or "post_push_ci_unreadable: previously observed push checks disappeared; retry merge close-out"
+            )
+            return PostPushVerdict(
+                "unreadable", runs=runs, detail=f"{detail}; {error}".strip("; ")
+            )
         runs = refreshed
 
 

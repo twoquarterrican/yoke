@@ -62,6 +62,27 @@ candidate ancestry are required whenever the checkout has a remote. Disabled iss
 not turn those merge gates off.
 See [GitHub](../github.md#merge-connectivity-and-issue-mirroring).
 
+Standalone post-push close-out reads workflow runs with `event=push` for the
+landed head SHA, then reads only those runs' check suites. Dispatched workflows
+on the same commit do not hold close-out. A queued workflow with no checks yet
+still counts as pending. The discovery window and 15-minute conclusion budget
+are unchanged.
+
+When a push workflow is cancelled, close-out follows the newer branch head
+only after proving it contains the landed commit and has push runs for the
+cancelled workflows. It reports `superseded by <full SHA>` and evaluates that
+commit within the original deadline. Cancellation without that proof is a
+failed CI result. Provider reads that cannot establish identity or completeness
+refuse as `post_push_ci_unreadable`; restore GitHub App Actions, Checks and
+Contents read access and resume the same item:
+
+```text
+yoke merge item PREFIX-N --result "<result>" --verification "<passing proof>"
+```
+
+The receipt preserves the landing identity and records the observed push
+workflow URL, conclusion and evaluated head SHA in its check evidence.
+
 ## Disabled semantics
 
 - **Item flows skip silently-and-logged.** Sync helpers invoked from item
