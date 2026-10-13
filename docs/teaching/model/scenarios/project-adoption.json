@@ -1,13 +1,74 @@
 {
- "id": "project-adoption",
- "title": "No project, a new project or an established project",
- "status": "draft-copy",
- "situations": ["Finish machine setup without a project", "Start an empty project or a folder without Git", "Clone a remote repository", "Adopt a mature app or reconnect an existing Yoke project"],
- "coverage": "traced",
- "current": "Research trace; requirements and source paths need live proof.",
- "desired": "Reconciled against current plan records.",
- "review": "Older research may describe heavier onboarding. Apply minimum activation and optional-adoption boundaries first.",
- "questions": ["Can already-onboarded projects enter current work without restarting Onboard?", "Does the handoff reach one useful outcome, including mature-project and no-project branches?"],
- "related_scenarios": ["agent-context", "work-intent", "architecture-project-structure", "packs"],
- "plan_refs": ["FIRST-USER.24", "FIRST-USER.D", "FIRST-USER.P4", "FIRST-USER.P5", "FIRST-USER.P6", "FIRST-USER.42", "FIRST-USER.43", "JOURNEYS.execution-boundary", "JOURNEYS.locked-principles", "JOURNEYS.principle-1", "JOURNEYS.principle-2", "JOURNEYS.principle-3", "JOURNEYS.principle-4", "JOURNEYS.principle-5", "JOURNEYS.principle-6", "JOURNEYS.principle-7", "JOURNEYS.principle-8", "JOURNEYS.principle-9", "JOURNEYS.situation-4", "JOURNEYS.situation-5", "JOURNEYS.situation-6", "JOURNEYS.situation-9", "JOURNEYS.situation-19", "JOURNEYS.moved-from-first-user-former-dash-g"]
+ "scenario": {
+  "id": "project-adoption",
+  "title": "No project, a new project or an established project",
+  "status": "draft-copy",
+  "situations": ["Finish machine setup without a project", "Start an empty project or a folder without Git", "Clone a remote repository", "Adopt a mature app or reconnect an existing Yoke project"],
+  "coverage": "traced",
+  "current": "Research trace; requirements and source paths need live proof.",
+  "desired": "Reconciled against current plan records.",
+  "review": "Older research may describe heavier onboarding. Apply minimum activation and optional-adoption boundaries first.",
+  "questions": ["Can already-onboarded projects enter current work without restarting Onboard?", "Does the handoff reach one useful outcome, including mature-project and no-project branches?"],
+  "related_scenarios": ["agent-context", "work-intent", "architecture-project-structure", "packs"],
+  "plan_refs": ["FIRST-USER.24", "FIRST-USER.D", "FIRST-USER.P4", "FIRST-USER.P5", "FIRST-USER.P6", "FIRST-USER.42", "FIRST-USER.43", "JOURNEYS.execution-boundary", "JOURNEYS.locked-principles", "JOURNEYS.principle-1", "JOURNEYS.principle-2", "JOURNEYS.principle-3", "JOURNEYS.principle-4", "JOURNEYS.principle-5", "JOURNEYS.principle-6", "JOURNEYS.principle-7", "JOURNEYS.principle-8", "JOURNEYS.principle-9", "JOURNEYS.situation-4", "JOURNEYS.situation-5", "JOURNEYS.situation-6", "JOURNEYS.situation-9", "JOURNEYS.situation-19", "JOURNEYS.moved-from-first-user-former-dash-g"]
+ },
+ "lessons": [
+  {
+   "id": "01",
+   "title": "Prepare the right folder and project identity",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Adding/opening a project",
+   "need": "Distinguish no folder, missing Git, a non-Git folder, an unregistered repository and an already registered project. Preserve existing content and identity.",
+   "disclosure": "current cue",
+   "surface": "Setup preparation, existing-project detection and project install",
+   "gap": "Direct project install and setup preparation have different boundaries. The guide’s create/import recipes also need the previously audited required-config correction.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 1", "FIRST-USER P6", "JOURNEYS 4", "JOURNEYS 5", "JOURNEYS 6"],
+   "sources": ["docs/public/projects.md", "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_existing_project_detected.py"]
+  },
+  {
+   "id": "02",
+   "title": "Hand off to an agent in the actual project",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "Setup finish or project selection",
+   "need": "TUI completion has no agent yet. Open a session in the chosen checkout. A projectless agent selects/adds the project and carries intent into a project session.",
+   "disclosure": "planned cue",
+   "surface": "Machine/project finish → global guide or project Onboard",
+   "gap": "Accepted correction: never invoke project Onboard from outside that project. A session does not change project identity just because its directory changes.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 24", "FIRST-USER P1", "FIRST-USER P4", "FIRST-USER P5", "FIRST-USER P6", "FIRST-USER P7", "JOURNEYS 6", "JOURNEYS 9"],
+   "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard_machine_finish.py", "packages/yoke-cli/src/yoke_cli/config/project_onboarding_handoff.py", ".agents/skills/yoke/onboard/run-and-rows.md"]
+  },
+  {
+   "id": "03",
+   "title": "Survey, reuse and choose what Yoke takes over",
+   "status": "draft-copy",
+   "audience": "both",
+   "when": "First project onboarding or explicit adoption of existing work",
+   "need": "An existing app needs mapping of docs, tests, CI and deployment. Agree on inherited work to adopt versus leave underway; a new project may need scaffolding.",
+   "disclosure": "planned cue",
+   "surface": "Onboard survey/profile plus FIRST-USER 24 intake",
+   "gap": "Define the adoption boundary for existing PRs/items, avoid duplicate seeding, and preserve accepted strategy. JOURNEYS proposes moving later infrastructure setup to the relevant moment.",
+   "review": "Pending exact recipe proof.",
+   "plan_notes": ["FIRST-USER 24", "FIRST-USER 25", "JOURNEYS 9"],
+   "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", ".agents/skills/yoke/onboard/strategy-conversation.md"]
+  },
+  {
+   "id": "setup-facts",
+   "title": "Read the saved profile and current setup facts before continuing",
+   "status": "observed",
+   "audience": "both",
+   "when": "Returning to setup in a fresh session or another machine.",
+   "need": "Use yoke onboard checklist get --project SLUG. Reuse the confirmed profile, confirm only changed settings, and check this machine independently. Optional unexamined capabilities stay unknown; required unknown facts block readiness.",
+   "disclosure": "current cue",
+   "surface": "Onboard resume and checklist CLI",
+   "gap": "Installed campaign proof requires the candidate release.",
+   "review": "Source tests pass; no installed campaign proof is claimed.",
+   "recipes": ["yoke onboard checklist get --project SLUG --json"],
+   "plan_refs": ["FIRST-USER.42"],
+   "sources": ["docs/public/guides/terminal-onboarding.md", ".agents/skills/yoke/onboard/run-and-rows.md"]
+  }
+ ]
 }

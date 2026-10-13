@@ -10,11 +10,15 @@ Resume the known run; initialize only when this project has none. Record the
 returned ID and reuse it for every write:
 
 ```bash
-yoke onboard checklist --run-id {run_id} --json
+yoke onboard checklist get --project {project} --run-id {run_id} --json
 yoke onboard checklist init --project {project} --checkout {checkout} --json
 ```
 
 Reentry evaluates each live skip predicate; it never blindly re-applies.
+Omit --run-id to resolve only this project's saved run. A foreign run refuses
+before a write. Read `run.execution_profile`, `profile_changed` and
+`setup_readiness`; shared decisions survive, while machine rows describe the
+requesting machine. Missing local checks never inherit another machine's proof.
 Requested reconfigure shows the proposed delta and uses the same ordinary
 confirmation/approval gate. Every gate leaves a coherent resumable partial state.
 
@@ -46,6 +50,9 @@ of the item list.
 Every step writes its row and echoes what changed/where:
 `verified` means checked facts; `configured` means applied setup;
 `not-needed` means confirmed exclusion; `deferred` means explicit postponement.
+`unknown` means unexamined or unavailable evidence. `saved_status` and
+`saved_evidence` retain the choice when current settings show a different fact.
+Optional unknown rows do not require another whole-profile interview.
 
 ```bash
 yoke onboard checklist --run-id {run_id} --row-status {row}=configured --evidence {row}="{what was written and where}"

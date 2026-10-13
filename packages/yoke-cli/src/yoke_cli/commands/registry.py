@@ -19,6 +19,7 @@ from yoke_cli.commands.adapters.migration_content_identity import (
 from yoke_cli.commands.adapters.claims_path_change import claims_path_amend
 from yoke_cli.commands.adapters.config import env_list
 from yoke_cli.commands.adapters.config_actor_binding import config_bind_actor
+from yoke_cli.commands.adapters.onboard_checklist_get import onboard_checklist_get
 from yoke_cli.commands.registry_render import RENDER_SUBCOMMAND_REGISTRY
 from yoke_cli.commands.registry_token_normalization import expanded_hyphen_routes
 from yoke_cli.commands.registry_deployment import DEPLOYMENT_SUBCOMMAND_REGISTRY
@@ -219,6 +220,7 @@ SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
         "onboard.checklist.init",
         _adapters.onboard_checklist_init,
     ),
+    ("onboard", "checklist", "get"): ("onboard.checklist.get", onboard_checklist_get),
     ("onboard", "checklist"): (
         "onboard.checklist.run",
         _adapters.onboard_checklist_cmd,

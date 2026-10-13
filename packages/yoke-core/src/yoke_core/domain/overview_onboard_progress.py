@@ -1,26 +1,7 @@
-"""Live checklist facts behind the Overview's ``/yoke onboard`` module.
+"""Refresh checklist facts for Overview without treating saved choices as checks.
 
-The module's state and its every rendered sentence come from here, because
-the fact a member needs is not "did somebody start onboarding" but "how far
-did it get, and what is it stuck on". A run row appears the moment the skill
-opens its checklist, so existence alone is satisfied while nothing has been
-configured yet; completion is what the module claims, and completion means a
-checklist with no open rows.
-
-A project that has deployed is past onboarding whatever its checklist says.
-Every read first lets :mod:`yoke_core.domain.project_onboarding_run_supersede`
-close the runs a project's deployments overtook — on the run row itself,
-so the record says why it closed — and a superseded run counts as complete.
-
-Nothing else is latched here. The activation latch is monotone and reads
-only the completion verdict; these facts re-derive on every read so a card
-can name the blocker a run picked up after it activated.
-
-The three outcome flags exist because a complete run does not imply a
-particular ending: a mapped existing app finishes with the scaffold row
-``not-needed`` and installs nothing, and a run may finish having deferred
-its environments. The card claims each outcome only where the universe
-carries its registration.
+Deployment supersession records that a project already reached delivery. It
+remains separate from current setup_readiness, which requires fresh facts.
 """
 
 from __future__ import annotations
@@ -28,7 +9,6 @@ from __future__ import annotations
 from typing import Any, Dict, List, Mapping, Optional
 
 from yoke_contracts.onboard_checklist import (
-    ROW_SPECS,
     STATUS_BLOCKED,
     STATUS_CONFIGURED,
     STATUS_VERIFIED,
@@ -40,6 +20,7 @@ from yoke_core.domain.project_onboarding_run_supersede import (
     superseded_by,
 )
 from yoke_core.domain.schema_common import _table_exists
+from yoke_core.domain.project_onboarding_runs import get_run
 
 RUNS_TABLE = "project_onboarding_runs"
 ROWS_TABLE = "project_onboarding_checklist_rows"
@@ -60,12 +41,6 @@ RUN_STATUS_OPEN = "open"
 #: Run statuses under which the module's checklist is finished.
 FINISHED_RUN_STATUSES = (RUN_STATUS_COMPLETE, RUN_STATUS_SUPERSEDED)
 
-#: Checklist position comes from the contract's row order, never from the
-#: ``step`` label: the labels sort "1", "10", "17a", "9a" as text, which
-#: would name the wrong next step.
-_ROW_ORDER = {spec.row_id: index for index, spec in enumerate(ROW_SPECS)}
-
-
 def read_onboard_progress(conn: Any) -> Optional[Dict[str, Any]]:
     """The most recent onboarding run's live facts, or ``None`` for none.
 
@@ -81,7 +56,8 @@ def read_onboard_progress(conn: Any) -> Optional[Dict[str, Any]]:
     ).fetchone()
     if run is None:
         return None
-    rows = _ordered_rows(conn, str(run[0]))
+    current = get_run(str(run[0]), conn=conn)
+    rows = current["rows"]
     open_rows = [row for row in rows if row["status"] not in TERMINAL_STATUSES]
     blocked = [row for row in rows if row["status"] == STATUS_BLOCKED]
     superseded = (
@@ -93,6 +69,7 @@ def read_onboard_progress(conn: Any) -> Optional[Dict[str, Any]]:
             else _run_status(rows, open_rows, blocked)
         ),
         "superseded_by": superseded,
+        "setup_readiness": current["setup_readiness"],
         "steps_done": len(rows) - len(open_rows),
         "steps_total": len(rows),
         # A superseded run has nothing next: its project moved on to delivery.
@@ -126,31 +103,6 @@ def _run_status(
     if blocked:
         return RUN_STATUS_BLOCKED
     return RUN_STATUS_COMPLETE if rows and not open_rows else RUN_STATUS_OPEN
-
-
-def _ordered_rows(conn: Any, run_id: str) -> List[Dict[str, str]]:
-    rows = conn.execute(
-        f"SELECT row_id, step, title, status, blocker FROM {ROWS_TABLE} "
-        "WHERE run_id = %s",
-        (run_id,),
-    ).fetchall()
-    payloads = [
-        {
-            "row_id": str(row[0]),
-            "step": str(row[1]),
-            "title": str(row[2]),
-            "status": str(row[3]),
-            "blocker": str(row[4] or ""),
-        }
-        for row in rows
-    ]
-    return sorted(
-        payloads,
-        key=lambda row: (
-            _ROW_ORDER.get(row["row_id"], len(_ROW_ORDER)),
-            row["row_id"],
-        ),
-    )
 
 
 def _step(row: Mapping[str, str]) -> Dict[str, str]:

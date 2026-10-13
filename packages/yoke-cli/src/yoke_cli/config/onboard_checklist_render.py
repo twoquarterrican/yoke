@@ -25,29 +25,42 @@ def render_human(report: Mapping[str, Any]) -> str:
         "Yoke onboarding checklist",
         f"  run: {run['run_id']}",
         f"  branch: {run['branch']}",
+        f"  project: {run.get('project_id') or 'machine only'}",
+        f"  machine: {run.get('machine_id') or 'not checked'}",
+        f"  setup ready: {bool((run.get('setup_readiness') or {}).get('ready'))}",
+        f"  profile: {'changed; confirm the delta' if run.get('profile_changed') else 'saved' if run.get('execution_profile') else 'unknown'}",
     ]
     if report.get("record_path"):
         lines.append(f"  record: {report['record_path']}")
     if report.get("view_path"):
         lines.append(f"  view: {report['view_path']}")
-    lines.extend([
-        f"  schema_version: {SCHEMA_VERSION}",
-        f"  doctor: {doctor_status}",
-        "",
-        "Rows:",
-    ])
+    lines.extend(
+        [
+            f"  schema_version: {SCHEMA_VERSION}",
+            f"  doctor: {doctor_status}",
+            "",
+            "Rows:",
+        ]
+    )
     for row in run["rows"]:
         lines.append(
-            f"  - {row['step']} {row['row_id']}: {row['status']}"
-            f" ({row['owner']})"
+            f"  - {row['step']} {row['row_id']}: {row['status']} ({row['owner']})"
         )
-    lines.extend([
-        "",
-        "Summary:",
-        f"  open_rows: {_summary_count(summary, 'open')}",
-        f"  blocked_rows: {_summary_count(summary, 'blocked')}",
-        "",
-    ])
+        if row.get("saved_status") and row["saved_status"] != row["status"]:
+            lines.append(f"    saved choice: {row['saved_status']}")
+        if row.get("reason"):
+            lines.append(
+                f"    {row['reason']}: {row.get('recovery') or 'Resume /yoke onboard.'}"
+            )
+    lines.extend(
+        [
+            "",
+            "Summary:",
+            f"  open_rows: {_summary_count(summary, 'open')}",
+            f"  blocked_rows: {_summary_count(summary, 'blocked')}",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -59,27 +72,57 @@ def render_markdown(record: Mapping[str, Any]) -> str:
         "",
         f"- Run: `{record['run_id']}`",
         f"- Branch: `{record['branch']}`",
+        f"- Project: `{record.get('project_id') or 'machine only'}`",
+        f"- Machine: `{record.get('machine_id') or 'not checked'}`",
+        f"- Current setup ready: `{bool((record.get('setup_readiness') or {}).get('ready'))}`",
         f"- Doctor status: `{doctor_status}`",
         "",
         "| Step | Row | Status | Layer | Owner | Evidence / Blocker |",
         "|---:|---|---|---|---|---|",
     ]
     for row in rows:
-        detail = row.get("blocker") or row.get("evidence") or row.get("note") or ""
+        detail = (
+            row.get("reason")
+            or row.get("blocker")
+            or row.get("evidence")
+            or row.get("note")
+            or ""
+        )
+        if row.get("recovery"):
+            detail = f"{detail}: {row['recovery']}"
+        if row.get("saved_status") != row["status"]:
+            detail = f"{detail}; saved choice: {row.get('saved_status', 'unknown')}"
         lines.append(
             f"| {row['step']} | `{row['row_id']}` | {row['status']} | "
             f"{row['layer']} | {row['owner']} | {_escape_table(str(detail))} |"
         )
-    lines.extend([
-        "",
-        "## Handoff",
-        "",
-        "Resume with:",
-        "",
-        f"```bash\nyoke onboard checklist --run-id {record['run_id']}\n```",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Handoff",
+            "",
+            "Resume with:",
+            "",
+            f"```bash\nyoke onboard checklist get --project {record.get('project_id') or '<project>'} --run-id {record['run_id']}\n```",
+            "",
+        ]
+    )
     return "\n".join(lines)
+
+
+def write_project_view(
+    result: dict[str, Any],
+    *,
+    project_root: str | None,
+    view_path: str | None,
+) -> None:
+    resolved = resolve_view_path(project_root, view_path)
+    if resolved is None:
+        return
+    record = _run_payload(result)
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.write_text(render_markdown(record), encoding="utf-8")
+    result["view_path"] = str(resolved)
 
 
 def _escape_table(value: str) -> str:

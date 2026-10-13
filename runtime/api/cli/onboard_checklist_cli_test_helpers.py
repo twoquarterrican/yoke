@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 from unittest.mock import patch
+from contextlib import ExitStack
+from uuid import uuid4
 
 from yoke_cli import main as yoke_operations_cli
 from yoke_contracts.api.function_call import (
@@ -19,6 +21,9 @@ from yoke_contracts.api.function_call import (
     FunctionCallResponse,
     TargetRef,
 )
+from yoke_contracts.onboard_checklist import SCHEMA_VERSION
+
+MACHINE_ID = str(uuid4())
 
 
 def checklist_row(
@@ -45,7 +50,7 @@ def checklist_row(
 
 def run_result(**updates: Any) -> dict[str, Any]:
     result: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "operation": "onboard.checklist.run",
         "run_id": "run-test",
         "resumed": False,
@@ -79,7 +84,7 @@ def run_result(**updates: Any) -> dict[str, Any]:
 
 def init_result(**updates: Any) -> dict[str, Any]:
     result: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "operation": "onboard.checklist.init",
         "run_id": "run-init",
         "resumed": False,
@@ -126,14 +131,16 @@ def run_cli(
 
     def stub_call_dispatcher(**kwargs: Any) -> FunctionCallResponse:
         calls.append(kwargs)
+        if kwargs["function_id"] == "onboard.checklist.get":
+            return dispatch_response(kwargs, {"schema_version": SCHEMA_VERSION, "exists": True, "run": result})
         return dispatch_response(kwargs, result)
 
-    with patch("yoke_cli.commands.adapters.onboard_checklist.ensure_handlers_loaded"):
-        with patch(
-            "yoke_cli.commands.adapters.onboard_checklist.call_dispatcher",
-            side_effect=stub_call_dispatcher,
-        ):
-            rc = yoke_operations_cli.main(argv)
+    with ExitStack() as stack:
+        for module in ("onboard_checklist", "onboard_checklist_get"):
+            stack.enter_context(patch(f"yoke_cli.commands.adapters.{module}.ensure_handlers_loaded"))
+            stack.enter_context(patch(f"yoke_cli.commands.adapters.{module}.call_dispatcher", side_effect=stub_call_dispatcher))
+        stack.enter_context(patch("yoke_cli.config.onboard_setup_facts.collect", return_value={"machine_id": MACHINE_ID, "observations": {}}))
+        rc = yoke_operations_cli.main(argv)
     return rc, calls
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 SCHEMA_NAME = "yoke.onboard.checklist"
 OPERATION = "onboard.checklist"
 OPERATION_INIT = "onboard.checklist.init"
@@ -180,6 +180,25 @@ PROJECT_ROW_IDS = tuple(
     if spec.layer != LAYER_MACHINE and spec.row_id != SETUP_HANDOFF_ROW_ID
 )
 
+# These facts depend on the checkout and tools on the requesting machine.
+MACHINE_ROW_IDS = frozenset(
+    spec.row_id for spec in ROW_SPECS if spec.layer == LAYER_MACHINE
+) | {"checkout-binding", "deterministic-repo-substrate", "scaffold-install"}
+REQUIRED_SETUP_ROW_IDS = frozenset(
+    {
+        "package-install",
+        "machine-profile",
+        "yoke-connection",
+        "project-permission",
+        "project-identity",
+        "checkout-binding",
+        "deterministic-repo-substrate",
+        "strategy-setup",
+        "human-interview",
+        "verification-command-binding",
+    }
+)
+
 
 __all__ = [
     "BRANCHES",
@@ -192,9 +211,11 @@ __all__ = [
     "CHECKLIST_STATUSES",
     "ChecklistRowSpec",
     "HANDOFF_TO",
+    "MACHINE_ROW_IDS",
     "OPERATION",
     "OPERATION_INIT",
     "PROJECT_ROW_IDS",
+    "REQUIRED_SETUP_ROW_IDS",
     "ROW_IDS",
     "ROW_SPECS",
     "SCHEMA_NAME",

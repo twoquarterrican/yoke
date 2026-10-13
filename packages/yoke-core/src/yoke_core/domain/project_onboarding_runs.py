@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from typing import Any, Mapping
-from datetime import datetime
 from yoke_contracts.timestamps import parse_instant
 
 from yoke_contracts.onboard_checklist import (
@@ -13,7 +12,7 @@ from yoke_contracts.onboard_checklist import (
     OPERATION_INIT,
     SCHEMA_NAME,
     SCHEMA_VERSION,
-    STATUS_NEEDED,
+    ROW_IDS,
 )
 from yoke_core.domain.project_onboarding_schema import (
     _ensure_columns,
@@ -22,22 +21,20 @@ from yoke_core.domain.project_onboarding_schema import (
     PROJECT_ONBOARDING_RUN_FOREIGN_KEY_SQL,
     PROJECT_ONBOARDING_CHECKLIST_ROWS_CREATE_SQL,
 )
-from yoke_core.domain.db_helpers import connect, instant_parameter, utc_now
+from yoke_core.domain.db_helpers import connect
 from yoke_core.domain.project_onboarding_run_records import (
     ProjectOnboardingRunError,
-    apply_row_updates,
-    base_metadata,
     doctor_payload,
-    json_dumps,
     project_payload,
     row_payload,
-    run_metadata,
     summary,
-    upsert_default_rows,
-    validate_branch,
-    with_operation,
 )
-from yoke_core.domain.project_onboarding_scope import resolve_run
+from yoke_core.domain.project_onboarding_updates import persist_run
+from yoke_core.domain.project_onboarding_facts import (
+    project_rows,
+    validate_observations,
+)
+from yoke_core.domain.project_onboarding_configuration import project_facts
 
 OPERATION_RUN = f"{OPERATION}.run"
 
@@ -77,6 +74,8 @@ def init_run(
     blocker: Mapping[str, str | None] | None = None,
     note: Mapping[str, str | None] | None = None,
     metadata: Mapping[str, Any] | None = None,
+    machine_id: str | None = None,
+    observations: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     return update_run(
         conn=conn,
@@ -91,6 +90,8 @@ def init_run(
         blocker=blocker,
         note=note,
         metadata=metadata,
+        machine_id=machine_id,
+        observations=observations,
         operation=OPERATION_INIT,
     )
 
@@ -109,62 +110,49 @@ def update_run(
     blocker: Mapping[str, str | None] | None = None,
     note: Mapping[str, str | None] | None = None,
     metadata: Mapping[str, Any] | None = None,
+    machine_id: str | None = None,
+    observations: Mapping[str, Any] | None = None,
     operation: str = OPERATION_RUN,
+    project_access: bool = False,
 ) -> dict[str, Any]:
     own_conn = conn is None
     selected = conn or connect()
     try:
-        selected_id, existing = resolve_run(
-            selected, run_id=run_id, project_id=project_id
-        )
-        resumed = existing is not None
-        selected_branch = branch or (
-            existing["branch"] if existing is not None else BRANCH_LOCAL_CHECKOUT
-        )
-        validate_branch(selected_branch)
-        now = utc_now()
-        p = _p(selected)
-        _upsert_run(
+        return persist_run(
             selected,
-            selected_id,
-            project_id,
-            selected_branch,
-            checkout_path,
-            machine_config_path,
-            github_repo,
-            now,
-        )
-        upsert_default_rows(selected, p, selected_id, selected_branch, now)
-        apply_row_updates(
-            selected,
-            p,
-            selected_id,
-            now,
+            run_id=run_id,
+            project_id=project_id,
+            branch=branch,
+            checkout_path=checkout_path,
+            github_repo=github_repo,
+            machine_config_path=machine_config_path,
             row_status=row_status or {},
             evidence=evidence or {},
             blocker=blocker or {},
             note=note or {},
+            metadata=metadata or {},
+            operation=operation,
+            project_access=project_access,
+            machine_id=machine_id,
+            observations=observations or {},
         )
-        payload = get_run(selected_id, conn=selected)
-        _set_run_status_and_metadata(
-            selected,
-            selected_id,
-            payload["summary"]["status"],
-            run_metadata(payload, operation=operation, extra=metadata),
-            now,
-        )
-        selected.commit()
-        payload = get_run(selected_id, conn=selected)
-        return with_operation(payload, operation=operation, resumed=resumed)
     finally:
         if own_conn:
             selected.close()
 
 
-def get_run(run_id: str, *, conn: Any | None = None) -> dict[str, Any]:
+def get_run(
+    run_id: str,
+    *,
+    conn: Any | None = None,
+    machine_id: str | None = None,
+    observations: Mapping[str, Any] | None = None,
+    project_access: bool = False,
+) -> dict[str, Any]:
     own_conn = conn is None
     selected = conn or connect()
     try:
+        validate_observations(observations or {}, machine_id)
         p = _p(selected)
         run = selected.execute(
             f"SELECT * FROM project_onboarding_runs WHERE run_id = {p}",
@@ -172,27 +160,63 @@ def get_run(run_id: str, *, conn: Any | None = None) -> dict[str, Any]:
         ).fetchone()
         if run is None:
             raise ProjectOnboardingRunError(f"onboarding run not found: {run_id}")
+        binding = (observations or {}).get("checkout-binding", {}).get("evidence") or {}
+        if (
+            binding.get("project_id") is not None
+            and binding["project_id"] != run["project_id"]
+        ):
+            raise ProjectOnboardingRunError(
+                "onboarding_checkout_mismatch: select this checkout's project or run yoke setup to rebind it."
+            )
         rows = selected.execute(
             "SELECT * FROM project_onboarding_checklist_rows "
             f"WHERE run_id = {p} ORDER BY step",
             (run_id,),
         ).fetchall()
         row_payloads = [row_payload(row) for row in rows]
-        run_summary = summary(row_payloads)
+        order = {row_id: index for index, row_id in enumerate(ROW_IDS)}
+        row_payloads.sort(key=lambda row: order.get(row["row_id"], len(order)))
         metadata = json.loads(run["metadata_json"] or "{}")
+        facts = project_facts(selected, run["project_id"])
+        row_payloads, readiness = project_rows(
+            row_payloads,
+            metadata,
+            machine_id=machine_id,
+            observations=observations or {},
+            facts=facts,
+            project_id=run["project_id"],
+            project_access=project_access,
+        )
+        run_summary = summary(row_payloads)
         project = project_payload(run)
+        local = (metadata.get("machines") or {}).get(machine_id, {})
+        current_checkout = (
+            (observations or {})
+            .get("checkout-binding", {})
+            .get("evidence", {})
+            .get("checkout_path")
+        )
+        project["root"] = current_checkout or local.get("checkout_path")
         doctor = doctor_payload(run, run_summary, metadata)
         return {
             "schema": SCHEMA_NAME,
-            "schema_version": int(run["schema_version"]),
+            "schema_version": SCHEMA_VERSION,
             "run_id": run["run_id"],
             "project_id": run["project_id"],
             "project": project,
+            "machine_id": machine_id,
+            "setup_readiness": readiness,
+            "execution_profile": metadata.get("execution_profile"),
+            "profile_changed": bool(
+                metadata.get("execution_profile")
+                and metadata.get("profile_facts") != facts
+            ),
             "branch": run["branch"],
-            "checkout_path": run["checkout_path"],
-            "machine_config_path": run["machine_config_path"],
+            "checkout_path": project["root"],
+            "machine_config_path": local.get("machine_config_path"),
             "github_repo": run["github_repo"],
-            "status": run["status"],
+            "status": run_summary["status"],
+            "historical_status": run["status"],
             "metadata": metadata,
             "doctor": doctor,
             "secret_free": True,
@@ -204,56 +228,6 @@ def get_run(run_id: str, *, conn: Any | None = None) -> dict[str, Any]:
     finally:
         if own_conn:
             selected.close()
-
-
-def _upsert_run(
-    conn: Any,
-    run_id: str,
-    project_id: int | None,
-    branch: str,
-    checkout_path: str | None,
-    machine_config_path: str | None,
-    github_repo: str | None,
-    now: datetime,
-) -> None:
-    p = _p(conn)
-    metadata = json_dumps(base_metadata())
-    conn.execute(
-        "INSERT INTO project_onboarding_runs "
-        "(run_id, schema_version, project_id, branch, checkout_path, "
-        "machine_config_path, github_repo, status, metadata_json, created_at, updated_at) "
-        f"VALUES ({', '.join([p] * 11)}) "
-        "ON CONFLICT (run_id) DO UPDATE SET "
-        "branch = EXCLUDED.branch, "
-        "checkout_path = COALESCE(EXCLUDED.checkout_path, project_onboarding_runs.checkout_path), "
-        "machine_config_path = COALESCE(EXCLUDED.machine_config_path, project_onboarding_runs.machine_config_path), "
-        "github_repo = COALESCE(EXCLUDED.github_repo, project_onboarding_runs.github_repo), "
-        "updated_at = EXCLUDED.updated_at",
-        (
-            run_id,
-            SCHEMA_VERSION,
-            project_id,
-            branch,
-            checkout_path,
-            machine_config_path,
-            github_repo,
-            STATUS_NEEDED,
-            metadata,
-            instant_parameter(conn, now),
-            instant_parameter(conn, now),
-        ),
-    )
-
-
-def _set_run_status_and_metadata(
-    conn: Any, run_id: str, status: str, metadata: Mapping[str, Any], now: datetime
-) -> None:
-    p = _p(conn)
-    conn.execute(
-        "UPDATE project_onboarding_runs "
-        f"SET status = {p}, metadata_json = {p}, updated_at = {p} WHERE run_id = {p}",
-        (status, json_dumps(metadata), instant_parameter(conn, now), run_id),
-    )
 
 
 __all__ = [

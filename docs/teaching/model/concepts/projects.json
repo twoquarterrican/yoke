@@ -1,9 +1,203 @@
 {
- "id": "projects",
- "title": "Projects and adoption",
- "status": "draft-copy",
- "sources": ["docs/public/projects.md", "docs/public/concepts.md", ".agents/skills/yoke/onboard/SKILL.md"],
- "surface_refs": ["manual-overview"],
- "page": "projects",
- "position": 30
+ "parent": null,
+ "nodes": [
+  {
+   "id": "projects",
+   "title": "Projects and adoption",
+   "status": "draft-copy",
+   "sources": ["docs/public/projects.md", "docs/public/concepts.md", ".agents/skills/yoke/onboard/SKILL.md"],
+   "surface_refs": ["manual-overview"],
+   "children": [
+    {
+     "id": "adoption",
+     "title": "Project starting points",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.24", "FIRST-USER.P5", "JOURNEYS.execution-boundary", "JOURNEYS.locked-principles", "JOURNEYS.moved-from-first-user-former-dash-g", "JOURNEYS.principle-1", "JOURNEYS.principle-2", "JOURNEYS.principle-3", "JOURNEYS.principle-4", "JOURNEYS.principle-5", "JOURNEYS.principle-6", "JOURNEYS.principle-7", "JOURNEYS.principle-8", "JOURNEYS.principle-9", "JOURNEYS.situation-4", "JOURNEYS.situation-5", "JOURNEYS.situation-6"],
+     "surface_refs": ["agent-help", "global-orientation", "setup-agent", "workbench-cues"],
+     "commands": ["yoke project create", "yoke project import", "yoke projects create"],
+     "functions": ["projects.create"],
+     "children": [
+      {
+       "id": "no-project-yet",
+       "title": "No project yet",
+       "status": "draft-copy"
+      },
+      {
+       "id": "new-empty-project",
+       "title": "New empty project",
+       "status": "draft-copy"
+      },
+      {
+       "id": "existing-git-repository",
+       "title": "Existing Git repository",
+       "status": "draft-copy"
+      },
+      {
+       "id": "mature-project-with-existing-ci-and-delivery",
+       "title": "Mature project with existing CI and delivery",
+       "status": "draft-copy"
+      },
+      {
+       "id": "existing-local-work-and-branches",
+       "title": "Existing local work and branches",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "identity",
+     "title": "Project identity and binding",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.P4", "FIRST-USER.P6", "FIRST-USER.P7", "JOURNEYS.situation-14", "JOURNEYS.situation-7"],
+     "surface_refs": ["global-orientation", "project-native", "project-orientation"],
+     "commands": ["yoke project register", "yoke projects resolve-by-github-repo"],
+     "functions": ["project.register.run", "projects.resolve_by_github_repo"],
+     "children": [
+      {
+       "id": "name-slug-and-item-prefix",
+       "title": "Name, slug and item prefix",
+       "status": "draft-copy"
+      },
+      {
+       "id": "checkout-and-workspace-home",
+       "title": "Checkout and workspace home",
+       "status": "draft-copy"
+      },
+      {
+       "id": "repository-and-remote",
+       "title": "Repository and remote",
+       "status": "draft-copy"
+      },
+      {
+       "id": "one-item-belongs-to-one-project",
+       "title": "One item belongs to one project",
+       "status": "draft-copy"
+      },
+      {
+       "id": "project-owner",
+       "title": "Project owner",
+       "status": "draft-copy"
+      }
+     ]
+    },
+    {
+     "id": "onboarding",
+     "title": "Execution-ready onboarding",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.24", "FIRST-USER.42", "FIRST-USER.43", "JOURNEYS.situation-19", "JOURNEYS.situation-9"],
+     "surface_refs": ["packets-help", "project-orientation", "resume-context", "setup-agent", "setup-tui", "skills-roles"],
+     "commands": ["yoke onboard checklist", "yoke onboard checklist init", "yoke onboard project", "yoke onboard checklist get"],
+     "functions": ["onboard.checklist.init", "onboard.checklist.run", "onboard.checklist.get"],
+     "skills": ["onboard"],
+     "children": [
+      {
+       "id": "existing-project-survey",
+       "title": "Existing project survey",
+       "status": "draft-copy"
+      },
+      {
+       "id": "strategy-and-context",
+       "title": "Strategy and context",
+       "status": "draft-copy"
+      },
+      {
+       "id": "testing-setup",
+       "title": "Testing setup",
+       "status": "draft-copy"
+      },
+      {
+       "id": "infrastructure-and-delivery-choices",
+       "title": "Infrastructure and delivery choices",
+       "status": "draft-copy"
+      },
+      {
+       "id": "first-useful-work",
+       "title": "First useful work",
+       "status": "draft-copy"
+      }
+     ],
+     "sources": ["docs/public/guides/terminal-onboarding.md"]
+    },
+    {
+     "id": "settings",
+     "title": "Project defaults",
+     "status": "draft-copy",
+     "plan_refs": ["FIRST-USER.42", "JOURNEYS.situation-19"],
+     "surface_refs": ["project-orientation"],
+     "commands": ["yoke projects get", "yoke projects list", "yoke projects update", "yoke onboard checklist get"],
+     "functions": ["projects.get", "projects.github_state.read", "projects.github_sync_receipt.record", "projects.list", "projects.update", "onboard.checklist.get"],
+     "children": [
+      {
+       "id": "workflow-defaults",
+       "title": "Workflow defaults",
+       "status": "draft-copy"
+      },
+      {
+       "id": "qa-defaults",
+       "title": "QA defaults",
+       "status": "draft-copy",
+       "related": "qa-plans/bindings"
+      },
+      {
+       "id": "deployment-defaults",
+       "title": "Deployment defaults",
+       "status": "draft-copy",
+       "related": "deployments/outcomes"
+      },
+      {
+       "id": "execution-levels",
+       "title": "Execution levels",
+       "status": "draft-copy",
+       "related": "levels/scheme"
+      },
+      {
+       "id": "breakage-policy",
+       "title": "Breakage policy",
+       "status": "draft-copy"
+      },
+      {
+       "id": "related-projects",
+       "title": "Related projects",
+       "status": "draft-copy"
+      }
+     ],
+     "sources": ["docs/public/guides/terminal-onboarding.md"]
+    },
+    {
+     "id": "lifecycle",
+     "title": "Project lifecycle",
+     "status": "draft-copy",
+     "commands": ["yoke project refresh", "yoke projects retire", "yoke projects unretire"],
+     "functions": ["project.refresh.run", "projects.retire", "projects.unretire"],
+     "children": [
+      {
+       "id": "list-and-inspect",
+       "title": "List and inspect",
+       "status": "draft-copy"
+      },
+      {
+       "id": "refresh-operating-layer",
+       "title": "Refresh operating layer",
+       "status": "draft-copy"
+      },
+      {
+       "id": "rebind-or-move-checkout",
+       "title": "Rebind or move checkout",
+       "status": "draft-copy"
+      },
+      {
+       "id": "disable-and-remove",
+       "title": "Disable and remove",
+       "status": "draft-copy"
+      },
+      {
+       "id": "preserve-project-owned-content",
+       "title": "Preserve project-owned content",
+       "status": "draft-copy"
+      }
+     ]
+    }
+   ]
+  }
+ ]
 }

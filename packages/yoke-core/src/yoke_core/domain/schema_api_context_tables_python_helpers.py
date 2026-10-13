@@ -37,6 +37,17 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "restore project-selection tests."
         ),
     },
+    "yoke_cli.config.onboard_setup_facts": {
+        "columns": [("collect", "callable"), ("read_profile", "callable")],
+        "notes": (
+            "collect reads the requesting machine's safe prerequisites for "
+            "the scoped checklist read. Wrong guess: importing project_install.files "
+            "at onboarding handoff module load is always safe. Its package "
+            "initialization reaches project_onboard_support.dispatch before that "
+            "symbol exists. Import the project-install reader inside collect, "
+            "after bootstrap; verify with yoke dev import-check yoke_cli.commands.registry."
+        ),
+    },
     "yoke_core.domain.handlers.deployment_common": {
         "columns": [("run_id", "callable")],
         "notes": (

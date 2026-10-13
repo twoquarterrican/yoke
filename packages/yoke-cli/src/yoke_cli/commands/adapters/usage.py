@@ -40,6 +40,7 @@ from yoke_cli.commands.adapters.dev import (
     DEV_SETUP_USAGE,
 )
 from yoke_cli.commands.adapters.onboard import ONBOARD_USAGE
+from yoke_cli.commands.adapters.onboard_checklist_get import ONBOARD_CHECKLIST_GET_USAGE
 from yoke_cli.commands.adapters.onboard_checklist import (
     ONBOARD_CHECKLIST_INIT_USAGE,
     ONBOARD_CHECKLIST_USAGE,
@@ -320,6 +321,7 @@ ADAPTER_USAGE: Dict[str, str] = {
     "onboard.project.run": ONBOARD_PROJECT_USAGE,
     "onboard.checklist.run": ONBOARD_CHECKLIST_USAGE,
     "onboard.checklist.init": ONBOARD_CHECKLIST_INIT_USAGE,
+    "onboard.checklist.get": ONBOARD_CHECKLIST_GET_USAGE,
     "env.use.run": ENV_USE_USAGE,
     "env.list.run": ENV_LIST_USAGE,
     "connection.set.run": CONNECTION_SET_USAGE,

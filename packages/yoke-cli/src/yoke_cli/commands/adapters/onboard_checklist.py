@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Any, List, Mapping
+from typing import Any, List
 
 from yoke_cli.commands._helpers import (
     client_project_context,
     ensure_handlers_loaded,
     parse_or_usage_error,
 )
-from yoke_cli.config import onboard_checklist_render
+from yoke_cli.config import onboard_checklist_render, onboard_setup_facts
+from yoke_cli.commands.adapters.onboard_checklist_get import get_setup, render_lookup
 from yoke_cli.config.onboard_checklist_schema import (
     BRANCHES,
     CHECKLIST_STATUSES,
@@ -44,9 +45,18 @@ def onboard_checklist_cmd(args: List[str]) -> int:
     parser.add_argument("--json", dest="json_mode", action="store_true")
     parser.add_argument("--run-id", dest="run_id", default=None)
     parser.add_argument(
+        "--project", default=None, help="Resume only this project's setup."
+    )
+    parser.add_argument("--config", dest="config_path", default=None)
+    parser.add_argument(
+        "--profile-file",
+        default=None,
+        help="Save an already confirmed profile JSON object.",
+    )
+    parser.add_argument(
         "--branch",
         choices=BRANCHES,
-        default="local-checkout",
+        default=None,
     )
     parser.add_argument("--project-root", dest="project_root", default=None)
     parser.add_argument("--project-id", dest="project_id", type=int, default=None)
@@ -73,16 +83,36 @@ def onboard_checklist_cmd(args: List[str]) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     ensure_handlers_loaded()
-    response = call_dispatcher(
-        function_id="onboard.checklist.run",
-        target=_target(parsed.project_id),
-        payload=payload,
-        actor=build_actor(),
+    target = _target(parsed.project_id, project=parsed.project)
+    response = get_setup(payload, target)
+    if not response.success:
+        return emit_response(response, json_mode=parsed.json_mode)
+    writes = any(
+        (
+            parsed.row_status,
+            parsed.evidence,
+            parsed.blocker,
+            parsed.note,
+            parsed.profile_file,
+            parsed.branch,
+            parsed.github_repo,
+        )
     )
+    if writes:
+        response = call_dispatcher(
+            function_id="onboard.checklist.run",
+            target=target,
+            payload=payload,
+            actor=build_actor(),
+        )
+    elif (response.result or {}).get("run") is None:
+        return emit_response(
+            response, json_mode=parsed.json_mode, human_writer=render_lookup
+        )
     if response.success and not parsed.no_view:
         try:
-            _write_project_view(
-                response,
+            onboard_checklist_render.write_project_view(
+                response.result or {},
                 project_root=parsed.project_root,
                 view_path=parsed.view_path,
             )
@@ -137,7 +167,21 @@ def _init(args: List[str]) -> int:
     }
     if parsed.project:
         payload["project"] = parsed.project
+    try:
+        payload.update(
+            onboard_setup_facts.collect(
+                config_path=parsed.config_path,
+                checkout_path=parsed.checkout_path,
+                project_id=parsed.project_id,
+            )
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     ensure_handlers_loaded()
+    response = get_setup(payload, _target(parsed.project_id, project=parsed.project))
+    if not response.success:
+        return emit_response(response, json_mode=parsed.json_mode)
     response = call_dispatcher(
         function_id="onboard.checklist.init",
         target=_target(parsed.project_id, project=parsed.project),
@@ -169,6 +213,7 @@ def _run_payload(parsed: argparse.Namespace) -> dict[str, Any]:
         "project_root": parsed.project_root,
         "project_id": parsed.project_id,
         "project_slug": parsed.project_slug,
+        "project": parsed.project,
         "github_repo": parsed.github_repo,
         "row_status": _parse_assignments(
             parsed.row_status,
@@ -179,6 +224,17 @@ def _run_payload(parsed: argparse.Namespace) -> dict[str, Any]:
         "blocker": _parse_assignments(parsed.blocker, "blocker"),
         "note": _parse_assignments(parsed.note, "note"),
     }
+    payload.update(
+        onboard_setup_facts.collect(
+            config_path=parsed.config_path,
+            checkout_path=parsed.project_root,
+            project_id=parsed.project_id,
+        )
+    )
+    if parsed.profile_file:
+        payload["metadata"] = {
+            "execution_profile": onboard_setup_facts.read_profile(parsed.profile_file)
+        }
     return {key: value for key, value in payload.items() if value not in (None, {}, [])}
 
 
@@ -205,38 +261,6 @@ def _parse_assignments(
             )
         parsed[row_id] = selected
     return parsed
-
-
-def _write_project_view(
-    response: FunctionCallResponse,
-    *,
-    project_root: str | None,
-    view_path: str | None,
-) -> None:
-    result = response.result or {}
-    selected = result.get("view_path") or view_path
-    resolved = onboard_checklist_render.resolve_view_path(project_root, selected)
-    if resolved is None:
-        return
-    record = _record_for_render(result)
-    resolved.parent.mkdir(parents=True, exist_ok=True)
-    resolved.write_text(
-        onboard_checklist_render.render_markdown(record), encoding="utf-8"
-    )
-    result["view_path"] = str(resolved)
-
-
-def _record_for_render(result: Mapping[str, Any]) -> dict[str, Any]:
-    summary = (
-        result.get("summary") if isinstance(result.get("summary"), Mapping) else {}
-    )
-    status = str(summary.get("status") or result.get("status") or "unknown")
-    return {
-        "run_id": result.get("run_id") or "unknown",
-        "branch": result.get("branch") or "unknown",
-        "doctor": {"status": status},
-        "rows": list(result.get("rows") or []),
-    }
 
 
 def _render_run_human(response: FunctionCallResponse, stdout, stderr) -> None:
