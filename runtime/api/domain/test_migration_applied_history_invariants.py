@@ -14,7 +14,9 @@ from runtime.api.tools.yoke_migration_fleet import (
     load_module,
     pending_names,
 )
+from yoke_contracts.session_control.relay_health import sanitize_relay_health
 from yoke_core.domain import db_backend, environment_bootstrap
+from yoke_core.domain.json_helper import dumps_compact
 from yoke_core.domain.migration_fleet_applied_invariants import (
     RETIRED_STANDING_INVARIANTS,
     applied_shipped_names,
@@ -121,6 +123,14 @@ def test_empty_database_converges_full_history_and_live_invariants(
         )
         assert first.failure is None
         assert "0035_clear_unproven_onboard_activation_latch" in dict(first.skipped)
+        assert "0070_native_domain_instants" in dict(first.skipped)
+
+        # Every live relay heartbeat stores this health shape, which frozen
+        # 0070 rejects; the re-prover must name that skip and stay green.
+        _store_live_relay_health(conn)
+        with pytest.raises(AssertionError, match="mutable_instant_not_canonical"):
+            load_module("0070_native_domain_instants").invariants(conn)
+        conn.rollback()
 
         # A session whose provider attested a model but whose ask was never
         # recorded is the normal shape of an manually started session, and
@@ -140,6 +150,26 @@ def test_empty_database_converges_full_history_and_live_invariants(
     finally:
         conn.close()
         pg_testdb.drop_test_database(database)
+
+
+def _store_live_relay_health(conn: Any) -> None:
+    """Insert a relay whose health is the live writer's no-failure document."""
+    now = "2026-01-01T00:00:00Z"
+    conn.execute(
+        "INSERT INTO actors (id, kind, name, created_at) "
+        "VALUES (900, 'human', 'Relay owner', %s)",
+        (now,),
+    )
+    conn.execute(
+        "INSERT INTO session_relays ("
+        "relay_id, actor_id, machine_id, hostname, surface_versions, "
+        "project_checkouts, first_seen_at, last_seen_at, connected_until, "
+        "relay_health"
+        ") VALUES ('machine:probe', 900, 'probe', 'probe', '{}', '[]', "
+        "%s, %s, %s, %s)",
+        (now, now, now, dumps_compact(sanitize_relay_health({}))),
+    )
+    conn.commit()
 
 
 def _register_session_with_no_recorded_request(conn: Any) -> None:

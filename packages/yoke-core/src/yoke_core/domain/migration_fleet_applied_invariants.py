@@ -31,6 +31,17 @@ RETIRED_STANDING_INVARIANTS: dict[str, str] = {
         "the live run_onboard signal also latches a deployment-superseded "
         "run, while this entry recognizes only a fully closed checklist"
     ),
+    # 0070's frozen relay repair adds a null clock to every declared owner it
+    # finds, so it requires report_failure/run_refusal to carry null keys. The
+    # live relay health contract stores "no failure" and "no refusal" as empty
+    # objects, and every heartbeat writes that shape, so the frozen
+    # invariants() rejects every database with an active relay. Native
+    # TIMESTAMPTZ storage stays proven by the serving probe's catalog check,
+    # and each live clock writer serializes through format_instant.
+    "0070_native_domain_instants": (
+        "live relay health stores an absent report_failure or run_refusal as "
+        "an empty object, while this entry requires null clock keys inside it"
+    ),
 }
 
 
