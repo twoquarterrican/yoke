@@ -63,13 +63,13 @@ def _resolve_configured_project(start: Path, *, explicit: bool) -> Path:
     projects = _configured_projects()
     if explicit:
         raise BoardProjectResolutionError(
-            f"{start.expanduser()} is not inside a project registered in "
+            f"project_checkout_unregistered: {start.expanduser()} is not inside a project registered in "
             "machine config; run from a registered checkout or pass one with "
             "--repo-root."
         )
     if not projects:
         raise BoardProjectResolutionError(
-            "no projects are registered in machine config; run `yoke setup` "
+            "project_required: no projects are registered in machine config; run `yoke setup` "
             "or `yoke project register` first."
         )
     configured = ", ".join(
