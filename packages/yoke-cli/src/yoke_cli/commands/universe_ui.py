@@ -41,6 +41,7 @@ TOOL_SHAPED_USAGE: Dict[str, str] = {
     "yoke ui up": UI_UP_USAGE,
     "yoke ui down": UI_DOWN_USAGE,
     "yoke ui status": UI_STATUS_USAGE,
+    "yoke ui restart-running": "yoke ui restart-running [--json]",
     "yoke ui serve-process": UI_SERVE_PROCESS_USAGE,
 }
 
@@ -88,6 +89,34 @@ def ui_status(
         print(json.dumps({"ok": True, **report}, sort_keys=True), flush=True)
         return 0
     _print_status(report)
+    return 0
+
+
+def ui_restart_running(args: List[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="yoke ui restart-running",
+        description=(
+            "Restart an existing machine dashboard after package installation, "
+            "keeping its environment, host, port and bookmark. A stopped dashboard "
+            "stays stopped; no browser opens. The public installer runs this step."
+        ),
+    )
+    _add_json_flag(parser)
+    parsed = parse_or_usage_error(parser, args, "yoke ui restart-running [--json]")
+    if parsed is None:
+        return 2
+    try:
+        report = daemon.restart_running()
+    except (UiDaemonError, UiLaunchdError, InvalidInstant, OSError) as exc:
+        print(
+            f"ui_restart_failed: {exc}; rerun the installer after recovery.",
+            file=sys.stderr,
+        )
+        return 1
+    if parsed.json_mode:
+        print(json.dumps({"ok": True, **report}, sort_keys=True), flush=True)
+    elif report["restarted"]:
+        print("Restarted the running dashboard with the installed Yoke version.")
     return 0
 
 
@@ -260,6 +289,7 @@ TOOL_SHAPED_SUBCOMMANDS: Dict[Tuple[str, ...], AdapterFn] = {
     ("ui", "up"): ui_up,
     ("ui", "down"): ui_down,
     ("ui", "status"): ui_status,
+    ("ui", "restart-running"): ui_restart_running,
     ("ui", "serve-process"): ui_serve_process,
 }
 

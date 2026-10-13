@@ -315,6 +315,7 @@ class Installer:
                 )
                 + "; run yoke hook resident restart, then retry the installer."
             )
+        self._restart_running_dashboard(yoke_bin)
         try:
             wsl_setup = self.terminal_runner([yoke_bin, "wsl", "setup"])
         except OSError as exc:
@@ -629,6 +630,42 @@ class Installer:
             print(
                 self._say(
                     "Rebuilt the git credential helper bundle this install wiped."
+                ),
+                file=self.stdout,
+            )
+
+    def _restart_running_dashboard(self, yoke_bin: str) -> None:
+        argv = [yoke_bin, "ui", "restart-running", "--json"]
+        try:
+            result = self.capture_runner(argv)
+        except OSError as exc:
+            raise InstallError(
+                f"ui_restart_unavailable: {exc}; rerun the installer to repair Yoke."
+            ) from exc
+        if result.returncode:
+            raise InstallError(
+                "ui_restart_failed: "
+                + _format_command_failure(argv, result)
+                + "; recover with `yoke ui down` and `yoke ui up --no-browser`, "
+                "then rerun the installer."
+            )
+        try:
+            payload = json.loads(result.stdout)
+        except (ValueError, TypeError):
+            payload = None
+        if (
+            not isinstance(payload, dict)
+            or payload.get("ok") is not True
+            or type(payload.get("restarted")) is not bool
+        ):
+            raise InstallError(
+                "ui_restart_result_invalid: dashboard restart returned no valid receipt; "
+                "rerun the installer to repair the installed Yoke executable."
+            )
+        if payload["restarted"]:
+            print(
+                self._say(
+                    "Restarted the running dashboard with the installed Yoke version."
                 ),
                 file=self.stdout,
             )

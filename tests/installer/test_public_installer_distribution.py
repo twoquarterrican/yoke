@@ -55,6 +55,8 @@ def test_install_records_actual_selection_before_ready(monkeypatch, tmp_path):
     monkeypatch.setattr(instance, "_product_boundary_audit", lambda **_: None)
 
     def record(argv):
+        if argv[1:] == ["ui", "restart-running", "--json"]:
+            return runner(argv)
         assert "is ready" not in instance.stdout.getvalue()
         if argv[1:] == ["hook", "resident", "restart"]:
             assert distribution.recorded() == {

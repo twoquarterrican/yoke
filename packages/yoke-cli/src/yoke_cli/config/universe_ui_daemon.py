@@ -40,6 +40,7 @@ from yoke_cli.config.universe_ui_daemon_state import (
     private_url,
     process_alive,
     read_record,
+    record_path,
     stable_session_token,
     state_dir,
     write_record,
@@ -127,6 +128,44 @@ def down() -> Dict[str, Any]:
     if stopped_pid is not None:
         report["stopped_pid"] = stopped_pid
     return report
+
+
+def restart_running() -> Dict[str, Any]:
+    """Replace a running machine dashboard using its saved serving settings."""
+    record = read_record()
+    if record is None:
+        if record_path().exists():
+            raise UiDaemonError(
+                "ui_restart_identity_invalid: the dashboard process record is unreadable; "
+                "inspect the dashboard process and stop it before running "
+                "`yoke ui down` and `yoke ui up --no-browser`, then rerun the installer."
+            )
+        return {"restarted": False}
+    if not process_alive(record.pid):
+        clear_record()
+        return {"restarted": False}
+    down()
+    if process_alive(record.pid):
+        write_record(
+            pid=record.pid,
+            host=record.host,
+            port=record.port,
+            env=record.env,
+            supervised=False,
+        )
+        raise UiDaemonError(
+            "ui_restart_stop_failed: the previous dashboard process is still alive; "
+            "stop it with `yoke ui down`, then rerun the installer."
+        )
+    try:
+        up(host=record.host, port=record.port, env=record.env)
+    except (UiDaemonError, UiLaunchdError, OSError) as exc:
+        raise UiDaemonError(
+            f"ui_restart_start_failed: {exc}; run "
+            f"`yoke --env {record.env} ui up --host {record.host} "
+            f"--port {record.port} --no-browser`, then rerun the installer."
+        ) from exc
+    return {"restarted": True}
 
 
 def publish_serving_identity(*, host: str, port: int, env: str) -> None:
