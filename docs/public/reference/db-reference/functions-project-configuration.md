@@ -14,6 +14,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `env.use.run` | `none` |
 | `files.upload` | `none` |
 | `onboard.checklist.init` | `none` |
+| `onboard.checklist.get` | `none` |
 | `onboard.checklist.run` | `none` |
 | `packs.bundle.get` | `none` |
 | `packs.bundle.render` | `none` |
