@@ -160,6 +160,15 @@ the helper, just without the version-change report. Prior-runtime bundles
 are verified against their own launcher's declared files and content hash,
 so adding helper modules in a release does not invalidate an older bundle.
 
+Every successful install or reinstall restarts a running machine-local
+dashboard with the newly installed executable. It keeps the same environment,
+host, port and bookmark, opens no browser, and leaves a stopped dashboard
+stopped. This also covers upgrades through `yoke update` and
+`yoke self-host upgrade`, which use the public installer. A restart failure
+fails installation before the ready message and names the recovery; after
+repairing it, rerun the installer. Hosted and team-server dashboards follow
+their server deployment lifecycle.
+
 When run inside an installed project, `yoke update` also runs
 `yoke project refresh` with the updated executable, even when the CLI version
 is already current. A refused or incomplete project refresh fails the update

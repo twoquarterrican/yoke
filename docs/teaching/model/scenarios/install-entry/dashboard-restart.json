@@ -1,0 +1,18 @@
+{
+ "id": "dashboard-restart",
+ "title": "Keep a running dashboard current after installation",
+ "status": "observed",
+ "audience": "both",
+ "when": "After package installation, before readiness",
+ "need": "Restart only a running machine-local dashboard using its saved environment, host, port and stable bookmark. Do not open a browser. Restart failure must refuse readiness and teach recovery.",
+ "disclosure": "installer result",
+ "surface": "Public installer and install guide",
+ "review": "Source and isolated scripted tests; deployed installer campaign proof remains required.",
+ "sources": [
+  "docs/public/install.md",
+  "packaging/public-installer/install.py",
+  "runtime/api/cli/test_yoke_universe_ui_restart.py",
+  "tests/installer/test_public_installer_dashboard.py"
+ ],
+ "position": 3
+}

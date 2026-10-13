@@ -227,6 +227,10 @@ class _Runner:
             return subprocess.CompletedProcess(
                 cmd, 0, json.dumps({"configured": False, "repaired": False}), ""
             )
+        if cmd[1:] == ["ui", "restart-running", "--json"]:
+            return subprocess.CompletedProcess(
+                cmd, 0, json.dumps({"ok": True, "restarted": False}), ""
+            )
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
 
