@@ -1,9 +1,10 @@
 """Declared AWS secret sources for machine connections."""
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import json
 from pathlib import Path
 import pytest
-from yoke_core.domain import db_backend, machine_config, yoke_connected_env
+from yoke_core.domain import db_backend, yoke_connected_env
 from runtime.api.domain.yoke_connected_env_test_support import _clean_env
 
 
@@ -52,7 +53,7 @@ def test_aws_secret_source_uses_declared_authority(
         encoding="utf-8",
     )
     monkeypatch.chdir(repo)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, binding)
     monkeypatch.setattr(
         deploy_remote.capability_machine_secrets,
         "read_machine_capability_secret",
@@ -145,7 +146,7 @@ def test_direct_aws_secret_source_refreshes_without_database_metadata(
         encoding="utf-8",
     )
     monkeypatch.chdir(repo)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, binding)
     monkeypatch.setattr(
         deploy_remote,
         "aws_machine_capability_env",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import hashlib
 import json
 import sqlite3
@@ -11,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from yoke_core.domain import db_backend, machine_config, yoke_connected_env
+from yoke_core.domain import db_backend, yoke_connected_env
 from yoke_core.domain.migration_history_manifest import write_manifest
 from yoke_core.tools import adopt_migration_content_identity as tool
 from yoke_core.tools import github_artifact_attestation
@@ -173,7 +174,7 @@ def test_selected_admin_authority_does_not_fall_through_to_ambient_dsn(
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, binding)
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     monkeypatch.setenv(db_backend.PG_DSN_ENV, "host=ambient.example dbname=wrong")
     seen: list[str] = []

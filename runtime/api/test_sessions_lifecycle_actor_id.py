@@ -28,6 +28,7 @@ rather than the operator's own machine.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import json
 
 import pytest
@@ -42,7 +43,7 @@ ENV = "local"
 
 
 @pytest.fixture(autouse=True)
-def machine_config(tmp_path, monkeypatch):
+def machine_config(tmp_path, monkeypatch, conn):
     """A throwaway machine config, so no test reads the operator's own."""
     path = tmp_path / "config.json"
     path.write_text(
@@ -54,7 +55,7 @@ def machine_config(tmp_path, monkeypatch):
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(path))
+    select_machine_config_file(monkeypatch, path)
     return path
 
 
