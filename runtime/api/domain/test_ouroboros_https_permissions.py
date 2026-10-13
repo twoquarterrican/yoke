@@ -122,7 +122,8 @@ def test_entry_close_out_refuses_a_caller_project_that_is_not_the_rows(
         )
 
         assert permission.error is not None
-        assert "project_required: no project given" in _denied_message(permission)
+        assert permission.error.error.code == "permission_denied"
+        assert "could not resolve a target project" in _denied_message(permission)
 
 
 def test_cutoff_review_without_a_project_resolves_no_target(test_db) -> None:
