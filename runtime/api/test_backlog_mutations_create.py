@@ -187,7 +187,7 @@ class TestExecuteCreate:
 
     def test_dash_instruction_does_not_emit_empty_body_warning(self, tmp_db):  # noqa: F811
         out = io.StringIO()
-        instruction = "Fix the footer and verify every link."
+        spec = "Fix the footer and verify every link."
         with (
             _patch_externals(),
             mock.patch.dict(
@@ -200,12 +200,12 @@ class TestExecuteCreate:
                 workflow="dash",
                 project="yoke",
                 entry_surface="harness_skill",
-                instruction=instruction,
+                spec=spec,
                 out=out,
             )
 
         assert result["success"] is True
-        assert _item_field(tmp_db, result["item_id"], "spec") == instruction
+        assert _item_field(tmp_db, result["item_id"], "spec") == spec
         assert "created with no body content" not in out.getvalue()
 
     def test_staged_issue_body_warns_with_registered_structured_field_recipe(

@@ -53,7 +53,7 @@ def test_browser_profile_refuses_unmapped_directory(monkeypatch, tmp_path):
 def test_dash_forwards_the_callers_selection(
     monkeypatch, explicit, env, bound, expected
 ):
-    from yoke_cli.commands.adapters import dash_file
+    from yoke_cli.commands.adapters import dash_file, items_create
     from yoke_cli.commands import _helpers
 
     monkeypatch.setenv("YOKE_PROJECT", env)
@@ -64,11 +64,11 @@ def test_dash_forwards_the_callers_selection(
         "yoke_cli.config.machine_config.project_id", lambda _p: int(bound)
     )
     monkeypatch.setattr(
-        dash_file, "client_project_context", _helpers.client_project_context
+        items_create, "client_project_context", _helpers.client_project_context
     )
     seen = []
     monkeypatch.setattr(
-        dash_file, "dispatch_and_emit", lambda **kw: seen.append(kw) or 0
+        items_create, "dispatch_create", lambda **kw: seen.append(kw) or 0
     )
     args = ["test", "instruction", "--execution-instructions-considered"]
     if explicit:

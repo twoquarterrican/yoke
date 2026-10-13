@@ -4,7 +4,7 @@
  "status": "draft-copy",
  "audience": "both",
  "when": "After project readiness, when the user first asks what to do next or states a concrete work intent.",
- "need": "One known instruction can enter Dash; Charge selects existing runnable work; Steer staffs work from a strategy document. The human names the outcome; the agent reads the selected skill.",
+ "need": "One known spec can enter Dash; Charge selects existing runnable work; Steer staffs work from a strategy document. The human names the outcome; the agent reads the selected skill.",
  "disclosure": "current cue",
  "surface": "Onboard handoff; router; Help; Dash, Charge and Steer entry skills",
  "gap": "The handoff names Steer/Charge but explains little; Help prints the full registry. Review question: should FIRST-USER C add a two-sentence intent handoff, with JOURNEYS supplying later depth?",

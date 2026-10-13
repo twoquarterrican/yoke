@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from yoke_cli.commands.adapters import dash_file, dash_verification_plan
+from yoke_cli.commands.adapters import dash_file, dash_verification_plan, items_create
 from yoke_cli.commands import direct_workflow_worktree
 from yoke_core.api import service_client_structured_api_adapter
 from yoke_core.domain import direct_workflow_worktree_preflight
@@ -40,7 +40,7 @@ def _capture_filing(monkeypatch: pytest.MonkeyPatch) -> dict:
         captured.update(kwargs)
         return 0
 
-    monkeypatch.setattr(dash_file, "dispatch_and_emit", _dispatch)
+    monkeypatch.setattr(items_create, "dispatch_create", _dispatch)
     return captured
 
 

@@ -4,7 +4,7 @@
  "status": "draft-copy",
  "audience": "both",
  "when": "At intake before creating an item, when the intended execution structure becomes known.",
- "need": "Dash executes a stored instruction; Issue supports planned single-lane work; Epic requires structural task decomposition; Blitz executes a linked document; Task is laneless and merge-free. Size alone does not choose.",
+ "need": "Dash executes a stored spec; Issue supports planned single-lane work; Epic requires structural task decomposition; Blitz executes a linked document; Task is laneless and merge-free. Size alone does not choose.",
  "disclosure": "current cue",
  "surface": "Idea metadata inference; Dash entry; public Workflows and command reference",
  "gap": "Public built-in table omits Task and provides no concise intent comparison. Review question: should the first-work guide teach only the matched choice, with the full comparison on request?",

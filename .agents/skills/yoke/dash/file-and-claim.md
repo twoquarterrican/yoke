@@ -1,6 +1,6 @@
 # Dash — resolve or file, then claim
 
-## New instruction
+## New spec
 
 Resolve the target project before title or scope; never silently substitute
 the current checkout. Read matching operator instructions through
@@ -12,10 +12,10 @@ yoke workflow execution-instruction resolve --workflow dash --project PROJECT --
 
 Obey every returned instruction. Read the project's effective title limit
 from `yoke workflows definition get --project PROJECT`.
-Keep supplied instruction content intact and file through `items.create`:
+Keep supplied spec content intact and file through `items.create`:
 
 ```text
-yoke dash "<specific title>" --project PROJECT --content-file /tmp/dash-instruction.txt --execution-instructions-considered --json
+yoke dash "<specific title>" --project PROJECT --spec-file /tmp/dash-spec.txt --execution-instructions-considered --json
 ```
 
 Author that file first; stdin is also valid. Commands/backticks/$() belong in
@@ -51,7 +51,7 @@ yoke items detail get ITEM --include '' --json
 yoke workflows item get ITEM --json
 ```
 
-Require the live Dash pin/stage; retain the stored instruction and operator
+Require the live Dash pin/stage; retain the stored spec and operator
 block. Detail's content_index names exact reads for body/Progress Log rather
 than carrying duplicate narrative; use --full only for needed full sections.
 Read workflows.item.get result.effective_policies. Required is item-scoped, required_per_task generated-task-scoped,

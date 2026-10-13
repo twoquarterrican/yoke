@@ -51,4 +51,4 @@ Routing distinctions:
   segment without a target argument; stage writes use `yoke lifecycle transition`.
 - `/yoke idea --workflow issue|epic|blitz|task {title}` files new work through
   the skill path. Filing without executing is the terminal
-  `yoke dash TITLE INSTRUCTION` / `yoke task TITLE INSTRUCTION` pair.
+  `yoke dash TITLE SPEC` / `yoke task TITLE SPEC` pair.

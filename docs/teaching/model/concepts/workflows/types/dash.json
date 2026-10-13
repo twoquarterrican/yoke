@@ -1,10 +1,11 @@
 {
  "id": "dash",
  "title": "Dash",
- "status": "draft-copy",
+ "status": "observed",
  "commands": ["yoke dash"],
  "functions": ["items.create"],
  "skills": ["dash"],
  "page": "workflows",
- "position": 0
+ "position": 0,
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/dash_file.py"]
 }

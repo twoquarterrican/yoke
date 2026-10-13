@@ -1,8 +1,8 @@
 ---
 name: dash
-description: "File or execute instruction-led Dash work through survey, isolation, verification, merge, and evidence."
+description: "File or execute spec-led Dash work through survey, isolation, verification, merge, and evidence."
 # argument-hint is generated from yoke_contracts.skill_registry.
-argument-hint: "\"instruction\" | {PREFIX-N}"
+argument-hint: "\"spec\" | {PREFIX-N}"
 ---
 
 # /yoke dash
@@ -13,12 +13,12 @@ yoke ouroboros field-note append --kind <failed|new|unclear|observation> --evide
 Run `yoke ouroboros field-note append --help` for the worked failure modes and decision tree.
 <!-- END GENERATED: field-note-directive -->
 
-Execute the complete stored instruction end to end in this session: file or
+Execute the complete stored spec end to end in this session: file or
 resume, survey, isolate, implement, verify, merge and delivery. Size does not
 change this workflow. It does not route through `/yoke idea`.
 Use ordinary registered item/claim/lifecycle/QA/delivery authority.
 
-`/yoke dash "instruction"` files and executes; `/yoke dash PREFIX-N`
+`/yoke dash "spec"` files and executes; `/yoke dash PREFIX-N`
 resumes. The CLI `yoke dash "<title>" --stdin` files only, with the required
 execution-instruction attestation. Task is the merge-free/laneless alternative,
 not a way to remove a selected gate.

@@ -33,7 +33,7 @@ route by id vocabulary.
 Initial Dash binding: read and follow [Dash's procedure](../dash/SKILL.md)
 internally so direct filing/execution is atomic. A served worktrees:none,
 delivery:merge_free definition supports the complete laneless shortcut
-`yoke task TITLE INSTRUCTION --execution-instructions-considered`.
+`yoke task TITLE SPEC --execution-instructions-considered`.
 A refine-to-Blitz boundary links exactly one execution strategy document
 through strategy.execution.link; intake never copies its plan into body.
 
@@ -105,10 +105,16 @@ create-anyway yes/no decision; no means use existing item, no matches proceed.
 
 ## 5. Create The Item
 
-Invoke items.create bare, without redirection/pipes/inline payload wrapping:
+Invoke items.create for the planned draft:
 ```bash
 yoke items create "<title>" "$_workflow" --entry-surface harness_skill --execution-instructions-considered --project "$_project" --priority <priority> --json
 ```
+
+For an already agreed initial spec, check `yoke items create --help` first,
+then add `--spec-file PATH` or `--stdin` when that CLI advertises it.
+The planned draft remains valid without that optional input. The selected
+workflow supplies its full spec through authoring. `--title-file PATH` reads
+title only.
 
 Include --deployment-flow only for a valid nonempty assignment; never none.
 Dry-run adds --dry-run and performs no later writes. Read the original receipt

@@ -120,7 +120,7 @@ function hostedFrameWorkflows() {
       id: "dash",
       name: "Dash",
       description:
-        "A short instruction you file in seconds — filing is the spec; an agent executes it end-to-end.",
+        "A short spec you file in seconds — filing is the spec; an agent executes it end-to-end.",
       entrySurfaces: ["web_form", "cli", "harness_skill", "promotion"],
       skills: ["dash"],
       stages: [
@@ -133,7 +133,7 @@ function hostedFrameWorkflows() {
             gate("conflict_survey"),
             gate("architecture_impact"),
           ],
-          "The agent surveys for conflicts, takes a worktree, and executes the instruction in one pass.",
+          "The agent surveys for conflicts, takes a worktree, and executes the spec in one pass.",
         ),
         stage(
           "reviewing-implementation",

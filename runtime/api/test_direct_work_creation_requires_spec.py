@@ -21,9 +21,11 @@ from yoke_core.domain.handlers.items_create import handle_item_create
 
 
 @pytest.mark.parametrize("workflow", ["dash", "task"])
-@pytest.mark.parametrize("instruction", [None, "", " \n\t"])
+@pytest.mark.parametrize("spec", [None, "", " \n\t"])
 def test_registered_create_refuses_without_allocating_or_writing(
-    tmp_db, workflow, instruction,  # noqa: F811
+    tmp_db,  # noqa: F811
+    workflow,
+    spec,  # noqa: F811
 ):
     payload = {
         "title": "Direct work",
@@ -32,11 +34,11 @@ def test_registered_create_refuses_without_allocating_or_writing(
         "entry_surface": "cli",
         "execution_instructions_considered": True,
     }
-    if instruction is not None:
-        payload["instruction"] = instruction
+    if spec is not None:
+        payload["spec"] = spec
     request = FunctionCallRequest(
         function="items.create",
-        actor=ActorContext(session_id="blank-instruction-test"),
+        actor=ActorContext(session_id="blank-spec-test"),
         target=TargetRef(kind="global"),
         payload=payload,
     )
@@ -58,8 +60,8 @@ def test_registered_create_refuses_without_allocating_or_writing(
 
     assert outcome.primary_success is False
     assert outcome.error.code == "create_failed"
-    assert "requires a nonblank instruction" in outcome.error.message
-    assert "provide instruction text" in outcome.error.message
+    assert "requires a nonblank spec" in outcome.error.message
+    assert "pass --spec-file" in outcome.error.message
     next_id.assert_not_called()
     next_sequence.assert_not_called()
     conn = _conn(tmp_db)

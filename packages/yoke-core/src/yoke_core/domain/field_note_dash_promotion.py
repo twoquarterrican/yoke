@@ -315,7 +315,7 @@ def promote_field_note_to_dash(
             source=str(actor_id) if actor_id is not None else None,
             session_id=session_id,
             entry_surface="promotion",
-            instruction=clean_instruction,
+            spec=clean_instruction,
             workflow_posture=workflow_posture,
             out=io.StringIO(),
         )

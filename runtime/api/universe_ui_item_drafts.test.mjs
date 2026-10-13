@@ -46,7 +46,7 @@ test("obsolete drafts for every actor and mount are deleted without migration", 
   const { document, entries, mount, main } = fixture();
   for (const [path, actor] of [["/items/new", 7], ["/workbench", 8], ["/orgs/other/items/new", 9]]) {
     entries.set(`yoke:item-draft:${JSON.stringify(["https://example.test", path, "acme", actor])}`,
-      JSON.stringify({ projectId: "7", title: "Obsolete", instruction: "Delete me" }));
+      JSON.stringify({ projectId: "7", title: "Obsolete", spec: "Delete me" }));
   }
   entries.set("unrelated", "keep");
   purgeObsoleteItemDrafts(document.defaultView);
@@ -185,13 +185,13 @@ test("edits made during creation survive and remain usable in the same form", as
   const complete = deferCreation(state);
   const form = input(main, "FORM");
   form.dispatchEvent(new Event("submit"));
-  const instruction = input(main, "TEXTAREA");
-  instruction.value = "A different instruction written while waiting.";
-  instruction.dispatchEvent(new Event("input"));
+  const spec = input(main, "TEXTAREA");
+  spec.value = "A different spec written while waiting.";
+  spec.dispatchEvent(new Event("input"));
   const saved = [...entries.values()][0];
   complete(); await settle();
   assert.notEqual([...entries.values()][0], saved);
-  assert.equal(JSON.parse([...entries.values()][0]).instruction, instruction.value);
+  assert.equal(JSON.parse([...entries.values()][0]).spec, spec.value);
   assert.equal(state.navigated.length, 0);
   assert.equal(input(main, "FORM"), form);
   assert.match(main.textContent, /Created.*Your newer draft is kept/);
@@ -244,3 +244,42 @@ for (const event of ["pagehide", "visibilitychange"]) {
     assert.equal(JSON.parse([...entries.values()][0]).title, "Leaving");
   });
 }
+
+test("an existing item draft is converted to spec without losing authored text", async () => {
+  const { main, entries, mount } = fixture();
+  await mount();
+  for (const [tag, value] of [["INPUT", "Retained outcome"], ["TEXTAREA", "Multiline spec\nSecond line."]]) {
+    const control = input(main, tag);
+    control.value = value;
+    control.dispatchEvent(new Event("input"));
+    control.dispatchEvent(new Event("blur"));
+  }
+  const [key, value] = [...entries][0];
+  const saved = JSON.parse(value);
+  saved.instruction = saved.spec;
+  delete saved.spec;
+  entries.set(key, JSON.stringify(saved));
+  await mount();
+  assert.equal(input(main, "TEXTAREA").value, "Multiline spec\nSecond line.");
+  const converted = JSON.parse(entries.get(key));
+  assert.equal(converted.spec, "Multiline spec\nSecond line.");
+  assert.equal(Object.hasOwn(converted, "instruction"), false);
+});
+
+
+test("existing draft text remains editable when browser storage writes are denied", async () => {
+  const { main, entries, mount, document } = fixture();
+  await mount();
+  fill(main);
+  const [key, value] = [...entries][0];
+  const saved = JSON.parse(value);
+  saved.instruction = saved.spec;
+  delete saved.spec;
+  const original = JSON.stringify(saved);
+  entries.set(key, original);
+  document.defaultView.sessionStorage.setItem = () => { throw new Error("Storage denied"); };
+  await mount();
+  assert.equal(input(main, "INPUT").value, "Fix layout");
+  assert.equal(input(main, "TEXTAREA").value, "Preserve the useful draft.");
+  assert.equal(entries.get(key), original);
+});

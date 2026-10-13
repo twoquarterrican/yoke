@@ -28,7 +28,7 @@ yoke_core.tools.render_skill_registry_inline --target-root CHECKOUT`.
 | `/yoke charge [--dry-run] [--item PREFIX-N] [--project P] [--wip-cap N]` | orchestrator | `charge` | autonomous execution | select runnable frontier work |
 | `/yoke conduct PREFIX-N [--max-attempts N] [--no-chain]` | stage | `conduct` | autonomous execution | execute generated task lanes |
 | `/yoke curate (no arguments)` | utility | `curate` | follow skill decision gates | curate the Ouroboros learning log |
-| `/yoke dash "instruction" \| {PREFIX-N}` | stage | `dash` | autonomous execution | execute instruction-led work |
+| `/yoke dash "spec" \| {PREFIX-N}` | stage | `dash` | autonomous execution | execute spec-led work |
 | `/yoke doctor [project] [--fix] [--file path]` | utility | `doctor` | follow skill decision gates | run health checks |
 | `/yoke feed [--no-new-items] [PREFIX-N ...] [--model MODEL]` | orchestrator | `feed` | follow skill decision gates | refresh frontier work |
 | `/yoke help` | utility | `wait` | follow skill decision gates | show command reference |
@@ -63,7 +63,7 @@ LOCAL TERMINAL HELPERS
   Verify machine/env/credential/checkout bindings.
  yoke dev setup [CHECKOUT]
   Explicit Yoke source-dev/admin setup.
- yoke dash TITLE INSTRUCTION / yoke task TITLE INSTRUCTION
+ yoke dash TITLE SPEC / yoke task TITLE SPEC
   File direct work; Task is laneless and merge-free.
  /yoke idea --workflow issue|epic|blitz|task {title}
   Select the filing workflow; `/yoke blitz` executes document-led work.

@@ -207,7 +207,7 @@ def handle_dash_escalate(request: FunctionCallRequest) -> HandlerOutcome:
         source=_actor_id(request),
         session_id=request.actor.session_id,
         entry_surface="harness_skill",
-        instruction=payload.findings,
+        spec=payload.findings,
         out=io.StringIO(),
     )
     if not created.get("success"):

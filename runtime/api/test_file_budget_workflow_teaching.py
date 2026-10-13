@@ -96,7 +96,7 @@ def test_each_execution_surface_teaches_the_both_off_composition() -> None:
     ]
     for path in paths:
         text = _read(path).lower()
-        assert "both off" in text or "neither: instruction and" in text
+        assert "both off" in text or "neither: spec and" in text
 
 
 def test_optional_budget_teaching_does_not_require_parent_section() -> None:

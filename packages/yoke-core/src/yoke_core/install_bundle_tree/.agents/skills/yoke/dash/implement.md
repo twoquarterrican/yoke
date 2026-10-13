@@ -1,4 +1,4 @@
-# Dash — execute the complete instruction
+# Dash — execute the complete spec
 
 Make the smallest complete change, preserve unrelated work and apply
 Simplify and governed DB rules. Use the lane's declared focused checks;

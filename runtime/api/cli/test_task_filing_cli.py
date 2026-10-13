@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from yoke_cli.commands.adapters import task
+from yoke_cli.commands.adapters import task, items_create
 
 
 def _capture(monkeypatch):
@@ -14,27 +14,32 @@ def _capture(monkeypatch):
         captured.update(kwargs)
         return 0
 
-    monkeypatch.setattr(task, "dispatch_and_emit", _dispatch)
+    monkeypatch.setattr(items_create, "dispatch_create", _dispatch)
     return captured
 
 
 def test_task_filing_dispatches_typed_cli_create(monkeypatch):
     captured = _capture(monkeypatch)
 
-    assert task.task_file([
-        "Refresh inventory",
-        "Refresh the local inventory file.",
-        "--project",
-        "yoke",
-        "--priority",
-        "low",
-        "--execution-instructions-considered",
-    ]) == 0
+    assert (
+        task.task_file(
+            [
+                "Refresh inventory",
+                "Refresh the local inventory file.",
+                "--project",
+                "yoke",
+                "--priority",
+                "low",
+                "--execution-instructions-considered",
+            ]
+        )
+        == 0
+    )
 
-    assert captured["function_id"] == "items.create"
     assert captured["payload"] == {
         "title": "Refresh inventory",
-        "instruction": "Refresh the local inventory file.",
+        "dry_run": False,
+        "spec": "Refresh the local inventory file.",
         "workflow": "task",
         "entry_surface": "cli",
         "workflow_posture": {},
@@ -47,9 +52,15 @@ def test_task_filing_dispatches_typed_cli_create(monkeypatch):
 def test_task_filing_never_attests_for_the_caller(monkeypatch):
     captured = _capture(monkeypatch)
 
-    assert task.task_file([
-        "Refresh inventory", "Refresh the local inventory file.",
-    ]) == 0
+    assert (
+        task.task_file(
+            [
+                "Refresh inventory",
+                "Refresh the local inventory file.",
+            ]
+        )
+        == 0
+    )
 
     assert captured["payload"]["execution_instructions_considered"] is False
 
@@ -65,11 +76,21 @@ def test_task_filing_never_attests_for_the_caller(monkeypatch):
     ],
 )
 def test_task_filing_refuses_inapplicable_dash_postures(
-    flags, reason, alternative, capsys,
+    flags,
+    reason,
+    alternative,
+    capsys,
 ):
-    assert task.task_file([
-        "Refresh inventory", "Refresh it.", *flags,
-    ]) == 2
+    assert (
+        task.task_file(
+            [
+                "Refresh inventory",
+                "Refresh it.",
+                *flags,
+            ]
+        )
+        == 2
+    )
 
     error = capsys.readouterr().err
     assert reason in error

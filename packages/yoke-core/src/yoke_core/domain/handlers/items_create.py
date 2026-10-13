@@ -82,9 +82,7 @@ class ItemCreateRequest(BaseModel):
     entry_surface: Optional[str] = Field(
         None, description="Typed creation surface allowed by the workflow."
     )
-    instruction: Optional[str] = Field(
-        None, description="Initial executable instruction stored with the item."
-    )
+    spec: Optional[str] = Field(None, description="Initial spec stored with the item.")
     strategy_doc: Optional[str] = Field(
         None,
         description=(
@@ -120,8 +118,9 @@ class ItemCreateResponse(BaseModel):
     public_ref: Optional[str] = None
     dry_run: bool = False
     log: str = ""
-    # The attestation this create was accepted under, so the receipt an
-    # auditor reads carries the answer rather than the absence of a refusal.
+    # Clients require explicit spec acceptance before a real write and in its receipt.
+    spec_accepted: bool = False
+    # The receipt records the filing instruction attestation.
     execution_instructions_considered: bool = False
     # One descriptor per operator execution instruction the created item is
     # bound by: its id, its heading, its scope, and the command that serves
@@ -144,6 +143,11 @@ def _error(code: str, message: str) -> HandlerOutcome:
 
 def handle_item_create(request: FunctionCallRequest) -> HandlerOutcome:
     """Route a typed create through ``backlog_create_op.execute_create``."""
+    if "instruction" in (request.payload or {}):
+        return _error(
+            "item_text_field_retired",
+            "Item text is spec. Send spec; use --spec-file PATH or --stdin.",
+        )
     try:
         payload = ItemCreateRequest.model_validate(request.payload or {})
     except Exception as exc:
@@ -200,7 +204,7 @@ def handle_item_create(request: FunctionCallRequest) -> HandlerOutcome:
         session_id=request.actor.session_id,
         dry_run=payload.dry_run,
         entry_surface=payload.entry_surface,
-        instruction=payload.instruction,
+        spec=payload.spec,
         workflow_posture=payload.workflow_posture,
         strategy_doc=payload.strategy_doc,
         out=captured,
@@ -232,6 +236,7 @@ def handle_item_create(request: FunctionCallRequest) -> HandlerOutcome:
         public_ref=result.get("public_ref"),
         dry_run=bool(result.get("dry_run", False)),
         log=captured.getvalue(),
+        spec_accepted=payload.spec is not None,
         execution_instructions_considered=(payload.execution_instructions_considered),
         execution_instructions=execution_instructions,
     )

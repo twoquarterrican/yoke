@@ -77,7 +77,7 @@ Codex supports these downstream paths (derived server-side from the shared Yoke 
 | `shepherd` | Drive an item through quality-gated lifecycle to ready |
 | `refine` | Critique and improve item artifacts |
 | `implement` | Definition-bound single-lane implementation through review |
-| `dash` | Direct execution from one instruction, any size: survey, worktree, verify, merge, evidence |
+| `dash` | Direct execution from one spec, any size: survey, worktree, verify, merge, evidence |
 | `blitz` | Document-led direct execution from the item's single linked strategy document |
 | `conduct` | Definition-bound task-graph loop that dispatches Engineer / Tester / Architect / Simulator |
 | `polish` | Review and finish implementation in existing worktree |

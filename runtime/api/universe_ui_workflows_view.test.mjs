@@ -117,8 +117,8 @@ test("Dash entry surfaces use the prototype filing copy", async (t) => {
     ],
   );
   assert.deepEqual(classText(root, "workflow-entry-command"), [
-    'yoke dash "<title>" "<instruction>"',
-    '/yoke dash "<instruction>"',
+    'yoke dash "<title>" "<spec>"',
+    '/yoke dash "<spec>"',
   ]);
   assert.deepEqual(classText(root, "workflow-entry-note"), [
     "agent authors title and files for you",

@@ -141,7 +141,7 @@ for (const workflowId of ["issue", "dash"]) {
       },
     });
     const rendered = itemText(root);
-    assert.match(rendered, workflowId === "dash" ? /Instruction/ : /Spec/);
+    assert.match(rendered, /Spec/);
     assert.match(rendered, /Technical plan/);
     assert.match(rendered, /Touch the footer renderer first/);
     if (workflowId === "issue") {

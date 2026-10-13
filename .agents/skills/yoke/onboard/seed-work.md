@@ -33,6 +33,12 @@ yoke items create "{title}" issue --entry-surface harness_skill --execution-inst
 yoke items create "{title}" issue --entry-surface harness_skill --execution-instructions-considered --project {project} --priority {priority}
 ```
 
+For an already agreed initial spec, check `yoke items create --help` first,
+then add `--spec-file PATH` or `--stdin` when that CLI advertises it.
+The planned draft remains valid without that optional input. The selected
+workflow supplies its full spec through authoring. `--title-file PATH` reads
+title only.
+
 All enter idea. Refine owns specs; do not manufacture bodies/claims/dependencies
 or imagined children through lower-level surfaces. Echo ID and source outcome.
 

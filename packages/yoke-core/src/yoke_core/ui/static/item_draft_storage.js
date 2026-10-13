@@ -38,14 +38,19 @@ export async function itemDraftStorage(context) {
     return {
       read(projects, initialProjectId) {
         try {
-          const saved = JSON.parse(storage.getItem(key) || "null");
+          let saved = JSON.parse(storage.getItem(key) || "null");
           if (!saved || !projects.some((row) => String(row.id) === saved.projectId)) return null;
           if (initialProjectId && initialProjectId !== "all" && String(initialProjectId) !== saved.projectId) return null;
-          if (typeof saved.title !== "string" || typeof saved.instruction !== "string") return null;
+          // Restore authored draft text as spec. Only save writes browser storage.
+          if (typeof saved.instruction === "string" && saved.spec == null) {
+            const { instruction, ...record } = saved;
+            saved = { ...record, spec: instruction };
+          }
+          if (typeof saved.title !== "string" || typeof saved.spec !== "string") return null;
           return {
             projectId: saved.projectId,
             title: saved.title,
-            instruction: saved.instruction,
+            spec: saved.spec,
             workflowId: typeof saved.workflowId === "string" ? saved.workflowId : null,
             posture: saved.posture && typeof saved.posture === "object" ? saved.posture : null,
           };
@@ -57,7 +62,7 @@ export async function itemDraftStorage(context) {
             revision: ++nextDraftRevision,
             projectId: String(projectId),
             title: draft.titleControl?.value ?? draft.title ?? "",
-            instruction: draft.instructionControl?.value ?? draft.instruction ?? "",
+            spec: draft.specControl?.value ?? draft.spec ?? "",
             workflowId: draft.workflowId,
             posture: draft.posture,
           });
