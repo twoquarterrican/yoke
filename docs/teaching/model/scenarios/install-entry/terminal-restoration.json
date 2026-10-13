@@ -1,0 +1,21 @@
+{
+ "id": "terminal-restoration",
+ "title": "Leave a usable terminal after piped installation",
+ "status": "observed",
+ "audience": "human",
+ "when": "Interrupting setup or resuming a suspended installer pipeline",
+ "need": "The piped installer gives setup /dev/tty input. Ctrl-C quits setup; foreground resume after SIGTSTP restores its display. Mouse reporting and terminal settings must be restored before returning to the shell.",
+ "disclosure": "Existing terminal lifecycle",
+ "surface": "Public shell installer and setup TUI",
+ "gap": "Released-installer visual proof in iTerm is still required; isolated PTY tests are not a terminal-emulator screenshot.",
+ "review": "POSIX regression executes real curl file URL | sh, foreground ownership, the setup driver and quit binding. Installation/download side effects are stubbed; interruption and suspend/resume verify mouse-mode cleanup and exact stty restoration.",
+ "plan_refs": [
+  "FIRST-USER.14"
+ ],
+ "sources": [
+  "packaging/public-installer/install",
+  "packages/yoke-cli/src/yoke_cli/config/onboard_terminal_driver.py",
+  "tests/installer/test_public_installer_terminal.py",
+  "runtime/api/cli/test_onboard_terminal_ownership.py"
+ ]
+}
