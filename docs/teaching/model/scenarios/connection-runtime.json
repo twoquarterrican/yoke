@@ -39,6 +39,19 @@
    "review": "Pending exact recipe proof.",
    "plan_notes": ["FIRST-USER 6", "FIRST-USER 15", "FIRST-USER 32", "FIRST-USER E", "JOURNEYS row 8"],
    "sources": ["docs/public/install.md", "docs/public/reference/linux-relay.md", "docs/public/windows-wsl.md", "docs/self-host.md", "docs/source-dev-doctrine.md"]
+  },
+  {
+   "id": "ci-wake-relay",
+   "title": "Keep the waiting session machine relay running",
+   "status": "observed",
+   "audience": "both",
+   "when": "Before ending a turn while CI continues.",
+   "need": "In local, self-hosted and hosted modes, run yoke relay status on the session machine and repair its named refusal. Keep that machine awake and connected; on Linux stay logged in with linger disabled.",
+   "disclosure": "current cue",
+   "surface": "Public GitHub CI wake-up guidance linked from verification and Linux relay docs.",
+   "review": "Relay observer and machine routing inspected; Linux no-linger contract checked in source. No cross-mode live wake proof claimed.",
+   "plan_refs": ["FIRST-USER.32"],
+   "sources": ["docs/public/github.md", "docs/public/reference/linux-relay.md", "docs/public/reference/agent-rules/verification.md", "packages/yoke-core/src/yoke_core/domain/session_ci_wait_observer.py", "packages/yoke-core/src/yoke_core/domain/session_relay_wake_claim.py"]
   }
  ]
 }

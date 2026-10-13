@@ -91,11 +91,35 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
 </li>
 <li id="machines/relay/linux-supervision-and-linger"><b>Linux supervision and
-linger</b> <i class="s draft-copy">draft-copy</i>
-<span class="gap">unmapped</span>
+linger</b> <i class="s observed">observed</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.32">32</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/detail-home.html">detail-home
+  ×1</a></div>
+  <div><b>Text:</b> The systemd user relay stops after the last logout. Linger
+  is refused as relay_linger_enabled; disable it with loginctl disable-linger,
+  then retry yoke relay install.</div>
+  <div><b>Sources:</b> <code>docs/public/reference/linux-relay.md</code>,
+  <code>packages/yoke-core/src/yoke_core/tools/session_relay_systemd.py</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/detail-home.html">detail-home</a></div>
 </li>
 <li id="machines/relay/windows-wsl-lifecycle"><b>Windows / WSL lifecycle</b>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+</li>
+<li id="machines/relay/ci-wake-machine"><b>CI wake-ups require the session
+machine relay</b> <i class="s observed">observed</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.32">32</a></div>
+  <div><b>Taught on:</b> <a href="../surfaces/detail-home.html">detail-home
+  ×1</a></div>
+  <div><b>Text:</b> Run yoke relay status on the waiting session machine with
+  its connection selected. A relay on another machine does not deliver that
+  session wake.</div>
+  <div><b>Sources:</b> <code>docs/public/github.md</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/session_relay_wake_claim.py</code></div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/detail-home.html">detail-home</a></div>
 </li>
 </ul>
 </li>
