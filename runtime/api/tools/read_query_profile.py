@@ -7,6 +7,13 @@ from collections import Counter
 from datetime import datetime, timezone
 import inspect
 import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tarfile
+import tempfile
 from statistics import median
 from time import perf_counter
 from typing import Any
@@ -47,6 +54,12 @@ def main() -> None:
     parser.add_argument("--session-id")
     parser.add_argument("--samples", type=int, default=5)
     parser.add_argument("--full", action="store_true")
+    parser.add_argument(
+        "--baseline-ref",
+        help="Compare this exact commit on the same exported read-only snapshot.",
+    )
+    parser.add_argument("--snapshot-id", help=argparse.SUPPRESS)
+    parser.add_argument("--now", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.samples < 1 or (args.read == "steering" and not args.session_id):
         parser.error(
@@ -57,6 +70,11 @@ def main() -> None:
 
     with connect() as conn:
         conn.execute("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+        conn.execute("SET LOCAL idle_in_transaction_session_timeout = 0")
+        if args.snapshot_id:
+            if not re.fullmatch(r"[0-9A-Fa-f-]+", args.snapshot_id):
+                parser.error("invalid exported snapshot identity")
+            conn.execute(f"SET TRANSACTION SNAPSHOT '{args.snapshot_id}'")
         project_id = resolve_project_id(conn, args.project)
         snapshot = dict(
             conn.execute(
@@ -66,7 +84,86 @@ def main() -> None:
                 (project_id, project_id, project_id),
             ).fetchone()
         )
-        now = datetime.now(timezone.utc)
+        now = (
+            datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
+        )
+        if args.baseline_ref:
+            snapshot_id = conn.execute("SELECT pg_export_snapshot()").fetchone()[0]
+            root = Path(__file__).resolve().parents[3]
+            commit = subprocess.check_output(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "rev-parse",
+                    f"{args.baseline_ref}^{{commit}}",
+                ],
+                text=True,
+            ).strip()
+            with tempfile.TemporaryDirectory(prefix="yoke-read-baseline-") as directory:
+                archive = Path(directory) / "source.tar"
+                with archive.open("wb") as stream:
+                    subprocess.run(
+                        [
+                            "git",
+                            "-C",
+                            str(root),
+                            "archive",
+                            commit,
+                            "packages",
+                            "runtime",
+                        ],
+                        stdout=stream,
+                        check=True,
+                    )
+                with tarfile.open(archive) as bundle:
+                    bundle.extractall(directory, filter="data")
+                env = dict(os.environ)
+                env["PYTHONPATH"] = os.pathsep.join(
+                    [
+                        str(Path(directory) / "packages" / name / "src")
+                        for name in (
+                            "yoke-cli",
+                            "yoke-contracts",
+                            "yoke-core",
+                            "yoke-harness",
+                        )
+                    ]
+                    + [directory]
+                )
+                command = [
+                    sys.executable,
+                    str(Path(__file__).resolve()),
+                    "--read",
+                    args.read,
+                    "--project",
+                    args.project,
+                    "--samples",
+                    str(args.samples),
+                    "--snapshot-id",
+                    snapshot_id,
+                    "--now",
+                    now.isoformat(),
+                ]
+                if args.full:
+                    command.append("--full")
+                if args.session_id:
+                    command.extend(("--session-id", args.session_id))
+                print(
+                    json.dumps({"comparison": "baseline", "commit": commit}), flush=True
+                )
+                subprocess.run(command, env=env, cwd=directory, check=True)
+                print(
+                    json.dumps(
+                        {
+                            "comparison": "candidate",
+                            "commit": subprocess.check_output(
+                                ["git", "-C", str(root), "rev-parse", "HEAD"], text=True
+                            ).strip(),
+                        }
+                    ),
+                    flush=True,
+                )
         timings = []
         samples = []
         for index in range(args.samples):
@@ -75,7 +172,12 @@ def main() -> None:
             if args.read == "qa":
                 from yoke_core.domain.qa_catalog_reads import list_plans
 
-                result = list_plans(counted, project=args.project, full=args.full)
+                options = (
+                    {"full": args.full}
+                    if "full" in inspect.signature(list_plans).parameters
+                    else {}
+                )
+                result = list_plans(counted, project=args.project, **options)
             else:
                 from yoke_core.domain.steering_fleet_report_compose import (
                     compose_held_reports,

@@ -71,25 +71,22 @@ def suspected_orphaned_waiters(
     — telemetry expiry would otherwise clear the signature and quietly
     stop reporting a frozen waiter. No waiter registry is inferred.
     """
+    if not idle:
+        return ()
     p = marker(conn)
-    matches = []
-    for holder in idle:
-        row = conn.execute(
-            f"""SELECT s.turn_posture
-                       {last_completed_tool_select(conn, session_alias="s")}
-                  FROM harness_sessions s
-                 WHERE s.session_id = {p}""",
-            (holder.session_id,),
-        ).fetchone()
-        if row is None:
-            continue
-        record = dict(row)
-        if (
-            str(record.get("turn_posture") or "") == "waiting"
-            and str(record.get(LAST_COMPLETED_TOOL_COLUMN) or "") == MONITOR_TOOL_NAME
-        ):
-            matches.append(holder)
-    return tuple(matches)
+    ids = tuple(dict.fromkeys(holder.session_id for holder in idle))
+    rows = conn.execute(
+        f"SELECT s.session_id, s.turn_posture {last_completed_tool_select(conn, session_alias='s')} "
+        f"FROM harness_sessions s WHERE s.session_id IN ({','.join(p for _ in ids)})",
+        ids,
+    ).fetchall()
+    matches = {
+        str(row["session_id"])
+        for row in rows
+        if str(row["turn_posture"] or "") == "waiting"
+        and str(row[LAST_COMPLETED_TOOL_COLUMN] or "") == MONITOR_TOOL_NAME
+    }
+    return tuple(holder for holder in idle if holder.session_id in matches)
 
 
 def _recorded_diagnostic(value: Any) -> str:

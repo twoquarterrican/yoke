@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import json
 import sys
 from types import SimpleNamespace
 
@@ -10,6 +11,7 @@ import pytest
 
 from runtime.api.test_constants import TEST_ITEM_REF
 from yoke_cli.commands.adapters import session_control_roster as roster
+from yoke_cli.commands.adapters.session_control_human_output import write_roster_result
 from yoke_cli.commands.adapters.session_control_usage import (
     SESSION_CONTROL_USAGE_BY_FUNCTION_ID,
 )
@@ -25,7 +27,7 @@ FULL_SESSION_ID = "11111111-1111-4111-8111-111111111111"
 FULL_MACHINE_ID = "22222222-2222-4222-8222-222222222222"
 
 
-def test_roster_dispatches_existing_registered_read_and_renders_headed_table(
+def test_full_roster_dispatches_detail_and_prints_every_field(
     monkeypatch,
     capsys,
 ) -> None:
@@ -87,6 +89,7 @@ def test_roster_dispatches_existing_registered_read_and_renders_headed_table(
                 "active",
                 "--limit",
                 "5",
+                "--full",
             ]
         )
         == 0
@@ -97,38 +100,23 @@ def test_roster_dispatches_existing_registered_read_and_renders_headed_table(
         "project": "yoke",
         "liveness": "active",
         "limit": 5,
+        "detail": "full",
+        "offset": 0,
     }
     rendered = capsys.readouterr().out
-    lines = rendered.splitlines()
-    assert lines[0] == "SESSIONS"
-    assert "SESSION" in lines[1]
-    assert "PROJECT" in lines[1]
-    assert "MESSAGEABLE" in lines[1]
-    assert "DIAGNOSTICS" in lines[1]
-    assert "RESUME" in lines[1]
-    assert FULL_SESSION_ID in rendered
-    assert "studio" in rendered
-    assert TEST_ITEM_REF in rendered
-    assert "codex / codex-desktop" in rendered
-    assert "connected" in rendered
-    assert "resumed running" in rendered
-    assert "yes" in rendered
-    assert "message pending" in rendered
-    assert "chain pending 2/3" in rendered
-    assert "TTL 60m" in rendered
-    assert "|" not in rendered
+    assert json.loads(rendered) == response.result
 
 
 def test_roster_has_explicit_empty_and_full_point_views() -> None:
     empty = io.StringIO()
-    roster.write_roster_result(
+    write_roster_result(
         {"fields": list(SESSION_CONTROL_ROSTER_FIELDS), "rows": []},
         empty,
     )
     assert empty.getvalue() == "SESSIONS\nNo sessions found.\n"
 
     point = io.StringIO()
-    roster.write_roster_result(
+    write_roster_result(
         {
             "fields": list(SESSION_CONTROL_ROSTER_FIELDS),
             "rows": [
@@ -176,13 +164,15 @@ def test_roster_point_lookup_dispatches_the_exact_session_filter(monkeypatch) ->
     assert captured["payload"] == {
         "project": "yoke",
         "session_id": "session-1",
+        "detail": "summary",
+        "offset": 0,
     }
     assert captured["json_mode"] is True
 
 
 def test_roster_names_a_pending_launch_binding_window() -> None:
     output = io.StringIO()
-    roster.write_roster_result(
+    write_roster_result(
         {
             "fields": list(SESSION_CONTROL_ROSTER_FIELDS),
             "rows": [

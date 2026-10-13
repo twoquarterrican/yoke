@@ -23,6 +23,7 @@ from yoke_contracts.session_control.launch_origin import LAUNCH_ORIGINS
 from yoke_core.domain.session_launch_capacity import (
     MachineCapacity,
     machine_capacity,
+    live_lane_counts,
 )
 from yoke_core.domain.session_launch_eligibility import (
     derive_launch_eligibility,
@@ -121,6 +122,7 @@ def machine_capacities(
         "ORDER BY last_seen_at DESC, machine_id",
         (instant_parameter(conn, current),),
     ).fetchall()
+    counts = live_lane_counts(conn, now=current)
     found: dict[str, MachineCapacity] = {}
     for row in rows:
         machine_id = str(row["machine_id"])
@@ -130,6 +132,7 @@ def machine_capacities(
             conn,
             machine_id=machine_id,
             capacity_document=row["machine_capacity"],
+            live_lanes=counts.get(machine_id, 0),
             now=current,
         )
     return tuple(found[machine] for machine in sorted(found))

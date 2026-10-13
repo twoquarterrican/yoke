@@ -11,10 +11,12 @@ from yoke_contracts.registered_reads import READ_FUNCTION_IDS
 # 350 displayed lines at the shared teaching width, including JSON output.
 READ_OUTPUT_LIMIT_BYTES = 28_000
 _FULL_OUTPUT = ContextVar("full_read_output", default=False)
+_READ_FUNCTION = ContextVar("registered_read_function", default=None)
 
 
 @contextmanager
-def read_output_scope(args: list[str]) -> Iterator[None]:
+def read_output_scope(args: list[str], function: str | None = None) -> Iterator[None]:
+    read_token = _READ_FUNCTION.set(function)
     token = _FULL_OUTPUT.set(
         "--full" in args[: args.index("--")] if "--" in args else "--full" in args
     )
@@ -22,6 +24,7 @@ def read_output_scope(args: list[str]) -> Iterator[None]:
         yield
     finally:
         _FULL_OUTPUT.reset(token)
+        _READ_FUNCTION.reset(read_token)
 
 
 def output_exceeds_limit(
@@ -36,6 +39,10 @@ def output_exceeds_limit(
 
 def full_output_requested() -> bool:
     return _FULL_OUTPUT.get()
+
+
+def registered_read_requested() -> bool:
+    return _READ_FUNCTION.get() in READ_FUNCTION_IDS
 
 
 def read_recovery(function: str) -> str:

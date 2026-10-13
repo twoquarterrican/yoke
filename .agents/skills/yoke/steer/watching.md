@@ -45,7 +45,9 @@ deltas too. Fingerprints suppress unchanged reports. Background uses armed
 native subscription; in-turn surfaces findings in its existing stream.
 Changed reports wake with the whole opening/digest/closing block, never a
 delimiter alone. Pull yoke steering report get without project filter for
-all held scopes; retain idle/unowned/undelivered triage.
+all held scopes; retain idle/unowned/undelivered triage. JSON serves scope
+counts; use --full --json for all facts. Oversized CLI reads refuse atomically
+and name the narrower recipe or --full opt-in.
 
 After compaction, resume, watcher exit or subscription loss, verify live mode
 and existing process. Reattach its stream/subscription; rearm only if absent.

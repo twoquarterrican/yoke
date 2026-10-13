@@ -217,7 +217,7 @@ Read it three ways:
 ```bash
 yoke relay probe-models [--surface S] [--json]   # refresh this machine now
 yoke session-control launch preview --list-models  # accepted flags beside availability
-yoke steering report get                         # every machine in the scope
+yoke steering report get                         # changed sections in held scopes
 ```
 
 The relay refreshes on its own cadence during normal polling;

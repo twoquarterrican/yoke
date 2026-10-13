@@ -34,6 +34,7 @@ def _compute_next_step(
     probe_path_claim_activation: bool = False,
     conn: Optional[Any] = None,
     item_id: Optional[int] = None,
+    verdicts: dict | None = None,
 ) -> _StepResult:
     """Convert a definition-selected skill into a scheduler action."""
     step = _ADAPTER_TO_STEP.get(adapter, NextStep.WAIT)
@@ -49,7 +50,11 @@ def _compute_next_step(
             probe_implement_feasibility,
         )
 
-        verdict = probe_implement_feasibility(conn, item_id=item_id)
+        verdict = (
+            verdicts[item_id]
+            if verdicts is not None
+            else probe_implement_feasibility(conn, item_id=item_id)
+        )
         if verdict.outcome is FeasibilityOutcome.BLOCKED_CROSS_ITEM_OVERLAP:
             override = RoutingOverride(
                 reason=ROUTING_OVERRIDE_PATH_CLAIM_BLOCKED,
@@ -63,6 +68,27 @@ def _compute_next_step(
                 routing_override=override,
             )
     return _StepResult(step)
+
+
+def compute_routing_results(conn: Any, runnable: list) -> dict:
+    from .scheduler_path_claim_feasibility import probe_implement_feasibilities
+
+    ids = [
+        row.item_id
+        for row in runnable
+        if row.probe_path_claim_activation and row.adapter == AdapterCategory.IMPLEMENT
+    ]
+    verdicts = probe_implement_feasibilities(conn, ids)
+    return {
+        row.item_id: _compute_next_step(
+            row.adapter,
+            probe_path_claim_activation=row.probe_path_claim_activation,
+            conn=conn,
+            item_id=row.item_id,
+            verdicts=verdicts,
+        )
+        for row in runnable
+    }
 
 
 __all__ = [

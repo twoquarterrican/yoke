@@ -109,6 +109,8 @@ PROJECT_TABLES: dict[str, dict] = {
         ],
         "notes": (
             "Deployment environments use numeric internal keys. The site FK is "
+            "Fixture reads must include the declared deploy_method metadata column; "
+            "its absence from a shortened fixture does not prove retirement. "
             "`site`, not `site_id`; creation time is `created_at`, with no "
             "`updated_at` column. `name` is the "
             "sole human environment identifier and is unique within "

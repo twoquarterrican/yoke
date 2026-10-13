@@ -87,6 +87,8 @@ HARNESS_SESSION_NOTES = (
     "API-EQUIVALENT estimate, never consumption of a subscription "
     "plan. Roster readers take the derived usage_tokens / "
     "usage_cost_usd / usage_note fields, not this column. "
+    "There is no harness_sessions.usage_note column: store the usage reading "
+    "in usage_totals and let the roster derive usage_note. "
     "executor stores only the canonical harness_id enum values "
     "claude-code, codex, or cursor (resolved at write time via "
     "yoke_harness.hooks.identity.canonical_harness_id); "

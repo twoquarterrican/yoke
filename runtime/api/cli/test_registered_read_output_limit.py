@@ -71,3 +71,14 @@ def test_mutation_receipt_is_not_replaced_after_the_write(capsys):
     value = "m" * (READ_OUTPUT_LIMIT_BYTES + 1)
     assert emit_response(response("items.create", {"body": value}), json_mode=True) == 0
     assert value in capsys.readouterr().out
+
+
+def test_registered_read_help_teaches_full_without_requesting_it():
+    import argparse
+    from yoke_cli.commands._helpers import parse_or_usage_error
+
+    parser = argparse.ArgumentParser(prog="read")
+    with read_output_scope([], "projects.list"):
+        parsed = parse_or_usage_error(parser, [], "read")
+    assert parsed.full is False
+    assert "--full" in parser.format_help()

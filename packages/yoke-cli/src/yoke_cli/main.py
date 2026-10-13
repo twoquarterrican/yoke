@@ -295,6 +295,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if argv[0] in ("-V", "--version", "version"):
         return _emit_version()
 
+    _function_id = None
     try:
         _cli_tokens, _function_id, adapter, remaining = resolve(argv)
     except KeyError:
@@ -324,7 +325,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         with (
             _control_plane_locality(global_env),
             propagated_session_identity(argv),
-            read_output_scope(remaining),
+            read_output_scope(remaining, _function_id),
         ):
             try:
                 return sandbox_denial.run(adapter, remaining, argv)

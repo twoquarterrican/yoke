@@ -170,9 +170,14 @@ def parse_or_usage_error(
     if parser.formatter_class is argparse.HelpFormatter:
         parser.formatter_class = argparse.RawDescriptionHelpFormatter
     _ensure_project_arg_for_item_parser(parser)
-    from yoke_cli.transport.output_limit import full_output_requested
+    from yoke_cli.transport.output_limit import (
+        full_output_requested,
+        registered_read_requested,
+    )
 
-    if full_output_requested() and not _has_arg(parser, "full"):
+    if (full_output_requested() or registered_read_requested()) and not _has_arg(
+        parser, "full"
+    ):
         parser.add_argument(
             "--full",
             action="store_true",

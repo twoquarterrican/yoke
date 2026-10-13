@@ -1,10 +1,10 @@
 {
  "id": "02",
- "title": "What was withheld from compact output and how to read it without repeating a mutation.",
- "status": "draft-copy",
+ "title": "Routine summaries and pages name full reads; oversized CLI reads refuse atomically with recovery.",
+ "status": "observed",
  "form": "State",
- "verification": "No delivery proof attached.",
- "topics": ["items/authoring", "context/instructions"],
+ "verification": "Source and fixed-fixture checks cover text/JSON bounds, page summaries and explicit full reads; deployed delivery is not yet proved.",
+ "topics": ["items/authoring", "context/instructions", "context/bounded-command-reads"],
  "plan_refs": ["FIRST-USER.13", "FIRST-USER.28", "FIRST-USER.29", "FIRST-USER.35", "FIRST-USER.P6"],
  "position": 1
 }

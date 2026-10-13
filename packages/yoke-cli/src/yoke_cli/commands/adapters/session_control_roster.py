@@ -78,7 +78,7 @@ def session_control_roster_list(args: List[str]) -> int:
         "--session",
         dest="session_filter",
         default=None,
-        help="Return the complete roster row for exactly this session.",
+        help="Select exactly this session; add --full for its complete roster row.",
     )
     add_session_arg(parser)
     add_json_arg(parser)

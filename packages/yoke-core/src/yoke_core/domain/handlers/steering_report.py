@@ -157,6 +157,27 @@ def handle_get(request: FunctionCallRequest) -> HandlerOutcome:
                 fingerprint=str(result["fingerprint"]),
                 now=combined.composed_at,
             )
+        if not payload.full and not payload.deliver:
+            summary = {
+                key: result[key]
+                for key in ("composed_at", "actionable", "fingerprint", "project_id")
+                if key in result
+            }
+            summary["scopes"] = [
+                {
+                    "project_id": section.report.project_id,
+                    "counts": {
+                        key: len(value)
+                        for key, value in report_dict(section.report).items()
+                        if isinstance(value, list)
+                    },
+                }
+                for section in combined.sections
+            ]
+            summary["detail_read"] = "yoke steering report get --full"
+            if payload.read_delta:
+                summary["delta_body"] = result.get("delta_body", "")
+            result = summary
         return HandlerOutcome(result_payload=result)
     finally:
         conn.close()
