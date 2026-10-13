@@ -119,7 +119,7 @@ def test_source_preview_rejects_malformed_settings_without_mutation(
     )
 
     assert rc == 1
-    assert "not valid JSON" in capsys.readouterr().err
+    assert "instruction_configuration_unreadable" in capsys.readouterr().err
     assert _project_tree(target) == before
 
 

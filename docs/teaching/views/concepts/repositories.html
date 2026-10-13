@@ -54,6 +54,23 @@ branch</b> <i class="s draft-copy">draft-copy</i>
 <li id="repositories/git/commit-identity"><b>Commit identity</b>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
 </li>
+<li id="repositories/git/git-hooks"><b>Yoke git hooks</b>
+<i class="s observed">observed</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-product-fixes.html#FIRST-USER.11">11</a></div>
+  <div><b>Commands:</b> <code>yoke git pre-commit</code>, <code>yoke git
+  post-commit</code></div>
+  <div><b>Current:</b> The installed hooks find yoke on PATH, then at
+  ${XDG_BIN_HOME:-$HOME/.local/bin}/yoke. A computer without Yoke commits with
+  one line naming the computer and the install command; CI and the merge-queue
+  preflight re-run the authored-file checks. Hook messages never suggest
+  --no-verify.</div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-cli/src/yoke_cli/project_install/managed_git_hooks.py</code>,
+  <code>runtime/api/cli/test_managed_git_hook_launcher_lookup.py</code>,
+  <code>packages/yoke-core/src/yoke_core/domain/authored_file_merge_preflight.py</code>,
+  <code>packages/yoke-core/src/yoke_core/tools/ci_repo_contracts.py</code></div>
+</li>
 </ul>
 </li>
 <li id="repositories/github"><b>GitHub access</b>

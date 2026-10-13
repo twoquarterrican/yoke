@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from yoke_contracts.api_urls import DISTRIBUTION_PROD_URL
-
 # The three marker strings are single-sourced in yoke-contracts so yoke-core's
 # doctor gate-liveness check can recognize an installed shim without importing
 # yoke-cli. Re-exported here so this module's public API is unchanged.
@@ -17,10 +15,21 @@ from yoke_contracts.git_hook_markers import (
 
 GIT_HOOK_NAMES = ("pre-commit", "post-commit", "pre-merge-commit")
 
-# Reinstall hint printed when a hooked commit runs on a machine whose `yoke`
-# launcher is missing. The official distribution channel is the default; a
-# machine installed from another channel reruns its own installer command.
-INSTALL_COMMAND_HINT = f"curl -fsSL {DISTRIBUTION_PROD_URL}/install | bash"
+# A repository can reach a computer without Yoke (a synced folder, a plain
+# clone). The shims find the launcher on PATH, then at the installer's
+# launcher home, as the harness hooks do; with no launcher the commit goes
+# through with one line of teaching, and CI plus the merge-queue preflight
+# re-run the same authored-file checks. No absolute path is ever written in.
+_LAUNCHER_LOOKUP = (
+    "yoke_bin=$(command -v yoke 2>/dev/null) "
+    '|| yoke_bin="${XDG_BIN_HOME:-$HOME/.local/bin}/yoke"\n'
+    'if [ ! -x "$yoke_bin" ]; then\n'
+    '    echo "Yoke is not installed on this computer ($(uname -n));'
+    " Yoke checks skipped. Install:"
+    ' \\`curl -fsSL https://upyoke.com/install | sh\\`" >&2\n'
+    "    exit 0\n"
+    "fi\n"
+)
 
 PRE_COMMIT_SHIM = (
     "#!/bin/sh\n"
@@ -28,15 +37,9 @@ PRE_COMMIT_SHIM = (
     "# Routes through the machine-installed `yoke` launcher (product\n"
     "# install or editable install) so hooked commits work without a Yoke\n"
     "# checkout importable by the ambient python3.\n"
-    "# Hard-fails on gate violations. Bypass with `git commit --no-verify`.\n"
-    "if ! command -v yoke >/dev/null 2>&1; then\n"
-    "    echo \"yoke pre-commit hook: 'yoke' launcher not on PATH —\" >&2\n"
-    '    echo "install or repair the machine CLI with the public installer:" >&2\n'
-    f'    echo "{INSTALL_COMMAND_HINT}" >&2\n'
-    "    echo \"or bypass once with 'git commit --no-verify'.\" >&2\n"
-    "    exit 1\n"
-    "fi\n"
-    'exec yoke git pre-commit "$@"\n'
+    "# Hard-fails on gate violations.\n"
+    + _LAUNCHER_LOOKUP
+    + 'exec "$yoke_bin" git pre-commit "$@"\n'
 )
 
 POST_COMMIT_SHIM = (
@@ -48,13 +51,8 @@ POST_COMMIT_SHIM = (
     "# (agent tool calls, manual git commit, merge, rebase, cherry-pick).\n"
     "# Routes through the machine-installed `yoke` launcher; never\n"
     "# blocks — a completed commit must not fail on snapshot sync trouble.\n"
-    "if ! command -v yoke >/dev/null 2>&1; then\n"
-    "    echo \"yoke post-commit hook: 'yoke' launcher not on PATH —\" >&2\n"
-    '    echo "path snapshot sync skipped; repair with the public installer:" >&2\n'
-    f'    echo "{INSTALL_COMMAND_HINT}" >&2\n'
-    "    exit 0\n"
-    "fi\n"
-    'exec yoke git post-commit "$@"\n'
+    + _LAUNCHER_LOOKUP
+    + 'exec "$yoke_bin" git post-commit "$@"\n'
 )
 
 PRE_MERGE_COMMIT_SHIM = (
@@ -64,15 +62,9 @@ PRE_MERGE_COMMIT_SHIM = (
     "# merge commit would otherwise skip the gate entirely and land files\n"
     "# no direct commit could. This runs the same staged-file gate before\n"
     "# the merge commit is written.\n"
-    "# Hard-fails on gate violations. Bypass with `git merge --no-verify`.\n"
-    "if ! command -v yoke >/dev/null 2>&1; then\n"
-    "    echo \"yoke pre-merge-commit hook: 'yoke' launcher not on PATH —\" >&2\n"
-    '    echo "install or repair the machine CLI with the public installer:" >&2\n'
-    f'    echo "{INSTALL_COMMAND_HINT}" >&2\n'
-    "    echo \"or bypass once with 'git merge --no-verify'.\" >&2\n"
-    "    exit 1\n"
-    "fi\n"
-    'exec yoke git pre-commit "$@"\n'
+    "# Hard-fails on gate violations.\n"
+    + _LAUNCHER_LOOKUP
+    + 'exec "$yoke_bin" git pre-commit "$@"\n'
 )
 
 # Exact historical bytes that the installer itself shipped before launcher
