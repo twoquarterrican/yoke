@@ -9,11 +9,13 @@ not the deep submodules.
 
 from __future__ import annotations
 
+import random
+
 from yoke_contracts.project_contract.board_art.config import BLACK, WHITE
 from yoke_contracts.project_contract.board_art.ascii import (
-    _render_ascii_variant,
-    _render_ascii_variants,
-    _select_ascii_variants,
+    _render_ascii_variant as _render_ascii_variant,
+    _render_ascii_variants as _render_ascii_variants,
+    _select_ascii_variants as _select_ascii_variants,
     generate_random_ascii_variant,
     generate_random_ascii_variant_detail,
 )
@@ -22,8 +24,8 @@ from yoke_contracts.project_contract.board_art.variants_image import (
     generate_random_image_mixed_variant_detail,
 )
 from yoke_contracts.project_contract.board_art.variants import (
-    _render_mixed_variants,
-    _select_mixed_variants,
+    _render_mixed_variants as _render_mixed_variants,
+    _select_mixed_variants as _select_mixed_variants,
     generate_random_mixed_variant,
     generate_random_mixed_variant_detail,
 )
@@ -40,14 +42,33 @@ from yoke_contracts.project_contract.board_art.render_seed import (
     MIXED_VARIANT_GAP,
     BoardArtVariant,
     _ART_HEADER,
-    _art_visual_width,
+    _art_visual_width as _art_visual_width,
     _master_map_lines,
-    _visual_width,
+    _visual_width as _visual_width,
     choose_art_word,
     normalize_header_art_word,
     normalize_master_map_word,
     resolve_project_art_word,
 )
+
+
+def generate_default_variants(word: str, *, seed_text: str) -> list[BoardArtVariant]:
+    """One random ASCII, Emoji and Mixed header, reproducible from the seed."""
+    ascii_variant = generate_random_ascii_variant_detail(word=word, seed_text=seed_text)
+    emoji_index = random.Random(seed_text).randrange(len(MIXED_EMOJI_COLUMNS))
+    emoji_variant = BoardArtVariant(
+        kind="Emoji",
+        text=MIXED_EMOJI_COLUMNS[emoji_index].strip(),
+        word=word,
+        emoji_index=emoji_index,
+    )
+    mixed_variant = generate_random_mixed_variant_detail(
+        word=word,
+        seed_text=seed_text,
+        used_fonts=[ascii_variant.font] if ascii_variant.font else [],
+        used_emoji_indexes=[emoji_index],
+    )
+    return [ascii_variant, emoji_variant, mixed_variant]
 
 
 def render_board_art(display_name: str = "", *, slug: str | None = None) -> str:
@@ -63,16 +84,8 @@ def render_board_art(display_name: str = "", *, slug: str | None = None) -> str:
         "\n".join(_master_map_lines(word)),
     ]
 
-    ascii_variants, selected_fonts = _select_ascii_variants(seed_text, word)
-    mixed_variants, _ = _select_mixed_variants(
-        seed_text, word, used_fonts=selected_fonts,
-    )
-
-    for ascii_art in ascii_variants:
-        parts.extend(("", "## ASCII", "", ascii_art))
-
-    for mixed_art in mixed_variants:
-        parts.extend(("", "## Mixed", "", mixed_art))
+    for variant in generate_default_variants(word, seed_text=seed_text):
+        parts.extend(("", f"## {variant.kind}", "", variant.text))
 
     return "\n".join(parts).rstrip() + "\n"
 
@@ -99,5 +112,6 @@ __all__ = [
     "generate_random_image_mixed_variant_detail",
     "generate_random_mixed_variant",
     "generate_random_mixed_variant_detail",
+    "generate_default_variants",
     "render_board_art",
 ]

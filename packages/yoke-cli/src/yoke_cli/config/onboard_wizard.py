@@ -162,10 +162,9 @@ class WizardResult:
     # publish offer was auto-skipped. Distinguishes "keep the folder's remote"
     # from a deliberate "no GitHub" choice on the review screen.
     project_keep_existing_remote: bool = False
-    # Board-art step state (collected in memory; materialized into
-    # ``.yoke/board-art`` at apply, never passed to build_report). The word
-    # seeds the master map and is the default for each header; the seed makes
-    # reroll deterministic; the variants are the saved header pieces.
+    # Automatically generated art stays in memory until Apply materializes
+    # ``.yoke/board-art``. The seed preserves the three defaults during Back;
+    # the word comes from the project details and spells its progress map.
     board_art_word: str | None = None
     board_art_seed: str | None = None
     board_art_variants: list = field(default_factory=list)

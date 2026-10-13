@@ -24,7 +24,6 @@ from yoke_cli.config import onboard_wizard_steps as steps  # noqa: E402
 from runtime.api.cli.onboard_wizard_test_helpers import (  # noqa: E402
     accept_project_details,
     advance_past_path,
-    complete_board_art,
     make_app,
     skip_hosting,
     stub_path_doctor,
@@ -124,7 +123,6 @@ def test_unavailable_app_publish_opens_github_and_keeps_project_local(
             await app.workers.wait_for_complete()
             await pilot.press("down")  # manual recovery: disabled
             await pilot.press("enter")  # App publishing unavailable: disabled
-            await complete_board_art(pilot)
             await skip_hosting(pilot)  # hosting: skip -> Finish
             await pilot.press("enter")  # finish: apply
             await pilot.pause()

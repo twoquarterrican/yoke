@@ -67,7 +67,7 @@ it disabled.
 
 **User:** Use connected repo.
 
-Board art: design ASCII header, continue.
+Board art: automatically add the progress map and ASCII, Emoji and Mixed headers.
 
 Hosting:
 

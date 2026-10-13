@@ -48,9 +48,7 @@ def _rank_emoji_columns(seed_text: str, *, salt: str, attempt: int) -> List[int]
     indexes = list(range(len(MIXED_EMOJI_COLUMNS)))
     return sorted(
         indexes,
-        key=lambda index: _digest_for_parts(
-            salt, str(attempt), seed_text, str(index)
-        ),
+        key=lambda index: _digest_for_parts(salt, str(attempt), seed_text, str(index)),
     )
 
 
@@ -131,7 +129,10 @@ def _render_fallback_mixed_variant_detail(
             if _fits_header_width(candidate.text, max_width):
                 return candidate
     return BoardArtVariant(
-        kind="Mixed", text=ascii_art, word=word, ascii_art=ascii_art,
+        kind="Mixed",
+        text=ascii_art,
+        word=word,
+        ascii_art=ascii_art,
     )
 
 
@@ -142,7 +143,9 @@ def _render_fallback_mixed_variant(
     used_emoji_indexes: Sequence[int] = (),
 ) -> Tuple[Tuple[str | None, int | None], str]:
     detail = _render_fallback_mixed_variant_detail(
-        word, max_width=max_width, used_emoji_indexes=used_emoji_indexes,
+        word,
+        max_width=max_width,
+        used_emoji_indexes=used_emoji_indexes,
     )
     return (detail.font, detail.emoji_index), detail.text
 
@@ -168,7 +171,9 @@ def _select_random_mixed_variant_detail(
     if keep_ascii_art is not None:
         for pass_requires_new_column in (True, False):
             for column_index in _rank_emoji_columns(
-                seed_text, salt="mixed-emoji", attempt=attempt,
+                seed_text,
+                salt="mixed-emoji",
+                attempt=attempt,
             ):
                 if pass_requires_new_column and column_index in used_column_set:
                     continue
@@ -185,7 +190,9 @@ def _select_random_mixed_variant_detail(
     if keep_emoji_column is not None:
         for pass_requires_new_font in (True, False):
             for font in _rank_figlet_fonts(
-                seed_text, salt="mixed-ascii", attempt=attempt,
+                seed_text,
+                salt="mixed-ascii",
+                attempt=attempt,
             ):
                 if pass_requires_new_font and font in used_font_set:
                     continue
@@ -217,7 +224,9 @@ def _select_random_mixed_variant_detail(
                 return candidate
 
     return _render_fallback_mixed_variant_detail(
-        word, max_width=max_width, used_emoji_indexes=used_emoji_indexes,
+        word,
+        max_width=max_width,
+        used_emoji_indexes=used_emoji_indexes,
     )
 
 
@@ -261,8 +270,7 @@ def generate_random_mixed_variant_detail(
 ) -> BoardArtVariant:
     """Generate one width-bounded Mixed variant with rerollable parts.
 
-    ``word`` overrides the auto-chosen project word (onboarding "customize
-    text").
+    ``word`` overrides the auto-chosen project word (explicit header customization).
     """
 
     word = word if word is not None else choose_art_word(display_name, slug=slug)

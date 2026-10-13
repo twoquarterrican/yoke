@@ -23,6 +23,19 @@ from __future__ import annotations
 
 
 PYTHON_HELPERS_TABLES: dict[str, dict] = {
+    "runtime.api.cli.onboard_wizard_test_helpers": {
+        "columns": [
+            ("advance_past_path", "callable"),
+            ("skip_hosting", "callable"),
+        ],
+        "notes": (
+            "Setup tests enter Hosting directly after project configuration; "
+            "the wizard prepares default board art automatically. Wrong guess: "
+            "complete_board_art remains an importable navigation helper. It was "
+            "retired with the art-selection screens; remove its import and call "
+            "when adapting setup test consumers, including resize tests."
+        ),
+    },
     "yoke_core.domain.handlers.deployment_common": {
         "columns": [("run_id", "callable")],
         "notes": (

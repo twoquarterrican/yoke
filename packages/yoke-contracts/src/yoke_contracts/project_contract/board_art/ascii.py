@@ -8,6 +8,7 @@ import pyfiglet
 
 from yoke_contracts.project_contract.board_art.render_seed import (
     ASCII_FIGLET_FONTS,
+    ASCII_VARIANT_COUNT,
     DEFAULT_VARIANT_MAX_WIDTH,
     BoardArtVariant,
     _digest_for_parts,
@@ -87,8 +88,7 @@ def generate_random_ascii_variant_detail(
 ) -> BoardArtVariant:
     """Generate one width-bounded pyfiglet ASCII variant with metadata.
 
-    ``word`` overrides the auto-chosen project word (used by onboarding's
-    "customize text" — it bypasses the master-map length cap since pyfiglet art
+    ``word`` overrides the auto-chosen project word (used by explicit header customization — it bypasses the master-map length cap since pyfiglet art
     width-fits arbitrarily long text).
     """
 
@@ -101,7 +101,11 @@ def generate_random_ascii_variant_detail(
         used_fonts=used_fonts,
     )
     return BoardArtVariant(
-        kind="ASCII", text=ascii_art, word=word, font=font, ascii_art=ascii_art,
+        kind="ASCII",
+        text=ascii_art,
+        word=word,
+        font=font,
+        ascii_art=ascii_art,
     )
 
 
@@ -132,7 +136,7 @@ def _select_ascii_variants(
 ) -> Tuple[List[str], List[str]]:
     variants: List[str] = []
     selected_fonts: List[str] = []
-    for attempt in range(3):
+    for attempt in range(ASCII_VARIANT_COUNT):
         font, ascii_art = _select_random_ascii_variant(
             word,
             seed_text=seed_text,

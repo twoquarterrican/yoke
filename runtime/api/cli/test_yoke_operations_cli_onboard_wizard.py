@@ -29,7 +29,6 @@ from yoke_cli.config.onboard_wizard_widgets import (  # noqa: E402
 
 from runtime.api.cli.onboard_wizard_test_helpers import (  # noqa: E402
     advance_past_path,
-    complete_board_art,
     make_app,
     skip_hosting,
     stub_path_doctor,
@@ -158,7 +157,6 @@ def test_local_checkout_collects_project_fields() -> None:
             await pilot.press("enter")  # item prefix -> WIDGET
             await pilot.press("down")  # publish prompt: move to No
             await pilot.press("enter")  # publish: No — keep local
-            await complete_board_art(pilot)  # board art -> hosting
             await skip_hosting(pilot)  # hosting: skip -> Finish
             await pilot.press("enter")  # finish: apply
             await pilot.pause()
@@ -251,7 +249,6 @@ def test_fast_type_enter_type_across_inputs_collects_both_values() -> None:
             await pilot.press("enter")  # item prefix
             await pilot.press("down")  # publish prompt: move to No
             await pilot.press("enter")  # publish: No — keep local
-            await complete_board_art(pilot)  # board art -> hosting
             await skip_hosting(pilot)  # hosting: skip -> Finish
             await pilot.press("enter")  # finish: apply
             await pilot.pause()

@@ -64,7 +64,7 @@ Publish to GitHub: **No — keep it local** (or auto-keep existing remote:
 Prefix `BILL`.
 
 No "How should Yoke manage this project on GitHub?" bind if
-`project_github_repo` is empty — flow goes to board art then hosting.
+`project_github_repo` is empty — flow prepares default board art and proceeds to hosting.
 
 Hosting: Skip (on-prem VMs, not AWS). Apply.
 

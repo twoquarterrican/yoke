@@ -10,7 +10,7 @@ import pytest
 
 pytest.importorskip("textual")
 
-from yoke_cli.config import onboard_wizard_board_art as art  # noqa: E402
+from yoke_contracts.project_contract.board_art import generate_default_variants  # noqa: E402
 from yoke_cli.config import onboard_wizard_board_art_apply as art_apply  # noqa: E402
 from yoke_cli.config.onboard_wizard import (  # noqa: E402
     WizardApplyError,
@@ -138,13 +138,11 @@ def test_after_apply_marks_report_failed_when_board_rebuild_fails(
 
 
 def test_write_board_art_writes_sections(tmp_path: Path):
-    variants = [
-        art.generate_variant(kind="ASCII", word="EXT", seed_text="s", attempt=0),
-        art.generate_variant(kind="Mixed", word="EXT", seed_text="s", attempt=0),
-    ]
+    variants = generate_default_variants("EXT", seed_text="s")
     art_apply.write_board_art(tmp_path, "EXT", variants)
     content = (tmp_path / ".yoke" / "board-art").read_text(encoding="utf-8")
     assert "## Master Map" in content
+    assert "## Emoji" in content
     assert "## ASCII" in content
     assert "## Mixed" in content
 
@@ -326,16 +324,14 @@ def _apply_report_payload() -> str:
 
 class _BoardArtShell(BoardArtFlow):
     def __init__(self) -> None:
-        variant = art.generate_variant(
-            kind="ASCII", word="EXT", seed_text="seed", attempt=0
-        )
+        variants = generate_default_variants("EXT", seed_text="seed")
         self.result = WizardResult(
             config_path="cfg",
             env_name="prod",
             api_url="https://x",
             project_checkout="",
             board_art_word="EXT",
-            board_art_variants=[variant],
+            board_art_variants=variants,
         )
         self.report_path = None
         self.resume_command = None

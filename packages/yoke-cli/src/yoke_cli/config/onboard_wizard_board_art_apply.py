@@ -46,7 +46,7 @@ def board_art_exists(repo_root: str | Path | None) -> bool:
 
 
 def write_board_art(repo_root: Path, word: str, variants: list[Any]) -> None:
-    """Write the chosen master map + header variants to ``.yoke/board-art``."""
+    """Write the generated master map + header variants to ``.yoke/board-art``."""
     from yoke_contracts.project_contract.board_art.config import BLACK, WHITE
     from yoke_contracts.project_contract.board_art.config_paths import (
         board_art_path_for_config,
@@ -70,7 +70,8 @@ def write_board_art(repo_root: Path, word: str, variants: list[Any]) -> None:
 
 
 def commit_board_art(
-    repo_root: Path, onboarding_report: Any,
+    repo_root: Path,
+    onboarding_report: Any,
 ) -> dict[str, Any]:
     """Commit the art this run wrote and prove the checkout is clean.
 
@@ -88,7 +89,9 @@ def commit_board_art(
         board_art_path_for_config(None, repo_root=str(root)).relative_to(root)
     )
     commit = checkout_gate.commit_paths(
-        root, [art_rel], message=BOARD_ART_COMMIT_MESSAGE,
+        root,
+        [art_rel],
+        message=BOARD_ART_COMMIT_MESSAGE,
     )
     install = _install_report(onboarding_report)
     verified = [art_rel]
@@ -100,7 +103,8 @@ def commit_board_art(
     return {
         "commit": commit,
         "verified_paths": checkout_gate.assert_paths_committed(
-            root, verified,
+            root,
+            verified,
         ),
     }
 
@@ -151,14 +155,14 @@ def mark_board_art_failed(
         return {}
     try:
         return onboard_apply_late_steps.fail_report_path(
-            path, exc, action=BOARD_ART_STEP_ACTION,
+            path,
+            exc,
+            action=BOARD_ART_STEP_ACTION,
         )
     except Exception:  # noqa: BLE001 - failure screen can still show root cause
         return {
             "path": path,
-            "resume_command": (
-                resume_command or onboard_apply_report.RESUME_COMMAND
-            ),
+            "resume_command": (resume_command or onboard_apply_report.RESUME_COMMAND),
         }
 
 

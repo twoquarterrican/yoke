@@ -170,7 +170,7 @@ class WizardFlow(
     def _after_prefix(self: _Shell, value: str) -> None:
         self.result.project_public_item_prefix = value
         if not self.result.project_github_repo:
-            self._goto_board_art()
+            self._prepare_board_art_and_continue()
             return
         if self._route_future_project_github_binding():
             return

@@ -21,7 +21,6 @@ from yoke_cli.config import onboard_project  # noqa: E402
 from runtime.api.cli.onboard_wizard_test_helpers import (  # noqa: E402
     accept_project_details,
     advance_past_path,
-    complete_board_art,
     make_app,
     skip_hosting,
     stub_path_doctor,
@@ -97,7 +96,6 @@ def test_review_preflight_blocks_apply_until_clear(monkeypatch) -> None:
             await accept_project_details(pilot)
             await pilot.press("down")  # publish: No
             await pilot.press("enter")
-            await complete_board_art(pilot)  # board art -> hosting
             await skip_hosting(pilot)  # hosting: skip -> Review (blocked)
             await pilot.pause()
             body = _body_text(app)

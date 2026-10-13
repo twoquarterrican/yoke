@@ -1,6 +1,6 @@
 """Record a late apply step's outcome on an already-written apply report.
 
-The wizard writes the operator's board art after ``build_report`` returns and
+The wizard writes the default board art after ``build_report`` returns and
 after the durable report has been finished, so that step's real outcome — the
 commit that hands over a clean checkout, or the failure that stopped it — has
 to be written back onto the step the write plan already named. Without it the

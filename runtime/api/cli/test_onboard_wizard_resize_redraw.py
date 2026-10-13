@@ -29,7 +29,6 @@ from runtime.api.cli.onboard_terminal_model import (  # noqa: E402
 )
 from runtime.api.cli.onboard_wizard_test_helpers import (  # noqa: E402
     advance_past_path,
-    complete_board_art,
     make_app,
     skip_hosting,
     stub_path_doctor,
@@ -125,7 +124,6 @@ def test_resizing_mid_flow_shows_each_screen_once() -> None:
             await _assert_screen_once(pilot, terminal, seen)  # publish
             await pilot.press("down", "enter")  # publish: No — keep local
             await _resize(pilot, terminal, NARROW)
-            await complete_board_art(pilot)  # board art -> hosting
             await _assert_screen_once(pilot, terminal, seen)  # hosting list
             await _resize(pilot, terminal, WIDE)
             await skip_hosting(pilot)

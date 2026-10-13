@@ -7,18 +7,20 @@ import re
 import secrets
 import unicodedata
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List
 
-import pyfiglet
 
 from yoke_contracts.project_contract.board_art.config import BLACK, WHITE
+from yoke_contracts.project_contract.board_art.font_pool import (
+    ASCII_FIGLET_FONTS as ASCII_FIGLET_FONTS,
+)
 from yoke_contracts.project_contract.board_art._data import _MASTER_MAP_GLYPHS
 
 
 MAX_ART_WORD_LEN = 8
 FALLBACK_ART_WORD = "PROJECT"
-ASCII_VARIANT_COUNT = 3
-MIXED_VARIANT_COUNT = 3
+ASCII_VARIANT_COUNT = 1
+MIXED_VARIANT_COUNT = 1
 MIXED_VARIANT_GAP = 2
 # Emoji canvas budget for the image-to-art downsample pipeline (cols * rows =
 # area cap). Independent of the product wordmark: it sizes the grid an arbitrary
@@ -40,57 +42,6 @@ CURRENT_YOKE_MASTER_MAP_VISUAL_WIDTH = (
 # separate from the master-map width so generated variants may run wider than the
 # YOKE header; the generator still rejects anything above this bound.
 DEFAULT_VARIANT_MAX_WIDTH = 140
-# Fonts that render illegibly, too sparse, or too small for board art. The pool
-# is allow-by-default (~570 pyfiglet fonts); grow this denylist as bad fonts are
-# spotted. Names must match pyfiglet exactly — several carry trailing underscores
-# (hills___, e__fist_, atc_____, b_m__200). Unknown names are harmless no-ops.
-_DENIED_ASCII_FONTS = frozenset({
-    "1943____", "1row", "3x5", "5x7", "5x8", "6x10",
-    "6x9", "advenger", "alpha", "amc_3_liv1", "atc_____", "atc_gran",
-    "b1ff", "b_m__200", "banner3", "battle_s", "battlesh", "baz__bil", "benjamin",
-    "bigascii12", "bigascii9", "binary", "brite", "britebi", "britei", "bubble",
-    "c1______", "caus_in_", "char1___", "char2___", "char4___", "charact3",
-    "charset_", "chartr", "chartri", "circle", "clb6x10", "clb8x10", "clb8x8", "cli8x8",
-    "clr4x6", "clr5x10", "clr5x6", "clr5x8", "clr6x10", "clr6x6",
-    "clr6x8", "clr7x10", "clr7x8", "clr8x10", "clr8x8", "coil_cop",
-    "contrast", "cour", "courb", "courbi", "couri", "cygnet",
-    "danc4", "decimal", "deep_str", "devilish", "digital", "druid___",
-    "dwhistled", "e__fist_", "eftichess", "eftipiti", "eftirobot", "eftiwall", "eftiwater",
-    "fair_mea", "fairligh", "fantasy_", "finalass", "flyn_sh", "lexible_", "future_1",
-    "future_2",
-    "future_5", "future_7", "gauntlet", "ghost_bo", "goofy", "gradient",
-    "grand_pr", "heavy_me", "helv", "helvb", "helvbi", "helvi", "hex",
-    "hieroglyphs", "high_noo", "hills___", "home_pak", "hypa_bal", "icl-1900",
-    "inc_raw_", "italic", "jerusalem", "joust___", "js_cursive", "katakana",
-    "kik_star", "konto", "konto_slant", "lazy_jon", "lcd", "letterw3",
-    "lil_devil", "mad_nurs", "magic_ma", "merlin2", "mike", "mirror", "mnemonic",
-    "modern__", "morse", "morse2", "moscow", "mshebrew210", "notie_ca",
-    "ntgreek", "octal", "odel_lak", "outrun__", "p_s_h_m_", "p_skateb",
-    "pawn_ins", "phonix__", "platoon2",
-    "pyramid", "r2-d2___", "rainbow_", "rally_s2", "rally_sp", "rampage_",
-    "relief", "relief2", "ripper!_", "rockbox_", "rok_____", "rot13", "rotated",
-    "runic", "runyc", "sans", "sansb", "sansbi", "sansi", "sbook",
-    "sbookb", "sbookbi", "sbooki", "short", "skate_ro", "skateord", "skateroc", "slide",
-    "smascii12", "smascii9", "smbraille", "smtengwar", "space_op", "star_strips",
-    "stealth_", "stencil1", "stencil2", "subteran", "super_te", "tecrvs__",
-    "tengwar", "term", "test1", "threepoint", "ticks", "ticksslant", "times",
-    "t__of_ap", "timesofl", "top_duck", "trashman", "tsalagi", "tty", "ttyb", "twin_cob", "twopoint",
-    "ugalympi", "unarmed_", "usaflag", "utopia", "utopiab", "utopiabi",
-    "utopiai", "wideterm", "wow", "xbritebi", "xbritei", "xchartri",
-    "xcour", "xcourb", "xcourbi", "xcouri", "xhelv", "xhelvb",
-    "xhelvbi", "xhelvi", "xsans", "xsansb", "xsansbi", "xsansi",
-    "xsbook", "xsbookb", "xsbookbi", "xsbooki", "xtimes", "xtty",
-    "xttyb", "z-pilot_", "zig_zag_",
-})
-# pyfiglet ships padding-named decorative variants whose names carry a long run
-# of underscores (pod_____, atc_____, roman___, …). Exclude them by rule so the
-# denylist need not enumerate each one (and future ones auto-exclude).
-_DECORATIVE_UNDERSCORE_RE = re.compile(r"_{3,}")
-ASCII_FIGLET_FONTS: Tuple[str, ...] = tuple(
-    font for font in sorted(pyfiglet.FigletFont.getFonts())
-    if font not in _DENIED_ASCII_FONTS
-    and not _DECORATIVE_UNDERSCORE_RE.search(font)
-)
 
 
 @dataclass(frozen=True)
@@ -104,6 +55,7 @@ class BoardArtVariant:
     emoji_index: int | None = None
     ascii_art: str | None = None
     emoji_column: str | None = None
+
 
 _ART_HEADER = """\
 # Board header art — read by the Yoke board renderer on every rebuild.
@@ -239,9 +191,7 @@ def normalize_header_art_word(
     spaces, uppercased, capped to ``max_len``. Header art renders through
     pyfiglet so spaces and longer words are fine; the empty string maps to
     ``""`` so callers can fall back to the default word."""
-    upper = "".join(
-        ch if (ch.isalnum() or ch == " ") else " " for ch in value.upper()
-    )
+    upper = "".join(ch if (ch.isalnum() or ch == " ") else " " for ch in value.upper())
     return " ".join(upper.split())[:max_len]
 
 
@@ -311,4 +261,4 @@ def _trim_lines(lines: list[str] | tuple[str, ...]) -> List[str]:
         start += 1
     while end >= start and not lines[end].strip():
         end -= 1
-    return list(lines[start:end + 1])
+    return list(lines[start : end + 1])

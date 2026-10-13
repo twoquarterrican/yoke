@@ -50,7 +50,10 @@ def test_build_plan_clone_make_it_mine_lists_post_checkout_repo_steps() -> None:
         plan,
         onboard_project.PROJECT_MODE_CLONE_REMOTE,
     )
-    assert "Write your board art, rebuild BOARD.md, and commit the art" in repo
+    assert (
+        "Add a progress map and three art headers, rebuild BOARD.md, and commit the art"
+        in repo
+    )
 
 
 def test_build_plan_clone_just_clone_has_no_remote_rehome_step() -> None:
@@ -69,7 +72,10 @@ def test_build_plan_clone_just_clone_has_no_remote_rehome_step() -> None:
         plan,
         onboard_project.PROJECT_MODE_CLONE_REMOTE,
     )
-    assert "Write your board art, rebuild BOARD.md, and commit the art" in repo
+    assert (
+        "Add a progress map and three art headers, rebuild BOARD.md, and commit the art"
+        in repo
+    )
 
 
 def test_build_plan_reused_existing_project_lists_missing_art_write(
@@ -152,7 +158,7 @@ def test_build_plan_reused_existing_project_lists_missing_art_write(
         TOOL_PERMISSIONS_LINE,
         HARNESS_HOOKS_LINE,
         GIT_HOOKS_LINE,
-        "Write your board art, rebuild BOARD.md, and commit the art",
+        "Add a progress map and three art headers, rebuild BOARD.md, and commit the art",
         "Commit locally (no remote)",
     ]
     assert (

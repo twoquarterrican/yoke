@@ -231,18 +231,6 @@ async def advance_past_path(pilot) -> None:
     await pilot.press("enter")  # path: continue (all clear)
 
 
-async def complete_board_art(pilot) -> None:
-    """Walk the board-art step from its map to the Hosting step.
-
-    Real-project onboarding routes project -> board art -> hosting -> Finish,
-    and saving the first header can continue directly. Scenarios that don't
-    care about art call this once, then :func:`skip_hosting` to reach review.
-    """
-    await pilot.press("enter")  # map: "Looks good — continue"
-    await pilot.press("enter")  # style: ASCII (first row)
-    await pilot.press("enter")  # preview: "Save and continue" -> hosting
-
-
 async def skip_hosting(pilot) -> None:
     """Choose provider-level "Decide later", landing on Review."""
     await pilot.press("down")  # hosting: past "I host this myself"

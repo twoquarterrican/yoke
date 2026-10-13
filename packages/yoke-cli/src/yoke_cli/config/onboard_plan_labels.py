@@ -155,7 +155,7 @@ def friendly_line(action: str, target: str, project_name: str = "") -> str:
     if action == "project-install-git-hooks":
         return "Install Git commit guards (pre-commit, pre-merge-commit, post-commit)"
     if action == "project-write-board-art":
-        return "Write your board art, rebuild BOARD.md, and commit the art"
+        return "Add a progress map and three art headers, rebuild BOARD.md, and commit the art"
     if action == onboard_publication.PLAN_ACTION:
         return target
     if action == "activate-yoke-source":

@@ -293,7 +293,7 @@ class ProjectIdentityFlow:
         ):
             self._goto_hosting()
             return
-        self._goto_board_art()
+        self._prepare_board_art_and_continue()
 
     def _yoke_token_for_project_lookup(self: _Shell) -> str | None:
         try:
