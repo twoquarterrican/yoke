@@ -1,15 +1,24 @@
 {
- "id": "02",
- "title": "Import replaces state and changes credential binding",
- "status": "draft-copy",
- "audience": "both",
- "when": "Before restoring an archive into a local destination",
- "need": "Import replaces the active local universe and requires explicit consent. Imported remote credentials are revoked; local owner authority is established. A binding warning supplies the exact recovery before session registration.",
- "disclosure": "current cue",
- "surface": "universe import help/refusal/result; FIRST-USER proposes the earlier setup entry.",
- "review": "Pending exact recipe proof.",
- "recipes": ["yoke universe import --help"],
- "plan_notes": ["FIRST-USER item 9"],
- "sources": ["packages/yoke-cli/src/yoke_cli/commands/local_universe_import_command.py", "docs/public/install.md"],
- "position": 1
+  "id": "02",
+  "title": "Import replaces state and changes credential binding",
+  "status": "observed",
+  "audience": "both",
+  "when": "Before restoring an archive into a local destination",
+  "need": "Start from a portable backup on This machine or Host a server here. Validate before Apply; the archive carries the account and skips the name prompt. Apply restores before project selection. Project data is restored; repository folders, external services and machine-local secrets require their own preparation.",
+  "disclosure": "current cue",
+  "surface": "Setup Account backup validation and Apply; Project restored-project picker; mode-specific import help.",
+  "review": "Focused pilot and command-order contract tests pass; live deployment proof pending.",
+  "recipes": [
+    "yoke universe import --help"
+  ],
+  "plan_notes": [
+    "FIRST-USER item 9"
+  ],
+  "sources": [
+    "packages/yoke-cli/src/yoke_cli/commands/local_universe_import_command.py",
+    "docs/public/install.md",
+    "packages/yoke-cli/src/yoke_cli/config/onboard_wizard_backup.py",
+    "packages/yoke-cli/src/yoke_cli/config/onboard_backup.py"
+  ],
+  "position": 1
 }

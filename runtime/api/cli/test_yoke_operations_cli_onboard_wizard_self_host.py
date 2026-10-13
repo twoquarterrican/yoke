@@ -75,6 +75,7 @@ async def _start(pilot) -> None:
     """Start, then answer the first-admin name prompt it opens."""
     await _open_preview(pilot)
     await pilot.press("enter")
+    await pilot.press("enter")  # Start fresh
     await type_text(pilot, "Ada Lovelace")
     await pilot.press("enter")
 

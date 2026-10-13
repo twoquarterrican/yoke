@@ -62,6 +62,13 @@ class WizardFlow(
     def _goto_project_mode(self: _Shell) -> None:
         from yoke_cli.config.onboard_wizard_app import _View
 
+        if getattr(self, "_restored_projects", None) and not getattr(
+            self, "_restored_projects_offered", False
+        ):
+            from yoke_cli.config.onboard_wizard_restored_projects import offer
+
+            offer(self)
+            return
         if self._project_mode_preset and not self._project_preset_attempted:
             self._project_preset_attempted = True
             self._preserve_project_fields_once = True
