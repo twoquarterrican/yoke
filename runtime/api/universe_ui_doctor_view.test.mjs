@@ -11,7 +11,7 @@ import {
   settle,
 } from "./universe_ui_dom_test_support.mjs";
 
-// One universe whose doctor journal answers with the given result, so each
+// One universe whose Doctor receipt answers with the given result, so each
 // state the view must render honestly is one doubled read away.
 function doctorClient(lastRunResult) {
   const requests = [];
@@ -119,17 +119,17 @@ test("a universe whose doctor never ran shows the command to run, as text", asyn
     never_run: true,
   });
 
-  // The "all" default reads unfiltered.
+  // The all-project view reads each accessible project explicitly.
   assert.deepEqual(
     client.requests.find((request) => request.function === "doctor.last_run.get"),
-    { function: "doctor.last_run.get", payload: {} },
+    { function: "doctor.last_run.get", payload: { project: "1" } },
   );
   const text = allNodes(root).map((node) => node.textContent || "").join(" ");
   assert.ok(text.includes("doctor has not run yet"));
   // Copyable command text: a <code> element, never a button.
   const code = allNodes(root).find((node) => node.tagName === "CODE");
   assert.ok(code);
-  assert.equal(code.textContent, "yoke doctor run --quick");
+  assert.equal(code.textContent, "yoke doctor run --quick --project 1");
   assert.ok(!allNodes(root).some(
     (node) => node.tagName === "BUTTON" &&
       (node.textContent || "").includes("doctor run"),
@@ -137,7 +137,7 @@ test("a universe whose doctor never ran shows the command to run, as text", asyn
   mounted.unmount();
 });
 
-test("a journal-truncated run keeps its honesty: dashes and the rerun hint", async (t) => {
+test("a truncated run keeps its honesty: dashes and the rerun hint", async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
   globalThis.fetch = () => response(200, {});
@@ -166,9 +166,9 @@ test("a journal-truncated run keeps its honesty: dashes and the rerun hint", asy
   );
   const text = allNodes(root).map((node) => node.textContent || "").join(" ");
   assert.ok(text.includes(
-    "detail truncated in the journal; run doctor again for a fresh report",
+    "detail truncated in the recorded report; run doctor again for a fresh report",
   ));
-  // No checks table renders for a report the journal no longer holds.
+  // No checks table renders for a truncated report.
   assert.ok(!allNodes(root).some((node) => node.tagName === "TD"));
   mounted.unmount();
 });

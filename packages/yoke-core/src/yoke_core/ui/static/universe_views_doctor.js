@@ -7,7 +7,7 @@ import {
 } from "./universe_view_support.js";
 
 // The stat-tile row above a report: one number that matters per tile. A
-// count the journal could not preserve renders as an em dash, never a
+// count the report did not record renders as an em dash, never a
 // made-up zero.
 function statRow(documentNode, stats) {
   const row = el(documentNode, "div", "stat-row");
@@ -25,8 +25,8 @@ function statRow(documentNode, stats) {
 
 // One doctor report body: fact line, stat tiles, then the checks table.
 // The three degraded states render honestly — never ran (with the command
-// to run, as copyable text), truncated in the journal, or a plain report.
-function renderDoctorReport(body, result) {
+// to run, as copyable text), truncated in the recorded report, or a plain report.
+function renderDoctorReport(body, result, project) {
   const documentNode = body.ownerDocument;
   if (result.never_run) {
     body.appendChild(el(
@@ -34,7 +34,7 @@ function renderDoctorReport(body, result) {
     ));
     const hint = el(documentNode, "p", "fact-line", "run it with ");
     hint.appendChild(el(
-      documentNode, "code", null, "yoke doctor run --quick",
+      documentNode, "code", null, `yoke doctor run --quick --project ${project}`,
     ));
     body.appendChild(hint);
     return;
@@ -51,7 +51,7 @@ function renderDoctorReport(body, result) {
   if (result.truncated) {
     body.appendChild(el(
       documentNode, "p", "empty",
-      "detail truncated in the journal; run doctor again for a fresh report",
+      "detail truncated in the recorded report; run doctor again for a fresh report",
     ));
     return;
   }
@@ -62,15 +62,12 @@ function renderDoctorReport(body, result) {
   ], "no checks recorded");
 }
 
-// The last completed doctor run — doctor findings persist nowhere but the
-// events journal, so this reads the journal, not a table of runs. "all"
-// serves the newest run regardless of project in one call; a project set
-// asks per member and labels each report with the project it answers for.
+// Read one durable Doctor receipt per accessible project in the selected scope.
 export function renderDoctorView(context, main, scope) {
   const panel = section(context.document, "Doctor");
   main.replaceChildren(panel);
   const projects = context.projects();
-  const buckets = scopeBuckets(scope, projects, false);
+  const buckets = scopeBuckets(scope, projects, true);
   const nameById = new Map(projects.map(
     (row) => [String(row.id), row.name || row.slug || String(row.id)],
   ));
@@ -78,9 +75,12 @@ export function renderDoctorView(context, main, scope) {
     context, panel,
     buckets.map((bucket) => ({
       functionId: "doctor.last_run.get",
-      payload: bucket === null ? {} : { project: bucket },
+      payload: { project: bucket },
     })),
     (body, callResults) => {
+      if (!buckets.length) {
+        body.appendChild(el(body.ownerDocument, "p", "empty", "No accessible projects to inspect."));
+      }
       callResults.forEach((callResult, index) => {
         if (buckets.length > 1) {
           body.appendChild(el(
@@ -88,7 +88,7 @@ export function renderDoctorView(context, main, scope) {
             nameById.get(buckets[index]) || String(buckets[index]),
           ));
         }
-        renderDoctorReport(body, callResult.envelope.result || {});
+        renderDoctorReport(body, callResult.envelope.result || {}, buckets[index]);
       });
     },
   );

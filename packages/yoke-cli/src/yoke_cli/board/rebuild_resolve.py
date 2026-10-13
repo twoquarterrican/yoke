@@ -67,8 +67,6 @@ def _resolve_configured_project(start: Path, *, explicit: bool) -> Path:
             "machine config; run from a registered checkout or pass one with "
             "--repo-root."
         )
-    if len(projects) == 1:
-        return _normalized_path(projects[0].checkout)
     if not projects:
         raise BoardProjectResolutionError(
             "no projects are registered in machine config; run `yoke setup` "
@@ -78,7 +76,7 @@ def _resolve_configured_project(start: Path, *, explicit: bool) -> Path:
         str(_normalized_path(project.checkout)) for project in projects
     )
     raise BoardProjectResolutionError(
-        "could not choose a board project from this directory; run from inside "
+        "project_required: could not choose a board project from this directory; run from inside "
         f"one registered checkout or pass --repo-root. Configured projects: {configured}"
     )
 

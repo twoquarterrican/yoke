@@ -83,9 +83,12 @@ def doctor_last_run_get(args: List[str]) -> int:
     parsed = parse_or_usage_error(parser, args, DOCTOR_LAST_RUN_GET_USAGE)
     if parsed is None:
         return 2
-    payload: Dict[str, Any] = {}
-    if parsed.project:
-        payload["project"] = parsed.project
+    try:
+        project = required_project_context(parsed.project)
+    except MissingProjectError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    payload: Dict[str, Any] = {"project": project}
     return dispatch_and_emit(
         function_id="doctor.last_run.get",
         target=TargetRef(kind="global"),

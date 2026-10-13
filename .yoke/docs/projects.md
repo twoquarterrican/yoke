@@ -2,6 +2,10 @@
 
 ## Create, import, bind
 
+Run `yoke setup` to configure your machine connection first. These commands
+use the default machine config; `--config PATH` explicitly selects another.
+A missing connection refuses and names the setup recovery.
+
 From onboard or standalone:
 
 ```bash
@@ -12,7 +16,7 @@ yoke project create ~/work/my-app \
   --github-adoption disabled --yes
 
 # Existing remote
-yoke project import git@github.com:owner/my-app.git ~/work/my-app \
+yoke project import https://github.com/owner/my-app.git ~/work/my-app \
   --slug my-app --name "My App" --github-repo owner/my-app \
   --default-branch main --public-item-prefix APP \
   --github-adoption disabled --yes
@@ -24,6 +28,17 @@ yoke onboard project ~/work/my-app \
   --github-adoption disabled --yes
 ```
 
+A project can stay local with no GitHub connection or remote:
+
+```bash
+yoke project create ~/work/local-app \
+  --slug local-app --name "Local App" --default-branch main \
+  --public-item-prefix APP --github-adoption disabled --yes
+```
+
+Create initializes Git; import clones the named remote; onboard adopts an
+existing local checkout. Disabled GitHub adoption needs no GitHub sign-in.
+
 ## Install the operating layer
 
 ```bash
@@ -31,7 +46,9 @@ yoke project install ~/path/to/checkout
 ```
 
 Writes skills, agents, hooks, contract seeds, and `.yoke/docs` from the
-engine. Refresh after upgrades the same way. Both operations require a
+engine. The folder must already be a Git checkout; initialize it with
+`git init` before installing, or use project create for a new folder.
+Refresh after upgrades the same way. Both operations require a
 clean checkout on the project default branch, fast-forward it onto its
 remote so the layer is generated against current upstream, commit the
 bundle output, and push that commit. A branch that refuses a direct push

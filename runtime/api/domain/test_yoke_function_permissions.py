@@ -74,7 +74,7 @@ def test_dispatch_permission_allows_role_project_and_denies_missing_project_role
         conn.close()
 
 
-def test_project_scoped_github_write_denies_omitted_project_context():
+def test_project_scoped_github_write_teaches_omitted_project_context():
     conn = _conn()
     try:
         actor_id = seed_human_actor(conn)
@@ -98,7 +98,7 @@ def test_project_scoped_github_write_denies_omitted_project_context():
 
         assert denied.error is not None
         assert denied.error.error is not None
-        assert denied.error.error.code == "permission_denied"
+        assert denied.error.error.code == "project_required"
         assert denied.project_id is None
     finally:
         conn.close()

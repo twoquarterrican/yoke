@@ -38,6 +38,7 @@ from yoke_core.domain.function_target_resolution import (
 )
 from yoke_core.domain.function_unresolved_project import (
     ProjectNotRegisteredError,
+    project_selection_missing,
     permission_error_response as _error_response,
 )
 from yoke_core.domain.project_identity import AmbiguousProjectRefError
@@ -196,6 +197,7 @@ def check_dispatch_permission(
         except (
             AmbiguousProjectRefError,
             ProjectNotRegisteredError,
+            project_selection_missing,
             QaSubjectProjectError,
         ) as exc:
             code = (
@@ -209,7 +211,7 @@ def check_dispatch_permission(
                 None,
                 error=_error_response(request, entry, code, str(exc)),
             )
-        if project_context is None and entry.function_id == "items.create":
+        if project_context is None and project_selection_missing(request):
             from yoke_core.domain.project_selection import missing_project_on_connection
 
             return DispatchPermission(

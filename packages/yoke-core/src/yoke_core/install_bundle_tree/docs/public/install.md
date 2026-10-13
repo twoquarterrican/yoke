@@ -244,7 +244,8 @@ On a machine holding a local universe or a self-host server, the first output
 warns that uninstall deletes its only copy of the universe data. Choose **back
 up first** to run `yoke universe export` for each owned universe, or **uninstall
 without backing up**. There is no automatic backup. Exports land in your
-current directory; run the command outside the machine home. A failed export
+machine Yoke home exports folder by default; pass `--out PATH` outside that
+home when preserving an archive before uninstall. A failed export
 stops removal and names the recovery. Hosted-only clients see no data warning.
 
 Next, the command lists registered checkouts with a Yoke install manifest.

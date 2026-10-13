@@ -83,13 +83,10 @@ def download_universe(
                 "artifact": str(target),
                 "bytes": written,
                 "format": str(
-                    response.headers.get("x-yoke-universe-format")
-                    or "universe-tar"
+                    response.headers.get("x-yoke-universe-format") or "universe-tar"
                 ),
                 "org": str(response.headers.get("x-yoke-universe-org") or ""),
-                "sha256": str(
-                    response.headers.get("x-yoke-universe-sha256") or ""
-                ),
+                "sha256": str(response.headers.get("x-yoke-universe-sha256") or ""),
                 "source": "self-host-https",
             }
     except urllib.error.HTTPError as exc:
@@ -130,11 +127,19 @@ def _response_filename(value: Any) -> str:
 
 def _destination(out: str | None, filename: str) -> Path:
     if out is None:
-        target = Path.cwd() / filename
+        from yoke_cli.config.machine_config import yoke_home
+
+        from yoke_contracts.machine_config.schema import DEFAULT_EXPORT_DIR_NAME
+
+        target = yoke_home() / DEFAULT_EXPORT_DIR_NAME / filename
     else:
         raw = os.fspath(out)
         selected = Path(raw).expanduser()
-        target = selected / filename if raw.endswith(("/", os.sep)) or selected.is_dir() else selected
+        target = (
+            selected / filename
+            if raw.endswith(("/", os.sep)) or selected.is_dir()
+            else selected
+        )
     target = target.absolute()
     if target.is_symlink():
         raise UniverseExportDownloadError(

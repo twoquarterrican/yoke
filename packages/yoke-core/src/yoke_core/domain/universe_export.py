@@ -27,10 +27,8 @@ binaries first, then ``PATH`` — the same rule the cluster lifecycle uses for
 from __future__ import annotations
 
 import os
-import re
 import tempfile
-from datetime import datetime
-from yoke_contracts.timestamps import utc_now, parse_instant
+from yoke_contracts.timestamps import utc_now
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Union
 
@@ -38,6 +36,10 @@ from yoke_core.domain import postgres_binaries
 from yoke_core.domain import runtime_settings
 from yoke_core.domain import universe_archive
 from yoke_core.domain import universe_portability
+from yoke_core.domain.universe_export_destination import (
+    default_artifact_name,
+    resolve_export_destination,
+)
 
 #: One tar carrying ``universe.dump`` + ``freeze-receipt.json``.
 ARTIFACT_FORMAT = "universe-tar"
@@ -48,22 +50,9 @@ ARTIFACT_SUFFIX = universe_archive.ARTIFACT_SUFFIX
 EXPORT_TIMEOUT_SETTING = "universe_export_timeout_seconds"
 DEFAULT_EXPORT_TIMEOUT_S = 600
 
-_FILENAME_SAFE_RE = re.compile(r"[^A-Za-z0-9._-]+")
-
 
 class UniverseExportError(RuntimeError):
     """The universe could not be exported (authority, connection, or dump)."""
-
-
-def default_artifact_name(
-    org_slug: str,
-    now: Optional[datetime] = None,
-) -> str:
-    """``<org-slug>-universe-<utc-timestamp>.tar``."""
-    now = parse_instant(utc_now() if now is None else now)
-    stamp = now.strftime("%Y%m%dT%H%M%SZ")
-    cleaned = _FILENAME_SAFE_RE.sub("-", org_slug).strip("-.")
-    return f"{cleaned or 'universe'}-universe-{stamp}{ARTIFACT_SUFFIX}"
 
 
 def resolve_export_dsn() -> str:
@@ -129,7 +118,7 @@ def export_universe(
 
     ``dsn=None`` resolves (and sanction-checks) the active connection; an
     explicit ``dsn`` is the injection seam for tests and operator tooling.
-    ``out`` routing: ``None`` writes to the current working directory; a
+    ``out`` routing: ``None`` writes under the machine Yoke home exports folder; a
     trailing path separator always means a directory (created when
     missing — pass the raw string, ``Path`` drops the separator); an
     existing directory stays a directory; any other path is the target
@@ -308,27 +297,6 @@ def _staged_dump_path(destination: Path) -> Path:
 def _unlink_quietly(staged: Optional[Path]) -> None:
     if staged is not None:
         staged.unlink(missing_ok=True)
-
-
-def resolve_export_destination(
-    out: Optional[Union[str, Path]],
-    org_slug: str,
-) -> Path:
-    """Route ``out`` to the artifact path (see :func:`export_universe`).
-
-    The trailing-separator check reads the raw text because ``Path``
-    normalizes the separator away; without it a not-yet-created
-    ``--out ~/backups/`` would silently become a file named ``backups``.
-    """
-    if out is None:
-        return Path.cwd() / default_artifact_name(org_slug)
-    raw = os.fspath(out)
-    target = Path(raw).expanduser()
-    if raw.endswith(("/", os.sep)) or target.is_dir():
-        target.mkdir(parents=True, exist_ok=True)
-        return target / default_artifact_name(org_slug)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    return target
 
 
 __all__ = [
