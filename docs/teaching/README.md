@@ -16,8 +16,10 @@ Ordinary repository access is the canonical route. Every machine and worker
 reads this directory from a Yoke checkout, or from the public repository at an
 exact commit: `https://github.com/upyoke/yoke/tree/<commit>/docs/teaching`.
 No shared-drive copy is a source. Private research stays outside this public
-repository: no raw strategy text, operator state, user or session ids,
-recordings or machine paths. The check refuses those patterns.
+repository: no private operator state, user or session ids, recordings or
+machine paths. Public strategy text is allowed (operator decision,
+2026-10-13); screen it for private material before committing. The check
+refuses private paths and identifiers.
 
 ## Layout
 
@@ -99,7 +101,8 @@ yoke dev run -- python3 docs/teaching/tools/build.py --check \
 
 Review the changed entries, update their rows, set each plan file's
 `reconciled_at` to the document's `updated_at`, and rebuild. Delete the saved
-files afterwards; they are strategy text and must not be committed.
+files afterwards when they are temporary reconciliation inputs. Public
+strategy text may be committed after checking it for private material.
 
 ## Live pages
 

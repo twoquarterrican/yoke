@@ -17,28 +17,41 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
 <main>
 <h1>Model facts, execution levels and capacity</h1>
 <h2 id="models-levels">Model facts, execution levels and capacity
-<i class="s draft-copy">draft-copy</i></h2>
+<i class="s observed">observed</i></h2>
   <div><b>Situations:</b> The user wants cheaper or stronger workers. · A new
   model appears or a level cannot launch. · A model catalog price changes.</div>
   <div><b>Coverage:</b> partial</div>
-  <div><b>Current:</b> Research trace; requirements and source paths need live
-  proof.</div>
-  <div><b>Desired:</b> Reconciled against current plan records.</div>
-  <div><b>Questions:</b> Live capacity and native-provider observations were not
-  exercised; freshness and external-account behavior need runtime
-  evidence.</div>
+  <div><b>Current:</b> Production Settings and the 18-row universe definition
+  verified on 2026-10-13. Admission, native expansion and predecessor rules
+  traced to current source; this record does not certify every external account
+  or harness.</div>
+  <div><b>Desired:</b> Keep catalog facts separate from staffing thresholds; use
+  live native listings and launch preview for placement.</div>
+  <div><b>Questions:</b> Future model or native-provider changes need fresh
+  catalog/listing evidence; the dated Settings capture does not prove universal
+  launch readiness.</div>
+  <div><b>Concepts:</b>
+  <a href="../concepts/levels.html#levels/scheme/model-min-effort">levels/scheme/model-min-effort</a>,
+  <a href="../concepts/levels.html#levels/options">levels/options</a>,
+  <a href="../concepts/levels.html#levels/capacity/quota-pools/cursor-quota-order">levels/capacity/quota-pools/cursor-quota-order</a>,
+  <a href="../concepts/workbench-destinations.html#workbench/destinations/levels">workbench/destinations/levels</a></div>
 <h3 id="models-levels/01">Separate facts from staffing policy
-<i class="s draft-copy">draft-copy</i></h3>
+<i class="s observed">observed</i></h3>
   <div><b>Audience:</b> both</div>
   <div><b>When:</b> Looking up a model or proposing a level change</div>
-  <div><b>Need:</b> Catalog research holds sourced model/pricing facts and
-  effective dates; execution levels select launches. Unknown research does not
-  mean unlaunchable. Changing the catalog does not silently change level
-  preferences.</div>
+  <div><b>Need:</b> Catalog research holds sourced model facts, efforts,
+  successors and effective dates; levels hold ordered model/min_effort
+  thresholds. Catalog updates do not silently change approved preferences.
+  Unknown models or unpublished effort establish no level: item/task claims and
+  work launches refuse session_below_intern; refresh catalog/native facts or
+  select a supported model and effort before retrying. Known older models
+  without explicit rows demote one class at the same effort; bottom-class
+  predecessors and single-class Grok refuse.</div>
   <div><b>Disclosure:</b> current cue</div>
   <div><b>Surface:</b> Yoke Help -&gt; Models skill; docs sidebar -&gt;
   CLI/config -&gt; model reference and execution levels.</div>
-  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Review:</b> Admission and predecessor behavior observed in the shipped
+  routing guide and source; live 18-row definition reread 2026-10-13.</div>
   <div><b>Recipes:</b> <code>yoke models lookup MODEL_ID</code>, <code>yoke
   models get</code>, <code>yoke models revisions</code>, <code>yoke models
   level-proposal</code></div>
@@ -47,37 +60,52 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
   <code>docs/public/cli-and-config.md</code>,
   <code>docs/public/reference/session-level-routing.md</code></div>
 <h3 id="models-levels/02">Read effective levels and real capacity
-<i class="s draft-copy">draft-copy</i></h3>
+<i class="s verified-live">verified-live</i></h3>
   <div><b>Audience:</b> both</div>
   <div><b>When:</b> Before choosing a worker level or explaining why staffing is
   blocked</div>
-  <div><b>Need:</b> Project override wins over universe/default levels. Read
-  source and live option/machine/quota blockers; use launch preview instead of
-  predicting capacity. An unreadable meter is unknown, not exhausted.</div>
+  <div><b>Need:</b> Project override wins over universe/default levels. Settings
+  Levels shows #, MODEL, MIN EFFORT, NOW and harness chips. Read live
+  native/machine/quota blockers and preview placement. Cursor Models and Other
+  Models have one editable universe-wide consumption order; the earlier pool is
+  preferred before headroom and does not change membership. Unknown meters are
+  not exhausted; no level borrows another level.</div>
   <div><b>Disclosure:</b> current cue</div>
-  <div><b>Surface:</b> Settings Levels documented view -&gt;
-  level-summary/capacity; Steer model-selection -&gt; preview.</div>
-  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Surface:</b> Settings → Levels → four-column model/effort table and
+  two-row Cursor quota order; CLI level-summary/capacity and launch
+  preview.</div>
+  <div><b>Review:</b> Production launch.622 QA run 45473 / artifact 32323 proves
+  the visible rows, columns, chips and quota panel; Levels and quota order
+  reread 2026-10-13. Placement semantics observed in source.</div>
   <div><b>Recipes:</b> <code>yoke projects level-summary get --project P</code>,
   <code>yoke universe levels get</code>, <code>yoke universe level-capacity
   get</code>, <code>yoke session-control launch preview --project P --level
-  SENIOR</code></div>
+  SENIOR</code>, <code>yoke universe cursor-quota-order get --json</code>,
+  <code>yoke universe cursor-quota-order set --pool &#x27;Cursor Models&#x27;
+  --pool &#x27;Other Models&#x27;</code></div>
   <div><b>Plan notes:</b> outside both</div>
   <div><b>Sources:</b>
   <code>docs/public/reference/session-level-routing.md</code>,
   <code>.agents/skills/yoke/steer/model-selection.md</code></div>
 <h3 id="models-levels/03">Inspect native availability and support limits
-<i class="s draft-copy">draft-copy</i></h3>
+<i class="s observed">observed</i></h3>
   <div><b>Audience:</b> agent</div>
   <div><b>When:</b> A requested model/effort/context is missing or refused</div>
-  <div><b>Need:</b> Observed surface availability and the receiving machine
-  matter. Unknown/stale/unsupported probes are different states. Preserve exact
-  refusal; a provider rejection does not authorize an alternate hidden launch
-  path.</div>
+  <div><b>Need:</b> Per-machine native listings expand base-model/min_effort
+  rows to selectors. Exact surface/model/effort/context requests bypass level
+  placement and cannot combine with --level. Surface and context are not stored
+  row fields. Unknown/stale/unsupported listings are distinct; probe unknown
+  listings, and obtain a declared adapter or choose an observed surface for
+  unsupported listings. Preserve each refusal and recovery; unresolved
+  model/effort cannot admit work, and no hidden fallback may borrow a different
+  level.</div>
   <div><b>Disclosure:</b> current cue</div>
   <div><b>Surface:</b> CLI/config observed-model section -&gt; list-models and
   probe help; Steer exact-model recipe.</div>
-  <div><b>Review:</b> Pending exact recipe proof.</div>
+  <div><b>Review:</b> Native expansion and exact-override behavior observed in
+  current routing docs/source. This worker launch receipt confirms the named
+  unsupported-listing and unavailable-model/effort refusals; no all-harness
+  launch success claimed.</div>
   <div><b>Recipes:</b> <code>yoke session-control launch preview
   --list-models</code>, <code>yoke relay probe-models --help</code></div>
   <div><b>Plan notes:</b> outside both</div>

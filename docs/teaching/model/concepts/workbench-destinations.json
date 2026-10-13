@@ -51,8 +51,10 @@
     {
      "id": "levels",
      "title": "Levels",
-     "status": "draft-copy",
-     "related": "levels"
+     "status": "verified-live",
+     "related": "levels",
+     "text": "Settings → Levels shows four columns: #, MODEL (base ID and display name), MIN EFFORT and NOW, plus Launchable on harness chips. Levels rows are configured through the CLI. A separate Cursor quota order panel has exactly two editable monthly-pool rows; no per-project next-launch summary is shown.",
+     "evidence": "Production launch.622: QA run 45473 / artifact 32323, captured 2026-10-13; 4 levels, 18 rows, 16 headers, 2 quota rows and move controls, zero level-next-launch summaries."
     },
     {
      "id": "workflows",
