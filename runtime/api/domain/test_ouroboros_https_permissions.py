@@ -58,7 +58,13 @@ def _project_owner(conn, project_slug: str) -> int:
 def _seed_entry(conn, body: str, project: str | None) -> int:
     entry_id = int(
         cmd_insert_entry(
-            conn, "2026-07-01T00:00:00Z", "tester", None, "friction", body, project,
+            conn,
+            "2026-07-01T00:00:00Z",
+            "tester",
+            None,
+            "friction",
+            body,
+            project,
         )
     )
     conn.commit()
@@ -91,7 +97,9 @@ def test_review_by_id_authorizes_from_the_entry_row(test_db) -> None:
     entry_id = _seed_entry(test_db, "review by row authority", "yoke")
 
     permission = check_dispatch_permission(
-        test_db, _entry(REVIEW), _request(REVIEW, actor_id, {"entry_id": entry_id}),
+        test_db,
+        _entry(REVIEW),
+        _request(REVIEW, actor_id, {"entry_id": entry_id}),
     )
 
     assert permission.error is None
@@ -108,10 +116,13 @@ def test_entry_close_out_refuses_a_caller_project_that_is_not_the_rows(
         payload = {"entry_id": entry_id, "project": "externalwebapp"}
 
         permission = check_dispatch_permission(
-            test_db, _entry(function_id), _request(function_id, actor_id, payload),
+            test_db,
+            _entry(function_id),
+            _request(function_id, actor_id, payload),
         )
 
         assert permission.error is not None
+        assert permission.error.error.code == "permission_denied"
         assert "could not resolve a target project" in _denied_message(permission)
 
 
@@ -120,11 +131,13 @@ def test_cutoff_review_without_a_project_resolves_no_target(test_db) -> None:
     payload = {"before": "2026-08-01", "limit": MAX_ENTRY_REVIEW_BATCH}
 
     permission = check_dispatch_permission(
-        test_db, _entry(REVIEW), _request(REVIEW, actor_id, payload),
+        test_db,
+        _entry(REVIEW),
+        _request(REVIEW, actor_id, payload),
     )
 
     assert permission.error is not None
-    assert "could not resolve a target project" in _denied_message(permission)
+    assert "project_required: no project given" in _denied_message(permission)
 
 
 def test_cutoff_review_authorizes_the_named_project(test_db) -> None:
@@ -132,7 +145,9 @@ def test_cutoff_review_authorizes_the_named_project(test_db) -> None:
     payload = {"before": "2026-08-01", "project": "yoke"}
 
     permission = check_dispatch_permission(
-        test_db, _entry(REVIEW), _request(REVIEW, actor_id, payload),
+        test_db,
+        _entry(REVIEW),
+        _request(REVIEW, actor_id, payload),
     )
 
     assert permission.error is None
@@ -144,7 +159,9 @@ def test_cutoff_review_denies_a_project_the_actor_does_not_hold(test_db) -> None
     payload = {"before": "2026-08-01", "project": "yoke"}
 
     permission = check_dispatch_permission(
-        test_db, _entry(REVIEW), _request(REVIEW, actor_id, payload),
+        test_db,
+        _entry(REVIEW),
+        _request(REVIEW, actor_id, payload),
     )
 
     assert permission.error is not None

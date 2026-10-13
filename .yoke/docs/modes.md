@@ -17,7 +17,9 @@ Private on your machine. No signup. One human, as many agents as you want.
 - Open the workbench with `yoke ui up` (detached; `yoke ui` reports it, `yoke ui down` stops it)
 - Members and Billing tabs do not apply (Cloud-only platform features)
 
-Portable: `yoke universe export` dumps the universe; import it later into
+Portable: `yoke universe export` dumps the universe into the machine Yoke
+home exports folder (normally `~/.yoke/exports/`). Pass `--out PATH` to choose
+a file or folder. Import the archive later into
 self-hosted or another local machine.
 
 Local browser function calls to `POST /api/functions/call` require an object

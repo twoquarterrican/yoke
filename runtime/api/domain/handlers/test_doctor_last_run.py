@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+import pytest
+
 from yoke_core.domain import last_doctor_run_read
 from yoke_core.domain.handlers.doctor_last_run import (
     handle_doctor_last_run_get,
@@ -81,7 +83,7 @@ class TestLastRunSelection:
             event_name="YokeFunctionCalled",
             created_at="2026-01-03T00:00:00.000000Z",
         )
-        outcome = handle_doctor_last_run_get(_request())
+        outcome = handle_doctor_last_run_get(_request({"project": "yoke"}))
         assert outcome.primary_success
         served = outcome.result_payload
         assert served["never_run"] is False
@@ -105,7 +107,7 @@ class TestLastRunSelection:
         }
 
     def test_never_run_on_an_empty_table(self, test_db):
-        outcome = handle_doctor_last_run_get(_request())
+        outcome = handle_doctor_last_run_get(_request({"project": "yoke"}))
         assert outcome.primary_success
         assert outcome.result_payload == {"never_run": True}
 
@@ -116,7 +118,7 @@ class TestLastRunSelection:
             event_name="YokeFunctionCalled",
             created_at="2026-01-02T00:00:00.000000Z",
         )
-        outcome = handle_doctor_last_run_get(_request())
+        outcome = handle_doctor_last_run_get(_request({"project": "yoke"}))
         assert outcome.primary_success
         assert outcome.result_payload == {"never_run": True}
 
@@ -170,7 +172,9 @@ class TestReceiptPersist:
             _doctor_payload(ran_at="2026-04-01T12:00:00.000000Z"),
         )
         assert outcome.primary_success
-        served = handle_doctor_last_run_get(_request()).result_payload
+        served = handle_doctor_last_run_get(
+            _request({"project": "yoke"})
+        ).result_payload
         assert served["ran_at"] == "2026-04-01T12:00:00.000000Z"
         assert served["fail_count"] == 1
 
@@ -185,7 +189,9 @@ class TestReceiptPersist:
             )
         )
         assert outcome.primary_success
-        served = handle_doctor_last_run_get(_request()).result_payload
+        served = handle_doctor_last_run_get(
+            _request({"project": "yoke"})
+        ).result_payload
         assert served["ran_at"] == "2026-04-02T00:00:00.000000Z"
 
 
@@ -207,3 +213,14 @@ class TestUiExposure:
         assert list(entry.side_effects) == []
         assert entry.claim_required_kind is None
         assert list(entry.target_kinds) == ["global"]
+
+
+def test_missing_project_refuses_without_reading_receipts(monkeypatch):
+    monkeypatch.setattr(
+        last_doctor_run_read,
+        "last_doctor_run",
+        lambda **_kw: pytest.fail("missing project must not read receipts"),
+    )
+    outcome = handle_doctor_last_run_get(_request())
+    assert not outcome.primary_success
+    assert outcome.error.code == "project_required"

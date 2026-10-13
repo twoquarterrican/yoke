@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any, Collection
 
 from yoke_contracts.api.function_call import (
     FunctionCallRequest,
@@ -14,10 +15,33 @@ from yoke_contracts.machine_config.schema import (
     ENV_OVERRIDE,
 )
 from yoke_core.domain.yoke_function_registry import RegistryEntry
+from yoke_core.domain.function_project_selection import project_selection_missing
 
-GENERIC_UNRESOLVED_PROJECT = (
-    "could not resolve a target project for project-scoped function"
-)
+
+def unresolved_project_response(
+    conn: Any,
+    request: FunctionCallRequest,
+    entry: RegistryEntry,
+    visible_project_ids: Collection[int] | None,
+) -> FunctionCallResponse:
+    if project_selection_missing(request):
+        from yoke_core.domain.project_selection import missing_project_on_connection
+
+        return permission_error_response(
+            request,
+            entry,
+            "project_required",
+            missing_project_on_connection(
+                conn, visible_project_ids=visible_project_ids
+            ),
+        )
+    return permission_error_response(
+        request,
+        entry,
+        "permission_denied",
+        "could not resolve a target project for project-scoped function; "
+        "name a registered project with --project P or repair the supplied target",
+    )
 
 
 class ProjectNotRegisteredError(LookupError):
@@ -62,7 +86,7 @@ def permission_error_response(
 
 
 __all__ = [
-    "GENERIC_UNRESOLVED_PROJECT",
+    "unresolved_project_response",
     "ProjectNotRegisteredError",
     "control_plevel_label",
     "permission_error_response",

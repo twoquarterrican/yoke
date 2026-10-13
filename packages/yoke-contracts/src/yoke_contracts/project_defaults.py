@@ -32,12 +32,14 @@ class MissingProjectError(ValueError):
     """A project-scoped operation has no caller-selected project."""
 
 
-def missing_project_message(projects: list[str], *, unavailable: str = "") -> str:
+def missing_project_message(
+    projects: list[str], *, unavailable: str = "", selection: str = "--project P"
+) -> str:
     """Explain the refusal using only the caller's accessible roster."""
     roster = ", ".join(projects) if projects else "none"
     if unavailable:
         roster = f"unavailable ({unavailable}); check `yoke env list` and retry"
-    return f"project_required: no project given — pass --project P. Accessible projects: {roster}."
+    return f"project_required: no project given — pass {selection}. Accessible projects: {roster}."
 
 
 __all__ = [

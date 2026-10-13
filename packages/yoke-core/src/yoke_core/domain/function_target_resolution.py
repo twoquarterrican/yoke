@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any, Collection
 
 from yoke_core.domain.function_org_context_resolution import resolve_org_context
+from yoke_core.domain.function_project_selection import PAYLOAD_NAMED_PROJECT_FUNCTIONS
 from yoke_core.domain.function_target_row_project import (
     resolve_authorized_project_id,
     resolve_deployment_run_project,
@@ -70,7 +71,7 @@ def resolve_project_context(
             request,
             visible_project_ids=visible_project_ids,
         )
-    if entry.function_id in _PAYLOAD_NAMED_PROJECT_FUNCTIONS:
+    if entry.function_id in PAYLOAD_NAMED_PROJECT_FUNCTIONS:
         return _resolve_named_project_context(
             conn,
             request,
@@ -203,37 +204,6 @@ def resolve_project_context(
             return entry_project
     # An unresolved target is denied upstream.
     return None
-
-
-# Functions whose target project lives in payload ``slug``, ``project``, or
-# ``scope``; a target-ref hint must agree with that payload authority.
-_PAYLOAD_NAMED_PROJECT_FUNCTIONS = frozenset(
-    {
-        "ephemeral_env.create",
-        "ephemeral_env.get",
-        "projects.update",
-        "projects.retire",
-        "projects.unretire",
-        "projects.capability_settings.get",
-        "projects.level_summary.get",
-        "projects.capability_settings.set",
-        "projects.capability_settings.merge",
-        "projects.capability_settings.remove",
-        "projects.environment_settings.get",
-        "projects.environment_settings.merge",
-        "projects.infrastructure.list",
-        "projects.environment.list",
-        "packs.list",
-        "packs.bundle.get",
-        "packs.bundle.render",
-        "packs.project.report",
-        "projects.pulumi_state.migrate",
-        "projects.pulumi_state.checkpoint_import",
-        "projects.pulumi_stack_config.get",
-        "board.data.get",
-        "board.rebuild.run",
-    }
-)
 
 
 def _resolve_github_actions_project_context(

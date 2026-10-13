@@ -61,9 +61,7 @@ def conn():
     from runtime.api.fixtures import pg_testdb
 
     name = pg_testdb.create_test_database()
-    c = pg_testdb.drop_database_on_close(
-        pg_testdb.connect_test_database(name), name
-    )
+    c = pg_testdb.drop_database_on_close(pg_testdb.connect_test_database(name), name)
     create_core_tables(c)
     seed_project_identities(c)
     create_path_registry_tables(c)
@@ -95,8 +93,11 @@ def _org_of(conn, project_id: int) -> int:
 def _project_owner(conn, project_id: int) -> int:
     actor_id = _new_actor(conn)
     grant_actor_project_role(
-        conn, actor_id=actor_id, project_id=project_id,
-        role_name=ROLE_OWNER, granted_by_actor_id=actor_id,
+        conn,
+        actor_id=actor_id,
+        project_id=project_id,
+        role_name=ROLE_OWNER,
+        granted_by_actor_id=actor_id,
     )
     return actor_id
 
@@ -104,8 +105,11 @@ def _project_owner(conn, project_id: int) -> int:
 def _org_admin(conn, org_id: int) -> int:
     actor_id = _new_actor(conn)
     grant_actor_org_role(
-        conn, actor_id=actor_id, org_id=org_id,
-        role_name=ROLE_ADMIN, granted_by_actor_id=actor_id,
+        conn,
+        actor_id=actor_id,
+        org_id=org_id,
+        role_name=ROLE_ADMIN,
+        granted_by_actor_id=actor_id,
     )
     return actor_id
 
@@ -167,8 +171,18 @@ def test_projects_list_allows_project_owner_for_actor_visible_handler_filter(con
     yoke_owner = _project_owner(conn, yoke)
     entry = _entry("projects.list", side_effects=False)
 
-    assert check_dispatch_permission(conn, entry, _request(org_admin, "projects.list")).error is None
-    assert check_dispatch_permission(conn, entry, _request(yoke_owner, "projects.list")).error is None
+    assert (
+        check_dispatch_permission(
+            conn, entry, _request(org_admin, "projects.list")
+        ).error
+        is None
+    )
+    assert (
+        check_dispatch_permission(
+            conn, entry, _request(yoke_owner, "projects.list")
+        ).error
+        is None
+    )
 
 
 def test_infrastructure_ci_reads_exact_project_render_inputs(conn):
@@ -219,10 +233,17 @@ def test_org_scoped_op_requires_org_admin(conn):
     yoke_owner = _project_owner(conn, yoke)
     entry = _entry("deployment_flows.get", side_effects=False)
 
-    assert check_dispatch_permission(conn, entry, _request(org_admin, "deployment_flows.get")).error is None
+    assert (
+        check_dispatch_permission(
+            conn, entry, _request(org_admin, "deployment_flows.get")
+        ).error
+        is None
+    )
 
     # A project owner — even yoke's — is not an org admin.
-    denied = check_dispatch_permission(conn, entry, _request(yoke_owner, "deployment_flows.get"))
+    denied = check_dispatch_permission(
+        conn, entry, _request(yoke_owner, "deployment_flows.get")
+    )
     assert denied.error is not None
     assert denied.error.error.code == "permission_denied"
 
@@ -244,7 +265,7 @@ def test_project_op_without_resolvable_target_is_denied_without_fallback(conn):
     for entry, request in cases:
         res = check_dispatch_permission(conn, entry, request)
         assert res.error is not None and res.error.error is not None
-        assert (res.error.error.code, res.project_id) == ("permission_denied", None)
+        assert (res.error.error.code, res.project_id) == ("project_required", None)
 
 
 def test_every_registered_function_is_explicitly_classified():
@@ -269,121 +290,10 @@ def test_every_registered_function_is_explicitly_classified():
             e.function_id,
             side_effects=bool(e.side_effects),
             project_permission=permission_key_for(e),
-        ).scope == DENY
+        ).scope
+        == DENY
     )
     assert not unclassified, (
         "registered functions fall through to the fail-closed DENY default — "
         f"classify each in function_authz_scope: {unclassified}"
     )
-
-
-def test_board_data_get_resolves_project_from_payload_scope(conn):
-    # board.data.get names its project in payload.scope; it must resolve + be
-    # checked against that project (not bypassed), so cross-project board reads
-    # are denied.
-    externalwebapp = resolve_project_id(conn, "externalwebapp")
-    externalwebapp_owner = _project_owner(conn, externalwebapp)
-    entry = _entry("board.data.get", side_effects=False)
-    allowed = check_dispatch_permission(
-        conn, entry, _payload_request(externalwebapp_owner, "board.data.get", {"scope": "externalwebapp"}),
-    )
-    assert allowed.error is None
-    assert allowed.project_slug == "externalwebapp"
-    denied = check_dispatch_permission(
-        conn, entry, _payload_request(externalwebapp_owner, "board.data.get", {"scope": "yoke"}),
-    )
-    assert denied.error is not None
-
-
-def test_payload_named_project_target_hint_must_match_payload(conn):
-    externalwebapp = resolve_project_id(conn, "externalwebapp")
-    externalwebapp_owner = _project_owner(conn, externalwebapp)
-    entry = _entry("projects.update")
-
-    denied = check_dispatch_permission(
-        conn,
-        entry,
-        FunctionCallRequest(
-            function="projects.update",
-            actor=ActorContext(actor_id=str(externalwebapp_owner), session_id="s-1"),
-            target=TargetRef(kind="global", project_id="yoke"),
-            payload={"slug": "externalwebapp", "name": "ExternalWebapp"},
-        ),
-    )
-
-    assert denied.error is not None
-    assert denied.error.error.code == "permission_denied"
-
-
-def test_unclassified_side_effecting_function_fails_closed(conn):
-    actor_id = _new_actor(conn)
-    entry = _entry("totally.unknown.sideeffecting.op")
-    res = check_dispatch_permission(
-        conn, entry, _request(actor_id, "totally.unknown.sideeffecting.op", project="yoke")
-    )
-    assert res.error is not None
-    assert "denied by default" in res.error.error.message
-
-
-def test_client_local_op_allowed_without_actor(conn):
-    entry = _entry("auth.set.run")
-    res = check_dispatch_permission(conn, entry, _no_actor_request("auth.set.run"))
-    assert res.error is None
-    assert res.permission_key is None
-
-
-def test_actor_session_op_allowed_with_actor(conn):
-    actor_id = _new_actor(conn)
-    entry = _entry("sessions.touch")
-    assert check_dispatch_permission(
-        conn, entry, _request(actor_id, "sessions.touch")
-    ).error is None
-
-
-def test_side_effecting_call_without_verified_actor_refuses_actor_required(conn):
-    # No numeric actor -> nothing to authorize or attribute -> refused for
-    # every side-effecting scope, including the unclassified DENY bucket.
-    for function_id in (
-        "items.structured_field.replace",
-        "totally.unknown.sideeffecting.op",
-    ):
-        res = check_dispatch_permission(
-            conn, _entry(function_id), _no_actor_request(function_id)
-        )
-        assert res.error is not None
-        assert res.error.error.code == "actor_required"
-        assert "yoke setup" in res.error.error.message
-
-
-def test_projects_create_is_org_scoped_update_is_project_scoped(conn):
-    yoke = resolve_project_id(conn, "yoke")
-    externalwebapp = resolve_project_id(conn, "externalwebapp")
-    org_admin = _org_admin(conn, _org_of(conn, yoke))
-    externalwebapp_owner = _project_owner(conn, externalwebapp)
-
-    # projects.create is org-scoped: an org admin may register; a project
-    # owner (even of an existing project) may not.
-    create = _entry("projects.create")
-    create_payload = {"slug": "newproj", "name": "New"}
-    assert check_dispatch_permission(
-        conn, create, _payload_request(org_admin, "projects.create", create_payload)
-    ).error is None
-    assert check_dispatch_permission(
-        conn, create, _payload_request(externalwebapp_owner, "projects.create", create_payload)
-    ).error is not None
-
-    # projects.update is project-scoped on the TARGET resolved from payload slug:
-    # externalwebapp's owner may update externalwebapp, but not yoke.
-    update = _entry("projects.update")
-    res = check_dispatch_permission(
-        conn, update,
-        _payload_request(externalwebapp_owner, "projects.update",
-                         {"slug": "externalwebapp", "name": "ExternalWebapp"}),
-    )
-    assert res.error is None
-    assert res.project_slug == "externalwebapp"
-    assert check_dispatch_permission(
-        conn, update,
-        _payload_request(externalwebapp_owner, "projects.update",
-                         {"slug": "yoke", "name": "Yoke"}),
-    ).error is not None

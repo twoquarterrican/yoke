@@ -38,6 +38,7 @@ from yoke_core.domain.function_target_resolution import (
 )
 from yoke_core.domain.function_unresolved_project import (
     ProjectNotRegisteredError,
+    unresolved_project_response,
     permission_error_response as _error_response,
 )
 from yoke_core.domain.project_identity import AmbiguousProjectRefError
@@ -209,34 +210,12 @@ def check_dispatch_permission(
                 None,
                 error=_error_response(request, entry, code, str(exc)),
             )
-        if project_context is None and entry.function_id == "items.create":
-            from yoke_core.domain.project_selection import missing_project_on_connection
-
-            return DispatchPermission(
-                spec.permission_key,
-                None,
-                None,
-                error=_error_response(
-                    request,
-                    entry,
-                    "project_required",
-                    missing_project_on_connection(
-                        conn,
-                        visible_project_ids=visible_ids,
-                    ),
-                ),
-            )
         if project_context is None:
             return DispatchPermission(
                 spec.permission_key,
                 None,
                 None,
-                error=_error_response(
-                    request,
-                    entry,
-                    "permission_denied",
-                    "could not resolve a target project for project-scoped function",
-                ),
+                error=unresolved_project_response(conn, request, entry, visible_ids),
             )
         project_id, project_slug = project_context
     try:

@@ -70,6 +70,11 @@ def install(
     converges before upstream reads and publication on every install or refresh.
     """
     root = files_layer.resolve_repo_root(repo_root)
+    if not (root / ".git").exists() or not checkout_gate.is_git_checkout(root):
+        raise ProjectInstallError(
+            f"project_git_required: {root} is not a Git checkout root; "
+            "run `git init` in that folder, then rerun project install."
+        )
     resolved_mode, reason = source_dev.resolve_mode(root, mode)
     print(
         f"yoke project {operation}: delivery strategy = {resolved_mode} ({reason})",

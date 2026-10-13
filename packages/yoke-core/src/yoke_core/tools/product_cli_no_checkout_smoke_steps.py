@@ -1,19 +1,21 @@
-"""Steps for the product-wheel no-checkout CLI smoke.
-
-Each step runs machine-installed ``yoke`` commands from an empty
-"project" directory (no Yoke checkout) through an injected runner and
-returns a ``{"step", "status", "failures", "evidence"}`` dict, so the
-whole sequence is unit-testable with canned command results.
-"""
+"""Product-wheel CLI probes from an empty project directory."""
 
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Callable, Mapping
 
 from yoke_core.tools import product_cli_remote_steps as _remote_steps
+from yoke_core.tools.product_cli_smoke_results import (
+    parse_json_output,
+    issue_codes,
+    dir_entries,
+    _expect_nonzero,
+    _combined_output,
+    _owner_only_mode,
+)
 from yoke_core.tools.checkout_clean_room_smoke_helpers import CommandResult, tail
 
 
@@ -88,32 +90,53 @@ def step_missing_config(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
     for required in ("config_missing", "connections_required"):
         if required not in codes:
             failures.append(f"status issues did not include {required!r}")
-    return step_entry(STEP_MISSING_CONFIG, failures, {
-        "returncode": result.returncode,
-        "issue_codes": sorted(codes),
-        "stderr_tail": tail(result.stderr),
-    })
+    return step_entry(
+        STEP_MISSING_CONFIG,
+        failures,
+        {
+            "returncode": result.returncode,
+            "issue_codes": sorted(codes),
+            "stderr_tail": tail(result.stderr),
+        },
+    )
 
 
 def step_writer_bootstrap(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
     write_token_file(ctx.token_path)
     failures: list[str] = []
     connection = run(
-        [str(ctx.yoke), "connection", "set", ENV_SMOKE,
-         "--transport", "https", "--api-url", ctx.api_url,
-         "--token-file", str(ctx.token_path)],
+        [
+            str(ctx.yoke),
+            "connection",
+            "set",
+            ENV_SMOKE,
+            "--transport",
+            "https",
+            "--api-url",
+            ctx.api_url,
+            "--token-file",
+            str(ctx.token_path),
+        ],
         STEP_WRITER_BOOTSTRAP,
     )
-    # An unmapped cwd is a status error (project_mapping_missing), so the
-    # bootstrap also registers the empty project dir — a machine-config
-    # write, never a project-dir write — to make `ok: true` reachable.
+    # Mapping is optional for status. Register the empty project directory
+    # only to bind the later project-scoped browser hygiene probe; this writes
+    # machine config and leaves the project directory untouched.
     register = run(
-        [str(ctx.yoke), "project", "register", str(ctx.project_dir),
-         "--project-id", str(SMOKE_PROJECT_ID)],
+        [
+            str(ctx.yoke),
+            "project",
+            "register",
+            str(ctx.project_dir),
+            "--project-id",
+            str(SMOKE_PROJECT_ID),
+        ],
         STEP_WRITER_BOOTSTRAP,
     )
-    for label, result in (("connection set", connection),
-                          ("project register", register)):
+    for label, result in (
+        ("connection set", connection),
+        ("project register", register),
+    ):
         if result.returncode != 0:
             failures.append(
                 f"{label} failed with {result.returncode}: {tail(result.stderr)}"
@@ -122,10 +145,9 @@ def step_writer_bootstrap(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
     payload = parse_json_output(status.stdout) or {}
     if payload.get("ok") is not True:
         failures.append(
-            "status ok was not true; issues: "
-            + json.dumps(payload.get("issues") or [])
+            "status ok was not true; issues: " + json.dumps(payload.get("issues") or [])
         )
-    envs = ((payload.get("connection") or {}).get("envs"))
+    envs = (payload.get("connection") or {}).get("envs")
     if envs != [ENV_SMOKE]:
         failures.append(f"connection.envs was {envs!r}, expected [{ENV_SMOKE!r}]")
     mode = _owner_only_mode(ctx.config_path)
@@ -133,13 +155,17 @@ def step_writer_bootstrap(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
         failures.append(f"machine config missing: {ctx.config_path}")
     elif mode & 0o077:
         failures.append(f"machine config is not 0600: mode {oct(mode)}")
-    return step_entry(STEP_WRITER_BOOTSTRAP, failures, {
-        "status_returncode": status.returncode,
-        "status_ok": payload.get("ok"),
-        "connection_envs": envs,
-        "config_path": str(ctx.config_path),
-        "config_mode": (oct(mode) if mode is not None else None),
-    })
+    return step_entry(
+        STEP_WRITER_BOOTSTRAP,
+        failures,
+        {
+            "status_returncode": status.returncode,
+            "status_ok": payload.get("ok"),
+            "connection_envs": envs,
+            "config_path": str(ctx.config_path),
+            "config_mode": (oct(mode) if mode is not None else None),
+        },
+    )
 
 
 def step_missing_credential(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
@@ -153,38 +179,56 @@ def step_missing_credential(ctx: SmokeContext, run: StepRunner) -> dict[str, Any
     failures = _expect_nonzero(status)
     if "credential_missing" not in codes:
         failures.append("status issues did not include 'credential_missing'")
-    return step_entry(STEP_MISSING_CREDENTIAL, failures, {
-        "missing_credential_path": str(missing_path),
-        "status_returncode": status.returncode,
-        "issue_codes": sorted(codes),
-    })
+    return step_entry(
+        STEP_MISSING_CREDENTIAL,
+        failures,
+        {
+            "missing_credential_path": str(missing_path),
+            "status_returncode": status.returncode,
+            "issue_codes": sorted(codes),
+        },
+    )
 
 
 def step_relay_denial(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
     if not ctx.online:
-        entry = step_entry(STEP_RELAY_DENIAL, [], {
-            "reason": "offline run; pass --online to exercise the live relay",
-        })
+        entry = step_entry(
+            STEP_RELAY_DENIAL,
+            [],
+            {
+                "reason": "offline run; pass --online to exercise the live relay",
+            },
+        )
         entry["status"] = STATUS_SKIPPED_OFFLINE
         return entry
     query = run(
-        [str(ctx.yoke), "--env", ENV_SMOKE,
-         "events", "query", "--limit", "1", "--json"],
+        [
+            str(ctx.yoke),
+            "--env",
+            ENV_SMOKE,
+            "events",
+            "query",
+            "--limit",
+            "1",
+            "--json",
+        ],
         STEP_RELAY_DENIAL,
     )
     failures = _expect_nonzero(query)
     output = _combined_output(query)
     matched = [code for code in DENIAL_CODES if code in output]
     if not matched:
-        failures.append(
-            f"output carried none of the typed denial codes {DENIAL_CODES}"
-        )
-    return step_entry(STEP_RELAY_DENIAL, failures, {
-        "returncode": query.returncode,
-        "denial_codes_seen": matched,
-        "stdout_tail": tail(query.stdout),
-        "stderr_tail": tail(query.stderr),
-    })
+        failures.append(f"output carried none of the typed denial codes {DENIAL_CODES}")
+    return step_entry(
+        STEP_RELAY_DENIAL,
+        failures,
+        {
+            "returncode": query.returncode,
+            "denial_codes_seen": matched,
+            "stdout_tail": tail(query.stdout),
+            "stderr_tail": tail(query.stderr),
+        },
+    )
 
 
 def step_unknown_env(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
@@ -204,16 +248,25 @@ def step_unknown_env(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
             "unknown-env issue did not name the configured envs "
             f"(expected {ENV_SMOKE!r} in: {messages!r})"
         )
-    return step_entry(STEP_UNKNOWN_ENV, failures, {
-        "returncode": status.returncode,
-        "issue_messages": messages,
-    })
+    return step_entry(
+        STEP_UNKNOWN_ENV,
+        failures,
+        {
+            "returncode": status.returncode,
+            "issue_messages": messages,
+        },
+    )
 
 
 def step_browser_hygiene(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
     result = run(
-        [str(ctx.venv_python), "-m", "yoke_core.domain.browser_client",
-         "daemon", "status"],
+        [
+            str(ctx.venv_python),
+            "-m",
+            "yoke_core.domain.browser_client",
+            "daemon",
+            "status",
+        ],
         STEP_BROWSER_HYGIENE,
     )
     failures: list[str] = []
@@ -233,12 +286,16 @@ def step_browser_hygiene(ctx: SmokeContext, run: StepRunner) -> dict[str, Any]:
             )
     else:
         outcome = "not_materialized"
-    return step_entry(STEP_BROWSER_HYGIENE, failures, {
-        "returncode": result.returncode,
-        "stdout_tail": tail(result.stdout),
-        "outcome": outcome,
-        "project_dir_entries": entries,
-    })
+    return step_entry(
+        STEP_BROWSER_HYGIENE,
+        failures,
+        {
+            "returncode": result.returncode,
+            "stdout_tail": tail(result.stdout),
+            "outcome": outcome,
+            "project_dir_entries": entries,
+        },
+    )
 
 
 def step_no_project_dir_writes(ctx: SmokeContext) -> dict[str, Any]:
@@ -249,9 +306,13 @@ def step_no_project_dir_writes(ctx: SmokeContext) -> dict[str, Any]:
             "project dir is not empty after the smoke — the no-checkout "
             "promise is broken: " + ", ".join(entries)
         )
-    return step_entry(STEP_NO_PROJECT_WRITES, failures, {
-        "project_dir_entries": entries,
-    })
+    return step_entry(
+        STEP_NO_PROJECT_WRITES,
+        failures,
+        {
+            "project_dir_entries": entries,
+        },
+    )
 
 
 def step_entry(
@@ -259,8 +320,12 @@ def step_entry(
     failures: list[str],
     evidence: dict[str, Any],
 ) -> dict[str, Any]:
-    return {"step": step, "status": STATUS_FAIL if failures else STATUS_PASS,
-            "failures": list(failures), "evidence": evidence}
+    return {
+        "step": step,
+        "status": STATUS_FAIL if failures else STATUS_PASS,
+        "failures": list(failures),
+        "evidence": evidence,
+    }
 
 
 def write_token_file(path: Path) -> None:
@@ -277,46 +342,7 @@ def _seed_missing_credential_env(ctx: SmokeContext, missing_path: Path) -> None:
         "credential_source": {"kind": "token_file", "path": str(missing_path)},
     }
     ctx.config_path.write_text(
-        json.dumps(payload, indent=2) + "\n", encoding="utf-8",
+        json.dumps(payload, indent=2) + "\n",
+        encoding="utf-8",
     )
     ctx.config_path.chmod(0o600)
-
-
-def parse_json_output(stdout: str) -> Optional[dict[str, Any]]:
-    try:
-        payload = json.loads(stdout)
-    except (ValueError, TypeError):
-        return None
-    return payload if isinstance(payload, dict) else None
-
-
-def issue_codes(payload: Optional[Mapping[str, Any]]) -> set:
-    if not isinstance(payload, Mapping):
-        return set()
-    return {
-        str(issue.get("code") or "")
-        for issue in payload.get("issues") or []
-        if isinstance(issue, Mapping)
-    }
-
-
-def dir_entries(path: Path) -> list[str]:
-    if not path.is_dir():
-        return []
-    return sorted(entry.name for entry in path.iterdir())
-
-
-def _expect_nonzero(result: CommandResult) -> list[str]:
-    if result.returncode == 0:
-        return [f"{result.step}: expected a non-zero exit, got 0"]
-    return []
-
-
-def _combined_output(result: CommandResult) -> str:
-    return f"{result.stdout}\n{result.stderr}"
-
-
-def _owner_only_mode(path: Path) -> Optional[int]:
-    if not path.is_file():
-        return None
-    return path.stat().st_mode & 0o777

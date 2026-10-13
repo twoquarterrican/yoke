@@ -43,9 +43,9 @@ def _fetch_last_run(report: Mapping[str, Any]) -> Mapping[str, Any] | None:
 
         project = report.get("project") or {}
         project_id = project.get("project_id") if isinstance(project, Mapping) else None
-        payload: dict[str, Any] = {}
-        if project_id is not None:
-            payload["project"] = str(project_id)
+        if project_id is None:
+            return None
+        payload: dict[str, Any] = {"project": str(project_id)}
         response = call_dispatcher(
             function_id="doctor.last_run.get",
             target=TargetRef(kind="global"),

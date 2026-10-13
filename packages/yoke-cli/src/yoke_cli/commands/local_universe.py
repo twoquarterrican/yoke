@@ -146,8 +146,8 @@ def universe_export(args: List[str]) -> int:
         help=(
             "Output file or directory; a trailing / always means a "
             "directory (created when missing). Default: "
-            "<org-slug>-universe-<utc-timestamp>.tar in the current "
-            "directory."
+            "<org-slug>-universe-<utc-timestamp>.tar under the machine "
+            "Yoke home exports folder (normally ~/.yoke/exports/)."
         ),
     )
     parser.add_argument("--json", dest="json_mode", action="store_true")

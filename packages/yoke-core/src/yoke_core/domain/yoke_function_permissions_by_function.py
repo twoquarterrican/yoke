@@ -25,6 +25,7 @@ from yoke_core.domain.control_plane_authority import require_control_plane_permi
 from yoke_core.domain.function_target_resolution import resolve_project_context
 from yoke_core.domain.function_unresolved_project import (
     permission_error_response as _error_response,
+    unresolved_project_response,
 )
 from yoke_core.domain.project_identity import AmbiguousProjectRefError
 from yoke_contracts.api.function_call import FunctionCallRequest
@@ -88,12 +89,7 @@ def board_data_get_dispatch_permission(
             None,
             None,
             visible_project_ids=ordered_visible,
-            error=_error_response(
-                request,
-                entry,
-                "permission_denied",
-                "could not resolve a target project for project-scoped function",
-            ),
+            error=unresolved_project_response(conn, request, entry, visible_ids),
         )
     project_id, project_slug = project_context
     try:
@@ -146,12 +142,7 @@ def doctor_dispatch_permission(
                 PERM_ITEMS_READ,
                 None,
                 None,
-                error=_error_response(
-                    request,
-                    entry,
-                    "permission_denied",
-                    "could not resolve a target project for project-scoped doctor",
-                ),
+                error=unresolved_project_response(conn, request, entry, visible_ids),
             )
         project_id, project_slug = project_context
         try:

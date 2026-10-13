@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from yoke_cli.config import machine_config
+from yoke_cli.config.project_selection import missing_project_context
 from yoke_cli.config.checkout_context import _strip_worktree_path
 from yoke_contracts.machine_config.schema import DEFAULT_BOARD_PATH
 
@@ -45,10 +46,6 @@ def _configured_project_matches(start: Path) -> list[machine_config.ConfiguredPr
     )
 
 
-def _configured_projects() -> list[machine_config.ConfiguredProject]:
-    return machine_config.configured_projects(existing_only=True)
-
-
 def _matching_configured_project_root(start: Path) -> Path | None:
     matches = _configured_project_matches(start)
     if matches:
@@ -60,26 +57,14 @@ def _resolve_configured_project(start: Path, *, explicit: bool) -> Path:
     match = _matching_configured_project_root(start)
     if match is not None:
         return match
-    projects = _configured_projects()
     if explicit:
         raise BoardProjectResolutionError(
-            f"{start.expanduser()} is not inside a project registered in "
+            f"project_checkout_unregistered: {start.expanduser()} is not inside a project registered in "
             "machine config; run from a registered checkout or pass one with "
             "--repo-root."
         )
-    if len(projects) == 1:
-        return _normalized_path(projects[0].checkout)
-    if not projects:
-        raise BoardProjectResolutionError(
-            "no projects are registered in machine config; run `yoke setup` "
-            "or `yoke project register` first."
-        )
-    configured = ", ".join(
-        str(_normalized_path(project.checkout)) for project in projects
-    )
     raise BoardProjectResolutionError(
-        "could not choose a board project from this directory; run from inside "
-        f"one registered checkout or pass --repo-root. Configured projects: {configured}"
+        missing_project_context(selection="--repo-root PATH")
     )
 
 

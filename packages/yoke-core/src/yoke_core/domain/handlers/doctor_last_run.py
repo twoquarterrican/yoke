@@ -52,10 +52,19 @@ def handle_doctor_last_run_get(request: FunctionCallRequest) -> HandlerOutcome:
             ),
         )
 
+    if not str(project or "").strip():
+        return HandlerOutcome(
+            primary_success=False,
+            error=FunctionError(
+                code="project_required",
+                message="project_required: pass --project P or run from a registered checkout.",
+            ),
+        )
+
     from yoke_core.domain.last_doctor_run_read import last_doctor_run
 
     try:
-        result = last_doctor_run(project=project or None)
+        result = last_doctor_run(project=project)
     except LookupError as exc:
         return HandlerOutcome(
             primary_success=False,

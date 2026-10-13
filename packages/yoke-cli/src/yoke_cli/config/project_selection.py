@@ -20,6 +20,11 @@ def required_project_context(
     selected = selected or default_project_for_directory(directory or Path.cwd())
     if selected:
         return selected
+    raise MissingProjectError(missing_project_context())
+
+
+def missing_project_context(*, selection: str = "--project P") -> str:
+    """Read missing-selection choices only through the caller's authority."""
     from yoke_contracts.api.function_call import TargetRef
     from yoke_cli.commands._helpers import ensure_handlers_loaded
     from yoke_cli.transport.dispatcher import build_actor, call_dispatcher
@@ -37,8 +42,8 @@ def required_project_context(
                 response.error.message if response.error else "roster read failed"
             )
         message = missing_project_message(
-            [str(row["slug"]) for row in response.result["rows"]]
+            [str(row["slug"]) for row in response.result["rows"]], selection=selection
         )
     except Exception as exc:  # noqa: BLE001 - report why the roster could not be read
-        message = missing_project_message([], unavailable=str(exc))
-    raise MissingProjectError(message)
+        message = missing_project_message([], unavailable=str(exc), selection=selection)
+    return message

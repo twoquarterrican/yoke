@@ -99,9 +99,7 @@ def _project_owner(conn, project_id: int) -> int:
 
 
 def _seed_item(conn, *, item_id: int, project_id: int) -> None:
-    workflow_id, workflow_version_id = resolve_current_workflow_pin(
-        conn, "issue"
-    )
+    workflow_id, workflow_version_id = resolve_current_workflow_pin(conn, "issue")
     conn.execute(
         "INSERT INTO items (id, title, workflow_id, workflow_version_id, "
         "status, priority, created_at, updated_at, project_id, "
@@ -289,6 +287,6 @@ def test_mark_archived_all_reviewed_without_project_is_denied(conn):
     )
     denied = check_dispatch_permission(conn, entry, request)
     assert denied.error is not None
-    assert "could not resolve a target project" in (
+    assert "project_required: no project given" in (
         denied.error.error.message if denied.error.error else ""
     )

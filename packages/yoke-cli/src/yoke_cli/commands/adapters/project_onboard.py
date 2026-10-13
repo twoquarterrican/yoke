@@ -11,7 +11,7 @@ from yoke_cli.commands._helpers import (
     add_json_arg,
     parse_or_usage_error,
 )
-from yoke_cli.config import onboard_github_copy
+from yoke_cli.config import machine_config, onboard_github_copy
 from yoke_cli.config import project_onboard
 from yoke_cli.config.onboard_error_friendly import friendly_permission_error
 from yoke_cli.config.project_clone_support import ClonePlan
@@ -28,21 +28,21 @@ from yoke_cli.project_install.files import ProjectInstallError
 GITHUB_ADOPTION_FLAGS = "[--github-adoption app-binding|disabled]"
 PROJECT_CREATE_USAGE = (
     "yoke project create CHECKOUT --slug SLUG --name NAME "
-    "[--org ORG] --github-repo OWNER/REPO --default-branch BRANCH "
-    f"--public-item-prefix PREFIX {GITHUB_ADOPTION_FLAGS} --config PATH "
+    "[--org ORG] [--github-repo OWNER/REPO] --default-branch BRANCH "
+    f"--public-item-prefix PREFIX {GITHUB_ADOPTION_FLAGS} [--config PATH] "
     "[--yes | --dry-run] [--json]"
 )
 PROJECT_IMPORT_USAGE = (
     "yoke project import REMOTE_URL CHECKOUT --slug SLUG --name NAME "
-    "[--org ORG] --github-repo OWNER/REPO --default-branch BRANCH "
+    "[--org ORG] [--github-repo OWNER/REPO] --default-branch BRANCH "
     f"--public-item-prefix PREFIX {GITHUB_ADOPTION_FLAGS} "
-    "[--existing-yoke-layer keep|remove] --config PATH "
+    "[--existing-yoke-layer keep|remove] [--config PATH] "
     "[--yes | --dry-run] [--json]"
 )
 ONBOARD_PROJECT_USAGE = (
     "yoke onboard project CHECKOUT --slug SLUG --name NAME "
     "[--org ORG] [--github-repo OWNER/REPO] --default-branch BRANCH "
-    f"--public-item-prefix PREFIX {GITHUB_ADOPTION_FLAGS} --config PATH "
+    f"--public-item-prefix PREFIX {GITHUB_ADOPTION_FLAGS} [--config PATH] "
     "[--yes | --dry-run] [--json]"
 )
 
@@ -66,6 +66,7 @@ def project_create(args: List[str]) -> int:
         )
         return 2
     try:
+        _require_config_for_apply(parsed)
         report = project_onboard.create_project(
             checkout=parsed.checkout,
             slug=parsed.slug,
@@ -100,6 +101,7 @@ def project_import(args: List[str]) -> int:
     if parsed is None:
         return 2
     try:
+        _require_config_for_apply(parsed)
         report = project_onboard.import_project(
             remote_url=parsed.remote_url,
             checkout=parsed.checkout,
@@ -131,6 +133,7 @@ def onboard_project(args: List[str]) -> int:
     if parsed is None:
         return 2
     try:
+        _require_config_for_apply(parsed)
         report = project_onboard.onboard_existing(
             checkout=parsed.checkout,
             slug=parsed.slug,
@@ -148,6 +151,16 @@ def onboard_project(args: List[str]) -> int:
         return 1
     _emit(report, parsed.json_mode)
     return 0
+
+
+def _require_config_for_apply(parsed: argparse.Namespace) -> None:
+    if parsed.apply:
+        selected = machine_config.config_path(parsed.config_path)
+        if not selected.is_file():
+            raise project_onboard.ProjectOnboardError(
+                f"machine_config_missing: no machine config at {selected}; "
+                "run `yoke setup` first, or pass --config PATH for an existing config."
+            )
 
 
 def _project_parser(prog: str, usage: str) -> argparse.ArgumentParser:
@@ -171,7 +184,12 @@ def _project_parser(prog: str, usage: str) -> argparse.ArgumentParser:
         dest="public_item_prefix",
         required=True,
     )
-    parser.add_argument("--config", dest="config_path", required=True)
+    parser.add_argument(
+        "--config",
+        dest="config_path",
+        default=None,
+        help="Machine config override; defaults to the machine config resolver.",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--yes", dest="apply", action="store_true")
     mode.add_argument("--dry-run", dest="dry_run", action="store_true")

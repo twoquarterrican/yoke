@@ -8,7 +8,11 @@ import pytest
 
 from yoke_cli import main as yoke_operations_cli
 from yoke_cli.project_install import transport as project_install_transport
-from yoke_core.domain import project_install
+from yoke_cli.project_install import runner as project_install
+from runtime.api.cli.project_install_publication_test_support import (
+    git,
+    local_only_checkout,
+)
 from yoke_core.domain.project_install_test_helpers import (
     DEFAULT_CONTRACT_FILES,
     make_bundle,
@@ -26,9 +30,7 @@ def cfg(tmp_path, monkeypatch):
 
 @pytest.fixture()
 def repo(tmp_path):
-    root = tmp_path / "repo"
-    root.mkdir()
-    return root
+    return local_only_checkout(tmp_path)
 
 
 @pytest.fixture()
@@ -100,11 +102,13 @@ def test_install_then_refresh_then_uninstall_round_trip(
     )
 
     assert rc == 0
-    report = json.loads(capsys.readouterr().out)
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
     assert report["operation"] == "install"
     assert report["machine_config_newly_registered"] is True
-    assert report["snapshot_sync"]["status"] == "skipped"
-    assert report["snapshot_sync"]["repair_command"].endswith("--project 7")
+    assert report["snapshot_sync"]["status"] == "failed"
+    assert "could not reach" in report["snapshot_sync"]["message"]
+    assert report["snapshot_sync"]["repair_command"] == ""
     assert (repo / ".claude/skills/yoke/onboard/SKILL.md").is_file()
     assert (repo / ".yoke/install-manifest.json").is_file()
     assert report["worktrees_ignore"]["status"] == "written"
@@ -119,6 +123,9 @@ def test_install_then_refresh_then_uninstall_round_trip(
     (repo / ".yoke/lint-config").write_text(
         "lint_destructive_git=warn\n", encoding="utf-8"
     )
+
+    git(repo, "add", "-A")
+    git(repo, "commit", "-m", "Customize project lint policy")
 
     # Refresh resolves the project id from the registered mapping.
     rc = yoke_operations_cli.main(
@@ -193,6 +200,8 @@ def test_refresh_discards_out_of_policy_prior_contract_record(
     inert_file = repo / inert_path
     inert_file.parent.mkdir(parents=True)
     inert_file.write_text("project-owned\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-m", "Record prior manifest and project content")
 
     rc = yoke_operations_cli.main(
         [

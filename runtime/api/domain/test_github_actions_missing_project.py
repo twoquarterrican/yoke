@@ -16,7 +16,6 @@ from yoke_core.domain.actor_permissions import (
     seed_roles_and_permissions,
 )
 from yoke_core.domain.auth_schema import create_auth_tables
-from yoke_core.domain.function_unresolved_project import GENERIC_UNRESOLVED_PROJECT
 from yoke_core.domain.org_schema import seed_default_org
 from yoke_core.domain.project_identity import resolve_project_id
 from yoke_core.domain.project_seed_test_helpers import seed_project_identities
@@ -35,7 +34,8 @@ class EmptyModel(BaseModel):
 def _conn():
     name = pg_testdb.create_test_database()
     conn = pg_testdb.drop_database_on_close(
-        pg_testdb.connect_test_database(name), name,
+        pg_testdb.connect_test_database(name),
+        name,
     )
     create_core_tables(conn)
     seed_project_identities(conn)
@@ -94,6 +94,7 @@ def test_github_actions_names_the_plane_when_the_project_is_missing(monkeypatch)
         assert "platform" in message
         assert "stage" in message
         assert "not registered" in message
-        assert GENERIC_UNRESOLVED_PROJECT not in message
+        assert permission.error.error.code == "permission_denied"
+        assert "Accessible projects" not in message
     finally:
         conn.close()

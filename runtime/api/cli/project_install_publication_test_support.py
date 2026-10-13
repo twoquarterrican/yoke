@@ -84,12 +84,15 @@ def identify(root: Path) -> None:
 
 
 def remote_world(
-    tmp_path: Path, *, pre_receive_hook: str | None = None,
+    tmp_path: Path,
+    *,
+    pre_receive_hook: str | None = None,
 ) -> RemoteWorld:
     """Build the bare remote, seed it, and clone the checkout under test."""
     remote = tmp_path / "remote.git"
     subprocess.run(
-        ["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True,
+        ["git", "init", "-q", "--bare", "-b", "main", str(remote)],
+        check=True,
     )
     teammate = tmp_path / "teammate"
     teammate.mkdir()
@@ -107,7 +110,8 @@ def remote_world(
         hook.chmod(0o755)
     checkout = tmp_path / "checkout"
     subprocess.run(
-        ["git", "clone", "-q", str(remote), str(checkout)], check=True,
+        ["git", "clone", "-q", str(remote), str(checkout)],
+        check=True,
     )
     identify(checkout)
     return RemoteWorld(remote=remote, teammate=teammate, checkout=checkout)
@@ -119,6 +123,8 @@ def local_only_checkout(tmp_path: Path) -> Path:
     root.mkdir()
     git(root, "init", "-q", "-b", "main")
     identify(root)
+    git(root, "config", "maintenance.auto", "false")
+    git(root, "config", "gc.auto", "0")
     (root / "README.md").write_text("project\n", encoding="utf-8")
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "seed")
@@ -162,7 +168,8 @@ def rewrite_outside_block(target: Path, operator_text: str) -> None:
     assert span is not None, f"{target} carries no managed block to preserve"
     start, end = span
     target.write_text(
-        f"{current[start:end]}\n\n{operator_text}", encoding="utf-8",
+        f"{current[start:end]}\n\n{operator_text}",
+        encoding="utf-8",
     )
 
 
@@ -181,11 +188,14 @@ def bind_bundle(monkeypatch, bundle: dict | None = None) -> None:
     from yoke_cli.project_install import runner
 
     monkeypatch.setattr(
-        runner, "_resolve_bundle",
+        runner,
+        "_resolve_bundle",
         lambda *_a, **_k: (bundle if bundle is not None else managed_bundle(), "test"),
     )
     monkeypatch.setattr(
-        runner, "_register_in_machine_config", lambda *_a, **_k: False,
+        runner,
+        "_register_in_machine_config",
+        lambda *_a, **_k: False,
     )
 
 

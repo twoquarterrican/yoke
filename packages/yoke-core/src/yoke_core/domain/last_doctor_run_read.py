@@ -8,7 +8,7 @@ here.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set
 
 from yoke_contracts.api.function_call import FunctionError, HandlerOutcome
 from yoke_contracts.timestamps import format_instant, parse_instant, utc_now
@@ -145,23 +145,29 @@ def _serve_row(row: Any) -> Dict[str, Any]:
     }
 
 
-def last_doctor_run(*, project: Optional[str] = None) -> Dict[str, Any]:
+def last_doctor_run(*, project: str) -> Dict[str, Any]:
     """Serve the newest completed doctor run recorded in ``doctor_runs``."""
+    if not str(project or "").strip():
+        from yoke_contracts.project_defaults import (
+            MissingProjectError,
+            missing_project_message,
+        )
+
+        raise MissingProjectError(missing_project_message([]))
     conn = db_helpers.connect()
     try:
         if not table_exists(conn, DOCTOR_RUNS_TABLE):
             return {"never_run": True}
-        accepted = _accepted_project_names(conn, project) if project else None
+        accepted = _accepted_project_names(conn, project)
         marker = _p(conn)
         sql = (
             f"SELECT ran_at, project, scope, runtime, fail_count, pass_count, "
             f"warn_count, na_count, results FROM {DOCTOR_RUNS_TABLE}"
         )
         params: List[Any] = []
-        if accepted is not None:
-            placeholders = ", ".join(marker for _ in accepted)
-            sql += f" WHERE project IN ({placeholders})"
-            params.extend(sorted(accepted))
+        placeholders = ", ".join(marker for _ in accepted)
+        sql += f" WHERE project IN ({placeholders})"
+        params.extend(sorted(accepted))
         sql += " ORDER BY ran_at DESC, id DESC LIMIT 1"
         row = conn.execute(sql, tuple(params)).fetchone()
         if row is None:

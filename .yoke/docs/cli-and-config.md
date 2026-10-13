@@ -291,3 +291,11 @@ cycles. The server binds loopback only and refuses remote-facing hosts.
 Installed into each managed repo: skills, agent adapters, hooks, policy,
 and `.yoke/docs` (this public corpus). Board markdown under `.yoke/BOARD.md`
 is a generated view — do not hand-edit it as source of truth.
+
+Project-scoped commands use your registered checkout or explicit project
+selection. Outside a project, a missing selection returns `project_required`
+and lists only projects you can access; permission, ambiguity and gate
+refusals retain their actual reasons. Board rebuild requires a registered
+checkout, even when only one is registered; pass `--repo-root PATH` from
+elsewhere. Doctor's last report uses your checkout or `--project P`.
+An unmapped folder is a `project_mapping_missing` warning in status.
