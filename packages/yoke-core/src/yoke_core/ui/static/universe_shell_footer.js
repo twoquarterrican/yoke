@@ -21,7 +21,7 @@ function environmentLabel(options) {
   if (packet?.environmentLabel) return String(packet.environmentLabel);
   const mode = options.capabilities?.data?.portability?.mode;
   if (mode === "hosted") return "hosted universe";
-  if (mode === "selfhost") return "self-hosted universe";
+  if (mode === "self-host") return "self-hosted universe";
   return "local universe";
 }
 
