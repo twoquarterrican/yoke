@@ -1,8 +1,8 @@
 {
  "id": "piped-install-iterm-proof",
- "title": "Verify released piped installation in iTerm",
+ "title": "Verify released piped installation in Terminal.app",
  "status": "observed",
- "text": "Source redirects setup input to /dev/tty. Isolated POSIX pipeline tests prove foreground ownership, interruption and suspend/resume cleanup with stubbed installation side effects. Run the released public installer in iTerm and retain visible clean-shell proof before closing this verification gap.",
+ "text": "Source redirects setup input to /dev/tty. Isolated POSIX pipeline tests prove foreground ownership, interruption and suspend/resume cleanup with stubbed installation side effects. The operator approved visible Terminal.app proof combined with these PTY tests on 2026-10-13. Run the released public installer in Terminal.app and retain visible clean-shell proof before closing this verification gap.",
  "plan_refs": [
   "FIRST-USER.14"
  ],

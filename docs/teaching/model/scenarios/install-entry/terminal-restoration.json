@@ -7,7 +7,7 @@
  "need": "The piped installer gives setup /dev/tty input. Ctrl-C quits setup; foreground resume after SIGTSTP restores its display. Mouse reporting and terminal settings must be restored before returning to the shell.",
  "disclosure": "Existing terminal lifecycle",
  "surface": "Public shell installer and setup TUI",
- "gap": "Released-installer visual proof in iTerm is still required; isolated PTY tests are not a terminal-emulator screenshot.",
+ "gap": "Released-installer visual proof in Terminal.app remains required. The operator approved this visible proof combined with the passing PTY tests on 2026-10-13; the tests alone do not close the gap.",
  "review": "POSIX regression executes real curl file URL | sh, foreground ownership, the setup driver and quit binding. Installation/download side effects are stubbed; interruption and suspend/resume verify mouse-mode cleanup and exact stty restoration.",
  "plan_refs": [
   "FIRST-USER.14"
