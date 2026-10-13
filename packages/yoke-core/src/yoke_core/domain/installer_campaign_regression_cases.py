@@ -115,8 +115,7 @@ _STALE_PREPARE = (
     '_campaign_selection=$("$_campaign_python" -c '
     + shlex.quote(_STALE_RELEASE_SCRIPT)
     + " {{installer_base_url}} {{release_channel}}); "
-    '_campaign_previous=${_campaign_selection##* }; '
-    '_campaign_expected=${_campaign_selection% *}; '
+    'read -r _campaign_expected _campaign_previous <<< "$_campaign_selection"; '
     + _INSTALL_ONLY.replace(
         "YOKE_NO_SETUP=1",
         'YOKE_NO_SETUP=1 YOKE_VERSION="$_campaign_previous"',

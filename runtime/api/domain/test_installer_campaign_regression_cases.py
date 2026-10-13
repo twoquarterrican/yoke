@@ -5,6 +5,7 @@ from subprocess import CompletedProcess
 import shutil
 import subprocess
 import sys
+from types import SimpleNamespace
 from urllib import request
 
 import pytest
@@ -16,6 +17,10 @@ from yoke_core.domain.installer_campaign_regression_cases import (
     _STALE_RELEASE_SCRIPT,
 )
 from yoke_core.domain.machine_qa_method_contracts import validate_machine_method_config
+from yoke_core.domain.installer_campaign_execution_target import installer_campaign_cases_for_target
+from yoke_core.domain.ssh_mac_host_control import SshMacHostControl
+from yoke_core.domain.ssh_linux_host_control import SshLinuxHostControl
+from runtime.api.domain.test_qa_release_channel_target import _target
 
 
 def test_every_recovery_recipe_satisfies_its_method_contract():
@@ -26,6 +31,19 @@ def test_every_recovery_recipe_satisfies_its_method_contract():
             entry_surface=case["entry_surface"],
             required_completion=case["required_completion"],
         )
+
+
+def test_projected_recovery_entries_expand_through_both_real_host_adapters():
+    control = SimpleNamespace(path_state=SimpleNamespace(yoke_bin="/tmp/fixture/bin/yoke"))
+    cases = installer_campaign_cases_for_target(
+        _target("prod"), primary_machine="primary-test", joining_machine="joining-test",
+    )
+    for case in cases:
+        if case["entry_surface"]:
+            mac = SshMacHostControl._resolve_entry_surface(control, case["entry_surface"])
+            linux = SshLinuxHostControl._entry_surface(control, case["entry_surface"])
+            assert mac == linux
+            assert "{yoke_bin}" not in mac
 
 
 def test_stale_lookup_selects_the_highest_published_predecessor(monkeypatch, capsys):
