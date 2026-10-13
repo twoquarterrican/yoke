@@ -66,7 +66,8 @@ def prepare_launch_registration(
             require_registered_session_facts(conn, session_id)
         else:
             recover_missing_identity = (
-                launch.state == "outcome_unknown"
+                launch.state
+                in {"launching", "awaiting_registration", "outcome_unknown"}
                 and not launch.native_session_id
                 and not launch.registered_session_id
             )
@@ -108,12 +109,6 @@ def prepare_launch_registration(
                     session_id=session_id,
                     facts=facts,
                     now=current,
-                )
-            elif not launch.native_session_id and not launch.registered_session_id:
-                raise SessionLaunchError(
-                    "invalid_state",
-                    "launch is awaiting its native identity report; retry on the next hook event",
-                    launch_state=launch.state,
                 )
             # Wake eligibility starts at this send, not deadline_at. A worker
             # that dies on arrival must not sit unwatched until registration
@@ -273,6 +268,19 @@ def complete_launch_for_message(
             if commit:
                 conn.commit()
             return launch
+        from yoke_core.domain.session_launch_work_entry import launch_work_entered
+
+        if not launch_work_entered(conn, launch):
+            pending = (
+                launch
+                if launch.result_code == "launch_work_claim_pending"
+                else update_launch(
+                    conn, launch_id, result_code="launch_work_claim_pending"
+                )
+            )
+            if commit:
+                conn.commit()
+            return pending
         completed = update_launch(
             conn,
             launch_id,

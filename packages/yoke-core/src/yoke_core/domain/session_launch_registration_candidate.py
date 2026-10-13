@@ -86,7 +86,9 @@ def _registration_candidates(
     window: tuple[datetime, datetime],
 ) -> list[str]:
     p = marker(conn)
-    native_clause = f" AND s.session_id={p}" if native_session_id else ""
+    if not native_session_id:
+        return []
+    native_clause = f" AND s.session_id={p}"
     lock = (
         " FOR UPDATE OF s SKIP LOCKED"
         if db_backend.connection_is_postgres(conn)
@@ -129,7 +131,7 @@ def reserve_launch_registration_candidate(
     lease_id: str,
     now: datetime | str,
 ) -> dict[str, Any]:
-    """Atomically reserve the only registration matching a supervised launch."""
+    """Reserve only a native identity proven by the hook or relay."""
     begin_mutation(conn)
     launch = get_launch(conn, launch_id, for_update=True)
     if launch.registered_session_id:
@@ -204,48 +206,6 @@ def reserve_launch_registration_candidate(
     }
 
 
-def registered_candidate_for_reconcile(conn: Any, launch: Any) -> str | None:
-    """Return the sole session that registered inside this launch's window.
-
-    Reconciliation runs after the binding window has closed, so unlike the live
-    reserve path it does not gate on the current time: a session that
-    registered inside the window but was never bound — the relay's pid-based
-    identity listing could not see a session served by a ``claude bg-spare``
-    child, and often burned the whole window before the registry was consulted
-    — is still the launch's rightful native session, and is adopted here rather
-    than spawned over by a retry. Returns ``None`` unless exactly one candidate
-    matches, so an ambiguous or empty result never guesses.
-    """
-    if launch.registered_session_id or launch.native_session_id:
-        return None
-    p = marker(conn)
-    attempt = conn.execute(
-        "SELECT started_at,evidence FROM session_launch_attempts "
-        f"WHERE launch_id={p} ORDER BY attempt_number DESC LIMIT 1",
-        (launch.launch_id,),
-    ).fetchone()
-    if attempt is None:
-        return None
-    evidence = registration_evidence_document(value(attempt, "evidence", 1))
-    workspace = str(evidence.get(NATIVE_LAUNCH_WORKSPACE_FIELD) or "").strip()
-    window = registration_binding_window(
-        value(attempt, "started_at", 0), launch.deadline_at, evidence
-    )
-    if not workspace or window is None:
-        return None
-    candidates = _registration_candidates(
-        conn,
-        launch_id=launch.launch_id,
-        project_id=launch.project_id,
-        surface=launch.selected_surface,
-        machine_id=str(launch.assigned_machine_id or ""),
-        workspace=workspace,
-        native_session_id=None,
-        window=window,
-    )
-    return candidates[0] if len(candidates) == 1 else None
-
-
 def wait_for_launch_registration_candidate(
     conn: Any,
     *,
@@ -287,7 +247,6 @@ def wait_for_launch_registration_candidate(
 
 __all__ = [
     "REGISTRATION_CANDIDATE_STATES",
-    "registered_candidate_for_reconcile",
     "registration_binding_window",
     "registration_evidence_document",
     "reserve_launch_registration_candidate",

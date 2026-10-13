@@ -59,7 +59,7 @@ def _deadline_candidates(
     project_id: int | None,
 ) -> list[LaunchRecord]:
     p = marker(conn)
-    states = sorted(IN_FLIGHT_LAUNCH_STATES)
+    states = sorted(IN_FLIGHT_LAUNCH_STATES | {"outcome_unknown"})
     where = [f"state IN ({', '.join(p for _ in states)})"]
     params: list[Any] = list(states)
     if launch_id is not None:
@@ -235,7 +235,9 @@ def _expire_at_deadline(
         "expired",
     )
     result_code = (
-        "launch_acknowledgement_missing"
+        "launch_work_claim_missing"
+        if registration and receipt_state == "acknowledged"
+        else "launch_acknowledgement_missing"
         if unacknowledged
         else "registration_deadline"
         if registration
@@ -256,6 +258,12 @@ def _expire_at_deadline(
         evidence["recovery"] = (
             "Inspect the native turn and hook evidence, then retry the launch; "
             "the injected message was never acknowledged."
+        )
+    if result_code == "launch_work_claim_missing":
+        evidence["receipt_state"] = receipt_state
+        evidence["recovery"] = (
+            "Inspect the worker's launch evidence, then retry the launch; "
+            "it acknowledged its mandate but never claimed its assigned item."
         )
     return update_launch(
         conn,
@@ -284,6 +292,14 @@ def settle_launch_deadlines(
             launch_id=launch_id,
             project_id=project_id,
         ):
+            from yoke_core.domain.session_launch_work_entry import (
+                complete_entered_launch,
+            )
+
+            completed = complete_entered_launch(conn, launch, now=current)
+            if completed.state == "succeeded":
+                changed.append(completed)
+                continue
             deadline_passed = parse_time(current) >= parse_time(launch.deadline_at)
             if launch.state == "launching":
                 row = open_attempt(conn, launch.launch_id)

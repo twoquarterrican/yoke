@@ -15,7 +15,9 @@ from yoke_core.domain.session_launch_closure_evidence import closure_evidence
 from yoke_core.domain.session_launch_deadlines import start_pickup_window
 from yoke_core.domain.session_launch_native_progress import native_launch_updates
 from yoke_core.domain.session_launch_registered_session_binding import (
+    attested_report_identity,
     bind_existing_registered_session,
+    preserve_bound_launch_report,
 )
 from yoke_core.domain.session_launch_visibility import launch_execution_failure_code
 from yoke_core.domain.session_launch_store import (
@@ -45,7 +47,7 @@ from yoke_core.domain.session_launch_types import (
 
 
 _REPORT_RESULTS = frozenset({"native_created", "not_created", "outcome_unknown"})
-_REPORT_STATES = ("launching", "awaiting_registration", "outcome_unknown")
+_REPORT_STATES = ("launching", "awaiting_registration", "outcome_unknown", "succeeded")
 
 
 def _attempt_by_lease(conn: Any, launch_id: str, lease_id: str) -> Any:
@@ -99,7 +101,7 @@ def expire_launch_attempt(
     result_code: str,
     now: datetime | str,
 ) -> LaunchRecord:
-    """Close an abandoned relay attempt without erasing its progress evidence."""
+    """Close an abandoned attempt, retaining its progress evidence."""
     begin_mutation(conn)
     try:
         launch = get_launch(conn, launch_id, for_update=True)
@@ -108,12 +110,6 @@ def expire_launch_attempt(
         if completed:
             conn.commit()
             return launch
-        # Compose the observable facts here rather than inheriting whatever an
-        # earlier pass happened to leave behind. The deadline pass only visits
-        # a launch still in flight, so a launch cancelled out of ``launching``
-        # reaches this closure with nothing written, and an attempt closed
-        # with only its result code is the silent death this path exists to
-        # end. Merging keeps any richer document a prior pass did write.
         evidence = closure_evidence(
             conn,
             launch=launch,
@@ -159,12 +155,7 @@ def claim_assigned_launch(
     batch_id: str | None = None,
     now: datetime | str | None = None,
 ) -> LaunchClaim:
-    """Lease one assigned launch and mint its single-use attestation secret.
-
-    ``batch_id`` names the relay poll that leased this attempt, so a later
-    reader can tell an attempt the relay still owns from one it has moved on
-    from. A launch leased outside a relay poll belongs to no batch.
-    """
+    """Lease a launch and mint its attestation; batch_id identifies its relay poll."""
     current = utc_now() if now is None else parse_instant(now)
     begin_mutation(conn)
     try:
@@ -243,7 +234,7 @@ def report_launch_attempt(
     evidence: dict[str, Any] | None = None,
     now: datetime | str | None = None,
 ) -> LaunchRecord:
-    """Persist the native-create boundary without guessing an uncertain outcome."""
+    """Persist creation; a proven hook binding outranks a late relay report."""
     if result_code not in _REPORT_RESULTS:
         raise SessionLaunchError("result_invalid", "unknown launch attempt result")
     if result_code == "native_created" and not str(native_session_id or "").strip():
@@ -256,6 +247,9 @@ def report_launch_attempt(
         completed = value(attempt, "completed_at", 3)
         previous_code = value(attempt, "result_code", 5)
         previous_native = value(attempt, "native_session_id", 4)
+        result_code, native_session_id = attested_report_identity(
+            launch, result_code, native_session_id
+        )
         if completed:
             if previous_code == result_code and previous_native == native_session_id:
                 conn.commit()
@@ -280,6 +274,10 @@ def report_launch_attempt(
             evidence=evidence,
             prior_evidence=prior_evidence,
         )
+        if launch.registered_session_id:
+            launch = preserve_bound_launch_report(conn, launch, evidence, now=current)
+            conn.commit()
+            return launch
         result_evidence = merge_redacted_evidence(prior_evidence, evidence)
         evidence_code = evidence_result_code(evidence)
         telemetry = native_launch_updates(evidence, observed_at=current)

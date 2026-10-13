@@ -77,7 +77,7 @@ def launch_visibility(
     else:
         correlation = "pending"
 
-    if state == "succeeded":
+    if state == "succeeded" or result == "launch_work_claim_pending":
         delivery = "delivered"
     elif result == "injected_awaiting_acknowledgement":
         delivery = "awaiting_acknowledgement"

@@ -41,6 +41,7 @@ _TEXT_FIELDS = frozenset(
         # verdict replaced it. An undelivered wake is otherwise a bare code
         # with nothing behind it to question.
         "receipt_state",
+        "recovery",
         "transport_result",
         "identity_output_snippet",
         "identity_parse_expectation",

@@ -82,6 +82,22 @@ def require_exact_launch_session(
         )
 
 
+def attested_report_identity(
+    launch: LaunchRecord, result_code: str, native_session_id: str | None
+) -> tuple[str, str | None]:
+    """A relay report cannot undo an authenticated hook binding."""
+    if not launch.registered_session_id:
+        return result_code, native_session_id
+    if result_code == "not_created" or (
+        native_session_id and native_session_id != launch.native_session_id
+    ):
+        raise SessionLaunchError(
+            "native_session_mismatch",
+            "native report contradicts the attested identity; inspect this launch's hook and relay evidence",
+        )
+    return "native_created", launch.native_session_id
+
+
 def adopt_attested_session_identity(
     conn: Any,
     *,
@@ -90,9 +106,9 @@ def adopt_attested_session_identity(
     facts: dict[str, Any],
     now: datetime | str,
 ) -> LaunchRecord:
-    """Recover a missing native id from a validated launch attestation."""
+    """Adopt the opening hook identity from its validated launch attestation."""
     if (
-        launch.state != "outcome_unknown"
+        launch.state not in {"launching", "awaiting_registration", "outcome_unknown"}
         or launch.native_session_id
         or launch.registered_session_id
     ):
@@ -124,6 +140,20 @@ def adopt_attested_session_identity(
         awaiting_registration_at=now,
         completed_at=None,
         result_code="native_identity_attested",
+    )
+
+
+def preserve_bound_launch_report(
+    conn: Any, launch: LaunchRecord, evidence: dict[str, Any] | None, *, now: Any
+) -> LaunchRecord:
+    """Keep native diagnostics without replacing hook delivery or work entry."""
+    from yoke_core.domain.session_launch_native_progress import native_launch_updates
+
+    return update_launch(
+        conn,
+        launch.launch_id,
+        result_evidence=merge_redacted_evidence(launch.result_evidence, evidence),
+        **native_launch_updates(evidence, observed_at=now),
     )
 
 

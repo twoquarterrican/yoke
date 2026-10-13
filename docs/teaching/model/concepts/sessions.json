@@ -34,6 +34,15 @@
        "status": "draft-copy"
       },
       {
+       "id": "launch-binding",
+       "title": "Launch attestation, exact identity and assigned-item entry",
+       "status": "observed",
+       "sources": ["docs/public/reference/db-reference/qa-and-sessions.md", "runtime/api/domain/test_session_launch_attested_binding.py", "runtime/api/domain/test_session_launch_work_entry.py"],
+       "surface_refs": ["command-feedback", "project-orientation"],
+       "commands": ["yoke session-control launch get"],
+       "functions": ["session_control.launch.get"]
+      },
+      {
        "id": "episodes-and-reactivation",
        "title": "Episodes and reactivation",
        "status": "draft-copy"

@@ -21,8 +21,8 @@ def complete_bound_launch(
 
     The transport starts Cursor's native new-chat print path with no selected
     id. Its opening hook registers the id Cursor assigned. The relay's shared
-    registration-candidate callback then resolves that session by launch,
-    machine, surface, workspace, and time window. A still-missing candidate is
+    registration callback reads the exact session bound by that hook.
+    A still-missing identity is
     an uncertain live native under existing supervision and deadline custody,
     not proof of either registration or failure.
     """

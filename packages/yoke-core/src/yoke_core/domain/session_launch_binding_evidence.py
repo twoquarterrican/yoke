@@ -151,11 +151,10 @@ SESSION_END_RECORDED = "recorded"
 def _still_bindable(launch: LaunchRecord) -> bool:
     """Whether a registration could still bind this launch.
 
-    Exactly the eligibility binding applies: a launch awaiting registration,
-    or an ``outcome_unknown`` one with no identity yet, which recovery
-    adoption still binds. Anything else is not this native's to annotate.
+    The attested opening hook can bind during native creation, while awaiting
+    registration, or recover an uncertain launch with no identity yet.
     """
-    if launch.state == "awaiting_registration":
+    if launch.state in {"launching", "awaiting_registration"}:
         return True
     return (
         launch.state == "outcome_unknown"
@@ -173,12 +172,9 @@ def record_session_ended_unbound(
 ) -> str:
     """Name a launch whose attested session ended before it ever bound.
 
-    Recovery adoption runs on the attested session's own hooks. A native that
-    ran only while its launch awaited the relay's identity report, then ended,
-    leaves no later hook to adopt it, and its pending refusals are deliberately
-    unrecorded because they normally resolve on the next event. Its ending is
-    the last fact that native can report, so it is written here rather than
-    left for a deadline to close with nothing attached.
+    An attested native that ends before opening-hook binding leaves no later
+    hook to recover its identity. Preserve its ending rather than waiting for
+    a deadline with no explanation.
 
     Only a session that proves the launch's attestation, and is the launch's
     native when the launch already names one, may write it, only while the
