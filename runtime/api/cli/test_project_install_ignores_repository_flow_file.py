@@ -15,6 +15,10 @@ from pathlib import Path
 
 import pytest
 
+from runtime.api.cli.project_install_publication_test_support import (
+    git,
+    local_only_checkout,
+)
 from yoke_cli.project_install import repository_layer
 from yoke_cli.project_install import runner
 from yoke_core.domain.project_install_test_helpers import make_bundle
@@ -73,7 +77,7 @@ INERT_DECLARATIONS = {
 @pytest.fixture
 def install_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """A checkout whose install reaches its own writers without a network."""
-    repo = tmp_path / "repo"
+    repo = local_only_checkout(tmp_path)
     (repo / ".yoke").mkdir(parents=True)
     monkeypatch.setattr(
         runner.git_hooks_layer,
@@ -116,6 +120,8 @@ def test_refresh_succeeds_and_leaves_any_flow_file_untouched(
 ) -> None:
     declaration = install_repo / DECLARATION
     declaration.write_text(INERT_DECLARATIONS[shape], encoding="utf-8")
+    git(install_repo, "add", DECLARATION)
+    git(install_repo, "commit", "-q", "-m", "existing declaration")
     before = declaration.read_bytes()
 
     report = runner.refresh(

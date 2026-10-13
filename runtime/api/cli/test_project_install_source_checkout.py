@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+
 import pytest
 
 from yoke_cli import main as yoke_operations_cli
@@ -19,6 +21,7 @@ def cfg(tmp_path, monkeypatch):
 def source_checkout(tmp_path):
     root = tmp_path / "yoke-src"
     root.mkdir()
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
     (root / "pyproject.toml").write_text('[project]\nname = "yoke"\n', encoding="utf-8")
     (root / "runtime" / "harness").mkdir(parents=True)
     return root

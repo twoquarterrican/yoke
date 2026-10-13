@@ -83,7 +83,7 @@ def test_project_install_refuses_missing_hook_runtime_before_repo_writes(
 ) -> None:
     checkout = tmp_path / "external-project"
     checkout.mkdir()
-    (checkout / ".git" / "hooks").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(checkout)], check=True)
     (checkout / "README.md").write_text("# external\n", encoding="utf-8")
 
     install = _run_product_cli(

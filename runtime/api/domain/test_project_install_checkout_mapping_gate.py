@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from runtime.api.cli.project_install_publication_test_support import local_only_checkout
+
 import pytest
 
 from yoke_core.domain import machine_config, machine_config_writer, project_install
@@ -13,9 +15,7 @@ from yoke_core.domain.project_install_test_helpers import make_bundle
 
 @pytest.fixture()
 def repo(tmp_path: Path) -> Path:
-    root = tmp_path / "repo"
-    root.mkdir()
-    return root
+    return local_only_checkout(tmp_path)
 
 
 def _tree_bytes(root: Path) -> dict[str, bytes | str]:

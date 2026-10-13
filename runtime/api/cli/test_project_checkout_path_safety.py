@@ -18,15 +18,25 @@ def test_project_apply_refuses_replaced_symlink_checkout(
     checkout = tmp_path / "project"
     checkout.symlink_to(victim, target_is_directory=True)
 
-    rc = yoke_operations_cli.main([
-        "project", "create", str(checkout),
-        "--slug", "demo",
-        "--name", "Demo",
-        "--default-branch", "main",
-        "--public-item-prefix", "DMO",
-        "--config", str(tmp_path / "config.json"),
-        "--yes",
-    ])
+    (tmp_path / "config.json").write_text("{}\n", encoding="utf-8")
+    rc = yoke_operations_cli.main(
+        [
+            "project",
+            "create",
+            str(checkout),
+            "--slug",
+            "demo",
+            "--name",
+            "Demo",
+            "--default-branch",
+            "main",
+            "--public-item-prefix",
+            "DMO",
+            "--config",
+            str(tmp_path / "config.json"),
+            "--yes",
+        ]
+    )
 
     assert rc == 1
     assert "symbolic link" in capsys.readouterr().err

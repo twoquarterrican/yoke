@@ -223,6 +223,7 @@ def test_product_wheels_exercise_installer_plan_surfaces(
 
     install_project = tmp_path / "install-project"
     install_project.mkdir()
+    subprocess.run(["git", "init", "-q", str(install_project)], check=True)
     with ProjectOnboardApi() as api:
         install_config_root = tmp_path / "install-config"
         install_config_root.mkdir()

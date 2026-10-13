@@ -263,6 +263,7 @@ class TestInstallDispatch:
     def test_install_refuses_source_checkout_without_env(
         self, checkout, capsys
     ) -> None:
+        _git_init(checkout)
         with pytest.raises(ProjectInstallError) as exc_info:
             project_install.install(checkout)
         assert "yoke dev setup" in str(exc_info.value)
@@ -272,6 +273,7 @@ class TestInstallDispatch:
     def test_install_announces_copy_strategy(
         self, plain_repo, monkeypatch, capsys
     ) -> None:
+        _git_init(plain_repo)
         from yoke_core.domain.project_install_test_helpers import make_bundle
 
         monkeypatch.setattr(
