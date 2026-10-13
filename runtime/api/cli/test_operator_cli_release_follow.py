@@ -31,7 +31,7 @@ def _cli(tmp_path: Path, monkeypatch, versions: list[str], *, installs: bool = T
     def run(argv, **_kwargs):
         return subprocess.CompletedProcess(argv, 0, stdout=versions[0] + "\n")
 
-    def install(target, _bin):
+    def install(target, _bin, *, env):
         installed.append(target)
         if not installs:
             raise self_update.SelfUpdateError("the Yoke installer failed (exit 1)")
@@ -56,6 +56,41 @@ def test_behind_cli_installs_exactly_the_observed_release(
     assert installed == ["0.1.1+launch.621"]
     stored = json.loads((tmp_path / follow.FOLLOW_RECORD_NAME).read_text())
     assert stored["after"] == "0.1.1+launch.621"
+
+
+def test_probe_and_install_run_outside_the_relay_python(tmp_path, monkeypatch) -> None:
+    state_dir = tmp_path / "relay"
+    release = state_dir / "releases" / "deadbeef"
+    monkeypatch.setenv(session_relay_instance.RELAY_STATE_DIR_ENV, str(state_dir))
+    monkeypatch.setenv("VIRTUAL_ENV", str(release))
+    monkeypatch.setenv("PYTHONPATH", str(release / "site-packages"))
+    monkeypatch.setenv("PATH", f"{state_dir / 'venv' / 'bin'}:/usr/bin")
+    yoke = tmp_path / "yoke"
+    yoke.write_text("", encoding="utf-8")
+    envs: list[dict[str, str]] = []
+    installed: list[str] = []
+
+    def run(argv, *, env, **_kwargs):
+        envs.append(env)
+        # Inside the relay's activation the launcher reports the relay's release.
+        moved = installed or "PYTHONPATH" in env
+        version = "0.1.1+launch.623" if moved else "0.1.1+launch.622"
+        return subprocess.CompletedProcess(argv, 0, stdout=version + "\n")
+
+    def install(target, _bin, *, env):
+        envs.append(env)
+        installed.append(target)
+
+    monkeypatch.setattr(self_update, "resolve_target", lambda *, version: version)
+    monkeypatch.setattr(self_update, "install_release", install)
+    record = follow.follow_release(
+        "v0.1.1+launch.623", tmp_path, run=run, executable=yoke
+    )
+    assert record["before"] == "0.1.1+launch.622"
+    assert record["outcome"] == "updated"
+    for env in envs:
+        assert "PYTHONPATH" not in env and "VIRTUAL_ENV" not in env
+        assert env["PATH"] == "/usr/bin"
 
 
 def test_current_cli_is_left_alone(tmp_path, monkeypatch) -> None:

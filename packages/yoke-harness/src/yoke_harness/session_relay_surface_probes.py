@@ -18,7 +18,7 @@ from yoke_contracts.harness_cli_manifest import (
     HARNESS_CLI_MANIFESTS,
     harness_cli_probe_commands,
 )
-from yoke_harness.session_relay_environment import strip_relay_owned_python_state
+from yoke_cli.config.session_relay_instance import strip_relay_owned_python_state
 from yoke_harness.linux_desktop_apps import read_linux_desktop_version
 
 SURFACE_PROBE_TIMEOUT_SECONDS = 30.0

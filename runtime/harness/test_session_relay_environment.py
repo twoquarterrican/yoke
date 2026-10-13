@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 
-from yoke_cli.config.session_relay_instance import RELAY_STATE_DIR_ENV
-from yoke_contracts.session_identity import ACTOR_ROLE_ENV_VAR, AMBIENT_ENV_VARS
-from yoke_harness.session_launch_handoff import LAUNCH_CONTEXT_ENV
-from yoke_harness.session_relay_environment import (
-    native_session_environment,
+from yoke_cli.config.session_relay_instance import (
+    RELAY_STATE_DIR_ENV,
     strip_relay_owned_python_state,
 )
+from yoke_contracts.session_identity import ACTOR_ROLE_ENV_VAR, AMBIENT_ENV_VARS
+from yoke_harness.session_launch_handoff import LAUNCH_CONTEXT_ENV
+from yoke_harness.session_relay_environment import native_session_environment
 
 
 RELAY_STATE_DIR = "/Users/example/.yoke/relay-instances/abcd1234"
