@@ -10,6 +10,7 @@ from runtime.api.fixtures import pg_testdb
 
 from yoke_core.domain.actor_invites import (
     DuplicatePendingInvite,
+    INVITE_STATUS_ACCEPTED,
     INVITE_STATUS_PENDING,
     INVITE_STATUS_REVOKED,
     InviteError,
@@ -36,6 +37,7 @@ from yoke_core.domain.schema_init_actor_path_claim_tables import (
 )
 from yoke_core.domain.schema_init_path_tables import create_path_registry_tables
 from yoke_core.domain.schema_init_tables import create_core_tables
+from yoke_core.domain.sign_in_invite_role import grant_invite_role, invite_role_refusal
 
 
 @pytest.fixture
@@ -142,16 +144,34 @@ def test_accept_requires_pending_and_records_acceptor(conn):
         )
 
 
-def test_an_invite_with_no_recorded_inviter_reads_as_none(conn):
+def test_an_invite_with_no_recorded_inviter_reads_lists_and_accepts(conn):
+    org_id = default_org_id(conn)
+    viewer = conn.execute("SELECT id FROM roles WHERE name = 'viewer'").fetchone()[0]
     invite = create_invite(
-        conn, email="dev@example.com", org_id=default_org_id(conn),
-        invited_by_actor_id=seed_human_actor(conn),
+        conn, email="dev@example.com", org_id=org_id,
+        invited_by_actor_id=seed_human_actor(conn), role_id=viewer,
     )
     conn.execute(
         "UPDATE actor_invites SET invited_by_actor_id = NULL WHERE id = %s",
         (invite.invite_id,),
     )
-    assert get_invite(conn, invite.invite_id).invited_by_actor_id is None
+    invite = get_invite(conn, invite.invite_id)
+    assert invite.invited_by_actor_id is None
+    listed = list_invites(conn, status=INVITE_STATUS_PENDING)
+    assert [(i.invite_id, i.invited_by_actor_id) for i in listed] == [
+        (invite.invite_id, None)
+    ]
+
+    member = seed_human_actor(conn, name="dev")
+    assert invite_role_refusal(conn, invite) is None
+    grant_invite_role(conn, invite, member)
+    mark_invite_accepted(conn, invite_id=invite.invite_id, accepted_by_actor_id=member)
+    assert get_invite(conn, invite.invite_id).status == INVITE_STATUS_ACCEPTED
+    granter = conn.execute(
+        "SELECT granted_by_actor_id FROM actor_org_roles WHERE actor_id = %s",
+        (member,),
+    ).fetchone()
+    assert granter == (None,)
 
 
 def test_bad_email_and_missing_invite_are_typed_errors(conn):
