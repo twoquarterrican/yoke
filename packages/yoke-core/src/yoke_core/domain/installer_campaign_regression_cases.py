@@ -172,12 +172,23 @@ SECOND_MACHINE_JOIN = _hosted_case(
     outcome="A distinct second physical machine joins the same organization and retains project facts with its own readiness evidence.",
 )
 
+_UNINSTALL_WAIT_SCRIPT = """
+import pathlib, sys, time
+launcher = pathlib.Path(sys.argv[1])
+deadline = time.monotonic() + 120
+print('Waiting by design: deferred CLI uninstall; checking launcher removal for at most 120s.', flush=True)
+while launcher.exists():
+    if time.monotonic() >= deadline:
+        sys.exit('uninstall_handoff_incomplete: inspect the uninstall result log before rerunning')
+    time.sleep(0.25)
+"""
 UNINSTALL = _command_case(
     15,
     "uninstall",
     _LOCAL_SETUP
     + f"; {YOKE_BIN} uninstall --no-backup --projects none --yes"
-    + f"; test ! -e {YOKE_BIN}; test ! -f \"$HOME/.yoke/config.json\"",
+    + "; python3 -c " + shlex.quote(_UNINSTALL_WAIT_SCRIPT)
+    + f" {YOKE_BIN}; test ! -f \"$HOME/.yoke/config.json\"",
     instructions=(
         "Install and configure a local machine-only universe on the isolated host. Uninstall with "
         "explicit no-backup and no-project choices. Verify launcher and machine config removal "

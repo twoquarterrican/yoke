@@ -1,10 +1,12 @@
 """Recovery recipes use executable method contracts and fail closed."""
 
 from io import BytesIO
+from pathlib import Path
 from subprocess import CompletedProcess
 import shutil
 import subprocess
 import sys
+import time
 from types import SimpleNamespace
 from urllib import request
 
@@ -15,6 +17,7 @@ from yoke_core.domain.installer_campaign_regression_cases import (
     INSTALLER_RECOVERY_CASES,
     _LATE_HARNESS_SCRIPT,
     _STALE_RELEASE_SCRIPT,
+    _UNINSTALL_WAIT_SCRIPT,
 )
 from yoke_core.domain.machine_qa_method_contracts import validate_machine_method_config
 from yoke_core.domain.installer_campaign_execution_target import installer_campaign_cases_for_target
@@ -68,6 +71,22 @@ def test_stale_lookup_network_failure_teaches_recovery(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["fixture", "https://example.invalid", "stable"])
     with pytest.raises(SystemExit, match="stale_release_lookup_failed"):
         exec(compile(_STALE_RELEASE_SCRIPT, "stale_fixture", "exec"), {})
+
+
+@pytest.mark.parametrize("removed_after", [2, None])
+def test_uninstall_waits_for_deferred_removal_or_names_timeout(monkeypatch, removed_after):
+    clock = [0]
+    with monkeypatch.context() as patch:
+        patch.setattr(sys, "argv", ["fixture", "/tmp/fixture-launcher"])
+        patch.setattr(time, "monotonic", lambda: clock[0])
+        patch.setattr(time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + 1))
+        patch.setattr(Path, "exists", lambda path: removed_after is None or clock[0] < removed_after)
+        if removed_after is None:
+            with pytest.raises(SystemExit, match="uninstall_handoff_incomplete"):
+                exec(compile(_UNINSTALL_WAIT_SCRIPT, "uninstall_fixture", "exec"), {})
+        else:
+            exec(compile(_UNINSTALL_WAIT_SCRIPT, "uninstall_fixture", "exec"), {})
+            assert clock[0] == removed_after
 
 
 def _late_fixture(monkeypatch, tmp_path, setup_returncode):
