@@ -10,6 +10,7 @@ from yoke_cli.commands._helpers import (
     dispatch_and_emit,
     item_target,
     parse_or_usage_error,
+    usage_error,
 )
 
 
@@ -32,17 +33,21 @@ def _terminal(args: list[str], action: str) -> int:
         ),
     )
     parser.add_argument("--item", required=True, help="Owning item (PREFIX-N).")
-    parser.add_argument("--claim-id", required=True, type=int, help="Path claim id.")
+    parser.add_argument("--claim-id", required=True, help="Path claim id.")
     parser.add_argument("--reason", required=True, help="Why coverage is ending.")
     add_session_arg(parser)
     add_json_arg(parser)
     parsed = parse_or_usage_error(parser, args, usage)
     if parsed is None:
         return 2
+    try:
+        claim_id = int(parsed.claim_id)
+    except ValueError:
+        return usage_error("--claim-id must be an integer path claim id")
     return dispatch_and_emit(
         function_id=f"claims.path.{action}",
         target=item_target("item", parsed.item, parsed.project),
-        payload={"claim_id": parsed.claim_id, "reason": parsed.reason},
+        payload={"claim_id": claim_id, "reason": parsed.reason},
         session_id=parsed.session_id,
         json_mode=parsed.json_mode,
     )

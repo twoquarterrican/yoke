@@ -42,3 +42,20 @@ def test_help_teaches_holder_and_fresh_coverage(action):
     assert code == 0
     assert "work claim" in out
     assert "fresh coverage" in out
+
+
+@pytest.mark.parametrize("action", ["release", "cancel"])
+def test_invalid_claim_id_names_recovery(action):
+    code, _, error = _run(
+        "claims",
+        "path",
+        action,
+        "--item",
+        "EXT-42",
+        "--claim-id",
+        "not-an-integer",
+        "--reason",
+        "finished",
+    )
+    assert code == 2
+    assert "--claim-id must be an integer" in error
