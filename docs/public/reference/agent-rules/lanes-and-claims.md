@@ -36,7 +36,7 @@ persisted task-budget coverage: parity defers before generated tasks exist,
 then reports uncovered task paths. Register or widen each owning task claim,
 then rerun readiness; a whole-item claim does not substitute:
 ```text
-yoke claims path register --item PREFIX-N --task-num N --paths <task-budget-paths> [--allow-planned]
+yoke claims path register --item PREFIX-N --task-num <task-number> --paths <task-budget-paths> [--allow-planned]
 ```
 
 - **File Budget and path claims are independent policy axes — never fuse them.** Before authoring or gating either surface, consume `result.effective_policies.file_budget` and `result.effective_policies.path_claims` from registered `workflows.item.get`; never reconstruct them from raw pinned policies or posture. The universal 350-line authored-file limit always applies, even when File Budget policy is off. File Budget/path-claim parity applies only when both effective axes are enabled. With File Budget off and path claims on, derive claim paths from the execution document, instruction, or conflict survey. With File Budget on and path claims off, use the budget for sizing and conflict evidence without registering a claim. With both off, neither artifact is required.

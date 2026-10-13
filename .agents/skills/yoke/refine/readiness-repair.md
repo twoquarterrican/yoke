@@ -29,7 +29,7 @@ coverage gates. Before generated tasks exist, claim parity is deferred;
 once they exist, readiness names only uncovered task paths. Register or widen
 the owning task's claim, then rerun readiness:
 ```text
-yoke claims path register --item PREFIX-N --task-num N --paths <task-budget-paths> [--allow-planned]
+yoke claims path register --item PREFIX-N --task-num <task-number> --paths <task-budget-paths> [--allow-planned]
 ```
 A whole-item claim is not a task-coverage substitute.
 
