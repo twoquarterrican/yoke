@@ -10,6 +10,13 @@ from yoke_cli.config import onboard_wizard_image_repository as wizard
 from yoke_cli.self_host import release_target, bundle, upgrade
 from yoke_contracts.server_image import PUBLISHED_SERVER_IMAGE_REPOSITORY
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
+
+@pytest.fixture(autouse=True)
+def _owned_repository_config(tmp_path, monkeypatch):
+    select_machine_config_file(monkeypatch, tmp_path / "machine" / "config.json")
+
 
 def test_repository_round_trip_preserves_other_settings(tmp_path):
     path = tmp_path / "machine" / "config.json"
@@ -52,7 +59,7 @@ def test_configured_repository_selects_upgrade_and_initial_image(tmp_path, monke
     path = tmp_path / "machine" / "config.json"
     value = "registry.example:5000/private/yoke"
     repository.save(value, path=path)
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(path))
+    select_machine_config_file(monkeypatch, str(path))
     commit = "a" * 40
     monkeypatch.setattr(release_target, "local_handshake_version", lambda: "1.2.3")
 

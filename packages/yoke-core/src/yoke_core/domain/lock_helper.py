@@ -38,13 +38,19 @@ DEFAULT_STALE_SECONDS = 60
 def _read_lock_settings(config_path: Path) -> tuple[int, float, int]:
     """Return ``(retries, sleep_seconds, stale_seconds)`` for the config."""
     retries = runtime_settings.get_int(
-        "lock_retries", DEFAULT_RETRIES, config_path=config_path,
+        "lock_retries",
+        DEFAULT_RETRIES,
+        config_path=config_path,
     )
     sleep_ms = runtime_settings.get_int(
-        "lock_sleep_ms", DEFAULT_SLEEP_MS, config_path=config_path,
+        "lock_sleep_ms",
+        DEFAULT_SLEEP_MS,
+        config_path=config_path,
     )
     stale_seconds = runtime_settings.get_int(
-        "lock_stale_seconds", DEFAULT_STALE_SECONDS, config_path=config_path,
+        "lock_stale_seconds",
+        DEFAULT_STALE_SECONDS,
+        config_path=config_path,
     )
     return retries, sleep_ms / 1000.0, stale_seconds
 
@@ -125,8 +131,9 @@ def _default_config_path(lock_dir: Path) -> Path:
     """Best-effort config resolution for CLI callers.
 
     Priority:
-      1. Explicit ``YOKE_MACHINE_CONFIG_FILE``
-      2. Default ``~/.yoke/config.json``
+      1. ``YOKE_MACHINE_HOME/config.json`` when the home override is set
+      2. ``YOKE_MACHINE_CONFIG_FILE`` when no home override is set
+      3. Default ``~/.yoke/config.json``
     """
     return machine_config.config_path()
 
@@ -154,7 +161,9 @@ def main(argv: list[str] | None = None) -> int:
     lock_dir = Path(args.lockdir)
 
     if args.cmd == "acquire":
-        config_path = Path(args.config) if args.config else _default_config_path(lock_dir)
+        config_path = (
+            Path(args.config) if args.config else _default_config_path(lock_dir)
+        )
         if acquire_lock(lock_dir, config_path):
             return 0
         retries, _, _ = _read_lock_settings(config_path)

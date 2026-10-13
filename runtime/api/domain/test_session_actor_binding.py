@@ -56,9 +56,10 @@ def _sole_human(conn) -> int:
 
 
 @pytest.fixture
-def config_path(tmp_path: Path) -> Path:
+def config_path(tmp_path: Path, monkeypatch) -> Path:
     """A machine config carrying one configured connection and no binding."""
     path = tmp_path / "config.json"
+    monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path))
     path.write_text(
         json.dumps(
             {
@@ -76,9 +77,7 @@ def _recorded(config_path: Path) -> dict:
     return payload["connections"][ENV].get("operating_actor") or {}
 
 
-def test_no_recorded_binding_refuses_and_names_the_bind_command(
-    conn, config_path
-):
+def test_no_recorded_binding_refuses_and_names_the_bind_command(conn, config_path):
     seed_human_actor(conn, "Ada Lovelace")
 
     result = resolve_operating_actor(conn, env=ENV, config_path=config_path)
@@ -92,9 +91,7 @@ def test_a_sole_human_is_not_a_standing_fallback(conn, config_path):
     """The one case that is unambiguous is still not answered implicitly."""
     assert _sole_human(conn)
 
-    assert not resolve_operating_actor(
-        conn, env=ENV, config_path=config_path
-    ).bound
+    assert not resolve_operating_actor(conn, env=ENV, config_path=config_path).bound
 
 
 def test_a_recorded_binding_resolves_by_id(conn, config_path):
@@ -180,9 +177,7 @@ def test_a_recorded_binding_with_no_universe_is_unproven_not_accepted(
     assert result.code == ACTOR_UNIVERSE_UNPROVEN
 
 
-def test_a_control_plane_that_cannot_state_its_identity_is_unproven(
-    conn, config_path
-):
+def test_a_control_plane_that_cannot_state_its_identity_is_unproven(conn, config_path):
     actor_id = seed_human_actor(conn, "Ada Lovelace")
     persist_operating_actor(conn, actor_id, env=ENV, config_path=config_path)
 
@@ -199,9 +194,7 @@ def test_a_control_plane_that_cannot_state_its_identity_is_unproven(
     assert result.code == ACTOR_UNIVERSE_UNPROVEN
 
 
-def test_persisting_refuses_when_the_universe_cannot_identify_itself(
-    conn, config_path
-):
+def test_persisting_refuses_when_the_universe_cannot_identify_itself(conn, config_path):
     """Refused at write time, so no unprovable binding is ever recorded."""
     actor_id = seed_human_actor(conn, "Ada Lovelace")
     conn.execute("DELETE FROM projects")
@@ -214,9 +207,7 @@ def test_persisting_refuses_when_the_universe_cannot_identify_itself(
     assert _recorded(config_path) == {}
 
 
-def test_persisting_refuses_an_env_this_machine_has_not_configured(
-    conn, config_path
-):
+def test_persisting_refuses_an_env_this_machine_has_not_configured(conn, config_path):
     actor_id = seed_human_actor(conn, "Ada Lovelace")
 
     with pytest.raises(MachineConfigContractError):
@@ -254,8 +245,7 @@ def test_converge_declines_to_choose_between_several_humans(conn, config_path):
     seed_human_actor(conn, "Grace Hopper")
 
     assert (
-        converge_operating_actor_binding(conn, env=ENV, config_path=config_path)
-        is None
+        converge_operating_actor_binding(conn, env=ENV, config_path=config_path) is None
     )
     assert _recorded(config_path) == {}
 
@@ -265,8 +255,7 @@ def test_converge_never_overwrites_an_existing_binding(conn, config_path):
     persist_operating_actor(conn, actor_id, env=ENV, config_path=config_path)
 
     assert (
-        converge_operating_actor_binding(conn, env=ENV, config_path=config_path)
-        is None
+        converge_operating_actor_binding(conn, env=ENV, config_path=config_path) is None
     )
     assert _recorded(config_path)["actor_id"] == actor_id
 

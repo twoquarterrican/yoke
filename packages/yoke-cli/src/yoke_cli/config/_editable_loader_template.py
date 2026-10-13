@@ -70,6 +70,8 @@ def _default_config_path(environ) -> Path:
     override = environ.get(MACHINE_CONFIG_ENV, "").strip()
     home = environ.get(MACHINE_HOME_ENV, "").strip()
     base = Path(home).expanduser() if home else Path.home() / ".yoke"
+    if home:
+        return base / CONFIG_FILE_NAME
     if override:
         path = Path(override).expanduser()
         return path if path.is_absolute() else base / path
@@ -101,8 +103,8 @@ def _root_from_config(config_path: Path):
 
 def _fallback_root():
     try:
-        text = Path(__file__).with_name(FALLBACK_SIDECAR_NAME).read_text(
-            encoding="utf-8"
+        text = (
+            Path(__file__).with_name(FALLBACK_SIDECAR_NAME).read_text(encoding="utf-8")
         )
     except (OSError, ValueError):
         return None
@@ -125,8 +127,7 @@ def resolve_repo_root(environ=None, config_path=None):
         if _is_yoke_checkout(candidate):
             return candidate
     resolved = _root_from_config(
-        Path(config_path) if config_path is not None
-        else _default_config_path(environ)
+        Path(config_path) if config_path is not None else _default_config_path(environ)
     )
     if resolved is not None:
         return resolved

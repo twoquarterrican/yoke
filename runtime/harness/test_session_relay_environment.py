@@ -25,6 +25,8 @@ RELAY_PYTHON_STATE = {
 def test_native_environment_replaces_parent_identity_and_surface_facts() -> None:
     inherited = {
         "PATH": "/opt/native/bin",
+        "YOKE_MACHINE_CONFIG_FILE": "/operator/config.json",
+        "YOKE_MACHINE_HOME": "/worker/.yoke",
         "YOKE_SESSION_ID": "parent-yoke-session",
         "CLAUDE_CODE_SESSION_ID": "parent-claude-session",
         "CODEX_SESSION_ID": "parent-codex-session",
@@ -55,6 +57,8 @@ def test_native_environment_replaces_parent_identity_and_surface_facts() -> None
     )
 
     assert environment["PATH"] == "/opt/native/bin"
+    assert "YOKE_MACHINE_CONFIG_FILE" not in environment
+    assert environment["YOKE_MACHINE_HOME"] == "/worker/.yoke"
     assert all(name not in environment for name in AMBIENT_ENV_VARS)
     assert ACTOR_ROLE_ENV_VAR not in environment
     assert environment["YOKE_EXECUTOR"] == "claude-code"
@@ -169,3 +173,12 @@ def test_wake_environment_drops_stale_launch_context() -> None:
     )
 
     assert LAUNCH_CONTEXT_ENV not in environment
+
+
+def test_explicit_launch_markers_can_select_a_shared_config() -> None:
+    environment = native_session_environment(
+        executor="codex",
+        markers={"YOKE_MACHINE_CONFIG_FILE": "/shared/config.json"},
+        environ={"YOKE_MACHINE_CONFIG_FILE": "/operator/config.json"},
+    )
+    assert environment["YOKE_MACHINE_CONFIG_FILE"] == "/shared/config.json"

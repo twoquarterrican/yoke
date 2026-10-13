@@ -161,12 +161,12 @@ def local_universe(tmp_path, monkeypatch):
             conn.close()
 
         # Machine config: ONLY the local connection, authored through the
-        # same writer `yoke init --local` uses. Point the config-file env at
+        # same writer `yoke init --local` uses. Point the machine-home env at
         # a per-test scratch home (the engines conftest pins it to a shared
         # session-scoped stub; writing there would leak across tests).
         monkeypatch.setenv(
-            machine_runtime.CONFIG_FILE_ENV,
-            str(tmp_path / "machine-home" / "config.json"),
+            "YOKE_MACHINE_HOME",
+            str(tmp_path / "machine-home"),
         )
         machine_config_writer.set_connection(
             LOCAL_ENV,

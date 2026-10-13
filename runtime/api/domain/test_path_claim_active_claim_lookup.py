@@ -34,12 +34,13 @@ from yoke_core.domain.path_claim_active_claim_lookup import (
 def _make_conn(repo_path: str):
     repo = Path(repo_path)
     repo.mkdir(parents=True, exist_ok=True)
-    config_path = repo / ".test-yoke-config.json"
+    config_path = repo / "config.json"
     config_path.write_text(
         json.dumps({"projects": [{"checkout": str(repo), "project_id": 1}]}),
         encoding="utf-8",
     )
     os.environ["YOKE_MACHINE_CONFIG_FILE"] = str(config_path)
+    os.environ["YOKE_MACHINE_HOME"] = str(repo)
     name = pg_testdb.create_test_database()
     conn = pg_testdb.drop_database_on_close(pg_testdb.connect_test_database(name), name)
     apply_fixture_ddl(

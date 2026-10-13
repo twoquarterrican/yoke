@@ -39,6 +39,8 @@ from yoke_core.engines.doctor_hc_session_actor_binding import (
     hc_session_actor_binding,
 )
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 
 @dataclass
 class _DoctorArgsStub:
@@ -109,7 +111,7 @@ def machine_config(tmp_path, monkeypatch):
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(path))
+    select_machine_config_file(monkeypatch, str(path))
     return path
 
 

@@ -12,6 +12,7 @@ phase's branching logic.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import json
 
 import pytest
@@ -42,7 +43,7 @@ def conn(tmp_path, monkeypatch):
         json.dumps({"projects": [{"checkout": str(repo_root), "project_id": 1}]}),
         encoding="utf-8",
     )
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+    select_machine_config_file(monkeypatch, config_path)
     name = pg_testdb.create_test_database()
     monkeypatch.setenv(db_backend.PG_DSN_ENV, pg_testdb.dsn_for_test_database(name))
     c = pg_testdb.connect_test_database(name)

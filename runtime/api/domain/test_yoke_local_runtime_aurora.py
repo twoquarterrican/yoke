@@ -21,6 +21,8 @@ from yoke_core.domain import (
 )
 from yoke_core.engines import _merge_worktree_runtime, done_transition_runtime
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 
 def _connected_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     repo = tmp_path / "repo"
@@ -55,7 +57,7 @@ def _connected_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     return repo
 
 

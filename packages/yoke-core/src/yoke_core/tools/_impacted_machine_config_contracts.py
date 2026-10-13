@@ -1,0 +1,53 @@
+"""Config selection and ownership consumers beyond bounded import reachability."""
+
+MACHINE_CONFIG_CONTRACTS = (
+    (
+        "machine_config_selection_and_ownership",
+        frozenset(
+            {
+                "packages/yoke-contracts/src/yoke_contracts/machine_config/paths.py",
+                "packages/yoke-contracts/src/yoke_contracts/machine_config/runtime.py",
+                "packages/yoke-cli/src/yoke_cli/config/machine_config.py",
+                "packages/yoke-cli/src/yoke_cli/config/machine_config_mutation.py",
+                "packages/yoke-cli/src/yoke_cli/config/_editable_loader_template.py",
+                "packages/yoke-cli/src/yoke_cli/config/project_onboard_support.py",
+                "packages/yoke-harness/src/yoke_harness/session_relay_environment.py",
+            }
+        ),
+        (
+            "runtime/api/cli/test_board_policy_authority.py",
+            "runtime/api/cli/test_db_router_connected_retired.py",
+            "runtime/api/cli/test_github_machine_shared_config_cleanup.py",
+            "runtime/api/cli/test_hosted_machine_authorization_identity.py",
+            "runtime/api/cli/test_onboard_machine_setup.py",
+            "runtime/api/cli/test_operator_cli_release_follow.py",
+            "runtime/api/cli/test_worker_machine_config_isolation.py",
+            "runtime/api/cli/test_yoke_cli_machine_setup.py",
+            "runtime/api/cli/test_yoke_editable_install.py",
+            "runtime/api/cli/test_yoke_operations_cli_config_write.py",
+            "runtime/api/cli/test_yoke_operations_cli_onboard_wizard_destination.py",
+            "runtime/api/cli/test_yoke_product_distribution_wheel.py",
+            "runtime/api/cli/test_yoke_product_pack_transport.py",
+            "runtime/api/domain/test_local_operating_actor.py",
+            "runtime/api/domain/test_machine_config_contract.py",
+            "runtime/api/domain/test_machine_config_writer_concurrency.py",
+            "runtime/api/domain/test_path_claim_active_claim_lookup.py",
+            "runtime/api/domain/test_project_install_checkout_identity.py",
+            "runtime/api/domain/test_runtime_settings.py",
+            "runtime/api/domain/test_timing_helper.py",
+            "runtime/api/domain/test_yoke_connected_env_secrets.py",
+            "runtime/api/engines/test_resync_local_mode.py",
+            "runtime/api/test_advance_path_claim_activation.py",
+            "runtime/api/test_hint_monitor_relay.py",
+            "runtime/api/test_merge_worktree_post_runtests.py",
+            "runtime/api/test_sessions_lifecycle_actor_id.py",
+            "runtime/api/test_worktree_db_resolution.py",
+            "runtime/api/tools/test_adopt_migration_content_identity.py",
+            "runtime/api/tools/test_source_dev_run_connection_selection.py",
+            "runtime/api/tools/test_watch_throttle.py",
+            "runtime/harness/test_machine_config_retired_keys.py",
+            "runtime/harness/test_session_relay_environment.py",
+            "tests/import_graph/test_board_rebuild_core_less_smoke.py",
+        ),
+    ),
+)

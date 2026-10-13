@@ -5,6 +5,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 import pytest
 
 from yoke_cli.config import writer
@@ -100,6 +102,7 @@ def _config(tmp_path, monkeypatch, entries):
     monkeypatch.delenv("YOKE_ENV", raising=False)
     (tmp_path / "api.token").write_text("test-token\n")
     cfg = tmp_path / "config.json"
+    select_machine_config_file(monkeypatch, cfg)
     cfg.write_text(
         json.dumps(
             {

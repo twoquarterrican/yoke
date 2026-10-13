@@ -9,6 +9,7 @@ these decisions to a follower in ``test_watch_progress_digest.py``.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import pytest
 
 from yoke_core.tools._watch_throttle import (
@@ -42,9 +43,7 @@ class TestProgressGate:
             ThrottlePolicy(percent_step=5.0),
             time_source=clock,
         )
-        decision = gate.consider(
-            Classification(LineClass.PROGRESS, progress_value=5.0)
-        )
+        decision = gate.consider(Classification(LineClass.PROGRESS, progress_value=5.0))
         assert decision.emit is True
         assert decision.suppressed_count == 0
 
@@ -72,9 +71,7 @@ class TestProgressGate:
         gate.consider(Classification(LineClass.PROGRESS, progress_value=10.0))
         # Three suppressed ticks (within window, below step):
         for v in (11.0, 12.0, 13.0):
-            d = gate.consider(
-                Classification(LineClass.PROGRESS, progress_value=v)
-            )
+            d = gate.consider(Classification(LineClass.PROGRESS, progress_value=v))
             assert d.emit is False
         # Crossing the 5-step (10 -> 15) emits with the suppressed count.
         crossing = gate.consider(
@@ -119,14 +116,10 @@ class TestProgressGate:
             ThrottlePolicy(percent_step=10.0),
             time_source=clock,
         )
-        first = gate.consider(
-            Classification(LineClass.PROGRESS, progress_value=1.0)
-        )
+        first = gate.consider(Classification(LineClass.PROGRESS, progress_value=1.0))
         assert first.emit is True
         clock.advance(600.0)
-        second = gate.consider(
-            Classification(LineClass.PROGRESS, progress_value=2.0)
-        )
+        second = gate.consider(Classification(LineClass.PROGRESS, progress_value=2.0))
         assert second.emit is False
         assert gate.pending_suppressed == 1
 
@@ -177,7 +170,7 @@ class TestAnnotateProgressLine:
 
 class TestLoadThrottlePolicy:
     def test_defaults_when_no_config(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(tmp_path / "missing.json"))
+        select_machine_config_file(monkeypatch, tmp_path / "missing.json")
         policy = load_throttle_policy()
         assert policy.percent_step == DEFAULT_PERCENT_STEP
 
@@ -188,7 +181,7 @@ class TestLoadThrottlePolicy:
             '{"settings": {"watcher_progress_percent_step": 12}}\n',
             encoding="utf-8",
         )
-        monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+        select_machine_config_file(monkeypatch, config_path)
         policy = load_throttle_policy()
         assert policy.percent_step == 12.0
 
@@ -199,11 +192,10 @@ class TestLoadThrottlePolicy:
         config_path = tmp_path / ".yoke" / "config.json"
         config_path.parent.mkdir()
         config_path.write_text(
-            '{"settings": '
-            f'{{"watcher_progress_percent_step": "{bad_value}"}}}}\n',
+            f'{{"settings": {{"watcher_progress_percent_step": "{bad_value}"}}}}\n',
             encoding="utf-8",
         )
-        monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(config_path))
+        select_machine_config_file(monkeypatch, config_path)
         policy = load_throttle_policy()
         # Bad config never silently breaks — the default takes over.
         assert policy.percent_step == DEFAULT_PERCENT_STEP

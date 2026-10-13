@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import contextlib
-import os
 from pathlib import Path
 from typing import Any, Iterator, Mapping
 
-from yoke_cli.config import machine_config
 from yoke_cli.config import project_onboarding_handoff
 from yoke_cli.config import project_worktrees_ignore
 from yoke_cli.config.project_github_adoption import (
@@ -15,6 +13,7 @@ from yoke_cli.config.project_github_adoption import (
 )
 from yoke_cli.transport.dispatcher import call_dispatcher
 from yoke_contracts.api.function_call import TargetRef
+from yoke_contracts.machine_config.paths import select_read_config
 
 PLAN = [
     "project.upsert",
@@ -55,7 +54,12 @@ def dry_run_report(
         "operation": operation,
         "applied": False,
         "project": _project_preview(
-            slug, name, org, github_repo, default_branch, public_item_prefix,
+            slug,
+            name,
+            org,
+            github_repo,
+            default_branch,
+            public_item_prefix,
         ),
         "checkout": {"path": str(root), "mode": checkout_mode},
         "worktrees_ignore": project_worktrees_ignore.report(root, apply=False),
@@ -72,6 +76,7 @@ def dry_run_report(
 
 def project_api_payload(**values: Any) -> dict[str, Any]:
     return {key: value for key, value in values.items() if value is not None}
+
 
 def project_dry_run(
     operation: str,
@@ -179,10 +184,7 @@ def capabilities_report(
         key = str(binding_result.get("key") or "")
         if cap_type and key:
             capability = dict(capabilities.get(cap_type) or {})
-            secret_refs = [
-                str(ref)
-                for ref in capability.get("secret_refs", [])
-            ]
+            secret_refs = [str(ref) for ref in capability.get("secret_refs", [])]
             if key not in secret_refs:
                 secret_refs.append(key)
             capability["secret_refs"] = secret_refs
@@ -224,18 +226,8 @@ def dispatch(
 
 @contextlib.contextmanager
 def machine_config_path(config_path: str | Path | None) -> Iterator[None]:
-    if config_path is None:
+    with select_read_config(config_path):
         yield
-        return
-    old = os.environ.get(machine_config.CONFIG_FILE_ENV)
-    os.environ[machine_config.CONFIG_FILE_ENV] = str(config_path)
-    try:
-        yield
-    finally:
-        if old is None:
-            os.environ.pop(machine_config.CONFIG_FILE_ENV, None)
-        else:
-            os.environ[machine_config.CONFIG_FILE_ENV] = old
 
 
 def project_from_result(result: Mapping[str, Any]) -> Mapping[str, Any]:

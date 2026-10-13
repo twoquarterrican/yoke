@@ -74,10 +74,10 @@ def test_resolve_picks_yoke_shaped_project_among_several(tmp_path: Path) -> None
     assert resolved == checkout
 
 
-def test_relative_machine_config_env_anchors_under_machine_home(tmp_path: Path) -> None:
+def test_machine_home_overrides_config_file_env(tmp_path: Path) -> None:
     home = tmp_path / "machine-home"
     checkout = _make_checkout(tmp_path / "checkout")
-    config = home / "machine-config" / "config.json"
+    config = home / "config.json"
     config.parent.mkdir(parents=True, exist_ok=True)
     _write_config(config, checkout)
 
@@ -143,9 +143,9 @@ def test_install_into_sys_path_never_raises_on_bad_config(tmp_path: Path) -> Non
 
 
 def test_loader_source_is_verbatim_template() -> None:
-    assert editable_install.loader_source() == Path(
-        loader.__file__
-    ).read_text(encoding="utf-8")
+    assert editable_install.loader_source() == Path(loader.__file__).read_text(
+        encoding="utf-8"
+    )
 
 
 def test_swap_writes_shim_and_removes_stale_pip_artifacts(tmp_path: Path) -> None:
@@ -193,10 +193,9 @@ def test_swap_is_idempotent(tmp_path: Path) -> None:
 
 def _sys_path_after_addsitedir(site: Path, config: Path, extra_env=None) -> list[str]:
     """Run the installed .pth in a subprocess and return the resulting sys.path."""
-    env = {
-        k: v for k, v in _base_env().items() if k != "YOKE_REPO_ROOT"
-    }
+    env = {k: v for k, v in _base_env().items() if k != "YOKE_REPO_ROOT"}
     env["YOKE_MACHINE_CONFIG_FILE"] = str(config)
+    env.pop("YOKE_MACHINE_HOME", None)
     if extra_env:
         env.update(extra_env)
     code = (
@@ -206,13 +205,17 @@ def _sys_path_after_addsitedir(site: Path, config: Path, extra_env=None) -> list
     )
     result = subprocess.run(
         [sys.executable, "-S", "-c", code],
-        env=env, text=True, capture_output=True, check=True,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=True,
     )
     return json.loads(result.stdout.strip().splitlines()[-1])
 
 
 def _base_env() -> dict:
     import os
+
     return dict(os.environ)
 
 

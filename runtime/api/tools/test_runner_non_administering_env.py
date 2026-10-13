@@ -24,6 +24,8 @@ from yoke_core.tools._impacted_selection import Selection
 
 import pytest
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 pytestmark = pytest.mark.usefixtures("bound_project_context")
 
 ADMIN_ENV = "prod-db-admin"
@@ -44,7 +46,7 @@ def _select_administering(monkeypatch, tmp_path: Path) -> None:
     config.write_text(
         json.dumps({"active_env": ADMIN_ENV, "connections": PAIRED_UNIVERSE})
     )
-    monkeypatch.setenv(machine_config_runtime.CONFIG_FILE_ENV, str(config))
+    select_machine_config_file(monkeypatch, str(config))
     monkeypatch.setenv(ENV_OVERRIDE, ADMIN_ENV)
 
 
@@ -87,7 +89,7 @@ def test_impacted_selection_collects_under_prod_flagged_ambient_env(
             }
         )
     )
-    monkeypatch.setenv(machine_config_runtime.CONFIG_FILE_ENV, str(config))
+    select_machine_config_file(monkeypatch, str(config))
     monkeypatch.setenv(ENV_OVERRIDE, SERVED_ENV)
     checkout = Path(__file__).resolve().parents[3]
     # This synthetic connection tests collection/schema isolation, not a live

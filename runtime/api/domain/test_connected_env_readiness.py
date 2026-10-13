@@ -11,6 +11,8 @@ from yoke_core.domain import connected_env_readiness_tunnel as cer_t
 from yoke_core.domain import machine_config
 from yoke_core.domain import yoke_connected_env
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 
 def _record_replacement(restarts: list):
     """Stand in for the coordinated replacement, recording each call."""
@@ -75,8 +77,8 @@ def managed_env(tmp_path, monkeypatch):
     monkeypatch.delenv(cer_c.PG_DSN_ENV, raising=False)
     monkeypatch.delenv(cer_c.PG_DSN_FILE_ENV, raising=False)
     binding = _write_binding(tmp_path)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
-    monkeypatch.setenv(machine_config.HOME_ENV, str(tmp_path / "machine-home"))
+    select_machine_config_file(monkeypatch, str(binding))
+    monkeypatch.setenv(machine_config.HOME_ENV, str(binding.parent))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     return binding
 
@@ -248,7 +250,7 @@ def test_remote_postgres_is_unmanaged_noop(tmp_path, monkeypatch):
     monkeypatch.delenv(cer_c.PG_DSN_ENV, raising=False)
     monkeypatch.delenv(cer_c.PG_DSN_FILE_ENV, raising=False)
     binding = _write_binding(tmp_path, host="10.20.30.40", with_tunnel=False)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     probes: list = []
     monkeypatch.setattr(cer_t, "_probe_failure", lambda dsn: probes.append(dsn))
@@ -264,10 +266,7 @@ def test_remote_postgres_is_unmanaged_noop(tmp_path, monkeypatch):
 def test_no_binding_is_unmanaged_noop(tmp_path, monkeypatch):
     monkeypatch.delenv(cer_c.PG_DSN_ENV, raising=False)
     monkeypatch.delenv(cer_c.PG_DSN_FILE_ENV, raising=False)
-    monkeypatch.setenv(
-        machine_config.CONFIG_FILE_ENV,
-        str(tmp_path / "absent.json"),
-    )
+    select_machine_config_file(monkeypatch, str(tmp_path / "absent.json"))
     result = cer.ensure_ready(force=True)
     assert result.ok
     assert result.connector_kind == cer.CONNECTOR_UNMANAGED
@@ -277,7 +276,7 @@ def test_managed_without_tunnel_block_raises_clear(tmp_path, monkeypatch):
     monkeypatch.delenv(cer_c.PG_DSN_ENV, raising=False)
     monkeypatch.delenv(cer_c.PG_DSN_FILE_ENV, raising=False)
     binding = _write_binding(tmp_path, with_tunnel=False)  # loopback, no tunnel
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     monkeypatch.setattr(cer_t, "_probe_failure", lambda dsn: "down (test)")
 

@@ -8,6 +8,8 @@ from yoke_core.domain import machine_config, yoke_connected_env
 from yoke_core.api import main_db
 from yoke_core.api import service_client_shared_io as io
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 _RETIRED_BACKEND_ENV = "YOKE_" + "BACKEND"
 
 
@@ -49,7 +51,7 @@ def test_subprocess_backend_env_uses_pytest_checkout_binding(
     monkeypatch.setattr(io, "_repo_root", str(root))
     monkeypatch.chdir(root)
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.delenv("YOKE_DB", raising=False)
     monkeypatch.delenv("YOKE_PG_DSN", raising=False)
     monkeypatch.delenv("YOKE_PG_DSN_FILE", raising=False)

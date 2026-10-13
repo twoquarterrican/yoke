@@ -177,6 +177,7 @@ def test_birth_actor_binding_uses_its_database_and_survives_reconnection(
     test_db.commit()
     dsn = os.environ["YOKE_PG_DSN"]
     config = tmp_path / "config.json"
+    monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path))
     config.write_text(
         json.dumps(
             {

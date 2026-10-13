@@ -24,6 +24,8 @@ import pytest
 from yoke_core.cli import db_router
 from yoke_core.domain import db_backend, machine_config, yoke_connected_env
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 
 def _reset_init_flag() -> None:
     os.environ.pop("YOKE_DB_INIT_DONE", None)
@@ -163,10 +165,7 @@ class TestWorktreeResolution:
         self._write_connected_postgres_binding(tmp_path, dsn_file)
         self._clear_authority_env(monkeypatch)
         monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
-        monkeypatch.setenv(
-            machine_config.CONFIG_FILE_ENV,
-            str(tmp_path / ".yoke" / "config.json"),
-        )
+        select_machine_config_file(monkeypatch, str(tmp_path / ".yoke" / "config.json"))
         monkeypatch.chdir(tmp_path)
         monkeypatch.setattr(db_router, "__file__", str(fake_file))
         seen: dict[str, object] = {}
@@ -200,10 +199,7 @@ class TestWorktreeResolution:
         self._write_connected_postgres_binding(tmp_path, dsn_file)
         self._clear_authority_env(monkeypatch)
         monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
-        monkeypatch.setenv(
-            machine_config.CONFIG_FILE_ENV,
-            str(tmp_path / ".yoke" / "config.json"),
-        )
+        select_machine_config_file(monkeypatch, str(tmp_path / ".yoke" / "config.json"))
         monkeypatch.chdir(tmp_path)
         monkeypatch.setattr(db_router, "__file__", str(fake_file))
 

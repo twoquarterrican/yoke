@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from yoke_core.domain import machine_config, observe_db, yoke_connected_env
+from yoke_core.domain import observe_db, yoke_connected_env
+
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 
 
 def _binding(root: Path) -> Path:
@@ -43,7 +45,7 @@ def test_normalize_observe_db_path_drops_retired_canonical_path(tmp_path, monkey
     root = tmp_path / "repo"
     root.mkdir()
     binding = _binding(root)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     canonical = root / "data" / "yoke.db"
     canonical.parent.mkdir(parents=True, exist_ok=True)
@@ -55,7 +57,7 @@ def test_normalize_observe_db_path_keeps_fixture_path(tmp_path, monkeypatch):
     root = tmp_path / "repo"
     root.mkdir()
     binding = _binding(root)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     fixture = tmp_path / "fixture.db"
 

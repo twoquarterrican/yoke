@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import io
 import json
 import subprocess
@@ -219,7 +220,7 @@ def test_other_relays_leave_the_installed_cli_alone(monkeypatch, tmp_path) -> No
 def test_update_installs_the_requested_version_from_the_recorded_origin(
     monkeypatch, tmp_path
 ) -> None:
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(tmp_path / "config.json"))
+    select_machine_config_file(monkeypatch, tmp_path / "config.json")
     distribution.save(origin="https://fork.example", channel="stable")
     monkeypatch.setattr(
         install_binding,
@@ -256,9 +257,7 @@ def test_update_installs_the_requested_version_from_the_recorded_origin(
 def test_stale_cli_warns_once_and_only_against_the_active_connection(
     monkeypatch, tmp_path
 ) -> None:
-    monkeypatch.setenv(
-        "YOKE_MACHINE_CONFIG_FILE", str(_https_config(tmp_path, active_env="prod"))
-    )
+    select_machine_config_file(monkeypatch, _https_config(tmp_path, active_env="prod"))
     monkeypatch.setattr(installed_cli_staleness, "_warned", False)
     stream = io.StringIO()
     kwargs = dict(server_version="0.1.1+launch.621", local_version="0.1.1+launch.616")

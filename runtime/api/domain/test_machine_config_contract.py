@@ -42,8 +42,11 @@ def test_machine_id_contract_rejects_noncanonical_values() -> None:
     assert any(issue.code == "machine_id_invalid" for issue in issues)
 
 
-def test_machine_id_is_created_once_and_written_privately(tmp_path) -> None:
+def test_machine_id_is_created_once_and_written_privately(
+    tmp_path, monkeypatch
+) -> None:
     config = tmp_path / "config.json"
+    monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path))
     config.write_text('{"schema_version": 1}\n', encoding="utf-8")
 
     first = machine_runtime.ensure_machine_id(config)
@@ -56,7 +59,7 @@ def test_machine_id_is_created_once_and_written_privately(tmp_path) -> None:
 
 def test_machine_id_initialization_requires_existing_config(tmp_path) -> None:
     with pytest.raises(machine_runtime.MachineConfigError, match="configured"):
-        machine_runtime.ensure_machine_id(tmp_path / "missing.json")
+        machine_runtime.ensure_machine_id(tmp_path / "machine-home" / "missing.json")
 
 
 def test_env_override_routes_to_configured_connection(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import io
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import json
 from pathlib import Path
 
@@ -54,34 +54,23 @@ def test_get_str_returns_default_when_file_missing(tmp_path: Path) -> None:
 def test_get_str_strips_inline_comments(tmp_path: Path) -> None:
     cfg = _write_config(tmp_path, "monitor_hint_color=C5DEF5  # azure\n")
     assert (
-        runtime_settings.get_str("monitor_hint_color", "", config_path=cfg)
-        == "C5DEF5"
+        runtime_settings.get_str("monitor_hint_color", "", config_path=cfg) == "C5DEF5"
     )
 
 
 def test_get_str_strips_surrounding_quotes(tmp_path: Path) -> None:
-    cfg = _write_config(
-        tmp_path, 'monitor_relay_hint_text="hello world"\n'
-    )
+    cfg = _write_config(tmp_path, 'monitor_relay_hint_text="hello world"\n')
     assert (
-        runtime_settings.get_str(
-            "monitor_relay_hint_text", "", config_path=cfg
-        )
+        runtime_settings.get_str("monitor_relay_hint_text", "", config_path=cfg)
         == "hello world"
     )
 
 
 def test_get_str_skips_blank_lines_and_comment_lines(tmp_path: Path) -> None:
-    body = (
-        "# header\n"
-        "\n"
-        "  # indented comment\n"
-        "monitor_hint_color=C5DEF5\n"
-    )
+    body = "# header\n\n  # indented comment\nmonitor_hint_color=C5DEF5\n"
     cfg = _write_config(tmp_path, body)
     assert (
-        runtime_settings.get_str("monitor_hint_color", "x", config_path=cfg)
-        == "C5DEF5"
+        runtime_settings.get_str("monitor_hint_color", "x", config_path=cfg) == "C5DEF5"
     )
 
 
@@ -118,9 +107,7 @@ def test_get_int_accepts_negative_value(tmp_path: Path) -> None:
 def test_get_seconds_parses_positive_integer(tmp_path: Path) -> None:
     cfg = _write_config(tmp_path, "git_fetch_timeout_seconds=120\n")
     assert (
-        runtime_settings.get_seconds(
-            "git_fetch_timeout_seconds", 60, config_path=cfg
-        )
+        runtime_settings.get_seconds("git_fetch_timeout_seconds", 60, config_path=cfg)
         == 120
     )
 
@@ -128,9 +115,7 @@ def test_get_seconds_parses_positive_integer(tmp_path: Path) -> None:
 def test_get_seconds_returns_default_for_non_positive(tmp_path: Path) -> None:
     cfg = _write_config(tmp_path, "git_fetch_timeout_seconds=0\n")
     assert (
-        runtime_settings.get_seconds(
-            "git_fetch_timeout_seconds", 60, config_path=cfg
-        )
+        runtime_settings.get_seconds("git_fetch_timeout_seconds", 60, config_path=cfg)
         == 60
     )
 
@@ -138,9 +123,7 @@ def test_get_seconds_returns_default_for_non_positive(tmp_path: Path) -> None:
 def test_get_seconds_returns_default_for_negative(tmp_path: Path) -> None:
     cfg = _write_config(tmp_path, "git_fetch_timeout_seconds=-30\n")
     assert (
-        runtime_settings.get_seconds(
-            "git_fetch_timeout_seconds", 60, config_path=cfg
-        )
+        runtime_settings.get_seconds("git_fetch_timeout_seconds", 60, config_path=cfg)
         == 60
     )
 
@@ -148,9 +131,7 @@ def test_get_seconds_returns_default_for_negative(tmp_path: Path) -> None:
 def test_get_seconds_returns_default_for_malformed(tmp_path: Path) -> None:
     cfg = _write_config(tmp_path, "git_fetch_timeout_seconds=oops\n")
     assert (
-        runtime_settings.get_seconds(
-            "git_fetch_timeout_seconds", 60, config_path=cfg
-        )
+        runtime_settings.get_seconds("git_fetch_timeout_seconds", 60, config_path=cfg)
         == 60
     )
 
@@ -191,7 +172,7 @@ def test_cli_get_prints_value(
         json.dumps({"schema_version": 1, "settings": {"monitor_hint_color": "FBCA04"}}),
         encoding="utf-8",
     )
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(cfg))
+    select_machine_config_file(monkeypatch, cfg)
     rc = runtime_settings.main(["get", "monitor_hint_color", "fallback"])
     out = capsys.readouterr().out.strip()
     assert rc == 0
@@ -203,7 +184,7 @@ def test_cli_get_falls_back_to_default(
 ) -> None:
     cfg = tmp_path / "config.json"
     cfg.write_text(json.dumps({"schema_version": 1, "settings": {}}), encoding="utf-8")
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(cfg))
+    select_machine_config_file(monkeypatch, cfg)
     rc = runtime_settings.main(["get", "monitor_hint_color", "fallback"])
     out = capsys.readouterr().out.strip()
     assert rc == 0
@@ -232,6 +213,6 @@ def test_default_reader_resolves_machine_config(
         json.dumps({"schema_version": 1, "settings": {"monitor_hint_color": "mocked"}}),
         encoding="utf-8",
     )
-    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(cfg))
+    select_machine_config_file(monkeypatch, cfg)
     monkeypatch.delenv("YOKE_ROOT", raising=False)
     assert runtime_settings.get_str("monitor_hint_color", "x") == "mocked"

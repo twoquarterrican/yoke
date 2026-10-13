@@ -31,7 +31,8 @@ def test_read_deadline_does_not_wait_for_other_pending_reads(monkeypatch):
 
     def read(value):
         started.set()
-        release.wait(timeout=1)
+        # Only the test cleanup releases readers; host load cannot do so.
+        release.wait()
         completed.append(value)
 
     try:

@@ -52,7 +52,14 @@ def _isolate_engines_from_live_config(_engines_isolated_repo_root):
             "yoke_core.engines.doctor_report._resolve_repo_root",
             return_value=repo_root,
         ),
-        patch.dict(os.environ, {"YOKE_MACHINE_CONFIG_FILE": config_path}),
+        patch.dict(
+            os.environ,
+            {
+                "YOKE_MACHINE_CONFIG_FILE": config_path,
+                "YOKE_MACHINE_HOME": "",
+                "HOME": repo_root,
+            },
+        ),
     ):
         yield
 

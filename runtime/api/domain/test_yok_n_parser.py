@@ -9,9 +9,10 @@ import pytest
 
 from runtime.api.domain.item_ref_parser_test_support import ref_db as ref_db
 from runtime.api.fixtures.file_test_db import connect_test_db
-from yoke_core.domain import machine_config
 from yoke_core.domain.yok_n_parser import parse_item_id
 from yoke_contracts.api.function_call import FunctionCallRequest
+
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 
 
 class TestParseItemId:
@@ -310,7 +311,7 @@ class TestClientProjectContext:
         monkeypatch.setattr(
             checkout_context, "resolve_repo_root_from_cwd", lambda: str(repo)
         )
-        monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(config))
+        select_machine_config_file(monkeypatch, str(config))
         monkeypatch.delenv("YOKE_PROJECT", raising=False)
         monkeypatch.chdir(repo)
 

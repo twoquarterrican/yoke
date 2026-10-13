@@ -3,6 +3,8 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
+
 import pytest
 
 from yoke_cli.commands.adapters import onboard_interactive
@@ -15,6 +17,7 @@ from yoke_cli.config import (
 
 def test_directories_are_convergent_and_repair_deleted_state(tmp_path, monkeypatch):
     config = tmp_path / "config.json"
+    select_machine_config_file(monkeypatch, config)
     calls = []
     original = setup.writer.set_runtime_paths
 

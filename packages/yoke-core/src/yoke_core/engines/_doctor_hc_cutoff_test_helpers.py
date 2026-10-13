@@ -60,6 +60,13 @@ def _patch_repo_root(tmp_path: Path):
             )
         )
         stack.enter_context(
-            patch.dict(os.environ, {"YOKE_MACHINE_CONFIG_FILE": str(config_path)})
+            patch.dict(
+                os.environ,
+                {
+                    "YOKE_MACHINE_CONFIG_FILE": str(config_path),
+                    "YOKE_MACHINE_HOME": "",
+                    "HOME": str(tmp_path),
+                },
+            )
         )
         yield

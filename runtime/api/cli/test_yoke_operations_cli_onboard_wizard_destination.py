@@ -129,8 +129,11 @@ def test_local_pick_swaps_sign_in_for_universe_summary() -> None:
     asyncio.run(scenario())
 
 
-def test_local_pick_names_existing_universe_on_rerun(tmp_path: Path) -> None:
+def test_local_pick_names_existing_universe_on_rerun(
+    tmp_path: Path, monkeypatch
+) -> None:
     config = tmp_path / "config.json"
+    monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path))
     writer.set_connection(
         local_universe_setup.LOCAL_ENV,
         transport="local-postgres",

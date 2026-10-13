@@ -60,7 +60,7 @@ def _configured_repo_with_wiped_bundle(
     repo.mkdir()
     helper_support.run_git(repo, "init")
     token_file = home / "secrets" / f"github-app-user-{'a' * 32}.json"
-    config = tmp_path / "config.json"
+    config = home / "config.json"
     helper_support.write_github_app_config(config, token_file, token)
     payload = json.loads(config.read_text(encoding="utf-8"))
     payload["connections"]["local"] = {

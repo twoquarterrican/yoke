@@ -13,8 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from yoke_core.domain import db_backend, machine_config, yoke_connected_env
+from yoke_core.domain import db_backend, yoke_connected_env
 from yoke_contracts.machine_config import schema_connections
+
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 
 
 def _https_active_binding(tmp_path: Path, *, with_local_env: bool = True) -> Path:
@@ -56,7 +58,7 @@ def https_active(tmp_path, monkeypatch):
     for key in (db_backend.PG_DSN_ENV, db_backend.PG_DSN_FILE_ENV, "YOKE_ENV"):
         monkeypatch.delenv(key, raising=False)
     binding = _https_active_binding(tmp_path)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
     return binding
 
@@ -93,7 +95,7 @@ def test_resolve_postgres_dsn_without_local_env_teaches_config(
     for key in (db_backend.PG_DSN_ENV, db_backend.PG_DSN_FILE_ENV, "YOKE_ENV"):
         monkeypatch.delenv(key, raising=False)
     binding = _https_active_binding(tmp_path, with_local_env=False)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.setenv(yoke_connected_env.PYTEST_ENABLE_ENV, "1")
 
     with pytest.raises(yoke_connected_env.ConnectedEnvNotLocalPostgres) as e:

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from yoke_core.cli import raw_query
-from yoke_core.domain import db_backend, machine_config, yoke_connected_env
+from yoke_core.domain import db_backend, yoke_connected_env
 from yoke_core.domain import db_helpers
 
 
@@ -14,6 +14,8 @@ from runtime.api.domain.yoke_connected_env_test_support import (
     _binding,
     _clean_env,
 )
+
+from runtime.api.fixtures.machine_config_test import select_machine_config_file
 
 
 def test_walks_parent_dirs_and_resolves_dsn_file(
@@ -27,7 +29,7 @@ def test_walks_parent_dirs_and_resolves_dsn_file(
     )
     repo = tmp_path / "repo"
     binding = _binding(repo, dsn_file)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     child = repo / "a" / "b"
     child.mkdir(parents=True)
     monkeypatch.chdir(child)
@@ -55,7 +57,7 @@ def test_explicit_env_and_fixture_db_override_connected_env(
     dsn_file.write_text("host=target dbname=prod\n", encoding="utf-8")
     repo = tmp_path / "repo"
     binding = _binding(repo, dsn_file)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.chdir(repo)
 
     assert db_backend.is_postgres()
@@ -72,7 +74,7 @@ def test_resolve_postgres_dsn_allows_explicit_prod_flag(
     dsn_file.write_text("host=prod dbname=yoke_prod\n", encoding="utf-8")
     repo = tmp_path / "repo"
     binding = _binding(repo, dsn_file, prod=True)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.chdir(repo)
 
     resolved = yoke_connected_env.resolve_postgres_dsn(
@@ -91,7 +93,7 @@ def test_explicit_pg_dsn_env_bypasses_prod_flagged_machine_config(
     repo = tmp_path / "repo"
     binding = _binding(repo, tmp_path / "missing.dsn", prod=True)
     explicit = "host=operator dbname=yoke_prod"
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.setenv(db_backend.PG_DSN_ENV, explicit)
     monkeypatch.chdir(repo)
 
@@ -104,7 +106,7 @@ def test_raw_query_surfaces_missing_prod_admin_credential(
     _clean_env(monkeypatch)
     repo = tmp_path / "repo"
     binding = _binding(repo, tmp_path / "missing.dsn", prod=True)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.chdir(repo)
 
     err = StringIO()
@@ -122,7 +124,7 @@ def test_retired_canonical_yoke_db_does_not_override_connected_env(
     dsn_file.write_text("host=target dbname=prod\n", encoding="utf-8")
     repo = tmp_path / "repo"
     binding = _binding(repo, dsn_file)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     canonical = repo / "data" / "yoke.db"
     canonical.parent.mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(repo)
@@ -142,7 +144,7 @@ def test_retired_yoke_db_resolves_postgres_from_outside_repo(
     dsn_file.write_text("host=target dbname=prod\n", encoding="utf-8")
     repo = tmp_path / "repo"
     binding = _binding(repo, dsn_file)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     canonical = repo / "data" / "yoke.db"
     canonical.parent.mkdir(parents=True, exist_ok=True)
     outside = tmp_path / "outside"
@@ -159,7 +161,7 @@ def test_missing_credential_file_fails_loud(
     _clean_env(monkeypatch)
     repo = tmp_path / "repo"
     binding = _binding(repo, tmp_path / "missing.dsn")
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.chdir(repo)
 
     with pytest.raises(yoke_connected_env.ConnectedEnvError, match="missing"):
@@ -178,7 +180,7 @@ def test_pytest_ambient_discovery_is_opt_in(
     dsn_file.write_text("host=target dbname=prod\n", encoding="utf-8")
     repo = tmp_path / "repo"
     binding = _binding(repo, dsn_file)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.chdir(repo)
 
     assert yoke_connected_env.find_binding() is None
@@ -194,7 +196,7 @@ def test_process_env_overrides_forward_dsn_file(
     dsn_file.write_text("host=target dbname=prod\n", encoding="utf-8")
     repo = tmp_path / "repo"
     binding = _binding(repo, dsn_file)
-    monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(binding))
+    select_machine_config_file(monkeypatch, str(binding))
     monkeypatch.chdir(repo)
 
     assert yoke_connected_env.process_env_overrides(

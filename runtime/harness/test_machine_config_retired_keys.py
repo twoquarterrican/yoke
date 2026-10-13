@@ -73,8 +73,9 @@ def test_strip_removes_only_retired_keys_and_names_them() -> None:
     assert strip_retired_keys(payload) == ()
 
 
-def test_a_config_write_drops_every_retired_key(tmp_path) -> None:
+def test_a_config_write_drops_every_retired_key(tmp_path, monkeypatch) -> None:
     config = tmp_path / "config.json"
+    monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path))
     payload = _with_retired_keys(contract.canonical_example_payload())
 
     machine_config_mutation.write_payload(payload, config)
