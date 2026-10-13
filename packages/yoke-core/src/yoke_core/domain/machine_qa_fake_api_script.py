@@ -51,7 +51,7 @@ def install_bundle(project):
         + strategy_body
     )
     bundle = {
-        "bundle_schema": 2,
+        "bundle_schema": 3,
         "skill_discovery_links": {".claude/skills/yoke": "../../.agents/skills/yoke"},
         "yoke_version": "9.9.9",
         "project_id": int(project.get("id") or 91),

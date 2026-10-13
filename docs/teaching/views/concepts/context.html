@@ -50,8 +50,17 @@ rules</b> <i class="s draft-copy">draft-copy</i>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
 </li>
 <li id="context/startup/installed-release-manifest"><b>Installed-release
-manifest</b> <i class="s draft-copy">draft-copy</i>
-<span class="gap">unmapped</span>
+manifest</b> <i class="s observed">observed</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a></div>
+  <div><b>Sources:</b>
+  <code>packages/yoke-core/src/yoke_core/domain/install_bundle_sources.py</code>,
+  <code>runtime/api/domain/test_installed_project_context.py</code></div>
+  <div><b>Detail:</b> Managed .yoke/harness manifests publish rendered release
+  bytes. Source and HTTPS transport tests prove install/refresh ownership;
+  receiving-harness proof waits for release.</div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/packets-help.html">packets-help</a></div>
 </li>
 <li id="context/startup/context-freshness"><b>Context freshness in a long-lived
 session</b> <i class="s draft-copy">draft-copy</i>
@@ -128,8 +137,19 @@ command facts</b> <i class="s draft-copy">draft-copy</i>
   <div><b>Functions:</b> <code>projects.checkout_context.run</code></div>
 </li>
 <li id="context/packets/project-structure-context-routing"><b>Project Structure
-context routing</b> <i class="s draft-copy">draft-copy</i>
-<span class="gap">unmapped</span>
+context routing</b> <i class="s observed">observed</i>
+  <div><b>Mapped by FIRST-USER:</b>
+  <a href="../plan-coverage/first-user-agent-install.html#FIRST-USER.41">41</a></div>
+  <div><b>Commands:</b> <code>yoke project-structure get</code></div>
+  <div><b>Functions:</b> <code>project_structure.get</code></div>
+  <div><b>Sources:</b>
+  <code>.agents/skills/yoke/implement/implementing/project-context.md</code>,
+  <code>.agents/skills/yoke/conduct/dispatch-context-project.md</code></div>
+  <div><b>Detail:</b> Conduct and Implement share the registered
+  entries/payload.docs, topic selection and lane/checkout recipe. Empty
+  configuration differs from failed reads and unread files.</div>
+  <div><b>Surfaces:</b>
+  <a href="../surfaces/packets-help.html">packets-help</a></div>
 </li>
 </ul>
 </li>

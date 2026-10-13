@@ -108,7 +108,7 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "envelope."
         ),
     },
-    "runtime/harness/<harness-dir>/manifest.json": {
+    ".yoke/harness/<harness-dir>/manifest.json": {
         "columns": [
             ("agent_wake", "object"),
             ("session_control", "object"),
@@ -124,7 +124,7 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "(idle_wake / idle_wake_mechanism / timer_wake, each with the "
             "evidence behind it), `session_control` answers messaging and "
             "launch routes, `supports` answers hook affordances. Schema: "
-            "runtime/harness/manifest-schema.md. Sources: "
+            ".yoke/docs/reference/harness-discovery.md. Sources: "
             "yoke_contracts.harness_wake_capability and "
             "yoke_contracts.session_control; the manifests are rendered, so "
             "never hand-edit one. A capability nobody probed reads "

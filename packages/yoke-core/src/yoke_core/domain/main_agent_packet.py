@@ -74,7 +74,7 @@ _MAIN_AGENT_HEADING = "Main-session startup block (main_agent)"
 MAIN_AGENT_STARTUP_READS = (
     "Before naming schema or commands: `yoke packets render --role main_agent "
     "--topic T` (`--detail full` for depth). Operation flags: `--help`. "
-    "Harness capability: `runtime/harness/<harness-dir>/manifest.json` "
+    "Harness capability: `.yoke/harness/<harness-dir>/manifest.json` "
     "(claude-code → claude), never a document's claim."
 )
 

@@ -21,12 +21,6 @@ from yoke_core.domain.install_bundle import (
     _read_text,
 )
 
-# Repo-root FILES (not dirs) every server tree and the packaged snapshot carry
-# alongside the source dirs; ``build_bundle`` extracts each file's managed
-# block. The snapshot materializer keeps the wheel copy byte-exact with each
-# file's project-agnostic managed region while leaving repo-only tails local.
-INSTALL_BUNDLE_SOURCE_FILES = ("AGENTS.md",)
-
 # The managed-markdown doctrine sources and the co-owned files each block
 # installs into. AGENTS.md is the single shared instruction owner.
 _DOCTRINE_SOURCE = "AGENTS.md"
@@ -136,6 +130,5 @@ def _claude_settings_status_line() -> Dict[str, Any]:
 
 
 __all__ = [
-    "INSTALL_BUNDLE_SOURCE_FILES",
     "managed_bundle_keys",
 ]

@@ -52,10 +52,29 @@ instruction file; code examples do not count as imports.
 
 ## Refresh and ownership
 
-Bundle schema 2 requires a matching CLI. An older bundle/CLI pairing refuses
+Bundle schema 3 requires a matching CLI. An older bundle/CLI pairing refuses
 and names the public-installer upgrade. Source previews, local/self-hosted
 servers, and hosted servers render the same canonical tree and discovery
 contract; wheels carry the same authored inputs.
+
+## Read installed capabilities
+
+```text
+cat .yoke/harness/codex/manifest.json
+```
+
+Read `.yoke/harness/<harness-dir>/manifest.json` for the installed release.
+Directories are `claude`, `codex`, and `cursor`; `claude-code` uses `claude`.
+`agent_wake` names wake support and its evidence, `session_control` names
+message/launch routes, and `supports` names hook affordances. `unverified`
+means the capability has no proof; it does not authorize guessing.
+The existing install bundle publishes renderer-owned release bytes and
+refresh manages their digests, restores missing files and resumes interrupted
+application. Do not edit managed manifests to change capabilities.
+If a manifest is missing, run `yoke project refresh` from this project.
+If its serving release lacks these files, report `installed_manifest_unavailable`
+with the project's bundle release and ask the control-plane operator to serve
+a release that publishes them. Local edits use the refresh refusal's recovery.
 
 Refresh writes only the canonical skill tree and Claude discovery link. An
 unexpected entry at `.claude/skills/yoke` refuses as

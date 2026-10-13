@@ -9,7 +9,7 @@
   "location": "/yoke help in a project; planned yoke-global outside",
   "basis": "Existing project skill · global planned",
   "note": "A human-facing router. It does not become a second copy of every skill or command reference.",
-  "current": "Existing source references; delivered content is not yet proved.",
+  "current": "The project Help skill routes product documentation to installed .yoke/docs/index.md; automated external-project install/refresh proof is in test_installed_project_context.py. Live receiving-harness delivery is unproven.",
   "desired": "General answer: overview. Specific question: complete short recipe. Installed help routes to .yoke/docs/index.md.",
   "plan_notes": ["FIRST-USER 8/P4", "JOURNEYS progressive guidance"],
   "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"],
@@ -64,9 +64,9 @@
   {
    "id": "desired-02",
    "title": "In a project, route product help to installed .yoke/docs/index.md; project docs retain their own route.",
-   "status": "candidate",
+   "status": "observed",
    "form": "Do",
-   "verification": "Desired outline; exact recipe and live delivery still need proof.",
+   "verification": "External target with no runtime source directory: HTTPS transport install and repeated refresh resolve the installed manual; runtime/api/domain/test_installed_project_context.py.",
    "topics": ["context/docs", "documentation/ownership"],
    "plan_refs": ["FIRST-USER.35", "FIRST-USER.41", "FIRST-USER.P4"]
   },

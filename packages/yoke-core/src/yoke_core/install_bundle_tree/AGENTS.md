@@ -78,7 +78,7 @@ Never edit generated views without an ingest command; `yoke board rebuild` expli
 
 File bugs through `/yoke idea`, `yoke dash` or field-notes; never harness task suggestions. Find root cause first; describe failures systemically, never as "agent error/mistake." After compaction reload the current-phase skill. Answer mid-sequence user messages before continuing. Prefer inline chat; the item is the plan. Insufficient plans escalate; never enter plan mode on your own.
 
-Harness settings route hooks through `yoke hook evaluate <event>`; Python owns them. Read the installed release's product harness manifest before stating capabilities.
+Harness settings route hooks through `yoke hook evaluate <event>`; Python owns them. Read `.yoke/harness/<harness-dir>/manifest.json` from the installed release before stating capabilities (claude-code → claude).
 
 ## Governed DB Mutation
 

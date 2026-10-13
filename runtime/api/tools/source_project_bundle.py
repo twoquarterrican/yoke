@@ -29,6 +29,7 @@ from yoke_contracts.project_contract.installed_layer import (
     installed_layer_receipt_entry,
 )
 from yoke_core.domain import install_bundle, install_bundle_managed
+from yoke_core.domain.install_bundle_sources import harness_manifest_files
 from yoke_cli.project_install import git_hooks as git_hooks_layer
 from yoke_core.domain.workspace_authority import (
     assert_target_under_session_work_authority,
@@ -50,6 +51,7 @@ SOURCE_MANAGED_PREFIXES = (
     ".cursor/agents/yoke-",
     ".claude/rules/",
     f"{install_bundle.DOCS_DEST}/",
+    ".yoke/harness/",
 )
 
 
@@ -109,6 +111,7 @@ def build_source_bundle(
     files.extend(install_bundle._agent_files(source_checkout))
     files.extend(install_bundle._rules_files(source_checkout))
     files.extend(install_bundle_managed.docs_bundle_files(source_checkout))
+    files.extend(harness_manifest_files(source_checkout))
     files.sort(key=lambda entry: entry["path"])
     hooks = install_bundle._hooks_block()
     managed = install_bundle_managed.managed_bundle_keys(source_checkout)

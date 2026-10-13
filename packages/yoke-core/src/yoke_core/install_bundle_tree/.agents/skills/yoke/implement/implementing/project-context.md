@@ -1,7 +1,7 @@
 # Active — Project Context Preflight
 
 Run after QA seeding and before the text-sensitive audit or discovery.
-This is Implement's own single-lane loader, independent of Conduct.
+Implement and Conduct use this same registered read and selection recipe.
 
 ## Read configured context
 
@@ -21,10 +21,15 @@ list; other keys are topic names. The machine's project mapping supplies the
 registered checkout; the project row does not store a path. Use the claimed
 lane for this item's project rather than reading main then editing a lane.
 
-No context entries is an advisory, not a failure. If the registered checkout
+No context entries is an advisory, not a failure. A failed read stops this
+preflight: report its actual reason and recovery, and retry the registered
+read after recovery. Never report a failed read as empty configuration.
+If the registered checkout
 is missing/unreadable, warn with the actual project/path and continue targeted
 discovery without claiming docs were read. Missing configured files likewise
-warn and continue.
+warn and continue. Name the project and exact path; repair the machine mapping
+with `yoke project register <checkout> --project-id <id>`, or restore/update
+the configured document path before retrying. Do not claim unread files arrived.
 
 ## Select and read topics
 

@@ -6,18 +6,17 @@ block; development still requires verified project attribution before lanes.
 ```text
 yoke items get PREFIX-N project
 yoke machine detail --json
-python3 -m yoke_core.domain.context_routing get-always {PROJECT}
-python3 -m yoke_core.domain.context_routing list-topics {PROJECT}
-python3 -m yoke_core.domain.context_routing get-topic {PROJECT} {TOPIC}
+yoke project-structure get --project {PROJECT} --family context_routing --json
 ```
 
-The retained source-dev routing owner reads the Project Structure family, not
-copied config. Include always paths plus configured topics matched to title:
-frontend/dashboard/UI→frontend; backend/api/server→backend; test/testing→testing;
-deploy/deployment→deployment. Read matched docs from the machine mapping's
-registered checkout. Missing doc warns with exact path and skips that doc;
-missing mapping names project register recovery, never projects.path or a
-guessed repository. Emit each successfully read filename/content once.
+Read and follow [the shared project-context recipe](../implement/implementing/project-context.md).
+Its `entries` map `entry_key` to `payload.docs`: read always plus every
+configured topic matched to title/spec/ACs using that recipe's keywords.
+Read this project's documents from its selected claimed lane and registered
+machine checkout. Empty configuration is an advisory; failed reads stop with
+their actual cause/recovery. Missing mappings/documents warn with the exact
+project/path and repair, and never count as read. Carry successfully read
+filename/content once into the relevant Engineer/Tester dispatch context.
 
 ```text
 yoke qa plan list --project {PROJECT} --json
