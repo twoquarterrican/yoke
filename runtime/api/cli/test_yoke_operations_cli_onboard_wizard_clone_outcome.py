@@ -52,7 +52,8 @@ def _stub_source_branch(monkeypatch):
 @pytest.fixture(autouse=True)
 def _stub_owners(monkeypatch):
     monkeypatch.setattr(
-        onboard_wizard_flow, "fetch_repo_owners",
+        onboard_wizard_flow,
+        "fetch_repo_owners",
         lambda api_url, token: [
             github_publish.RepoOwner("octocat", "user"),
             github_publish.RepoOwner("acme-inc", "organization"),
@@ -109,14 +110,20 @@ def test_clone_outcome_rows_use_configured_ghes_origin() -> None:
         web_url="https://ghe.example",
     )
     assert clone.CLONE_OUTCOME_FORK in [row.value for row in rows]
-    assert screens.default_repo(
-        "https://ghe.example/acme/widgets.git",
-        web_url="https://ghe.example",
-    ) == "acme/widgets"
-    assert screens.default_repo(
-        "https://other.example/acme/widgets.git",
-        web_url="https://ghe.example",
-    ) is None
+    assert (
+        screens.default_repo(
+            "https://ghe.example/acme/widgets.git",
+            web_url="https://ghe.example",
+        )
+        == "acme/widgets"
+    )
+    assert (
+        screens.default_repo(
+            "https://other.example/acme/widgets.git",
+            web_url="https://ghe.example",
+        )
+        is None
+    )
 
 
 def test_writable_variant_is_two_rows_clone_default() -> None:
@@ -174,11 +181,7 @@ def test_clone_outcome_body_title_only_no_subtitle() -> None:
     text = " ".join(str(w.render()) for w in bodies)
     assert "How do you want to copy acme/widgets?" in text
     # No "onboard-subtitle" Static is built when the subtitle is None.
-    classes = [
-        cls
-        for w in bodies
-        for cls in (getattr(w, "classes", set()) or set())
-    ]
+    classes = [cls for w in bodies for cls in (getattr(w, "classes", set()) or set())]
     assert "onboard-subtitle" not in classes
 
 
@@ -186,9 +189,7 @@ def test_clone_outcome_screen_writable_variant_drops_fork(monkeypatch) -> None:
     """A writable token (probe True) renders the 2-row writable screen."""
     from yoke_cli.config import onboard_wizard_flow_clone as clone_flow
 
-    monkeypatch.setattr(
-        clone_flow.CloneFlow, "_source_push_access", lambda self: True
-    )
+    monkeypatch.setattr(clone_flow.CloneFlow, "_source_push_access", lambda self: True)
     app, _spy = make_app()
 
     async def scenario() -> None:
@@ -205,7 +206,8 @@ def test_clone_outcome_screen_writable_variant_drops_fork(monkeypatch) -> None:
             selection = app.query_one("#onboard-body SelectionList", SelectionList)
             values = [row.value for row in selection.rows]
             assert values == [
-                clone.CLONE_OUTCOME_JUST_CLONE, clone.CLONE_OUTCOME_MAKE_IT_MINE,
+                clone.CLONE_OUTCOME_JUST_CLONE,
+                clone.CLONE_OUTCOME_MAKE_IT_MINE,
             ]
             assert selection.cursor == 0  # Clone it pre-selected
 
@@ -239,8 +241,14 @@ def test_clone_outcome_body_threads_has_token_flag() -> None:
 def test_empty_private_repo_picker_requires_app_access(monkeypatch) -> None:
     """An empty private list offers App access recovery, never URL paste."""
     monkeypatch.setattr(
-        onboard_wizard_flow_clone, "fetch_private_repos",
+        onboard_wizard_flow_clone,
+        "fetch_private_repos",
         lambda api_url, token, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        onboard_wizard_flow_clone.github_state,
+        "repository_access_url",
+        lambda _: "https://github.com/settings/installations/1",
     )
     app, _spy = make_app()
 
@@ -248,17 +256,20 @@ def test_empty_private_repo_picker_requires_app_access(monkeypatch) -> None:
         async with app.run_test() as pilot:
             await _connect_machine_github_auth(app, pilot)
             await _pick_mode(pilot, onboard_project.PROJECT_MODE_CLONE_REMOTE)
-            await pilot.press("down")   # visibility: move to Private
+            await pilot.press("down")  # visibility: move to Private
             await pilot.press("enter")
             await pilot.pause()
             from textual.widgets import Input
 
             assert not list(app.query("#onboard-body Input").results(Input))
             selection = app.query_one(
-                "#onboard-body SelectionList", SelectionList,
+                "#onboard-body SelectionList",
+                SelectionList,
             )
             assert [row.value for row in selection.rows] == [
-                "manage", "check", "back",
+                "manage",
+                "check",
+                "back",
             ]
 
     asyncio.run(scenario())

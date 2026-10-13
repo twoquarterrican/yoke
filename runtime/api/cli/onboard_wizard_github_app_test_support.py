@@ -24,6 +24,7 @@ def stub_github_app_access(
     """Expose App config only after the browser connection completes."""
     connected = False
     stubbed_connect = github_flow.github_machine.connect
+    stubbed_status = github_flow.github_machine.status
     owner_list = tuple(owners)
     repository_list = tuple(repositories)
     installation_ids = {
@@ -79,10 +80,24 @@ def stub_github_app_access(
             ],
         }
 
+    def _status(**kwargs: Any) -> dict[str, Any]:
+        report = stubbed_status(**kwargs)
+        config = _github_config(kwargs.get("config_path"))
+        return {
+            **report,
+            "access": {
+                **report["access"],
+                "repo_listing_ok": True,
+                "repositories": config.get("repositories", []),
+                "installations": config.get("installations", []),
+            },
+        }
+
     def _user_access_token(result: Any) -> str | None:
         return user_access_token if github_state.connected(result) else None
 
     monkeypatch.setattr(github_flow.github_machine, "connect", _connect)
+    monkeypatch.setattr(github_flow.github_machine, "status", _status)
     monkeypatch.setattr(machine_config, "github_config", _github_config)
     monkeypatch.setattr(github_state, "user_access_token", _user_access_token)
     monkeypatch.setattr(publish_flow, "user_access_token", _user_access_token)
@@ -108,6 +123,7 @@ async def select_connected_repository(app: Any, pilot: Any) -> None:
     for _ in range(index):
         await pilot.press("down")
     await pilot.press("enter")
+    await app.workers.wait_for_complete()
     await pilot.pause()
     assert app.result.project_github_adoption == "app-binding", (
         app.result.project_github_repo,
