@@ -10,14 +10,15 @@
     {
      "id": "scheme",
      "title": "Execution levels",
-     "status": "draft-copy",
+     "status": "verified-live",
      "commands": ["yoke models level-proposal", "yoke projects level-summary get", "yoke universe levels get", "yoke universe levels set"],
      "functions": ["models.level_proposal.run", "projects.level_summary.get", "universe.levels.get", "universe.levels.set"],
      "children": [
       {
        "id": "ordered-capability-bands",
        "title": "Ordered capability bands",
-       "status": "draft-copy"
+       "status": "observed",
+       "text": "A session takes the highest level containing its resolved base model whose minimum effort it meets. Thresholds for the same model strictly increase with level; duplicate or decreasing thresholds refuse level_min_effort_order_invalid."
       },
       {
        "id": "level-names-and-glyphs",
@@ -27,7 +28,9 @@
       {
        "id": "launch-options",
        "title": "Launch options",
-       "status": "draft-copy"
+       "status": "verified-live",
+       "text": "Each stored option is exactly model and min_effort. Native listings expand it into available surface selectors at the minimum effort; stored rows contain no surface, context, speed or fallback.",
+       "related": "levels/options"
       },
       {
        "id": "universe-levels",
@@ -48,40 +51,59 @@
        "id": "stage-defaults",
        "title": "Stage defaults",
        "status": "draft-copy"
+      },
+      {
+       "id": "model-min-effort",
+       "title": "Base model and minimum effort",
+       "status": "verified-live",
+       "text": "The shipped scheme has 5 INTERN low rows, 7 JUNIOR rows (Grok/Terra/Sonnet high; Opus/Sol/Fable/Astra low), 4 SENIOR medium rows (Opus/Sol/Fable/Astra), and 2 PRINCIPAL xhigh rows (Fable/Astra). Speed does not change membership. Published catalog efforts constrain writes.",
+       "evidence": "Production QA run 45473 / artifact 32323 and universe.levels.get, 2026-10-13.",
+       "related": "levels/options/reasoning-effort"
       }
-     ]
+     ],
+     "text": "Ordered base-model/min_effort thresholds determine the highest matching session level. Production has 18 approved rows across INTERN, JUNIOR, SENIOR and PRINCIPAL; no model rank table participates.",
+     "evidence": "Production launch.622: QA run 45473 / artifact 32323; universe.levels.get reread 2026-10-13. Session resolution mechanics checked in the routing guide."
     },
     {
      "id": "options",
      "title": "Launch option",
-     "status": "draft-copy",
+     "status": "verified-live",
      "children": [
       {
        "id": "harness-surface",
        "title": "Harness surface",
-       "status": "draft-copy"
+       "status": "verified-live",
+       "text": "Harness surface is not a stored level-row field. Per-machine native listings determine launchable surfaces; Settings shows Launchable on chips. Unsupported listings name the missing adapter and recovery, rather than inventing availability.",
+       "evidence": "Settings harness chips: QA run 45473 / artifact 32323. Unsupported Claude listing refusal also present in this session launch receipt; other surface mechanics observed in source."
       },
       {
        "id": "model-or-native-selector",
        "title": "Model or native selector",
-       "status": "draft-copy"
+       "status": "observed",
+       "text": "Rows store a base-model ID without native effort/speed suffixes. Placement expands observed native selectors; observed model/effort facts outrank requested launch stamps. Known older catalog models without explicit rows demote exactly one class at the same effort; older bottom-class models and single-class Grok refuse."
       },
       {
        "id": "reasoning-effort",
        "title": "Reasoning effort",
-       "status": "draft-copy"
+       "status": "observed",
+       "text": "min_effort is the row threshold; actual effort resolves session membership. Effort order is none < minimal < low < medium < high < xhigh (extra-high) < max < ultra. Native embedded effort may fill missing facts; speed suffixes are ignored. Unknown models or unpublished efforts resolve no level and work claims/launches refuse session_below_intern; refresh catalog/native facts or select a supported model and effort before retrying."
       },
       {
        "id": "context-window",
        "title": "Context window",
-       "status": "draft-copy"
+       "status": "observed",
+       "text": "Context window is not stored in Levels and does not determine membership. An exact launch may request context only where its receiving surface supports it. Exact surface/model/effort/context knobs and --level are exclusive; preview the observed native availability before launch."
       },
       {
        "id": "fallback",
-       "title": "Fallback",
-       "status": "draft-copy"
+       "title": "No cross-level fallback",
+       "status": "observed",
+       "text": "There is no exhausted-pool cross-level fallback. Cursor Opus medium is SENIOR and cannot escape JUNIOR exhaustion. No usable selection refuses level_no_capacity with each candidate reason and recovery; capacity-stopped workers use same-level recovery excluding the refused model.",
+       "sources": ["docs/public/reference/session-level-routing.md", "docs/public/reference/session-capacity-recovery.md"]
       }
-     ]
+     ],
+     "text": "Stored launch options are base model/min_effort rows. Surface, native selector and context are resolved for placement or supplied on an exact launch override.",
+     "evidence": "Production universe.levels.get, 2026-10-13; native expansion mechanics observed in the routing guide."
     },
     {
      "id": "catalog",
@@ -128,7 +150,21 @@
       {
        "id": "quota-pools",
        "title": "Quota pools",
-       "status": "draft-copy"
+       "status": "verified-live",
+       "text": "Candidates read only the pools their model consumes. Readable zero blocks; unreadable or missing quota is unknown. Claude has a separate 5-hour cap. Cursor has exactly two monthly pools, ordered universe-wide; pool preference affects consumption, never level membership.",
+       "evidence": "Two Cursor rows proved by QA run 45473 / artifact 32323; current order reread through universe.cursor_quota_order.get, 2026-10-13. Other quota semantics observed in the routing guide.",
+       "children": [
+        {
+         "id": "cursor-quota-order",
+         "title": "Cursor monthly pool order",
+         "status": "verified-live",
+         "text": "Cursor Models precedes Other Models in the verified production definition. Admins can reverse the two rows in Settings or replace the whole order with the registered CLI. This is universe-wide, not per machine; available Cursor candidates prefer the earlier pool before headroom.",
+         "commands": ["yoke universe cursor-quota-order get", "yoke universe cursor-quota-order set"],
+         "functions": ["universe.cursor_quota_order.get", "universe.cursor_quota_order.set"],
+         "recipes": ["yoke universe cursor-quota-order get --json", "yoke universe cursor-quota-order set --pool 'Cursor Models' --pool 'Other Models'"],
+         "evidence": "Production QA run 45473 / artifact 32323 proves two rows and move controls; universe.cursor_quota_order.get reread 2026-10-13. Mutation and placement mechanics observed in source."
+        }
+       ]
       },
       {
        "id": "remaining-headroom",
@@ -148,7 +184,8 @@
       {
        "id": "no-usable-option",
        "title": "No usable option",
-       "status": "draft-copy"
+       "status": "observed",
+       "text": "level_no_capacity reports every candidate refusal and recovery. Unknown native listings require a probe; unsupported listings require a declared adapter or another observed surface. Unknown quota is not exhausted, and another level is never borrowed."
       }
      ]
     }

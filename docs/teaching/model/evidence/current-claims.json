@@ -1,6 +1,6 @@
 {
  "title": "Current claims that need verification",
- "scope": "Research evidence read from source on 2026-10-12; each record states what it checked. Revalidate before relying on it as live behavior.",
+ "scope": "Dated evidence with a scope per record: original source research from 2026-10-12 and scoped production checks from 2026-10-13. Revalidate changed behavior before relying on it.",
  "records": [
   {
    "id": "01",
@@ -106,6 +106,17 @@
    "evidence_scope": "Local installed CLI output, captured once.",
    "lines": 76,
    "characters": 3755
+  },
+  {
+   "id": "levels-production",
+   "title": "Production model/effort Levels and Cursor quota order",
+   "status": "verified-live",
+   "observed_at": "2026-10-13",
+   "evidence_scope": "Production launch.622, QA run 45473 / artifact 32323: passed browser assertions and reviewed screenshot prove 4 levels, 18 approved rows, four columns per level, harness chips, exactly 2 Cursor pool rows and move controls, and no per-project next-launch summary. Universe Levels and quota order independently reread. No all-surface launch or external-account certification.",
+   "claim": "Levels rows are model/min_effort. Settings shows #, MODEL, MIN EFFORT, NOW and Launchable on chips. Cursor Models then Other Models is the verified universe-wide order. Native expansion, admission, predecessor demotion, exact-context overrides and absence of cross-level fallback are observed in the cited source, not proven by this screenshot.",
+   "concepts": ["levels/scheme", "levels/options", "levels/capacity/quota-pools", "workbench/destinations/levels"],
+   "scenarios": ["models-levels"],
+   "sources": ["docs/public/reference/session-level-routing.md", "docs/public/cli-and-config.md"]
   }
  ]
 }

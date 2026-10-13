@@ -25,7 +25,7 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
   <code>docs/public/reference/db-reference/model-reference.md</code></div>
 <ul>
 <li id="levels/scheme"><b>Execution levels</b>
-<i class="s draft-copy">draft-copy</i>
+<i class="s verified-live">verified-live</i>
   <div><b>Taught on:</b>
   <a href="../surfaces/manual-overview.html">manual-overview ×1</a></div>
   <div><b>Commands:</b> <code>yoke models level-proposal</code>, <code>yoke
@@ -34,15 +34,30 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
   <div><b>Functions:</b> <code>models.level_proposal.run</code>,
   <code>projects.level_summary.get</code>, <code>universe.levels.get</code>,
   <code>universe.levels.set</code></div>
+  <div><b>Text:</b> Ordered base-model/min_effort thresholds determine the
+  highest matching session level. Production has 18 approved rows across INTERN,
+  JUNIOR, SENIOR and PRINCIPAL; no model rank table participates.</div>
+  <div><b>Evidence:</b> Production launch.622: QA run 45473 / artifact 32323;
+  universe.levels.get reread 2026-10-13. Session resolution mechanics checked in
+  the routing guide.</div>
 <ul>
 <li id="levels/scheme/ordered-capability-bands"><b>Ordered capability bands</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s observed">observed</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> A session takes the highest level containing its resolved
+  base model whose minimum effort it meets. Thresholds for the same model
+  strictly increase with level; duplicate or decreasing thresholds refuse
+  level_min_effort_order_invalid.</div>
 </li>
 <li id="levels/scheme/level-names-and-glyphs"><b>Level names and glyphs</b>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
 </li>
 <li id="levels/scheme/launch-options"><b>Launch options</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s verified-live">verified-live</i> <span class="gap">unmapped</span>
+  <div><b>Related:</b>
+  <a href="levels.html#levels/options">levels/options</a></div>
+  <div><b>Text:</b> Each stored option is exactly model and min_effort. Native
+  listings expand it into available surface selectors at the minimum effort;
+  stored rows contain no surface, context, speed or fallback.</div>
 </li>
 <li id="levels/scheme/universe-levels"><b>Universe levels</b>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
@@ -56,25 +71,73 @@ coverage</a> · <a href="../evidence.html">Evidence</a> ·
 <li id="levels/scheme/stage-defaults"><b>Stage defaults</b>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
 </li>
+<li id="levels/scheme/model-min-effort"><b>Base model and minimum effort</b>
+<i class="s verified-live">verified-live</i> <span class="gap">unmapped</span>
+  <div><b>Related:</b>
+  <a href="levels.html#levels/options/reasoning-effort">levels/options/reasoning-effort</a></div>
+  <div><b>Text:</b> The shipped scheme has 5 INTERN low rows, 7 JUNIOR rows
+  (Grok/Terra/Sonnet high; Opus/Sol/Fable/Astra low), 4 SENIOR medium rows
+  (Opus/Sol/Fable/Astra), and 2 PRINCIPAL xhigh rows (Fable/Astra). Speed does
+  not change membership. Published catalog efforts constrain writes.</div>
+  <div><b>Evidence:</b> Production QA run 45473 / artifact 32323 and
+  universe.levels.get, 2026-10-13.</div>
+</li>
 </ul>
 </li>
 <li id="levels/options"><b>Launch option</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s verified-live">verified-live</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> Stored launch options are base model/min_effort rows.
+  Surface, native selector and context are resolved for placement or supplied on
+  an exact launch override.</div>
+  <div><b>Evidence:</b> Production universe.levels.get, 2026-10-13; native
+  expansion mechanics observed in the routing guide.</div>
 <ul>
 <li id="levels/options/harness-surface"><b>Harness surface</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s verified-live">verified-live</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> Harness surface is not a stored level-row field. Per-machine
+  native listings determine launchable surfaces; Settings shows Launchable on
+  chips. Unsupported listings name the missing adapter and recovery, rather than
+  inventing availability.</div>
+  <div><b>Evidence:</b> Settings harness chips: QA run 45473 / artifact 32323.
+  Unsupported Claude listing refusal also present in this session launch
+  receipt; other surface mechanics observed in source.</div>
 </li>
 <li id="levels/options/model-or-native-selector"><b>Model or native selector</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s observed">observed</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> Rows store a base-model ID without native effort/speed
+  suffixes. Placement expands observed native selectors; observed model/effort
+  facts outrank requested launch stamps. Known older catalog models without
+  explicit rows demote exactly one class at the same effort; older bottom-class
+  models and single-class Grok refuse.</div>
 </li>
 <li id="levels/options/reasoning-effort"><b>Reasoning effort</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s observed">observed</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> min_effort is the row threshold; actual effort resolves
+  session membership. Effort order is none &lt; minimal &lt; low &lt; medium
+  &lt; high &lt; xhigh (extra-high) &lt; max &lt; ultra. Native embedded effort
+  may fill missing facts; speed suffixes are ignored. Unknown models or
+  unpublished efforts resolve no level and work claims/launches refuse
+  session_below_intern; refresh catalog/native facts or select a supported model
+  and effort before retrying.</div>
 </li>
 <li id="levels/options/context-window"><b>Context window</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s observed">observed</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> Context window is not stored in Levels and does not
+  determine membership. An exact launch may request context only where its
+  receiving surface supports it. Exact surface/model/effort/context knobs and
+  --level are exclusive; preview the observed native availability before
+  launch.</div>
 </li>
-<li id="levels/options/fallback"><b>Fallback</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<li id="levels/options/fallback"><b>No cross-level fallback</b>
+<i class="s observed">observed</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> There is no exhausted-pool cross-level fallback. Cursor Opus
+  medium is SENIOR and cannot escape JUNIOR exhaustion. No usable selection
+  refuses level_no_capacity with each candidate reason and recovery;
+  capacity-stopped workers use same-level recovery excluding the refused
+  model.</div>
+  <div><b>Sources:</b>
+  <code>docs/public/reference/session-level-routing.md</code>,
+  <code>docs/public/reference/session-capacity-recovery.md</code></div>
 </li>
 </ul>
 </li>
@@ -116,7 +179,36 @@ proposals</b> <i class="s draft-copy">draft-copy</i>
   <div><b>Functions:</b> <code>universe.level_capacity.get</code></div>
 <ul>
 <li id="levels/capacity/quota-pools"><b>Quota pools</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s verified-live">verified-live</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> Candidates read only the pools their model consumes.
+  Readable zero blocks; unreadable or missing quota is unknown. Claude has a
+  separate 5-hour cap. Cursor has exactly two monthly pools, ordered
+  universe-wide; pool preference affects consumption, never level
+  membership.</div>
+  <div><b>Evidence:</b> Two Cursor rows proved by QA run 45473 / artifact 32323;
+  current order reread through universe.cursor_quota_order.get, 2026-10-13.
+  Other quota semantics observed in the routing guide.</div>
+<ul>
+<li id="levels/capacity/quota-pools/cursor-quota-order"><b>Cursor monthly pool
+order</b> <i class="s verified-live">verified-live</i>
+<span class="gap">unmapped</span>
+  <div><b>Text:</b> Cursor Models precedes Other Models in the verified
+  production definition. Admins can reverse the two rows in Settings or replace
+  the whole order with the registered CLI. This is universe-wide, not per
+  machine; available Cursor candidates prefer the earlier pool before
+  headroom.</div>
+  <div><b>Commands:</b> <code>yoke universe cursor-quota-order get</code>,
+  <code>yoke universe cursor-quota-order set</code></div>
+  <div><b>Functions:</b> <code>universe.cursor_quota_order.get</code>,
+  <code>universe.cursor_quota_order.set</code></div>
+  <div><b>Recipes:</b> <code>yoke universe cursor-quota-order get --json</code>,
+  <code>yoke universe cursor-quota-order set --pool &#x27;Cursor Models&#x27;
+  --pool &#x27;Other Models&#x27;</code></div>
+  <div><b>Evidence:</b> Production QA run 45473 / artifact 32323 proves two rows
+  and move controls; universe.cursor_quota_order.get reread 2026-10-13. Mutation
+  and placement mechanics observed in source.</div>
+</li>
+</ul>
 </li>
 <li id="levels/capacity/remaining-headroom"><b>Remaining headroom</b>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
@@ -128,7 +220,11 @@ proposals</b> <i class="s draft-copy">draft-copy</i>
 <i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
 </li>
 <li id="levels/capacity/no-usable-option"><b>No usable option</b>
-<i class="s draft-copy">draft-copy</i> <span class="gap">unmapped</span>
+<i class="s observed">observed</i> <span class="gap">unmapped</span>
+  <div><b>Text:</b> level_no_capacity reports every candidate refusal and
+  recovery. Unknown native listings require a probe; unsupported listings
+  require a declared adapter or another observed surface. Unknown quota is not
+  exhausted, and another level is never borrowed.</div>
 </li>
 </ul>
 </li>
