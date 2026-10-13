@@ -68,9 +68,18 @@ status recommend switching selected installations and show their direct settings
 link. Change the selection there, save, then run `yoke github status` to refresh.
 User authorization alone does not change installation scope.
 
-Yoke opens the plain `/apps/<app>/installations/new` URL without repository
+Setup's TUI opens the plain `/apps/<app>/installations/new` URL without repository
 preselection. GitHub documents all repositories as the default when repository
 IDs are omitted ([GitHub installation documentation](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/migrating-oauth-apps-to-github-apps#prompt-users-to-install-your-github-app)).
+
+For agent-led connection, use `yoke github connect --json`. No browser opens;
+JSON progress on stderr supplies the link, code and instructions before the
+approval wait, with the final result on stdout. Present the action to the
+person and continue the same command. A valid saved authorization is reused;
+`--replace` requests fresh approval. `--add-installation` returns the App
+installation link while reusing the saved authorization. Setup's TUI opens
+these links only after an “Opening your browser…” notice and offers Ctrl-Y
+copy. See [setup browser steps](install.md#onboard-wizard).
 
 Optional during `yoke setup` Account/GitHub steps. The onboard GitHub
 rail stays incomplete until that same `ready` contract is true — skipping

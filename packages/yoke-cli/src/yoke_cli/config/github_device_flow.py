@@ -8,7 +8,7 @@ import time
 from typing import Any, Callable, Mapping
 import urllib.request
 
-from yoke_cli.config.hosted_machine_browser import open_url
+from yoke_cli.config import setup_browser
 
 from yoke_cli.config import github_git_credential_store as credential_store
 from yoke_cli.config import github_device_transport
@@ -40,6 +40,11 @@ class DeviceAuthorization:
             "verification_uri": self.verification_uri,
             "expires_in": self.expires_in,
             "interval": self.interval,
+            "browser_action": setup_browser.action(
+                self.verification_uri,
+                "Enter the code in GitHub, approve access, then return here.",
+                user_code=self.user_code,
+            ),
         }
 
 
@@ -91,15 +96,15 @@ def authorize(
     authorization = _parse_authorization(payload, expected_origin=configured_origin)
     if notify is not None:
         notify({"phase": "device_authorization", **authorization.public_dict()})
-    browser_opened = _open_browser(
-        authorization.verification_uri,
-        lambda url: open_url(url, browser_open=browser_open).opened,
-    )
+    browser = setup_browser.open_requested(authorization.verification_uri, browser_open)
+    browser_opened = browser.opened
     if notify is not None:
         notify(
             {
                 "phase": "device_browser",
                 "browser_opened": browser_opened,
+                "browser_attempted": browser.attempted,
+                "browser_reason": browser.reason,
                 **authorization.public_dict(),
             }
         )
@@ -183,7 +188,9 @@ def _poll_for_token(
         raise GitHubDeviceFlowError(
             f"GitHub device authorization failed ({error_code}): {description}"
         )
-    raise GitHubDeviceFlowError("GitHub device authorization expired")
+    raise GitHubDeviceFlowError(
+        "github_device_authorization_expired: GitHub device authorization expired; start a fresh GitHub connection and approve its new code"
+    )
 
 
 def _parse_authorization(
@@ -268,13 +275,6 @@ def _validate_expiring_token_response(payload: Mapping[str, Any]) -> None:
             "GitHub did not return an expiring, refreshable App user token. "
             f"{token_contract.GITHUB_APP_USER_AUTH_CONFIGURATION_HINT}"
         ) from exc
-
-
-def _open_browser(url: str, browser_open: Callable[[str], Any]) -> bool:
-    try:
-        return bool(browser_open(url))
-    except Exception:
-        return False
 
 
 def _same_origin_verification_uri(value: Any, *, expected_origin: str) -> str:

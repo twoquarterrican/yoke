@@ -6,6 +6,7 @@ from typing import Any
 
 from yoke_contracts import github_app_snapshot
 from yoke_cli.config import onboard_wizard_steps as steps
+from yoke_cli.config.onboard_wizard_state import CopyTarget
 from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT, SelectionRow
 
 
@@ -68,8 +69,10 @@ class ManualRepositoryAccessFlow:
         if not getattr(self, "_manual_publish_access_missing", False):
             return
         owner = self._manual_publish_expected_repository.split("/", 1)[0]
-        self._open_project_github_access(owner=owner)
-        self._show_manual_repository_access(opened=True)
+        self._open_project_github_access(
+            owner=owner,
+            on_success=lambda: self._show_manual_repository_access(opened=True),
+        )
 
     def _show_manual_repository_access(self, *, opened: bool = False) -> None:
         from yoke_cli.config.onboard_wizard_app import _View
@@ -126,5 +129,14 @@ class ManualRepositoryAccessFlow:
                     ok=False,
                 ),
                 self._on_manual_publish_recovery,
+                copy_targets=(
+                    CopyTarget(
+                        "the App access link",
+                        self._project_github_access_opened_url,
+                        is_url=True,
+                    ),
+                )
+                if opened
+                else (),
             )
         )

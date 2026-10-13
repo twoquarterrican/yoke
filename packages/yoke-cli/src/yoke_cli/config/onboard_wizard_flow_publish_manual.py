@@ -8,6 +8,8 @@ from typing import Any, Mapping
 from yoke_contracts import github_app_snapshot
 from yoke_cli.config import github_machine
 from yoke_cli.config import onboard_github_copy
+from yoke_cli.config import setup_browser
+from yoke_cli.config.onboard_wizard_state import CopyTarget
 from yoke_cli.config import onboard_wizard_github_state as github_state
 from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config.onboard_wizard_manual_access import (
@@ -49,6 +51,7 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
                     "Create the repository in GitHub.",
                     self._cannot_publish_reason(),
                     [
+                        setup_browser.status_line(self),
                         (
                             "GitHub opened the repository page."
                             if opened
@@ -74,6 +77,7 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
                     ok=False,
                 ),
                 self._on_manual_publish_guidance,
+                copy_targets=(CopyTarget("the repository link", url, is_url=True),),
             )
         )
 

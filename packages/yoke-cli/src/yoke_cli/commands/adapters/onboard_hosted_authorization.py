@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
-from yoke_cli.config import onboard_destinations
+from yoke_cli.config import onboard_destinations, machine_config
 
 
 def add_token_arguments(parser: argparse.ArgumentParser) -> None:
@@ -33,6 +34,37 @@ def has_explicit_token_source(parsed: argparse.Namespace) -> bool:
     return bool(parsed.token or parsed.token_file or parsed.token_stdin)
 
 
+def hydrate_saved(parsed: argparse.Namespace, destination: str | None) -> bool:
+    """Reuse the same stored browser-approved reference as the TUI."""
+    if (
+        destination != onboard_destinations.DESTINATION_HOSTED
+        or has_explicit_token_source(parsed)
+    ):
+        return False
+    try:
+        connection = machine_config.active_connection(
+            parsed.config_path, explicit_env=parsed.env_name
+        )
+    except (OSError, RuntimeError, ValueError):
+        return False
+    source = connection.get("credential_source") or {}
+    api_url = str(connection.get("api_url") or "")
+    if (
+        connection.get("transport") != "https"
+        or source.get("kind") != "token_file"
+        or not onboard_destinations.matches_stored_hosted_authority(
+            parsed.api_url, api_url
+        )
+    ):
+        return False
+    token_file = Path(str(source.get("path") or "")).expanduser()
+    if not token_file.is_file():
+        return False
+    parsed.api_url, parsed.token_file = api_url, str(token_file)
+    parsed.env_name = str(connection.get("env") or parsed.env_name or "")
+    return True
+
+
 def usage_error(
     destination: str | None,
     explicit_token_source: bool,
@@ -45,12 +77,13 @@ def usage_error(
     if explicit_token_source:
         return (
             "Yoke Cloud uses browser approval; remove TOKEN, --token-file, or "
-            "--token-stdin and run onboarding interactively"
+            "--token-stdin; use `yoke connect --json` for agent-led approval, then rerun setup"
         )
     if not resuming and not should_prompt:
         return (
-            "Yoke Cloud onboarding requires browser approval; run `yoke setup "
-            "--connect https://app.upyoke.com` interactively"
+            "browser_approval_required: Yoke Cloud onboarding requires browser approval; "
+            "run `yoke connect --json`, present its link and code, then rerun setup. "
+            "For the TUI, run `yoke setup --connect https://app.upyoke.com`."
         )
     return None
 

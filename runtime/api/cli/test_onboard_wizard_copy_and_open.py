@@ -47,6 +47,10 @@ class _Shell(copy_open.CopyOpenFlow):
     def query_one(self, _selector, _expect_type=None):
         return self.footer
 
+    def call_after_refresh(self, callback, *args):
+        assert "Opening your browser…" in self.footer.rendered[-1]
+        callback(*args)
+
 
 def _completed(returncode: int = 0, stderr: str = "") -> subprocess.CompletedProcess:
     return subprocess.CompletedProcess(args=[], returncode=returncode, stderr=stderr)

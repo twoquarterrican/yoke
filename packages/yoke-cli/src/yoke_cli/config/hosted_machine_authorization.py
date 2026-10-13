@@ -28,7 +28,10 @@ from yoke_contracts.machine_authorization import (
     credential_api_url,
 )
 from yoke_cli.config import machine_config_mutation
-from yoke_cli.config.hosted_machine_browser import BrowserOpenResult, open_browser
+from yoke_cli.config.hosted_machine_browser import (
+    BrowserOpenResult,
+    open_browser as open_browser,
+)
 from yoke_cli.transport.bounded_json_http import (
     BoundedJsonHttpError,
     BoundedJsonHttpStatusError,
@@ -232,8 +235,10 @@ def authorize(
     monotonic: Callable[[], float] = time.monotonic,
     self_host: bool = False,
 ) -> HostedMachineCredential:
+    from yoke_cli.config.setup_browser import open_requested
+
     pending = start(platform_url, opener=opener, self_host=self_host)
-    browser = open_browser(pending, browser_open=browser_open)
+    browser = open_requested(pending.verification_uri_complete, browser_open)
     if notify is not None:
         notify(pending, browser)
     return complete(pending, opener=opener, sleep=sleep, monotonic=monotonic)

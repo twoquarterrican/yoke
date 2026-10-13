@@ -30,7 +30,7 @@ def show_device_code(shell: Any, event: dict[str, Any]) -> None:
         return
     _report(
         shell,
-        f"Enter code {code} at {uri}",
+        f"Opening your browser… Enter code {code} at {uri}; Ctrl-Y copies the code.",
         (
             CopyTarget(CODE_LABEL, code),
             CopyTarget(DEVICE_URL_LABEL, uri, is_url=True),
@@ -43,11 +43,46 @@ def show_install_url(shell: Any, event: dict[str, Any]) -> None:
     install_url = str(event.get("install_url") or "").strip()
     if not install_url:
         return
+    prefix = "Opening your browser…"
+    if "browser_opened" in event:
+        prefix = (
+            "Browser opened."
+            if event["browser_opened"]
+            else f"browser_open_failed: {event.get('browser_reason')}; copy the link and open it yourself."
+        )
     _report(
         shell,
-        f"Install or configure the App at {install_url}",
+        f"{prefix} Install or configure the App at {install_url}",
         (CopyTarget(INSTALL_URL_LABEL, install_url, is_url=True),),
     )
+
+
+def notify_from_worker(shell: Any, event: Any) -> None:
+    if not isinstance(event, dict):
+        return
+    phase = event.get("phase")
+    try:
+        if phase == "device_authorization":
+            shell.call_from_thread(show_device_code, shell, event)
+        elif phase == "app_installation":
+            shell.call_from_thread(show_install_url, shell, event)
+        elif phase == "device_browser" and not event.get("browser_opened"):
+            line = f"browser_open_failed: {event.get('browser_reason')}; Ctrl-Y copies code {event.get('user_code')}, then open {event.get('verification_uri')} yourself."
+            shell.call_from_thread(
+                _report,
+                shell,
+                line,
+                (
+                    CopyTarget(CODE_LABEL, str(event.get("user_code"))),
+                    CopyTarget(
+                        DEVICE_URL_LABEL,
+                        str(event.get("verification_uri")),
+                        is_url=True,
+                    ),
+                ),
+            )
+    except RuntimeError:
+        return
 
 
 def _report(shell: Any, line: str, targets: tuple[CopyTarget, ...]) -> None:

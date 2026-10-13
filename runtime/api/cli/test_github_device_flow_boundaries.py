@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+import urllib.error
 
 from runtime.api.cli.test_github_app_device_flow import _Response
 from yoke_cli.config import github_device_flow
@@ -108,3 +109,51 @@ def test_device_flow_wraps_direct_transport_errors_without_details(
     message = str(caught.value)
     assert "could not be reached" in message
     assert "must not leak" not in message
+
+
+def test_device_invalid_utf8_is_a_typed_error() -> None:
+    class _RawResponse(_Response):
+        def read(self, size: int = -1) -> bytes:
+            return b"\xff"
+
+    with pytest.raises(github_device_flow.GitHubDeviceFlowError, match="not JSON"):
+        github_device_flow.authorize(
+            client_id="Iv1.local",
+            web_url="https://github.com",
+            opener=lambda request, timeout: _RawResponse(
+                {},
+                request.full_url,
+            ),
+        )
+
+
+def test_device_transport_reason_redacts_device_code() -> None:
+    responses = iter(
+        [
+            {
+                "device_code": "device-secret",
+                "user_code": "ABCD-EFGH",
+                "verification_uri": "https://github.com/login/device",
+                "expires_in": 900,
+                "interval": 5,
+            }
+        ]
+    )
+
+    def opener(request, timeout):
+        try:
+            return _Response(next(responses), request.full_url)
+        except StopIteration:
+            raise urllib.error.URLError("refused device-secret ABCD-EFGH")
+
+    with pytest.raises(github_device_flow.GitHubDeviceFlowError) as caught:
+        github_device_flow.authorize(
+            client_id="Iv1.local",
+            web_url="https://github.com",
+            opener=opener,
+            browser_open=lambda url: False,
+            sleep=lambda seconds: None,
+            monotonic=lambda: 0,
+        )
+    assert "device-secret" not in str(caught.value)
+    assert "ABCD-EFGH" not in str(caught.value)

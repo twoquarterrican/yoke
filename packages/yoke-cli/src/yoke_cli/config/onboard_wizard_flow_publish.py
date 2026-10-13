@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import asyncio
 
-from yoke_cli.config.hosted_machine_browser import open_url
+from yoke_cli.config import setup_browser
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -136,17 +136,17 @@ class PublishFlow:
             self._goto_owner_picker()
             return
         self._open_repository_creation_page()
-        self._goto_publish_cannot_create()
 
-    def _open_repository_creation_page(self: _Shell) -> tuple[str, bool]:
+    def _open_repository_creation_page(self: _Shell) -> None:
         url = endpoint_pair(self.result).new_repository_url()
-        try:
-            opened = open_url(url).opened
-        except Exception:
-            opened = False
-        self._manual_repository_url = url
-        self._manual_repository_opened = opened
-        return url, opened
+
+        def completed(browser):
+            self._manual_repository_url = url
+            self._manual_repository_opened = browser.opened
+            self._manual_repository_reason = browser.reason
+            self._goto_publish_cannot_create()
+
+        setup_browser.open_in_wizard(self, url, step=STEP_PROJECT, on_success=completed)
 
     def _machine_can_publish(self: _Shell) -> bool:
         """Whether a connected installation grants optional Administration."""
@@ -229,7 +229,6 @@ class PublishFlow:
 
         if not owners:
             self._open_repository_creation_page()
-            self._goto_publish_cannot_create()
             return
         authenticated = next(
             (owner.login for owner in owners if owner.kind == "user"),

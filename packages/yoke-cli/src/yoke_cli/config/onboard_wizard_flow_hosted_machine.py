@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from yoke_contracts.api_urls import HOSTED_PLATFORM_URL, HOSTED_STAGE_PLATFORM_URL
 
 from yoke_cli.config import hosted_machine_authorization
+from yoke_cli.config import setup_browser
 from yoke_cli.config import onboard_destinations
 from yoke_cli.config import onboard_wizard_diagnostics
 from yoke_cli.config import onboard_wizard_steps as steps
@@ -83,11 +84,8 @@ class HostedMachineConnectFlow:
         after_denial: bool = False,
         replace_current: bool = False,
     ) -> None:
-        """Mint a one-time code and open the browser on it.
-
-        ``replace_current`` drops the view that asked (a retry row on an error
-        view); the destination picker stays in history otherwise, so Esc from
-        any later approval view returns to it.
+        """Mint a code, paint the notice, then open its complete approval URL.
+        ``replace_current`` drops the retry view; otherwise Esc keeps its route.
         """
         self._hosted_machine_denial_retry_used = after_denial
 
@@ -101,13 +99,17 @@ class HostedMachineConnectFlow:
 
             self._run_checking(
                 step=STEP_CONNECT,
-                title="Opening your approval link.",
+                title="Opening your browser…",
                 message="Checking for a browser; preparing Yoke's browser runtime if needed.",
                 detail_lines=self._approval_detail_lines(
                     pending, "You can also open this link on any device."
                 ),
                 copy_targets=self._approval_copy_targets(pending),
-                work=lambda: hosted_machine_authorization.open_browser(pending),
+                work=lambda: setup_browser.open_after_notice(
+                    self,
+                    pending.verification_uri_complete,
+                    opener=lambda _: hosted_machine_authorization.open_browser(pending),
+                ),
                 on_success=_opened,
                 on_error=lambda exc: _opened(
                     hosted_machine_authorization.BrowserOpenResult(

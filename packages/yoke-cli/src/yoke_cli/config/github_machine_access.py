@@ -16,11 +16,18 @@ _TRANSIENT_PROGRESS_FIELDS = frozenset({"user_code", "device_code"})
 
 def report_safe_progress_event(event: Mapping[str, Any]) -> dict[str, Any]:
     """Remove one-time authorization material from durable report progress."""
-    return {
+    result = {
         key: value
         for key, value in event.items()
         if key not in _TRANSIENT_PROGRESS_FIELDS
     }
+    if isinstance(result.get("browser_action"), Mapping):
+        result["browser_action"] = {
+            key: value
+            for key, value in result["browser_action"].items()
+            if key not in _TRANSIENT_PROGRESS_FIELDS
+        }
+    return result
 
 
 def discover_access_with_unauthorized_retry(
@@ -107,7 +114,7 @@ def open_install_page(
     error_type: type[Exception] = RuntimeError,
 ) -> None:
     """Open the profile-derived App installation page, if available."""
-    from yoke_cli.config.hosted_machine_browser import open_url
+    from yoke_cli.config import setup_browser
 
     install_url = str(report.get("install_url") or "").strip()
     if not install_url:
@@ -115,12 +122,25 @@ def open_install_page(
             "GitHub App installation URL is unavailable because the configured "
             "GitHub endpoints are invalid"
         )
-    opened = False
-    try:
-        opened = open_url(install_url, browser_open=browser_open).opened
-    except Exception:
-        pass
-    report.update({"install_url": install_url, "install_browser_opened": opened})
+    request = setup_browser.action(
+        install_url, "Install the App and choose repositories, then check access again."
+    )
+    if notify is not None:
+        notify(
+            {
+                "phase": "app_installation",
+                "install_url": install_url,
+                "browser_action": request,
+            }
+        )
+    browser = setup_browser.open_requested(install_url, browser_open)
+    report.update(
+        {
+            "install_url": install_url,
+            "install_browser_opened": browser.opened,
+            "browser_action": request,
+        }
+    )
     if pending:
         report["state"] = "pending_installation"
     if notify is not None:
@@ -128,7 +148,9 @@ def open_install_page(
             {
                 "phase": "app_installation",
                 "install_url": install_url,
-                "browser_opened": opened,
+                "browser_opened": browser.opened,
+                "browser_attempted": browser.attempted,
+                "browser_reason": browser.reason,
             }
         )
 
