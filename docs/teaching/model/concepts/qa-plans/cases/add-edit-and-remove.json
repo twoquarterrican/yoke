@@ -3,5 +3,7 @@
  "title": "Add, edit and remove",
  "status": "draft-copy",
  "page": "qa-plans",
- "position": 6
+ "position": 6,
+ "summary": "Source-generated shared installer cases sync only from clean source already on the verified repository default branch. Lanes compare without publishing and use item-scoped or run-bound corrections for proof.",
+ "sources": ["docs/testing-verification/installer-campaign.md"]
 }

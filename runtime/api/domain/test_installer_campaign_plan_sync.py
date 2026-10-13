@@ -2,10 +2,14 @@
 
 import copy
 import json
+import subprocess
+
+import pytest
 
 from yoke_core.domain.installer_campaign_execution_target import (
     installer_campaign_cases_for_target,
 )
+from yoke_core.tools import installer_campaign_plan as sync
 from yoke_core.tools.installer_campaign_plan import compare_plan, main
 from runtime.api.domain.test_qa_release_channel_target import _target
 
@@ -17,7 +21,9 @@ def _plan(environment="prod"):
         "slug": "installer-campaign",
         "target_environment": environment,
         "execution_target": target,
-        "cases": installer_campaign_cases_for_target(target, primary_machine="primary-test", joining_machine="joining-test"),
+        "cases": installer_campaign_cases_for_target(
+            target, primary_machine="primary-test", joining_machine="joining-test"
+        ),
     }
 
 
@@ -47,7 +53,10 @@ def test_comparison_reports_nested_drift_and_missing_and_extra_cases():
     assert {"case_key": "obsolete-case", "change": "removed"} in report["differences"]
 
 
-def test_export_uses_bound_environment_and_check_refuses_drift(tmp_path, capsys):
+def test_export_uses_bound_environment_and_check_refuses_drift(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(sync, "export_source_revision", lambda: "a" * 40)
     plan = _plan("stage")
     expected = copy.deepcopy(plan["cases"])
     plan["cases"][0]["instructions"] = "stale"
@@ -84,3 +93,84 @@ def test_comparison_reads_a_stored_baseline_state_as_the_source_declares_it():
     assert report["differences"] == [
         {"case_key": plan["cases"][0]["case_key"], "fields": ["starting_state"]}
     ]
+
+
+@pytest.fixture
+def source_checkout(tmp_path, monkeypatch):
+    def git(root, *args, timeout=30):
+        return subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+
+    remote = tmp_path / "remote"
+    remote.mkdir()
+    assert git(remote, "init", "--bare", "--initial-branch=stable").returncode == 0
+    root = tmp_path / "source"
+    assert git(tmp_path, "clone", str(remote), str(root)).returncode == 0
+    for key, value in (
+        ("user.name", "QA Fixture"),
+        ("user.email", "qa@example.invalid"),
+    ):
+        assert git(root, "config", key, value).returncode == 0
+    (root / "cases.json").write_text("[]\n")
+    assert git(root, "add", "cases.json").returncode == 0
+    assert git(root, "commit", "-m", "Define cases").returncode == 0
+    assert git(root, "push", "origin", "stable").returncode == 0
+    assert git(root, "remote", "set-head", "origin", "--auto").returncode == 0
+    monkeypatch.setattr(sync.pack_catalog, "server_tree_root", lambda: root)
+    monkeypatch.setattr(sync.source_git, "git", git)
+    return root, git
+
+
+def test_export_refuses_unmerged_commit_preserves_output_and_accepts_after_merge(
+    source_checkout,
+    tmp_path,
+    capsys,
+):
+    root, git = source_checkout
+    assert git(root, "checkout", "-b", "case-change").returncode == 0
+    (root / "cases.json").write_text('["new"]\n')
+    assert git(root, "commit", "-am", "Change cases").returncode == 0
+    revision = git(root, "rev-parse", "HEAD").stdout.strip()
+    snapshot, output = tmp_path / "plan.json", tmp_path / "export.json"
+    snapshot.write_text(json.dumps({"success": True, "result": {"plan": _plan()}}))
+    output.write_text("previous export\n")
+    args = ["--plan-file", str(snapshot), "--cases-file", str(output)]
+    assert main(args) == 2
+    assert output.read_text() == "previous export\n"
+    error = capsys.readouterr().err
+    assert "qa_plan_source_unmerged_or_unverified" in error
+    assert revision in error and "sync after merge" in error
+    assert main(["--plan-file", str(snapshot), "--check"]) == 0
+    capsys.readouterr()
+    assert git(root, "push", "origin", "HEAD:stable").returncode == 0
+    assert main(args) == 0
+    assert json.loads(output.read_text()) == _plan()["cases"]
+    assert json.loads(capsys.readouterr().out)["source_revision"] == revision
+
+
+def test_export_refuses_dirty_source_and_unreadable_remote(source_checkout):
+    root, git = source_checkout
+    (root / "cases.json").write_text("dirty\n")
+    with pytest.raises(ValueError, match="uncommitted changes.*sync after merge"):
+        sync.export_source_revision()
+    assert git(root, "add", "cases.json").returncode == 0
+    assert git(root, "commit", "-m", "Update cases").returncode == 0
+    assert (
+        git(root, "remote", "set-url", "origin", str(root / "missing")).returncode == 0
+    )
+    with pytest.raises(ValueError, match="unmerged_or_unverified.*sync after merge"):
+        sync.export_source_revision()
+
+
+def test_export_timeout_has_named_recovery(source_checkout, monkeypatch):
+    def timeout(*args):
+        raise subprocess.TimeoutExpired("git fetch", 30)
+
+    monkeypatch.setattr(sync.source_git, "fetch_branch", timeout)
+    with pytest.raises(sync.SourceSyncRefused, match="sync after merge"):
+        sync.export_source_revision()
