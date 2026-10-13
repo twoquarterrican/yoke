@@ -128,9 +128,8 @@ def test_success_against_a_different_consumer_commit_is_unproven() -> None:
 
 
 def test_a_non_exact_pair_caller_trusts_the_run_s_own_evidence() -> None:
-    # The advisory check has no durable authority to bind an exact consumer
-    # commit ahead of dispatch; it dispatches onto a branch name and trusts
-    # whatever the run reports instead of demanding a match.
+    # Non-exact classification remains available for callers reading a run
+    # without a bound identity; the advisory itself now validates its key.
     code, narrative, proven = gate.classify(
         {
             "state": "success",
@@ -214,20 +213,12 @@ def test_a_different_consumer_commit_is_a_different_pair(
     assert not gate.is_full_commit_sha(seen[1][seen[1].index("--ref") + 1])
 
 
-def test_a_non_exact_pair_dispatch_never_reuses_a_stale_proof(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # The advisory's branch name is not a bound identity; a stable key
-    # keyed on it would let a later call silently reuse a proof taken
-    # against an earlier, possibly since-moved, consumer trunk.
-    seen: List[List[str]] = []
+def test_advisory_dispatch_uses_its_explicit_content_key(monkeypatch):
+    seen = []
     monkeypatch.setattr(gate, "_yoke", _recorder(seen))
-
-    gate.dispatch(CANDIDATE, "main", exact_pair=False)
-    gate.dispatch(CANDIDATE, "main", exact_pair=False)
-
-    request_ids = [argv[argv.index("--request-id") + 1] for argv in seen]
-    assert request_ids[0] != request_ids[1]
+    gate.dispatch(CANDIDATE, CONSUMER_REVISION, exact_pair=False, request_id="tree-key")
+    gate.dispatch(CANDIDATE, CONSUMER_REVISION, exact_pair=False, request_id="tree-key")
+    assert {argv[argv.index("--request-id") + 1] for argv in seen} == {"tree-key"}
 
 
 def test_the_gate_reuses_the_consumer_s_own_required_check(

@@ -15,7 +15,6 @@ import os
 import re
 import subprocess
 import sys
-import uuid
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from runtime.api.tools.platform_consumer_run_wait import wait_run
@@ -44,13 +43,6 @@ def pair_request_id(candidate_sha: str, consumer_sha: str) -> str:
     return (
         f"consumer-compat:{candidate_sha}:{consumer_sha}:ref={CONSUMER_TRUNK_REF}:"
         f"{CONSUMER_CHECK_WORKFLOW}"
-    )
-
-
-def fresh_request_id(candidate_sha: str) -> str:
-    """Advisory branch reads get a fresh key to avoid stale proof reuse."""
-    return (
-        f"consumer-compat:{candidate_sha}:{uuid.uuid4().hex}:{CONSUMER_CHECK_WORKFLOW}"
     )
 
 
@@ -125,14 +117,11 @@ def dispatch(
     consumer_sha: str,
     *,
     exact_pair: bool = True,
+    request_id: str = "",
 ) -> Tuple[str, str]:
-    """Dispatch from trunk without requiring a harness session in CI."""
+    """Dispatch from trunk, rejoining the exact pair or advisory content key."""
     ref = CONSUMER_TRUNK_REF
-    request_id = (
-        pair_request_id(candidate_sha, consumer_sha)
-        if exact_pair
-        else fresh_request_id(candidate_sha)
-    )
+    request_id = request_id or pair_request_id(candidate_sha, consumer_sha)
     code, stdout, stderr = _yoke(
         [
             "github-actions",

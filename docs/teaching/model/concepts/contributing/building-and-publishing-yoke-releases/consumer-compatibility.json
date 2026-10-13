@@ -1,8 +1,10 @@
 {
  "id": "consumer-compatibility",
  "title": "Consumer compatibility",
- "status": "draft-copy",
+ "status": "observed",
  "audience": "Maintainers",
  "page": "contributing-guides",
- "position": 4
+ "position": 4,
+ "summary": "Every upstream PR, main push and manual candidate receives an independent advisory. Identical product trees at the same observed Platform commit reuse the durable original dispatch and its run, including after a rebase. Merge-queue groups do not dispatch advisories. Release publication still requires the exact product/consumer commit pair.",
+ "sources": [".github/workflows/consumer-compatibility-advisory.yml", "runtime/api/tools/consumer_compatibility_advisory.py", "docs/source-dev-doctrine.md"]
 }

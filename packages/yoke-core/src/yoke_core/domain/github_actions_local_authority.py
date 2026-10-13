@@ -14,15 +14,18 @@ from yoke_contracts.github_workflow_dispatch import (
 )
 
 
-_ALLOWED_FUNCTIONS = frozenset({
-    "github_actions.workflow.dispatch",
-    "github_actions.workflow.dispatch_once",
-    "github_actions.workflow.find_run",
-    "github_actions.commit_runs.list",
-    "github_actions.run.jobs_count",
-    "github_actions.wait_run",
-    "github_actions.failed_log",
-})
+_ALLOWED_FUNCTIONS = frozenset(
+    {
+        "github_actions.workflow.dispatch",
+        "github_actions.workflow.dispatch_once",
+        "github_actions.workflow.find_run",
+        "github_actions.commit_runs.list",
+        "github_actions.dispatch_receipt.get",
+        "github_actions.run.jobs_count",
+        "github_actions.wait_run",
+        "github_actions.failed_log",
+    }
+)
 
 
 def _denied(request: FunctionCallRequest, message: str) -> FunctionCallResponse:
@@ -75,6 +78,7 @@ def dispatch(request: FunctionCallRequest) -> FunctionCallResponse:
     options = dict(request.options or {})
     options["authorized_project_id"] = project_id
     narrowed = request.model_copy(update={"actor": actor, "options": options})
+    from yoke_core.domain.handlers import github_actions_dispatch_receipt
     from yoke_core.domain.handlers import github_actions_commit_runs
     from yoke_core.domain.handlers import github_actions_failed_log
     from yoke_core.domain.handlers import github_actions_run
@@ -82,6 +86,7 @@ def dispatch(request: FunctionCallRequest) -> FunctionCallResponse:
 
     registrations = (
         *github_actions_commit_runs.REGISTRATIONS,
+        *github_actions_dispatch_receipt.REGISTRATIONS,
         *github_actions_failed_log.REGISTRATIONS,
         *github_actions_run.REGISTRATIONS,
         *github_actions_workflow.REGISTRATIONS,
