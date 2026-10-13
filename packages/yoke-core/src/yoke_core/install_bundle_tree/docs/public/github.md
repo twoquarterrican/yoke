@@ -40,6 +40,7 @@ credential locks or requesting service health. Before refresh, Yoke proves the
 selected service's App identity, then takes the machine and credential locks
 and reads the credential again; concurrent refreshes reuse the first result.
 Binding also proves the App identity before writing the project binding.
+Local product App identity is checked against the installed bundle on every read.
 A credential lock wait is announced after about two seconds. If it times out,
 retry the command; run `yoke github status` if access keeps failing.
 

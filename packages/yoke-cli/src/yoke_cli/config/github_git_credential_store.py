@@ -131,6 +131,15 @@ def access_token_from_config(
         if now is None
         else _ensure_utc(now)
     )
+    if (
+        github.get("profile_source")
+        == token_contract.GITHUB_PROFILE_SOURCE_LOCAL_PRODUCT
+        and not profile_proven
+    ):
+        try:
+            github_service_profile_proof.prove_local_product(github)
+        except github_service_profile_proof.GitHubServiceProfileProofError as exc:
+            raise GitHubCredentialStoreError(str(exc)) from exc
     current = read_credential_document(path)
     usable = access_cache.usable_token_state(
         current,
@@ -146,15 +155,6 @@ def access_token_from_config(
                 service_api_url,
                 opener=profile_opener,
             )
-        except github_service_profile_proof.GitHubServiceProfileProofError as exc:
-            raise GitHubCredentialStoreError(str(exc)) from exc
-    if (
-        github.get("profile_source")
-        == token_contract.GITHUB_PROFILE_SOURCE_LOCAL_PRODUCT
-        and not profile_proven
-    ):
-        try:
-            github_service_profile_proof.prove_local_product(github)
         except github_service_profile_proof.GitHubServiceProfileProofError as exc:
             raise GitHubCredentialStoreError(str(exc)) from exc
     with machine_operation_lock(config_path), _locked(path):
