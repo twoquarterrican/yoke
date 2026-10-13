@@ -174,9 +174,9 @@ function dashPanels(context, documentNode, item) {
     [
       textPanel(
         documentNode,
-        "Instruction",
+        "Spec",
         item.narrative.spec || item.narrative.body,
-        "No instruction recorded.",
+        "No spec recorded.",
       ),
       ...filledNarrativePanels(documentNode, item),
       verificationPanel(context, item),
@@ -201,9 +201,9 @@ function taskPanels(context, documentNode, item) {
     [
       textPanel(
         documentNode,
-        "Instruction",
+        "Spec",
         item.narrative.spec || item.narrative.body,
-        "No instruction recorded.",
+        "No spec recorded.",
       ),
       ...filledNarrativePanels(documentNode, item),
     ],

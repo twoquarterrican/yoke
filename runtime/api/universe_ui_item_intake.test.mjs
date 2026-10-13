@@ -73,7 +73,7 @@ test("New item derives web-fileability and settings from the definition", async 
   assert.match(rendered, /Dash and Task can be filed from the web/);
   assert.match(rendered, /Issue is filed in a harness \(\/yoke idea\)/);
   assert.match(rendered, /Title/);
-  assert.match(rendered, /Instruction/);
+  assert.match(rendered, /Spec/);
   assert.match(rendered, /Verification/);
   assert.match(rendered, /File Budget/);
   assert.match(rendered, /Path claims/);
@@ -120,7 +120,7 @@ test("New item derives web-fileability and settings from the definition", async 
     .dispatchEvent(new Event("click"));
   const taskView = itemText(root);
   assert.match(taskView, /New Task/);
-  assert.match(taskView, /complete laneless, merge-free instruction/);
+  assert.match(taskView, /complete laneless, merge-free spec/);
   assert.doesNotMatch(taskView, /Verification|Approval on done|Deploy after merge/);
   assert.equal(byClass(root, "item-setting-row").length, 0);
 });
@@ -204,7 +204,7 @@ test("New item submits one atomic create and routes to the public ref", async ()
   const create = requests.find((request) => request.function === "items.create");
   assert.deepEqual(create.payload, {
     title: "Fix the footer",
-    instruction: "Correct it and verify every link.",
+    spec: "Correct it and verify every link.",
     project: "acme",
     workflow: "dash",
     entry_surface: "web_form",
@@ -262,7 +262,7 @@ test("New item files Task through the typed web surface without gate posture", a
   const create = requests.find((request) => request.function === "items.create");
   assert.deepEqual(create.payload, {
     title: "Refresh inventory",
-    instruction: "Refresh the local inventory file.",
+    spec: "Refresh the local inventory file.",
     project: "acme",
     workflow: "task",
     entry_surface: "web_form",

@@ -29,8 +29,8 @@ Create one at a time **bare**, read each returned public ref before the next.
 When no flow applies, omit `--deployment-flow`:
 
 ```bash
-yoke items create "{title}" issue --entry-surface harness_skill --execution-instructions-considered --project {project} --deployment-flow {flow_id} --priority {priority}
-yoke items create "{title}" issue --entry-surface harness_skill --execution-instructions-considered --project {project} --priority {priority}
+yoke items create "{title}" issue --entry-surface harness_skill --execution-instructions-considered --project {project} --deployment-flow {flow_id} --priority {priority} --spec-file /tmp/item-spec.md
+yoke items create "{title}" issue --entry-surface harness_skill --execution-instructions-considered --project {project} --priority {priority} --spec-file /tmp/item-spec.md
 ```
 
 All enter idea. Refine owns specs; do not manufacture bodies/claims/dependencies

@@ -42,7 +42,7 @@ def _insert_item(
     workflow_id: str,
     workflow_version_id: int,
     owner: Optional[str] = None,
-    instruction: Optional[str] = None,
+    spec: Optional[str] = None,
     workflow_posture: Optional[dict[str, Any]] = None,
     commit: bool = True,
 ) -> None:
@@ -89,9 +89,9 @@ def _insert_item(
             workflow_id,
             workflow_version_id,
             json.dumps(workflow_posture or {}, sort_keys=True),
-            instruction,
-            updated_at if instruction else None,
-            source if instruction else None,
+            spec,
+            updated_at if spec else None,
+            source if spec else None,
         ),
     )
     if commit:

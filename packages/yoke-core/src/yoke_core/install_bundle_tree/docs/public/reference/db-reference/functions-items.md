@@ -53,6 +53,21 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 
 ## Creation and structured writes
 
+```text
+yoke items create "Outcome" task --spec-file spec.md --project P --execution-instructions-considered
+```
+
+The item text is **spec**. Use --stdin for spec input and --title-file PATH
+for a title file. Task and Dash are thin shortcuts to this same operation.
+The payload carries spec. Creation stores it with attribution in the same
+transaction. A spec-bearing CLI write first previews the request and requires
+spec_accepted in the receipt. An older server that cannot attest acceptance
+refuses with the argument serving floor before a real write. The real-write
+receipt must also attest acceptance. A changed serving contract reports the
+available item identifiers and spec repair command. Do not repeat creation.
+Creation no longer accepts --content-file or the retired item-text field.
+
+
 Every create chooses the target project, pinned workflow and allowed typed entry
 surface. Non-web filing reads Before creation instructions with
 `yoke workflow execution-instruction resolve --workflow W --project P --full`

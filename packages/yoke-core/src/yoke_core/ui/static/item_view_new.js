@@ -52,7 +52,7 @@ export function renderNewItemView(context, main, initialProjectId) {
     const token = ++sequence;
     ++instructionSequence;
     draft.title = draft.titleControl?.value ?? draft.title;
-    draft.instruction = draft.instructionControl?.value ?? draft.instruction;
+    draft.spec = draft.specControl?.value ?? draft.spec;
     selector.value = projectId;
     main.replaceChildren(itemIntakeField(documentNode, "Project", selector), el(documentNode, "p", "empty", "Loading project settings…"));
     const project = context.projects().find((row) => String(row.id) === projectId);
@@ -82,7 +82,7 @@ export function renderNewItemView(context, main, initialProjectId) {
         onWorkflowChange: (id) => {
           draft.instructionsLoading = true;
           draft.title = draft.titleControl.value;
-          draft.instruction = draft.instructionControl.value;
+          draft.spec = draft.specControl.value;
           loadInstructions(id).catch((error) => showFailure({ status: 0, envelope: { error: { message: String(error) } } }));
         },
       });

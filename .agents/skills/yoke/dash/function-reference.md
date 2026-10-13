@@ -7,7 +7,7 @@ Each CLI adapter dispatches the same typed function authority.
 
 | Function id | Local purpose / adapter |
 |---|---|
-| items.create | Resolved project/title, full instruction, allowed entry/posture and attestation; yoke dash |
+| items.create | Resolved project/title, full spec, allowed entry/posture and attestation; yoke dash |
 | workflow.execution_instruction.resolve | Read matching instructions before authoring; yoke workflow execution-instruction resolve |
 | items.detail.get | Posture/content_index with `yoke items detail get ITEM --include ''`; request narrative/body/log explicitly when needed |
 | workflows.item.get | Exact pin/effective independent axes; yoke workflows item get |

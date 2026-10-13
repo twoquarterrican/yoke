@@ -64,12 +64,12 @@ export function renderNewItemForm(context, main, projectId, options) {
     title.required = true;
     title.value = draft.title || "";
     draft.titleControl = title;
-    const instruction = el(documentNode, "textarea", "item-form-control");
-    instruction.required = true;
-    instruction.rows = 3;
-    instruction.value = draft.instruction || "";
-    draft.instructionControl = instruction;
-    for (const control of [title, instruction]) {
+    const spec = el(documentNode, "textarea", "item-form-control");
+    spec.required = true;
+    spec.rows = 3;
+    spec.value = draft.spec || "";
+    draft.specControl = spec;
+    for (const control of [title, spec]) {
       control.addEventListener("input", () => draft.scheduleSave());
       control.addEventListener("blur", () => draft.save?.());
     }
@@ -134,18 +134,18 @@ export function renderNewItemForm(context, main, projectId, options) {
         form.appendChild(choices.panel);
       }
       form.appendChild(itemIntakeField(documentNode, "Title", title));
-      const instructionHelp = el(
+      const specHelp = el(
         documentNode,
         "span",
         "item-form-help",
         selected.id === "task"
-          ? "This is the complete laneless, merge-free instruction. Choose " +
+          ? "This is the complete laneless, merge-free spec. Choose " +
             "Dash when work needs a git lane, verification, or approval."
-          : "This is the whole spec. The agent completes the full instruction " +
+          : "This is the whole spec. The agent completes the full spec " +
             "in this item, including larger-than-expected work.",
       );
       form.appendChild(itemIntakeField(
-        documentNode, "Instruction", instruction, instructionHelp,
+        documentNode, "Spec", spec, specHelp,
       ));
       form.appendChild(itemIntakeField(documentNode, "Project", projectControl));
       if (stored) form.appendChild(el(documentNode, "p", "item-form-help", "Draft saved in this browser tab. You can leave and return."));
@@ -234,11 +234,11 @@ export function renderNewItemForm(context, main, projectId, options) {
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const cleanTitle = title.value.trim();
-        const cleanInstruction = instruction.value.trim();
+        const cleanSpec = spec.value;
         if (submit.disabled || draft.creating) return;
-        if (!cleanTitle || !cleanInstruction) {
+        if (!cleanTitle || !cleanSpec.trim()) {
           outcome.className = "item-form-outcome error";
-          outcome.textContent = "Title and instruction are required.";
+          outcome.textContent = "Title and spec are required.";
           return;
         }
         if (cleanTitle.length > titleLimit) {
@@ -273,7 +273,7 @@ export function renderNewItemForm(context, main, projectId, options) {
         }
         const submittedRevision = draft.save?.();
         const content = () => JSON.stringify([
-          draft.titleControl.value, draft.instructionControl.value, draft.workflowId, draft.posture,
+          draft.titleControl.value, draft.specControl.value, draft.workflowId, draft.posture,
         ]);
         const submittedContent = content();
         draft.creating = true;
@@ -285,7 +285,7 @@ export function renderNewItemForm(context, main, projectId, options) {
         try {
           result = await callFunction(context.client, "items.create", {
             title: cleanTitle,
-            instruction: cleanInstruction,
+            spec: cleanSpec,
             project: String(project?.slug || project?.id || projectId),
             workflow: selected.id,
             entry_surface: "web_form",

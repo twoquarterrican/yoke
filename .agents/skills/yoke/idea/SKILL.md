@@ -57,6 +57,6 @@ the whole touch set; an overlap cannot remove scope.
 
 `/yoke idea --workflow blitz` selects a harness_skill definition whose
 refinement links **exactly one execution strategy document** before execution.
-Laneless Task is fully scaffolded intake here or the complete-instruction
+Laneless Task is fully scaffolded intake here or the complete-spec
 `yoke task` shortcut; work needing a lane or optional gate uses Dash's bound
 procedure. Never prefile imagined task children.

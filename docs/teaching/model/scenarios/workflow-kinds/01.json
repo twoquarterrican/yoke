@@ -4,13 +4,23 @@
  "status": "draft-copy",
  "audience": "both",
  "when": "At intake before creating an item, when the intended execution structure becomes known.",
- "need": "Dash executes a stored instruction; Issue supports planned single-lane work; Epic requires structural task decomposition; Blitz executes a linked document; Task is laneless and merge-free. Size alone does not choose.",
+ "need": "Dash executes a stored spec; Issue supports planned single-lane work; Epic requires structural task decomposition; Blitz executes a linked document; Task is laneless and merge-free. Size alone does not choose.",
  "disclosure": "current cue",
  "surface": "Idea metadata inference; Dash entry; public Workflows and command reference",
  "gap": "Public built-in table omits Task and provides no concise intent comparison. Review question: should the first-work guide teach only the matched choice, with the full comparison on request?",
  "review": "Pending exact recipe proof.",
- "recipes": ["yoke workflows version get --help"],
- "plan_notes": ["JOURNEYS row 11", "outside both"],
- "sources": [".agents/skills/yoke/idea/infer-and-create.md", ".agents/skills/yoke/dash/SKILL.md", "docs/public/workflows.md", "docs/public/reference/commands.md"],
+ "recipes": [
+  "yoke workflows version get --help"
+ ],
+ "plan_notes": [
+  "JOURNEYS row 11",
+  "outside both"
+ ],
+ "sources": [
+  ".agents/skills/yoke/idea/infer-and-create.md",
+  ".agents/skills/yoke/dash/SKILL.md",
+  "docs/public/workflows.md",
+  "docs/public/reference/commands.md"
+ ],
  "position": 0
 }

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from yoke_cli.commands.adapters import dash_file
+from yoke_cli.commands.adapters import dash_file, items_create
 
 
 def _capture(monkeypatch):
@@ -21,7 +21,7 @@ def _capture(monkeypatch):
         captured.update(kwargs)
         return 0
 
-    monkeypatch.setattr(dash_file, "dispatch_and_emit", _dispatch)
+    monkeypatch.setattr(items_create, "dispatch_create", _dispatch)
     return captured
 
 
@@ -41,7 +41,6 @@ def test_dash_filing_sends_the_named_deployment_flow(monkeypatch):
         == 0
     )
 
-    assert captured["function_id"] == "items.create"
     assert captured["payload"]["deployment_flow"] == (
         "yoke-hosted-production-release-qa"
     )

@@ -49,7 +49,7 @@ def execute_create(
     session_id: Optional[str] = None,
     dry_run: bool = False,
     entry_surface: Optional[str] = None,
-    instruction: Optional[str] = None,
+    spec: Optional[str] = None,
     workflow_posture: Optional[Mapping[str, Any]] = None,
     strategy_doc: Optional[str] = None,
     out: TextIO = sys.stdout,
@@ -142,17 +142,17 @@ def execute_create(
         )
         if intake_block:
             return {"success": False, "error": intake_block}
-        clean_instruction = None if instruction is None else str(instruction).strip()
-        if workflow_id in ("dash", "task") and not clean_instruction:
+        clean_spec = None if spec is None else str(spec)
+        if workflow_id in ("dash", "task") and not (clean_spec or "").strip():
             return {
                 "success": False,
-                "error": f"{workflow_id} item creation requires a nonblank instruction; "
-                "provide instruction text before filing",
+                "error": f"{workflow_id} item creation requires a nonblank spec; "
+                "pass --spec-file PATH or --stdin with a nonblank spec",
             }
-        if entry_surface == "web_form" and not clean_instruction:
+        if entry_surface == "web_form" and not (clean_spec or "").strip():
             return {
                 "success": False,
-                "error": "web-form item creation requires an instruction",
+                "error": "web-form item creation requires a spec; fill Spec or pass --spec-file PATH / --stdin",
             }
         from yoke_core.domain.item_posture_validation import (
             ItemPostureError,
@@ -263,7 +263,7 @@ def execute_create(
                     owner=owner_token,
                     workflow_id=workflow_id,
                     workflow_version_id=workflow_version_id,
-                    instruction=clean_instruction,
+                    spec=clean_spec,
                     workflow_posture=normalized_posture,
                     commit=False,
                 )
@@ -317,7 +317,7 @@ def execute_create(
             public_ref=public_ref,
             title=title,
             body=body,
-            instruction=clean_instruction,
+            spec=clean_spec,
             out=out,
         )
         # A create is authoritative on its own; the mirror is a second write

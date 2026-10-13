@@ -45,7 +45,7 @@ Registered `workflow.execution_instruction.resolve`:
 yoke workflow execution-instruction resolve --workflow <workflow> --project <project> --full
 ```
 
-Apply every returned instruction to title, instruction, provenance and body
+Apply every returned instruction to title, spec, provenance and body
 BEFORE final authoring/creation, rather than relying on the create receipt.
 
 ### 3A.3 Create via `/yoke idea`
@@ -62,11 +62,11 @@ body_context, pull-forward justification and mandatory provenance:
 ```
 
 Idea owns title_max_length, inference, secondary dedup, GH sync and AC normalization.
-For one coherent instruction carrying all strategic context, file instead:
+For one coherent spec carrying all strategic context, file instead:
 
 ```sh
-yoke dash "<title>" "<instruction including strategic provenance>" --execution-instructions-considered --json
-yoke task "<title>" "<instruction including strategic provenance>" --execution-instructions-considered --json
+yoke dash "<title>" "<spec including strategic provenance>" --execution-instructions-considered --json
+yoke task "<title>" "<spec including strategic provenance>" --execution-instructions-considered --json
 ```
 
 Choose one adapter. Dash files without execution at idea/next_step=dash.

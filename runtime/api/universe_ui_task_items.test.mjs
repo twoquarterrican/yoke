@@ -24,7 +24,7 @@ test("Task detail is laneless and omits merge and QA affordances", () => {
   renderWorkflowItemDetail(itemContext(documentNode, async () => null), root, item);
 
   const rendered = itemText(root);
-  assert.match(rendered, /Instruction/);
+  assert.match(rendered, /Spec/);
   assert.match(rendered, /no git lane/);
   assert.match(rendered, /\/yoke dash ACM-22/);
   assert.doesNotMatch(rendered, /Verification|merge SHA|worktree branch/);

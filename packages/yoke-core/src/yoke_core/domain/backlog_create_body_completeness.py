@@ -18,12 +18,12 @@ def warn_when_body_is_empty(
     public_ref: str,
     title: str,
     body: str,
-    instruction: str,
+    spec: str,
     out: Optional[TextIO] = None,
 ) -> bool:
     """Print the empty-body warning; return whether it fired."""
     out = out if out is not None else sys.stderr
-    if instruction or len(body) > len(f"# {title}") + 4:
+    if spec or len(body) > len(f"# {title}") + 4:
         return False
     print("", file=out)
     print(f"WARNING: {public_ref} created with no body content.", file=out)

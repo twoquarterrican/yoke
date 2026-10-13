@@ -40,13 +40,13 @@ def _ordered(text: str, first: str, second: str) -> None:
 
 def test_dash_resolves_before_filing_and_before_escalation_authoring() -> None:
     text = _read("dash/file-and-claim.md")
-    filing = text.split("## New instruction", 1)[1].split(
+    filing = text.split("## New spec", 1)[1].split(
         "## Existing reference and first claim", 1
     )[0]
     _ordered(
         filing,
         f"{RESOLVER} --workflow dash --project PROJECT",
-        'yoke dash "<specific title>" --project PROJECT --content-file /tmp/dash-instruction.txt '
+        'yoke dash "<specific title>" --project PROJECT --spec-file /tmp/dash-spec.txt '
         f"{ATTESTATION} --json",
     )
 

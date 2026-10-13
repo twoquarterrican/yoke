@@ -56,7 +56,7 @@ yoke items list --status done --fields "id,title,status"
 
 Extract the observation's paths, functions, scripts, keys and patterns;
 verify them in current code. Classify Still present, Likely resolved or
-Inconclusive with evidence. One repair executable from a complete instruction
+Inconclusive with evidence. One repair executable from a complete spec
 is Dash; acceptance agreement or generated parallel lanes calls for an item.
 Volume alone does not change that choice.
 
@@ -78,7 +78,7 @@ yoke workflow execution-instruction resolve --workflow issue --project {project}
 
 Apply every returned instruction before the effect; the create receipt is
 defense in depth. Present each cluster's title, count/authors/category/entry
-ids, summary, code verdict/proof, proposed output/title/instruction or priority,
+ids, summary, code verdict/proof, proposed output/title/spec or priority,
 and similar items with refs/status. Recommend skip with evidence for likely
 resolved work. Ask `create / skip / defer`: create routes below, skip reviews
 without output, defer keeps entries unreviewed.
@@ -101,7 +101,7 @@ contract, the same contract `/yoke idea` uses. After the full instruction read,
 create once:
 
 ```sh
-yoke items create "{title}" issue --project {project} --priority {priority} --entry-surface harness_skill --execution-instructions-considered
+yoke items create "{title}" issue --project {project} --priority {priority} --entry-surface harness_skill --execution-instructions-considered --spec-file /tmp/item-spec.md
 ```
 
 Immediately write the spec through `items.structured_field.replace`:

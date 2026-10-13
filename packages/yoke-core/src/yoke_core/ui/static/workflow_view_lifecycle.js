@@ -18,11 +18,11 @@ const ENTRY_SURFACE_COPY = {
     },
     cli: {
       title: "CLI",
-      command: 'yoke dash "<title>" "<instruction>"',
+      command: 'yoke dash "<title>" "<spec>"',
     },
     harness_skill: {
       title: "Harness",
-      command: '/yoke dash "<instruction>"',
+      command: '/yoke dash "<spec>"',
       note: "agent authors title and files for you",
       noteBreak: true,
     },

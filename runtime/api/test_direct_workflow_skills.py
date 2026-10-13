@@ -155,7 +155,7 @@ def test_idea_to_blitz_route_dispatches_the_typed_create_payload(monkeypatch):
         captured.update(kwargs)
         return 0
 
-    monkeypatch.setattr(items_create, "dispatch_and_emit", _dispatch)
+    monkeypatch.setattr(items_create, "dispatch_create", _dispatch)
 
     assert (
         items_create.items_create(
@@ -171,7 +171,6 @@ def test_idea_to_blitz_route_dispatches_the_typed_create_payload(monkeypatch):
         )
         == 0
     )
-    assert captured["function_id"] == "items.create"
     assert captured["target"].kind == "global"
     assert captured["target"].project_id == "yoke"
     assert captured["payload"] == {

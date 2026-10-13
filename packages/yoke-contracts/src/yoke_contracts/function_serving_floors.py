@@ -123,6 +123,11 @@ class ArgumentFloor:
 #: ignore them. Payload refusals name this floor; adapters whose writes can be
 #: ignored must also verify the success receipt echoes the requested argument.
 FUNCTION_ARGUMENT_MINIMUM_SERVING_VERSIONS: dict[str, dict[str, ArgumentFloor]] = {
+    "items.create": {
+        "spec": ArgumentFloor(
+            "next-release", "the filing form supported by the serving CLI release"
+        ),
+    },
     "items.structured_field.section_upsert": {
         "field": ArgumentFloor(
             "next-release", "field-less --section TEXT for a top-level item section"

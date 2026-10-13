@@ -1,8 +1,16 @@
 {
  "id": "task",
  "title": "Task",
- "status": "draft-copy",
- "commands": ["yoke task"],
+ "status": "observed",
+ "commands": [
+  "yoke task"
+ ],
  "page": "workflows",
- "position": 4
+ "position": 4,
+ "functions": [
+  "items.create"
+ ],
+ "sources": [
+  "packages/yoke-cli/src/yoke_cli/commands/adapters/task.py"
+ ]
 }

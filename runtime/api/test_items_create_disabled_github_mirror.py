@@ -61,7 +61,8 @@ def _bind_yoke_repo(path) -> None:
 
 
 def test_items_create_skip_on_bound_disabled_project_is_unmirrored(
-    tmp_db, monkeypatch,  # noqa: F811
+    tmp_db,  # noqa: F811
+    monkeypatch,  # noqa: F811
 ):
     _bind_yoke_repo(tmp_db)
     monkeypatch.delenv(ITEM_ENTRY_SURFACE_ENV, raising=False)
@@ -78,7 +79,7 @@ def test_items_create_skip_on_bound_disabled_project_is_unmirrored(
             _request(
                 {
                     "title": "Skip must not look synced",
-                    "instruction": "Create a task against a sync-disabled project.",
+                    "spec": "Create a task against a sync-disabled project.",
                     "workflow": "task",
                     "project": "yoke",
                     "entry_surface": "cli",

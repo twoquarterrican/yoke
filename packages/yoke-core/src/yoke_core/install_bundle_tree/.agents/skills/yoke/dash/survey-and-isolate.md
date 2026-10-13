@@ -33,7 +33,7 @@ survey sizing in the spec's File Budget through
 `items.structured_field.section_upsert`.
 Disabled: no invented section. Claims enabled/budget off: survey supplies
 claim scope. Both enabled: pair full enumerations. Budget enabled/claims off:
-retain sizing/conflict evidence without registering. Neither: instruction and
+retain sizing/conflict evidence without registering. Neither: spec and
 survey still define scope. Never remove a required file to clear a contact.
 
 ## Contacts

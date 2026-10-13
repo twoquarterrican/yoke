@@ -228,7 +228,7 @@ class TestItemsCreateEndToEnd:
                 _request(
                     {
                         "title": "Fix the footer",
-                        "instruction": "Correct the footer and verify every link.",
+                        "spec": "Correct the footer and verify every link.",
                         "workflow": "dash",
                         "project": "yoke",
                         "entry_surface": "web_form",
@@ -263,7 +263,7 @@ class TestItemsCreateEndToEnd:
         assert attachment["qa_phase"] == "verification"
         assert int(requirement_count) == 0
 
-    def test_web_form_create_stores_instruction_and_posture_atomically(
+    def test_web_form_create_stores_spec_and_posture_atomically(
         self,
         tmp_db,
         monkeypatch,  # noqa: F811
@@ -274,7 +274,7 @@ class TestItemsCreateEndToEnd:
                 _request(
                     {
                         "title": "Fix the footer",
-                        "instruction": "Correct the footer and verify every link.",
+                        "spec": "Correct the footer and verify every link.",
                         "workflow": "dash",
                         "project": "yoke",
                         "entry_surface": "web_form",

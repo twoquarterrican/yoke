@@ -33,7 +33,7 @@ route by id vocabulary.
 Initial Dash binding: read and follow [Dash's procedure](../dash/SKILL.md)
 internally so direct filing/execution is atomic. A served worktrees:none,
 delivery:merge_free definition supports the complete laneless shortcut
-`yoke task TITLE INSTRUCTION --execution-instructions-considered`.
+`yoke task TITLE SPEC --execution-instructions-considered`.
 A refine-to-Blitz boundary links exactly one execution strategy document
 through strategy.execution.link; intake never copies its plan into body.
 
@@ -105,9 +105,9 @@ create-anyway yes/no decision; no means use existing item, no matches proceed.
 
 ## 5. Create The Item
 
-Invoke items.create bare, without redirection/pipes/inline payload wrapping:
+Write the agreed initial spec to /tmp/item-spec.md, then invoke items.create:
 ```bash
-yoke items create "<title>" "$_workflow" --entry-surface harness_skill --execution-instructions-considered --project "$_project" --priority <priority> --json
+yoke items create "<title>" "$_workflow" --entry-surface harness_skill --execution-instructions-considered --project "$_project" --priority <priority> --json --spec-file /tmp/item-spec.md
 ```
 
 Include --deployment-flow only for a valid nonempty assignment; never none.
