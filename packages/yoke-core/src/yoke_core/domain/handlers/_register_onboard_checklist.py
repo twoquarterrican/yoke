@@ -22,7 +22,6 @@ def register(registry) -> None:
         ambient_session_required=False,
         minimum_serving_version="next-release",
     )
-    # No onboarding-specific event helper exists yet; the function
     # Run metadata owns saved choices; dispatcher events record calls.
     registry.register(
         "onboard.checklist.init",
