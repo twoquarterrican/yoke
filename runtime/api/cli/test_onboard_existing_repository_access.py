@@ -27,7 +27,7 @@ class Flow(access.ProjectGithubAccessFlow):
     def _goto(self, view):
         self.details = view.builder()
 
-    def _goto_board_art(self):
+    def _prepare_board_art_and_continue(self):
         self.bound = True
 
 

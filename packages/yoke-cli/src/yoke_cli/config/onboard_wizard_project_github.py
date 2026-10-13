@@ -52,7 +52,7 @@ class ProjectGithubAccessFlow:
         self.result.project_github_adoption_preserve = False
         self.result.project_github_repository_id = None
         self.result.project_github_installation_id = None
-        self._goto_board_art()
+        self._prepare_board_art_and_continue()
         return True
 
     def _on_project_github(self, choice: str) -> None:
@@ -66,7 +66,7 @@ class ProjectGithubAccessFlow:
         self.result.project_github_repository_id = None
         self.result.project_github_installation_id = None
         if choice == "skip":
-            self._goto_board_art()
+            self._prepare_board_art_and_continue()
 
     def _project_github_access_url(self) -> str:
         owner = str(self.result.project_github_repo or "").split("/", 1)[0]
@@ -162,7 +162,7 @@ class ProjectGithubAccessFlow:
             self.result.project_github_adoption_preserve = False
             self.result.project_github_repository_id = None
             self.result.project_github_installation_id = None
-            self._goto_board_art()
+            self._prepare_board_art_and_continue()
             return
         asyncio.ensure_future(self.action_back())
 
@@ -241,7 +241,7 @@ class ProjectGithubAccessFlow:
         self.result.project_github_adoption_preserve = False
         self.result.project_github_repository_id = repository_id
         self.result.project_github_installation_id = installation_id
-        self._goto_board_art()
+        self._prepare_board_art_and_continue()
 
     def _project_installation_status(
         self,

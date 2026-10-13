@@ -13,7 +13,6 @@ from runtime.api.cli.test_yoke_operations_cli_onboard_wizard_publish_capability 
     _github_config,
     _mark_connected,
     _stubs as _source_stubs,
-    complete_board_art,
     github_origin,
     machine_config,
     make_app,
@@ -115,7 +114,6 @@ def test_manual_create_refresh_selects_exact_repo_and_continues_in_run(
             await pilot.press("enter")  # GitHub binding
             await pilot.pause()
             assert "Here's your progress map." in _body_text(app)
-            await complete_board_art(pilot)
             assert "Connect your hosting provider?" in _body_text(app)
             await skip_hosting(pilot)
             assert "Review what Yoke will save." in _body_text(app)

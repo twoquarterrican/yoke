@@ -88,7 +88,7 @@ def test_friendly_line_covers_full_action_vocabulary() -> None:
         (
             "project-write-board-art",
             "",
-        ): "Write your board art, rebuild BOARD.md, and commit the art",
+        ): "Add a progress map and three art headers, rebuild BOARD.md, and commit the art",
         (
             "activate-yoke-source",
             "/src/yoke",

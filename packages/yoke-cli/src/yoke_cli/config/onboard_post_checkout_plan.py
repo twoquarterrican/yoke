@@ -24,7 +24,7 @@ from yoke_contracts.project_contract.board_art.config_paths import (
 # The project modes whose apply path lays down the ``.yoke/`` scaffold via
 # ``install_runner.install`` and then writes board art + the initial BOARD.md.
 # Source-dev-admin takes a separate ``yoke dev setup`` path and never reaches
-# the board-art design flow, so it is excluded; machine-only has no checkout.
+# the default board-art preparation, so it is excluded; machine-only has no checkout.
 SCAFFOLD_PROJECT_MODES = frozenset(
     {
         onboard_project.PROJECT_MODE_CREATE_REPO,

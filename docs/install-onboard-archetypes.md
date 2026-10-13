@@ -22,7 +22,7 @@ forbidden. Sources:
 | Publish / clone / branch | `onboard_wizard_project_screens.py`, `onboard_wizard_flow_publish.py` |
 | Hosting | `onboard_wizard_hosting_steps.py` |
 | Review | `onboard_wizard_review_steps.py` |
-| Board art | `onboard_wizard_board_art.py`, `onboard_wizard_board_art_steps.py` |
+| Board art | `onboard_wizard_flow_board_art.py`, `project_contract/board_art/__init__.py` |
 | Modes | `docs/public/modes.md` |
 | Harness onboard skill | `.agents/skills/yoke/onboard/` (SKILL + step files) |
 | Idea deploy-default | `.agents/skills/yoke/idea/infer-deployment-flow.md` |

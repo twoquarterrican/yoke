@@ -19,6 +19,12 @@ and the required `--execution-instructions-considered` flag. If your account
 has no projects, it says so and omits the filing and browsing commands.
 To prepare a project's code on this machine later, run `yoke setup`.
 
+Setup adds a progress map and three random headers (ASCII, Emoji and Mixed)
+without a design screen. Existing project art stays intact. After setup, run
+`yoke board art variant create --help` to preview and add another header, or
+edit `.yoke/board-art` to change the map or saved art; run `yoke board rebuild`
+to see the result.
+
 Setup wires the project to Yoke and installs its operating guidance. It does
 not install an application scaffold. `/yoke onboard` derives and confirms the
 project's execution profile, then installs the chosen application Pack when

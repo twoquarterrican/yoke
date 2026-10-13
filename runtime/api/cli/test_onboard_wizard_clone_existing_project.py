@@ -23,7 +23,6 @@ from runtime.api.cli.onboard_wizard_github_app_test_support import (  # noqa: E4
     select_connected_repository,
 )
 from runtime.api.cli.onboard_wizard_test_helpers import (  # noqa: E402
-    complete_board_art,
     make_app,
     skip_hosting,
     type_text,
@@ -93,7 +92,6 @@ def test_clone_existing_yoke_project_offers_binding_upgrade(
             await pilot.press("enter")  # connect to it -> clone folder input
             await pilot.press("enter")  # folder default -> clone, then GitHub choice
             await select_connected_repository(app, pilot)
-            await complete_board_art(pilot)
             await skip_hosting(pilot)  # hosting: skip -> Finish
             await pilot.press("enter")  # apply
             await pilot.pause()

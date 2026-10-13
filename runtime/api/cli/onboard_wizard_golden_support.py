@@ -2,7 +2,7 @@
 
 The gates live in :mod:`test_onboard_wizard_goldens` (PATH / Connect / GitHub),
 :mod:`test_onboard_wizard_goldens_project` (Project / Finish),
-:mod:`test_onboard_wizard_goldens_art` (board art), and
+and
 :mod:`test_onboard_wizard_goldens_hosting` (Hosting); each imports this module
 for the render-and-assert machinery, the stubbed host-independent data, and the
 catalog<->golden parity scan. Splitting the harness out keeps each gate module
@@ -289,7 +289,6 @@ def render(
 GATE_MODULES = (
     "runtime.api.cli.test_onboard_wizard_goldens",
     "runtime.api.cli.test_onboard_wizard_goldens_project",
-    "runtime.api.cli.test_onboard_wizard_goldens_art",
     "runtime.api.cli.test_onboard_wizard_goldens_hosting",
 )
 

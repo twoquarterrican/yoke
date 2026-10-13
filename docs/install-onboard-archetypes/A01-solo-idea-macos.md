@@ -143,16 +143,9 @@ Yoke creates the repo with GitHub authorization and connects it as your remote.
 
 ### Board art
 
-```
-Preview your board map.
-The map spelling starts from your project details and can be edited here.
-  Looks good — continue
-  Edit the map word
-```
-
-**User:** Accepts the map spelling, picks ASCII, then chooses **Save and
-continue** on the header preview. The gallery appears only after deliberately
-saving more than one header.
+Setup automatically prepares the progress map and three random headers:
+ASCII, Emoji and Mixed. It proceeds to Hosting without a design prompt;
+customization is available after setup.
 
 ### Hosting
 
@@ -188,7 +181,8 @@ Apply creates the local universe, writes machine config, creates
 ```
 ✓ Setup complete.
 Everything in the Review plan was applied.
-✓ Board art ready
+✓ Progress map and ASCII, Emoji, Mixed headers ready
+Customize later: yoke board art variant create --help
 ✓ Session relay ready
   Exit
   Show report

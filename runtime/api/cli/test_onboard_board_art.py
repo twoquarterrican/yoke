@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
 import pytest
 
 pytest.importorskip("textual")
 
-from yoke_cli.config import onboard_wizard_board_art as art  # noqa: E402
-from yoke_cli.config import onboard_wizard_board_art_apply as art_apply  # noqa: E402
 from yoke_cli.config.onboard_wizard import WizardResult  # noqa: E402
 from yoke_cli.config.onboard_wizard_flow_board_art import BoardArtFlow  # noqa: E402
 from yoke_contracts.project_contract.board_art import (  # noqa: E402
     MAX_ART_WORD_LEN,
+    generate_default_variants,
+    MIXED_EMOJI_COLUMNS,
+    DEFAULT_VARIANT_MAX_WIDTH,
     generate_random_ascii_variant_detail,
     generate_random_mixed_variant_detail,
     normalize_header_art_word,
@@ -96,250 +96,75 @@ def test_mixed_generator_word_override():
     assert variant.word == "EXT"
 
 
-def test_generate_variant_helper_shuffle_changes_output():
-    first = art.generate_variant(kind="ASCII", word="EXT", seed_text="seed", attempt=0)
-    second = art.generate_variant(kind="ASCII", word="EXT", seed_text="seed", attempt=1)
-    assert first.text != second.text  # a different attempt picks a different font
-
-
-def test_render_master_map_returns_board_header():
-    rendered = art.render_master_map("EXT")
-    assert "\n" in rendered
-    # render_header composed the stats box, so we got the real board header,
-    # not the bare-map fallback.
-    assert "THE BOARD" in rendered
-
-
-def test_preview_rows_shape_by_kind():
-    ascii_values = [r.value for r in art.preview_rows("ASCII", is_image=False)]
-    assert ascii_values == [
-        "save-continue",
-        "save-another",
-        "shuffle",
-        "customize",
-        "back",
-    ]
-    emoji_values = [r.value for r in art.preview_rows("Emoji", is_image=True)]
-    assert emoji_values == ["save-continue", "save-another", "reimage", "back"]
-
-
-class _FakeShell(BoardArtFlow):
-    """Drives BoardArtFlow without the Textual app: records goto/input/finish."""
-
-    def __init__(self, result: WizardResult) -> None:
-        self.result = result
-        self._history: list = []
-        self.goto_views = self._history
-        self.input_calls: list = []
-        self.left_board_art = False
-        self.exited = False
-
-    def _board_art_view(self, step, builder, on_select):
-        return {"step": step, "builder": builder, "on_select": on_select}
-
-    def _selection_view(self, step, title, subtitle, rows, on_select):
-        return {"step": step, "title": title, "rows": rows, "on_select": on_select}
-
-    def _goto(self, view):
-        self._history.append(view)
-
-    def _replace_current(self, view):
-        if self._history:
-            self._history[-1] = view
-        else:
-            self._history.append(view)
-
-    def _render_current(self):
-        return None
-
-    def _goto_input(
-        self,
-        step,
-        title,
-        subtitle,
-        *,
-        placeholder,
-        on_done,
-        password=False,
-        allow_placeholder=True,
-    ):
-        view = {"step": step, "placeholder": placeholder, "on_done": on_done}
-        self.input_calls.append(view)
-        self._goto(view)
-
-    def _goto_hosting(self):
-        self.left_board_art = True
-
-    def exit(self):
-        self.exited = True
-
-
-def _shell() -> _FakeShell:
-    return _FakeShell(
-        WizardResult(
+class _Shell(BoardArtFlow):
+    def __init__(self, **kwargs):
+        self.result = WizardResult(
             config_path="cfg",
             env_name="prod",
-            api_url="https://x",
+            api_url="https://example.com",
             project_name="ExternalWebapp",
             project_slug="externalwebapp",
             project_public_item_prefix="EXT",
+            **kwargs,
         )
-    )
+        self.hosting_visits = 0
+
+    def _goto_hosting(self):
+        self.hosting_visits += 1
 
 
-def test_flow_map_entry_seeds_default_word_and_seed():
-    shell = _shell()
-    shell._goto_board_art()
+def test_prepare_art_goes_directly_to_hosting_with_three_styles():
+    shell = _Shell()
+    shell._prepare_board_art_and_continue()
+    assert shell.hosting_visits == 1
     assert shell.result.board_art_word == "EXT"
     assert shell.result.board_art_seed
+    assert [v.kind for v in shell.result.board_art_variants] == [
+        "ASCII",
+        "Emoji",
+        "Mixed",
+    ]
+    assert all(v.text.strip() for v in shell.result.board_art_variants)
 
 
-def test_flow_save_then_continue_gated_on_one_header():
-    shell = _shell()
-    shell._goto_board_art()
-    shell._on_board_art_map_preview("continue")
-    shell._on_board_art_style("ascii")
-    assert shell._art_variant.kind == "ASCII"
-    shell._on_board_art_preview("save-continue")
-    assert len(shell.result.board_art_variants) == 1
-    assert shell.left_board_art is True
+def test_back_navigation_preserves_default_art_and_seed():
+    shell = _Shell()
+    shell._prepare_board_art_and_continue()
+    seed = shell.result.board_art_seed
+    variants = shell.result.board_art_variants
+    shell._prepare_board_art_and_continue()
+    assert shell.hosting_visits == 2
+    assert shell.result.board_art_seed == seed
+    assert shell.result.board_art_variants is variants
 
 
-def test_flow_shuffle_increments_attempt():
-    shell = _shell()
-    shell._goto_board_art()
-    shell._on_board_art_style("ascii")
-    first = shell._art_variant.text
-    shell._on_board_art_preview("shuffle")
-    assert shell._art_attempt == 1
-    assert shell._art_variant.text != first
+def test_new_setup_chooses_a_new_random_seed():
+    first, second = _Shell(), _Shell()
+    first._prepare_board_art_and_continue()
+    second._prepare_board_art_and_continue()
+    assert first.result.board_art_seed != second.result.board_art_seed
 
 
-def test_flow_repeated_preview_transitions_keep_history_bounded():
-    shell = _shell()
-    shell._goto_board_art()
-    map_depth = len(shell._history)
-    for word in ("First", "Second", "Third"):
-        shell._on_board_art_map_preview("edit")
-        shell._after_board_art_map_word(word)
-    assert len(shell._history) == map_depth
+def test_default_art_is_reproducible_and_width_bounded():
+    from yoke_contracts.project_contract.board_art import _art_visual_width
 
-    shell._on_board_art_map_preview("continue")
-    shell._on_board_art_style("ascii")
-    preview_depth = len(shell._history)
-
-    for _ in range(5):
-        shell._on_board_art_preview("shuffle")
-    assert len(shell._history) == preview_depth
-
-    for word in ("First", "Second", "Third"):
-        shell._on_board_art_preview("customize")
-        shell._after_board_art_text(word)
-    assert len(shell._history) == preview_depth
+    first = generate_default_variants("EXT", seed_text="seed")
+    assert first == generate_default_variants("EXT", seed_text="seed")
+    assert first != generate_default_variants("EXT", seed_text="another seed")
+    assert all(_art_visual_width(v.text) <= DEFAULT_VARIANT_MAX_WIDTH for v in first)
+    assert first[1].text in [column.strip() for column in MIXED_EMOJI_COLUMNS]
+    assert first[0].font != first[2].font
+    assert first[1].emoji_index != first[2].emoji_index
 
 
-def test_flow_image_error_retry_and_back_reuse_real_views(monkeypatch):
-    shell = _shell()
-    shell._goto_board_art()
-    shell._on_board_art_map_preview("continue")
-    style_view = shell._history[-1]
-    shell._on_board_art_style("image")
-    input_depth = len(shell._history)
-    monkeypatch.setattr(
-        art,
-        "build_image",
-        lambda **_: (_ for _ in ()).throw(ValueError("not an image")),
-    )
+def test_seeded_install_art_has_exactly_three_headers(tmp_path):
+    from yoke_contracts.project_contract.board_art import render_board_art
+    from yoke_contracts.project_contract.board_art.config import parse_art_config
 
-    for _ in range(4):
-        shell._after_board_art_image_path("/tmp/not-an-image")
-        assert len(shell._history) == input_depth
-        shell._on_board_art_image_error("retry")
-        assert len(shell._history) == input_depth
-
-    shell._after_board_art_image_path("/tmp/not-an-image")
-    shell._on_board_art_image_error("back")
-    assert shell._history[-1] is style_view
-    assert len(shell._history) == input_depth - 1
-
-
-def test_flow_repeated_image_previews_reuse_input_slot(monkeypatch):
-    shell = _shell()
-    shell._goto_board_art()
-    shell._on_board_art_map_preview("continue")
-    style_view = shell._history[-1]
-    shell._on_board_art_style("image")
-    input_depth = len(shell._history)
-    variant = art.generate_variant(
-        kind="ASCII",
-        word="EXT",
-        seed_text="seed",
-        attempt=0,
-    )
-    monkeypatch.setattr(
-        art,
-        "build_image",
-        lambda **_: ("Emoji", variant, "🟩"),
-    )
-
-    for _ in range(4):
-        shell._after_board_art_image_path("/tmp/logo.png")
-        assert len(shell._history) == input_depth
-        shell._on_board_art_preview("reimage")
-        assert len(shell._history) == input_depth
-
-    shell._after_board_art_image_path("/tmp/logo.png")
-    shell._on_board_art_preview("back")
-    assert shell._history[-1] is style_view
-
-
-def test_flow_preview_back_and_gallery_another_return_to_style():
-    shell = _shell()
-    shell._goto_board_art()
-    shell._on_board_art_map_preview("continue")
-    style_view = shell._history[-1]
-
-    shell._on_board_art_style("ascii")
-    shell._on_board_art_preview("back")
-    assert shell._history[-1] is style_view
-
-    shell._on_board_art_style("ascii")
-    shell._on_board_art_preview("save-another")
-    shell._on_board_art_style("mixed")
-    shell._on_board_art_preview("save-another")
-    shell._on_board_art_gallery("another")
-    assert shell._history[-1] is style_view
-
-
-def test_flow_customize_text_allows_long_header():
-    shell = _shell()
-    shell._goto_board_art()
-    shell._on_board_art_style("ascii")
-    shell._after_board_art_text("Ship It Now")
-    assert shell._art_variant.word == "SHIP IT NOW"
-
-
-def test_flow_edit_master_letters_caps_at_limit():
-    shell = _shell()
-    shell._goto_board_art()
-    shell._after_board_art_map_word("my cool app")
-    assert shell.result.board_art_word == "MYCOOLAP"
-
-
-def test_flow_after_apply_writes_and_shows_payoff(tmp_path: Path, monkeypatch):
-    monkeypatch.setattr(art_apply, "rebuild_board", lambda repo_root: None)
-    shell = _shell()
-    shell._goto_board_art()
-    shell._on_board_art_style("ascii")
-    shell._on_board_art_preview("save-continue")
-    report = {"project_onboarding": {"checkout": str(tmp_path)}}
-    assert shell._board_art_after_apply(report) is True
-    assert (tmp_path / ".yoke" / "board-art").exists()
-    # payoff view was pushed; the wizard did not exit yet.
-    assert shell.goto_views and not shell.exited
-
-
-def test_flow_after_apply_noop_without_variants(tmp_path: Path):
-    shell = _shell()
-    report = {"project_onboarding": {"checkout": str(tmp_path)}}
-    assert shell._board_art_after_apply(report) is False
+    target = tmp_path / "board-art"
+    target.write_text(render_board_art("Acme"), encoding="utf-8")
+    config = parse_art_config(str(target))
+    assert config.master_map
+    assert len(config.ascii_variants) == 1
+    assert len(config.emoji_variants) == 1
+    assert len(config.mixed_variants) == 1

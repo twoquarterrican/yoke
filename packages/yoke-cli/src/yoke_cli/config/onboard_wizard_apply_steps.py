@@ -275,7 +275,18 @@ def apply_success_body(
         ),
     ]
     if board_art_committed:
-        widgets.append(Static("✓ Board art ready", classes="onboard-plan-line"))
+        widgets.append(
+            Static(
+                "✓ Progress map and ASCII, Emoji, Mixed headers ready",
+                classes="onboard-plan-line",
+            )
+        )
+        widgets.append(
+            Static(
+                "Customize later: yoke board art variant create --help",
+                classes="onboard-plan-line",
+            )
+        )
     if relay_lines:
         widgets.append(Static("✓ Session relay ready", classes="onboard-plan-line"))
     # A machine that connected is set up whatever the registry decided, so a

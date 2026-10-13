@@ -324,7 +324,7 @@ def test_finish_applying() -> None:
                 "step_id": "04-project-write-board-art",
                 "action": "project-write-board-art",
                 "target": "",
-                "label": "Write your board art, rebuild BOARD.md, and commit the art",
+                "label": "Add a progress map and three art headers, rebuild BOARD.md, and commit the art",
                 "status": "pending",
             },
         ]

@@ -18,7 +18,6 @@ from yoke_cli.config.onboard_wizard import WizardDefaults  # noqa: E402
 
 from runtime.api.cli.onboard_wizard_test_helpers import (  # noqa: E402
     advance_past_path,
-    complete_board_art,
     make_app,
     skip_hosting,
     stub_path_doctor,
@@ -119,7 +118,6 @@ def test_local_checkout_manifest_project_id_skips_project_setup(
             )
             assert "Yoke core database: verified project id 37." in body
             await pilot.press("enter")  # continue -> board art
-            await complete_board_art(pilot)
             await skip_hosting(pilot)  # hosting: skip -> Finish
             await pilot.press("enter")  # finish: apply
             await pilot.pause()
@@ -195,7 +193,6 @@ def test_stored_checkout_project_id_shows_confirmation_picker(
             assert str(checkout) in body
             assert "~/code/my-project" not in body
             await pilot.press("enter")  # continue -> board art
-            await complete_board_art(pilot)
             await skip_hosting(pilot)  # hosting: skip -> Finish
             await pilot.press("enter")  # finish: apply
             await pilot.pause()
