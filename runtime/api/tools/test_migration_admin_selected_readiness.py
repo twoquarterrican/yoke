@@ -135,7 +135,6 @@ def test_preflight_keeps_receipt_on_preexisting_control_plane(
                 passed=True,
                 line="yoke_alpha: PASS",
                 database="yoke_alpha",
-                not_applicable=(),
             )
         ]
 
@@ -198,7 +197,6 @@ def test_preflight_records_receipt_on_registered_environment_not_admin(
                 passed=True,
                 line="yoke_alpha: PASS",
                 database="yoke_alpha",
-                not_applicable=(),
             )
         ]
 
@@ -261,7 +259,6 @@ def test_preflight_resolves_an_environment_name_to_the_admin_connection(
                 passed=True,
                 line="yoke_alpha: PASS",
                 database="yoke_alpha",
-                not_applicable=(),
             )
         ]
 

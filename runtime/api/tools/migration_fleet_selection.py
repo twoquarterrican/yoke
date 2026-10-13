@@ -17,7 +17,6 @@ from typing import Any, Callable, List, Mapping, Optional, Tuple
 
 from yoke_core.domain import migration_model_fleet as fleets
 from yoke_core.domain.migration_fleet_preflight import RehearsalPlan
-from runtime.api.tools.fleet_rehearsal_release_run import ReleaseRun
 
 
 @dataclass(frozen=True)
@@ -29,9 +28,6 @@ class FleetTarget:
     plan: RehearsalPlan
     databases: Callable[[Callable[[str], str]], List[str]]
     schema_shape_digest: Callable[[], str]
-    #: The fleet's receipt needs the release run named, because the database
-    #: holding that run replays the release driver.
-    replays_release_driver: bool = False
 
 
 def resolve(
@@ -39,7 +35,6 @@ def resolve(
     model_name: Optional[str] = None,
     *,
     checkout: Optional[Path] = None,
-    release_run: Optional[ReleaseRun] = None,
 ) -> Tuple[Optional[FleetTarget], str]:
     """The project's model fleet as a rehearsal, or why there is none to run."""
     from yoke_core.domain.migration_model_fleet_read import read_declared
@@ -75,23 +70,20 @@ def resolve(
             "release gate requires no receipt"
         )
     if fleet["kind"] == fleets.FLEET_ENGINE_TENANTS:
-        return _engine_tenants(project, name, release_run), ""
+        return _engine_tenants(project, name), ""
     return _named_databases(project, name, model, fleet, checkout)
 
 
-def _engine_tenants(
-    project: str, model_name: str, release_run: Optional[ReleaseRun]
-) -> FleetTarget:
+def _engine_tenants(project: str, model_name: str) -> FleetTarget:
     from yoke_core.domain.schema_shape_source import digest_schema_shape
     from runtime.api.tools import yoke_migration_fleet
 
     return FleetTarget(
         project=project,
         model_name=model_name,
-        plan=yoke_migration_fleet.rehearsal_plan(release_run),
+        plan=yoke_migration_fleet.rehearsal_plan(),
         databases=lambda dsn_for: yoke_migration_fleet.tenant_databases(dsn_for),
         schema_shape_digest=digest_schema_shape,
-        replays_release_driver=True,
     )
 
 

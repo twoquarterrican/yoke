@@ -3,33 +3,23 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
-
 from yoke_core.domain import db_backend, migration_fleet_copy_validation as validation
 from yoke_core.domain import postgres_cluster
-from yoke_core.domain.migration_fleet_preflight import (
-    NotApplicable,
-    RehearsalPlan,
-    format_fleet_summary,
-)
+from yoke_core.domain.migration_fleet_preflight import RehearsalPlan
 
 
-@pytest.mark.parametrize("boundary", ["pre_boot", "post_boot"])
-def test_copy_failure_names_boundary_and_redacts_password(boundary):
+def test_copy_failure_names_boundary_and_redacts_password():
     def crash(conn, dsn):
         raise ValueError("invalid_instant password=swordfish")
 
-    detail = validation.validate_copy(
-        crash, None, "host=localhost password=swordfish", boundary
-    )
-    assert f"rehearsal_{boundary}_failed" in detail
+    detail = validation.validate_copy(crash, None, "host=localhost password=swordfish")
+    assert "rehearsal_post_boot_failed" in detail
     assert "invalid_instant" in detail
     assert "swordfish" not in detail
     assert "rerun fleet preflight" in detail
 
 
-def test_driver_precedes_convergence_and_readers_follow_it(monkeypatch):
-    calls = []
+def _open_copy(monkeypatch, calls):
     conn = SimpleNamespace(
         rollback=lambda: calls.append("rollback"),
         commit=lambda: calls.append("commit"),
@@ -37,6 +27,11 @@ def test_driver_precedes_convergence_and_readers_follow_it(monkeypatch):
     )
     monkeypatch.setattr(postgres_cluster, "dsn", lambda *_: "host=copy")
     monkeypatch.setattr(db_backend, "_open_native_postgres", lambda *_: conn)
+
+
+def test_readers_follow_convergence(monkeypatch):
+    calls = []
+    _open_copy(monkeypatch, calls)
     pending = ["history"]
 
     def converge(*_):
@@ -47,59 +42,29 @@ def test_driver_precedes_convergence_and_readers_follow_it(monkeypatch):
         ("history",),
         lambda *_: tuple(pending),
         converge,
-        pre_converge_validator=lambda *_: calls.append("driver"),
         post_converge_validator=lambda *_: calls.append("readers"),
     )
     result = validation.converge_copy(
         None, "source", "copy", Path("/tmp/restore.dump"), plan
     )
     assert result.passed
-    assert calls == ["driver", "converge", "readers", "commit", "close"]
+    assert calls == ["converge", "readers", "commit", "close"]
     assert result.pending_before == ("history",)
     assert result.applied == ("history",)
 
 
-def test_failed_driver_never_applies_history(monkeypatch):
+def test_failed_readers_fail_the_copy_without_committing(monkeypatch):
     calls = []
-    conn = SimpleNamespace(
-        rollback=lambda: calls.append("rollback"), close=lambda: calls.append("close")
-    )
-    monkeypatch.setattr(postgres_cluster, "dsn", lambda *_: "host=copy")
-    monkeypatch.setattr(db_backend, "_open_native_postgres", lambda *_: conn)
+    _open_copy(monkeypatch, calls)
     plan = RehearsalPlan(
         ("history",),
-        lambda *_: ("history",),
-        lambda *_: pytest.fail("must not converge"),
-        pre_converge_validator=lambda *_: "text >= timestamptz",
+        lambda *_: (),
+        lambda *_: calls.append("converge"),
+        post_converge_validator=lambda *_: "text >= timestamptz",
     )
     result = validation.converge_copy(
         None, "source", "copy", Path("/tmp/restore.dump"), plan
     )
     assert not result.passed
-    assert "rehearsal_pre_boot_failed" in result.detail
-    assert result.applied == ()
-    assert calls == ["rollback", "close"]
-
-
-def test_not_applicable_check_passes_and_is_named(monkeypatch):
-    conn = SimpleNamespace(
-        rollback=lambda: None, commit=lambda: None, close=lambda: None
-    )
-    monkeypatch.setattr(postgres_cluster, "dsn", lambda *_: "host=copy")
-    monkeypatch.setattr(db_backend, "_open_native_postgres", lambda *_: conn)
-    absent = NotApplicable("release_driver", "never_run: no stored release")
-    plan = RehearsalPlan(
-        ("history",),
-        lambda *_: (),
-        lambda *_: None,
-        pre_converge_validator=lambda *_: absent,
-    )
-    result = validation.converge_copy(
-        None, "tenant", "copy", Path("/tmp/restore.dump"), plan
-    )
-    assert result.passed
-    assert result.not_applicable == (absent,)
-    assert "release_driver not applicable -- never_run" in result.line
-    summary = format_fleet_summary([result])
-    assert summary.splitlines()[0] == "1 passed, 0 failed, 0 skipped"
-    assert "tenant: release_driver not applicable -- never_run" in summary
+    assert "rehearsal_post_boot_failed" in result.detail
+    assert calls == ["converge", "rollback", "close"]

@@ -89,12 +89,10 @@ remove `preboot_instant_parameters`, declared writer arguments and boot/stage
 cache invalidations. Keep strict decoders, relevance filtering and permanent
 history. Delivery Notes name this cleanup for steering to file after release.
 
-Fleet rehearsal now owns this proof through `migration_fleet_preflight.rehearse`.
-The candidate runs real member-driver operations on each restored pre-boot
-copy before history convergence, through start, stage entry and receipt
-allocation, without dispatching an executor. It then converges and requires
-real product readers to decode the migrated rows. Driver or reader refusals
-fail the gate; a universe that never ran a release is named not applicable
-for the driver step. The [fleet contract](public/reference/db-reference/migration-model-fleet.md)
-owns subject selection and complete copy custody. The instant census remains
-read-only diagnostic evidence and cannot earn a release receipt.
+Fleet rehearsal converges each restored copy through
+`migration_fleet_preflight.rehearse` and then requires real product readers to
+decode the migrated rows; reader refusals fail the gate. It does not replay
+candidate release-driver code against the pre-boot schema. The
+[fleet contract](public/reference/db-reference/migration-model-fleet.md) owns
+complete copy custody. The instant census remains read-only diagnostic evidence
+and cannot earn a release receipt.
