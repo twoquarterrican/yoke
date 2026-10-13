@@ -116,11 +116,15 @@ export function workflowInstructionsPanel(documentNode, client, context = {}) {
   let workflowFilter = "";
   let projectFilter = "";
   let listed = [];
+  let loaded = false;
+  let editing = false;
   let deliveryOptions = null;
   const workflows = () => roster(context.workflows);
   const projects = () => roster(context.projects);
 
   const reload = () => {
+    editing = false;
+    loaded = false;
     body.textContent = "loading…";
     callFunction(client, "workflow.execution_instruction.list", {})
       .then((callResult) => {
@@ -131,6 +135,7 @@ export function workflowInstructionsPanel(documentNode, client, context = {}) {
         }
         const result = callResult.envelope.result || {};
         deliveryOptions = result.delivery_options || null;
+        loaded = true;
         paint(result.instructions || []);
       })
       .catch((failure) => {
@@ -145,6 +150,7 @@ export function workflowInstructionsPanel(documentNode, client, context = {}) {
   };
 
   const edit = (instruction) => {
+    editing = true;
     const host = el(documentNode, "div", "workflow-instruction-editor-host");
     body.replaceChildren(host);
     openExecutionInstructionEditor({
@@ -278,6 +284,7 @@ export function workflowInstructionsPanel(documentNode, client, context = {}) {
     return row;
   };
 
+  panel.refreshFilters = () => { if (loaded && !editing) paint(listed); };
   reload();
   return panel;
 }

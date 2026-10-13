@@ -18,8 +18,8 @@ import {
 } from "./workflow_mechanics_data.js";
 import {
   openApprovalEditor,
-  openProjectDefaultEditor,
 } from "./workflow_mechanics_dialogs.js";
+import { openProjectDefaultEditor } from "./workflow_project_default_editor.js";
 import { renderCoordinationDialog } from "./workflow_coordination_dialog.js";
 import { clearWorkflowDialog, linkWorkflowPanel } from "./workflow_accessibility.js";
 import { workflowInstructionsPanel } from "./workflow_instructions_panel.js";
@@ -63,6 +63,7 @@ function renderSelectedWorkflow(
     }),
     renderMechanics(documentNode, workflow, {
       mechanics: actions.mechanics,
+      retryMechanics: actions.retryMechanics,
       editTesting: bound(actions.editTesting, workflow),
       editApprovals: bound(actions.editApprovals, workflow),
       editDelivery: bound(actions.editDelivery, workflow),
@@ -100,7 +101,11 @@ export function renderWorkflowsView(context, main, _scope, routeWorkflowId) {
   content.appendChild(loading.panel);
   main.replaceChildren(instructionsHost, tabs, intro, content, dialogHost);
   let workflows = [];
-  let instructionsMounted = false;
+  const instructionsPanel = workflowInstructionsPanel(documentNode, context.client, {
+    workflows: () => workflows, projects: () => context.projects(),
+  });
+  instructionsHost.replaceChildren(instructionsPanel);
+  let loadGeneration = 0;
   let catalogById = new Map();
   let selectedWorkflowId = null;
   let mechanicsData = emptyMechanicsData();
@@ -169,6 +174,7 @@ export function renderWorkflowsView(context, main, _scope, routeWorkflowId) {
       workflow,
       projects: context.projects(),
       data: mechanicsData,
+      client: context.client,
       close: closeDialog,
       save: (edit) => saveProjectDefault("testing", workflow, edit),
     });
@@ -182,6 +188,7 @@ export function renderWorkflowsView(context, main, _scope, routeWorkflowId) {
       workflow,
       projects: context.projects(),
       data: mechanicsData,
+      client: context.client,
       close: closeDialog,
       save: (edit) => saveProjectDefault("delivery", workflow, edit),
     });
@@ -193,6 +200,7 @@ export function renderWorkflowsView(context, main, _scope, routeWorkflowId) {
       host: dialogHost,
       workflow,
       data: mechanicsData,
+      client: context.client,
       close: closeDialog,
       save: async (approvalDefaults) => {
         await mutation("workflows.approval_defaults.publish", {
@@ -232,6 +240,7 @@ export function renderWorkflowsView(context, main, _scope, routeWorkflowId) {
       {
         client: context.client,
         mechanics: mechanicsData,
+        retryMechanics: () => loadMechanics(mechanicsData.flows || [], loadGeneration),
         editCoordination: openCoordinationDialog,
         editTesting: mechanicsData.editable ? openTestingDialog : null,
         editApprovals: mechanicsData.editable ? openApprovalsDialog : null,
@@ -251,17 +260,23 @@ export function renderWorkflowsView(context, main, _scope, routeWorkflowId) {
     render();
     return true;
   };
-  const mountInstructions = () => {
-    if (instructionsMounted) return;
-    instructionsHost.replaceChildren(
-      workflowInstructionsPanel(documentNode, context.client, {
-        workflows: () => workflows,
-        projects: () => context.projects(),
-      }),
-    );
-    instructionsMounted = true;
+  const loadMechanics = async (flows, generation) => {
+    mechanicsData = emptyMechanicsData();
+    render();
+    try {
+      const data = await loadWorkflowMechanicsData(context, flows);
+      if (!context.isMounted() || generation !== loadGeneration) return;
+      mechanicsData = data;
+    } catch (error) {
+      if (!context.isMounted() || generation !== loadGeneration) return;
+      mechanicsData = { ...emptyMechanicsData(), loading: false, failure: {
+        status: 0, envelope: { error: { message: `mechanics_read_failed: ${error}` } },
+      } };
+    }
+    render();
   };
   const load = async () => {
+    const generation = ++loadGeneration;
     let callResult;
     try {
       callResult = await callFunction(
@@ -275,14 +290,7 @@ export function renderWorkflowsView(context, main, _scope, routeWorkflowId) {
       }
       const result = callResult.envelope.result || {};
       workflows = sortedWorkflows(result.workflows || []);
-      try {
-        mechanicsData = await loadWorkflowMechanicsData(
-          context, result.flows || [],
-        );
-      } catch {
-        mechanicsData = emptyMechanicsData();
-      }
-      if (!context.isMounted()) return;
+      instructionsPanel.refreshFilters();
       catalogById = new Map(
         (result.gate_catalog || []).map((gate) => [gate.id, gate]),
       );
@@ -302,11 +310,10 @@ export function renderWorkflowsView(context, main, _scope, routeWorkflowId) {
         tabs.replaceChildren();
         intro.hidden = true;
         content.replaceChildren(empty.panel);
-        mountInstructions();
         return;
       }
       render();
-      mountInstructions();
+      loadMechanics(result.flows || [], generation);
     } catch (fetchError) {
       if (!context.isMounted()) return;
       renderFailure(documentNode, tabs, intro, content, {

@@ -231,6 +231,7 @@ test("Testing and Delivery editors stay project-owned and can apply broadly", as
       .classList.contains("actions-only"),
     true,
   );
+  await settle();
   byClass(root, "workflow-checkbox")[0].children[0]
     .dispatchEvent(new Event("change"));
   buttonByText(root, "Set default").dispatchEvent(new Event("click"));

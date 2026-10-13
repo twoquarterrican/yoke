@@ -88,7 +88,29 @@ def open_guarded_postgres(dsn: str, **connect_kwargs: Any):
     """
     import psycopg
 
-    return psycopg.connect(guarded_conninfo(dsn), **connect_kwargs)
+    from yoke_contracts.read_deadline import (
+        FUNCTION_RESPONSE_TIMEOUT_SECONDS,
+        active,
+        remaining_seconds,
+    )
+    from yoke_core.domain.python_execution_deadline import native_call
+
+    # Opening a socket is native I/O too; keep its wait inside the same budget.
+    if active():
+        connect_kwargs["connect_timeout"] = max(
+            1, int(remaining_seconds(FUNCTION_RESPONSE_TIMEOUT_SECONDS))
+        )
+    conn = native_call(psycopg.connect, guarded_conninfo(dsn), **connect_kwargs)
+    if active():
+        from yoke_core.domain.bounded_database import BudgetConnection
+        from yoke_core.domain.function_read_deadline import driver_call
+
+        return BudgetConnection(
+            conn,
+            remaining=lambda: remaining_seconds(FUNCTION_RESPONSE_TIMEOUT_SECONDS),
+            driver_call=driver_call,
+        )
+    return conn
 
 
 __all__ = [

@@ -1,4 +1,4 @@
-import { el } from "./universe_view_support.js";
+import { el, renderError } from "./universe_view_support.js";
 import {
   approvalSummary,
   deliverySummary,
@@ -186,5 +186,13 @@ export function renderMechanics(documentNode, workflow, actions = {}) {
       : null,
   ));
   body.appendChild(rows);
+  if (mechanics.loading) body.appendChild(el(documentNode, "p", "workflow-field-help", "loading defaults…"));
+  if (mechanics.failure) {
+    renderError(body, mechanics.failure);
+    const retry = el(documentNode, "button", "workflow-button compact", "Retry defaults read");
+    retry.type = "button";
+    retry.addEventListener("click", actions.retryMechanics);
+    body.appendChild(retry);
+  }
   return panel;
 }

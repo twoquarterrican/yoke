@@ -1,8 +1,10 @@
 {
  "id": "workflows",
  "title": "Workflows",
- "status": "draft-copy",
+ "status": "observed",
  "related": "workflows",
  "page": "workbench-destinations",
- "position": 8
+ "position": 8,
+ "sources": ["docs/public/workflows.md"],
+ "summary": "Definitions render without waiting for defaults or plan catalogues. Instructions load independently; testing pickers use paged summaries on opening and retain refusals with an explicit retry."
 }

@@ -7,6 +7,14 @@ checks. Shipped workflows default every non-terminal stage to SENIOR;
 terminal stages have no level. Item overrides and worker handoffs follow
 [execution levels](reference/session-level-routing.md#stage-level-handoff).
 
+The definitions and selected tab appear as soon as their read finishes.
+Execution instructions load independently from the start and gain workflow
+filter choices when definitions arrive. Defaults load in the Mechanics
+panel; a refusal names the failed read there and offers **Retry defaults read**.
+Opening a testing-default editor reads that project's plan names in summary
+pages. A failed page keeps the picker disabled and offers **Retry plan read**;
+it never reports a refused catalogue as a project with no plans.
+
 Saving workflow settings keeps the workflow currently selected. The view
 does not jump back to the definition originally named by the route.
 

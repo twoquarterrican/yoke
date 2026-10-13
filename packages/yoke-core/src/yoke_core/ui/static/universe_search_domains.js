@@ -9,6 +9,7 @@
 // slug you half-remember finds it wherever it lives.
 
 import { buildUniverseRoute } from "./universe_navigation.js";
+import { loadPlanSummaries } from "./qa_plan_summary_rows.js";
 import { itemDrillInHref } from "./universe_item_routes.js";
 
 // The chips the empty state shows, in the order it shows them — which is the
@@ -42,7 +43,9 @@ function rowsOf(callResult, key) {
 // avoid.
 async function call(client, request) {
   try {
-    return await client.call(request);
+    return request.function === "qa.plan.list"
+      ? await loadPlanSummaries(client, request.payload.project)
+      : await client.call(request);
   } catch (error) {
     return { status: 0, envelope: { success: false, error: String(error) } };
   }
@@ -257,7 +260,7 @@ export function createUniverseSearch(client) {
       function: "packs.list", payload: { project: String(project.id) },
     })),
     qaPlans: perProject("rows", (project) => ({
-      function: "qa.plan.list", payload: { project: String(project.id), detail: "full" },
+      function: "qa.plan.list", payload: { project: String(project.id), detail: "summary" },
     })),
     strategy: perProject("docs", (project) => ({
       function: "strategy.doc.list",

@@ -58,7 +58,9 @@ from yoke_contracts.machine_config.schema import (
     TRANSPORT_HTTPS,
 )
 
-_DEFAULT_TIMEOUT_S = 30.0
+from yoke_contracts.read_deadline import FUNCTION_RESPONSE_TIMEOUT_SECONDS
+
+_DEFAULT_TIMEOUT_S = FUNCTION_RESPONSE_TIMEOUT_SECONDS
 _RETRYABLE_RESPONSE_ERROR = "HTTPS function relay response exceeded the time limit"
 _NETWORK_ERRORS = (
     urllib.error.URLError,

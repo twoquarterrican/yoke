@@ -9,10 +9,7 @@ import {
   workflowDialogShell,
 } from "./workflow_dialog_shell.js";
 import {
-  optionsForProject,
-  projectKey,
   ROLE_LABELS,
-  selectedProjectDefault,
 } from "./workflow_mechanics_data.js";
 
 const ROLE_OPTIONS = [
@@ -222,107 +219,6 @@ export function openApprovalEditor({
             ),
           ),
       ),
-    });
-  };
-  render();
-}
-
-export function openProjectDefaultEditor({
-  documentNode, host, kind, workflow, projects, data, close, save,
-}) {
-  const available = projects.filter(
-    (project) => optionsForProject(data, kind, project).length,
-  );
-  const state = {
-    project: available[0] || projects[0],
-    value: "",
-    applyToAll: false,
-  };
-  const noun = kind === "testing" ? "test plan" : "deployment flow";
-  const setProject = (project) => {
-    state.project = project;
-    const selected = selectedProjectDefault(
-      data, kind, project, workflow.id,
-    );
-    const options = optionsForProject(data, kind, project);
-    state.value = selected || (options[0] && String(options[0].id)) || "";
-  };
-  if (state.project) setProject(state.project);
-
-  const render = () => {
-    const name = workflow.name || workflow.id;
-    const shell = workflowDialogShell(
-      documentNode, host, `Default ${noun} — ${name}`, close,
-    );
-    const { dialog } = shell;
-    dialog.appendChild(fieldLabel(documentNode, "Project"));
-    const projectSelect = el(documentNode, "select", "workflow-field");
-    for (const project of projects) {
-      projectSelect.appendChild(option(
-        documentNode,
-        projectKey(project),
-        projectKey(project),
-        state.project && projectKey(state.project),
-      ));
-    }
-    projectSelect.value = state.project ? projectKey(state.project) : "";
-    projectSelect.addEventListener("change", (event) => {
-      const project = projects.find(
-        (row) => projectKey(row) === event.target.value,
-      );
-      if (project) setProject(project);
-      render();
-    });
-    dialog.appendChild(projectSelect);
-    const projectName = state.project ? projectKey(state.project) : "";
-    dialog.appendChild(fieldLabel(
-      documentNode,
-      `Default ${noun} for ${name} in ${projectName}`,
-    ));
-    const choices = state.project
-      ? optionsForProject(data, kind, state.project) : [];
-    if (choices.length) {
-      const valueSelect = el(documentNode, "select", "workflow-field");
-      for (const choice of choices) {
-        const value = String(choice.id);
-        valueSelect.appendChild(option(
-          documentNode, value, choice.slug || choice.name || value, state.value,
-        ));
-      }
-      valueSelect.value = state.value;
-      valueSelect.addEventListener("change", (event) => {
-        state.value = event.target.value;
-      });
-      dialog.appendChild(valueSelect);
-    } else {
-      dialog.appendChild(el(
-        documentNode, "p",
-        "workflow-field-help workflow-empty-options",
-        `${projectName || "This project"} has no ${noun}s yet.`,
-      ));
-    }
-    if (state.project) {
-      dialog.appendChild(checkbox(
-        documentNode,
-        state.applyToAll,
-        `Apply to every workflow in ${projectName}`,
-        () => {
-          state.applyToAll = !state.applyToAll;
-          render();
-        },
-      ));
-    }
-    appendWorkflowDialogFooter(documentNode, dialog, {
-      impact: "",
-      confirmText: "Set default",
-      dismiss: shell.dismiss,
-      activate: shell.activate,
-      disabled: !choices.length,
-      save: () => save({
-        project: projectName,
-        value: state.value,
-        applyToAll: state.applyToAll,
-      }),
     });
   };
   render();
