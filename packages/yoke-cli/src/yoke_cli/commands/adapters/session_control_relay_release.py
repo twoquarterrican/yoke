@@ -3,8 +3,8 @@
 An https relay follows the release its control plane serves; a local-universe
 relay runs the machine's own installed Yoke, because that machine is also the
 one serving the plane. Both shapes answer the same status and daemon calls.
-The prod relay also moves the operator's installed CLI to each release it
-starts on.
+The relay for the machine's active connection also moves the installed CLI to
+each release it starts on.
 """
 
 from __future__ import annotations
@@ -150,9 +150,10 @@ def serve_release_daemon(*, cycle_maintenance: Callable[[], None] | None = None)
             executable=installed.launch_executable,
         )
 
-    if instance.prod:
-        # This start is the relay observing prod serving its release; the
-        # operator's installed CLI follows it here, never on a schedule.
+    if instance.machine_active:
+        # This start is the relay observing its plane serving this release;
+        # the installed CLI follows the active connection here, never on a
+        # schedule.
         from yoke_cli.config.operator_cli_release_follow import follow_release
 
         follow_release(installed.pinned_release, instance.state_dir)

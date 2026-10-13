@@ -1,4 +1,4 @@
-"""The installed CLI follows each release the prod relay starts on."""
+"""The installed CLI follows each release its active connection's relay starts on."""
 
 from __future__ import annotations
 
@@ -105,12 +105,49 @@ def test_failed_install_names_the_recovery(tmp_path, monkeypatch, capsys) -> Non
     assert "yoke update --version 0.1.1+launch.621" in err
 
 
-def test_prod_relay_start_follows_its_pinned_release(monkeypatch, tmp_path) -> None:
+def _https_config(tmp_path: Path, *, active_env: str) -> Path:
+    """The connections an ordinary setup writes: https with no prod marker."""
+    path = tmp_path / ".yoke" / "config.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connections = {
+        env: {
+            "transport": "https",
+            "api_url": f"https://{env}.example.test",
+            "credential_source": {
+                "kind": "token_file",
+                "path": f"~/.yoke/secrets/{env}.token",
+            },
+        }
+        for env in ("prod", "stage")
+    }
+    payload = {
+        "schema_version": 1,
+        "active_env": active_env,
+        "connections": connections,
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def test_only_the_active_connections_relay_is_machine_active(tmp_path) -> None:
+    config = _https_config(tmp_path, active_env="prod")
+    resolved = {
+        env: session_relay_instance.resolve_relay_instance(
+            config_path=config, environment=env, yoke_home=tmp_path / ".yoke"
+        )
+        for env in ("prod", "stage")
+    }
+    assert not resolved["prod"].prod
+    assert resolved["prod"].machine_active
+    assert not resolved["stage"].machine_active
+
+
+def _serve_relay(monkeypatch, tmp_path, *, machine_active: bool) -> list[str]:
     instance = SimpleNamespace(
         environment="prod",
         state_dir=tmp_path,
         follows_served_release=True,
-        prod=True,
+        machine_active=machine_active,
     )
     followed: list[str] = []
     monkeypatch.setattr(
@@ -130,7 +167,18 @@ def test_prod_relay_start_follows_its_pinned_release(monkeypatch, tmp_path) -> N
     )
     monkeypatch.setattr(session_relay_daemon, "serve_forever", lambda **_k: "served")
     assert release_cli.serve_release_daemon() == "served"
+    return followed
+
+
+def test_active_connection_relay_start_follows_its_pinned_release(
+    monkeypatch, tmp_path
+) -> None:
+    followed = _serve_relay(monkeypatch, tmp_path, machine_active=True)
     assert followed == ["v0.1.1+launch.621"]
+
+
+def test_other_relays_leave_the_installed_cli_alone(monkeypatch, tmp_path) -> None:
+    assert _serve_relay(monkeypatch, tmp_path, machine_active=False) == []
 
 
 def test_update_installs_the_requested_version_from_the_recorded_origin(
@@ -170,24 +218,28 @@ def test_update_installs_the_requested_version_from_the_recorded_origin(
     assert installed == ["1.1.0+launch.7"]
 
 
-def test_stale_cli_warns_once_and_only_against_prod(monkeypatch) -> None:
+def test_stale_cli_warns_once_and_only_against_the_active_connection(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setenv(
+        "YOKE_MACHINE_CONFIG_FILE", str(_https_config(tmp_path, active_env="prod"))
+    )
     monkeypatch.setattr(installed_cli_staleness, "_warned", False)
     stream = io.StringIO()
     kwargs = dict(server_version="0.1.1+launch.621", local_version="0.1.1+launch.616")
-    assert not installed_cli_staleness.warn_if_behind_prod(
-        prod=False, stream=stream, **kwargs
-    )
-    assert installed_cli_staleness.warn_if_behind_prod(
-        prod=True, stream=stream, **kwargs
-    )
-    assert not installed_cli_staleness.warn_if_behind_prod(
-        prod=True, stream=stream, **kwargs
-    )
+    warn = installed_cli_staleness.warn_if_behind_active_connection
+    assert not warn(env="stage", stream=stream, **kwargs)
+    assert warn(env="prod", stream=stream, **kwargs)
+    assert not warn(env="prod", stream=stream, **kwargs)
     assert "yoke update --version 0.1.1+launch.621" in stream.getvalue()
+    assert "active connection 'prod'" in stream.getvalue()
 
 
 def test_current_cli_does_not_warn(monkeypatch) -> None:
     monkeypatch.setattr(installed_cli_staleness, "_warned", False)
-    assert not installed_cli_staleness.warn_if_behind_prod(
-        prod=True, server_version="0.1.1+launch.621", local_version="0.1.1+launch.621"
+    assert not installed_cli_staleness.warn_if_behind_active_connection(
+        env="prod",
+        active_env="prod",
+        server_version="0.1.1+launch.621",
+        local_version="0.1.1+launch.621",
     )

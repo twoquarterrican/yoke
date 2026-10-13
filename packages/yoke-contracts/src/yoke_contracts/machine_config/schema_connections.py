@@ -21,11 +21,15 @@ class MachineConfigContractError(RuntimeError):
     """Raised when the selected machine config cannot be used."""
 
 
+def configured_active_env(payload: Mapping[str, Any]) -> str:
+    """The machine's own ``active_env``, ignoring ``YOKE_ENV`` and ``--env``."""
+    return str(payload.get("active_env") or "").strip()
+
+
 def selected_env(payload: Mapping[str, Any], explicit_env: str | None = None) -> str:
     """Resolve env precedence: explicit, ``YOKE_ENV``, then ``active_env``."""
     requested = (explicit_env or "").strip() or os.environ.get(ENV_OVERRIDE, "").strip()
-    configured = str(payload.get("active_env") or "").strip()
-    selected = requested or configured
+    selected = requested or configured_active_env(payload)
     if not selected:
         raise MachineConfigContractError(
             "active env is not configured; run `yoke env use <env>` or pass --env"
@@ -230,6 +234,7 @@ __all__ = [
     "ENV_OVERRIDE",
     "MachineConfigContractError",
     "PROD_FLAG_KEY",
+    "configured_active_env",
     "connection_is_prod",
     "env_override_teaching",
     "local_postgres_envs",

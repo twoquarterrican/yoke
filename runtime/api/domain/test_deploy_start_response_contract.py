@@ -22,6 +22,10 @@ from yoke_core.domain import (
 from yoke_core.domain.deployment_runs_crud_mutate import cmd_update
 from yoke_core.domain.json_helper import loads_text
 
+_HTTPS = https_transport.HttpsConnection(
+    api_url="https://api.example", token="tok", env="prod"
+)
+
 
 @pytest.mark.parametrize(
     "transport,compose", [("https", False), ("https", True), ("local", True)]
@@ -45,7 +49,7 @@ def test_start_attests_dispatched_basis_without_rewriting_it(
     monkeypatch.setattr(
         https_transport,
         "resolve_https_connection",
-        lambda: object() if transport == "https" else None,
+        lambda: _HTTPS if transport == "https" else None,
     )
     submitted = []
     with test_database() as conn:
@@ -127,7 +131,7 @@ def test_https_start_uses_the_core_facade_without_client_database_authority(
         "call_with_machine_github_authorization",
         lambda request, dispatch, **_: dispatch(request),
     )
-    monkeypatch.setattr(https_transport, "resolve_https_connection", lambda: object())
+    monkeypatch.setattr(https_transport, "resolve_https_connection", lambda: _HTTPS)
     basis = {
         "basis_digest": "b" * 64,
         "primary_project": "platform",
