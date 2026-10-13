@@ -84,8 +84,6 @@ def test_ctrl_left_bracket_steps_back_one_view() -> None:
         "clone-git",
         "clone-remote",
         "project-lookup",
-        "board-image",
-        "board-preview",
         "self-host-preview",
         "self-host-failure",
         "local-summary",
@@ -104,10 +102,6 @@ def test_back_returns_to_exact_previous_view(route: str, key: str) -> None:
             app._on_clone_remote_error(value, "https://example.com/repo.git")
         elif route == "project-lookup":
             app._on_existing_project_lookup_error(value, retry=lambda: None)
-        elif route == "board-image":
-            app._on_board_art_image_error(value)
-        elif route == "board-preview":
-            app._on_board_art_preview(value)
         elif route == "self-host-preview":
             self_host._on_preview(app, None, value)
         elif route == "self-host-failure":
