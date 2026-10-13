@@ -1,9 +1,4 @@
-"""Width-aware layout coverage for onboarding selection rows.
-
-Every row is exactly one line wide: a hint that fits is right-aligned, a
-hint that does not is cut to the room left and ends in an ellipsis, and a
-hint with almost no room is dropped. No row wraps its hint under the label.
-"""
+"""Selection rows retain full labels and hints at every terminal width."""
 
 from __future__ import annotations
 
@@ -27,39 +22,21 @@ SELF_HOST_ROW = next(
 )
 
 
-def test_a_hint_with_no_room_is_cut_to_an_ellipsis_on_the_same_line() -> None:
+def test_long_hint_moves_below_the_full_label() -> None:
     rendered = _option_row_text(SELF_HOST_ROW, selected=True, width=70)
+    assert rendered.plain == f"›  {SELF_HOST_ROW.label}\n{SELF_HOST_ROW.hint}"
 
-    assert rendered.plain.count("\n") == 0
+
+def test_short_selection_row_keeps_its_hint_right_aligned() -> None:
+    row = SelectionRow("back", "Back", "choose another Yoke home")
+    rendered = _option_row_text(row, selected=False, width=70)
+    assert "\n" not in rendered.plain
     assert cell_len(rendered.plain) == 70
-    assert rendered.plain.endswith("…")
-    assert rendered.plain.startswith("›  Set this machine up as a self-hosting server ")
-
-
-def test_short_selection_row_stays_on_one_line() -> None:
-    rendered = _option_row_text(
-        SelectionRow("back", "Back", "choose another Yoke home"),
-        selected=False,
-        width=70,
-    )
-
-    assert rendered.plain.count("\n") == 0
-    assert cell_len(rendered.plain) == 70
-
-
-def test_a_hint_with_almost_no_room_is_dropped_rather_than_stubbed() -> None:
-    rendered = _option_row_text(
-        SelectionRow("x", "A label that fills the whole row", "hint"),
-        selected=False,
-        width=36,
-    )
-
-    assert rendered.plain.rstrip() == "·  A label that fills the whole row"
-    assert cell_len(rendered.plain) == 36
+    assert rendered.plain.endswith(row.hint)
 
 
 @pytest.mark.parametrize("columns", [40, 60, 80, 100, 120, 143])
-def test_every_destination_row_is_one_line_at_common_widths(monkeypatch, columns):
+def test_every_destination_row_keeps_all_text_at_common_widths(monkeypatch, columns):
     pytest.importorskip("textual")
     from runtime.api.cli.onboard_wizard_test_helpers import (
         advance_past_path,
@@ -87,15 +64,17 @@ def test_every_destination_row_is_one_line_at_common_widths(monkeypatch, columns
     rows = asyncio.run(scenario())
     assert len(rows) == len(DESTINATION_ROWS)
     for (line, width, height), row in zip(rows, DESTINATION_ROWS):
-        assert height == 1
-        assert "\n" not in line
-        assert cell_len(line) == width, (columns, row.label, line)
+        assert height >= 1
+        assert row.label in line
+        assert row.hint in line
+        assert "…" not in line
         # Every hint fits intact beside its label from 100 columns up.
         if columns >= 100:
             assert line.endswith(row.hint), (columns, row.label, line)
 
 
 @pytest.mark.parametrize("width", [0, 1, 3, 12, 30, 70])
-def test_long_label_never_overruns_available_content(width):
+def test_long_label_and_hint_are_never_truncated(width):
     rendered = _option_row_text(SELF_HOST_ROW, selected=True, width=width)
-    assert cell_len(rendered.plain) <= width
+    assert SELF_HOST_ROW.label in rendered.plain
+    assert SELF_HOST_ROW.hint in rendered.plain

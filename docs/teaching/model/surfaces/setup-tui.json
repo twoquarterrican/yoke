@@ -17,6 +17,16 @@
  },
  "teaching": [
   {
+   "id": "text-wrapping",
+   "title": "Keep setup instructions, choices, recovery commands and footer actions complete at narrow widths.",
+   "status": "observed",
+   "form": "State",
+   "verification": "Source uses automatic text heights and wraps full choice labels and hints. Offline layout tests cover narrow widths and resize; deployed terminal proof is pending.",
+   "topics": ["installation/entry"],
+   "plan_refs": ["FIRST-USER.37"],
+   "sources": ["packages/yoke-cli/src/yoke_cli/config/onboard_wizard.tcss", "runtime/api/cli/test_onboard_wizard_text_wrapping.py"]
+  },
+  {
    "id": "01",
    "title": "At the mode choice: this computer only, your server or Yoke Cloud; explain practical reachability.",
    "status": "draft-copy",
