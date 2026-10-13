@@ -135,6 +135,35 @@ def test_docker_failure_is_named_without_dumping_secret_streams(monkeypatch):
     assert "sensitive" not in error
 
 
+@pytest.mark.parametrize(
+    ("api_url", "expected"),
+    [
+        ("https://cloud.upyoke.com", ""),
+        ("http://127.0.0.1:8765", "uninstall_docker_inventory_failed"),
+        ("http://localhost:8765", "uninstall_docker_inventory_failed"),
+        ("http://[::1]:8765", "uninstall_docker_inventory_failed"),
+    ],
+)
+def test_docker_failure_matters_only_with_a_self_host_connection(
+    machine, monkeypatch, api_url, expected
+):
+    (machine / "config.json").write_text(
+        json.dumps({"connections": {"one": {"transport": "https", "api_url": api_url}}})
+    )
+    monkeypatch.setattr(
+        inventory,
+        "_self_host_directories",
+        lambda: (
+            (),
+            "uninstall_docker_inventory_failed: start Docker and retry uninstall.",
+        ),
+    )
+    result = inventory.inspect()
+    assert result.discovery_error.startswith(expected) and (
+        bool(result.discovery_error) == bool(expected)
+    )
+
+
 @pytest.mark.parametrize("stale_identity", [False, True])
 def test_worker_stop_checks_process_identity_before_signalling(
     tmp_path, monkeypatch, stale_identity

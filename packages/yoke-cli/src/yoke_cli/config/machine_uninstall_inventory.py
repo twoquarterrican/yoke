@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ipaddress
 import os
 import shutil
 import stat
 import subprocess
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from yoke_cli.config import install_binding, local_universe_setup, machine_config
 from yoke_cli.config.machine_uninstall_detached import DETACHED_TEMP_ROOT
@@ -85,6 +87,15 @@ def inspect() -> Inventory:
             None,
         )
     directories, error = _self_host_directories()
+    if error and not any(
+        _is_loopback_url(entry.get("api_url"))
+        for entry in connections.values()
+        if isinstance(entry, dict)
+    ):
+        # Only a self-host server makes Docker relevant, and this machine
+        # reaches its own server on loopback; without one, a stopped or broken
+        # Docker cannot be hiding a Yoke install.
+        error = ""
     bundles = []
     for directory in directories:
         url = teardown.bundle_connect_url(directory)
@@ -101,6 +112,16 @@ def inspect() -> Inventory:
     return Inventory(
         home, config, projects, relay_envs, local, local_env, tuple(bundles), error
     )
+
+
+def _is_loopback_url(value: object) -> bool:
+    host = urlsplit(str(value or "")).hostname or ""
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def _assert_safe_home(home: Path, checkouts: list[Path]) -> None:

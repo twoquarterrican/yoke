@@ -106,8 +106,28 @@ def lookup_error_hint(*, local_destination: bool) -> str:
             "option."
         )
     return (
-        "Use a Yoke API token that can access this project, or choose "
-        "a different project option."
+        "Check that this machine is connected to the Yoke install that has "
+        "this project, or choose a different project option."
+    )
+
+
+def stale_link_copy(
+    result: Any, exc: BaseException, local_ref: Any
+) -> tuple[str, list[str]]:
+    """Title and lines for a folder linked to a project this install won't serve."""
+    link = f"{local_ref.source} links this folder to project {local_ref.project_id}"
+    unlink = (
+        "Unlink it to set this folder up fresh. Nothing changes until you "
+        "confirm Apply."
+    )
+    if isinstance(exc, existing_project_lookup.ExistingProjectAccessError):
+        return (
+            "This folder is linked to a project you can't use.",
+            [f"{link}, which your Yoke account can't access.", unlink],
+        )
+    return (
+        "This folder is linked to a project from a different Yoke install.",
+        [f"{link}, which this {_database_label(result)} doesn't have.", unlink],
     )
 
 
@@ -125,4 +145,5 @@ __all__ = [
     "match_lines",
     "match_summary",
     "record_match",
+    "stale_link_copy",
 ]
