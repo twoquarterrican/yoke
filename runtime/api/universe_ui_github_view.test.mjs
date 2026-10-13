@@ -1,276 +1,213 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { allNodes, byClass } from "./universe_ui_dom_test_support.mjs";
 import {
-  mountUniverseApp,
-} from "../../packages/yoke-core/src/yoke_core/ui/static/app.js";
-import {
-  FakeDocument,
-  allNodes,
-  byClass,
-  response,
-  settle,
-} from "./universe_ui_dom_test_support.mjs";
+  SETTINGS_URL,
+  UNBOUND_STATUS,
+  boundStatusFixture,
+  buttons,
+  click,
+  githubClient,
+  headerLabels,
+  modeCapabilities,
+  mountGithub,
+  okEnvelope,
+  panelTitles,
+  viewHost,
+  viewText,
+} from "./universe_ui_github_test_support.mjs";
 
-function okEnvelope(result) {
-  return { status: 200, envelope: { success: true, result } };
-}
-
-const FOUR_TITLES = [
+const PAGE_TITLES = [
   "GitHub App installations",
-  "Personal GitHub authorization",
   "Project mappings with issue-sync",
-  "Machine authentications",
-];
-const HOSTED_TITLES = [
-  "Project mappings with issue-sync",
-  "Machine authentications",
 ];
 
-function boundStatusFixture(overrides = {}) {
-  return {
-    project: "yoke",
-    github_repo: "example-org/example-repo",
-    default_branch: "main",
-    github_sync_mode: "enabled",
-    bound: true,
-    binding: {
-      project_id: 1,
-      installation_id: "inst-31",
-      repository_id: "repo-9",
-      api_url: "https://api.github.com",
-      github_repo: "example-org/example-repo",
-      default_branch: "main",
-      status: "active",
-      permissions: { contents: "write" },
-      last_verified_at: "2026-07-01T10:00:00Z",
-      last_error: "",
-      last_sync_at: "2026-07-02T08:30:00Z",
-      last_sync_outcome: "success",
-      last_sync_error: "",
-    },
-    installation: {
-      installation_id: "inst-31",
-      api_url: "https://api.github.com",
-      account_id: "acct-4",
-      account_login: "example-org",
-      account_type: "Organization",
-      repository_selection: "selected",
-      permissions: { contents: "write" },
-      status: "active",
-      last_verified_at: "2026-07-01T10:00:00Z",
-      last_error: "",
-    },
-    permission_status: { status: "satisfied", missing: [] },
-    automation: { available: true, reason: "bound" },
-    ...overrides,
-  };
+function statusCalls(client) {
+  return client.requests.filter(
+    (request) => request.function === "projects.github_binding.status",
+  );
 }
 
-function githubClient(statusResult, options = {}) {
-  const requests = [];
-  const machines = options.machines || [];
-  return {
-    requests,
-    async call(request) {
-      requests.push(request);
-      if (request.function === "organizations.get") {
-        return okEnvelope({ name: "Yoke" });
-      }
-      if (request.function === "projects.list") {
-        return okEnvelope({
-          rows: options.projects || [{ id: 1, slug: "yoke", name: "Yoke" }],
-        });
-      }
-      if (request.function === "projects.github_binding.status") {
-        return okEnvelope(statusResult);
-      }
-      if (request.function === "machine.list") {
-        return okEnvelope({ machines, count: machines.length });
-      }
-      throw new Error(`unexpected function ${request.function}`);
-    },
-  };
+function settingsLinks(root) {
+  return allNodes(viewHost(root)).filter(
+    (node) => node.tagName === "A" && node.textContent === "Manage on GitHub ↗",
+  );
 }
 
-async function mountGithub(t, client, options = {}) {
-  const originalFetch = globalThis.fetch;
-  t.after(() => { globalThis.fetch = originalFetch; });
-  globalThis.fetch = () => response(200, {});
-  const documentNode = new FakeDocument();
-  documentNode.defaultView.location.href = options.hash || "/github?project=1";
-  const root = documentNode.createElement("div");
-  const sections = typeof options.sections === "function"
-    ? options.sections(documentNode) : options.sections;
-  const mounted = mountUniverseApp(root, {
-    client,
-    capabilities: options.capabilities,
-    sections,
-  });
-  await settle();
-  return { root, mounted, documentNode };
-}
+for (const mode of ["local", "self-host"]) {
+  test(`${mode}: one page with last-checked freshness and Check now`, async (t) => {
+    const client = githubClient(boundStatusFixture());
+    const { root, mounted } = await mountGithub(t, client, {
+      capabilities: modeCapabilities(mode),
+    });
 
-function panelTitles(root, host = byClass(root, "view-host")[0]) {
-  return allNodes(host)
-    .filter((node) => node.tagName === "H2")
-    .map((node) => node.textContent);
-}
-
-function viewText(root) {
-  const view = byClass(root, "view-host")[0];
-  return allNodes(view).map((node) => node.textContent || "").join(" ");
-}
-
-function pillTexts(root) {
-  return byClass(root, "pill").map((node) => node.textContent);
-}
-
-function assertNoControls(root) {
-  const view = byClass(root, "view-host")[0];
-  assert.ok(!allNodes(view).some(
-    (node) => ["SELECT", "INPUT", "BUTTON"].includes(node.tagName),
-  ));
-}
-
-test("a bound project renders installations, mappings, and machine facts", async (t) => {
-  const client = githubClient(boundStatusFixture(), {
-    machines: [{
-      machine_id: "m-1",
-      name: "studio",
-      owner_actor_id: 2,
-      last_seen_at: "2026-07-03T12:00:00Z",
-    }],
-  });
-  const { root, mounted } = await mountGithub(t, client);
-
-  assert.deepEqual(
-    client.requests.find(
-      (request) => request.function === "projects.github_binding.status",
-    ),
-    {
+    assert.deepEqual(statusCalls(client)[0], {
       function: "projects.github_binding.status",
       payload: { project: "1" },
-    },
+    });
+    assert.deepEqual(panelTitles(root), PAGE_TITLES);
+    assert.ok(headerLabels(root).includes("last checked"));
+    assert.ok(!headerLabels(root).includes("updates"));
+    const text = viewText(root);
+    assert.ok(text.includes("example-org/example-repo"));
+    assert.ok(text.includes("Organization"));
+    assert.match(text, /\d+d ago/);
+    assert.doesNotMatch(text, /unavailable/);
+
+    const [link] = settingsLinks(root);
+    assert.equal(link.href, SETTINGS_URL);
+    assert.equal(link.target, "_blank");
+    assert.equal(link.rel, "noreferrer");
+    const [check] = buttons(root, "Check now");
+    assert.equal(check.disabled, false);
+    assert.equal(buttons(root, "Detach").length, 0);
+    mounted.unmount();
+  });
+}
+
+test("Check now re-verifies each bound project, then reloads", async (t) => {
+  const client = githubClient(boundStatusFixture(), {
+    check: () => okEnvelope({ project: "yoke", binding: {} }),
+  });
+  const { root, mounted } = await mountGithub(t, client, {
+    capabilities: modeCapabilities("local"),
+  });
+  const before = statusCalls(client).length;
+
+  await click(buttons(root, "Check now")[0]);
+
+  assert.deepEqual(
+    client.requests.filter(
+      (request) => request.function === "projects.github_binding.check",
+    ),
+    [{ function: "projects.github_binding.check", payload: { project: "1" } }],
   );
-  assert.ok(client.requests.some(
-    (request) => request.function === "machine.list",
-  ));
-  assert.deepEqual(panelTitles(root), FOUR_TITLES);
-
-  const text = viewText(root);
-  assert.ok(text.includes("example-org/example-repo"));
-  assert.ok(text.includes("example-org"));
-  assert.ok(text.includes("Organization"));
-  assert.ok(text.includes("enabled"));
-  assert.ok(text.includes("success"));
-  assert.ok(text.includes("2026-07-02T08:30:00Z"));
-  assert.ok(text.includes("bound"));
-  assert.ok(text.includes("studio"));
-  assert.match(text, /seen \d+d ago/);
-  assert.doesNotMatch(text, /(?:now|recently) ago/);
-  assert.ok(text.includes(
-    "unavailable — this universe has no product read for a personal",
-  ));
-
-  const pills = pillTexts(root);
-  assert.ok(pills.includes("satisfied"));
-  assert.ok(pills.includes("available"));
-  assert.ok(pills.includes("enabled"));
-  assert.ok(pills.includes("unavailable"));
-  assert.equal(pills.filter((text) => text === "unavailable").length, 2);
-
-  assertNoControls(root);
+  assert.ok(statusCalls(client).length > before);
+  assert.ok(viewText(root).includes("Checked 1 bound project with GitHub."));
+  assert.equal(byClass(viewHost(root), "error").length, 0);
   mounted.unmount();
 });
 
-test("an unbound project still maps the named repo, with no dead controls", async (t) => {
-  const client = githubClient({
-    project: "yoke",
-    github_repo: "example-org/orphaned-repo",
-    default_branch: "",
-    github_sync_mode: "disabled",
-    bound: false,
-    binding: null,
-    installation: null,
-    permission_status: { status: "unknown", missing: [] },
-    automation: { available: false, reason: "repo_not_bound" },
+test("a refused check names its reason and recovery", async (t) => {
+  const client = githubClient(boundStatusFixture(), {
+    check: () => ({
+      status: 409,
+      envelope: {
+        success: false,
+        error: {
+          code: "github_check_authority_unavailable",
+          message: "no GitHub authority can check this binding",
+          recovery_hint: "Run yoke github connect on this machine.",
+        },
+      },
+    }),
   });
-  const { root, mounted } = await mountGithub(t, client);
+  const { root, mounted } = await mountGithub(t, client, {
+    capabilities: modeCapabilities("local"),
+  });
 
-  assert.deepEqual(panelTitles(root), FOUR_TITLES);
+  await click(buttons(root, "Check now")[0]);
+
+  const [alert] = byClass(viewHost(root), "error");
+  assert.equal(
+    alert.textContent,
+    "Yoke: no GitHub authority can check this binding " +
+      "Run yoke github connect on this machine.",
+  );
+  assert.equal(alert.getAttribute("role"), "alert");
+  mounted.unmount();
+});
+
+test("an unbound project disables Check now and still maps the repo", async (t) => {
+  const client = githubClient(UNBOUND_STATUS);
+  const { root, mounted } = await mountGithub(t, client, {
+    capabilities: modeCapabilities("local"),
+  });
+
+  assert.deepEqual(panelTitles(root), PAGE_TITLES);
   const text = viewText(root);
   assert.ok(text.includes("example-org/orphaned-repo"));
   assert.ok(text.includes("repo_not_bound"));
   assert.ok(text.includes("no GitHub App installation backs a project"));
-
-  const view = byClass(root, "view-host")[0];
-  const codes = allNodes(view).filter((node) => node.tagName === "CODE");
-  assert.deepEqual(
-    codes.map((node) => node.textContent), ["example-org/orphaned-repo"],
-  );
-
-  assertNoControls(root);
+  const [check] = buttons(root, "Check now");
+  assert.equal(check.disabled, true);
+  assert.match(check.title, /No project in this scope is bound/);
+  assert.equal(settingsLinks(root).length, 0);
   mounted.unmount();
 });
 
-test("a binding without an installation record renders honestly, not a crash", async (t) => {
+test("a binding without an installation record renders honestly", async (t) => {
   const client = githubClient(boundStatusFixture({
     installation: null,
-    permission_status: {
-      status: "unknown",
-      missing: [],
-      hint: "Reconnect the GitHub App so Yoke can verify its required " +
-        "repository permissions.",
-    },
+    permission_status: { status: "unknown", missing: [] },
     automation: { available: false, reason: "installation_missing" },
   }));
-  const { root, mounted } = await mountGithub(t, client);
+  const { root, mounted } = await mountGithub(t, client, {
+    capabilities: modeCapabilities("self-host"),
+  });
 
-  assert.deepEqual(panelTitles(root), FOUR_TITLES);
   const text = viewText(root);
   assert.ok(text.includes(
-    "the binding names installation inst-31, but no installation record " +
-      "backs it",
+    "the binding names installation 31, but no installation record backs it",
   ));
   assert.ok(text.includes("installation_missing"));
-  const pills = pillTexts(root);
-  assert.ok(pills.includes("unknown"));
-  assert.ok(pills.includes("unavailable"));
-
-  assertNoControls(root);
+  assert.ok(text.includes("blocked"));
+  assert.doesNotMatch(text, /unavailable/);
+  assert.equal(settingsLinks(root).length, 0);
   mounted.unmount();
 });
 
-test("hosted mode omits personal and installations so the host slot owns them", async (t) => {
+test("hosted: live freshness, the host's installations, and Detach", async (t) => {
+  const detached = [];
   const client = githubClient(boundStatusFixture());
-  let hostWrap;
   const { root, mounted } = await mountGithub(t, client, {
-    capabilities: { data: { portability: { mode: "hosted" } } },
-    sections(documentNode) {
-      hostWrap = documentNode.createElement("div");
-      for (const title of [
-        "GitHub App installations", "Personal GitHub authorization",
-      ]) {
-        const panel = documentNode.createElement("section");
-        const heading = documentNode.createElement("h2");
-        heading.textContent = title;
-        panel.appendChild(heading);
-        hostWrap.appendChild(panel);
-      }
-      return { github: { content: hostWrap, placement: "beforeScope" } };
-    },
+    capabilities: modeCapabilities("hosted", {
+      installations: [
+        {
+          installationId: "31",
+          accountLogin: "example-org",
+          accountType: "Organization",
+          status: "active",
+          repositorySelection: "selected",
+          settingsUrl: SETTINGS_URL,
+          boundProjects: 1,
+        },
+        {
+          installationId: "44",
+          accountLogin: "spare-org",
+          accountType: "Organization",
+          status: "active",
+          repositorySelection: "all",
+          settingsUrl: "",
+          boundProjects: 0,
+          missingPermissions: ["issues"],
+        },
+      ],
+      detachInstallation: {
+        label: "Detach",
+        onInvoke(option) { detached.push(option); },
+      },
+    }),
   });
 
-  assert.deepEqual(panelTitles(root), HOSTED_TITLES);
-  const combined = allNodes(byClass(root, "content")[0])
-    .filter((node) => node.tagName === "H2")
-    .map((node) => node.textContent);
-  assert.deepEqual(combined, FOUR_TITLES);
-  assert.ok(!viewText(root).includes(
-    "unavailable — this universe has no product read for a personal",
+  assert.deepEqual(panelTitles(root), PAGE_TITLES);
+  assert.ok(headerLabels(root).includes("updates"));
+  assert.ok(!headerLabels(root).includes("last checked"));
+  assert.ok(byClass(viewHost(root), "pill").some(
+    (node) => node.textContent === "live",
   ));
-  assert.ok(allNodes(root).includes(hostWrap));
-  assertNoControls(root);
+  assert.equal(buttons(root, "Check now").length, 0);
+  const text = viewText(root);
+  assert.ok(text.includes("spare-org"));
+  assert.ok(text.includes("missing: issues"));
+  assert.equal(settingsLinks(root).length, 1);
+
+  const [boundDetach, spareDetach] = buttons(root, "Detach");
+  assert.equal(boundDetach.disabled, true);
+  assert.match(boundDetach.title, /Remove this installation's project mappings/);
+  assert.equal(spareDetach.disabled, false);
+  await click(spareDetach);
+  assert.deepEqual(detached, [{ id: "44", label: "Detach" }]);
   mounted.unmount();
 });

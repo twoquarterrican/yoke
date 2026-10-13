@@ -113,8 +113,9 @@ export function renderError(body, callResult) {
 // views whose linking cell is not the first). A column marked `pill: true`
 // renders its value as a state pill; `mono: true` renders it in the code
 // face (stored identifiers, not prose); `code: true` renders it as a `code`
-// element — deliberately copyable text, never a button. `sub` is a second
-// accessor for muted detail under the value, omitted when empty.
+// element — deliberately copyable text, never a button. `render(row, cell)`
+// fills the cell itself, for controls a value cannot carry. `sub` is a
+// second accessor for muted detail under the value, omitted when empty.
 export function renderTable(body, rows, columns, emptyText, rowHref, options = { stack: true }) {
   const documentNode = body.ownerDocument;
   if (rows.length === 0) {
@@ -152,6 +153,8 @@ export function renderTable(body, rows, columns, emptyText, rowHref, options = {
         if (pill) cell.appendChild(pill);
       } else if (column.code) {
         if (text) cell.appendChild(el(documentNode, "code", null, text));
+      } else if (column.render) {
+        column.render(row, cell);
       } else {
         cell.textContent = text;
       }

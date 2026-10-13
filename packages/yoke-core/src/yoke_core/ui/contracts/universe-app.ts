@@ -117,7 +117,9 @@ export interface UniverseAction {
 /**
  * Opaque host capability data. Capability presence and string flags carry
  * state without coupling the app to a bag of host-specific booleans.
+ * `data.github` is the GitHub page's `UniverseGitHubHost`.
  */
+export type { UniverseGitHubHost } from "./universe-github-host.js";
 export interface UniverseCapabilities {
   readonly flags?: readonly string[];
   readonly data?: Readonly<Record<string, unknown>>;
@@ -147,8 +149,8 @@ export interface UniverseAppSlots {
  *   inside the view body, under the scope control, after whatever the view
  *   renders for itself.
  * * `beforeScope` — content the view's scope does NOT govern, because it is
- *   about something wider than one project (a hosted org's GitHub connection
- *   is one). It renders above the scope control, so the picker never appears
+ *   about something wider than one project, such as an organization-wide
+ *   setting. It renders above the scope control, so the picker never appears
  *   to filter facts it cannot touch.
  *
  * A scope-less view has no picker to sit above, so both placements put the

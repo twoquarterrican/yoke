@@ -236,7 +236,7 @@
   padding: 2px 7px;
 }
 
-/* Host capability actions, rendered inside the Organization panel.
+/* Host capability actions, rendered inside the Organization and GitHub panels.
    Each is a real control that acts on click, dressed as the shared chip:
    bordered, tokenized, with a hover wash. */
 .universe-app-root .capability-actions {

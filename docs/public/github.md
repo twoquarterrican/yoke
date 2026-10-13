@@ -118,6 +118,15 @@ After returning from App settings, refresh access with **Check repositories**
 for a new repo or **Check access again** for an existing one before continuing.
 Issue mirroring remains a separate setting.
 
+The workbench **GitHub** tab is the same page in every mode. It lists App
+installations, this machine's or organization's personal authorization when
+one is known, and each project's repository mapping. Each installation links
+to its GitHub repository-access settings (**Manage on GitHub**). Hosted pages
+mark installation facts **live**. Local and self-hosted pages show when each
+installation was last checked; **Check now** re-verifies every bound project
+in scope (`yoke projects github-binding check --project <slug>` does the same
+for one project). A refused check names its reason and recovery.
+
 ## CI verdicts and session wake-ups
 
 On the **machine running the waiting session**, with that session's Yoke

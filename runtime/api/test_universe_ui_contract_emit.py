@@ -84,9 +84,10 @@ def test_universe_app_contract_tsc_outputs_are_current(tmp_path: Path) -> None:
             "is part of this command."
         ) from expired
     assert completed.returncode == 0, f"{completed.stdout}\n{completed.stderr}"
-    assert (tmp_path / "universe-app.d.ts").read_bytes() == (
-        contracts / "universe-app.d.ts"
-    ).read_bytes()
+    for name in ("universe-app", "universe-github-host"):
+        assert (tmp_path / f"{name}.d.ts").read_bytes() == (
+            contracts / f"{name}.d.ts"
+        ).read_bytes()
     assert (tmp_path / "universe-app.js").read_bytes() == (
         _UI_ROOT / "static" / "contract-version.js"
     ).read_bytes()

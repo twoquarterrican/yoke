@@ -211,6 +211,36 @@
         data: {
           portability: { mode: "hosted" },
           memberDirectory: { "2": "ben", "5": "dana" },
+          // The organization's GitHub connection, rendered by the product's
+          // one GitHub page: installations, personal authorization, and the
+          // host actions that change them.
+          github: {
+            authorization: { login: "acme-admin", status: "authorized" },
+            installations: [{
+              installationId: "31",
+              accountLogin: "acme",
+              accountType: "Organization",
+              status: "active",
+              repositorySelection: "selected",
+              settingsUrl:
+                "https://github.com/organizations/acme/settings/installations/31",
+              boundProjects: 0,
+            }],
+            connect: {
+              label: "Add or refresh GitHub access",
+              onInvoke() { globalThis.console.log("harness github connect"); },
+            },
+            disconnectIdentity: {
+              label: "Disconnect my GitHub identity",
+              onInvoke() { globalThis.console.log("harness github disconnect"); },
+            },
+            detachInstallation: {
+              label: "Detach",
+              onInvoke(option) {
+                globalThis.console.log("harness github detach", option);
+              },
+            },
+          },
         },
         actions: [{
           label: "Move universe",
@@ -238,29 +268,6 @@
           "Billing",
           "Sample billing summary supplied by the host platform.",
         ),
-        // The hosted GitHub connection is the organization's, not any one
-        // project's, so the platform declares it unscoped and the frame must
-        // stand it above the view's picker. Combined hosted proof is four
-        // h2 titles: these two host panels, then the product's mappings and
-        // machines. No bind form, no Unbind, no duplicate mapping table.
-        github: {
-          placement: "beforeScope",
-          content: (() => {
-            const wrap = el("div");
-            wrap.appendChild(sampleHostSection(
-              "GitHub App installations",
-              "Sample organization-wide GitHub App installations supplied " +
-                "by the host platform.",
-            ));
-            wrap.appendChild(sampleHostSection(
-              "Personal GitHub authorization",
-              "Sample organization-wide personal GitHub authorization " +
-                "supplied by the host platform. It sits above the project " +
-                "picker because no project narrows it.",
-            ));
-            return wrap;
-          })(),
-        },
       },
     });
   </script>
