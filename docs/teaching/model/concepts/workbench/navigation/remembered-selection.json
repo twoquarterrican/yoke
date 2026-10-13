@@ -1,7 +1,8 @@
 {
  "id": "remembered-selection",
  "title": "Remembered selection",
- "status": "draft-copy",
+ "status": "observed",
+ "summary": "Background saved-project and sorting reads retain the last known choice, log error codes, and retry on focus or visibility. The project selector carries no errors; first-load and explicit-save failures use a page-level error banner.",
  "page": "workbench",
  "position": 1
 }

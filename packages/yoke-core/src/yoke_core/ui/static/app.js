@@ -93,8 +93,6 @@ export function mountUniverseApp(rootNode, options = {}) {
   let projectsLoaded = false;
   const scopeSelections = createProjectSelection(
     (viewId, selection, focus) => saveScreenSelection(client, viewId, selection, focus),
-    // A save can fail well after the render that started it; re-render so
-    // its notice shows up without the person having to navigate again.
     () => renderRoute(),
     (viewId, sort) => saveScreenSelection(client, viewId, null, null, sort),
   );
@@ -170,6 +168,10 @@ export function mountUniverseApp(rootNode, options = {}) {
   }
 
   function renderRoute() {
+    renderView();
+    if (mounted && scopeSelections.notice) main.appendChild(el(documentNode, "p", "error-banner", scopeSelections.notice));
+  }
+  function renderView() {
     if (!mounted || !projectsLoaded) return;
     replaceViewAbort(context);
     detachMountedSlots(rootNode, sectionNodes());
@@ -294,8 +296,6 @@ export function mountUniverseApp(rootNode, options = {}) {
       pageHead, ...beforeScopeSections(entry), aboveScope, viewHost,
     );
     const handle = renderer(context, viewHost, scope, { aboveScope,
-      // A tabbed destination reads which of its facets the route names; an
-      // untabbed one is handed null and ignores it.
       tab: route.tab,
       hidePageHead() {
         if (!mounted || main.children[0] !== pageHead) return;

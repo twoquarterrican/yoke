@@ -112,9 +112,10 @@ export function createProjectSelection(saveView, onNotice, saveSort) {
       if (result.sorts[viewId]) sorts.set(viewId, result.sorts[viewId]);
       else sorts.delete(viewId);
       return "";
-    } catch {
+    } catch (error) {
       if (revision !== sortRevision) return "";
-      return "Saved sorting could not be loaded. Showing the last known order; return to this page or reload to retry.";
+      console.warn("Saved sorting refresh failed", { code: error?.code || "unknown" });
+      return "";
     }
   };
   state.saveSortFor = (viewId, sort) => {
@@ -165,9 +166,9 @@ export function createProjectSelection(saveView, onNotice, saveSort) {
         state.seed(viewId, view.selection, view.focus);
       }
       return true;
-    } catch {
+    } catch (error) {
       if (revision !== selectionRevision) return false;
-      state.setNotice("Saved projects could not be loaded. Showing the last known selection; return to this tab or reload to retry.");
+      console.warn("Saved projects refresh failed", { code: error?.code || "unknown" });
       return false;
     }
   };
