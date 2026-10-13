@@ -7,6 +7,7 @@ from pathlib import Path
 from runtime.harness.session_relay_clock_test_support import at
 
 from yoke_contracts.fleet_policy import RELAY_POLL_SECONDS
+from yoke_contracts.harness_cli_manifest import harness_cli_manifest
 from yoke_contracts.session_control.plan_limits import (
     PLAN_LIMIT_FRESH_SECONDS,
     PLAN_LIMIT_REFRESH_SECONDS,
@@ -24,6 +25,7 @@ from yoke_harness.session_relay_report_delivery import (
 
 
 SURFACE = "codex-cli"
+QUOTA_SOURCE = harness_cli_manifest("codex").quota_source
 FIRST_OBSERVED_AT = "2026-09-04T12:00:00.000000Z"
 REFRESHED_AT = "2026-09-04T12:04:00.000000Z"
 
@@ -70,7 +72,7 @@ def test_cached_reading_refreshes_before_the_display_deadline(
         observed.append(observed_at)
         return _reading(observed_at)
 
-    monkeypatch.setitem(session_relay_plan_limits._PROBES, SURFACE, probe)
+    monkeypatch.setitem(session_relay_plan_limits._PROBES, QUOTA_SOURCE, probe)
 
     first = session_relay_plan_limits.observe_plan_limits(
         (SURFACE,), state_dir=tmp_path, now=at(0), clock=lambda: FIRST_OBSERVED_AT
@@ -100,7 +102,7 @@ def test_failed_refresh_replaces_old_quota_with_a_named_unknown(
 ) -> None:
     monkeypatch.setitem(
         session_relay_plan_limits._PROBES,
-        SURFACE,
+        QUOTA_SOURCE,
         lambda *, observed_at: _reading(observed_at),
     )
     session_relay_plan_limits.observe_plan_limits(
@@ -108,7 +110,7 @@ def test_failed_refresh_replaces_old_quota_with_a_named_unknown(
     )
     monkeypatch.setitem(
         session_relay_plan_limits._PROBES,
-        SURFACE,
+        QUOTA_SOURCE,
         lambda *, observed_at: unknown_reading(
             SURFACE, "http_503", observed_at=observed_at
         ),

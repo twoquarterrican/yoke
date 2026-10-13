@@ -96,12 +96,19 @@ def test_claude_separate_cap_blocks_an_otherwise_open_model():
     )
 
 
-def test_unobserved_models_are_blocked_with_recovery():
-    result = evaluate(native={})
+def test_unobserved_native_models_are_blocked_with_recovery():
+    result = evaluate(native={}, offered=[(MACHINE, "cursor-cli")])
     assert result["launchable_surfaces"] == []
     assert (
         "native_models_unknown" in result["options"][0]["now"]["blockers"][0]["label"]
     )
+
+
+def test_claude_catalog_capacity_does_not_require_a_native_listing():
+    result = evaluate(native={})
+    assert result["launchable_surfaces"] == ["claude-cli"]
+    assert result["options"][0]["now"]["surfaces"] == ["claude-cli"]
+    assert result["options"][1]["now"]["state"] == "blocked"
 
 
 def test_no_machine_and_unknown_meters_remain_distinct():
