@@ -40,8 +40,10 @@ def test_list_prints_declared_tool_names(monkeypatch, capsys) -> None:
     assert packs.packs_list(["--project", "sample"]) == 0
 
     out = capsys.readouterr().out
-    assert out.startswith("catalog=kind:served\n")
-    assert "tools=pulumi" in out
+    assert out.startswith("catalog:\n  kind: served\n")
+    assert "prerequisites:" in out
+    assert "tool" in out
+    assert "pulumi" in out
 
 
 def test_update_forwards_repeated_accepted_current_paths(

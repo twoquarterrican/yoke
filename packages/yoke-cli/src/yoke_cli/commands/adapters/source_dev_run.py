@@ -12,6 +12,12 @@ def _source_runner():
 
 
 def source_dev_run(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        "yoke dev run [--lane PATH] -- COMMAND [ARG ...]",
+        "Uses a claimed source lane and its locked environment. Registered scanners and claimed-target maintenance may use the mapped main checkout when no lane exists.",
+    ):
+        return 0
     return _source_runner().main(args)
 
 

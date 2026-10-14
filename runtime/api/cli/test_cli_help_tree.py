@@ -18,6 +18,9 @@ def test_all_help_routes_are_inert_and_bounded(monkeypatch, tmp_path):
     monkeypatch.setattr("subprocess.Popen", deny)
     monkeypatch.setattr("socket.socket.connect", deny)
     monkeypatch.setattr(Path, "write_text", deny)
+    monkeypatch.setattr(
+        "yoke_cli.commands.adapters.source_dev_run._source_runner", deny
+    )
     evidence = []
     routes = discovery_routes()
     prefixes = {route[:n] for route in routes for n in range(1, len(route))}

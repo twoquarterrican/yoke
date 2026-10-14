@@ -4,7 +4,7 @@ from __future__ import annotations
 from yoke_cli.transport.human_values import write_human
 
 import argparse
-from typing import Any, List
+from typing import List
 
 from yoke_cli.commands._helpers import (
     add_json_arg,
@@ -50,12 +50,6 @@ DEPLOYMENT_RUNS_RESOLVE_TARGET_USAGE = (
     "yoke deployment-runs resolve-target PROJECT FLOW "
     "[--environment ENV] [--session-id S] [--json]"
 )
-
-
-def _pipe(fields: list[str], row: dict[str, Any]) -> str:
-    return "|".join(
-        "" if row.get(field) is None else str(row.get(field)) for field in fields
-    )
 
 
 def _run_target(run_id: str) -> TargetRef:
@@ -157,12 +151,7 @@ def deployment_runs_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        if parsed.field:
-            print("" if result.get("value") is None else result["value"], file=stdout)
-            return None
-        print(_pipe(result.get("fields") or [], result.get("run") or {}), file=stdout)
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_runs.get",

@@ -4,7 +4,7 @@ from __future__ import annotations
 from yoke_cli.transport.human_values import write_human
 
 import argparse
-from typing import Any, List
+from typing import List
 
 from yoke_cli.commands._helpers import (
     add_json_arg,
@@ -30,12 +30,6 @@ DEPLOYMENT_RUNS_STAGES_USAGE = (
 DEPLOYMENT_RUNS_FAILURE_TRACE_USAGE = (
     "yoke deployment-runs failure-trace RUN-ID [--session-id S] [--json]"
 )
-
-
-def _pipe(fields: list[str], row: dict[str, Any]) -> str:
-    return "|".join(
-        "" if row.get(field) is None else str(row.get(field)) for field in fields
-    )
 
 
 def deployment_flows_list(args: List[str]) -> int:

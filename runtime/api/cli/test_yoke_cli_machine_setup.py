@@ -64,7 +64,7 @@ class TestMachineSetupRouting:
         with redirect_stdout(buf):
             rc = cli_main([])
         assert rc == 0
-        assert "yoke — Yoke operations CLI" in buf.getvalue()
+        assert "yoke — plan, build, verify and deliver software" in buf.getvalue()
 
     def test_no_args_missing_config_tty_points_to_setup(
         self,

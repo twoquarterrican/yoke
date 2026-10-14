@@ -77,32 +77,6 @@ GROUP_TEACHING: dict[tuple[str, ...], str] = {
 }
 
 
-def _extends(tokens: tuple[str, ...], route: tuple[str, ...]) -> bool:
-    return len(tokens) > len(route) and tokens[: len(route)] == route
-
-
-def _belongs_to_group(
-    cli_tokens: tuple[str, ...],
-    routed_prefixes: Sequence[tuple[str, ...]],
-) -> bool:
-    """Return whether a registered command sits under one of the prefixes.
-
-    A command whose canonical tokens hyphenate what reads as a group
-    (``github-actions poll``) is routable spaced as well, so the prefix an
-    operator types (``yoke github actions``) owns it even though no
-    canonical token matches. The row still prints the canonical spelling —
-    the one the CLI grammar guarantees and the one the usage line beneath
-    it repeats.
-    """
-    spelled = [cli_tokens]
-    spaced = tuple(part for token in cli_tokens for part in token.split("-"))
-    if spaced in SPACE_EXPANDED_ROUTE_REGISTRY:
-        spelled.append(spaced)
-    return any(
-        _extends(tokens, route) for tokens in spelled for route in routed_prefixes
-    )
-
-
 def emit_group_help_if_available(
     argv: Sequence[str],
     *,

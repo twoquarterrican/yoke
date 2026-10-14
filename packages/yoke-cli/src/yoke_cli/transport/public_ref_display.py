@@ -36,6 +36,7 @@ def emit_response(
     *,
     json_mode: bool,
     human_writer=None,
+    failure_writer=None,
     full: bool = False,
     machine_mode: bool = False,
 ) -> int:
@@ -58,6 +59,9 @@ def emit_response(
             human_writer(display, stdout, stderr)
             if not machine_mode and not stdout.getvalue().strip():
                 write_human(display.result, stdout)
+        elif failure_writer is not None and not display.success:
+            failure_writer(display, stdout, stderr)
+            _write_error(display, stderr)
         else:
             _default_human_writer(display, stdout, stderr)
     if not json_mode and not machine_mode:
@@ -136,6 +140,10 @@ def _default_human_writer(
         return
     if response.result:
         write_human(response.result, stdout)
+    _write_error(response, stderr)
+
+
+def _write_error(response: FunctionCallResponse, stderr: TextIO) -> None:
     if response.error is not None:
         print(f"error ({response.error.code}): {response.error.message}", file=stderr)
         if response.error.recovery_hint:

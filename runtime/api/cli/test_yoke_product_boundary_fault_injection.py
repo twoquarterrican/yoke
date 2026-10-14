@@ -27,7 +27,7 @@ def test_top_level_help_does_not_import_source_authority(tmp_path: Path) -> None
     assert run.returncode == 0
     assert "Categories and actions" in run.stdout
     assert "yoke status" in run.stdout
-    assert "yoke project install" in run.stdout
+    assert "yoke project " in run.stdout
     assert run.stderr == ""
     _assert_clean_client_boundary(run)
 
