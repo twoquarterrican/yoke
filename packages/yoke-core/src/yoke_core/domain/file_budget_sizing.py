@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import re
 
 from yoke_contracts.project_contract.file_line_policy import DEFAULT_LIMIT
+from yoke_core.domain.file_budget_paths import FILE_BUDGET_PATH_CHARS
 
 
 @dataclass(frozen=True)
@@ -17,7 +18,7 @@ class FileBudgetSizing:
 
 
 def path_sizing_pattern(path: str | None = None) -> re.Pattern[str]:
-    path_group = re.escape(path) if path is not None else r"[\w./_-]+"
+    path_group = re.escape(path) if path is not None else rf"{FILE_BUDGET_PATH_CHARS}+"
     return re.compile(
         rf"`(?P<path>{path_group})`(?:(?!`)[\s\S])*?"
         r"\bcurrent\s+(?P<count>\d+)\s+lines?\s*;\s*"
@@ -45,16 +46,20 @@ def replacement_for_current_size(match: re.Match[str], count: int) -> str:
     text = re.sub(r"(?i)(\bcurrent\s+)\d+", rf"\g<1>{count}", text)
     text = re.sub(
         r"(?i)(remaining\s+headroom\s+)-?\d+",
-        rf"\g<1>{DEFAULT_LIMIT - count}", text,
+        rf"\g<1>{DEFAULT_LIMIT - count}",
+        text,
     )
     flag = str(count >= DEFAULT_LIMIT).lower()
     return re.sub(
         r"(?i)(at-or-over-limit\s*:\s*)(?:true|false)",
-        rf"\g<1>{flag}", text,
+        rf"\g<1>{flag}",
+        text,
     )
 
 
 __all__ = [
-    "FileBudgetSizing", "parse_file_budget_sizing", "path_sizing_pattern",
+    "FileBudgetSizing",
+    "parse_file_budget_sizing",
+    "path_sizing_pattern",
     "replacement_for_current_size",
 ]

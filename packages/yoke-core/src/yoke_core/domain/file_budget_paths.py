@@ -13,7 +13,10 @@ Rules (single source of truth):
 - Only list items (``- ...``) are inspected. A list item may contain
   multiple backticked tokens.
 - A backticked token is a path when:
-    * it matches the safe-path regex ``[\\w./_-]+`` for its full length,
+    * it matches the safe-path regex ``[\\w./_\\-\\[\\]()@+]+`` for its full
+      length, so framework route paths such as
+      ``app/docs/[[...slug]]/page.tsx``, ``app/(marketing)/page.tsx``,
+      ``app/@modal/page.tsx`` and ``routes/+page.svelte`` are paths,
     * AND it contains ``/`` and does not end with ``/``,
     * OR it is a top-level dotfile (``.gitignore``, ``.prettierrc``),
     * OR it is a top-level ALLCAPS markdown filename
@@ -31,7 +34,8 @@ Filtered out:
   next consumer.
 - Inline symbol tokens that lack ``/`` (``release_item_claim``).
 - Directory tokens that end in ``/``.
-- Shell fragments such as ``>/dev/null 2>&1 || true``.
+- Shell fragments such as ``>/dev/null 2>&1 || true`` and tokens with
+  spaces, ``>``, ``|`` or ``&``.
 - Heading text and non-list prose.
 
 Returns paths in first-occurrence order, deduplicated.
@@ -49,37 +53,42 @@ _FILE_BUDGET_HEADER = re.compile(rf"^{re.escape(FILE_BUDGET_HEADING)}\b")
 _LEVEL2_HEADER = re.compile(r"^## ")
 _LIST_ITEM = re.compile(r"^\s*-\s")
 _BACKTICKED = re.compile(r"`([^`]+)`")
-_SAFE_PATH = re.compile(r"^[\w./_-]+$")
+FILE_BUDGET_PATH_CHARS = r"[\w./_\-\[\]()@+]"
+_SAFE_PATH = re.compile(rf"^{FILE_BUDGET_PATH_CHARS}+$")
 _TOP_LEVEL_DOTFILE = re.compile(r"^\.[A-Za-z0-9][\w.-]*$")
 _TOP_LEVEL_ALLCAPS_MD = re.compile(r"^[A-Z][A-Z0-9_]*\.md$")
 _DOTTED_IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)+$")
-_TOP_LEVEL_BUILD_CONFIG_FILES = frozenset({
-    "package-lock.json",
-    "package.json",
-    "pnpm-lock.yaml",
-    "pyproject.toml",
-    "pytest.ini",
-    "requirements.txt",
-    "ruff.toml",
-    "setup.cfg",
-    "setup.py",
-    "tox.ini",
-    "tsconfig.json",
-    "uv.lock",
-    "vite.config.ts",
-    "yarn.lock",
-})
+_TOP_LEVEL_BUILD_CONFIG_FILES = frozenset(
+    {
+        "package-lock.json",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pyproject.toml",
+        "pytest.ini",
+        "requirements.txt",
+        "ruff.toml",
+        "setup.cfg",
+        "setup.py",
+        "tox.ini",
+        "tsconfig.json",
+        "uv.lock",
+        "vite.config.ts",
+        "yarn.lock",
+    }
+)
 _NO_REPO_SCOPE = re.compile(
     r"^\s*(?:-\s*)?N/A\s+[—-]\s+(.+?)\s*$",
     re.IGNORECASE,
 )
-_UNRESOLVED_BUDGET_VALUES = frozenset({
-    "none",
-    "tbd",
-    "todo",
-    "unknown",
-    "unresolved",
-})
+_UNRESOLVED_BUDGET_VALUES = frozenset(
+    {
+        "none",
+        "tbd",
+        "todo",
+        "unknown",
+        "unresolved",
+    }
+)
 _UNRESOLVED_PROSE = re.compile(
     r"^\s*UNRESOLVED(\s+[—-].*)?\s*$",
     re.IGNORECASE,
@@ -248,6 +257,7 @@ def apply_unresolved_file_budget_marker(spec_text: str) -> str:
 
 __all__ = [
     "FILE_BUDGET_HEADING",
+    "FILE_BUDGET_PATH_CHARS",
     "FILE_BUDGET_SECTION",
     "UNRESOLVED_FILE_BUDGET_MARKER",
     "UNRESOLVED_FILE_BUDGET_SECTION",
