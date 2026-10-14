@@ -228,11 +228,8 @@ def wake_eligible_recipients(
             ):
                 continue
             escalation = ""
-            if not explicit_wake and liveness == "active":
-                # An active session is served by its own hooks — unless the
-                # envelope proves that route stopped running, or the session
-                # declared a wait its harness has no way to end, in which
-                # case deferring to it forever is what starves the message.
+            if not explicit_wake and liveness in {"active", "stale"}:
+                # Active and stale sessions share the hook-route absence checks.
                 for reason, absent in _HOOK_ROUTE_ABSENCES:
                     if absent(
                         row,
@@ -242,7 +239,10 @@ def wake_eligible_recipients(
                     ):
                         escalation = reason
                         break
-                if not escalation:
+                if not escalation and (
+                    liveness == "active"
+                    or row.get("wake_escalation") in dict(_HOOK_ROUTE_ABSENCES)
+                ):
                     continue
             idle_window = timedelta(seconds=policy.wake_after_idle_seconds)
             waiting_pending = row["state"] == "pending" and (

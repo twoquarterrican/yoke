@@ -37,6 +37,14 @@ from yoke_harness.session_relay_native_diagnostics import (
     MODEL_COMBO_UNSUPPORTED,
     classify_native_failure,
     model_combo_rejection_detail,
+    diagnostic_reference,
+    native_diagnostic_path,
+    NativeDiagnosticError,
+    write_native_capture,
+)
+from yoke_harness.session_relay_native_capture_format import (
+    STATE_RUNNING,
+    compose_capture,
 )
 from yoke_harness.session_relay_native_streams import (
     STDERR,
@@ -122,6 +130,10 @@ class CodexCliTransport:
         command.append("-")
         process: subprocess.Popen[bytes] | None = None
         try:
+            capture = native_diagnostic_path(diagnostic_reference(request.job_id))
+            write_native_capture(
+                capture, compose_capture(stdout=b"", stderr=b"", state=STATE_RUNNING)
+            )
             process = spawn_admitted_process(
                 command,
                 cwd=request.checkout,
@@ -137,6 +149,7 @@ class CodexCliTransport:
                 native_session_id=request.target_thread_id or request.target_session_id,
                 target_session_id=request.target_session_id,
                 supervision_kind="resume" if resume else "launch",
+                capture_path=capture,
             ):
                 _stop(process)
                 raise _NativePhaseError(
@@ -150,12 +163,16 @@ class CodexCliTransport:
             process.stdin.flush()
             process.stdin.close()
             return process, resolved.source
-        except (OSError, subprocess.SubprocessError) as exc:
+        except (OSError, subprocess.SubprocessError, NativeDiagnosticError) as exc:
             started = process is not None
             if process is not None:
                 _stop(process)
             raise _NativePhaseError(
-                "instruction_write" if started else "spawn",
+                "custody"
+                if isinstance(exc, NativeDiagnosticError)
+                else "instruction_write"
+                if started
+                else "spawn",
                 binary_source=resolved.source,
                 pid=process.pid if process is not None else None,
             ) from exc
@@ -286,7 +303,7 @@ class CodexCliTransport:
                 failure_code="native_custody_unavailable"
                 if failure.phase == "custody"
                 else None,
-                failure_detail="Inspect machine custody storage and explicitly retry the operation."
+                failure_detail="Inspect machine capture and custody storage and explicitly retry the operation."
                 if failure.phase == "custody"
                 else None,
                 phase=failure.phase,

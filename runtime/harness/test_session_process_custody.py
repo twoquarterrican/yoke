@@ -19,6 +19,7 @@ from yoke_harness.session_launch_containment import (
 from yoke_harness.session_relay_codex import CodexNativeRequest
 from yoke_harness.session_relay_codex_cli import CodexCliTransport
 from yoke_harness.session_relay_inventory import ResolvedNativeCli
+from yoke_harness.session_relay_native_diagnostics import native_diagnostic_path
 
 SESSION = "33333333-3333-4333-8333-333333333333"
 ATTEMPT = "44444444-4444-4444-8444-444444444444"
@@ -187,6 +188,11 @@ def test_codex_accepted_resume_has_durable_custody_then_terminates(
     )
     executable.chmod(0o700)
     monkeypatch.setattr("yoke_cli.config.machine_config.cache_dir", lambda: tmp_path)
+    for module in ("session_relay_codex_cli", "session_relay_codex_cli_process"):
+        monkeypatch.setattr(
+            f"yoke_harness.{module}.native_diagnostic_path",
+            lambda ref: native_diagnostic_path(ref, state_dir=tmp_path),
+        )
     monkeypatch.setattr(
         "yoke_harness.session_relay_codex_cli_process._retain", lambda *args: None
     )
@@ -219,6 +225,9 @@ def test_codex_accepted_resume_has_durable_custody_then_terminates(
         assert record["process_group_id"] == outcome.pid
         assert record["native_session_id"] == SESSION
         assert record["process_start_time"] == process_start_time(outcome.pid)
+        assert record["capture_path"] == str(
+            native_diagnostic_path(f"nd-{ATTEMPT}", state_dir=tmp_path)
+        )
         result = reap.reap_terminated_session(
             {"target_session_id": SESSION}, state_dir=tmp_path
         )

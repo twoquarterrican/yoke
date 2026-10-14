@@ -101,12 +101,8 @@ def test_a_completed_call_uses_the_manifest_selected_wake_route(wake_connection)
     eligible = wake_eligible_recipients(conn, now=SWEEP)
     assert bool(eligible) == wake_supported
     if eligible:
-        expected_mode = (
-            "waiting"
-            if eligible[0]["executor_surface"] == "codex-cli"
-            else "idle_timeout"
-        )
-        assert eligible[0]["wake_mode"] == expected_mode
+        # The completed call is stale; its absent hook route resumes the stopped route.
+        assert eligible[0]["wake_mode"] == "waiting"
         assert eligible[0]["liveness"] == "stale"
 
 

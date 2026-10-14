@@ -41,6 +41,7 @@ from yoke_core.domain.session_tool_call_liveness import session_call_is_live
 from yoke_core.domain.session_message_ended_recipient import (
     recipient_has_no_delivery_route,
 )
+from yoke_core.domain.session_wake_hold_recovery import held_native_is_gone
 
 #: An attempt was made and settled badly. It names its own reason.
 ATTEMPT_FAILED = "attempt_failed"
@@ -162,6 +163,7 @@ def delivery_state(
     sla: timedelta,
     current: datetime,
     failed_count: int = 0,
+    attempt_evidence: Mapping[str, Any] | None = None,
 ) -> str:
     """Classify one undelivered receipt into exactly one delivery state.
 
@@ -185,6 +187,8 @@ def delivery_state(
         if delivery_attempt_failed(result_code):
             return ATTEMPT_FAILED
         if str(result_code) in WAKE_DEFERRED_RESULTS:
+            if held_native_is_gone(record, attempt_evidence or {}):
+                return NEVER_ATTEMPTED
             return WAKE_HELD_FOR_NATIVE_TURN
         return ATTEMPT_IN_FLIGHT
     if _attempt_owed(record, sent_at=sent_at, grace=grace, sla=sla, current=current):

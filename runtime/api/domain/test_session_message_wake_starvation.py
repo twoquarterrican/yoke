@@ -162,7 +162,16 @@ def test_one_escalated_wake_per_recipient_per_window() -> None:
     assert wake_eligible_recipients(conn, now=later) == []
     next_window = STARVED + ACK_GRACE + timedelta(seconds=1)
     stamp_activity(conn, when=next_window)
-    assert len(wake_eligible_recipients(conn, now=next_window)) == 1
+    assert (
+        len(
+            [
+                r
+                for r in wake_eligible_recipients(conn, now=next_window)
+                if r["session_id"] == NATIVE_WAKE_SESSION_ID
+            ]
+        )
+        == 1
+    )
 
 
 def test_the_broker_re_read_keeps_the_escalation_it_already_stamped() -> None:
@@ -275,7 +284,16 @@ def test_one_parked_escalation_per_recipient_per_window() -> None:
     assert wake_eligible_recipients(conn, now=later) == []
     next_window = early + ACK_GRACE + timedelta(seconds=1)
     stamp_activity(conn, when=next_window)
-    assert len(wake_eligible_recipients(conn, now=next_window)) == 1
+    assert (
+        len(
+            [
+                r
+                for r in wake_eligible_recipients(conn, now=next_window)
+                if r["session_id"] == NATIVE_WAKE_SESSION_ID
+            ]
+        )
+        == 1
+    )
 
 
 def _parked_row(surface: str, version: str) -> dict:

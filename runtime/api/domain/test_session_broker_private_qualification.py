@@ -38,6 +38,9 @@ RELEASE_SHA = "a" * 40
 @pytest.fixture(autouse=True)
 def _candidate_route_requires_grant(monkeypatch) -> None:
     require_exact_cli_idle_policy(monkeypatch)
+    monkeypatch.setattr(
+        "yoke_core.domain.session_staleness._resolve_effective_ttl", lambda *a: 1
+    )
 
 
 def _candidate_connection(monkeypatch, *, route: str):
@@ -54,8 +57,9 @@ def _candidate_connection(monkeypatch, *, route: str):
     )
     # Route-scoped grants only arbitrate where a grant is still required, so
     # the target is idle rather than ended: a stopped wake needs no grant now.
-    # Day-old activity keeps it idle under any staleness window.
-    idle_since = format_instant(NOW - timedelta(days=1))
+    # Stale under the one-minute TTL, inside the five-minute hook grace.
+    # That selects the private idle route this qualification proof covers.
+    idle_since = format_instant(NOW - timedelta(minutes=2))
     conn.execute(
         "UPDATE harness_sessions SET executor='claude-code',"
         "executor_surface='claude-cli',executor_version='2.1.241',"
@@ -165,6 +169,7 @@ def test_broker_scoped_grant_does_not_claim_direct_availability(monkeypatch) -> 
 
     assert len(outcome.jobs) == 1
     assert outcome.jobs[0].wake_route == "broker"
+    assert outcome.jobs[0].wake_mode.value == "idle_timeout"
     assert outcome.jobs[0].private_route_qualification == grant
     row = conn.execute(
         "SELECT released_at,release_reason_intent FROM work_claims WHERE id=?",

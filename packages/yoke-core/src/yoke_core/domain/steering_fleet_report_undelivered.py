@@ -289,6 +289,7 @@ def undelivered_messages(
             sla=sla,
             current=current,
             failed_count=failed_count,
+            attempt_evidence=evidence,
         )
         group = groups.setdefault((session_id, state), _Group())
         group.absorb(

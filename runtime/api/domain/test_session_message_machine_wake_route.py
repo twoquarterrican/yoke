@@ -141,13 +141,13 @@ def test_send_snapshot_reports_no_route_without_a_qualified_machine_cli():
     assert _snapshot_route(stale, _send(stale))["wake_interface"] == "none"
 
 
-def test_machine_cli_makes_a_stopped_ide_recipient_wake_eligible():
+def test_machine_cli_makes_a_stopped_ide_recipient_wake_eligible_after_backoff():
     conn = _stopped_ide_connection()
     _send(conn)
     assert wake_eligible_recipients(conn, now=NOW + timedelta(minutes=11)) == []
 
     _register_relay(conn, {"claude-cli": QUALIFIED_CLI})
-    eligible = wake_eligible_recipients(conn, now=NOW + timedelta(minutes=11))
+    eligible = wake_eligible_recipients(conn, now=NOW + timedelta(minutes=12))
 
     assert [row["session_id"] for row in eligible] == ["s2"]
     assert eligible[0]["executor_surface"] == "claude-vscode"
@@ -307,7 +307,9 @@ def test_capability_refusal_records_one_observable_wake_skip(
     assert evidence["turn_posture"] == ("waiting" if ended else "running")
     assert evidence["liveness"] == ("ended" if ended else "stale")
     assert details["attempts"][0]["completed_at"] is not None
-    assert details["recipients"][0]["wake_attempt_count"] == 0
+    assert details["recipients"][0]["wake_attempt_count"] == (
+        0 if reason == "surface_wake_operator_driven" else 1
+    )
 
 
 def test_no_wake_job_is_minted_when_the_machine_cli_is_below_its_floor():
@@ -327,5 +329,5 @@ def test_no_wake_job_is_minted_when_the_machine_cli_is_below_its_floor():
         conn.execute(
             "SELECT wake_attempt_count FROM session_message_recipients"
         ).fetchone()[0]
-        == 0
+        == 1
     )

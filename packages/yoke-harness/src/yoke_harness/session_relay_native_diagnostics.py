@@ -232,23 +232,10 @@ def write_native_capture(
     path: Path,
     payload: bytes,
 ) -> None:
-    """Replace one capture's bytes owner-only, refusing an unsafe target."""
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
-    try:
-        descriptor = os.open(path, flags, 0o600)
-    except OSError as exc:
-        raise NativeDiagnosticError("diagnostic could not be created") from exc
-    try:
-        details = os.fstat(descriptor)
-        if not stat.S_ISREG(details.st_mode) or details.st_uid != os.getuid():
-            raise NativeDiagnosticError("diagnostic target is unsafe")
-        os.fchmod(descriptor, 0o600)
-        with os.fdopen(descriptor, "wb", closefd=True) as stream:
-            descriptor = -1
-            stream.write(payload[:NATIVE_DIAGNOSTIC_MAX_BYTES])
-    finally:
-        if descriptor >= 0:
-            os.close(descriptor)
+    """Publish one complete owner-only capture, refusing an unsafe target."""
+    from yoke_harness.session_relay_native_capture_write import replace_private_capture
+
+    replace_private_capture(path, payload[:NATIVE_DIAGNOSTIC_MAX_BYTES])
 
 
 def store_native_diagnostic(

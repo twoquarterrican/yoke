@@ -11,10 +11,16 @@ import sys
 import threading
 from typing import BinaryIO, Callable, Mapping, TextIO
 
-from yoke_harness.session_relay_native_streams import BoundedStreams, STDOUT, drain
+from yoke_harness.session_relay_native_streams import (
+    BoundedStreams,
+    STDOUT,
+    start_drain,
+)
+from yoke_harness.session_relay_native_supervisor import retain_native_capture
 from yoke_harness.session_relay_native_diagnostics import (
     NativeDiagnosticError,
     diagnostic_reference,
+    native_diagnostic_path,
     store_native_diagnostic,
 )
 from yoke_harness.session_relay_codex import CodexNativeOutcome, CodexNativeRequest
@@ -43,21 +49,19 @@ def _retain_and_reap(
     streams: BoundedStreams,
     reference: str,
 ) -> None:
-    """Own the native for the rest of its turn and keep what it said.
-
-    This worker outlives the relay poll that started it, so it is the only
-    process that can see how the native ends. Reading the streams to their end
-    and writing them once, with the exit status, is what turns a codex turn
-    that died into something an operator can still read.
-    """
+    """Own the native and refresh its capture even during hook-silent waits."""
 
     def own() -> None:
-        drain(process.stdout, streams, STDOUT)
-        try:
-            exit_code = process.wait()
-        except (OSError, subprocess.SubprocessError):
-            exit_code = None
-        _retain(streams, reference, exit_code)
+        drains = [
+            start_drain(process.stdout, streams, STDOUT),
+            getattr(process, "_yoke_stderr_thread", None),
+        ]
+        retain_native_capture(
+            native_diagnostic_path(diagnostic_reference(reference)),
+            process,
+            streams,
+            tuple(thread for thread in drains if thread is not None),
+        )
 
     threading.Thread(target=own, daemon=False, name="yoke-codex-relay-reap").start()
 
