@@ -27,6 +27,9 @@ and retry afterward. `shared_plan_execution_busy` names a different group
 already using the stage's ordered cursor. Refresh and declared corrections
 also use an attaching member and keep the failed group's target identity.
 Removing one member preserves shared evidence for the members still attached.
+At materialization, redundant member copies retire as history. A live cursor
+using those copies refuses as `shared_plan_duplicate_execution_live`: its owner
+must finish or abort it before retrying; conversion makes no partial changes.
 
 ## Machine partitions
 

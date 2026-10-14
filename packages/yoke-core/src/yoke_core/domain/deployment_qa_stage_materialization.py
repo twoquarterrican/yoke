@@ -104,6 +104,19 @@ def materialize_deployment_qa_stage(
                         replaced_requirement_ids=replaced_requirement_ids,
                     )
                 )
+                from yoke_core.domain.deployment_qa_shared_duplicates import (
+                    retire_member_copies,
+                )
+
+                retire_member_copies(
+                    conn,
+                    group,
+                    deployment_qa_execution_target(conn, group),
+                    [
+                        *results[-1]["created_requirement_ids"],
+                        *results[-1]["existing_requirement_ids"],
+                    ],
+                )
             private = [r for r in admitted if r.get("plan_id") is None]
             private_snapshots = [
                 snapshot for snapshot in snapshots if snapshot not in shared

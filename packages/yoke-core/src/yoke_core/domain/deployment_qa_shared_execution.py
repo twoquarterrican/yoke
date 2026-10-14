@@ -2,6 +2,8 @@
 
 from functools import wraps
 
+from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
+
 
 def route_shared_plan_execution(begin):
     """Reuse completed group evidence and execute only this member's owed groups."""
@@ -66,7 +68,8 @@ def route_shared_plan_execution(begin):
                 pending.append(group)
         private = conn.execute(
             "SELECT COUNT(*) FROM qa_requirements WHERE deployment_run_id=%s AND deployment_stage=%s "
-            "AND deployment_member_item_id=%s AND method_id IS NOT NULL",
+            "AND deployment_member_item_id=%s AND method_id IS NOT NULL "
+            f"AND NOT {settled_obligation_sql(conn)}",
             (run_id, stage, member),
         ).fetchone()[0]
         if pending:

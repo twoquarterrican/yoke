@@ -1,5 +1,6 @@
 """Member acceptance is the conjunction of its own private and shared subjects."""
 
+from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
 from yoke_core.domain.deployment_qa_shared_plans import member_plan_subjects
 from yoke_core.domain.deployment_qa_execution_target import (
     deployment_qa_execution_target,
@@ -15,6 +16,7 @@ def acceptance_subjects(conn, subject, target):
     private = conn.execute(
         "SELECT 1 FROM qa_requirements WHERE deployment_run_id=%s AND deployment_stage=%s "
         "AND deployment_member_item_id=%s "
+        f"AND NOT {settled_obligation_sql(conn)} "
         "AND qa_kind<>'deployment_stage_acceptance' LIMIT 1",
         (subject["id"], subject["stage"]["name"], subject["member_item_id"]),
     ).fetchone()
