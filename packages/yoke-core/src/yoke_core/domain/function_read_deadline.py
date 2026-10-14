@@ -16,6 +16,10 @@ from yoke_contracts.read_deadline import (
     ReadDeadlineExceeded,
     read_budget,
 )
+from yoke_core.domain.function_connection_loss import (
+    retry_dropped_connection,
+    side_effect_free,
+)
 from yoke_core.domain.handler_execution_context import invoke_resolved_handler
 
 
@@ -29,7 +33,7 @@ def driver_call(method, *args, **kwargs):
 
 
 def invoke_handler(entry, request):
-    if set(entry.side_effects) - {"event_emit"}:
+    if not side_effect_free(entry):
         return invoke_resolved_handler(entry.handler, request)
     seconds = FUNCTION_RESPONSE_TIMEOUT_SECONDS - READ_RESPONSE_RESERVE_SECONDS
     recovery = (
@@ -38,7 +42,11 @@ def invoke_handler(entry, request):
     )
     try:
         with read_budget(seconds):
-            return invoke_resolved_handler(entry.handler, request)
+            # A dropped connection retries inside the same budget, so the
+            # second attempt cannot outlive the transport waiting on it.
+            return retry_dropped_connection(
+                lambda: invoke_resolved_handler(entry.handler, request)
+            )
     except ReadDeadlineExceeded:
         return HandlerOutcome(
             primary_success=False,

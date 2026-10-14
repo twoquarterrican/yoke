@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 
+from yoke_contracts.api.function_call import FunctionError
 from yoke_core.domain import (
     deploy_pipeline_control_plane as control_plane,
     deploy_pipeline_run_updates as run_updates,
@@ -21,9 +22,7 @@ def _refusal(code):
     return SimpleNamespace(
         success=False,
         result=None,
-        error=SimpleNamespace(
-            code=code, message=f"{code}: refused; Recovery: re-drive"
-        ),
+        error=FunctionError(code=code, message=f"{code}: refused; Recovery: re-drive"),
     )
 
 

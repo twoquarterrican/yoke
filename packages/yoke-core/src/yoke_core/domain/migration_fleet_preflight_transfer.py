@@ -26,13 +26,9 @@ DUMP_ATTEMPTS = 3
 
 #: Copy failures worth another attempt: every connect-class marker the
 #: readiness layer recognizes (a forward that died mid-copy refuses the next
-#: connection exactly like one that was never up), plus the mid-stream
-#: signatures a transfer produces when the channel drops under it.
-DUMP_RETRY_MARKERS = CONNECTION_FAILURE_MARKERS + (
-    "ssl syscall error",
-    "eof detected",
-    "connection reset",
-)
+#: connection exactly like one that was never up), plus the reset a transfer
+#: produces when the channel drops under it.
+DUMP_RETRY_MARKERS = CONNECTION_FAILURE_MARKERS + ("connection reset",)
 
 _DUMP_KEEPALIVE_ENV = {
     "PGKEEPALIVES": "1",

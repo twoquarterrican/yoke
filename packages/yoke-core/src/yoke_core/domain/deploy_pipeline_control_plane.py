@@ -6,6 +6,7 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from yoke_core.domain.deployment_start_timing import emit_records
+from yoke_core.domain.function_connection_loss import CONNECTION_LOST_CODE
 from yoke_contracts.api.function_call import TargetRef
 from yoke_core.api.service_client_structured_api_adapter import call_dispatcher
 
@@ -26,10 +27,15 @@ def _call(function_id: str, run_id: str, payload: Dict[str, Any]) -> Dict[str, A
     )
     emit_records((response.result or {}).get("start_timings"))
     if not response.success:
-        message = response.error.message if response.error else "request failed"
+        error = response.error
+        message = error.message if error else "request failed"
+        if error and error.recovery_hint:
+            message = f"{message} Recovery: {error.recovery_hint}"
+        if error and error.code == CONNECTION_LOST_CODE:
+            message = f"{message} The run is resumable: rerun `yoke watch deploy -- {run_id}`."
         raise DeploymentControlPlaneError(
             f"{function_id} failed: {message}",
-            code=response.error.code if response.error else "",
+            code=error.code if error else "",
         )
     result = dict(response.result or {})
     return result

@@ -64,6 +64,21 @@ Retry a narrower read: name a project or section, or use `--limit` and
 search and intake follow summary pages; Test plans explicitly requests full
 rows for outcomes, execution targets, attachments and case counts.
 
+## Dropped connections
+
+Handlers open a fresh database connection on every invocation. When that
+connection drops mid-statement (`consuming input failed`, `SSL SYSCALL
+error`, `unexpected eof`), a side-effect-free function runs once more inside
+the same read budget. A function that can change state is never resent,
+because the lost statement may already have committed. A second drop, or any
+drop in a state-changing function, returns `control_plane_connection_lost`
+(HTTP 500, so the HTTPS client does not resend it). Its recovery is to re-read
+the targeted state and rerun once `yoke env list` shows the control plane
+reachable; the deploy driver adds `yoke watch deploy -- RUN-ID`, because a run
+resumes where it stopped. Any other exception a handler raises answers
+`handler_exception` with the function id and exception class, on in-process
+dispatch as on the HTTPS route, never a raw traceback.
+
 ## Claim verification
 
 | Catalog value | Dispatcher obligation |

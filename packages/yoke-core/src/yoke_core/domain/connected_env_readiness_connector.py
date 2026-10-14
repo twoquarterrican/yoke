@@ -64,8 +64,9 @@ SSH_KEEPALIVE_COUNT_MAX = 20
 
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1", "0.0.0.0"})
 
-# Substrings marking a libpq connect-class failure (tunnel down / refused /
-# dropped). Matched case-insensitively against the exception text.
+# Substrings marking a libpq connection failure: tunnel down, refused, or a
+# connection that dropped mid-statement (the SSL/EOF wording). Matched
+# case-insensitively against the exception text.
 CONNECTION_FAILURE_MARKERS = (
     "connection refused",
     "could not connect",
@@ -78,6 +79,10 @@ CONNECTION_FAILURE_MARKERS = (
     "connection timed out",
     "could not translate host name",
     "network is unreachable",
+    "ssl syscall error",
+    "unexpected eof",
+    "consuming input failed",
+    "eof detected",
 )
 
 # SSH options proven from the live operator tunnel. BatchMode keeps it
@@ -131,9 +136,11 @@ class TunnelSpec:
 
     @property
     def redacted(self) -> str:
-        return (f"local={self.local_host}:{self.local_port} "
-                f"bastion={self.bastion} "
-                f"remote={self.remote_host}:{self.remote_port}")
+        return (
+            f"local={self.local_host}:{self.local_port} "
+            f"bastion={self.bastion} "
+            f"remote={self.remote_host}:{self.remote_port}"
+        )
 
 
 @dataclass(frozen=True)
@@ -198,8 +205,9 @@ def looks_like_connection_failure(exc: BaseException) -> bool:
     return any(marker in text for marker in CONNECTION_FAILURE_MARKERS)
 
 
-def _tunnel_spec(env: "yoke_connected_env.ConnectedEnv", local_host: str,
-                 local_port: int) -> Optional[TunnelSpec]:
+def _tunnel_spec(
+    env: "yoke_connected_env.ConnectedEnv", local_host: str, local_port: int
+) -> Optional[TunnelSpec]:
     """Build a :class:`TunnelSpec` from the selected env's
     ``connections.<env>.postgres.tunnel`` block, or ``None`` when the block is
     absent/incomplete (so self-heal is not possible)."""
@@ -238,5 +246,11 @@ def detect() -> Detection:
 
     dsn = db_backend.resolve_pg_dsn()
     spec = _tunnel_spec(env, str(host), int(port))
-    return Detection(CONNECTOR_LOCAL_SSH_TUNNEL_PG, env.environment, dsn, spec,
-                     local_host=str(host), local_port=int(port))
+    return Detection(
+        CONNECTOR_LOCAL_SSH_TUNNEL_PG,
+        env.environment,
+        dsn,
+        spec,
+        local_host=str(host),
+        local_port=int(port),
+    )

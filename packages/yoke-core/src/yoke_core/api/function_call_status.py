@@ -45,6 +45,9 @@ ERROR_TO_STATUS: Dict[str, int] = {
     "handler_contract": 500,
     "handler_exception": 500,
     "read_deadline_exceeded": 408,
+    # 500, not 503: a 503 tells the HTTPS client to resend, and a write whose
+    # connection dropped may already have committed.
+    "control_plane_connection_lost": 500,
     # Per-handler validation/gate codes raised by registered handlers.
     "validation_error": 422,
     "unsupported_field": 422,
