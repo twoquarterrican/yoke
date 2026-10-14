@@ -129,6 +129,7 @@ def test_resolve_or_create_epic_issue_compacts_oversized_body(monkeypatch, epic_
         conn=epic_conn,
         stdout=stdout,
         stderr=stderr,
+        search_cache={},
     )
 
     assert num == "999"
@@ -159,6 +160,7 @@ def test_dedup_or_create_task_issue_compacts_oversized_body(monkeypatch):
         gh_project="yoke",
         stdout=stdout,
         stderr=stderr,
+        search_cache={},
         conn=None,
         epic_id="4242",
         task_num=7,
@@ -233,6 +235,7 @@ def test_dedup_or_create_task_issue_keeps_full_body_under_budget(monkeypatch):
         gh_project="yoke",
         stdout=stdout,
         stderr=stderr,
+        search_cache={},
         conn=None,
         epic_id="4242",
         task_num=1,

@@ -258,8 +258,8 @@ class TestSyncEpicTasksDedup:
         finalize_generated_task_scopes(epic_db, 10)
         stdout = io.StringIO()
 
-        # Two list_issues calls: parent dedup returns the full-content match;
-        # task dedup returns nothing so the task is created fresh.
+        # One shared search: the parent adopts its full-content match; the
+        # task has no match in the same results, so it is created fresh.
         parent_match = _issue(
             808,
             "[EXT-10] "
@@ -271,7 +271,7 @@ class TestSyncEpicTasksDedup:
         with (
             patch(
                 "yoke_core.domain.github_dedup.github_rest.list_issues",
-                side_effect=[[parent_match], [], []],
+                return_value=[parent_match],
             ),
             patch(
                 "yoke_core.domain.epic_task_sync_github_create.github_rest.create_issue",
@@ -322,13 +322,12 @@ class TestSyncEpicTasksDedup:
         epic_created = _issue(9001, "[YOK-1500] Epic title")
         task_created = _issue(9002, "[YOK-1500] 001 First task")
 
-        # Parent dedup returns fuzzy (rejected) → parent create returns
-        # epic_created; task dedup returns nothing → task create returns
-        # task_created.
+        # The one shared search returns only the fuzzy candidate, rejected
+        # for both the parent and the task, so both are created.
         with (
             patch(
                 "yoke_core.domain.github_dedup.github_rest.list_issues",
-                side_effect=[[fuzzy], [], []],
+                return_value=[fuzzy],
             ),
             patch(
                 "yoke_core.domain.epic_task_sync_github_create.github_rest.create_issue",
