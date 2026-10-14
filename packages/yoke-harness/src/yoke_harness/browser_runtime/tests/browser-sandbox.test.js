@@ -8,7 +8,10 @@ const { resolveExecutablePath } = require('../src/authorize');
 
 async function main() {
   const calls = [];
-  const context = { close: async () => {} };
+  const context = {
+    close: async () => {},
+    grantPermissions: async () => {},
+  };
   chromium.launchPersistentContext = async (directory, options) => {
     calls.push({ directory, ...options });
     return context;

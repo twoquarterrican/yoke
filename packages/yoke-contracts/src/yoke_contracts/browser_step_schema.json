@@ -86,6 +86,10 @@
       "fields": {
         "target": {"type": "non_empty_string", "required": true}
       }
+    },
+    "grant_clipboard": {
+      "keys": [],
+      "fields": {}
     }
   }
 }

@@ -91,6 +91,16 @@ def declared_schema_help() -> str:
         "artifact. target must be a non-empty string selector, not an "
         "object. On assert, value is refused; use expected."
     )
+    if "grant_clipboard" in ACTION_STEP_KEYS:
+        lines.append(
+            "The Chromium runtime grants clipboard-read and clipboard-write "
+            "when it opens a context, so a case that clicks Copy works "
+            "without a new step. A browser that cannot grant them fails "
+            "launch as clipboard_permission_unsupported. grant_clipboard "
+            "grants the same permissions for the open page's http or https "
+            "origin. Another origin fails as "
+            "clipboard_permission_origin_required."
+        )
     return "\n".join(lines)
 
 

@@ -206,6 +206,15 @@ be a string; an object is refused. A screenshot without `capture: true` is
 refused rather than recorded empty. A navigate that sets `target` instead of
 `route` is refused rather than falling through to the base URL.
 
+### Clipboard permission
+
+The Chromium runtime grants `clipboard-read` and `clipboard-write` when it
+opens a context, so a case that clicks Copy works without a new step. A
+browser that cannot grant them fails launch as
+`clipboard_permission_unsupported`. `{"action": "grant_clipboard"}` grants
+the same permissions for the open page's http or https origin. Another
+origin fails as `clipboard_permission_origin_required`.
+
 ### Absence assertions and what they observed
 
 `hidden`, `count_eq` of 0, and `count_gte` of 0 are all satisfied by a page
