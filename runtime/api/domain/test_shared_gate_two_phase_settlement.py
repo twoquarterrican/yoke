@@ -158,6 +158,11 @@ def test_an_effects_failure_keeps_members_done_and_replay_finishes_it(
     _five_ready_members(test_db)
     _executing_run(test_db, "run-effects")
     retired: list[str] = []
+    monkeypatch.setattr(
+        terminal_lane_cleanup,
+        "sweep_managed_lanes",
+        lambda **_kwargs: ((), {}),
+    )
 
     def _broken(item, envelope, **_kwargs):
         raise RuntimeError("lane cleanup unavailable")

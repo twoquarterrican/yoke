@@ -2,9 +2,9 @@
 
 The per-lane retirement at landing (``merge_landed_lane_cleanup``) can refuse
 — a dirty tree, a locked worktree, an incomplete remote delete — and nothing
-retries it on its own. This sweep is that retry: every landing boundary on a
-machine runs it after its own lane is handled, so a lane one landing
-preserved is examined again by the next. It never widens the rules: the
+retries it on its own. A standalone landing runs this sweep after its own
+lane, and a deployment run runs it once after every member has closed, so a
+lane kept earlier is examined again at that boundary. It never widens the rules: the
 control plane must name a terminal owner with no live authority
 (``merge.prune.authority_verdict`` over the active transport), the tree must
 hold nothing but named caches once those are gone, ``origin/<target>`` must

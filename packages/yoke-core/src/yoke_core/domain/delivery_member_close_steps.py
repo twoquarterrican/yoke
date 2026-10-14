@@ -19,6 +19,7 @@ sessions the release left empty. A failure here never reopens the member.
 from __future__ import annotations
 
 import io
+import sys
 from dataclasses import dataclass
 from typing import Any
 
@@ -182,7 +183,7 @@ def _closed_item(public_ref: str) -> tuple[dict[str, Any], str]:
 
 
 def _retire_closed_member_lanes(public_ref: str) -> list[str]:
-    """Retire the closed member's lanes and sweep; return what was preserved."""
+    """Retire the closed member's own lanes; return what was preserved."""
     from yoke_core.domain.terminal_lane_cleanup import record_terminal_lane_close_out
 
     item, refusal = _closed_item(public_ref)
@@ -192,8 +193,43 @@ def _retire_closed_member_lanes(public_ref: str) -> list[str]:
             f"be read ({refusal})"
         ]
     envelope: dict[str, Any] = {"warnings": []}
-    record_terminal_lane_close_out(item, envelope, target_status=CLOSED_OUT_STATUS)
+    record_terminal_lane_close_out(
+        item, envelope, target_status=CLOSED_OUT_STATUS, machine_sweep=False
+    )
     return list(envelope["warnings"])
+
+
+def sweep_closed_member_checkouts(public_refs: list[str]) -> list[str]:
+    """Sweep each distinct checkout of these closed members once.
+
+    A member close-out retires only that member's lanes. The run calls this
+    after every member has closed.
+    """
+    from yoke_core.domain.terminal_lane_cleanup import (
+        item_lane_checkout,
+        sweep_managed_lanes,
+    )
+
+    def _emit(message: str, **_kw: Any) -> None:
+        print(message, file=sys.stderr, flush=True)
+
+    seen: set[tuple[str, str]] = set()
+    warnings: list[str] = []
+    for public_ref in public_refs:
+        item, refusal = _closed_item(public_ref)
+        if refusal or not item:
+            continue
+        resolved = item_lane_checkout(item)
+        if resolved is None:
+            continue
+        root, target = resolved
+        key = (str(root), target)
+        if key in seen:
+            continue
+        seen.add(key)
+        found, _payload = sweep_managed_lanes(repo_root=root, target=target, emit=_emit)
+        warnings.extend(found)
+    return warnings
 
 
 def run_closed_member_effects(
@@ -289,4 +325,5 @@ __all__ = [
     "prepare_member_close",
     "run_closed_member_effects",
     "stage_member_close",
+    "sweep_closed_member_checkouts",
 ]

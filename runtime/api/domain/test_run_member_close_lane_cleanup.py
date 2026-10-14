@@ -1,8 +1,9 @@
-"""A deployment run's member close-out retires the member's lanes.
+"""A deployment run's member close-out retires that member's own lanes.
 
 Run settlement closes members without a session, so terminal lane cleanup
 reads the closed item itself: its project names this machine's checkout and
-target branch, and its lane rows name what to retire. A lane cleanup could
+target branch, and its lane rows name what to retire. After every member
+closes, the run sweeps each distinct checkout once. A lane cleanup could
 not retire is printed on the run's output with the recovery that frees it,
 and never holds the run.
 """
@@ -27,7 +28,6 @@ from yoke_core.domain.item_worktrees import record_item_worktree
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.workflow_behavior import LANE_IMPLEMENTATION
 from yoke_core.domain.worktree_capacity import DOCTOR_RETIRE_RECIPE
-from yoke_core.engines.merge_worktree_safe_prune import WorktreeSweep
 
 
 def _member_lanes(conn: Any, checkout: Path) -> dict[str, int]:
@@ -60,12 +60,14 @@ def _wire_cleanup(
         calls["pruned"].append((branch, target))
         return preserved
 
-    def _sweep(*, repo_root: str, target: str, **_kw) -> WorktreeSweep:
-        calls["swept"].append((repo_root, target))
-        return WorktreeSweep()
+    def _sweep(**kwargs) -> tuple[tuple[str, ...], dict[str, Any]]:
+        calls["swept"].append((str(kwargs["repo_root"]), kwargs["target"]))
+        return (), {}
 
     def _cleanup(item, **kwargs):
-        return real_cleanup(item, **kwargs, prune=_prune, sweep=_sweep)
+        return real_cleanup(item, **kwargs, prune=_prune)
+
+    monkeypatch.setattr(terminal_lane_cleanup, "sweep_managed_lanes", _sweep)
 
     monkeypatch.setattr(
         terminal_lane_cleanup,
@@ -76,7 +78,7 @@ def _wire_cleanup(
     return calls
 
 
-def test_run_close_out_retires_each_member_lane_and_sweeps(
+def test_run_close_out_retires_each_member_lane_and_sweeps_once(
     test_db: Any, monkeypatch, tmp_path: Path
 ) -> None:
     _isolate_status_effects(monkeypatch)
@@ -88,8 +90,9 @@ def test_run_close_out_retires_each_member_lane_and_sweeps(
     assert cmd_update("run-lane-cleanup", "status", "succeeded") is None
 
     assert _run(test_db, "run-lane-cleanup") == ("succeeded", True)
+    assert len(MEMBERS) > 1
     assert sorted(calls["pruned"]) == sorted((branch, "main") for branch in lanes)
-    assert calls["swept"] == [(str(tmp_path.resolve()), "main")] * len(MEMBERS)
+    assert calls["swept"] == [(str(tmp_path.resolve()), "main")]
 
 
 def test_a_preserved_lane_is_printed_on_the_run_output(
