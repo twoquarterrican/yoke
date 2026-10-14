@@ -1,8 +1,8 @@
 """Enforce committed touch coverage at the pinned merge boundary.
 
 Before landing, use open claims and the registered lane's committed diff.
-After landing, released coverage remains evidence for the recorded merge's
-first-parent diff. Rework selects fresh open coverage and a new lane head.
+After landing, released coverage remains evidence for the files the item's
+merge receipt recorded against the pre-landing target. Rework selects fresh open coverage and a new lane head.
 
 Unreadable claims, unresolved lanes or integration refs refuse by name and
 teach recovery. An item that declared no claims has no boundary to enforce.

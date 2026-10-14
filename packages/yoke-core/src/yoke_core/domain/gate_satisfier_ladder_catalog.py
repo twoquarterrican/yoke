@@ -54,8 +54,9 @@ PATH_CLAIM_BOUNDARY_LADDER = SatisfierLadder(
         SatisfierRung(
             rung_id="landed_merge",
             summary=(
-                "diff of the item's recorded landing merge against its first "
-                "parent — exactly what landed, fixed once it lands"
+                "files the item's merge receipt recorded for its newest landing, "
+                "changed against the target as it stood before landing — fixed "
+                "once it lands"
             ),
             requires=(OBSERVED_LANDED_MERGE,),
         ),

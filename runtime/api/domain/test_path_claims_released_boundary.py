@@ -5,7 +5,7 @@ from contextlib import closing
 
 from runtime.api.domain.test_path_claims_landed_boundary import (
     _claim,
-    _land_and_move_main,
+    _land_by_merge,
     _commit_in_worktree,
     project_repo,
     real_db,
@@ -21,7 +21,7 @@ from yoke_core.domain.path_claims_landing import release_landed_claims
 def test_released_coverage_still_rejects_undeclared_landed_files(project_repo, real_db):
     _claim(real_db, "covered.py")
     _commit_in_worktree(project_repo, name="undeclared.py")
-    _land_and_move_main(project_repo, real_db)
+    _land_by_merge(project_repo, real_db)
     with closing(connect_test_db(real_db)) as connection:
         released = release_landed_claims(connection, item_id=7777)
         connection.commit()

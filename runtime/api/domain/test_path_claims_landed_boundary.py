@@ -1,17 +1,17 @@
 # ruff: noqa: F401, F811 -- imported pytest fixtures are intentionally re-exported.
-"""The boundary gate proves a landed item from its merge, not the moving head.
+"""The boundary gate proves a landed item from its receipt, not the moving head.
 
-A recorded landing fixes what the item put on its target: the merge's diff
-against its first parent. These cases land a path-claimed item, move the
-target on past it, and ask the gate again with no lane, the way a hosted
-control plane does at close-out.
+A recorded landing fixes what the item put on its target: the files its
+merge receipt recorded against the target as it stood before the landing.
+These cases land a path-claimed item, move the target on past it, and ask
+the gate again with no lane, the way a hosted control plane does at
+close-out. The fast-forward case is the one a first-parent diff gets wrong.
 """
 
 from __future__ import annotations
 
 import json
 from contextlib import closing
-from types import SimpleNamespace
 
 import pytest
 
@@ -28,13 +28,15 @@ from runtime.api.domain.test_path_claims_gate_boundary import (
 )
 from runtime.api.fixtures.file_test_db import connect_test_db
 from yoke_core.domain import path_claims_landed_boundary as landed
-from yoke_core.domain import path_claims_landed_boundary_github as landed_github
+from yoke_core.domain import standalone_item_merge_git as merge_git
 from yoke_core.domain.gate_satisfier_stamp import read_rungs
 from yoke_core.domain.item_landings import ItemLanding, append_landing
+from yoke_core.domain.item_merge_receipt_document import record_entry
 from yoke_core.domain.path_claim_boundary_gate_proof import BoundaryProofError
 from yoke_core.domain.path_claims import register
 from yoke_core.domain.path_claims_gate_boundary import check_boundary_for_item
-from yoke_core.domain.project_github_auth import MissingCapability
+
+LANE = "YOK-7777"
 
 
 def _claim(real_db, *paths: str) -> None:
@@ -51,15 +53,28 @@ def _claim(real_db, *paths: str) -> None:
         conn.commit()
 
 
-def _land_and_move_main(project_repo, real_db, *, lane_head: str = "") -> str:
-    """Merge the lane into main, advance main past it, retire the lane."""
-    candidate = _git(project_repo / ".worktrees" / "YOK-7777", "rev-parse", "HEAD")
-    _git(project_repo, "merge", "-q", "--no-ff", "YOK-7777", "-m", "land YOK-7777")
-    merge_sha = _git(project_repo, "rev-parse", "HEAD")
-    (project_repo / "later.txt").write_text("someone else's landing\n")
-    _git(project_repo, "add", "later.txt")
-    _git(project_repo, "commit", "-q", "-m", "main moves on")
-    _git(project_repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+def _main_gains(project_repo, name: str) -> None:
+    """Someone else's work lands on main."""
+    (project_repo / name).write_text("someone else's landing\n")
+    _git(project_repo, "add", name)
+    _git(project_repo, "commit", "-q", "-m", f"main gains {name}")
+
+
+def _record_receipt(real_db, *, commit_sha: str, touched=None) -> None:
+    """The merge boundary's pre-landing receipt write."""
+    with closing(connect_test_db(real_db)) as conn:
+        record_entry(
+            conn,
+            item_id=7777,
+            branch=LANE,
+            target="main",
+            commit_sha=commit_sha,
+            touched_files=touched or (),
+        )
+        conn.commit()
+
+
+def _record_landing(real_db, *, merge_sha: str, candidate: str, route: str) -> None:
     with closing(connect_test_db(real_db)) as conn:
         append_landing(
             conn,
@@ -67,51 +82,33 @@ def _land_and_move_main(project_repo, real_db, *, lane_head: str = "") -> str:
                 item_id=7777,
                 merge_sha=merge_sha,
                 candidate_sha=candidate,
-                pr_number="1",
+                pr_number="1" if route == "merge_queue" else "",
                 target_branch="main",
-                route="merge_queue",
+                route=route,
                 landed_at="2026-10-10T14:57:49Z",
             ),
         )
         # The swept lane is re-registered with no path and no head.
         conn.execute(
-            "UPDATE item_worktrees SET path = NULL, commit_sha = %s "
-            "WHERE item_id = 7777",
-            (lane_head or None,),
+            "UPDATE item_worktrees SET path = NULL, commit_sha = NULL "
+            "WHERE item_id = 7777"
         )
         conn.commit()
-    return merge_sha
 
 
-def _fake_github(project_repo, monkeypatch, *, files=None) -> list:
-    """Serve the commit endpoint's paged file list for a merge."""
-    calls: list = []
-
-    def _rest_get(path, *, token, query=None):
-        calls.append((path, dict(query or {})))
-        sha = path.rsplit("/", 1)[-1]
-        parent = _git(project_repo, "rev-parse", f"{sha}^1")
-        listed = files
-        if listed is None:
-            names = _git(project_repo, "diff", "--name-only", f"{parent}..{sha}")
-            listed = [
-                {"filename": name, "status": "modified"} for name in names.splitlines()
-            ]
-        size = int((query or {}).get("per_page", 30))
-        start = (int((query or {}).get("page", 1)) - 1) * size
-        return {
-            "sha": sha,
-            "parents": [{"sha": parent}],
-            "files": listed[start : start + size],
-        }
-
-    monkeypatch.setattr(
-        "yoke_core.domain.project_github_auth.resolve_project_github_auth",
-        lambda *_a, **_k: SimpleNamespace(repo="test/test", token="t"),
+def _land_by_merge(project_repo, real_db, *, receipt: bool = True) -> str:
+    """Merge the lane into main with a merge commit, then move main on."""
+    candidate = _git(project_repo / ".worktrees" / LANE, "rev-parse", "HEAD")
+    if receipt:
+        observed = merge_git.changed_files(str(project_repo), candidate, "main")
+        _record_receipt(real_db, commit_sha=candidate, touched=observed)
+    _git(project_repo, "merge", "-q", "--no-ff", LANE, "-m", f"land {LANE}")
+    merge_sha = _git(project_repo, "rev-parse", "HEAD")
+    _main_gains(project_repo, "later.txt")
+    _record_landing(
+        real_db, merge_sha=merge_sha, candidate=candidate, route="merge_queue"
     )
-    monkeypatch.setattr("yoke_core.domain.github_actions_rest.rest_get", _rest_get)
-    monkeypatch.setattr(landed, "_local_checkouts", lambda *_a: [])
-    return calls
+    return merge_sha
 
 
 def _gate(real_db, target_status: str = "release"):
@@ -120,33 +117,54 @@ def _gate(real_db, target_status: str = "release"):
     )
 
 
-def test_hosted_close_out_proves_landed_item_after_main_moved(
-    project_repo, real_db, monkeypatch
-):
-    _claim(real_db, "src/foo.py")
-    _commit_in_worktree(project_repo, name="foo.py")
-    merge_sha = _land_and_move_main(project_repo, real_db)
-    calls = _fake_github(project_repo, monkeypatch)
-
-    assert _gate(real_db) is None
-    assert calls == [
-        (f"/repos/test/test/commits/{merge_sha}", {"per_page": "100", "page": "1"})
-    ]
+def _landed_fact(real_db) -> dict:
     with closing(connect_test_db(real_db)) as conn:
         stamp = read_rungs(conn, 7777)[0]
     assert stamp["rung_id"] == landed.LANDED_MERGE_RUNG
-    fact = json.loads(stamp["facts"]["observed:landed_merge"])
-    assert fact["merge_sha"] == merge_sha
-    assert fact["source"] == "github"
+    return json.loads(stamp["facts"]["observed:landed_merge"])
+
+
+def test_fast_forward_of_a_lane_that_merged_main_charges_only_its_own_files(
+    project_repo, real_db
+):
+    worktree = project_repo / ".worktrees" / LANE
+    _claim(real_db, "src/foo.py")
+    _commit_in_worktree(project_repo, name="foo.py")
+    _main_gains(project_repo, "synced.txt")
+    _git(worktree, "merge", "-q", "--no-ff", "main", "-m", "sync main")
+    tip = _git(worktree, "rev-parse", "HEAD")
+    observed = merge_git.changed_files(str(project_repo), tip, "main")
+    _record_receipt(real_db, commit_sha=tip, touched=observed)
+    _git(project_repo, "merge", "-q", "--ff-only", LANE)
+    first_parent_diff = _git(project_repo, "diff", "--name-only", f"{tip}^1", tip)
+    assert "synced.txt" in first_parent_diff.splitlines()
+    _main_gains(project_repo, "later.txt")
+    _record_landing(real_db, merge_sha=tip, candidate=tip, route="fast_forward")
+
+    assert _gate(real_db) is None
+    fact = _landed_fact(real_db)
+    assert fact["merge_sha"] == tip
+    assert fact["source"] == "merge_receipt"
     assert fact["touched_paths"] == ["src/foo.py"]
 
 
-def test_landed_file_outside_coverage_is_named(project_repo, real_db, monkeypatch):
+def test_merge_commit_landing_proves_the_same_files(project_repo, real_db):
+    _claim(real_db, "src/foo.py")
+    _commit_in_worktree(project_repo, name="foo.py")
+    merge_sha = _land_by_merge(project_repo, real_db)
+
+    assert _gate(real_db) is None
+    fact = _landed_fact(real_db)
+    assert fact["merge_sha"] == merge_sha
+    assert fact["touched_paths"] == ["src/foo.py"]
+    assert fact["receipt_branch"] == LANE
+
+
+def test_landed_file_outside_coverage_is_named(project_repo, real_db):
     _claim(real_db, "src/foo.py")
     _commit_in_worktree(project_repo, name="foo.py")
     _commit_in_worktree(project_repo, name="bar.py")
-    _land_and_move_main(project_repo, real_db)
-    _fake_github(project_repo, monkeypatch)
+    _land_by_merge(project_repo, real_db)
 
     result = _gate(real_db)
     assert result["error_code"] == "GATE_PATH_CLAIM_BOUNDARY"
@@ -154,104 +172,59 @@ def test_landed_file_outside_coverage_is_named(project_repo, real_db, monkeypatc
     assert "claims path widen" in result["error"]
 
 
-def test_local_checkout_holding_the_merge_answers_from_git(project_repo, real_db):
+def test_landing_without_a_receipt_is_a_named_refusal(project_repo, real_db):
     _claim(real_db, "src/foo.py")
     _commit_in_worktree(project_repo, name="foo.py")
-    _land_and_move_main(project_repo, real_db)
+    merge_sha = _land_by_merge(project_repo, real_db, receipt=False)
 
-    assert _gate(real_db) is None
-    with closing(connect_test_db(real_db)) as conn:
-        fact = json.loads(read_rungs(conn, 7777)[0]["facts"]["observed:landed_merge"])
-    assert fact["source"] == "git"
+    result = _gate(real_db)
+    assert result["error_code"] == "GATE_PATH_CLAIM_BOUNDARY"
+    assert "landed_boundary_receipt_missing" in result["error"]
+    assert merge_sha in result["error"]
+    assert "yoke merge item YOK-7777" in result["error"]
+    assert "yoke say --steering" in result["error"]
+
+
+def test_receipt_for_another_candidate_does_not_prove_the_landing(
+    project_repo, real_db
+):
+    _claim(real_db, "src/foo.py")
+    _commit_in_worktree(project_repo, name="foo.py")
+    _record_receipt(real_db, commit_sha="e" * 40, touched=["src/foo.py"])
+    _land_by_merge(project_repo, real_db, receipt=False)
+
+    result = _gate(real_db)
+    assert "landed_boundary_receipt_missing" in result["error"]
+
+
+def test_receipt_without_changed_files_is_a_named_refusal(project_repo, real_db):
+    _claim(real_db, "src/foo.py")
+    _commit_in_worktree(project_repo, name="foo.py")
+    candidate = _git(project_repo / ".worktrees" / LANE, "rev-parse", "HEAD")
+    _record_receipt(real_db, commit_sha=candidate)
+    _land_by_merge(project_repo, real_db, receipt=False)
+
+    result = _gate(real_db)
+    assert "landed_boundary_receipt_files_missing" in result["error"]
+    assert "re-records the receipt's changed files" in result["error"]
 
 
 def test_unlanded_rework_is_checked_from_the_lane(project_repo, real_db):
     _claim(real_db, "src/foo.py")
     _commit_in_worktree(project_repo, name="foo.py")
-    _land_and_move_main(project_repo, real_db, lane_head="f" * 40)
+    _land_by_merge(project_repo, real_db)
     with closing(connect_test_db(real_db)) as conn:
         conn.execute(
-            "UPDATE item_worktrees SET path = %s WHERE item_id = 7777",
-            (str(project_repo / ".worktrees" / "YOK-7777"),),
+            "UPDATE item_worktrees SET path = %s, commit_sha = %s WHERE item_id = 7777",
+            (str(project_repo / ".worktrees" / LANE), "f" * 40),
         )
         conn.commit()
+    _git(project_repo, "update-ref", "refs/remotes/origin/main", "HEAD")
     _commit_in_worktree(project_repo, name="bar.py")
 
     result = _gate(real_db, "reviewed-implementation")
     assert result["error_code"] == "GATE_PATH_CLAIM_BOUNDARY"
     assert "offending paths: src/bar.py" in result["error"]
-
-
-def test_no_checkout_and_no_github_is_a_named_refusal(
-    project_repo, real_db, monkeypatch
-):
-    _claim(real_db, "src/foo.py")
-    _commit_in_worktree(project_repo, name="foo.py")
-    merge_sha = _land_and_move_main(project_repo, real_db)
-
-    def _missing(*_a, **_k):
-        raise MissingCapability("yoke", "no GitHub capability")
-
-    monkeypatch.setattr(
-        "yoke_core.domain.project_github_auth.resolve_project_github_auth", _missing
-    )
-    monkeypatch.setattr(landed, "_local_checkouts", lambda *_a: [])
-
-    result = _gate(real_db)
-    assert result["error_code"] == "GATE_PATH_CLAIM_BOUNDARY"
-    assert merge_sha in result["error"]
-    assert "fetch the integration target" in result["error"]
-    assert "re-run the same close-out" in result["error"]
-
-
-def test_merge_past_the_compare_cap_passes_with_its_full_list(
-    project_repo, real_db, monkeypatch
-):
-    """301 changed files page through in full; none is dropped at 300."""
-    paths = [f"src/f{index:03d}.py" for index in range(301)]
-    _claim(real_db, *paths)
-    _commit_in_worktree(project_repo, name="foo.py")
-    _land_and_move_main(project_repo, real_db)
-    listed = [{"filename": path, "status": "added"} for path in paths]
-    calls = _fake_github(project_repo, monkeypatch, files=listed)
-
-    assert _gate(real_db) is None
-    assert [query["page"] for _path, query in calls] == ["1", "2", "3", "4"]
-    with closing(connect_test_db(real_db)) as conn:
-        fact = json.loads(read_rungs(conn, 7777)[0]["facts"]["observed:landed_merge"])
-    assert fact["touched_paths"] == paths
-
-
-def test_file_past_the_compare_cap_outside_coverage_is_named(
-    project_repo, real_db, monkeypatch
-):
-    paths = [f"src/f{index:03d}.py" for index in range(301)]
-    _claim(real_db, *paths[:300])
-    _commit_in_worktree(project_repo, name="foo.py")
-    _land_and_move_main(project_repo, real_db)
-    listed = [{"filename": path, "status": "added"} for path in paths]
-    _fake_github(project_repo, monkeypatch, files=listed)
-
-    result = _gate(real_db)
-    assert result["error_code"] == "GATE_PATH_CLAIM_BOUNDARY"
-    assert "src/f300.py" in result["error"]
-
-
-def test_github_commit_file_ceiling_refuses_instead_of_passing(
-    project_repo, real_db, monkeypatch
-):
-    _claim(real_db, "src/foo.py")
-    _commit_in_worktree(project_repo, name="foo.py")
-    _land_and_move_main(project_repo, real_db)
-    capped = [{"filename": "src/foo.py", "status": "modified"}] * (
-        landed_github.GITHUB_COMMIT_FILE_LIMIT
-    )
-    _fake_github(project_repo, monkeypatch, files=capped)
-
-    result = _gate(real_db)
-    assert result["error_code"] == "GATE_PATH_CLAIM_BOUNDARY"
-    assert "3000-file ceiling" in result["error"]
-    assert "checkout has fetched the merge" in result["error"]
 
 
 def test_caller_proof_cannot_claim_the_landed_rung(project_repo, real_db):
