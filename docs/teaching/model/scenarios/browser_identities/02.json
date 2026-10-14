@@ -4,13 +4,13 @@
  "status": "observed",
  "audience": "both",
  "when": "Test needs authenticated behavior or more than one account",
- "need": "Declare personas and each target origin with signed-in probes in browser-control. Hosted signed-in missions set method_config.browser_identities, such as [\"operator\"]. Named identities select managed setup, verification and steps even without installing Yoke; expired sites return a human gate naming identity, site and account. API/CLI credentials stay separate.",
+ "need": "Declare personas and each target origin with signed-in probes in browser-control. A mission may set method_config.browser_identities, such as [\"operator\"]; its list wins. Otherwise dispatch supplies project identities covering the immutable target origin, and the walker picks the needed account. Selected identities use managed setup, verification and steps even without installing Yoke; expired sites return a human gate naming identity, site and account. API/CLI credentials stay separate.",
  "disclosure": "current cue",
  "surface": "Browser scenario method configuration → browser-identities reference.",
  "gap": "Live signed-in prod mission proof remains a release obligation.",
- "review": "Dispatch selection is covered for both mission executors, one or several identities, and missions without identities.",
+ "review": "Source regressions cover explicit case lists, project personas covering the target origin, uncovered sites, managed browser selection and public-bundle database forwarding.",
  "recipes": ["yoke projects capability-settings get --project P --cap-type browser-control --json", "yoke browser authorize --help"],
  "plan_notes": ["JOURNEYS row 13", "outside both"],
- "sources": ["docs/public/reference/browser-scenarios.md", "docs/public/reference/qa-platform/browser-identities.md", "packages/yoke-core/src/yoke_core/domain/agent_mission_review.py", "runtime/api/domain/test_agent_mission_browser_choice.py"],
+ "sources": ["docs/public/reference/browser-scenarios.md", "docs/public/reference/qa-platform/browser-identities.md", "packages/yoke-core/src/yoke_core/domain/agent_mission_review.py", "packages/yoke-core/src/yoke_core/domain/agent_mission_browser_identities.py", "runtime/api/domain/test_agent_mission_browser_choice.py"],
  "position": 1
 }
