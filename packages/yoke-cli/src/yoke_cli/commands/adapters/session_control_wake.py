@@ -40,9 +40,6 @@ def _write_wake_result(response: Any, stdout: TextIO, stderr: TextIO) -> None:
             ("WAKE COUNT", result.get("wake_attempt_count", 0)),
             ("LAST WAKE", result.get("last_wake_at")),
             ("EVIDENCE", json.dumps(evidence, sort_keys=True)),
-            # Cancelling somebody's envelope is never silent: the earlier
-            # wake stops existing here, and the row says which one.
-            ("RELEASED", " ".join(result.get("released_queued_wakes") or ()) or "none"),
             ("RECOVERY", result.get("recovery")),
         ),
         stdout,
@@ -64,10 +61,9 @@ def session_wake(args: List[str]) -> int:
             "A wake already moving refuses this one as `wake_in_flight`, "
             "naming the receipt and when to retry. A wake the plane was "
             "owed and never attempted is not moving: after the acknowledgement "
-            "grace period, this command cancels it as "
-            "superseded, reports it under RELEASED, and takes its own "
-            "route decision — so a queued receipt nothing will deliver "
-            "can no longer block every later wake for that session. A "
+            "grace period, it stops blocking a new wake. Its message remains "
+            "pending: this command never cancels another message's unread "
+            "content. Idempotent retries reuse only uncancelled receipts. A "
             "session whose pinned model would spend a published meter "
             "that is already at zero is refused as `meter_exhausted`, "
             "naming the meter, remaining quota, reset time, and that "
@@ -92,7 +88,7 @@ def session_wake(args: List[str]) -> int:
     parser.add_argument(
         "--idempotency-key",
         default=None,
-        help="Return the same wake receipt when this caller retries the same intent.",
+        help="Reuse the uncancelled receipt; retry a cancelled intent with a fresh message.",
     )
     add_session_arg(parser)
     add_json_arg(parser)

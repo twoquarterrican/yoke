@@ -66,6 +66,7 @@ def authorize_wake_versions(
     operation = wake_operation(
         str(candidate.get("wake_mode") or ""),
         str(candidate.get("liveness") or ""),
+        surface,
     )
     if operation is None:
         return None, None

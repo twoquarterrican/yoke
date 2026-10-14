@@ -58,10 +58,11 @@ def create_session_control_tables(conn: Any) -> None:
         );
         CREATE UNIQUE INDEX IF NOT EXISTS idx_session_messages_sender_dedupe
             ON session_messages(sender_actor_id, idempotency_key)
-            WHERE idempotency_key IS NOT NULL;
+            WHERE idempotency_key IS NOT NULL AND cancelled_at IS NULL;
         CREATE UNIQUE INDEX IF NOT EXISTS idx_session_messages_engine_dedupe
             ON session_messages(idempotency_key)
-            WHERE sender_actor_id IS NULL AND idempotency_key IS NOT NULL;
+            WHERE sender_actor_id IS NULL AND idempotency_key IS NOT NULL
+                AND cancelled_at IS NULL;
         CREATE INDEX IF NOT EXISTS idx_session_messages_created
             ON session_messages(created_at);
 
@@ -141,6 +142,10 @@ def create_session_control_tables(conn: Any) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_session_message_attempts_recipient
             ON session_message_attempts(message_id, target_session_id, started_at);
+        CREATE INDEX IF NOT EXISTS idx_session_message_attempts_message
+            ON session_message_attempts(message_id);
+        CREATE INDEX IF NOT EXISTS idx_session_message_attempts_target_session
+            ON session_message_attempts(target_session_id);
 
         CREATE TABLE IF NOT EXISTS session_launches (
             launch_id TEXT PRIMARY KEY,

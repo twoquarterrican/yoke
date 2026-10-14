@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import re
 from functools import lru_cache
+from itertools import islice
 from yoke_core.engines.doctor_parallel_reads import bounded_read_map
 from pathlib import Path
 
@@ -130,7 +131,17 @@ def _read_scan_file(path: Path):
 
 def _read_scan_files(repo_root: Path):
     """Overlap filesystem latency without changing path or finding order."""
-    yield from bounded_read_map(_read_scan_file, _iter_scan_paths(repo_root))
+    paths = iter(_iter_scan_paths(repo_root))
+
+    def groups():
+        while group := tuple(islice(paths, 32)):
+            yield group
+
+    def read_group(group):
+        return [_read_scan_file(path) for path in group]
+
+    for group in bounded_read_map(read_group, groups()):
+        yield from group
 
 
 def scan_repo(repo_root: Path) -> list[str]:

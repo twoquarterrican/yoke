@@ -331,7 +331,7 @@ def test_private_versions_use_floors_and_malformed_versions_fail_closed() -> Non
     assert wake_versions_supported(
         "codex-cli", "0.148.0a15", "0.148.0a15", "waiting", "active"
     )
-    assert not wake_versions_supported(
+    assert wake_versions_supported(
         "codex-cli", "0.148.0a15", "0.148.0a15", "idle_timeout", "stale"
     )
     assert wake_versions_supported(

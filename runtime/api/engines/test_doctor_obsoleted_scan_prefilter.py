@@ -68,3 +68,36 @@ def test_literal_anchor_characters_keep_the_whole_file_gate(source):
 )
 def test_line_context_after_a_class_or_comment_keeps_the_line_scan(source):
     assert _whole_text_gate(source) is None
+
+
+@pytest.mark.parametrize("suffix", [r"\b", ""])
+def test_noncapturing_literal_choices_skip_absent_files(suffix):
+    source = r"\b(?:retired_key|former_key)" + suffix
+    required = scan._required_candidate(re.compile(source))
+    assert required is not None
+    present = required_test(required)
+    assert present("set retired_key here")
+    assert present("set former_key_extended here")
+    assert not present("set current_key here")
+
+
+def test_empty_noncapturing_choice_keeps_every_candidate():
+    assert scan._required_candidate(re.compile(r"\b(?:retired_key|)\b")) is None
+
+
+def test_grouped_reads_keep_every_path_in_order(tmp_path, monkeypatch):
+    paths = [tmp_path / str(index) for index in range(70)]
+    monkeypatch.setattr(scan, "_iter_scan_paths", lambda root: iter(paths))
+    monkeypatch.setattr(scan, "_read_scan_file", lambda path: (path, path.name))
+    sizes = []
+
+    def mapped(method, groups):
+        for group in groups:
+            sizes.append(len(group))
+            yield method(group)
+
+    monkeypatch.setattr(scan, "bounded_read_map", mapped)
+    assert list(scan._read_scan_files(tmp_path)) == [
+        (path, path.name) for path in paths
+    ]
+    assert sizes == [32, 32, 6]

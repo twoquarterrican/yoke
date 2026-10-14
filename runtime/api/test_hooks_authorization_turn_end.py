@@ -15,7 +15,7 @@ from runtime.api.domain.test_session_native_turn_end import (
     _codex_connection,
     _posture,
     _send,
-    _stuck,
+    _pending,
 )
 from yoke_core.domain.session_message_wake import wake_eligible_recipients
 
@@ -82,7 +82,7 @@ def test_clean_rollout_recovers_a_denied_stop_and_routes_next_message_to_resume(
     from yoke_contracts.timestamps import format_instant
 
     conn = _codex_connection()
-    assert _stuck(conn) == [{"session_id": "s2", "executor_surface": "codex-cli"}]
+    assert _pending(conn) == [{"session_id": "s2", "executor_surface": "codex-cli"}]
     day = tmp_path / "2026" / "08" / "22"
     day.mkdir(parents=True)
     (day / "rollout-2026-08-22T16-00-00-s2.jsonl").write_text(

@@ -1,16 +1,13 @@
-"""A queued wake nothing attempted must not refuse the next wake forever."""
-
-from __future__ import annotations
+"""Manual retries preserve every pending envelope whose content they do not carry."""
 
 from datetime import timedelta
 
-from yoke_core.domain.session_manual_wake import (
-    QUEUED_WAKE_RELEASE_REASON,
-    request_session_wake,
-)
+import pytest
+
+from yoke_core.domain.session_manual_wake import request_session_wake
 from yoke_core.domain.session_message_service import send_message
 from yoke_core.domain.session_message_store import message_details
-from yoke_core.domain.session_wake_idempotency import stale_queued_wakes
+from yoke_core.domain.session_message_types import SessionMessageError
 from yoke_contracts.session_control.models import RecipientSelector
 from runtime.api.domain.test_session_message_support import (
     ACK_GRACE,
@@ -22,74 +19,69 @@ from runtime.api.domain.test_session_message_support import (
 PAST_THE_WINDOW = NOW + ACK_GRACE + timedelta(seconds=1)
 
 
-def _queued_wake(conn, *, idempotency_key: str = "first-wake") -> dict:
+def _wake(conn, *, key, now=NOW, prompt=None):
     return request_session_wake(
         conn,
         actor_id=10,
         caller_session_id=None,
         session_id="s2",
         public_ref=None,
-        prompt=None,
-        idempotency_key=idempotency_key,
-        now=NOW,
+        prompt=prompt,
+        idempotency_key=key,
+        now=now,
     )
 
 
-def test_unattempted_queued_wake_past_its_window_is_released_for_a_retry() -> None:
+def test_unattempted_stale_wake_stops_blocking_but_keeps_its_content():
     conn = message_connection()
-    first = _queued_wake(conn)
-
-    second = request_session_wake(
-        conn,
-        actor_id=10,
-        caller_session_id=None,
-        session_id="s2",
-        public_ref=None,
-        prompt=None,
-        idempotency_key="second-wake",
-        now=PAST_THE_WINDOW,
+    first = _wake(
+        conn, key="first-wake", prompt="The deployment QA action is still owed."
     )
-
+    second = _wake(conn, key="second-wake", now=PAST_THE_WINDOW)
     assert second["message_id"] != first["message_id"]
-    assert second["released_queued_wakes"] == [first["message_id"]]
-    released = message_details(conn, first["message_id"])
-    assert released["cancelled_at"]
-    assert released["cancellation_reason"] == QUEUED_WAKE_RELEASE_REASON
-    assert released["recipients"][0]["state"] == "cancelled"
+    original = message_details(conn, first["message_id"])
+    assert original["cancelled_at"] is None
+    assert original["recipients"][0]["state"] == "pending"
+    assert original["body"] == "The deployment QA action is still owed."
 
 
-def test_queued_wake_inside_its_window_is_still_in_flight() -> None:
+def test_queued_wake_inside_grace_still_blocks_another_native_resume():
     conn = message_connection()
-    first = _queued_wake(conn)
-
-    stale = stale_queued_wakes(
-        conn,
-        session_id="s2",
-        now=NOW + ACK_GRACE - timedelta(seconds=1),
-        grace_seconds=int(ACK_GRACE.total_seconds()),
-    )
-
-    assert stale == []
-    assert not message_details(conn, first["message_id"])["cancelled_at"]
+    first = _wake(conn, key="first-wake")
+    with pytest.raises(SessionMessageError, match="wake_queued") as error:
+        _wake(conn, key="second-wake", now=NOW + ACK_GRACE - timedelta(seconds=1))
+    assert error.value.code == "wake_in_flight"
+    assert message_details(conn, first["message_id"])["cancelled_at"] is None
 
 
-def test_an_ordinary_envelope_is_never_released_as_a_stale_wake() -> None:
+def test_manual_wake_preserves_an_ordinary_pending_envelope():
     conn = message_connection()
-    send_message(
+    original = send_message(
         conn,
-        message_id="11111111-1111-4111-8111-111111111111",
         actor_id=10,
         sender_session_id=None,
         selector=RecipientSelector(session_ids=["s2"]),
         body="Stage notice for the release.",
         now=NOW,
     )
-
-    stale = stale_queued_wakes(
-        conn,
-        session_id="s2",
-        now=PAST_THE_WINDOW,
-        grace_seconds=int(ACK_GRACE.total_seconds()),
+    _wake(conn, key="new-wake", now=PAST_THE_WINDOW)
+    assert (
+        message_details(conn, original["message_id"])["recipients"][0]["state"]
+        == "pending"
     )
 
-    assert stale == []
+
+def test_cancelled_explicit_intent_gets_a_fresh_receipt_on_retry():
+    from yoke_core.domain.session_message_receipts import cancel_message
+
+    conn = message_connection()
+    first = _wake(conn, key="same-intent")
+    cancel_message(conn, message_id=first["message_id"], actor_id=10, now=NOW)
+    second = _wake(conn, key="same-intent", now=PAST_THE_WINDOW)
+    assert second["message_id"] != first["message_id"]
+    assert second["deduplicated"] is False
+    assert message_details(conn, first["message_id"])["cancelled_at"] is not None
+    assert (
+        _wake(conn, key="same-intent", now=PAST_THE_WINDOW)["message_id"]
+        == second["message_id"]
+    )

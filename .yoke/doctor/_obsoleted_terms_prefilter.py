@@ -93,7 +93,7 @@ def _required_candidate(pattern):
         suffix = _required_literal_prefix(tail) if tail is not None else ""
         if suffix:
             return re.compile(re.escape(suffix), pattern.flags)
-    choice = re.fullmatch(r"\\b\(([A-Za-z0-9_|]+)\)\\b", source)
+    choice = re.fullmatch(r"\\b\((?:\?:)?([A-Za-z0-9_|]+)\)(?:\\b)?", source)
     if choice:
         words = choice.group(1).split("|")
         if all(words):
@@ -164,4 +164,7 @@ def required_test(required):
     if required.flags & re.IGNORECASE:
         folded = [literal.lower() for literal in literals]
         return lambda text: any(literal in text.lower() for literal in folded)
+    if len(literals) == 1:
+        literal = literals[0]
+        return lambda text: literal in text
     return lambda text: any(literal in text for literal in literals)

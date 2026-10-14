@@ -14,12 +14,9 @@ session, so the one operator move that could recover the session is the one
 move the deadlock blocks. One such receipt held a machine's worth of workers
 unreachable until the message aged out.
 
-So being queued buys a bounded wait, not an unbounded one. Inside the
-project's wake acknowledgement grace window a queued explicit receipt still
-blocks, because an attempt is genuinely owed and about to be made. Past that
-window it is stale rather than in flight: :func:`stale_queued_wakes` names it
-so the caller can release it and try again, and :func:`recent_wake_blocker`
-stops counting it as a reason to refuse.
+A queued receipt blocks only inside the wake acknowledgement grace window.
+After that it stops blocking a new native wake, while its content remains
+pending for delivery. Retry never cancels another message's envelope.
 """
 
 from __future__ import annotations
@@ -91,38 +88,6 @@ def _receipt_facts(
     }
 
 
-def stale_queued_wakes(
-    conn: Any,
-    *,
-    session_id: str,
-    now: datetime,
-    grace_seconds: int,
-    exclude_message_id: str | None = None,
-) -> list[dict[str, Any]]:
-    """Explicit wake receipts whose attempt was owed and never made.
-
-    The window is the same acknowledgement grace a live attempt is given,
-    counted from the envelope's own creation: after it, the delivery plane
-    has had its chance and a receipt still at zero attempts is not one more
-    poll away. Returning it is not a verdict on why — the caller releases it
-    and asks for a fresh wake, and whatever refused the first attempt refuses
-    that one by name, with its own recovery, instead of silently blocking.
-    """
-    now = parse_instant(now)
-    window = timedelta(seconds=max(0, int(grace_seconds)))
-    stale: list[dict[str, Any]] = []
-    for row in _open_receipts(conn, session_id=session_id, now=now):
-        if str(row["message_id"]) == exclude_message_id:
-            continue
-        if not _queued_explicit(row):
-            continue
-        created = parse_timestamp(row.get("created_at"))
-        if created is None or created + window > now:
-            continue
-        stale.append(_receipt_facts(row, reason=WAKE_QUEUED_REASON, retry_at=None))
-    return stale
-
-
 def recent_wake_blocker(
     conn: Any,
     *,
@@ -138,8 +103,7 @@ def recent_wake_blocker(
     deduplicate. New explicit requests also treat an older still-pending
     queued explicit receipt as in flight, closing the gap before a relay
     has claimed it -- but only inside ``grace_seconds`` of that envelope's
-    creation, after which :func:`stale_queued_wakes` owns it and this
-    returns nothing for it. An already-injected receipt is delivered, not
+    creation, after which this returns nothing for it without cancelling it. An already-injected receipt is delivered, not
     queued, even when it is unacknowledged and has no native wake attempt.
     A writer must hold the target harness-session row lock across this read
     and its insert; :func:`request_session_wake` does so.
@@ -168,4 +132,4 @@ def recent_wake_blocker(
     return None
 
 
-__all__ = ["WAKE_QUEUED_REASON", "recent_wake_blocker", "stale_queued_wakes"]
+__all__ = ["WAKE_QUEUED_REASON", "recent_wake_blocker"]

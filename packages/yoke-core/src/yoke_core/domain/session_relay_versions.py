@@ -2,7 +2,10 @@
 
 from typing import Mapping
 
-from yoke_contracts.session_control.capabilities import native_wake_supported
+from yoke_contracts.session_control.capabilities import (
+    capability_for_surface,
+    native_wake_supported,
+)
 from yoke_contracts.session_control.surface_versions import (
     machine_wake_surface,
     surface_operation_supported,
@@ -17,16 +20,17 @@ _WAKE_OPERATION_BY_LIVENESS = {
 }
 
 
-def wake_operation(wake_mode: str, liveness: str) -> str | None:
+def wake_operation(wake_mode: str, liveness: str, surface: str) -> str | None:
     try:
         mode = WakeMode(wake_mode)
     except ValueError:
         return None
-    return (
-        "message_stopped"
-        if mode is WakeMode.WAITING
-        else _WAKE_OPERATION_BY_LIVENESS.get(liveness)
-    )
+    if mode is WakeMode.WAITING:
+        return "message_stopped"
+    capability = capability_for_surface(surface)
+    if liveness == "stale" and capability and capability.message_idle == "none":
+        return "message_stopped"
+    return _WAKE_OPERATION_BY_LIVENESS.get(liveness)
 
 
 def wake_versions_supported(
@@ -36,7 +40,7 @@ def wake_versions_supported(
     wake_mode: str,
     liveness: str,
 ) -> bool:
-    operation = wake_operation(wake_mode, liveness)
+    operation = wake_operation(wake_mode, liveness, surface)
     return bool(
         operation
         and native_wake_supported(surface)
@@ -77,6 +81,7 @@ def wake_execution_surface(
     operation = wake_operation(
         str(candidate.get("wake_mode") or ""),
         str(candidate.get("liveness") or ""),
+        surface,
     )
     if operation is None:
         return None

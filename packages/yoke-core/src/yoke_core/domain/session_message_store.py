@@ -43,15 +43,16 @@ def begin_message_mutation(conn: Any) -> None:
         conn.execute("BEGIN IMMEDIATE")
 
 
-def _idempotent_message(
+def idempotent_message(
     conn: Any, *, sender_actor_id: int | None, idempotency_key: str
 ) -> dict[str, Any] | None:
+    """Read the uncancelled message reserving this sender intent key."""
     marker = _p(conn)
     engine = sender_actor_id is None
     row = conn.execute(
         "SELECT message_id FROM session_messages WHERE sender_actor_id "
         + ("IS NULL" if engine else f"={marker}")
-        + f" AND idempotency_key={marker}",
+        + f" AND idempotency_key={marker} AND cancelled_at IS NULL",
         (idempotency_key,) if engine else (sender_actor_id, idempotency_key),
     ).fetchone()
     return message_details(conn, str(row[0])) if row else None
@@ -106,7 +107,7 @@ def insert_message(
     selector_json = json.dumps(selector_snapshot, sort_keys=True, separators=(",", ":"))
     digest = body_sha256(body)
     if idempotency_key:
-        existing = _idempotent_message(
+        existing = idempotent_message(
             conn,
             sender_actor_id=sender_actor_id,
             idempotency_key=idempotency_key,
@@ -145,7 +146,7 @@ def insert_message(
     if not inserted.rowcount:
         if not idempotency_key:
             raise SessionMessageError("message_conflict", "message id collision")
-        existing = _idempotent_message(
+        existing = idempotent_message(
             conn,
             sender_actor_id=sender_actor_id,
             idempotency_key=idempotency_key,
@@ -330,6 +331,7 @@ __all__ = [
     "body_sha256",
     "cancel_message_rows",
     "cancel_open_recipients",
+    "idempotent_message",
     "insert_message",
     "list_message_ids",
     "message_details",
