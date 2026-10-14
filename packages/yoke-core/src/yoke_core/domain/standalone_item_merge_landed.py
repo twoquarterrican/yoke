@@ -30,14 +30,12 @@ change. The mismatch refusal preserves the lane when the item is
 already closed out, or when the pinned workflow declares no release
 wait. Do not reset unlanded corrections.
 
-Rebasing after a landing is neither of those, and it is the case sha reads
-cannot see: the base holds the work, the lane holds new shas for the same
-patches, and calling that new work sends close-out off to publish the lane
-and open a second pull request for a merge that already happened. The same
-is true of extra lane commits that reached the base under a *different*
-item's landing. So a head the base does not contain is asked one further
-question — by content rather than by sha, and only once a recorded merge is
-confirmed on the base — see :func:`_replayed_base_ref`.
+Rebasing after a landing is neither, and sha reads cannot see it: the base
+holds the work under other shas, as it does extra lane commits that reached
+the base under another item's landing. Calling that new work would publish
+the lane for a merge that already happened. So a head the base does not
+contain is asked one further question, by content and only once a recorded
+merge is on the base: see :func:`replayed_base_ref`.
 
 What a landed lane then owes its item is a separate concern, owned by
 :mod:`yoke_core.domain.standalone_item_merge_converge`.
@@ -140,7 +138,10 @@ def replayed_base_ref(
 
 
 def base_holds(
-    repo_root: str, candidate: str, target: str, receipt: Optional[receipts.MergeReceipt]
+    repo_root: str,
+    candidate: str,
+    target: str,
+    receipt: Optional[receipts.MergeReceipt],
 ) -> bool:
     """Whether the base already carries ``candidate``, by sha or by content."""
     if git.containing_ref(repo_root, candidate, target):
@@ -152,31 +153,30 @@ def _recorded_describes(
     repo_root: str,
     containing: str,
     recorded: Optional[receipts.MergeReceipt],
+    candidate: str,
     candidate_merge: str,
 ) -> bool:
     """Whether the recorded receipt speaks for the landing in hand.
 
-    The receipt is preferred because a lane fast-forwarded onto the base
-    points at the merge commit rather than at the work, and a rebased copy
-    holds shas the base never saw; in both the candidate names no landing
-    merge of its own and the receipt is the only identity there is.
-
-    A lane that landed twice is what that preference gets wrong: the
-    superseded candidate is equally on the base under a merge of its own,
-    so the receipt describes a landing this close-out already replaced.
-    A candidate that names a merge therefore keeps the receipt only when
-    the receipt landed under that same merge.
+    A lane fast-forwarded onto the base points at the merge commit, and a
+    rebased copy holds shas the base never saw; neither names a landing merge
+    of its own, so the receipt is the identity. A lane that landed twice is
+    what that gets wrong. A candidate naming a merge keeps the receipt only
+    under that same merge; one naming none only as the receipt's own commit
+    or merge, or a patch-identical copy of its commit.
     """
     if recorded is None or not recorded.commit_sha:
         return False
     if not git.is_ancestor(repo_root, recorded.commit_sha, containing):
         return False
-    if not candidate_merge:
+    if candidate_merge:
+        return (
+            receipts.landing_merge_commit(repo_root, containing, recorded.commit_sha)
+            == candidate_merge
+        )
+    if norm(candidate) in {norm(recorded.commit_sha), norm(recorded.merge_sha)} - {""}:
         return True
-    return (
-        receipts.landing_merge_commit(repo_root, containing, recorded.commit_sha)
-        == candidate_merge
-    )
+    return git.unlanded_commits(repo_root, candidate, recorded.commit_sha) == ()
 
 
 def _describe(
@@ -198,10 +198,10 @@ def _describe(
     the same landing.
     """
     recorded = receipts.load(item_id, branch, target)
-    candidate_merge = receipts.landing_merge_commit(
-        repo_root, containing, landed_sha
-    )
-    if not _recorded_describes(repo_root, containing, recorded, candidate_merge):
+    candidate_merge = receipts.landing_merge_commit(repo_root, containing, landed_sha)
+    if not _recorded_describes(
+        repo_root, containing, recorded, landed_sha, candidate_merge
+    ):
         recorded = None
     commit_sha = landed_sha
     if recorded is not None and recorded.commit_sha:
@@ -273,6 +273,9 @@ def landed_lane(
         )
         if not containing and not replayed and norm(head) not in identities:
             return None
+        if replayed and (own := git.containing_ref(repo_root, recorded, target)):
+            # A rebased copy names no merge; the recorded candidate it copies does.
+            head, containing, replayed = recorded, own, ""
         return _describe(
             item_id=item_id,
             branch=branch,
@@ -292,11 +295,8 @@ def landed_lane(
     head = str(recorded_head or "").strip()
     if head:
         # The recorded candidate answers on its own, exactly as the live
-        # branch does. Falling past it to the receipt's older shas is what
-        # let a branch name that had landed before report a NEW candidate as
-        # already merged: the item then carried an evidence record naming a
-        # merge that predates the work it describes, and advanced on a
-        # candidate nothing had landed.
+        # branch does. Falling past it to the receipt's older shas let a
+        # branch name that had landed before report a NEW candidate as merged.
         containing = git.containing_ref(repo_root, head, target)
         replayed = (
             "" if containing else replayed_base_ref(repo_root, head, target, receipt)

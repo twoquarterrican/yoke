@@ -37,9 +37,11 @@ steering seat for restaffing.
 
 Before recording a landing, the merge boundary fetches the remote default
 branch and requires it to contain the exact candidate commit. The recorded
-merge SHA is the item's own merged PR commit reported by GitHub, verified
-against that fetched branch. A later target push cannot become the item's
-landing. Local merges record the merge that first carried the candidate, or
+merge SHA is the merge on that fetched branch's first-parent history that
+first carried the candidate: the item's own pull request merge. A merge-queue
+batch's merge commit is the train's tip, so in a multi-PR batch it names the
+last member's merge and never stands in for another member's landing. A later
+target push cannot become the item's landing either. Local merges record the merge that first carried the candidate, or
 the candidate itself for a fast forward. A failed fetch or missing candidate
 returns a named refusal, retains the lane, and leaves the item before landing.
 Repair routing or remote access and re-enter the same governed merge command.

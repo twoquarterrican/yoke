@@ -166,7 +166,8 @@ def _landing_merge(ctx: MergeContext, commit_sha: str, state: dict) -> str:
     also carries. Everything on the base has a merge that carried it, so an
     earlier candidate answers accurately for an earlier landing — and a
     correction relanded on the same lane would be pointed back at the
-    landing it replaced.
+    landing it replaced. A queue batch's merge commit is the train's tip,
+    not this member's own merge, so it never stands in for this answer.
     """
     if not ctx.repo_root or not commit_sha:
         return ""
@@ -272,10 +273,7 @@ def record_landing(
 
     try:
         landing_sha = verified_landing_identity(
-            ctx.repo_root,
-            remote_sha,
-            candidate_sha or commit_sha,
-            batch.merge_sha if batch else landing_sha,
+            ctx.repo_root, remote_sha, candidate_sha or commit_sha, landing_sha
         )
     except LandingUnverified as exc:
         return QueueCloseOut(receipt_error=str(exc))
@@ -291,7 +289,7 @@ def record_landing(
     stamp_error = stamp_merged_at(
         item_id,
         repo_root=ctx.repo_root or "",
-        merge_sha=landing_sha or (batch.merge_sha if batch else receipt_commit),
+        merge_sha=landing_sha,
     )
     if stamp_error:
         warnings.append(f"merged_at not recorded: {stamp_error}")

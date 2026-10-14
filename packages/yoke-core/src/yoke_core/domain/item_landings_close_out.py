@@ -1,11 +1,13 @@
 """Describing the landing close-out is finishing, and recording it.
 
-Close-out already has to say which lane it is closing: either the landed-lane
-path's answer, for a base branch that already holds the work, or one built
-from the merge that just ran. Both routes to the base branch — the merge queue
-and the standalone engine — arrive here with that identity resolved, and this
-is the only place they both pass through, so it is the one writer of the
-item's landing history. A second writer anywhere else could disagree with what
+Close-out already has to say which lane it is closing, and the merge outcome
+is that answer: the convergence on a base branch that already holds the work
+and the merge that just ran both resolve it. The landed-lane read taken before
+convergence is not, because it can still name an earlier landing that a
+rebased lane replaced. Both routes to the base branch — the merge queue and
+the standalone engine — arrive here with that identity resolved, and this is
+the only place they both pass through, so it is the one writer of the item's
+landing history. A second writer anywhere else could disagree with what
 close-out believes it landed.
 
 The append is idempotent on the landing identity, so a close-out re-entered
@@ -23,7 +25,7 @@ from yoke_core.domain.public_item_target import public_item_target
 
 from datetime import datetime
 from yoke_contracts.timestamps import utc_now, parse_instant, format_instant
-from typing import Any, Optional
+from typing import Any
 
 from yoke_core.api.service_client_structured_api_adapter import call_dispatcher
 from yoke_core.domain import standalone_item_merge_git as git
@@ -95,7 +97,6 @@ def close_out_lane(
     branch: str,
     target: str,
     repo_root: str,
-    landed_lane: Optional[LandedLane],
     outcome: Any,
     queue_pr_number: str = "",
     queue_landed_at: datetime | str | None = None,
@@ -105,7 +106,7 @@ def close_out_lane(
     Returns the lane and an advisory note, empty when the landing was
     recorded or was already on the item's history.
     """
-    lane = landed_lane or LandedLane(
+    lane = LandedLane(
         branch=branch,
         target=target,
         commit_sha=outcome.commit_sha,

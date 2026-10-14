@@ -59,6 +59,7 @@ def _dispatch(record):
 
 def _wire(monkeypatch, *, merge_sha: str):
     recorded: dict = {}
+    monkeypatch.setattr(close_out_mod, "_landing_merge", lambda *_a: merge_sha)
     monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_landing_identity",
         lambda _repo, _target, candidate, reported="": reported or candidate,
