@@ -5,11 +5,15 @@ from __future__ import annotations
 from yoke_contracts.machine_config.directories import create_private_directory
 
 from contextlib import contextmanager
-import fcntl
 import os
 from pathlib import Path
 import time
 from typing import Iterator
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 from yoke_cli.config.session_relay_instance import (
     PROD_RELAY_STATE_DIR_NAME,
@@ -20,6 +24,35 @@ from yoke_cli.config.session_relay_instance import (
 RELAY_STATE_DIR_NAME = PROD_RELAY_STATE_DIR_NAME
 RELAY_LOCK_FILE_NAME = "serve-once.lock"
 RELAY_NEXT_POLL_FILE_NAME = "next-poll-at"
+
+
+def _try_lock(descriptor: int) -> bool:
+    """Take one process-shared byte without waiting."""
+    if os.name != "nt":
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        return True
+
+    # ``msvcrt.locking`` locks bytes from the current file position.  Keep a
+    # real byte in the file so Windows can enforce the range across processes.
+    if os.fstat(descriptor).st_size < 1:
+        os.write(descriptor, b"\0")
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    try:
+        msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+    except OSError:
+        return False
+    return True
+
+
+def _unlock(descriptor: int) -> None:
+    if os.name != "nt":
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+        return
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
 
 
 def relay_state_dir() -> Path:
@@ -45,15 +78,11 @@ def relay_run_lock(
     descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
     acquired = False
     try:
-        try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            acquired = True
-        except BlockingIOError:
-            pass
+        acquired = _try_lock(descriptor)
         yield acquired
     finally:
         if acquired:
-            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            _unlock(descriptor)
         os.close(descriptor)
 
 
