@@ -40,6 +40,11 @@ PERMANENT_ROWS: Tuple[_Row, ...] = (
         "tools.atlas",
         REASON_TOOL_SHAPED,
     ),
+    _p(
+        "python3 -m yoke_core.domain.event_catalog_render",
+        "events.catalog",
+        REASON_TOOL_SHAPED,
+    ),
 )
 
 
