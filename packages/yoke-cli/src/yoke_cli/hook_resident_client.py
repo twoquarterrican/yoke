@@ -26,13 +26,9 @@ from yoke_contracts.hook_evaluator_protocol import (
 )
 
 
-# Total time this process may spend reaching a usable resident: connecting,
-# starting one, and re-trying after a restart handshake. An absolute
-# deadline imposed on every socket operation, not a loop-top glance.
 RESIDENT_CONNECT_GRACE_SECONDS = 2.0
 _CONNECT_ATTEMPT_SECONDS = 0.1
 _START_RETRY_SECONDS = 0.025
-# The floor a legitimate evaluation keeps however much the grace spent.
 _MINIMUM_RESULT_SECONDS = 1.0
 _SOCKET_PATH_LIMIT_BYTES = 100
 
@@ -82,7 +78,7 @@ def resident_paths() -> ResidentPaths:
     if len(os.fsencode(candidate)) > _SOCKET_PATH_LIMIT_BYTES:
         digest = hashlib.sha256(os.fsencode(state_dir)).hexdigest()[:16]
         candidate = Path(tempfile.gettempdir()) / (
-            f"yoke-hook-{os.getuid()}-{digest}.sock"
+            f"yoke-hook-{getattr(os, 'getuid', lambda: 0)()}-{digest}.sock"
         )
     return ResidentPaths(
         state_dir=state_dir,
@@ -90,6 +86,11 @@ def resident_paths() -> ResidentPaths:
         lock=state_dir / "evaluator.lock",
         log=state_dir / "evaluator.log",
     )
+
+
+def resident_transport_available() -> bool:
+    """Return whether this Python runtime can host the resident transport."""
+    return hasattr(socket, "AF_UNIX")
 
 
 def _result_ceiling_seconds(environment: dict[str, str]) -> float:
@@ -106,13 +107,7 @@ def _result_timeout_seconds(
     environment: dict[str, str],
     client_started_monotonic: float | None,
 ) -> float:
-    """Bound the response wait by what is left of the hook's total budget.
-
-    A legitimate evaluation still gets its intended deadline — at send
-    time a healthy hook has spent milliseconds. What this removes is the
-    case where connect retries burn the grace and a full ceiling then
-    starts counting from there, so one call could outlast its own budget.
-    """
+    """Bound the response wait while retaining a floor for real evaluation."""
     ceiling = _result_ceiling_seconds(environment)
     if client_started_monotonic is None:
         return ceiling
@@ -294,6 +289,12 @@ def evaluate_with_resident(
 ) -> ResidentEvaluation:
     """Evaluate through the resident or raise a named fallback reason."""
     paths = resident_paths()
+    if not resident_transport_available():
+        raise ResidentUnavailable(
+            "YOKE_HOOK_RESIDENT_UNSUPPORTED",
+            "Unix-domain socket transport is unavailable on this platform",
+            log_path=paths.log,
+        )
     request = _request(event_name, stdin_data, dry_run, client_timing_id)
     started = time.monotonic()
     deadline = started + RESIDENT_CONNECT_GRACE_SECONDS
@@ -339,7 +340,6 @@ def evaluate_with_resident(
         resident_wait_ms=waited_ms(),
     )
 
-
 __all__ = [
     "RESIDENT_CONNECT_GRACE_SECONDS",
     "ResidentEvaluation",
@@ -347,4 +347,5 @@ __all__ = [
     "ResidentUnavailable",
     "evaluate_with_resident",
     "resident_paths",
+    "resident_transport_available",
 ]

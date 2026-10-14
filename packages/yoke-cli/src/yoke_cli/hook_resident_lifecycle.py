@@ -73,6 +73,8 @@ def _resident_processes(paths: client.ResidentPaths) -> list[tuple[int, str]]:
 
 def stop_resident(paths: client.ResidentPaths | None = None) -> None:
     """Signal only proven residents and wait for process exit and lock release."""
+    if not client.resident_transport_available():
+        return
     paths = paths or client.resident_paths()
     residents = _resident_processes(paths)
     for pid, started in residents:
@@ -109,6 +111,12 @@ def stop_resident(paths: client.ResidentPaths | None = None) -> None:
 def restart_resident() -> None:
     """Restart even a same-version install; a dry evaluation proves readiness."""
     paths = client.resident_paths()
+    if not client.resident_transport_available():
+        raise _failure(
+            "YOKE_HOOK_RESIDENT_UNSUPPORTED",
+            "Unix-domain socket transport is unavailable on this platform",
+            paths,
+        )
     lock_fd = os.open(paths.state_dir / "lifecycle.lock", os.O_CREAT | os.O_RDWR, 0o600)
     try:
         try:

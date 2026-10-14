@@ -45,6 +45,8 @@ def claim_fallback_warning(state_dir: Path) -> bool:
 
 def resident_revision_problem(socket_path: Path, expected: str) -> str:
     """Read loaded identity without evaluating hooks or restarting the process."""
+    if not hasattr(socket, "AF_UNIX"):
+        return "YOKE_HOOK_RESIDENT_UNSUPPORTED: Unix-domain sockets unavailable"
     from yoke_contracts.hook_evaluator_protocol import receive_frame, send_frame
     from yoke_contracts.hook_evaluator_protocol import HookEvaluatorProtocolError
 
