@@ -93,7 +93,7 @@ def _required_candidate(pattern):
         suffix = _required_literal_prefix(tail) if tail is not None else ""
         if suffix:
             return re.compile(re.escape(suffix), pattern.flags)
-    choice = re.fullmatch(r"\\b\(([A-Za-z0-9_|]+)\)\\b", source)
+    choice = re.fullmatch(r"\\b\((?:\?:)?([A-Za-z0-9_|]+)\)(?:\\b)?", source)
     if choice:
         words = choice.group(1).split("|")
         if all(words):
