@@ -48,6 +48,16 @@ class LocalHostControlSubmission:
             path.unlink(missing_ok=True)
 
 
+def _row(name: str, result: HostActionResult) -> dict[str, Any]:
+    """Name one check row; evidence never overrides the row's name or verdict.
+
+    Nested receipts carry their own ``ok`` flag. Letting one overwrite the
+    row's turned a failed reset into a passing row with an error code, which the
+    server refuses without ever showing what failed on the host.
+    """
+    return {**result.evidence, "name": name, "ok": result.ok}
+
+
 def run_verification_sequence(
     *,
     checks: Sequence[tuple[str, Callable[[], HostActionResult]]],
@@ -70,7 +80,7 @@ def run_verification_sequence(
             recorded.append({"name": name, "ok": False})
             error_code = error_code or f"{name}_failed"
         else:
-            recorded.append({"name": name, "ok": result.ok, **result.evidence})
+            recorded.append(_row(name, result))
             if result.ok:
                 continue
             error_code = error_code or result.error_code or f"{name}_failed"
@@ -78,7 +88,7 @@ def run_verification_sequence(
             return recorded, error_code
     for name, reach in baselines:
         baseline = reach()
-        recorded.append({"name": name, "ok": baseline.ok, **baseline.evidence})
+        recorded.append(_row(name, baseline))
         if not baseline.ok:
             error_code = error_code or baseline.error_code
             break
@@ -110,7 +120,7 @@ def _single_row(
     str | None,
 ]:
     return (
-        [{"name": name, "ok": result.ok, **result.evidence}],
+        [_row(name, result)],
         None if result.ok else (result.error_code or f"{name}_failed"),
     )
 

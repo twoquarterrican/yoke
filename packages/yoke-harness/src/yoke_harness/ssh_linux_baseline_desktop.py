@@ -62,7 +62,7 @@ def prove_capture_roundtrip(
         ("restored_probes", lambda: prove_linux_probes(control, document)),
     ):
         result = action()
-        steps.append({"name": name, "ok": result.ok, **result.evidence})
+        steps.append({**result.evidence, "name": name, "ok": result.ok})
         if not result.ok:
             failed = (name, result)
             break
@@ -80,13 +80,13 @@ def prove_capture_roundtrip(
                 )
             steps.append(
                 {
-                    "name": "desktop_frame",
-                    "ok": frame.ok,
                     **{
                         k: v
                         for k, v in frame.evidence.items()
                         if k != "capture_artifact"
                     },
+                    "name": "desktop_frame",
+                    "ok": frame.ok,
                 }
             )
             if frame.ok:
@@ -101,7 +101,7 @@ def prove_capture_roundtrip(
                 failed = ("desktop_frame", frame)
         finally:
             stopped = end_desktop(control)
-            steps.append({"name": "desktop_end", "ok": stopped.ok, **stopped.evidence})
+            steps.append({**stopped.evidence, "name": "desktop_end", "ok": stopped.ok})
             if not stopped.ok and failed is None:
                 failed = ("desktop_end", stopped)
     evidence["roundtrip_checks"] = steps

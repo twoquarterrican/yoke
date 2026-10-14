@@ -38,6 +38,7 @@ from yoke_contracts.test_machine_verification_surfaces import verification_surfa
 from yoke_core.domain import db_helpers
 from yoke_core.domain.handlers.machine_qa import _failure, _invalid
 from yoke_core.domain.handlers.machine_qa_operation_result import (
+    submission_refusal,
     validate_operation_result,
 )
 from yoke_core.domain.machine_qa_capability import TestMachineCapabilityError
@@ -321,7 +322,7 @@ def handle_operation_submit(request: FunctionCallRequest) -> HandlerOutcome:
         ValueError,
     ) as exc:
         conn.rollback()
-        return _failure("test_machine_operation_submit_failed", str(exc))
+        return submission_refusal(parsed, exc)
     except Exception:
         conn.rollback()
         raise

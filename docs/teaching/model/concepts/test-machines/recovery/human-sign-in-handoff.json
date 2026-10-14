@@ -1,7 +1,8 @@
 {
  "id": "human-sign-in-handoff",
  "title": "Human sign-in handoff",
- "status": "draft-copy",
+ "status": "observed",
  "page": "test-machines",
- "position": 3
+ "position": 3,
+ "summary": "After the operator completes a sign-in on a test machine, save it at once with golden-capture, which proves the real requests and recaptures the baseline. Every standard probe failure's recovery names that command."
 }

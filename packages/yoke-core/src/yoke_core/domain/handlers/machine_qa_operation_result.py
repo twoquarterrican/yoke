@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+from yoke_contracts.api.function_call import FunctionError, HandlerOutcome
 from yoke_contracts.machine_qa_execution import (
     BRIDGE_DIAGNOSE_OPERATION,
     GOLDEN_CAPTURE_OPERATION,
@@ -145,4 +146,56 @@ def validate_operation_result(
     ensure_secret_free_result(parsed.model_dump(mode="json"))
 
 
-__all__ = ["validate_operation_result"]
+def _named(row: Mapping[str, Any], key: str) -> str | None:
+    """Return a row's own text field, else one nested step's (a reset nests its probes).
+
+    Only secret-free text is echoed: the receipt may be refused for carrying
+    private material, and the refusal must not repeat it.
+    """
+    for value in (row, *(v for v in row.values() if isinstance(v, Mapping))):
+        text = value.get(key)
+        if isinstance(text, str) and text.strip():
+            try:
+                ensure_secret_free_result(text)
+            except ValueError:
+                return None
+            return text
+    return None
+
+
+def submission_refusal(parsed: Any, exc: Exception) -> HandlerOutcome:
+    """Refuse a receipt while still naming what the host itself reported.
+
+    A refused receipt is not recorded, so this message is the only place the
+    operator sees the host's failure; dropping it leaves a reset that failed
+    for a reason nobody can read.
+    """
+    rows = [row for row in parsed.checks if isinstance(row, Mapping)]
+    # The failed row, else the only evidence there is: a refused receipt may
+    # be one whose rows all claim to pass.
+    failed = next((row for row in rows if row.get("ok") is not True), None) or (
+        rows[0] if rows else {}
+    )
+    reported = parsed.error_code or _named(failed, "reason")
+    detail = _named(failed, "reason") or _named(failed, "detail")
+    message = f"{parsed.operation} receipt refused: {exc}"
+    if reported:
+        message += f"; the host reported {reported}"
+        if detail and detail != reported:
+            message += f" ({detail})"
+    return HandlerOutcome(
+        primary_success=False,
+        error=FunctionError(
+            code="test_machine_operation_submit_failed",
+            message=message,
+            jsonpath="$.payload",
+            recovery_hint=_named(failed, "recovery")
+            or (
+                f"Repair the failure the host reported, then rerun `yoke test-machine "
+                f"{parsed.operation.replace('_', '-')}`; this receipt was not recorded."
+            ),
+        ),
+    )
+
+
+__all__ = ["submission_refusal", "validate_operation_result"]

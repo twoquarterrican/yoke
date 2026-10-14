@@ -22,6 +22,11 @@ from yoke_harness.ssh_mac_host_session_state import (
 from yoke_harness.test_machine_types import HostActionResult
 
 CHECKLIST = "docs/packs/machine-qa/host-provisioning.md"
+#: Saving a sign-in is a recapture: it proves the real requests, quits the apps
+#: holding sign-ins and seals a new baseline, so no later reset rolls it back.
+SAVE_BASELINE_COMMAND = (
+    "yoke test-machine golden-capture --project PROJECT --machine MACHINE"
+)
 RECOVERIES = {
     "Claude real request": "Sign in Claude with claude auth login in the test user's session.",
     "Codex real request": "Sign in Codex with codex login in the test user's session.",
@@ -48,7 +53,10 @@ def standard_probe_failure(name: str, exit_code: int) -> dict[str, str] | None:
     # The named step is the fix only when the program ran and reported the
     # state absent; a missing executable or a timeout has its own fix.
     if failure in (HARNESS_EXIT_NONZERO, CHECK_UNMET):
-        recovery = f"{step} Follow {CHECKLIST}, then retry capture/reset."
+        recovery = (
+            f"{step} Follow {CHECKLIST}, then save it at once with "
+            f"`{SAVE_BASELINE_COMMAND}`, which proves it and recaptures the baseline."
+        )
     else:
         recovery = f"{failure.recovery} See {CHECKLIST}."
     return failure_evidence(failure, name, recovery)

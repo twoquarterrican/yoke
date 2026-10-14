@@ -210,7 +210,9 @@ def test_success_seals_exactly_the_proven_default_document(monkeypatch, os_name)
         os=os_name,
         home="/Users/tester" if os_name == "macos" else "/home/tester",
         path_state=None,
-        run_remote_command=None,
+        run_remote_command=lambda *a, **kw: SimpleNamespace(
+            returncode=1, stdout="", stderr=""
+        ),
         run_command=lambda *a, **kw: SimpleNamespace(
             returncode=0, stdout="", stderr=""
         ),

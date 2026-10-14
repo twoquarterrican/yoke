@@ -29,6 +29,7 @@ from yoke_harness.ssh_mac_host_session_state import (
 from yoke_harness.ssh_mac_baseline_probes import prove_declared_probes
 from yoke_harness.ssh_mac_full_reset import execute_full_test_machine_reset
 from yoke_harness.ssh_mac_golden_capture import capture_golden_baseline
+from yoke_harness.ssh_mac_sign_in_apps import quit_sign_in_apps
 from yoke_harness.ssh_mac_terminal_bridge_diagnose import (
     diagnose_terminal_app_control,
 )
@@ -188,12 +189,18 @@ class SshMacTransport(SshTestMachineTransport):
 
     def reset_installer_test_host(self) -> HostActionResult:
         """Restore the declared golden baseline over the dedicated host's home."""
-        return execute_full_test_machine_reset(
+        quit_apps = quit_sign_in_apps(self._run, self._user)
+        if not quit_apps.ok:
+            return quit_apps
+        reset = execute_full_test_machine_reset(
             run_remote=self._run,
             upload_text=self.upload_remote_text,
             home=self.home,
             golden_baseline_path=self.golden_baseline_path,
             path_state=self.path_state,
+        )
+        return HostActionResult(
+            reset.ok, {**quit_apps.evidence, **reset.evidence}, reset.error_code
         )
 
     def prove_user_equivalent(self) -> HostActionResult:
