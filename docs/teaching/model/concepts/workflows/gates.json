@@ -5,5 +5,6 @@
  "commands": ["yoke advance implementation-entry", "yoke lifecycle skip record-recoverable-substrate", "yoke lifecycle transition", "yoke readiness check", "yoke readiness prd-validate", "yoke readiness repair-stale-count"],
  "functions": ["advance.preflight.file_budget", "advance.preflight.hard_blocks", "advance.preflight.spec_coverage", "gate_satisfier.rung.resolve", "lifecycle.skip.record_recoverable_substrate", "lifecycle.transition.execute", "readiness.check.run", "readiness.prd_validate.run", "readiness.repair_stale_count"],
  "page": "workflows",
+ "summary": "Stale-count repair refreshes numeric File Budget facts independently of readiness findings. Repair success records the write; rerun_verdict and rerun_issues report remaining gates, which still govern closure.",
  "position": 4
 }

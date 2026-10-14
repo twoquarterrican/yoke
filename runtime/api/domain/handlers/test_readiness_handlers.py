@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 
+import pytest
+
 from yoke_contracts.api.function_call import (
     ActorContext,
     FunctionCallRequest,
@@ -86,7 +88,9 @@ def test_readiness_check_reports_unperformed_checks_in_a_success_envelope(
         readiness,
         "_run_readiness",
         lambda item_id, observations=None: _readiness_payload(
-            "unavailable", "unavailable", unavailable=[_UNPERFORMED_CHECK],
+            "unavailable",
+            "unavailable",
+            unavailable=[_UNPERFORMED_CHECK],
         ),
     )
 
@@ -121,7 +125,9 @@ def test_repair_refuses_when_validation_was_not_performed(monkeypatch) -> None:
         readiness,
         "_run_readiness",
         lambda item_id, observations=None: _readiness_payload(
-            "unavailable", "unavailable", unavailable=[_UNPERFORMED_CHECK],
+            "unavailable",
+            "unavailable",
+            unavailable=[_UNPERFORMED_CHECK],
         ),
     )
 
@@ -142,12 +148,17 @@ def test_repair_refuses_when_validation_was_not_performed(monkeypatch) -> None:
     assert coverage.result_payload["unavailable_checks"] == [_UNPERFORMED_CHECK]
 
 
-def test_repair_stale_count_calls_domain_repair(monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "other_code", [None, "FILE_BUDGET_NOT_IN_CLAIM", "UNRESOLVED_FUNCTION"]
+)
+def test_repair_stale_count_calls_domain_repair(monkeypatch, other_code) -> None:
     monkeypatch.setattr(
         readiness,
         "_run_readiness",
         lambda item_id, observations=None: _readiness_payload(
-            "block", "pure_stale_count", issues=[_STALE_ISSUE],
+            "block",
+            "pure_stale_count" if other_code is None else "unrecoverable",
+            issues=[_STALE_ISSUE] + ([{"code": other_code}] if other_code else []),
         ),
     )
 
@@ -195,9 +206,7 @@ def test_required_gate_handler_evaluates_target_item(monkeypatch) -> None:
         },
     )
 
-    outcome = cpa.handle_required_gate(
-        _item_request("claims.path.required_gate")
-    )
+    outcome = cpa.handle_required_gate(_item_request("claims.path.required_gate"))
 
     assert outcome.primary_success is True
     assert outcome.result_payload == {
@@ -243,7 +252,8 @@ def test_activation_handler_resolves_item_actor_and_target(monkeypatch) -> None:
         activation_mod, "resolve_item_actor", lambda conn, item_id: (42, None)
     )
     monkeypatch.setattr(
-        activation_mod, "check_work_claim_ownership",
+        activation_mod,
+        "check_work_claim_ownership",
         lambda conn, *, item_id, session_id: None,
     )
 

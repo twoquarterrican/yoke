@@ -60,7 +60,8 @@ def _err(code: str, message: str) -> HandlerOutcome:
 
 
 def _unavailable_repair_payload(
-    item_id: int, readiness: Dict[str, Any],
+    item_id: int,
+    readiness: Dict[str, Any],
 ) -> Dict[str, Any]:
     """Refuse a repair the executing host cannot verify afterwards.
 
@@ -86,7 +87,8 @@ def _unavailable_repair_payload(
 
 
 def _reverification_request(
-    payload: Dict[str, Any], item_id: int,
+    payload: Dict[str, Any],
+    item_id: int,
 ) -> Dict[str, Any]:
     """Ask for a fresh reading when a repair's own re-run could not verify it.
 
@@ -111,7 +113,9 @@ def _reverification_request(
     conn = db_helpers.connect()
     try:
         payload["local_execution_request"] = build_local_execution_request(
-            conn, item_id, read_spec(conn, item_id),
+            conn,
+            item_id,
+            read_spec(conn, item_id),
         )
     finally:
         conn.close()
@@ -119,7 +123,8 @@ def _reverification_request(
 
 
 def _run_readiness(
-    item_id: int, local_observations: Optional[Dict[str, Any]] = None,
+    item_id: int,
+    local_observations: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Run every readiness check for one item and render its payload.
 
@@ -147,9 +152,7 @@ def _run_readiness(
         unavailable = outcome.unavailable_payloads()
         request = (
             build_local_execution_request(conn, item_id, read_spec(conn, item_id))
-            if any(
-                u["reason"] == CHECKOUT_UNAVAILABLE_REASON for u in unavailable
-            )
+            if any(u["reason"] == CHECKOUT_UNAVAILABLE_REASON for u in unavailable)
             else None
         )
     finally:
@@ -225,7 +228,6 @@ def handle_repair_stale_count(request: FunctionCallRequest) -> HandlerOutcome:
 
     from yoke_core.domain.idea_readiness_repair import (
         CLASS_PASS,
-        CLASS_PURE_STALE_COUNT,
         attempt_stale_count_repair,
     )
 
@@ -242,14 +244,14 @@ def handle_repair_stale_count(request: FunctionCallRequest) -> HandlerOutcome:
         }
     elif verdict == VERDICT_UNAVAILABLE:
         payload = _unavailable_repair_payload(item_id, readiness)
-    elif classification != CLASS_PURE_STALE_COUNT:
+    elif not any(issue.get("code") == "STALE_LINE_COUNT" for issue in issues):
         payload = {
             "success": False,
             "classification": classification,
             "item_id": item_id,
             "rerun_verdict": verdict,
             "rerun_issues": issues,
-            "error": "only pure stale-count handled by this repair",
+            "error": "no stale counts to refresh; resolve rerun_issues through refine",
         }
     else:
         payload = _reverification_request(

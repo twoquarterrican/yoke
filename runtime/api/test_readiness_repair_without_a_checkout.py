@@ -66,7 +66,10 @@ def _spec(recorded: int) -> str:
 @pytest.fixture
 def item(test_db):
     return insert_item(
-        test_db, id=_ITEM_ID, workflow_id="dash", status="idea",
+        test_db,
+        id=_ITEM_ID,
+        workflow_id="dash",
+        status="idea",
         spec=_spec(_RECORDED_LINES),
     )
 
@@ -80,13 +83,25 @@ def _checkout_with(root, lines: int):
     module = root / _BUDGET_PATH
     module.parent.mkdir(parents=True)
     module.write_text(
-        "def stream_rows():\n" + "    pass\n" * (lines - 1), encoding="utf-8",
+        "def stream_rows():\n" + "    pass\n" * (lines - 1),
+        encoding="utf-8",
     )
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
     subprocess.run(
-        ["git", "-C", str(root), "-c", "user.email=t@example.com",
-         "-c", "user.name=t", "commit", "-q", "-m", "seed"],
+        [
+            "git",
+            "-C",
+            str(root),
+            "-c",
+            "user.email=t@example.com",
+            "-c",
+            "user.name=t",
+            "commit",
+            "-q",
+            "-m",
+            "seed",
+        ],
         check=True,
     )
     return root
@@ -118,7 +133,9 @@ def quiet_body_sync():
     with (
         mock.patch.object(backlog_rendering, "_render_body", return_value=True),
         mock.patch.object(
-            backlog_rendering, "_sync_body", return_value=(True, "full"),
+            backlog_rendering,
+            "_sync_body",
+            return_value=(True, "full"),
         ),
         mock.patch.object(backlog_rendering, "_record_sync_failure"),
         mock.patch.object(idea_readiness_repair, "_emit_audit", return_value=True),
@@ -134,7 +151,11 @@ def _observe(conn, repo_root) -> dict:
 
 
 def test_a_stale_count_repair_runs_from_another_machines_reading(
-    test_db, item, hosted, observing_machine, quiet_body_sync,
+    test_db,
+    item,
+    hosted,
+    observing_machine,
+    quiet_body_sync,
 ) -> None:
     """The count written is the one the machine with the file reported."""
     observations = _observe(test_db, observing_machine)
@@ -152,7 +173,11 @@ def test_a_stale_count_repair_runs_from_another_machines_reading(
 
 
 def test_the_spec_write_unbinds_the_reading_that_drove_it(
-    test_db, item, hosted, observing_machine, quiet_body_sync,
+    test_db,
+    item,
+    hosted,
+    observing_machine,
+    quiet_body_sync,
 ) -> None:
     """So the repair reports unverified rather than claiming a pass.
 
@@ -170,11 +195,15 @@ def test_the_spec_write_unbinds_the_reading_that_drove_it(
     )
 
     assert repair.rerun_verdict == VERDICT_UNAVAILABLE
-    assert repair.success is False
+    assert repair.success is True
 
 
 def test_a_second_reading_completes_the_repair(
-    test_db, item, hosted, observing_machine, quiet_body_sync,
+    test_db,
+    item,
+    hosted,
+    observing_machine,
+    quiet_body_sync,
 ) -> None:
     """The round the caller runs next, which is what actually verifies it."""
     first = _observe(test_db, observing_machine)
@@ -192,19 +221,24 @@ def test_a_second_reading_completes_the_repair(
 
 
 def test_a_repair_with_no_reading_at_all_refuses(
-    test_db, item, hosted, quiet_body_sync,
+    test_db,
+    item,
+    hosted,
+    quiet_body_sync,
 ) -> None:
     """No checkout here and none reported: nothing to repair against."""
     repair = attempt_stale_count_repair(
         item_id=_ITEM_ID,
-        issues=[{
-            "code": "STALE_LINE_COUNT",
-            "context": {
-                "path": _BUDGET_PATH,
-                "recorded": _RECORDED_LINES,
-                "actual": _ACTUAL_LINES,
-            },
-        }],
+        issues=[
+            {
+                "code": "STALE_LINE_COUNT",
+                "context": {
+                    "path": _BUDGET_PATH,
+                    "recorded": _RECORDED_LINES,
+                    "actual": _ACTUAL_LINES,
+                },
+            }
+        ],
         observations=None,
     )
 
@@ -216,15 +250,21 @@ def _register_claim(conn, paths) -> int:
     actor = local_human(conn)
     target_ids = [seed_target(conn, path_string=p) for p in paths]
     claim_id = register(
-        conn, actor_id=actor, integration_target="main",
-        target_ids=target_ids, item_id=_ITEM_ID,
+        conn,
+        actor_id=actor,
+        integration_target="main",
+        target_ids=target_ids,
+        item_id=_ITEM_ID,
     )
     conn.commit()
     return claim_id
 
 
 def test_a_widen_succeeds_and_is_verified_by_the_same_reading(
-    test_db, item, hosted, agreeing_machine,
+    test_db,
+    item,
+    hosted,
+    agreeing_machine,
 ) -> None:
     """The case the hosted repair used to get wrong.
 
@@ -241,8 +281,9 @@ def test_a_widen_succeeds_and_is_verified_by_the_same_reading(
 
     repair = attempt_claim_coverage_repair(
         item_id=_ITEM_ID,
-        issues=[{"code": "FILE_BUDGET_NOT_IN_CLAIM",
-                 "context": {"path": _BUDGET_PATH}}],
+        issues=[
+            {"code": "FILE_BUDGET_NOT_IN_CLAIM", "context": {"path": _BUDGET_PATH}}
+        ],
         observations=observations,
     )
 
@@ -252,7 +293,9 @@ def test_a_widen_succeeds_and_is_verified_by_the_same_reading(
 
 
 def test_a_narrow_refuses_before_it_has_changed_anything(
-    test_db, item, hosted,
+    test_db,
+    item,
+    hosted,
 ) -> None:
     """Dropping a path needs a boundary proof that reads the worktree.
 
@@ -266,10 +309,14 @@ def test_a_narrow_refuses_before_it_has_changed_anything(
     repair = attempt_claim_coverage_repair(
         item_id=_ITEM_ID,
         issues=[
-            {"code": "FILE_BUDGET_NOT_IN_CLAIM",
-             "context": {"path": "packages/yoke-core/added.py"}},
-            {"code": "CLAIM_NOT_IN_FILE_BUDGET",
-             "context": {"path": "packages/yoke-core/stale.py"}},
+            {
+                "code": "FILE_BUDGET_NOT_IN_CLAIM",
+                "context": {"path": "packages/yoke-core/added.py"},
+            },
+            {
+                "code": "CLAIM_NOT_IN_FILE_BUDGET",
+                "context": {"path": "packages/yoke-core/stale.py"},
+            },
         ],
     )
 

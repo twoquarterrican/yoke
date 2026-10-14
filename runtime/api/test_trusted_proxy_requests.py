@@ -1,6 +1,7 @@
 """Real request consumers use Uvicorn's scheme/client trust boundary."""
 
 import hashlib
+from types import SimpleNamespace
 
 import pytest
 from fastapi import FastAPI, Request
@@ -293,6 +294,9 @@ def test_machine_budgets_use_trusted_clients_or_transport_peer(
     database, monkeypatch, peer, path, operation, setting
 ):
     monkeypatch.setattr(machine_authorization_limits, setting, 1)
+    monkeypatch.setattr(
+        machine_authorization_limits, "time", SimpleNamespace(time=lambda: 120)
+    )
     with serving_client(peer) as client:
         # Invalid bodies still consume admission, without needing an OIDC provider.
         assert client.post(path, json={}, headers=forwarded()).status_code == 400

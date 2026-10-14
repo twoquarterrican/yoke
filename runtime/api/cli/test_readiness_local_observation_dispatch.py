@@ -58,9 +58,10 @@ def _run(adapter, args, responses, observations):
             "yoke_cli.commands.adapters.readiness_local_compose.collect_observations",
             return_value=observations,
         ),
-        redirect_stdout(StringIO()),
+        redirect_stdout(output := StringIO()),
     ):
         adapter(args)
+    _run.output = output.getvalue()
     return calls
 
 
@@ -134,12 +135,7 @@ def test_the_repairs_take_the_same_route() -> None:
     assert calls[1]["payload"]["local_observations"] == _OBSERVATIONS
 
 
-def test_a_repair_that_asks_twice_is_answered_twice() -> None:
-    """A spec write unbinds the reading that drove it, so the host asks again.
-
-    Answering the second request is what verifies the repair; stopping
-    after one round would report a repair that worked as unverified.
-    """
+def test_written_counts_keep_receipt_when_fresh_readiness_blocks() -> None:
     refused = _response(
         {
             "success": False,
@@ -149,21 +145,32 @@ def test_a_repair_that_asks_twice_is_answered_twice() -> None:
     )
     applied = _response(
         {
-            "success": False,
+            "success": True,
+            "field_written": "spec",
+            "repaired_paths": [{"path": "module.py", "actual": 100}],
             "rerun_verdict": "unavailable",
             "local_execution_request": _REQUEST,
         }
     )
-    verified = _response({"success": True, "rerun_verdict": "pass"})
-
+    blocked = _response(
+        {"verdict": "block", "issues": [{"code": "FILE_BUDGET_NOT_IN_CLAIM"}]}
+    )
     calls = _run(
         readiness_repair_stale_count,
-        ["--item", "YOK-1800"],
-        [refused, applied, verified],
+        ["--item", _REQUEST["item_ref"], "--json"],
+        [refused, applied, blocked],
         _OBSERVATIONS,
     )
-
     assert len(calls) == 3
+    assert calls[2]["function_id"] == "readiness.check.run"
+    import json
+
+    result = json.loads(_run.output)["result"]
+    assert result["success"] is True
+    assert result["field_written"] == "spec"
+    assert result["repaired_paths"] == applied.result["repaired_paths"]
+    assert result["rerun_verdict"] == "block"
+    assert result["rerun_issues"] == blocked.result["issues"]
 
 
 def test_a_host_that_keeps_asking_does_not_spin() -> None:
