@@ -11,12 +11,12 @@ on a landed branch is completed as the interrupted removal it is.
 from __future__ import annotations
 
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
 
 from yoke_contracts import doctor_budget
-from yoke_core.domain.python_execution_deadline import run_bounded
 from yoke_core.engines import worktree_removal
 from yoke_core.engines.merge_landed_lane_cleanup import prune_landed_lane
 from yoke_core.engines.merge_worktree_cleanliness import assess_lane_residue
@@ -115,16 +115,15 @@ def test_an_expiring_check_deadline_cannot_cut_a_removal_short(lane, monkeypatch
     def git_as_the_deadline_passes(repo_root, *args):
         if "prune" in args:
             armed["deadline_passed"] = True
+            doctor_budget._deadline.set(time.monotonic() - 1)
         return real_git(repo_root, *args)
 
     monkeypatch.setattr(worktree_removal, "_git", git_as_the_deadline_passes)
 
-    def check():
-        if armed["deadline_passed"]:
-            raise doctor_budget.DoctorBudgetExhausted("doctor_check_budget_exhausted")
-
+    # The check reports its exhausted budget only once the removal returns.
     with pytest.raises(doctor_budget.DoctorBudgetExhausted):
-        run_bounded(lambda: remove_worktree(repo, path), check=check)
+        with doctor_budget.check_budget():
+            remove_worktree(repo, path)
 
     assert armed["deadline_passed"]
 
