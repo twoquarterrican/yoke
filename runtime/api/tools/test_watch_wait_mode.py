@@ -18,6 +18,7 @@ import pytest
 
 from yoke_contracts.harness_wake_capability import HarnessWakeCapability
 from yoke_harness.session_launch_handoff import LAUNCH_CONTEXT_ENV
+from yoke_core.domain.sessions_list_read import session_summary_result
 from yoke_core.tools import _watch_wait_mode
 from yoke_core.tools._watch_wait_mode import (
     HEADLESS_CONTINUATION_DIRECTIVE,
@@ -74,6 +75,15 @@ def test_native_idle_wake_selects_the_background_wait(
     assert mode.wake_mechanism == mechanism
     assert "agent_wake.idle_wake=supported" in mode.reason
     assert mechanism in mode.reason
+
+
+def test_summary_roster_row_carries_the_executor_the_selector_reads() -> None:
+    summary = session_summary_result(
+        [_session("claude-code", surface="claude-cli")], offset=0, limit=25
+    )
+    mode = wait_mode_for_session(summary["rows"][0])
+    assert summary["rows"][0]["executor"] == "claude-code"
+    assert mode.name == "background-wake"
 
 
 @pytest.mark.parametrize(

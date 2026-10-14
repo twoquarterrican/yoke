@@ -226,6 +226,7 @@ def session_summary_result(rows: list[dict], *, offset: int, limit: int | None) 
         "session_id",
         "actor_label",
         "project",
+        "executor",
         "executor_surface",
         "model",
         "execution_level",
