@@ -139,9 +139,9 @@ def test_plan_owned_grouped_requirement_materializes_ordered_plan_once(
     rows = test_db.execute(
         "SELECT plan_id,plan_case_key,host_baseline,case_position,baseline_position "
         "FROM qa_requirements WHERE deployment_run_id=%s "
-        "AND deployment_member_item_id IS NULL AND plan_id=%s "
+        "AND deployment_member_item_id=%s AND plan_id=%s "
         "ORDER BY case_position,baseline_position",
-        (run_id, plan_id),
+        (run_id, item_id, plan_id),
     ).fetchall()
     assert [tuple(row.values()) for row in rows] == [
         (plan_id, "grouped-inspection", "shell-preconfigured", 1, 1),

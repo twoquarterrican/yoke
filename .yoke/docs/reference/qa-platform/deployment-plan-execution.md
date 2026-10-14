@@ -14,6 +14,9 @@ owns the scope and target-binding contract.
 
 Members attaching the same post-deploy plan share its case rows and ordered
 execution when the plan id, source revision and observed execution target match.
+A plan only one run member attaches stays that member's private copy and keeps
+its `deployment_member_item_id`; a formed group stays shared until its last
+attaching member leaves.
 The shared target omits `deployment.member_item_id` and records
 `deployment.shared_plan`; the run and stage remain explicit. Each member waits
 only for its attached groups. A failing shared case blocks every attaching
