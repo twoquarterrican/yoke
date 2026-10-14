@@ -75,7 +75,10 @@ def claims_coordination_claim_acquire(args: List[str]) -> int:
             "Takes one shared-operation claim for this session. Deployment "
             "runs take none: a run occupies its target servers until its QA "
             "settles. Reserved qualification grants open only through "
-            "session-control."
+            "session-control. A refused QA_HOST:<machine> acquire joins that "
+            "host's waiting line and names its place; the next release "
+            "reserves the host for the oldest live waiter and wakes it to "
+            "rerun this same command, which takes the reserved turn."
         ),
     )
     parser.add_argument("--project", required=True, help="Project slug or id.")
@@ -122,7 +125,10 @@ def claims_coordination_claim_release(args: List[str]) -> int:
             "row id. This is the holder's own release; freeing a claim "
             "stranded by another session is the steering-seat "
             "`yoke coordination-claim release`, which records an "
-            "OperatorLeaseRelease event."
+            "OperatorLeaseRelease event. Releasing a QA_HOST:<machine> claim "
+            "reserves the host for the oldest live waiter in its line and "
+            "wakes that session; releasing a reserved turn you no longer "
+            "need passes it on."
         ),
     )
     parser.add_argument("--project", default=None, help="Project slug or id.")

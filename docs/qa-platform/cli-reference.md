@@ -109,10 +109,13 @@ to candidate source. For post-deploy source tests, run
 Candidate-bound cases export `YOKE_QA_CANDIDATE_TREE` as JSON with `root` and
 `head_sha`; source wrappers refuse switching to a different root. A leftover
 `QA_HOST:<machine>` claim is released by its holder with
-`yoke claims coordination-claim release --claim-id N --reason TEXT`.
-The holder may also use `yoke claims work release --claim-id N --reason TEXT`,
-including after the deployment run completes (permission follows the holding
-session's project; the scope names only the machine). Requirement reads and
+`yoke claims coordination-claim release --claim-id N --reason TEXT` or
+`yoke claims work release --claim-id N --reason TEXT`, including after the
+deployment run completes (permission follows the holding session's project;
+the scope names only the machine). Either release advances the host's waiting
+line: a refused `yoke claims coordination-claim acquire --key QA_HOST:<machine>`
+joins it beside queued plan executions, and each release reserves the host for
+the oldest live waiter and wakes that session with the command that takes it. Requirement reads and
 artifact uploads resolve the persisted member's project even after run
 membership ends; starting or reviewing stage QA still requires the active
 admitted subject. Its
