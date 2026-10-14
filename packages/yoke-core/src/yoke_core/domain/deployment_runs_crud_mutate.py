@@ -249,11 +249,10 @@ def cmd_update(
                     "UPDATE deployment_runs SET status=%s, completed_at=%s WHERE id=%s",
                     (value, instant_parameter(conn, completed_at), run_id),
                 )
-                from yoke_core.domain.deployment_run_carried_work import (
-                    record_carried_work,
-                )
-
                 if value == "succeeded":
+                    from yoke_core.domain.deployment_run_carried_work import (
+                        record_carried_work,
+                    )
                     from yoke_core.domain.environment_delivery_record import (
                         stamp_run_environment,
                     )
@@ -264,9 +263,10 @@ def cmd_update(
                     )
 
                     record_completed_run_delivery(conn, run_id=run_id)
-                # A terminal run keeps its answer, so no reader derives it; a
-                # transient failure on an unsuccessful run is left for a read.
-                record_carried_work(conn, run_id, permanent_only=value != "succeeded")
+                    # A delivered run keeps its answer, so no reader derives
+                    # it. A failed or cancelled run derives nothing under this
+                    # row lock; a read derives it if the freeze never did.
+                    record_carried_work(conn, run_id)
                 if value in {"failed", "cancelled"}:
                     from yoke_core.domain.qa_deployment_run_settlement import (
                         settle_unsuccessful_run,

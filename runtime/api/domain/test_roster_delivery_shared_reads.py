@@ -233,10 +233,7 @@ def test_one_candidate_opens_its_sources_once_for_many_commits() -> None:
             return False
 
     source = _Source()
-    walk = CandidateContainment.__new__(CandidateContainment)
-    walk._candidate = LINEAGE
-    walk._openers = (lambda: source,)
-    walk._opened = None
+    walk = CandidateContainment(None, 1, candidate_lineage=LINEAGE, source=source)
 
     verdicts = [walk.contains(sha) for sha in ("a" * 40, "b" * 40, "c" * 40)]
 

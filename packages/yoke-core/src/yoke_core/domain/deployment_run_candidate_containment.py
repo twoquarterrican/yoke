@@ -95,8 +95,12 @@ class CandidateContainment:
         *,
         candidate_lineage: str,
         source: Optional[CarriedWorkSource] = None,
+        contained_commits: frozenset[str] = frozenset(),
     ) -> None:
         self._candidate = str(candidate_lineage or "").strip()
+        # Commits already known to be on the candidate's line; see
+        # :mod:`deployment_run_candidate_range`. Asking a source is skipped.
+        self._contained = contained_commits
         self._openers = (
             (lambda: source,)
             if source is not None
@@ -123,6 +127,8 @@ class CandidateContainment:
         merge = str(commit_sha or "").strip()
         if not self._candidate or not merge:
             return _operands_missing()
+        if merge.lower() in self._contained:
+            return ContainmentVerdict(CONTAINED, source="candidate_range")
         refusals: list[tuple[str, str]] = []
         excluded: Optional[ContainmentVerdict] = None
         for entry in self._sources():

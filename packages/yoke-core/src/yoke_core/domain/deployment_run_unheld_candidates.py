@@ -60,6 +60,7 @@ from yoke_core.domain.delivery_landing_custody import (
     landing_custody,
     merged_open_items,
 )
+from yoke_core.domain.deployment_run_candidate_range import candidate_range_commits
 from yoke_core.domain.deployment_run_candidate_containment import (
     UNDETERMINED,
     CandidateContainment,
@@ -228,6 +229,25 @@ def held_candidate_ids(
     return (custody or resolve_candidate_custody(conn, run_id)).held_ids
 
 
+def _previous_release_lineage(conn: Any, run_id: str, project_id: int) -> str:
+    """What the preceding succeeded release shipped for this project."""
+    from yoke_core.domain.deployment_run_carried_work import previous_release_run
+    from yoke_core.domain.deployment_run_project_sources import (
+        recorded_source_sha,
+    )
+
+    row = conn.execute(
+        "SELECT project_id,target_environment_id FROM deployment_runs WHERE id=%s",
+        (run_id,),
+    ).fetchone()
+    if row is None:
+        return ""
+    previous = previous_release_run(conn, run_id, int(row[0]), row[1])
+    if previous is None:
+        return ""
+    return recorded_source_sha(dict(previous), int(project_id))
+
+
 def _project_custody(
     conn: Any, run_id: str, *, project_id: int, lineage: str
 ) -> tuple[set[int], list[HeldCandidate]]:
@@ -241,13 +261,26 @@ def _project_custody(
     deliverable = [item_id for item_id in deliverable if item_id in needed]
     if not deliverable:
         return set(), []
+    # One comparison since the previous release answers most landings; a
+    # holder pinned to this same lineage reuses it.
+    walker = CandidateContainment(
+        conn,
+        project_id,
+        candidate_lineage=lineage,
+        contained_commits=candidate_range_commits(
+            conn,
+            project_id,
+            base=_previous_release_lineage(conn, run_id, project_id),
+            candidate=lineage,
+        ),
+    )
     custody = landing_custody(
         conn,
         project_id=project_id,
         item_ids=deliverable,
         exclude_run_id=str(run_id),
+        candidates={lineage: walker},
     )
-    walker = CandidateContainment(conn, project_id, candidate_lineage=lineage)
     found: set[int] = set()
     held: list[HeldCandidate] = []
     for item_id in deliverable:

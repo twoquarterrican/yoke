@@ -302,19 +302,21 @@ def landing_custody(
     project_id: int,
     item_ids: Sequence[int],
     exclude_run_id: str = "",
+    candidates: dict[str, CandidateContainment] | None = None,
 ) -> dict[int, LandingCustody]:
     """Answer custody for every one of ``item_ids`` in one pass.
 
     Membership and landing receipts are batched. One comparison source per
     candidate serves every item; immutable definite answers survive requests.
     Excluding a run asks who OTHER than that run holds its members.
+    ``candidates`` seeds the per-lineage walkers a caller already built.
     """
     ids = [int(value) for value in item_ids]
     if not ids:
         return {}
     runs = _member_runs(conn, ids, exclude_run_id=str(exclude_run_id))
     shas = _landing_shas(conn, ids)
-    candidates: dict[str, CandidateContainment] = {}
+    candidates = dict(candidates or {})
     return {
         item_id: _custody_for(
             conn,
