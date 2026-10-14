@@ -57,7 +57,8 @@ def dispatch_tag_name(run_id: str) -> str:
 class DispatchTagEnsureRequest(BaseModel):
     repo: str = Field(..., min_length=3, description="GitHub repo slug (owner/name).")
     project: str = Field(
-        ..., min_length=1,
+        ...,
+        min_length=1,
         description="Project capability owning the GitHub App repo binding.",
     )
     tag: str = Field(..., pattern=_TAG_NAME.pattern)
@@ -94,7 +95,10 @@ def _settled(repo: str, tag: str, sha: str, existing: str) -> HandlerOutcome:
     if existing == sha:
         return HandlerOutcome(
             result_payload=DispatchTagEnsureResponse(
-                repo=repo, tag=tag, sha=sha, created=False,
+                repo=repo,
+                tag=tag,
+                sha=sha,
+                created=False,
             ).model_dump(),
             primary_success=True,
         )
@@ -151,7 +155,10 @@ def handle_dispatch_tag_ensure(request: FunctionCallRequest) -> HandlerOutcome:
 
     return HandlerOutcome(
         result_payload=DispatchTagEnsureResponse(
-            repo=repo, tag=tag, sha=sha, created=True,
+            repo=repo,
+            tag=tag,
+            sha=sha,
+            created=True,
         ).model_dump(),
         primary_success=True,
     )
@@ -176,6 +183,7 @@ REGISTRATIONS: List[Dict[str, Any]] = [
         ],
         "adapter_status": "live",
         "claim_required_kind": None,
+        "ambient_session_required": False,
         "minimum_serving_version": "next-release",
     },
 ]

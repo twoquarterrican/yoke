@@ -4,6 +4,6 @@
  "status": "observed",
  "page": "deployments",
  "position": 2,
- "summary": "Exact consumer proof dispatches an immutable tag at the bound consumer commit. A moving trunk cannot change the pair being checked.",
- "sources": ["runtime/api/tools/platform_consumer_dispatch_ref.py"]
+ "summary": "Required consumer proof currently dispatches main and refuses a verdict naming a different consumer commit. Immutable consumer-tag binding remains disabled until the control plane serves session-optional dispatch-tag creation.",
+ "sources": ["runtime/api/tools/require_platform_consumer_compatibility.py", "packages/yoke-core/src/yoke_core/domain/handlers/github_actions_dispatch_tag.py"]
 }

@@ -29,6 +29,14 @@ def _request(**overrides) -> FunctionCallRequest:
     )
 
 
+def test_dispatch_tag_creation_is_available_without_an_ambient_session() -> None:
+    registration = subject.REGISTRATIONS[0]
+    assert registration["function_id"] == subject.FUNCTION_ID
+    assert registration["ambient_session_required"] is False
+    assert registration["claim_required_kind"] is None
+    assert "project_auth_required" in registration["guardrails"]
+
+
 def _install(monkeypatch, *, refs: dict, commits: set[str], race: str = ""):
     """Fake GitHub: ``refs`` maps tag -> commit, ``commits`` the repo holds."""
     posts: list[dict] = []
@@ -36,7 +44,9 @@ def _install(monkeypatch, *, refs: dict, commits: set[str], race: str = ""):
         subject,
         "_validate_and_resolve",
         lambda request, model, function_id, required_permissions: (
-            model.model_validate(request.payload), "installation-token", None,
+            model.model_validate(request.payload),
+            "installation-token",
+            None,
         ),
     )
 
