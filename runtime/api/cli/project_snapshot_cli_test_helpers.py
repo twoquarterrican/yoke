@@ -13,7 +13,6 @@ from yoke_cli.main import main as cli_main
 from yoke_contracts.api.function_call import FunctionCallResponse
 
 CALLS: List[Dict[str, Any]] = []
-OVERSIZED_HTTPS_PAYLOAD_BYTES = 900_001
 
 
 def make_repo(tmp_path: Path) -> Path:

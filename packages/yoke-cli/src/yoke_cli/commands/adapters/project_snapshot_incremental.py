@@ -148,17 +148,23 @@ def _sync_ref(
     send = dict(
         project=project,
         repo_root=repo_root,
-        defer_multi_chunk=defer,
         hook_mode=hook_mode,
         session_id=session_id,
         timeout_s=timeout_s,
     )
-    response = upload_snapshot(upload_id=upload_id, upload=upload, **send)
+    response = upload_snapshot(
+        upload_id=upload_id,
+        upload=upload,
+        defer_multi_chunk=defer and upload.delta is None,
+        **send,
+    )
     if upload.delta is None or not _base_mismatch(response):
         return _annotated(response, upload)
     mismatch = response.error.message if response.error else ""
     full = scan_full(plan.repo_root, ref)
-    response = upload_snapshot(upload_id=uuid4().hex, upload=full, **send)
+    response = upload_snapshot(
+        upload_id=uuid4().hex, upload=full, defer_multi_chunk=defer, **send
+    )
     if response.success:
         (response.result or {}).setdefault("warnings", []).append(
             f"incremental snapshot sync of {ref.label} was refused ({mismatch}); "
