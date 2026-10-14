@@ -10,7 +10,7 @@ from __future__ import annotations
 from yoke_contracts.project_contract.strategy_doc_fields import fields_recipe
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -133,7 +133,7 @@ def dispatch_and_render(
     )
 
     def _human_writer(response, stdout, stderr) -> None:
-        print(json.dumps(response.result, sort_keys=True), file=stdout)
+        write_human(response.result, stdout)
         if slug in report:
             print(f"{slug}\t{report[slug]}", file=stdout)
         for warning in response.warnings:

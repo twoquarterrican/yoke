@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from types import SimpleNamespace
 from yoke_cli.commands import _helpers
 from yoke_contracts.api.function_call import FunctionCallResponse, TargetRef
@@ -90,7 +89,8 @@ def test_lifecycle_transition_prints_structured_success(monkeypatch) -> None:
     )
 
     assert rc == 0, err
-    assert json.loads(out) == {"public_ref": "ITEM-7", "to_status": "done"}
+    assert "public ref: ITEM-7" in out
+    assert "to status: done" in out
 
 
 def test_deployment_run_create_falls_back_to_structured_receipt() -> None:
@@ -108,7 +108,7 @@ def test_deployment_run_create_falls_back_to_structured_receipt() -> None:
     )
 
     assert rc == 0, err
-    assert json.loads(out) == {"status": "created"}
+    assert out == "status: created\n"
 
 
 def test_start_for_item_falls_back_to_structured_receipt() -> None:
@@ -118,4 +118,4 @@ def test_start_for_item_falls_back_to_structured_receipt() -> None:
     rc, out, err = _run_capture(stub, "deployment-runs", "start-for-item", "ITEM-7")
 
     assert rc == 0, err
-    assert json.loads(out) == {"status": "created"}
+    assert out == "status: created\n"

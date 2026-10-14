@@ -1,6 +1,7 @@
 """HTTPS-safe ``yoke projects environment-settings ...`` adapters."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import json
@@ -104,17 +105,7 @@ def _dispatch(
     function_id: str, parsed: argparse.Namespace, payload: Dict[str, Any]
 ) -> int:
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        if not response.success:
-            return None
-        result = response.result or {}
-        if function_id == "projects.environment_settings.get":
-            for path, value in (result.get("values") or {}).items():
-                stdout.write(f"{path}={json.dumps(value, sort_keys=True)}\n")
-        else:
-            paths = ",".join(result.get("changed_paths") or [])
-            stdout.write(f"{result.get('environment', '')}|{paths}\n")
-        return None
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id=function_id,

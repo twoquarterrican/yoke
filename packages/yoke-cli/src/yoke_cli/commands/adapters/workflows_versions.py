@@ -1,6 +1,7 @@
 """CLI adapters for immutable workflow version controls."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import List
@@ -41,20 +42,12 @@ def workflows_current_set(args: List[str]) -> int:
     parser.add_argument("--expected-current-version", type=int, default=None)
     add_session_arg(parser)
     add_json_arg(parser)
-    parsed = parse_or_usage_error(
-        parser, args, WORKFLOWS_CURRENT_SET_USAGE
-    )
+    parsed = parse_or_usage_error(parser, args, WORKFLOWS_CURRENT_SET_USAGE)
     if parsed is None:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        print(
-            f"workflow-current|{result.get('workflow_id') or ''}|"
-            f"{result.get('version') or ''}|"
-            f"{result.get('version_id') or ''}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     payload = {"workflow_id": parsed.workflow, "version": parsed.version}
     if parsed.expected_current_version is not None:
@@ -83,14 +76,7 @@ def workflows_version_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        print(
-            f"workflow-version|{result.get('workflow_id') or ''}|"
-            f"{result.get('version') or ''}|"
-            f"{str(bool(result.get('current'))).lower()}|"
-            f"{result.get('definition_digest') or ''}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="workflows.version.get",
@@ -118,14 +104,7 @@ def workflows_version_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        for row in (response.result or {}).get("rows") or []:
-            print(
-                f"{row.get('workflow_id', '')}|{row.get('version', '')}|"
-                f"{str(bool(row.get('current'))).lower()}|"
-                f"{row.get('definition_digest', '')}",
-                file=stdout,
-            )
+        write_human(response.result or {}, stdout)
 
     payload = {}
     if parsed.workflow:
@@ -153,33 +132,12 @@ def workflows_policy_defaults_publish(args: List[str]) -> int:
     parser.add_argument("--expected-current-version", type=int, required=True)
     add_session_arg(parser)
     add_json_arg(parser)
-    parsed = parse_or_usage_error(
-        parser, args, WORKFLOWS_POLICY_DEFAULTS_PUBLISH_USAGE
-    )
+    parsed = parse_or_usage_error(parser, args, WORKFLOWS_POLICY_DEFAULTS_PUBLISH_USAGE)
     if parsed is None:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        key = next(
-            name for name in (
-                "file_budget_default",
-                "path_claims_default",
-                "path_survey_default",
-            ) if result.get(name) is not None
-        )
-        label = {
-            "file_budget_default": "file-budget",
-            "path_claims_default": "path-claims",
-            "path_survey_default": "path-survey",
-        }[key]
-        value = "on" if result.get(key) else "off"
-        print(
-            f"workflow-defaults-published|"
-            f"{result.get('workflow_id') or ''}|"
-            f"{result.get('version') or ''}|{label}={value}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     if parsed.file_budget is not None:
         policy_payload = {"file_budget_default": parsed.file_budget == "on"}

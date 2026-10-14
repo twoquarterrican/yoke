@@ -233,8 +233,10 @@ def test_sessions_list_dispatches_filters_and_prints_summary_rows() -> None:
                     )
 
     assert rc == 0
-    assert out.getvalue().splitlines() == ["s-1|active|charge|YOK-41"]
-    assert "--full" in err.getvalue()
+    text = out.getvalue()
+    assert "session id | liveness | mode | current item ref" in text
+    assert "s-1 | active | charge | YOK-41" in text
+    assert err.getvalue() == ""
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "sessions.list"
     assert req.target.kind == "global"

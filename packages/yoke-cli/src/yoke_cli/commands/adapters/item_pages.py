@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 from typing import List
 
 from yoke_cli.commands.adapters.workflow_execution_instructions import (
@@ -197,7 +197,7 @@ def items_detail_get(args: List[str]) -> int:
         # twice. The content index still names the count and the read.
         instructions = result.pop("execution_instructions", None) or []
         stdout.write(render_execution_instruction_block(instructions))
-        print(json.dumps(result, sort_keys=True), file=stdout)
+        write_human(result, stdout)
         return None
 
     return dispatch_and_emit(

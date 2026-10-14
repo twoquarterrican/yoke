@@ -7,7 +7,7 @@ without an import cycle back into that module.
 
 from __future__ import annotations
 
-import json
+from yoke_cli.transport.human_values import write_local
 import sys
 from typing import Callable
 
@@ -21,7 +21,7 @@ def run(operation: "Callable[[], dict]") -> int:
     except machine_config_errors() as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(json.dumps(result, indent=2))
+    write_local(result, sys.stdout)
     return 0
 
 

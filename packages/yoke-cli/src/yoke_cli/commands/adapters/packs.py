@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from yoke_cli.transport.human_values import write_local
 import sys
 from typing import List
 
@@ -65,19 +66,7 @@ def packs_list(args: List[str]) -> int:
     if parsed.json_mode:
         print(json.dumps(report, sort_keys=True))
         return 0
-    print("catalog=" + ",".join(f"{k}:{v}" for k, v in report["catalog"].items()))
-    for row in report["packs"]:
-        installed = row.get("installed_version") or "—"
-        tools = (
-            ",".join(
-                prerequisite["tool"] for prerequisite in row.get("prerequisites", [])
-            )
-            or "none"
-        )
-        print(
-            f"{row['slug']}\t{row['status']}\tinstalled={installed}\t"
-            f"latest={row['latest_version']}\ttools={tools}\t{row['description']}"
-        )
+    write_local(report, sys.stdout)
     return 0
 
 
@@ -127,13 +116,7 @@ def packs_relink(args: List[str]) -> int:
     except PackClientError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(
-        json.dumps(
-            report,
-            sort_keys=parsed.json_mode,
-            indent=None if parsed.json_mode else 2,
-        )
-    )
+    _emit_report(report, parsed.json_mode)
     return 0
 
 
@@ -199,12 +182,15 @@ def _pack_write(operation: str, args: List[str], usage: str) -> int:
     except PackClientError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(
-        json.dumps(
-            report, sort_keys=parsed.json_mode, indent=None if parsed.json_mode else 2
-        )
-    )
+    _emit_report(report, parsed.json_mode)
     return 1 if report.get("refused") else 0
+
+
+def _emit_report(report, json_mode):
+    if json_mode:
+        print(json.dumps(report, sort_keys=True))
+    else:
+        write_local(report, sys.stdout)
 
 
 def _add_catalog_args(parser: argparse.ArgumentParser) -> None:

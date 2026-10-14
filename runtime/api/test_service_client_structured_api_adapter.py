@@ -307,7 +307,7 @@ class TestJsonMode:
         with redirect_stdout(out), redirect_stderr(err):
             rc = emit_response(response, json_mode=False)
         assert rc == 0
-        assert json.loads(out.getvalue()) == {"k": "v"}
+        assert out.getvalue() == "k: v\n"
 
 
 # ---------------------------------------------------------------------------

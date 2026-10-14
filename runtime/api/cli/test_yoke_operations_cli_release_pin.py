@@ -92,7 +92,10 @@ def test_record_dispatches_only_project_target_and_release_inputs():
     )
 
     assert rc == 0
-    assert out == "customer-app|canary|build-43|changed\n"
+    assert "project: customer-app" in out
+    assert "environment: canary" in out
+    assert "pin: build-43" in out
+    assert "changed: yes" in out
     request = calls[0]
     assert request.function == "release_pin.record"
     assert request.target.kind == "global"
@@ -251,9 +254,7 @@ def test_verify_accepts_registered_names(environment, capsys):
         ),
     ):
         assert (
-            release_pin_verify(
-                ["--project", "platform", "--environment", environment]
-            )
+            release_pin_verify(["--project", "platform", "--environment", environment])
             == 0
         )
 
@@ -273,9 +274,7 @@ def test_verify_lists_valid_keys_when_environment_is_unknown(capsys):
         ),
     ):
         assert (
-            release_pin_verify(
-                ["--project", "platform", "--environment", "missing"]
-            )
+            release_pin_verify(["--project", "platform", "--environment", "missing"])
             == 2
         )
 
@@ -283,7 +282,6 @@ def test_verify_lists_valid_keys_when_environment_is_unknown(capsys):
     assert "registered:" in err
     for token in ("prod", "stage"):
         assert token in err
-
 
 
 @pytest.mark.parametrize(

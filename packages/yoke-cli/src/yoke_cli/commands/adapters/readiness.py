@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
-import sys
 from typing import Any, Dict, List
 
 from yoke_cli.commands._helpers import (
@@ -18,9 +16,9 @@ from yoke_cli.commands._helpers import (
 from yoke_cli.transport.dispatcher import (
     build_actor,
     call_dispatcher,
-    response_to_dict,
 )
-from yoke_cli.transport.public_ref_display import prepare_human_response
+from yoke_cli.transport.public_ref_display import emit_response
+from yoke_cli.transport.human_values import write_human
 from yoke_contracts.api.function_call import FunctionCallResponse
 
 
@@ -137,27 +135,14 @@ def _emit_prd_validate(
     *,
     json_mode: bool,
 ) -> int:
-    response = prepare_human_response(response)
-    if json_mode:
-        print(json.dumps(response_to_dict(response), sort_keys=True))
-        return 0 if response.success else 1
-    report_text = str((response.result or {}).get("report_text") or "").strip()
-    if report_text:
-        print(report_text)
-        return 0 if response.success else 1
-    if response.success:
-        print(json.dumps(response.result, sort_keys=True))
-        return 0
-    if response.error is not None:
-        print(
-            f"error ({response.error.code}): {response.error.message}",
-            file=sys.stderr,
-        )
-        if response.error.recovery_hint:
-            print(f"hint: {response.error.recovery_hint}", file=sys.stderr)
-    else:
-        print("error: dispatch returned success=False", file=sys.stderr)
-    return 0 if response.success else 1
+    def writer(receipt, stdout, stderr):
+        report = str((receipt.result or {}).get("report_text") or "").strip()
+        if report:
+            print(report, file=stdout)
+        else:
+            write_human(receipt.result, stdout)
+
+    return emit_response(response, json_mode=json_mode, human_writer=writer)
 
 
 def readiness_repair_stale_count(args: List[str]) -> int:

@@ -1,6 +1,7 @@
 """HTTPS-safe adapter for configured release-pin recording."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import List
@@ -36,16 +37,7 @@ def release_pin_record(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        if not response.success:
-            return None
-        result = response.result or {}
-        state = "changed" if result.get("changed") else "already-recorded"
-        stdout.write(
-            f"{result.get('project', '')}|{result.get('environment', '')}|"
-            f"{result.get('pin', '')}|{state}\n"
-        )
-        return None
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="release_pin.record",

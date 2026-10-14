@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from yoke_cli.transport.human_values import write_human
 from typing import Any, Dict, List
 
 from yoke_cli.commands._helpers import (
@@ -101,7 +102,7 @@ def ouroboros_entry_insert(args: List[str]) -> int:
             payload[key] = value
 
     def _human_writer(response, stdout, stderr) -> None:
-        print((response.result or {}).get("entry_id", ""), file=stdout)
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="ouroboros.entry.insert",
@@ -186,7 +187,7 @@ def ouroboros_entry_mark_reviewed(args: List[str]) -> int:
         return usage_error(_BULK_PROJECT_REQUIRED)
 
     def _human_writer(response, stdout, stderr) -> None:
-        print((response.result or {}).get("message", ""), file=stdout)
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="ouroboros.entry.mark_reviewed",
@@ -244,7 +245,7 @@ def ouroboros_entry_mark_archived(args: List[str]) -> int:
         return usage_error(_BULK_PROJECT_REQUIRED)
 
     def _human_writer(response, stdout, stderr) -> None:
-        print((response.result or {}).get("message", ""), file=stdout)
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="ouroboros.entry.mark_archived",

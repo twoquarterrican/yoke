@@ -102,7 +102,8 @@ def test_boundary_prove_observes_recorded_lane_then_relays_proof(tmp_path):
         retry_command="yoke claims path boundary-prove --item YOK-7777",
     )
     assert (
-        f"boundary-proof-recorded|YOK-{7777}|remote_integration_ref" in out.getvalue()
+        "public ref: YOK-7777" in out.getvalue()
+        and "rung id: remote_integration_ref" in out.getvalue()
     )
 
 

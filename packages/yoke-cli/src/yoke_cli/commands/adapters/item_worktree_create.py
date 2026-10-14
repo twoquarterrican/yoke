@@ -1,6 +1,7 @@
 """``yoke item-worktrees create`` registered-function adapter."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import sys
@@ -63,15 +64,7 @@ def item_worktrees_create(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, _stderr) -> None:
-        worktree = (response.result or {}).get("worktree") or {}
-        print(
-            "item-worktree-created|"
-            f"{worktree.get('id') or ''}|"
-            f"{worktree.get('lane_role') or ''}|"
-            f"{worktree.get('branch') or ''}|"
-            f"{worktree.get('path') or ''}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="item_worktrees.create",

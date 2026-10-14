@@ -1,6 +1,7 @@
 """``yoke projects github-binding ...`` adapters."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import json
@@ -182,7 +183,7 @@ def _dispatch(
                 binding = result.get("binding") or {}
                 print(str(binding.get("github_repo") or ""), file=stdout)
             else:
-                print(json.dumps(result, sort_keys=True), file=stdout)
+                write_human(result, stdout)
         return None
 
     return dispatch_and_emit(

@@ -77,7 +77,7 @@ class TestTokenRouting:
         assert captured.err == ""
 
     def test_help_lists_tool_shaped_commands(self, capsys):
-        assert cli_main(["--help"]) == 0
+        assert cli_main(["git", "--help"]) == 0
         out = capsys.readouterr().out
         assert "yoke git pre-commit" in out
         assert "yoke git post-commit" in out

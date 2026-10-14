@@ -1,9 +1,10 @@
 """``yoke deployment-flows`` / ``yoke deployment-runs`` adapters."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
-from typing import Any, List
+from typing import List
 
 from yoke_cli.commands._helpers import (
     add_json_arg,
@@ -21,6 +22,7 @@ from yoke_contracts.deployment_itemless_teaching import (
     ITEMLESS_RELEASE_RECIPE,
     RESOLVE_TARGET_DESCRIPTION,
 )
+from yoke_contracts.deployment_release_roles_teaching import RELEASE_ROLE_RECIPE
 
 DEPLOYMENT_FLOWS_GET_USAGE = (
     "yoke deployment-flows get FLOW-ID [FIELD] [--session-id S] [--json]"
@@ -50,12 +52,6 @@ DEPLOYMENT_RUNS_RESOLVE_TARGET_USAGE = (
 )
 
 
-def _pipe(fields: list[str], row: dict[str, Any]) -> str:
-    return "|".join(
-        "" if row.get(field) is None else str(row.get(field)) for field in fields
-    )
-
-
 def _run_target(run_id: str) -> TargetRef:
     return TargetRef(kind="workflow_run", workflow_run_id=run_id)
 
@@ -74,12 +70,7 @@ def deployment_flows_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        if parsed.field:
-            print("" if result.get("value") is None else result["value"], file=stdout)
-            return None
-        print(_pipe(result.get("fields") or [], result.get("flow") or {}), file=stdout)
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_flows.get",
@@ -104,8 +95,7 @@ def deployment_flows_stages(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        print((response.result or {}).get("stages", ""), file=stdout)
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_flows.stages",
@@ -135,12 +125,7 @@ def deployment_flows_set_status(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        print(
-            f"{result.get('flow_id', '')}|{result.get('status', '')}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_flows.set_status",
@@ -166,12 +151,7 @@ def deployment_runs_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        if parsed.field:
-            print("" if result.get("value") is None else result["value"], file=stdout)
-            return None
-        print(_pipe(result.get("fields") or [], result.get("run") or {}), file=stdout)
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_runs.get",
@@ -203,11 +183,7 @@ def deployment_runs_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        fields = result.get("fields") or []
-        for row in result.get("rows") or []:
-            print(_pipe(fields, row), file=stdout)
-        return None
+        write_human(response.result or {}, stdout)
 
     payload = {}
     if parsed.project is not None:
@@ -291,7 +267,7 @@ def deployment_runs_resolve_target(args: List[str]) -> int:
         prog="yoke deployment-runs resolve-target",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=RESOLVE_TARGET_DESCRIPTION,
-        epilog=ITEMLESS_RELEASE_RECIPE,
+        epilog=RELEASE_ROLE_RECIPE + "\n" + ITEMLESS_RELEASE_RECIPE,
     )
     parser.add_argument("project")
     parser.add_argument("flow")
@@ -307,13 +283,7 @@ def deployment_runs_resolve_target(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        fields = ("target_tier", "target_environment")
-        print(
-            "|".join(str(result.get(f) or "") for f in fields),
-            file=stdout,
-        )
-        return None
+        write_human(response.result or {}, stdout)
 
     payload = {"project": parsed.project, "flow": parsed.flow}
     if parsed.environment is not None:

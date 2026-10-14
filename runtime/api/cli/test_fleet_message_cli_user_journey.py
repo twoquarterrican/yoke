@@ -207,7 +207,7 @@ def test_operator_journey_discovers_sends_reads_and_acknowledges() -> None:
     )
     assert result == 0 and error == ""
     assert RECIPIENT_ID in output
-    assert '"messageable": true' in output
+    assert "messageable: yes" in output
     evidence.append(output)
 
     result, output, error = _run_cli(

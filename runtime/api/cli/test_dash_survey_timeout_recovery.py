@@ -35,7 +35,10 @@ def _transport_failure() -> FunctionCallResponse:
 
 
 def _status_response(
-    state: str, *, path: str = "pkg/change.py", no_changes: bool = False,
+    state: str,
+    *,
+    path: str = "pkg/change.py",
+    no_changes: bool = False,
 ):
     recorded = state == DURABLE_RECORDED
     return FunctionCallResponse(
@@ -137,13 +140,18 @@ def test_timeout_with_absent_row_renders_a_durable_state_error(
 
 def test_timeout_recovers_matching_explicit_no_change_survey(monkeypatch):
     monkeypatch.setattr(
-        dash_survey_recovery, "call_dispatcher",
+        dash_survey_recovery,
+        "call_dispatcher",
         lambda **_kwargs: _status_response(DURABLE_RECORDED, no_changes=True),
     )
     recover = dash_survey_recovery.build_survey_timeout_recovery(
         TargetRef(kind="item", item_id=9),
-        {"paths": [], "path_sizes": [], "integration_target": "main",
-         "no_changes": True},
+        {
+            "paths": [],
+            "path_sizes": [],
+            "integration_target": "main",
+            "no_changes": True,
+        },
     )
 
     response = recover(
@@ -171,4 +179,4 @@ def test_status_human_output_names_absence(monkeypatch):
         stdout,
         io.StringIO(),
     )
-    assert stdout.getvalue() == "survey-absent\n"
+    assert stdout.getvalue() == "durable state: absent\n"

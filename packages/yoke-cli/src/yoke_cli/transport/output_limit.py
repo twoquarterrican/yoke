@@ -8,7 +8,7 @@ from collections.abc import Iterator
 
 from yoke_contracts.registered_reads import READ_FUNCTION_IDS
 
-# 350 displayed lines at the shared teaching width, including JSON output.
+# Explicit structured reads use a byte bound; human replies have a line budget.
 READ_OUTPUT_LIMIT_BYTES = 28_000
 _FULL_OUTPUT = ContextVar("full_read_output", default=False)
 _READ_FUNCTION = ContextVar("registered_read_function", default=None)

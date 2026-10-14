@@ -225,8 +225,10 @@ Want part of an answer? Ask the narrow question — every read has a shape that 
 
 ### Routine versus deliberate reads
 
-Every registered CLI read has one 28,000-byte rendered-output limit, including
-text, JSON and renderer advisories. Oversized reads print no partial answer:
+Human replies label values and preserve complete oversized results in a named
+private evidence file. Entry instructions, handoffs and warnings stay immediate.
+See [help and replies](../cli-help.md). Structured registered reads retain the
+28,000-byte output limit. Oversized structured reads print no partial answer:
 `read_output_limit_exceeded` names the narrower recipe and the explicit `--full`
 opt-in. `--json` selects format; it does not bypass the limit. Lists serve
 summary pages: QA plans require `--project P`, and QA/session lists default to

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 from typing import List
 
 from yoke_contracts.api.function_call import TargetRef
@@ -16,8 +16,7 @@ from yoke_cli.commands._helpers import (
 
 
 PROJECTS_INFRASTRUCTURE_LIST_USAGE = (
-    "yoke projects infrastructure list --project NAME "
-    "[--session-id S] [--json]"
+    "yoke projects infrastructure list --project NAME [--session-id S] [--json]"
 )
 
 
@@ -32,14 +31,16 @@ def projects_infrastructure_list(args: List[str]) -> int:
     add_session_arg(parser)
     add_json_arg(parser)
     parsed = parse_or_usage_error(
-        parser, args, PROJECTS_INFRASTRUCTURE_LIST_USAGE,
+        parser,
+        args,
+        PROJECTS_INFRASTRUCTURE_LIST_USAGE,
     )
     if parsed is None:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
         if response.success:
-            print(json.dumps(response.result or {}, sort_keys=True), file=stdout)
+            write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="projects.infrastructure.list",
@@ -57,13 +58,15 @@ def projects_environment_list(args: List[str]) -> int:
     parser.add_argument("--project", required=True)
     add_session_arg(parser)
     add_json_arg(parser)
-    parsed = parse_or_usage_error(parser, args, "yoke projects environment list --project P [--json]")
+    parsed = parse_or_usage_error(
+        parser, args, "yoke projects environment list --project P [--json]"
+    )
     if parsed is None:
         return 2
 
     def _writer(response, stdout, stderr) -> None:
         if response.success:
-            print(json.dumps((response.result or {}).get("environments", []), sort_keys=True), file=stdout)
+            write_human((response.result or {}).get("environments", []), stdout)
 
     return dispatch_and_emit(
         function_id="projects.environment.list",

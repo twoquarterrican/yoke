@@ -20,22 +20,19 @@ import sys
 from typing import List, Optional, Sequence
 
 from yoke_cli.commands.registry import (
-    SUBCOMMAND_REGISTRY,
     resolve,
 )
-from yoke_cli.commands.flag_adapters import ADAPTER_USAGE
+from yoke_cli.commands.command_tree import render_root_help
 from yoke_cli.commands.group_help import (
     emit_group_help_if_available,
     emit_nearest_group_help,
     nearest_subcommand_hint,
 )
-from yoke_cli.commands.help_labels import labeled_cli_form
 from yoke_cli.commands.manifest_drift import (
     manifest_unknown_hint,
     render_manifest_drift,
 )
 from yoke_cli.commands.tool_shaped import (
-    TOOL_SHAPED_USAGE,
     resolve_tool_shaped,
 )
 from yoke_cli.conceptual_cli_names import conceptual_cli_hint
@@ -48,10 +45,9 @@ from yoke_contracts.control_plane_locality import (
     local_authority_is_pinned,
     remote_control_plane,
 )
-from yoke_contracts.adapter_read_recipes import format_recipes_for_help
-from yoke_contracts.field_note_text import FOOTER as _FIELD_NOTE_FOOTER
 from yoke_contracts.machine_config import schema as machine_schema
 from yoke_contracts.machine_config.schema import ENV_OVERRIDE, TRANSPORT_HTTPS
+from yoke_contracts.field_note_text import FOOTER as FIELD_NOTE_FOOTER
 
 
 _BARE_SETUP_COMMAND = "yoke setup"
@@ -62,67 +58,8 @@ _NONINTERACTIVE_SETUP_COMMAND = (
 )
 
 
-_TOP_LEVEL_HELP_HEADER = """\
-yoke — Yoke operations CLI.
-
-Usage:
-  yoke [--env NAME] <namespace> <entity> <verb> [args...]
-  yoke <namespace> <entity> <verb> [args...]
-  yoke --help
-  yoke --version
-
-Every subcommand mirrors a Yoke function id. Dots become spaces;
-underscores inside a segment become hyphens; synthetic terminal
-``.run`` / ``.execute`` segments drop. The translation is reversible
-by mechanical rule — no lookup table required.
-
-Available subcommands (grouped by family):
-"""
-
-
 def _render_help() -> str:
-    lines: List[str] = [_TOP_LEVEL_HELP_HEADER]
-    rows: List[tuple[str, str, str]] = []
-    for cli_tokens, (function_id, _adapter) in sorted(SUBCOMMAND_REGISTRY.items()):
-        cli_form = "yoke " + " ".join(cli_tokens)
-        usage = ADAPTER_USAGE.get(function_id, "")
-        rows.append((cli_form, function_id, usage))
-
-    family_groups: dict[str, list[tuple[str, str, str]]] = {}
-    for cli_form, function_id, usage in rows:
-        family = function_id.split(".", 1)[0]
-        family_groups.setdefault(family, []).append((cli_form, function_id, usage))
-
-    tool_shaped_groups: dict[str, list[tuple[str, str]]] = {}
-    for cli_form, usage in TOOL_SHAPED_USAGE.items():
-        tokens = cli_form.split()
-        family = tokens[1] if len(tokens) > 1 and tokens[0] == "yoke" else "tool-shaped"
-        tool_shaped_groups.setdefault(family, []).append((cli_form, usage))
-
-    for family in sorted(set(family_groups.keys()) | set(tool_shaped_groups.keys())):
-        lines.append(f"\n  [{family}]")
-        for cli_form, function_id, usage in family_groups.get(family, []):
-            lines.append(f"    {labeled_cli_form(cli_form)}")
-            lines.append(f"      -> {function_id}")
-            if usage:
-                lines.append(f"      {usage}")
-        for cli_form, usage in sorted(tool_shaped_groups.get(family, [])):
-            lines.append(f"    {labeled_cli_form(cli_form)}")
-            lines.append("      -> client-local helper (no function id)")
-            if usage:
-                lines.append(f"      {usage}")
-    lines.append("")
-    lines.append(
-        "Subcommand-specific help: every subcommand also accepts standard "
-        "argparse flags. Invoke with a bad/missing flag to see usage."
-    )
-    lines.append(
-        "Session id resolves from $YOKE_SESSION_ID (or --session-id "
-        "override); actor id is filled server-side from harness_sessions."
-    )
-    # Standing read and field-note guidance lives on root help.
-    lines.extend(["", format_recipes_for_help(), "", _FIELD_NOTE_FOOTER])
-    return "\n".join(lines)
+    return render_root_help() + "\n\n" + FIELD_NOTE_FOOTER
 
 
 def _emit_help(*, explicit_env: Optional[str] = None) -> int:
@@ -294,6 +231,17 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if argv[0] in ("-V", "--version", "version"):
         return _emit_version()
+
+    if argv[-1] in ("-h", "--help", "help"):
+        from yoke_cli.commands.command_tree import command_routes
+        from yoke_cli.commands.group_help import can_route_group
+
+        prefix = tuple(argv[:-1])
+        if can_route_group(prefix):
+            group_result = emit_group_help_if_available(argv)
+            if prefix not in command_routes():
+                return group_result if group_result is not None else 0
+            argv[-1] = "--help"
 
     _function_id = None
     try:

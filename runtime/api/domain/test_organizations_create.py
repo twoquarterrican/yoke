@@ -66,4 +66,4 @@ def test_cli_sends_name_and_slug():
     assert rc == 0
     assert captured[0].function == "organizations.create"
     assert captured[0].payload == {"name": "Acme Robotics", "slug": "acme"}
-    assert '"slug": "acme"' in out.getvalue()
+    assert "slug: acme" in out.getvalue()

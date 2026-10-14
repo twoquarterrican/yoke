@@ -115,7 +115,7 @@ def test_start_for_item_entry_relays_through_dispatcher():
     assert request.target.public_ref == TEST_ITEM_REF
     assert request.payload == {"release_lineage": _MERGE_SHA}
     # The composed handler prints the run id resolved server-side.
-    assert out.strip() == "run-20260730-001"
+    assert "run id: run-20260730-001" in out
 
 
 def test_start_for_item_entry_opens_no_local_connection():

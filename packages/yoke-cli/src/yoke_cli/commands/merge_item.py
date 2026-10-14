@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from yoke_cli.commands._helpers import show_delegate_help
 from typing import Callable, Dict, List, Tuple
 
 
@@ -11,7 +12,7 @@ AdapterFn = Callable[[List[str]], int]
 MERGE_ITEM_USAGE = (
     "yoke merge item ITEM --result TEXT --verification TEXT "
     "[--no-changes] [--target BRANCH] [--project P] [--skip-status] [--pr] "
-    "[--wait]  (default queue route enqueues and exits; re-enter after "
+    "[--wait] [--verification-status STATUS] [--session-id S] [--json]  (default queue route enqueues and exits; re-enter after "
     "landing; --no-changes is an existing lane only; a laneless no-change "
     "Dash uses dash evidence and its unique lifecycle edge)"
 )
@@ -19,6 +20,12 @@ MERGE_ITEM_USAGE = (
 
 def merge_item(args: List[str]) -> int:
     """Delegate local merge authority without importing engine internals."""
+    if show_delegate_help(
+        args,
+        MERGE_ITEM_USAGE,
+        "Requires a committed, verified item lane and its work claim. The project merge policy owns landing.",
+    ):
+        return 0
     completed = subprocess.run(
         [
             sys.executable,

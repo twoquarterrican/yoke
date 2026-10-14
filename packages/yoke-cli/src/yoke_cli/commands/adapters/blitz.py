@@ -1,6 +1,7 @@
 """Blitz direct-execution CLI adapters."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import List
@@ -35,19 +36,7 @@ def blitz_survey(args: List[str]) -> int:
         return 2
 
     def _human(response, stdout, stderr) -> None:
-        result = response.result or {}
-        if result.get("clear"):
-            print(f"survey-clear|{result.get('fingerprint') or ''}", file=stdout)
-            return
-        for blocker in result.get("blockers") or []:
-            print(
-                "survey-blocked|"
-                + "|".join(
-                    str(blocker.get(key) or "")
-                    for key in ("kind", "owner_public_ref", "path", "state", "detail")
-                ),
-                file=stdout,
-            )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="direct_workflow.blitz.survey",

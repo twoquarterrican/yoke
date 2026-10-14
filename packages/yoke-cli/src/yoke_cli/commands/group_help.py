@@ -4,23 +4,16 @@ from __future__ import annotations
 
 import sys
 from difflib import get_close_matches
-from typing import List, Optional, Sequence, TextIO
+from typing import Optional, Sequence, TextIO
 
-from yoke_cli.commands.adapters.usage import ADAPTER_USAGE
-from yoke_cli.commands.help_labels import labeled_cli_form
+from yoke_cli.commands.command_tree import child_lines
 from yoke_cli.commands.registry import (
     SPACE_EXPANDED_ROUTE_REGISTRY,
     SUBCOMMAND_ALIAS_REGISTRY,
     SUBCOMMAND_REGISTRY,
 )
-from yoke_cli.commands.tool_shaped import TOOL_SHAPED_SUBCOMMANDS, TOOL_SHAPED_USAGE
+from yoke_cli.commands.tool_shaped import TOOL_SHAPED_SUBCOMMANDS
 from yoke_contracts.connection_authority_teaching import DB_GROUP_TEACHING
-from yoke_contracts.deployment_itemless_teaching import (
-    ITEMLESS_RELEASE_RECIPE,
-)
-from yoke_contracts.deployment_release_roles_teaching import (
-    RELEASE_ROLE_RECIPE,
-)
 
 GROUP_ROUTES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("deployments",): (("deployment-flows",), ("deployment-runs",)),
@@ -52,7 +45,13 @@ GUIDANCE_ROUTES: dict[tuple[str, ...], str] = {
 # exist at all and the capability is reached another way.
 GROUP_TEACHING: dict[tuple[str, ...], str] = {
     ("db",): DB_GROUP_TEACHING,
-    ("deployment-runs",): RELEASE_ROLE_RECIPE + "\n" + ITEMLESS_RELEASE_RECIPE,
+    ("deployment-runs",): (
+        "Steering creates and drives release runs; member owners retain their "
+        "item claims and credit their own scoped QA. Runs occupy their target "
+        "servers, and only a live driver may continue its run.\n"
+        "Recipes and prerequisites: yoke deployment-runs resolve-target --help.\n"
+        "Execution and recovery: yoke watch deploy --help."
+    ),
     ("env",): (
         "Retirement is a `connection` command: `yoke connection remove ENV` "
         "deletes the entry and its Yoke-owned credential, taking "
@@ -78,32 +77,6 @@ GROUP_TEACHING: dict[tuple[str, ...], str] = {
 }
 
 
-def _extends(tokens: tuple[str, ...], route: tuple[str, ...]) -> bool:
-    return len(tokens) > len(route) and tokens[: len(route)] == route
-
-
-def _belongs_to_group(
-    cli_tokens: tuple[str, ...],
-    routed_prefixes: Sequence[tuple[str, ...]],
-) -> bool:
-    """Return whether a registered command sits under one of the prefixes.
-
-    A command whose canonical tokens hyphenate what reads as a group
-    (``github-actions poll``) is routable spaced as well, so the prefix an
-    operator types (``yoke github actions``) owns it even though no
-    canonical token matches. The row still prints the canonical spelling —
-    the one the CLI grammar guarantees and the one the usage line beneath
-    it repeats.
-    """
-    spelled = [cli_tokens]
-    spaced = tuple(part for token in cli_tokens for part in token.split("-"))
-    if spaced in SPACE_EXPANDED_ROUTE_REGISTRY:
-        spelled.append(spaced)
-    return any(
-        _extends(tokens, route) for tokens in spelled for route in routed_prefixes
-    )
-
-
 def emit_group_help_if_available(
     argv: Sequence[str],
     *,
@@ -121,46 +94,18 @@ def emit_group_help_if_available(
 
     routed_prefixes = GROUP_ROUTES.get(prefix, (prefix,))
 
-    rows: List[tuple[str, str, str]] = []
-    registry_rows = {
-        **SUBCOMMAND_REGISTRY,
-        **SUBCOMMAND_ALIAS_REGISTRY,
-    }
-    for cli_tokens, (function_id, _adapter) in sorted(registry_rows.items()):
-        if not _belongs_to_group(cli_tokens, routed_prefixes):
-            continue
-        cli_form = "yoke " + " ".join(cli_tokens)
-        rows.append((cli_form, function_id, ADAPTER_USAGE.get(function_id, "")))
-
-    tool_rows: List[tuple[str, str]] = []
-    for cli_form, usage in sorted(TOOL_SHAPED_USAGE.items()):
-        tokens = tuple(cli_form.split()[1:])
-        if not any(_extends(tokens, route) for route in routed_prefixes):
-            continue
-        tool_rows.append((cli_form, usage))
-
-    if not rows and not tool_rows:
+    lines = child_lines(prefix) or sorted(
+        {line for route in routed_prefixes for line in child_lines(route)}
+    )
+    if not lines:
         return None
-
     group = " ".join(prefix)
     if prefix == ("onboard",):
         print("For machine setup, run `yoke setup`.", file=out)
     print(f"yoke {group} - subcommand group.", file=out)
-    print(file=out)
-    print("Usage:", file=out)
-    print(f"  yoke {group} <subcommand> [args...]", file=out)
-    print(file=out)
-    print("Available subcommands:", file=out)
-    for cli_form, function_id, usage in rows:
-        print(f"  {labeled_cli_form(cli_form)}", file=out)
-        print(f"    -> {function_id}", file=out)
-        if usage:
-            print(f"    {usage}", file=out)
-    for cli_form, usage in tool_rows:
-        print(f"  {labeled_cli_form(cli_form)}", file=out)
-        print("    -> client-local helper (no function id)", file=out)
-        if usage:
-            print(f"    {usage}", file=out)
+    print(f"Usage: yoke {group} <subcommand> [arguments]", file=out)
+    print("Immediate children (open --help for recipes and options):", file=out)
+    print("\n".join(lines), file=out)
     teaching = GROUP_TEACHING.get(prefix)
     if teaching:
         print(file=out)

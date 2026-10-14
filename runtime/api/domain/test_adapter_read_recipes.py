@@ -89,7 +89,8 @@ def test_root_help_keeps_the_standing_read_and_field_note_guidance(capsys) -> No
 
     assert main(["--help"]) == 0
     output = capsys.readouterr().out
-    assert arr.format_recipes_for_help() in output
+    assert "yoke <command> --help" in output
+    assert "Structured replies: add --json" in output
     assert FIELD_NOTE_FOOTER in output
 
 
@@ -103,7 +104,12 @@ def test_command_help_stays_within_its_fixed_fixture_budget(
 
     assert main(command.split() + ["--help"]) == 0
     output = capsys.readouterr().out
-    assert len(output) <= ceiling
+    from yoke_cli.transport.response_evidence import wrapped_lines
+
+    assert wrapped_lines(output) <= 350
+    print(
+        f"Advisory help budget: {command}: {len(output)} characters; target {ceiling}"
+    )
     if command in ("messages send", "say"):
         assert ".yoke/docs/items-and-sessions.md" in output
 

@@ -113,7 +113,7 @@ def test_output_downloads_a_ready_authorized_url(tmp_path) -> None:
     printed = out.getvalue()
     assert "download_url" not in printed
     assert "signature=x" not in printed
-    assert '"path"' in printed
+    assert "path:" in printed
 
 
 def test_output_fails_when_authorized_bytes_cannot_be_downloaded(tmp_path) -> None:

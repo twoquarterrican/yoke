@@ -115,7 +115,7 @@ class TestDbReadDispatch:
         assert req.target.kind == "global"
         assert req.payload == {"sql": sql}
 
-    def test_db_read_default_output_is_result_json(self) -> None:
+    def test_db_read_default_output_is_labeled(self) -> None:
         def stub(request: FunctionCallRequest) -> FunctionCallResponse:
             _CAPTURED_REQUESTS.append(request)
             return FunctionCallResponse(
@@ -130,7 +130,9 @@ class TestDbReadDispatch:
 
         assert rc == 0
         assert err == ""
-        assert json.loads(out) == {"columns": ["id"], "rows": [{"id": 1}]}
+        assert "columns:" in out
+        assert "rows:" in out
+        assert "1" in out
 
     def test_db_read_json_flag_emits_envelope(self) -> None:
         rc, out, err = _run_capture(

@@ -6,6 +6,7 @@ authored-file line cap.
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import Any, Dict, List
@@ -33,23 +34,15 @@ def projects_capabilities_list(args: List[str]) -> int:
     add_session_arg(parser)
     add_json_arg(parser)
     parsed = parse_or_usage_error(
-        parser, args, PROJECTS_CAPABILITIES_LIST_USAGE,
+        parser,
+        args,
+        PROJECTS_CAPABILITIES_LIST_USAGE,
     )
     if parsed is None:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        fields = result.get("fields") or []
-        for row in result.get("rows") or []:
-            print(
-                "|".join(
-                    "" if row.get(field) is None else str(row.get(field))
-                    for field in fields
-                ),
-                file=stdout,
-            )
-        return None
+        write_human(response.result or {}, stdout)
 
     payload: Dict[str, Any] = {}
     if parsed.project is not None:

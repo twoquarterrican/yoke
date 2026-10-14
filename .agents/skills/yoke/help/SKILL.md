@@ -15,7 +15,22 @@ Run `yoke ouroboros field-note append --help` for the worked failure modes and d
 
 ## Output
 
-Show this registry and reference:
+Match the request's scope before answering. For general help, show:
+
+```text
+yoke --help                         # terminal categories and actions
+/yoke idea --workflow issue {title}  # file work
+/yoke charge                        # select ready work
+```
+
+Explain that Yoke plans, builds, verifies and delivers software with people
+and agents. Point to `yoke <category> --help` and `.yoke/docs/index.md`.
+For a specific topic, read that command's `--help` or the applicable skill
+from the registry below. Answer with its shortest complete recipe, required
+prerequisites and exact installed deeper home. Read before teaching or acting.
+The following inventories are references to consult, not the default reply.
+Full skill inventory: `.yoke/docs/reference/commands.md`.
+Terminal help and output: `.yoke/docs/reference/cli-help.md`.
 
 <!-- BEGIN GENERATED: skill-registry -->
 Skill metadata is generated from `yoke_contracts.skill_registry`.

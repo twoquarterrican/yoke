@@ -16,16 +16,13 @@ here — the same boundary rule ``doctor_https_compose`` follows.
 from __future__ import annotations
 
 import importlib
-import json
 import sys
 from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
 
-from yoke_cli.transport.public_ref_display import prepare_human_response
+from yoke_cli.transport.public_ref_display import emit_response
 from yoke_contracts.api.function_call import FunctionCallResponse
-
-from yoke_cli.transport.dispatcher import response_to_dict
 
 
 def _progress() -> Any:
@@ -70,31 +67,22 @@ def emit_doctor_response(
     report_file: Optional[str] = None,
 ) -> int:
     """Print one doctor run's outcome and return its exit status."""
-    response = prepare_human_response(response)
     result = response.result or {}
-    if json_mode:
-        print(json.dumps(response_to_dict(response), sort_keys=True))
-    else:
-        if result:
-            report = report_text(result)
-            print(report)
-            if report_file:
-                _write_report(report, report_file)
-        if not response.success and response.error is not None:
-            print(
-                f"error ({response.error.code}): {response.error.message}",
-                file=sys.stderr,
-            )
-            if response.error.recovery_hint:
-                print(f"hint: {response.error.recovery_hint}", file=sys.stderr)
-    for warning in response.warnings:
-        print(
-            f"warning: {warning.code} ({warning.step}): {warning.detail}",
-            file=sys.stderr,
-        )
-    sys.stdout.flush()
-    sys.stderr.flush()
-    if not response.success:
+    if not json_mode and result and report_file:
+        _write_report(report_text(result), report_file)
+
+    def writer(receipt, stdout, stderr):
+        print(report_text(receipt.result or {}), file=stdout)
+        if result and report_file:
+            print(f"Report saved to: {report_file}", file=stdout)
+
+    rc = emit_response(
+        response,
+        json_mode=json_mode,
+        human_writer=writer,
+        failure_writer=writer if result else None,
+    )
+    if rc or not response.success:
         return 1
     return 1 if int(result.get("fail_count") or 0) > 0 else 0
 
@@ -103,7 +91,6 @@ def _write_report(report: str, report_file: str) -> None:
     out_path = Path(report_file)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(report, encoding="utf-8")
-    print(f"\nReport saved to: {report_file}")
 
 
 __all__ = [

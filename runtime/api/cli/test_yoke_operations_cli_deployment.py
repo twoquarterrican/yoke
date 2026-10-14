@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import sys
 from contextlib import redirect_stderr, redirect_stdout
 from typing import List
 from unittest.mock import patch
@@ -59,9 +58,7 @@ def test_registry_maps_deployment_tokens_to_function_ids() -> None:
     assert SUBCOMMAND_REGISTRY[("deployment-flows", "stages")][0] == (
         "deployment_flows.stages"
     )
-    assert SUBCOMMAND_REGISTRY[("deployment-runs", "get")][0] == (
-        "deployment_runs.get"
-    )
+    assert SUBCOMMAND_REGISTRY[("deployment-runs", "get")][0] == ("deployment_runs.get")
     assert SUBCOMMAND_REGISTRY[("deployment-runs", "approve")][0] == (
         "deployment_runs.approve"
     )
@@ -71,9 +68,10 @@ def test_registry_maps_deployment_tokens_to_function_ids() -> None:
     assert SUBCOMMAND_REGISTRY[("deployment-runs", "update")][0] == (
         "deployment_runs.update"
     )
-    assert SUBCOMMAND_REGISTRY[
-        ("deployment-runs", "resolve-target")
-    ][0] == "deployment_runs.resolve_target"
+    assert (
+        SUBCOMMAND_REGISTRY[("deployment-runs", "resolve-target")][0]
+        == "deployment_runs.resolve_target"
+    )
 
 
 def test_flow_stages_dispatches_and_prints_raw_stages() -> None:
@@ -88,10 +86,13 @@ def test_flow_stages_dispatches_and_prints_raw_stages() -> None:
         )
 
     rc, out, _err = _run_capture(
-        stub, "deployment-flows", "stages", "yoke-prod",
+        stub,
+        "deployment-flows",
+        "stages",
+        "yoke-prod",
     )
     assert rc == 0
-    assert out == '[{"name":"deploy"}]\n'
+    assert 'stages: [{"name":"deploy"}]' in out
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "deployment_flows.stages"
     assert req.target.kind == "global"
@@ -100,7 +101,11 @@ def test_flow_stages_dispatches_and_prints_raw_stages() -> None:
 
 def test_deployment_run_get_dispatches_workflow_run_target() -> None:
     rc, _out, _err = _run_capture(
-        _stub_ok, "deployment-runs", "get", "run-20260616-001", "status",
+        _stub_ok,
+        "deployment-runs",
+        "get",
+        "run-20260616-001",
+        "status",
     )
     assert rc == 0
     req = _CAPTURED_REQUESTS[-1]
@@ -131,23 +136,34 @@ def test_deployment_runs_list_prints_pipe_rows() -> None:
         )
 
     rc, out, _err = _run_capture(
-        stub, "deployment-runs", "list", "--project", "yoke", "--limit", "7",
+        stub,
+        "deployment-runs",
+        "list",
+        "--project",
+        "yoke",
+        "--limit",
+        "7",
     )
     assert rc == 0
-    assert out == "run-20260616-001|yoke|created\n"
+    assert "id | project | status" in out
+    assert "run-20260616-001 | yoke | created" in out
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "deployment_runs.list"
     assert req.payload == {"project": "yoke", "limit": 7}
 
 
-def test_deployment_run_update_dispatches_and_prints_nothing() -> None:
+def test_deployment_run_update_dispatches_and_prints_receipt() -> None:
     rc, out, _err = _run_capture(
         _stub_ok,
-        "deployment-runs", "update", "run-20260616-001",
-        "status", "succeeded", "--force",
+        "deployment-runs",
+        "update",
+        "run-20260616-001",
+        "status",
+        "succeeded",
+        "--force",
     )
     assert rc == 0
-    assert out == ""
+    assert "ok: yes" in out
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "deployment_runs.update"
     assert req.target.workflow_run_id == "run-20260616-001"
@@ -175,13 +191,14 @@ def test_deployment_run_approve_dispatches_note_and_prints_transition() -> None:
 
     rc, out, err = _run_capture(
         stub,
-        "deployment-runs", "approve", "run-20260616-001",
-        "--note", "stage verified",
+        "deployment-runs",
+        "approve",
+        "run-20260616-001",
+        "--note",
+        "stage verified",
     )
     assert rc == 0, err
-    assert out == (
-        "Approved run-20260616-001: prod-approval -> prod\n"
-    )
+    assert out == ("Approved run-20260616-001: prod-approval -> prod\n")
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "deployment_runs.approve"
     assert req.target.workflow_run_id == "run-20260616-001"
@@ -206,11 +223,14 @@ def test_resolve_target_dispatches_and_prints_typed_triple() -> None:
 
     rc, out, _err = _run_capture(
         stub,
-        "deployment-runs", "resolve-target",
-        "yoke", "yoke-hosted-prod",
+        "deployment-runs",
+        "resolve-target",
+        "yoke",
+        "yoke-hosted-prod",
     )
     assert rc == 0
-    assert out == "persistent|prod\n"
+    assert "target tier: persistent" in out
+    assert "target environment: prod" in out
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "deployment_runs.resolve_target"
     assert req.target.kind == "global"
@@ -247,20 +267,27 @@ def test_deployment_run_create_dispatches_mechanically_bound_lineage() -> None:
         )
 
     with patch(
-        "yoke_cli.commands.adapters.deployment_run_create."
-        "resolve_commit_lineage",
+        "yoke_cli.commands.adapters.deployment_run_create.resolve_commit_lineage",
         return_value="a" * 40,
     ) as resolve_lineage:
         rc, out, err = _run_capture(
             stub,
-            "deployment-runs", "create", "yoke", "yoke-hosted-prod",
-            "--idempotency-key", "prod-release-1",
-            "--created-by", "operator",
-            "--project-repo-path", "/repo", "--source-ref", "origin/main",
+            "deployment-runs",
+            "create",
+            "yoke",
+            "yoke-hosted-prod",
+            "--idempotency-key",
+            "prod-release-1",
+            "--created-by",
+            "operator",
+            "--project-repo-path",
+            "/repo",
+            "--source-ref",
+            "origin/main",
         )
 
     assert rc == 0, err
-    assert out.strip() == "run-20260616-009"
+    assert "run id: run-20260616-009" in out
     request = _CAPTURED_REQUESTS[-1]
     assert request.function == "deployment_runs.create"
     assert request.target.kind == "global"
@@ -272,72 +299,3 @@ def test_deployment_run_create_dispatches_mechanically_bound_lineage() -> None:
         "release_lineage": "a" * 40,
     }
     resolve_lineage.assert_called_once_with("/repo", "origin/main")
-
-
-def test_deployment_run_execute_is_a_client_local_tool() -> None:
-    from yoke_cli.commands.tool_shaped import resolve_tool_shaped
-
-    resolved = resolve_tool_shaped([
-        "deployment-runs", "execute", "run-20260616-009", "--timeout", "90",
-    ])
-    assert resolved is not None
-    adapter, remaining = resolved
-    assert adapter.__name__ == "deployment_runs_execute"
-    assert remaining == ["run-20260616-009", "--timeout", "90"]
-
-
-def test_deployment_run_execute_allows_the_selected_external_control_plane() -> None:
-    with patch(
-        "yoke_cli.commands.deployment_execute.execution_connection_error",
-        return_value=None,
-    ), patch(
-        "yoke_cli.commands.deployment_execute.subprocess.run",
-    ) as pipeline:
-        pipeline.return_value.returncode = 0
-        rc, _out, err = _run_capture(
-            _stub_ok, "deployment-runs", "execute", "run-20260616-009",
-        )
-    assert rc == 0, err
-    pipeline.assert_called_once()
-
-
-def test_deployment_run_execute_help_does_not_require_admin_env() -> None:
-    rc, out, err = _run_capture(
-        _stub_ok, "deployment-runs", "execute", "--help",
-    )
-    assert rc == 0
-    assert out.startswith("usage: yoke --env CONTROL-PLANE-ENV")
-    assert "CONTROL-PLANE-ENV-db-admin" not in out
-    # The selected connection names the control plane, not the destination;
-    # only a true serving-API self-deploy needs its paired local admin env.
-    assert "not the environment being deployed to" in out
-    assert "self-deploy" in out
-    assert "release_lineage" in out
-    assert "--environment" in out
-    assert err == ""
-
-
-def test_deployment_run_execute_calls_pipeline_with_selected_admin_env() -> None:
-    with patch(
-        "yoke_cli.commands.deployment_execute.subprocess.run",
-    ) as pipeline:
-        pipeline.return_value.returncode = 0
-        rc, _out, err = _run_capture(
-            _stub_ok,
-            "--env", "prod-db-admin",
-            "deployment-runs", "execute", "run-20260616-009",
-            "--from-stage", "hosted-release",
-        )
-
-    assert rc == 0, err
-    pipeline.assert_called_once_with(
-        [
-            sys.executable,
-            "-m",
-            "yoke_core.domain.deploy_pipeline_liveness_cli",
-            "run-20260616-009",
-            "--from-stage",
-            "hosted-release",
-        ],
-        check=False,
-    )

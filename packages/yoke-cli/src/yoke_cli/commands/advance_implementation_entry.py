@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from yoke_cli.commands._helpers import show_delegate_help
 from typing import Callable, Dict, List, Tuple
 
 AdapterFn = Callable[[List[str]], int]
@@ -15,6 +16,12 @@ IMPLEMENTATION_ENTRY_USAGE = (
 
 def advance_implementation_entry(args: List[str]) -> int:
     """Delegate local engine mutation without importing engine authority."""
+    if show_delegate_help(
+        args,
+        IMPLEMENTATION_ENTRY_USAGE,
+        "Requires the item work claim and its live implementation binding; creates or resumes its lane.",
+    ):
+        return 0
     completed = subprocess.run(
         [
             sys.executable,

@@ -11,7 +11,9 @@ from yoke_cli.main import main as cli_main
 def _git(repo: Path, *args: str) -> None:
     subprocess.run(
         ["git", "-C", str(repo), *args],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
 
 
@@ -25,7 +27,7 @@ def _init_repo(path: Path) -> Path:
 
 class TestCheckFileLineCommand:
     def test_help_lists_and_renders_sanctioned_surface(self, capsys):
-        assert cli_main(["--help"]) == 0
+        assert cli_main(["check", "--help"]) == 0
         assert "yoke check file-line" in capsys.readouterr().out
 
         assert cli_main(["check", "file-line", "--help"]) == 0

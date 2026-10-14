@@ -8,6 +8,7 @@ import subprocess
 import sys
 from typing import List, Tuple
 
+from yoke_cli.commands._helpers import show_delegate_help
 from yoke_cli.transport.dispatcher import build_actor
 
 
@@ -24,7 +25,8 @@ QA_CASE_RUN_USAGE = (
 QA_PLAN_RUN_USAGE = (
     "yoke qa plan run "
     "(--item PREFIX-N --transition TRANSITION | "
-    "--deployment-run-id RUN --plan PLAN --project P) "
+    "--deployment-run-id RUN --stage STAGE [--member PREFIX-N] | "
+    "--plan PLAN --project P) [--replaces CASE_KEY=REQUIREMENT_ID] "
     "[--project P] [--base-url URL] [--machine NAME] "
     "[--expected-branch BRANCH --expected-sha SHA] "
     "[--timeout-seconds N] [--checkout-path PATH] "
@@ -32,7 +34,7 @@ QA_PLAN_RUN_USAGE = (
     "[--session-id S]"
 )
 QA_PLAN_ABORT_USAGE = (
-    "yoke qa plan abort (--item PREFIX-N | --deployment-run-id RUN) "
+    "yoke qa plan abort (--item PREFIX-N | --deployment-run-id RUN | --project P) "
     "--execution-id ID --reason TEXT [--project P] [--session-id S]"
 )
 QA_PLAN_REVIEW_SUBMIT_USAGE = (
@@ -46,23 +48,29 @@ QA_PLAN_REVIEW_BEGIN_USAGE = (
 )
 QA_MISSION_HOST_COMMAND_USAGE = (
     "yoke qa mission host-command "
-    "(--item PREFIX-N | --deployment-run-id RUN) "
+    "(--item PREFIX-N | --deployment-run-id RUN | --project P) "
     "--execution-id ID --requirement-id N [--gui-session] "
-    "[--timeout-seconds N] -- ARGV..."
+    "[--timeout-seconds N] [--session-id S] -- ARGV..."
 )
 QA_MISSION_WALK_START_USAGE = (
     "yoke qa mission walk-start "
-    "(--item PREFIX-N | --deployment-run-id RUN) "
-    "--execution-id ID --requirement-id N"
+    "(--item PREFIX-N | --deployment-run-id RUN | --project P) "
+    "--execution-id ID --requirement-id N [--session-id S]"
 )
 QA_MISSION_WALK_END_USAGE = (
     "yoke qa mission walk-end "
-    "(--item PREFIX-N | --deployment-run-id RUN) "
-    "--execution-id ID --requirement-id N --run-id N [--timeout-seconds N]"
+    "(--item PREFIX-N | --deployment-run-id RUN | --project P) "
+    "--execution-id ID --requirement-id N --run-id N [--timeout-seconds N] [--session-id S]"
 )
 
 
 def qa_case_run(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_CASE_RUN_USAGE,
+        "Requires the named immutable QA case or execution; item cases require the item work claim.",
+    ):
+        return 0
     return _run_execution_module(
         "yoke_core.domain.qa_case_execution_cli",
         args,
@@ -70,6 +78,12 @@ def qa_case_run(args: List[str]) -> int:
 
 
 def qa_plan_run(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_PLAN_RUN_USAGE,
+        "Requires the named immutable QA case or execution; item cases require the item work claim.",
+    ):
+        return 0
     return _run_execution_module(
         "yoke_core.domain.qa_plan_execution_cli",
         args,
@@ -77,6 +91,12 @@ def qa_plan_run(args: List[str]) -> int:
 
 
 def qa_plan_abort(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_PLAN_ABORT_USAGE,
+        "Requires the named immutable QA case or execution; item cases require the item work claim.",
+    ):
+        return 0
     return _run_execution_module(
         "yoke_core.domain.qa_plan_execution_abort_cli",
         args,
@@ -84,6 +104,12 @@ def qa_plan_abort(args: List[str]) -> int:
 
 
 def qa_plan_review_submit(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_PLAN_REVIEW_SUBMIT_USAGE,
+        "Requires the named immutable QA case or execution; item cases require the item work claim.",
+    ):
+        return 0
     return _run_execution_module(
         "yoke_core.domain.qa_plan_review_cli",
         args,
@@ -91,10 +117,23 @@ def qa_plan_review_submit(args: List[str]) -> int:
 
 
 def qa_plan_review_begin(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_PLAN_REVIEW_BEGIN_USAGE,
+        "Retrieve completed captures, then use the returned review-submit command. "
+        "An aborted or errored execution remains terminal after review.",
+    ):
+        return 0
     return _run_execution_module("yoke_core.domain.qa_plan_review_begin_cli", args)
 
 
 def qa_mission_host_command(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_MISSION_HOST_COMMAND_USAGE,
+        "Requires the named immutable QA case or execution; item cases require the item work claim.",
+    ):
+        return 0
     return _run_execution_module(
         _QA_MISSION_HOST_COMMAND_MODULE,
         args,
@@ -102,10 +141,22 @@ def qa_mission_host_command(args: List[str]) -> int:
 
 
 def qa_mission_walk_start(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_MISSION_WALK_START_USAGE,
+        "Requires the named immutable QA case or execution; item cases require the item work claim.",
+    ):
+        return 0
     return _run_execution_module(_QA_MISSION_WALK_MODULE, ["start", *args])
 
 
 def qa_mission_walk_end(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_MISSION_WALK_END_USAGE,
+        "Requires the named immutable QA case or execution; item cases require the item work claim.",
+    ):
+        return 0
     return _run_execution_module(_QA_MISSION_WALK_MODULE, ["end", *args])
 
 

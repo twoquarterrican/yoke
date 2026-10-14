@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import json
 import sys
 from types import SimpleNamespace
 
@@ -104,7 +103,12 @@ def test_full_roster_dispatches_detail_and_prints_every_field(
         "offset": 0,
     }
     rendered = capsys.readouterr().out
-    assert json.loads(rendered) == response.result
+    assert FULL_SESSION_ID in rendered
+    assert FULL_MACHINE_ID in rendered
+    assert "messageable: yes" in rendered
+    assert "chain_pending" in rendered
+    assert "effective stale ttl minutes: 60" in rendered
+    assert "2099-08-22T13:00:00Z" in rendered
 
 
 def test_roster_has_explicit_empty_and_full_point_views() -> None:

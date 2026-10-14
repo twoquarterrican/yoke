@@ -1,6 +1,7 @@
 """``yoke ephemeral-env`` adapters."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import List
@@ -41,12 +42,9 @@ def ephemeral_env_get(args: List[str]) -> int:
 
     def _human_writer(response, stdout, stderr) -> None:
         del stderr
-        import json
+        from yoke_cli.transport.human_values import write_human
 
-        print(
-            json.dumps((response.result or {}).get("environment", {}), sort_keys=True),
-            file=stdout,
-        )
+        write_human((response.result or {}).get("environment", {}), stdout)
 
     return dispatch_and_emit(
         function_id="ephemeral_env.get",
@@ -75,7 +73,7 @@ def ephemeral_env_create(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        print((response.result or {}).get("env_id", ""), file=stdout)
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="ephemeral_env.create",
@@ -108,9 +106,7 @@ def ephemeral_env_update(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        print(result.get("message", ""), file=stdout)
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="ephemeral_env.update",

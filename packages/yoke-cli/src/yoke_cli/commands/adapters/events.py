@@ -11,6 +11,7 @@ Read ids over the events ledger share one filter-flag surface
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 from yoke_cli.commands.adapters.events_query_filters import (
     _dispatch_filtered,
@@ -165,7 +166,7 @@ def events_emit(args: List[str]) -> int:
     def _human_writer(response, stdout, stderr) -> None:
         result = response.result or {}
         if result.get("reason") not in ("", None, "severity_filtered"):
-            print(json.dumps(result, sort_keys=True), file=stdout)
+            write_human(result, stdout)
 
     return dispatch_and_emit(
         function_id="events.emit",

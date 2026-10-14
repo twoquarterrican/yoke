@@ -233,17 +233,18 @@ def test_item_reads_deliver_operator_prose_once(fields):
     assert len(rendered) <= len(prose) + 750
     assert instruction["content"] == prose
     if not fields:
-        receipt = json.loads(rendered.splitlines()[-1])
-        descriptor = receipt["execution_instructions"][0]
-        assert descriptor["id"] == 4
-        assert descriptor["content_characters"] == len(prose)
+        lines = rendered.splitlines()
+        header = next(i for i, line in enumerate(lines) if "on every read" in line)
+        descriptor = dict(
+            zip(
+                (cell.strip() for cell in lines[header].split("|")),
+                (cell.strip() for cell in lines[header + 1].split("|")),
+            )
+        )
+        assert descriptor["id"] == "4"
+        assert descriptor["content characters"] == str(len(prose))
         assert descriptor["read"] == "yoke items get EX-1 --json"
-        assert descriptor["on_every_read"] is True
-        assert "content" not in descriptor
-        assert receipt["fields"] == {"spec": "Specification", "blocked": False}
-        assert receipt["sections"] == [
-            {"name": "Progress Log", "content": "Checkpoint"}
-        ]
+        assert descriptor["on every read"] == "yes"
 
 
 def test_json_item_read_retains_the_complete_instruction_envelope(monkeypatch, capsys):

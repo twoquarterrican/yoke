@@ -79,12 +79,14 @@ def test_top_level_help_lists_recovery_commands() -> None:
 
     with redirect_stdout(out), redirect_stderr(err):
         rc = cli_main(["--help"])
+        cli_main(["merge", "--help"])
+        cli_main(["usher", "--help"])
 
     help_text = out.getvalue()
     assert rc == 0
     assert "yoke merge audit" in help_text
     assert "yoke usher reconcile-github" in help_text
-    assert "client-local helper (no function id)" in help_text
+    assert "[client-local]" in help_text
     assert err.getvalue() == ""
 
 

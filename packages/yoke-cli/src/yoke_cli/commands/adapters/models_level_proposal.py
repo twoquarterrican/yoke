@@ -91,7 +91,7 @@ def _print_levels_only(response: Any, stdout: TextIO, stderr: TextIO) -> None:
         print(error.message if error else "level proposal failed", file=stderr)
         return
     levels = (response.result or {}).get("levels") or []
-    print(json.dumps({"levels": levels}, ensure_ascii=False, indent=2), file=stdout)
+    print(json.dumps({"levels": levels}, indent=2), file=stdout)
 
 
 def models_level_proposal(args: List[str]) -> int:
@@ -147,6 +147,7 @@ def models_level_proposal(args: List[str]) -> int:
         payload=payload,
         session_id=parsed.session_id,
         json_mode=parsed.json_mode,
+        machine_mode=parsed.levels_only,
         human_writer=(
             None
             if parsed.json_mode

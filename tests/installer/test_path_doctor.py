@@ -202,6 +202,8 @@ def test_path_check_json_is_parseable(capsys):
 
 def test_top_level_help_teaches_concrete_path_commands(capsys):
     assert yoke_main(["--help"]) == 0
+    assert "yoke path " in capsys.readouterr().out
+    assert yoke_main(["path", "--help"]) == 0
     out = capsys.readouterr().out
 
     assert "yoke path <check|fix|verify>" not in out

@@ -145,6 +145,7 @@ def test_project_install_https_external_repo_stays_product_client_only(
                 str(PROJECT_ID),
                 "--no-commit",
                 "--no-publish",
+                "--json",
             ],
             config_payload=_https_only_config(server.url, token_path),
             client_cwd=checkout,

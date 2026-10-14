@@ -20,6 +20,18 @@ yoke ouroboros field-note append --kind <failed|new|unclear|observation> --evide
 Run `yoke ouroboros field-note append --help` for the worked failure modes and decision tree.
 <!-- END GENERATED: field-note-directive -->
 
+## Find the right operation
+
+```text
+yoke --help
+yoke items --help
+yoke items get --help
+```
+
+Each level lists immediate children. Command help owns its recipe and options.
+For agent help, ask `/yoke help` a topic. [Help and replies](cli-help.md) explains
+labeled results, complete saved evidence and deliberate machine formats.
+
 ## Operator Commands
 
 <!-- BEGIN GENERATED: skill-registry -->

@@ -40,9 +40,15 @@ def test_json_and_human_output_do_not_leak_internal_keys(capsys):
     for json_mode in (True, False):
         assert emit_response(response(), json_mode=json_mode) == 0
         output = capsys.readouterr().out
-        parsed = json.loads(output)
-        result = parsed["result"] if json_mode else parsed
-        assert result == prepare_human_response(response()).result
+        if json_mode:
+            assert (
+                json.loads(output)["result"]
+                == prepare_human_response(response()).result
+            )
+        else:
+            assert "public ref: APP-7" in output
+            assert "requirement id: 11" in output
+            assert "item_id" not in output
 
 
 def test_transport_redacts_secrets_without_projecting_machine_responses():
@@ -126,10 +132,16 @@ def test_output_formats_native_clock_with_null_and_opaque_body(
         update={"result": {"created_at": clock, "body": opaque}}
     )
     assert emit_response(raw, json_mode=json_mode) == 0
-    document = json.loads(capsys.readouterr().out)
-    result = document["result"] if json_mode else document
-    assert result == {
-        "created_at": format_instant(clock) if clock is not None else None,
-        "body": opaque,
-    }
+    output = capsys.readouterr().out
+    if json_mode:
+        assert json.loads(output)["result"] == {
+            "created_at": format_instant(clock) if clock is not None else None,
+            "body": opaque,
+        }
+    else:
+        assert (
+            f"created at: {format_instant(clock) if clock is not None else 'none'}"
+            in output
+        )
+        assert f"body: {opaque}" in output
     assert raw.result["created_at"] is clock

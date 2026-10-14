@@ -17,16 +17,10 @@ def test_top_help_labels_non_product_dispositions() -> None:
     out = buf.getvalue()
 
     assert rc == 0
-    assert "yoke dev setup [source-dev/admin]" in out
-    assert "yoke dev db-admin setup [source-dev/admin]" in out
-    assert "yoke qa case run [client-local]" in out
-    assert "yoke qa browser run" not in out
-    assert "yoke qa browser step [client-local]" in out
-    assert "yoke git pre-commit [hook-local]" in out
-    assert "yoke status\n" in out
-    assert "yoke self-host import ARCHIVE [--dir D] [--yes] [--json]" in out
-    assert "yoke self-host upgrade [--dir D] [--channel C] [--yes] [--json]" in out
-    assert not any(line.startswith("    yoke status [") for line in out.splitlines())
+    for category in ("dev", "qa", "git", "status", "self-host"):
+        assert f"yoke {category}" in out
+    assert "yoke dev setup" not in out
+    assert "yoke qa case run" not in out
 
 
 @pytest.mark.parametrize(
@@ -41,7 +35,7 @@ def test_top_help_labels_non_product_dispositions() -> None:
             "yoke qa browser screenshot [client-local]",
         ),
         (
-            ["github-actions", "--help"],
+            ["github-actions", "secret", "--help"],
             "yoke github-actions secret set [source-dev/admin]",
         ),
     ),

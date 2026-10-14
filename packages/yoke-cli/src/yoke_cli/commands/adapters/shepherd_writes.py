@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 from typing import Any, Dict, List, TextIO
 
 from yoke_cli.commands._helpers import (
@@ -30,7 +30,7 @@ def _write_verdict_id(
     if "verdict_id" in response.result:
         print(response.result["verdict_id"], file=stdout)
     else:
-        print(json.dumps(response.result, sort_keys=True), file=stdout)
+        write_human(response.result, stdout)
 
 
 def shepherd_verdict(args: List[str]) -> int:
@@ -94,7 +94,7 @@ def _write_caveat_result(
     if "result" in response.result:
         print(response.result["result"], file=stdout)
     else:
-        print(json.dumps(response.result, sort_keys=True), file=stdout)
+        write_human(response.result, stdout)
 
 
 def shepherd_caveat_disposition(args: List[str]) -> int:

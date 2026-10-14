@@ -6,6 +6,7 @@ without being cancelled and re-filed.
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import json
@@ -195,22 +196,7 @@ def workflows_item_posture_amend(args: List[str]) -> int:
                 return usage_error(f"--value is not valid JSON: {exc}")
 
     def _human(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        print(
-            "item-posture-amend|"
-            + "|".join(
-                str(result.get(field) or "")
-                for field in ("public_ref", "key", "changed")
-            )
-            + "|waived="
-            + ",".join(
-                str(value) for value in result.get("waived_requirement_ids") or []
-            )
-            + "|detached="
-            + ",".join(str(value) for value in result.get("detached_plan_ids") or []),
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="workflows.item_posture.amend",

@@ -22,8 +22,11 @@ _CAPTURED_REQUESTS: List[FunctionCallRequest] = []
 def _stub_ok(request: FunctionCallRequest) -> FunctionCallResponse:
     _CAPTURED_REQUESTS.append(request)
     return FunctionCallResponse(
-        success=True, function=request.function, version=request.version,
-        request_id=request.request_id, result={"echo": True},
+        success=True,
+        function=request.function,
+        version=request.version,
+        request_id=request.request_id,
+        result={"echo": True},
     )
 
 
@@ -38,16 +41,16 @@ def _run(stub, *argv: str, session_id: str = "test-session") -> int:
 
 
 def _run_capture(
-    stub, *argv: str, session_id: str = "test-session",
+    stub,
+    *argv: str,
+    session_id: str = "test-session",
 ) -> tuple[int, str, str]:
     with patch.dict("os.environ", {"YOKE_SESSION_ID": session_id}):
         with patch(
             "yoke_core.domain.yoke_function_dispatch.dispatch",
             side_effect=stub,
         ):
-            with patch(
-                "yoke_cli.commands._helpers.ensure_handlers_loaded"
-            ):
+            with patch("yoke_cli.commands._helpers.ensure_handlers_loaded"):
                 out = io.StringIO()
                 err = io.StringIO()
                 with redirect_stdout(out), redirect_stderr(err):
@@ -59,15 +62,19 @@ class TestProjectStructureDeployDefaults:
     def test_deploy_defaults_registry_maps_tokens_to_function_id(self) -> None:
         from yoke_cli.commands.registry import SUBCOMMAND_REGISTRY
 
-        assert SUBCOMMAND_REGISTRY[
-            ("project-structure", "deploy-defaults", "get")
-        ][0] == "project_structure.deploy_defaults.get"
+        assert (
+            SUBCOMMAND_REGISTRY[("project-structure", "deploy-defaults", "get")][0]
+            == "project_structure.deploy_defaults.get"
+        )
 
     def test_deploy_defaults_get_dispatches_project(self) -> None:
         rc = _run(
             _stub_ok,
-            "project-structure", "deploy-defaults", "get",
-            "--project", "yoke",
+            "project-structure",
+            "deploy-defaults",
+            "get",
+            "--project",
+            "yoke",
         )
         assert rc == 0
         req = _CAPTURED_REQUESTS[-1]
@@ -92,13 +99,16 @@ class TestProjectStructureDeployDefaults:
 
         rc, out, _err = _run_capture(
             stub,
-            "project-structure", "deploy-defaults", "get",
-            "--project", "yoke",
+            "project-structure",
+            "deploy-defaults",
+            "get",
+            "--project",
+            "yoke",
         )
         assert rc == 0
-        assert out == "yoke-hosted-production\n"
+        assert "deployment flow: yoke-hosted-production" in out
 
-    def test_deploy_defaults_get_absent_default_prints_empty_stdout(self) -> None:
+    def test_deploy_defaults_get_absent_default_labels_empty_value(self) -> None:
         def stub(request: FunctionCallRequest) -> FunctionCallResponse:
             _CAPTURED_REQUESTS.append(request)
             return FunctionCallResponse(
@@ -114,8 +124,11 @@ class TestProjectStructureDeployDefaults:
 
         rc, out, _err = _run_capture(
             stub,
-            "project-structure", "deploy-defaults", "get",
-            "--project", "yoke",
+            "project-structure",
+            "deploy-defaults",
+            "get",
+            "--project",
+            "yoke",
         )
         assert rc == 0
-        assert out == ""
+        assert "deployment flow: none" in out

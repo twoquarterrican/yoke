@@ -1,6 +1,7 @@
 """CLI adapters for complete deployment-flow definition configuration."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import sys
@@ -107,15 +108,7 @@ def _changes(parsed: argparse.Namespace) -> dict[str, Any]:
 
 
 def _flow_writer(response, stdout, stderr) -> None:
-    del stderr
-    flow = (response.result or {}).get("flow") or {}
-    print(
-        "|".join(
-            str(flow.get(key) or "")
-            for key in ("id", "definition_schema_version", "status")
-        ),
-        file=stdout,
-    )
+    write_human(response.result or {}, stdout)
 
 
 def deployment_flows_update(args: List[str]) -> int:
@@ -183,13 +176,7 @@ def deployment_flows_validate(args: List[str]) -> int:
         return usage_error(str(exc))
 
     def writer(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        print(
-            f"valid|schema={result.get('definition_schema_version')}|"
-            f"execution_supported={str(bool(result.get('execution_supported'))).lower()}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_flows.validate",

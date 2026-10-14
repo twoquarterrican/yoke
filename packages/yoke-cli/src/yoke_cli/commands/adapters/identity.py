@@ -17,7 +17,7 @@ them as ``hosted_invites_platform_owned``.
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 from typing import Any, Dict, List
 
 from yoke_cli.commands._helpers import (
@@ -61,7 +61,7 @@ IDENTITY_USAGE: Dict[str, str] = {
 def _print_result(response, stdout, stderr) -> None:
     if not response.success:
         return None
-    print(json.dumps(response.result or {}, sort_keys=True), file=stdout)
+    write_human(response.result or {}, stdout)
     return None
 
 

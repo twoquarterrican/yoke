@@ -59,7 +59,9 @@ def test_create_builds_an_item_targeted_lane_registration(monkeypatch) -> None:
         stdout,
         StringIO(),
     )
-    assert stdout.getvalue() == "item-worktree-created|44|worker|blitz/docs|\n"
+    assert "id: 44" in stdout.getvalue()
+    assert "lane role: worker" in stdout.getvalue()
+    assert "branch: blitz/docs" in stdout.getvalue()
 
 
 def test_create_rejects_the_default_implementation_role(capsys) -> None:

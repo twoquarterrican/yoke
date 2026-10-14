@@ -1,6 +1,7 @@
 """Adapters for path-claim gate and activation flow commands."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import importlib
@@ -178,14 +179,7 @@ def _local_error(code: str, message: str) -> int:
 
 
 def _write_boundary_proof(response: Any, stdout, _stderr) -> None:
-    result = response.result or {}
-    print(
-        "boundary-proof-recorded|"
-        f"{result.get('public_ref') or 'item'}|"
-        f"{result.get('rung_id')}|"
-        f"{result.get('lane_commit_sha')}",
-        file=stdout,
-    )
+    write_human(response.result or {}, stdout)
 
 
 __all__ = [

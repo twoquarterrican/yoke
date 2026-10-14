@@ -6,6 +6,7 @@ event rows (the read is poll-safe by construction).
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import Any, Dict, List
@@ -20,21 +21,20 @@ from yoke_contracts.api.function_call import TargetRef
 
 
 FRONTIER_LIST_USAGE = (
-    "yoke frontier list [--project P] [--wip-cap N] "
-    "[--session-id S] [--json]"
+    "yoke frontier list [--project P] [--wip-cap N] [--session-id S] [--json]"
 )
 
 
 def _cells(row: Dict[str, Any], fields: List[str]) -> str:
     return "|".join(
-        "" if row.get(field) is None else str(row.get(field))
-        for field in fields
+        "" if row.get(field) is None else str(row.get(field)) for field in fields
     )
 
 
 def frontier_list(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
-        prog="yoke frontier list", description=FRONTIER_LIST_USAGE,
+        prog="yoke frontier list",
+        description=FRONTIER_LIST_USAGE,
     )
     parser.add_argument("--project", default=None)
     parser.add_argument("--wip-cap", type=int, default=None)
@@ -45,13 +45,7 @@ def frontier_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        fields = result.get("fields") or {}
-        for label, rows_key in (("ready", "ready_rows"), ("blocked", "blocked_rows")):
-            row_fields = fields.get(label) or []
-            for row in result.get(rows_key) or []:
-                print(f"{label}|{_cells(row, row_fields)}", file=stdout)
-        return None
+        write_human(response.result or {}, stdout)
 
     payload: Dict[str, Any] = {}
     if parsed.project is not None:

@@ -9,6 +9,7 @@ infrastructure-registry writes (``projects.site.create`` /
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import json
 import sys
@@ -143,7 +144,7 @@ def _projects_write(
     def _human_writer(response, stdout, stderr) -> None:
         if not response.success:
             return None
-        print(json.dumps(response.result or {}, sort_keys=True), file=stdout)
+        write_human(response.result or {}, stdout)
         return None
 
     return dispatch_and_emit(
@@ -250,7 +251,7 @@ def _infrastructure_create(
     def _human_writer(response, stdout, stderr) -> None:
         if not response.success:
             return None
-        print(json.dumps(response.result or {}, sort_keys=True), file=stdout)
+        write_human(response.result or {}, stdout)
         return None
 
     return dispatch_and_emit(
@@ -330,7 +331,7 @@ def projects_environment_update(args: List[str]) -> int:
     def _human_writer(response, stdout, stderr) -> None:
         if not response.success:
             return None
-        print(json.dumps(response.result or {}, sort_keys=True), file=stdout)
+        write_human(response.result or {}, stdout)
         return None
 
     return dispatch_and_emit(

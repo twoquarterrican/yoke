@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 from typing import List, TextIO
 
 from yoke_cli.commands._helpers import (
@@ -49,7 +49,7 @@ def _write_rebind_result(
 ) -> None:
     result = response.result
     if "requirement_id" not in result:
-        print(json.dumps(result, sort_keys=True), file=stdout)
+        write_human(result, stdout)
         return
     status = "already current" if result.get("already_current") else "rebound"
     print(

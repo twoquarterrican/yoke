@@ -67,4 +67,7 @@ class TestEpicTasksList:
             "YOK-501",
         )
         assert rc == 0
-        assert out == "1|Plan lane|planned|YOK-501-1|\n"
+        assert "task num: 1" in out
+        assert "title: Plan lane" in out
+        assert "status: planned" in out
+        assert "branch: YOK-501-1" in out

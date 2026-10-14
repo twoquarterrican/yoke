@@ -64,13 +64,12 @@ def test_human_output_renders_registry_rows_and_gate_catalog(capsys) -> None:
     ):
         assert workflows_definition_get([]) == 0
 
-    assert capsys.readouterr().out.splitlines() == [
-        "family|work-items",
-        "title_max_length|100",
-        "workflow|issue|1|7|active|idea",
-        "gate|issue|idea|db_mutation",
-        "catalog-gate|db_mutation|engine|DB mutation evidence is complete.",
-    ]
+    text = capsys.readouterr().out
+    assert "family: work-items" in text
+    assert "title max length: 100" in text
+    assert "id: issue" in text
+    assert "db_mutation" in text
+    assert "DB mutation evidence is complete." in text
 
 
 def test_item_get_builds_server_resolved_target_and_renders_pin(capsys) -> None:
@@ -102,9 +101,13 @@ def test_item_get_builds_server_resolved_target_and_renders_pin(capsys) -> None:
 
     assert captured["function_id"] == "workflows.item.get"
     assert captured["target"].public_ref == "YOK-42"
-    assert capsys.readouterr().out.strip() == (
-        "item-workflow|YOK-42|issue|3|17|implementing|single_implementation_lane"
-    )
+    text = capsys.readouterr().out
+    assert "public ref: YOK-42" in text
+    assert "workflow id: issue" in text
+    assert "workflow version: 3" in text
+    assert "workflow version id: 17" in text
+    assert "status: implementing" in text
+    assert "worktree policy: single_implementation_lane" in text
 
 
 def test_item_migrate_preview_renders_compatibility_and_conflicts(capsys) -> None:
@@ -133,10 +136,12 @@ def test_item_migrate_preview_renders_compatibility_and_conflicts(capsys) -> Non
     ):
         assert workflows_item_migrate(["YOK-42", "--preview"]) == 0
 
-    assert capsys.readouterr().out.splitlines() == [
-        "item-workflow-preview|false|issue|5|implementing",
-        "conflict|QA requirement 7 changed",
-    ]
+    text = capsys.readouterr().out
+    assert "preview: yes" in text
+    assert "workflow id: issue" in text
+    assert "workflow version: 5" in text
+    assert "status: implementing" in text
+    assert "QA requirement 7 changed" in text
 
 
 def test_current_set_and_item_migrate_build_typed_payloads() -> None:
