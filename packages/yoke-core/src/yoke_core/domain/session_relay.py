@@ -149,10 +149,13 @@ def claim_relay_job(
             conn.rollback()
             _LOG.warning("pending CI verdict observation skipped: %s", exc)
 
-    live_batch = relay_has_live_batch(conn, relay_id=heartbeat.relay_id, now=current)
     started = monotonic()
     while True:
         current = parse_instant(now_provider())
+        # Re-read each step: serial work resumes the moment the batch drains.
+        live_batch = relay_has_live_batch(
+            conn, relay_id=heartbeat.relay_id, now=current
+        )
         termination = (
             None
             if broker_only or live_batch
@@ -178,15 +181,19 @@ def claim_relay_job(
         if not broker_only:
             jobs += tuple(claim_next_launch(conn, heartbeat, now=current))
         if jobs:
-            # Handing out one job does not mean the machine is done.
+            # Handing out one job does not mean the machine is done: a live
+            # batch takes newly assigned launches at once, and wakes may wait.
             next_poll = (
                 RELAY_DRAIN_POLL_SECONDS
                 if not broker_only
-                and wake_work_pending(
-                    conn,
-                    machine_id=heartbeat.machine_id,
-                    project_ids=heartbeat.project_ids,
-                    now=current,
+                and (
+                    relay_has_live_batch(conn, relay_id=heartbeat.relay_id, now=current)
+                    or wake_work_pending(
+                        conn,
+                        machine_id=heartbeat.machine_id,
+                        project_ids=heartbeat.project_ids,
+                        now=current,
+                    )
                 )
                 else policy.poll_seconds
             )
@@ -205,10 +212,11 @@ def claim_relay_job(
                 next_poll_seconds=next_poll,
                 jobs=jobs,
             )
-        # Never hold a read transaction open across the long-poll sleep.
+        # Never hold a read transaction open across the long-poll sleep. A
+        # live batch keeps polling: a launch assigned meanwhile joins it.
         conn.commit()
         elapsed = monotonic() - started
-        if live_batch or elapsed >= wait_seconds:
+        if elapsed >= wait_seconds:
             break
         sleep(min(RELAY_LONG_POLL_STEP_SECONDS, wait_seconds - elapsed))
 
@@ -223,9 +231,12 @@ def claim_relay_job(
         surface_operation_supported(surface, version, "create")
         for surface, version in heartbeat.surface_versions.items()
     )
-    next_poll = (
-        policy.idle_poll_seconds if idle and not launch_capable else policy.poll_seconds
-    )
+    if live_batch and not broker_only:
+        next_poll = RELAY_DRAIN_POLL_SECONDS
+    elif idle and not launch_capable:
+        next_poll = policy.idle_poll_seconds
+    else:
+        next_poll = policy.poll_seconds
     connected = heartbeat_relay(
         conn,
         heartbeat,
