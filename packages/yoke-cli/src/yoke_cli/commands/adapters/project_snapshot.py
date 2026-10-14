@@ -17,12 +17,10 @@ from yoke_cli.commands._helpers import (
 )
 from yoke_cli.project_snapshot import (
     ProjectSnapshotScanError,
-    build_sync_payload,
+    identity_sync_payload,
+    plan_sync,
 )
-from yoke_cli.commands.adapters.project_snapshot_chunked import (
-    dispatch_chunked_sync_payload,
-    needs_https_chunking,
-)
+from yoke_cli.commands.adapters.project_snapshot_incremental import sync_snapshots
 from yoke_cli.transport.dispatcher import (
     build_actor,
     call_dispatcher,
@@ -49,8 +47,9 @@ def project_snapshot_sync(args: List[str]) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         prog="yoke project snapshot sync",
         description=(
-            "Scan committed git tree state in this checkout and sync "
-            "server-side path snapshots for HEAD plus the integration target."
+            "Sync server-side path snapshots of this checkout's committed HEAD "
+            "plus the integration target. Only files whose blob differs from "
+            "a snapshot the server already holds are read and uploaded."
         ),
     )
     parser.add_argument("repo_root", nargs="?", default=None)
@@ -78,19 +77,33 @@ def project_snapshot_sync(args: List[str]) -> int:
         return 2
 
     project = _project_context(parsed.project)
+    # --head-only and the git hook ask for commit identity only: the server
+    # records the lane head and stores no snapshot. A full sync stores the
+    # inventory, uploading only files the server's base snapshot lacks.
     try:
-        payload = build_sync_payload(
+        plan = plan_sync(
             parsed.repo_root,
-            project_id=project,
             integration_target=parsed.integration_target,
             head_only=parsed.head_only,
-            hook_mode=parsed.hook_mode,
-            # --head-only asks for HEAD's identity, which is the whole of
-            # what the stale-lane-head recovery needs. The payload says it
-            # carries no contents, so the server records the lane head and
-            # stores no snapshot; a full sync uploads the inventory.
-            include_contents=not (parsed.hook_mode or parsed.head_only),
         )
+        if parsed.head_only and not parsed.hook_mode:
+            response = _dispatch_sync_payload(
+                project=project,
+                payload=identity_sync_payload(
+                    plan, project_id=project, hook_mode=False
+                ),
+                session_id=parsed.session_id,
+                timeout_s=None,
+            )
+        else:
+            response = sync_snapshots(
+                project=project,
+                plan=plan,
+                contents=not parsed.hook_mode,
+                hook_mode=parsed.hook_mode,
+                session_id=parsed.session_id,
+                timeout_s=HOOK_WRITE_TIMEOUT_S if parsed.hook_mode else None,
+            )
     except ProjectSnapshotScanError as exc:
         label = "warning" if parsed.hook_mode else "error"
         message = f"{label}: {exc}"
@@ -98,21 +111,6 @@ def project_snapshot_sync(args: List[str]) -> int:
             message = format_hook_diagnostic("post-commit", message)
         print(message, file=sys.stderr)
         return 0 if parsed.hook_mode else 1
-    try:
-        if parsed.hook_mode or needs_https_chunking(payload):
-            response = dispatch_chunked_sync_payload(
-                project=project,
-                payload=payload,
-                session_id=parsed.session_id,
-                timeout_s=HOOK_WRITE_TIMEOUT_S if parsed.hook_mode else None,
-            )
-        else:
-            response = _dispatch_sync_payload(
-                project=project,
-                payload=payload,
-                session_id=parsed.session_id,
-                timeout_s=HOOK_WRITE_TIMEOUT_S if parsed.hook_mode else None,
-            )
     except Exception as exc:
         if parsed.hook_mode:
             message = str(exc) or type(exc).__name__
@@ -168,30 +166,33 @@ def sync_local_snapshot_for_write(
             snapshot_repair,
         )
     try:
-        payload = build_sync_payload(
+        plan = plan_sync(
             repo_root,
-            project_id=project_id,
             integration_target=integration_target,
             head_only=head_only,
-            hook_mode=True,
-            # Identity-only callers match the git post-commit shim: skip
-            # the blob scan; the server stores no snapshot for them.
-            include_contents=not head_only,
         )
+        if head_only:
+            # Identity-only callers match the git post-commit shim: no blob
+            # scan, and the server stores no snapshot for them.
+            response = _dispatch_sync_payload(
+                project=project_id,
+                payload=identity_sync_payload(
+                    plan, project_id=project_id, hook_mode=True
+                ),
+                session_id=session_id,
+                timeout_s=timeout_s,
+            )
+        else:
+            response = sync_snapshots(
+                project=project_id,
+                plan=plan,
+                contents=True,
+                hook_mode=True,
+                session_id=session_id,
+                timeout_s=timeout_s,
+            )
     except ProjectSnapshotScanError as exc:
         return _sync_status(False, "skipped", str(exc), snapshot_repair)
-    dispatch = (
-        dispatch_chunked_sync_payload
-        if needs_https_chunking(payload)
-        else _dispatch_sync_payload
-    )
-    try:
-        response = dispatch(
-            project=project_id,
-            payload=payload,
-            session_id=session_id,
-            timeout_s=timeout_s,
-        )
     except Exception as exc:
         message = str(exc) or type(exc).__name__
         repair = _write_repair(
@@ -331,6 +332,8 @@ def _write_human(response: Any, stdout, stderr) -> None:
         commit = row.get("commit_sha") or ""
         snapshot_id = row.get("snapshot_id")
         suffix = f" snapshot={snapshot_id}" if snapshot_id is not None else ""
+        if base := row.get("base_commit_sha"):
+            suffix += f" ({row.get('uploaded_file_count')} files over base {base})"
         print(f"{status}: {ref} {commit}{suffix}", file=stdout)
     for warning in result.get("warnings") or []:
         print(f"warning: {warning}", file=stderr)

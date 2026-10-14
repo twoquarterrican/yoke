@@ -1,198 +1,179 @@
-"""Chunked HTTPS dispatch for project snapshot sync."""
+"""Chunked dispatch for project snapshot sync: begin, append, finalize."""
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-from uuid import uuid4
+from typing import Any, List, Optional
 
 from yoke_cli.commands._helpers import ensure_handlers_loaded
 from yoke_cli.commands.adapters.project_snapshot_chunk_results import (
-    alias_snapshot_row,
-    begin_settled_row,
     deferral_response,
-    upload_result,
 )
 from yoke_cli.commands.adapters.project_snapshot_chunk_sizing import (
-    active_transport_is_https,
-    needs_https_chunking,
     raise_if_https_chunk_payload_too_large,
     snapshot_file_chunks,
 )
+from yoke_cli.project_snapshot.sync_refs import SyncRef
+from yoke_cli.project_snapshot.tree_delta import SnapshotUpload
 from yoke_cli.transport.dispatcher import build_actor, call_dispatcher
 from yoke_contracts.api.function_call import FunctionCallResponse, TargetRef
-from yoke_contracts.path_snapshot import (
-    PathSnapshotPayload,
-    PathSnapshotSyncPayload,
-)
 from yoke_contracts.path_snapshot_chunks import (
+    SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE,
     PathSnapshotChunkMetadata,
     PathSnapshotChunkSyncPayload,
 )
 
-SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE = "snapshot_chunk_upload_missing"
 
-
-def dispatch_chunked_sync_payload(
-    *,
-    project: Optional[str],
-    payload: PathSnapshotSyncPayload,
-    session_id: Optional[str],
-    timeout_s: Optional[float],
-) -> FunctionCallResponse:
-    snapshots: List[Dict[str, Any]] = []
-    warnings: List[str] = []
-    project_id = None
-    rows_by_commit_sha: Dict[str, Dict[str, Any]] = {}
-    for snapshot in payload.snapshots:
-        existing_row = rows_by_commit_sha.get(snapshot.commit_sha)
-        if existing_row is not None:
-            snapshots.append(alias_snapshot_row(snapshot, existing_row))
-            warnings.extend(snapshot.warnings)
-            continue
-        response = _upload_snapshot_with_restart(
-            project=project,
-            repo_root=payload.repo_root,
-            snapshot=snapshot,
-            hook_mode=payload.hook_mode,
-            session_id=session_id,
-            timeout_s=timeout_s,
-        )
-        if not response.success:
-            return response
-        result = response.result or {}
-        project_id = result.get("project_id", project_id)
-        result_rows = result.get("snapshots") or []
-        snapshots.extend(result_rows)
-        warnings.extend(result.get("warnings") or [])
-        for row in result_rows:
-            commit_sha = row.get("commit_sha")
-            if commit_sha:
-                rows_by_commit_sha.setdefault(str(commit_sha), row)
-    return FunctionCallResponse(
-        success=True,
-        function="project.snapshot.sync",
-        version="v1",
-        result={
-            "project_id": project_id,
-            "snapshots": snapshots,
-            "warnings": warnings,
-        },
-    )
-
-
-def _upload_snapshot_with_restart(**kwargs: Any) -> FunctionCallResponse:
-    """Upload one snapshot, restarting once if its staging went missing.
-
-    Server-side staging is deleted on abort and on a completed finalize, so
-    a call whose response was lost finds nothing to append to or finalize on
-    its retry. A restart mints a fresh upload id, which makes recovering
-    from that window automatic rather than an operator errand.
-    """
-    response = _upload_snapshot(**kwargs)
-    if _staging_went_missing(response):
-        return _upload_snapshot(**kwargs)
-    return response
-
-
-def _staging_went_missing(response: FunctionCallResponse) -> bool:
-    if response.success:
-        return False
-    return getattr(response.error, "code", "") == (SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE)
-
-
-def _upload_snapshot(
+def offer_begin(
     *,
     project: Optional[str],
     repo_root: Optional[str],
-    snapshot: PathSnapshotPayload,
+    upload_id: str,
+    ref: SyncRef,
+    base_candidates: List[str],
+    contents_included: bool,
     hook_mode: bool,
     session_id: Optional[str],
     timeout_s: Optional[float],
 ) -> FunctionCallResponse:
-    upload_id = uuid4().hex
-    chunks = snapshot_file_chunks(
-        project=project,
-        repo_root=repo_root,
-        upload_id=upload_id,
-        snapshot=snapshot,
-        hook_mode=hook_mode,
-    )
+    """Open ``ref``'s upload before scanning any file.
+
+    The server settles it at once when it already holds the commit (or the
+    upload is identity-only), and otherwise names the first of
+    ``base_candidates`` it holds a snapshot for in ``base_commit_sha``.
+    """
     begin = PathSnapshotChunkSyncPayload(
         project_id=project,
         repo_root=repo_root,
         upload_id=upload_id,
         operation="begin",
         snapshot=PathSnapshotChunkMetadata(
-            ref=snapshot.ref,
-            commit_sha=snapshot.commit_sha,
-            file_count=len(snapshot.files),
-            chunk_count=len(chunks),
-            symlinks=snapshot.symlinks,
-            warnings=snapshot.warnings,
-            contents_included=snapshot.contents_included,
+            ref=ref.label,
+            commit_sha=ref.commit_sha,
+            file_count=0,
+            chunk_count=0,
+            warnings=ref.warnings,
+            contents_included=contents_included,
+            base_candidates=base_candidates,
         ),
         hook_mode=hook_mode,
     )
-    response = dispatch_chunk_payload(
+    return dispatch_chunk_payload(
+        project=project, payload=begin, session_id=session_id, timeout_s=timeout_s
+    )
+
+
+def upload_snapshot(
+    *,
+    project: Optional[str],
+    repo_root: Optional[str],
+    upload_id: str,
+    upload: SnapshotUpload,
+    defer_multi_chunk: bool,
+    hook_mode: bool,
+    session_id: Optional[str],
+    timeout_s: Optional[float],
+) -> FunctionCallResponse:
+    """Stage ``upload`` in chunks and finalize it into a stored snapshot.
+
+    Server-side staging is deleted on abort and on a completed finalize, so
+    a call whose response was lost finds nothing on its retry; that window
+    restarts once under a fresh upload id instead of becoming an errand.
+    """
+    common = dict(
         project=project,
-        payload=begin,
+        repo_root=repo_root,
+        upload=upload,
+        defer_multi_chunk=defer_multi_chunk,
+        hook_mode=hook_mode,
         session_id=session_id,
         timeout_s=timeout_s,
     )
-    if not response.success:
-        return response
-    begin_result = response.result or {}
-    settled_row = begin_settled_row(snapshot, begin_result)
-    if settled_row is not None:
-        return upload_result(
-            begin_result,
-            [settled_row],
-            begin_result.get("warnings") or [],
+    response = _upload_once(upload_id=upload_id, **common)
+    if _staging_went_missing(response):
+        from uuid import uuid4
+
+        return _upload_once(upload_id=uuid4().hex, **common)
+    return response
+
+
+def _staging_went_missing(response: FunctionCallResponse) -> bool:
+    if response.success:
+        return False
+    return getattr(response.error, "code", "") == SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE
+
+
+def _upload_once(
+    *,
+    project: Optional[str],
+    repo_root: Optional[str],
+    upload_id: str,
+    upload: SnapshotUpload,
+    defer_multi_chunk: bool,
+    hook_mode: bool,
+    session_id: Optional[str],
+    timeout_s: Optional[float],
+) -> FunctionCallResponse:
+    chunks = snapshot_file_chunks(
+        upload.files,
+        project=project,
+        repo_root=repo_root,
+        upload_id=upload_id,
+        hook_mode=hook_mode,
+    )
+    if defer_multi_chunk and len(chunks) > 1:
+        abort_chunk_upload(
+            project=project,
+            upload_id=upload_id,
+            session_id=session_id,
+            timeout_s=timeout_s,
         )
-    if hook_mode:
-        _abort(project, upload_id, session_id, timeout_s)
         return deferral_response()
-    for chunk_index, files in enumerate(chunks):
-        append = PathSnapshotChunkSyncPayload(
+    payloads = [
+        PathSnapshotChunkSyncPayload(
             project_id=project,
             repo_root=repo_root,
             upload_id=upload_id,
-            operation="append",
-            chunk_index=chunk_index,
-            files=files,
+            operation="begin",
+            snapshot=PathSnapshotChunkMetadata(
+                ref=upload.label,
+                commit_sha=upload.commit_sha,
+                file_count=len(upload.files),
+                chunk_count=len(chunks),
+                symlinks=upload.symlinks,
+                warnings=upload.warnings,
+            ),
             hook_mode=hook_mode,
-        )
+        ),
+        *(
+            PathSnapshotChunkSyncPayload(
+                project_id=project,
+                repo_root=repo_root,
+                upload_id=upload_id,
+                operation="append",
+                chunk_index=index,
+                files=files,
+                hook_mode=hook_mode,
+            )
+            for index, files in enumerate(chunks)
+        ),
+        PathSnapshotChunkSyncPayload(
+            project_id=project,
+            repo_root=repo_root,
+            upload_id=upload_id,
+            operation="finalize",
+            delta=upload.delta,
+            hook_mode=hook_mode,
+        ),
+    ]
+    response: Optional[FunctionCallResponse] = None
+    for payload in payloads:
         response = _dispatch_or_abort(
-            project,
-            upload_id,
-            append,
-            session_id,
-            timeout_s,
+            project, upload_id, payload, session_id, timeout_s
         )
         if not response.success:
             return response
-    finalize = PathSnapshotChunkSyncPayload(
-        project_id=project,
-        repo_root=repo_root,
-        upload_id=upload_id,
-        operation="finalize",
-        hook_mode=hook_mode,
-    )
-    response = _dispatch_or_abort(
-        project,
-        upload_id,
-        finalize,
-        session_id,
-        timeout_s,
-    )
-    if not response.success:
-        return response
-    result = response.result or {}
-    return upload_result(
-        result,
-        result.get("snapshots") or [],
-        result.get("warnings") or [],
-    )
+    assert response is not None
+    return response
 
 
 def _dispatch_or_abort(
@@ -202,6 +183,12 @@ def _dispatch_or_abort(
     session_id: Optional[str],
     timeout_s: Optional[float],
 ) -> FunctionCallResponse:
+    abort: Any = dict(
+        project=project,
+        upload_id=upload_id,
+        session_id=session_id,
+        timeout_s=timeout_s,
+    )
     try:
         response = dispatch_chunk_payload(
             project=project,
@@ -210,25 +197,11 @@ def _dispatch_or_abort(
             timeout_s=timeout_s,
         )
     except Exception:
-        _abort(project, upload_id, session_id, timeout_s)
+        abort_chunk_upload(**abort)
         raise
     if not response.success:
-        _abort(project, upload_id, session_id, timeout_s)
+        abort_chunk_upload(**abort)
     return response
-
-
-def _abort(
-    project: Optional[str],
-    upload_id: str,
-    session_id: Optional[str],
-    timeout_s: Optional[float],
-) -> None:
-    abort_chunk_upload(
-        project=project,
-        upload_id=upload_id,
-        session_id=session_id,
-        timeout_s=timeout_s,
-    )
 
 
 def dispatch_chunk_payload(
@@ -272,10 +245,8 @@ def abort_chunk_upload(
 
 
 __all__ = [
-    "SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE",
     "abort_chunk_upload",
-    "active_transport_is_https",
     "dispatch_chunk_payload",
-    "dispatch_chunked_sync_payload",
-    "needs_https_chunking",
+    "offer_begin",
+    "upload_snapshot",
 ]

@@ -1,4 +1,9 @@
-"""Chunked HTTPS CLI tests for ``yoke project snapshot sync``."""
+"""Chunked CLI dispatch tests for ``yoke project snapshot sync``.
+
+Every content sync opens with a base-offer ``begin`` before scanning; a
+server that names no base gets the full inventory in a second ``begin``
+plus ``append`` chunks and a ``finalize``.
+"""
 
 from __future__ import annotations
 
@@ -12,20 +17,11 @@ from yoke_contracts.api.function_call import (
 )
 from runtime.api.cli.project_snapshot_cli_test_helpers import (
     CALLS,
-    OVERSIZED_HTTPS_PAYLOAD_BYTES,
     head_sha,
     make_repo,
     non_progress_err,
     run_cli,
 )
-
-
-def _force_https_chunking():
-    return patch(
-        "yoke_cli.commands.adapters.project_snapshot_chunk_sizing"
-        ".snapshot_sync_payload_size_bytes",
-        return_value=OVERSIZED_HTTPS_PAYLOAD_BYTES,
-    )
 
 
 def _https_connection():
@@ -36,12 +32,11 @@ def _https_connection():
     )
 
 
-def test_https_payload_too_large_uses_chunked_dispatch(tmp_path: Path) -> None:
+def test_full_sync_offers_base_then_uploads_in_chunks(tmp_path: Path) -> None:
     repo = make_repo(tmp_path)
-    # One snapshot carrying file entries: the append chunk is made of them,
-    # and `--head-only` deliberately produces none. Naming an integration
-    # target this repository does not have keeps the payload to HEAD alone.
-    with _force_https_chunking(), _https_connection():
+    # Naming an integration target this repository does not have keeps the
+    # sync to HEAD alone; the default response names no base.
+    with _https_connection():
         rc, out, err = run_cli(
             "project",
             "snapshot",
@@ -57,9 +52,15 @@ def test_https_payload_too_large_uses_chunked_dispatch(tmp_path: Path) -> None:
     assert non_progress_err(err) == ""
     assert [call["payload"]["operation"] for call in CALLS] == [
         "begin",
+        "begin",
         "append",
         "finalize",
     ]
+    offer, staging = CALLS[0]["payload"], CALLS[1]["payload"]
+    assert offer["upload_id"] == staging["upload_id"]
+    assert offer["snapshot"]["file_count"] == 0
+    assert staging["snapshot"]["file_count"] == len(CALLS[2]["payload"]["files"])
+    assert CALLS[3]["payload"]["delta"] is None
 
 
 def test_chunked_dispatch_skips_upload_when_begin_reuses_snapshot(
@@ -88,7 +89,7 @@ def test_chunked_dispatch_skips_upload_when_begin_reuses_snapshot(
             "warnings": [],
         },
     )
-    with _force_https_chunking(), _https_connection():
+    with _https_connection():
         rc, out, err = run_cli(
             "project",
             "snapshot",
@@ -127,7 +128,7 @@ def test_chunked_dispatch_deduplicates_same_commit_refs(
             "snapshots": [
                 {
                     "status": "created",
-                    "ref": "HEAD",
+                    "ref": "main",
                     "commit_sha": commit_sha,
                     "snapshot_id": 45,
                     "entry_count": 3,
@@ -137,7 +138,7 @@ def test_chunked_dispatch_deduplicates_same_commit_refs(
             "warnings": [],
         },
     )
-    with _force_https_chunking(), _https_connection():
+    with _https_connection():
         rc, out, err = run_cli(
             "project",
             "snapshot",
@@ -145,18 +146,24 @@ def test_chunked_dispatch_deduplicates_same_commit_refs(
             str(repo),
             "--project",
             "demo",
-            responses=[success, success, finalized],
+            responses=[success, success, success, finalized],
         )
 
     assert rc == 0
-    assert f"created: HEAD {commit_sha} snapshot=45" in out
-    assert f"reused: main {commit_sha} snapshot=45" in out
+    # The integration target uploads first; HEAD reuses it and still
+    # reports first.
+    assert out.splitlines() == [
+        f"reused: HEAD {commit_sha} snapshot=45",
+        f"created: main {commit_sha} snapshot=45",
+    ]
     assert non_progress_err(err) == ""
     assert [call["payload"]["operation"] for call in CALLS] == [
+        "begin",
         "begin",
         "append",
         "finalize",
     ]
+    assert CALLS[0]["payload"]["snapshot"]["ref"] == "main"
 
 
 def test_chunked_dispatch_aborts_after_append_failure(tmp_path: Path) -> None:
@@ -173,7 +180,7 @@ def test_chunked_dispatch_aborts_after_append_failure(tmp_path: Path) -> None:
         version="v1",
         error=FunctionError(code="snapshot_sync_failed", message="chunk failed"),
     )
-    with _force_https_chunking(), _https_connection():
+    with _https_connection():
         rc, out, err = run_cli(
             "project",
             "snapshot",
@@ -183,7 +190,7 @@ def test_chunked_dispatch_aborts_after_append_failure(tmp_path: Path) -> None:
             "demo",
             "--integration-target",
             "no-such-branch",
-            responses=[success, failure, success],
+            responses=[success, success, failure, success],
         )
 
     assert rc == 1
@@ -191,11 +198,12 @@ def test_chunked_dispatch_aborts_after_append_failure(tmp_path: Path) -> None:
     assert "chunk failed" in err
     assert [call["payload"]["operation"] for call in CALLS] == [
         "begin",
+        "begin",
         "append",
         "abort",
     ]
-    assert CALLS[0]["payload"]["snapshot"]["chunk_count"] == 1
-    assert len(CALLS[1]["payload"]["files"]) >= 2
+    assert CALLS[1]["payload"]["snapshot"]["chunk_count"] == 1
+    assert len(CALLS[2]["payload"]["files"]) >= 2
 
 
 def test_chunked_dispatch_restarts_once_when_staging_went_missing(
@@ -237,7 +245,7 @@ def test_chunked_dispatch_restarts_once_when_staging_went_missing(
             "warnings": [],
         },
     )
-    with _force_https_chunking(), _https_connection():
+    with _https_connection():
         rc, out, err = run_cli(
             "project",
             "snapshot",
@@ -248,6 +256,7 @@ def test_chunked_dispatch_restarts_once_when_staging_went_missing(
             "--integration-target",
             "no-such-branch",
             responses=[
+                success,
                 success,
                 missing,
                 success,
@@ -262,13 +271,14 @@ def test_chunked_dispatch_restarts_once_when_staging_went_missing(
     assert non_progress_err(err) == ""
     assert [call["payload"]["operation"] for call in CALLS] == [
         "begin",
+        "begin",
         "append",
         "abort",
         "begin",
         "append",
         "finalize",
     ]
-    assert CALLS[0]["payload"]["upload_id"] != CALLS[3]["payload"]["upload_id"]
+    assert CALLS[1]["payload"]["upload_id"] != CALLS[4]["payload"]["upload_id"]
 
 
 def test_chunked_dispatch_restarts_only_once(tmp_path: Path) -> None:
@@ -288,7 +298,7 @@ def test_chunked_dispatch_restarts_only_once(tmp_path: Path) -> None:
             message="snapshot chunk upload 'gone' not found",
         ),
     )
-    with _force_https_chunking(), _https_connection():
+    with _https_connection():
         rc, out, err = run_cli(
             "project",
             "snapshot",
@@ -298,13 +308,14 @@ def test_chunked_dispatch_restarts_only_once(tmp_path: Path) -> None:
             "demo",
             "--integration-target",
             "no-such-branch",
-            responses=[success, missing, success, success, missing, success],
+            responses=[success, success, missing, success, success, missing, success],
         )
 
     assert rc == 1
     assert out == ""
     assert "not found" in err
     assert [call["payload"]["operation"] for call in CALLS] == [
+        "begin",
         "begin",
         "append",
         "abort",

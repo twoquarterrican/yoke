@@ -11,18 +11,10 @@ from yoke_contracts.path_snapshot import (
 from yoke_contracts.path_snapshot_chunks import PathSnapshotChunkSyncPayload
 from yoke_core.domain import db_backend, json_helper
 from yoke_core.domain.db_helpers import instant_parameter, utc_now
+from yoke_core.domain.project_snapshot_base import apply_snapshot_delta, offer_base
+from yoke_core.domain.project_snapshot_sync_refusals import ChunkUploadMissingError
 
 SyncSnapshotPayload = Callable[[str, PathSnapshotSyncPayload], Dict[str, Any]]
-
-
-class ChunkUploadMissingError(LookupError):
-    """The staged upload is gone; the caller must restart it from ``begin``.
-
-    Staging rows are deleted on abort and on a completed finalize, so a
-    retried append or finalize whose response was lost finds nothing. That
-    is recoverable by re-uploading, unlike the other chunk failures, so it
-    carries its own type instead of collapsing into a generic failure.
-    """
 
 
 def sync_chunk(
@@ -45,7 +37,7 @@ def sync_chunk(
             return _append_chunk_upload(conn, payload)
         if payload.operation == "abort":
             return _delete_chunk_upload(conn, payload.upload_id, status="aborted")
-        return _finalize_chunk_upload(conn, payload.upload_id, sync_payload)
+        return _finalize_chunk_upload(conn, payload, sync_payload)
 
 
 def _ensure_chunk_tables(conn: Any) -> None:
@@ -84,6 +76,8 @@ def _begin_chunk_upload(
         return _settled_at_begin(
             payload, "reused", existing_snapshot_id, lane_head_recorded
         )
+    if payload.snapshot.base_candidates:
+        return offer_base(conn, project_id, payload, lane_head_recorded)
     conn.execute(
         "INSERT INTO path_snapshot_sync_uploads "
         "(upload_id, project_ref, repo_root, ref, commit_sha, "
@@ -212,9 +206,12 @@ def _append_chunk_upload(
 
 def _finalize_chunk_upload(
     conn: Any,
-    upload_id: str,
+    finalize: PathSnapshotChunkSyncPayload,
     sync_payload: SyncSnapshotPayload,
 ) -> Dict[str, Any]:
+    from yoke_core.domain.project_identity import resolve_project_id
+
+    upload_id = finalize.upload_id
     upload = _load_upload(conn, upload_id)
     if upload is None:
         raise ChunkUploadMissingError(f"snapshot chunk upload {upload_id!r} not found")
@@ -232,6 +229,10 @@ def _finalize_chunk_upload(
             f"snapshot chunk upload {upload_id!r} has {len(files)} files, "
             f"expected {expected_file_count}"
         )
+    project_ref = str(_row_get(upload, "project_ref", 1))
+    if finalize.delta is not None:
+        project_id = resolve_project_id(conn, project_ref)
+        files = apply_snapshot_delta(conn, project_id, files, finalize.delta)
     symlinks = json_helper.loads_text(str(_row_get(upload, "symlinks_json", 8)))
     warnings = json_helper.loads_text(str(_row_get(upload, "warnings_json", 7)))
     payload = PathSnapshotPayload(
@@ -241,7 +242,6 @@ def _finalize_chunk_upload(
         symlinks=symlinks if isinstance(symlinks, list) else [],
         warnings=warnings if isinstance(warnings, list) else [],
     )
-    project_ref = str(_row_get(upload, "project_ref", 1))
     result = sync_payload(
         project_ref,
         PathSnapshotSyncPayload(

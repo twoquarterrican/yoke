@@ -1,4 +1,4 @@
-"""Payload sizing and chunk splitting for HTTPS project snapshot sync."""
+"""Payload sizing and chunk splitting for chunked project snapshot sync."""
 
 from __future__ import annotations
 
@@ -7,65 +7,83 @@ from typing import List, Optional
 from yoke_cli.transport.https import TransportError, resolve_https_connection
 from yoke_contracts.path_snapshot import (
     SNAPSHOT_SYNC_HTTPS_PAYLOAD_LIMIT_BYTES,
-    PathSnapshotPayload,
-    PathSnapshotSyncPayload,
     SnapshotFileEntry,
-    snapshot_sync_payload_size_bytes,
 )
 from yoke_contracts.path_snapshot_chunks import (
     SNAPSHOT_SYNC_CHUNK_TARGET_BYTES,
     PathSnapshotChunkSyncPayload,
+    PathSnapshotDelta,
     snapshot_chunk_payload_size_bytes,
 )
 
 
 def snapshot_file_chunks(
+    files: List[SnapshotFileEntry],
     *,
     project: Optional[str],
     repo_root: Optional[str],
     upload_id: str,
-    snapshot: PathSnapshotPayload,
     hook_mode: bool,
 ) -> List[List[SnapshotFileEntry]]:
+    """Split ``files`` into append chunks near the chunk target size.
+
+    Each entry is serialized once: an append's JSON is its envelope plus the
+    entries joined by commas, so sizes add up without re-serializing the
+    growing chunk for every entry.
+    """
+    if not files:
+        return []
+    first = files[0]
+    envelope = _append_size(project, repo_root, upload_id, [first], hook_mode)
+    envelope -= _entry_size(first)
     chunks: List[List[SnapshotFileEntry]] = []
     current: List[SnapshotFileEntry] = []
-    for entry in snapshot.files:
-        candidate = [*current, entry]
-        if current and append_chunk_size(
-            project=project,
-            repo_root=repo_root,
-            upload_id=upload_id,
-            chunk_index=len(chunks),
-            files=candidate,
-            hook_mode=hook_mode,
-        ) > SNAPSHOT_SYNC_CHUNK_TARGET_BYTES:
-            chunks.append(current)
-            current = [entry]
-        else:
-            current = candidate
-        if append_chunk_size(
-            project=project,
-            repo_root=repo_root,
-            upload_id=upload_id,
-            chunk_index=len(chunks),
-            files=current,
-            hook_mode=hook_mode,
-        ) > SNAPSHOT_SYNC_HTTPS_PAYLOAD_LIMIT_BYTES:
+    size = envelope
+    for entry in files:
+        entry_size = _entry_size(entry) + (1 if current else 0)
+        if envelope + entry_size > SNAPSHOT_SYNC_HTTPS_PAYLOAD_LIMIT_BYTES:
             raise ValueError(
-                "one snapshot file entry is too large for HTTPS chunked "
-                "snapshot sync; repair from a local-core/source-dev env"
+                f"snapshot file entry {entry.path!r} is too large for one "
+                "chunked snapshot-sync request; repair from a "
+                "local-core/source-dev env"
             )
-    if current:
-        chunks.append(current)
+        if current and size + entry_size > SNAPSHOT_SYNC_CHUNK_TARGET_BYTES:
+            chunks.append(current)
+            current, size, entry_size = [], envelope, entry_size - 1
+        current.append(entry)
+        size += entry_size
+    chunks.append(current)
     return chunks
 
 
-def append_chunk_size(
+def delta_fits_one_request(
+    delta: PathSnapshotDelta,
     *,
     project: Optional[str],
     repo_root: Optional[str],
     upload_id: str,
-    chunk_index: int,
+) -> bool:
+    """Whether the finalize that carries ``delta`` stays within one chunk."""
+    finalize = PathSnapshotChunkSyncPayload(
+        project_id=project,
+        repo_root=repo_root,
+        upload_id=upload_id,
+        operation="finalize",
+        delta=delta,
+    )
+    return snapshot_chunk_payload_size_bytes(finalize) <= (
+        SNAPSHOT_SYNC_CHUNK_TARGET_BYTES
+    )
+
+
+def _entry_size(entry: SnapshotFileEntry) -> int:
+    return len(entry.model_dump_json().encode("utf-8"))
+
+
+def _append_size(
+    project: Optional[str],
+    repo_root: Optional[str],
+    upload_id: str,
     files: List[SnapshotFileEntry],
     hook_mode: bool,
 ) -> int:
@@ -74,7 +92,7 @@ def append_chunk_size(
         repo_root=repo_root,
         upload_id=upload_id,
         operation="append",
-        chunk_index=chunk_index,
+        chunk_index=0,
         files=files,
         hook_mode=hook_mode,
     )
@@ -103,17 +121,9 @@ def active_transport_is_https() -> bool:
         return False
 
 
-def needs_https_chunking(payload: PathSnapshotSyncPayload) -> bool:
-    if not active_transport_is_https():
-        return False
-    payload_size = snapshot_sync_payload_size_bytes(payload)
-    return payload_size > SNAPSHOT_SYNC_HTTPS_PAYLOAD_LIMIT_BYTES
-
-
 __all__ = [
     "active_transport_is_https",
-    "append_chunk_size",
-    "needs_https_chunking",
+    "delta_fits_one_request",
     "raise_if_https_chunk_payload_too_large",
     "snapshot_file_chunks",
 ]
