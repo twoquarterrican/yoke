@@ -310,6 +310,7 @@ class TestItemsCreateEndToEnd:
                 _request(
                     {
                         "title": "Created via items.create",
+                        "spec": "Agreed outcome: the item shows on the board.",
                         "workflow": "issue",
                         "entry_surface": "harness_skill",
                     },

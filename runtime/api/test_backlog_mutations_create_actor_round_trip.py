@@ -34,6 +34,7 @@ class TestExecuteCreateActorRoundTrip:
             result = backlog.execute_create(
                 project="yoke",
                 title="Actor-id round trip",
+                spec="Agreed outcome for Actor-id round trip.",
                 workflow="issue",
                 entry_surface="harness_skill",
                 out=out,
@@ -52,6 +53,7 @@ class TestExecuteCreateActorRoundTrip:
             result = backlog.execute_create(
                 project="yoke",
                 title="Mechanism label",
+                spec="Agreed outcome for Mechanism label.",
                 workflow="issue",
                 entry_surface="harness_skill",
                 source="user",

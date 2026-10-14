@@ -2,7 +2,19 @@
 
 from __future__ import annotations
 
+from io import StringIO
+
+import pytest
+
 from yoke_cli.commands.adapters import items_create, items_create_policy as policy
+
+
+@pytest.fixture(autouse=True)
+def _spec_on_stdin(monkeypatch):
+    monkeypatch.setattr(
+        "yoke_cli.commands.text_file.sys.stdin",
+        StringIO("Agreed outcome: the item shows on the board."),
+    )
 
 
 def test_allow_operator_debug_without_ambient_session() -> None:
@@ -71,6 +83,7 @@ def test_adapter_refuses_non_idea_session_and_names_correct_paths(
             [
                 "Skip scaffolding",
                 "issue",
+                "--stdin",
                 "--entry-surface",
                 "harness_skill",
                 "--execution-instructions-considered",
@@ -109,6 +122,7 @@ def test_adapter_dispatches_when_session_mode_is_idea(monkeypatch) -> None:
             [
                 "File through idea",
                 "issue",
+                "--stdin",
                 "--entry-surface",
                 "harness_skill",
                 "--execution-instructions-considered",
@@ -140,7 +154,7 @@ def test_adapter_dispatches_dry_run_without_reading_session_mode(
     monkeypatch.setattr(policy, "_session_mode", _fail_mode)
     monkeypatch.setattr(items_create, "dispatch_create", _dispatch)
 
-    assert items_create.items_create(["Preview only", "issue", "--dry-run"]) == 0
+    assert items_create.items_create(["Preview only", "issue", "--stdin", "--dry-run"]) == 0
     assert captured["payload"]["dry_run"] is True
 
 
@@ -163,6 +177,6 @@ def test_adapter_refuses_when_session_identity_cannot_be_read(
         ),
     )
 
-    assert items_create.items_create(["Needs identity", "issue"]) == 2
+    assert items_create.items_create(["Needs identity", "issue", "--stdin"]) == 2
     err = capsys.readouterr().err
     assert "yoke sessions identity" in err

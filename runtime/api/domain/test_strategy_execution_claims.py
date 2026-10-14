@@ -52,6 +52,7 @@ def test_typed_blitz_create_can_be_refined_linked_and_read_for_execution(
                 target=TargetRef(kind="global", project_id="yoke"),
                 payload={
                     "title": "Execute the delivery plan",
+                    "spec": "Deliver the linked plan; done when every member lands.",
                     "workflow": "blitz",
                     "project": "yoke",
                     "entry_surface": "harness_skill",

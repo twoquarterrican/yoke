@@ -13,6 +13,7 @@ from runtime.api.api_items_test_helpers import (
     make_test_db_fixture,
 )
 from runtime.api.backlog_mutations_test_helpers import (
+    _conn,
     _patch_externals,
     tmp_db,  # noqa: F401 - pytest fixture re-export
 )
@@ -103,23 +104,49 @@ def test_create_with_a_spec_stores_it(tmp_db):
     assert row[0] == spec
 
 
-def test_items_create_function_refuses_with_spec_required(tmp_db):
+@pytest.mark.parametrize("workflow", ["dash", "task", "issue", "epic"])
+@pytest.mark.parametrize("spec", [None, "", " \n\t", "# Filed outcome"])
+def test_items_create_refuses_without_allocating_or_writing(tmp_db, workflow, spec):
+    payload = {
+        "title": "Filed outcome",
+        "workflow": workflow,
+        "project": "yoke",
+        "entry_surface": "cli" if workflow in ("dash", "task") else "harness_skill",
+        "execution_instructions_considered": True,
+    }
+    if spec is not None:
+        payload["spec"] = spec
     request = FunctionCallRequest(
         function="items.create",
-        actor=ActorContext(actor_id=None, session_id=""),
+        actor=ActorContext(session_id="title-only-test"),
         target=TargetRef(kind="global"),
-        payload={
-            "title": "Filed outcome",
-            "workflow": "issue",
-            "project": "yoke",
-            "entry_surface": "harness_skill",
-            "execution_instructions_considered": True,
-        },
+        payload=payload,
     )
-    with _patch_externals(), mock.patch.dict(os.environ, {"YOKE_DB": tmp_db}):
+    before = _item_count(tmp_db)
+    with (
+        _patch_externals(),
+        mock.patch.dict(os.environ, {"YOKE_DB": tmp_db}),
+        mock.patch("yoke_core.domain.backlog_create_op._get_next_id") as next_id,
+        mock.patch(
+            "yoke_core.domain.backlog_create_op.allocate_project_sequence"
+        ) as next_sequence,
+    ):
         outcome = handle_item_create(request)
+
     assert outcome.primary_success is False
     assert outcome.error.code == "spec_required"
+    assert "--spec-file PATH" in outcome.error.message
+    next_id.assert_not_called()
+    next_sequence.assert_not_called()
+    assert _item_count(tmp_db) == before
+
+
+def _item_count(db_path) -> int:
+    conn = _conn(db_path)
+    try:
+        return conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+    finally:
+        conn.close()
 
 
 def test_frontier_holds_a_title_only_item_labelled_needs_a_spec():

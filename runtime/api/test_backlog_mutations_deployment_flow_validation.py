@@ -50,6 +50,7 @@ class TestExecuteCreateDeploymentFlowValidation:
         with _patch_externals(), mock.patch.dict(os.environ, {"YOKE_DB": tmp_db}):
             result = backlog.execute_create(
                 title="Bad flow",
+                spec="Agreed outcome for Bad flow.",
                 workflow="issue",
                 entry_surface="harness_skill",
                 project="yoke",
@@ -67,6 +68,7 @@ class TestExecuteCreateDeploymentFlowValidation:
         with _patch_externals(), mock.patch.dict(os.environ, {"YOKE_DB": tmp_db}):
             result = backlog.execute_create(
                 title="Literal none",
+                spec="Agreed outcome for Literal none.",
                 workflow="issue",
                 entry_surface="harness_skill",
                 project="yoke",
@@ -82,6 +84,7 @@ class TestExecuteCreateDeploymentFlowValidation:
         with _patch_externals(), mock.patch.dict(os.environ, {"YOKE_DB": tmp_db}):
             result = backlog.execute_create(
                 title="Good flow",
+                spec="Agreed outcome for Good flow.",
                 workflow="issue",
                 entry_surface="harness_skill",
                 project="yoke",
@@ -97,6 +100,7 @@ class TestExecuteCreateDeploymentFlowValidation:
         with _patch_externals(), mock.patch.dict(os.environ, {"YOKE_DB": tmp_db}):
             result = backlog.execute_create(
                 title="Empty flow",
+                spec="Agreed outcome for Empty flow.",
                 workflow="issue",
                 entry_surface="harness_skill",
                 project="yoke",
@@ -112,6 +116,7 @@ class TestExecuteCreateDeploymentFlowValidation:
         with _patch_externals(), mock.patch.dict(os.environ, {"YOKE_DB": tmp_db}):
             result = backlog.execute_create(
                 title="No flow arg",
+                spec="Agreed outcome for No flow arg.",
                 workflow="issue",
                 entry_surface="harness_skill",
                 project="yoke",
@@ -125,6 +130,7 @@ class TestExecuteCreateDeploymentFlowValidation:
         with _patch_externals(), mock.patch.dict(os.environ, {"YOKE_DB": tmp_db}):
             result = backlog.execute_create(
                 title="Null sentinel flow",
+                spec="Agreed outcome for Null sentinel flow.",
                 workflow="issue",
                 entry_surface="harness_skill",
                 project="yoke",
