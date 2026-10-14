@@ -101,7 +101,7 @@ loopback DevTools port and runs the installer's tmux session on that desktop,
 so the wizard's link opens in the browser the operator signed in to. The step
 always attaches a desktop screenshot. A host without a desktop refuses
 `headless_linux_browser_approval_unavailable`; the Machine QA Pack's
-[Linux browser approval gates](../../packs/machine-qa/versions/1.3.24/files/docs/packs/machine-qa/linux-host-provisioning.md#browser-approval-gates)
+[Linux browser approval gates](../../packs/machine-qa/versions/1.3.25/files/docs/packs/machine-qa/linux-host-provisioning.md#browser-approval-gates)
 list every refusal and its recovery.
 
 ## Isolated welcome frame
