@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
-from runtime.api.skill_doc_regressions_test_helpers import REPO
 from yoke_contracts.harness_session_transcripts import (
     HARNESS_SESSION_TRANSCRIPTS,
     session_transcripts_for_harness,
 )
 
+REPO = Path(__file__).resolve().parents[2]
 MANIFEST_DIRS = {"claude-code": "claude", "codex": "codex", "cursor": "cursor"}
 
 

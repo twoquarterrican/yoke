@@ -112,7 +112,8 @@ def test_terminal_cases_use_current_stage_and_browser_approval_surfaces() -> Non
     )
     assert "Report:" in handoff["method_config"]["expected_text"]
     assert (
-        "Next: bring your existing work into Yoke." in (handoff["method_config"]["expected_text"])
+        "Next: bring your existing work into Yoke."
+        in (handoff["method_config"]["expected_text"])
     )
     assert "One-time code:" not in handoff["method_config"]["expected_text"]
     assert "terminal_exit_code:0" in handoff["method_config"]["post_checks"]
