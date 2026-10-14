@@ -40,7 +40,17 @@ CURSOR_NO_TURN_IDENTITY_REASON = (
 #: want of a label, which is worse than pricing them as unattributable.
 UNNAMED_MODEL = "unknown"
 
-#: Cursor's first-class usage surface: parent-turn hook fields, and the
+#: The standing known undercount of every harness's reading. Session
+#: totals include each child agent's (subagent's) calls on every harness,
+#: but a call the harness never writes a usage row for — context
+#: compaction or summarization — leaves nothing to count. Those calls are
+#: not estimated, because ``usage_totals`` promises measurement.
+UNRECORDED_USAGE_UNDERCOUNT = (
+    "includes child-agent usage; context compaction and summarization calls "
+    "that write no usage row are not counted, so this can undercount"
+)
+
+#: Cursor's first-class usage surface: turn hook fields, and the
 #: print-mode result ``usage`` object read from a finished native's own
 #: capture, because that result is printed after the turn's last hook —
 #: which is also why that capture retains its tail rather than only its
@@ -49,23 +59,27 @@ UNNAMED_MODEL = "unknown"
 #: optional fields is ``unavailable`` for that surface, not a global
 #: "Cursor unsupported" deferral.
 CURSOR_USAGE_SOURCE = (
-    "cursor parent-turn stop/afterAgentResponse token fields; print-mode result usage"
+    "cursor parent and child-agent turn stop/afterAgentResponse token fields; "
+    "print-mode result usage"
 )
 
 #: The first-class usage surface per harness family, or ``""`` for a
 #: family that counts tokens nowhere machine-readable.
 #:
 #: Claude stamps a full ``message.usage`` block on every assistant row of
-#: its session transcript, naming uncached input, cache reads, cache
-#: writes split by cache lifetime, output, and the thinking tokens inside
-#: that output. Codex writes a cumulative ``token_count`` event into its
-#: rollout whose ``info.total_token_usage`` is the whole thread's
-#: consumption to that point. Cursor folds optional parent-turn token
-#: fields from ``stop`` / ``afterAgentResponse`` and print-mode result
-#: ``usage`` — see :data:`CURSOR_USAGE_SOURCE`.
+#: its session transcript and of each child agent's transcript under the
+#: session's ``subagents/`` directory, naming uncached input, cache reads,
+#: cache writes split by cache lifetime, output, and the thinking tokens
+#: inside that output. Codex writes a cumulative ``token_count`` event into
+#: each thread's rollout whose ``info.total_token_usage`` is that thread's
+#: consumption to that point; a child agent is its own thread. Cursor folds
+#: optional turn token fields from ``stop`` / ``afterAgentResponse``,
+#: child-agent turns included, and print-mode result ``usage`` — see
+#: :data:`CURSOR_USAGE_SOURCE`. What none of them records is
+#: :data:`UNRECORDED_USAGE_UNDERCOUNT`.
 SESSION_USAGE_SOURCES: Mapping[str, str] = {
-    CLAUDE_FAMILY: "transcript assistant message.usage",
-    CODEX_FAMILY: "rollout token_count info.total_token_usage",
+    CLAUDE_FAMILY: "transcript and child-agent transcript assistant message.usage",
+    CODEX_FAMILY: "thread and child-thread rollout token_count info.total_token_usage",
     CURSOR_FAMILY: CURSOR_USAGE_SOURCE,
 }
 
@@ -86,6 +100,7 @@ __all__ = [
     "UNNAMED_MODEL",
     "CURSOR_USAGE_SOURCE",
     "SESSION_USAGE_SOURCES",
+    "UNRECORDED_USAGE_UNDERCOUNT",
     "states_usage",
     "usage_source",
 ]

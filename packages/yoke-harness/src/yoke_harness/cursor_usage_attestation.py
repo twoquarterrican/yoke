@@ -1,11 +1,19 @@
-"""Read Cursor parent-turn token counts from native hook and result payloads.
+"""Read Cursor turn token counts from native hook and result payloads.
 
 Cursor staff document optional ``input_tokens`` / ``output_tokens`` /
 ``cache_read_tokens`` / ``cache_write_tokens`` on ``stop`` and
-``afterAgentResponse``. Those counts are cumulative for the parent turn,
+``afterAgentResponse``. Those counts are cumulative for one turn,
 identical across the two events for one ``generation_id``, and exclusive
-of subagents. ``input_tokens`` already contains both cache figures, so
-disjoint buckets subtract them and clamp the remainder at zero.
+of the turns of any child agent the turn started. ``input_tokens`` already
+contains both cache figures, so disjoint buckets subtract them and clamp
+the remainder at zero.
+
+A child agent's turn arrives as its own payload under its own
+``generation_id``, flagged ``is_subagent_session`` and already folded onto
+the container session id by payload parsing
+(:mod:`yoke_harness.child_agent_artifacts`). It is folded exactly like a
+parent turn, into the same per-model totals, so the session's total
+includes every child agent.
 
 The installed CLI's print-mode JSON result is a second native shape:
 ``usage.inputTokens`` (exclusive of cache), ``cacheReadTokens``,
@@ -48,7 +56,7 @@ from yoke_harness.artifact_watermark import (
 )
 
 
-#: How many parent-turn ids the dedup record keeps. A turn arrives twice
+#: How many turn ids the dedup record keeps. A turn arrives twice
 #: within moments — a ``stop`` and an ``afterAgentResponse`` naming one
 #: ``generation_id`` — never after hundreds of later turns, so keeping
 #: every id a long session ever produced would grow a record that is
@@ -96,10 +104,7 @@ def _fold_cursor_usage(payload: Mapping[str, Any]) -> SessionUsage:
     mark = load_watermark(session_id, artifact)
     totals = _totals_by_model(stored_totals(mark))
     seen = _generation_ids(stored_totals(mark))
-    if payload.get("is_subagent_session") is True:
-        buckets, generation, model = None, "", ""
-    else:
-        buckets, generation, model = _payload_reading(payload)
+    buckets, generation, model = _payload_reading(payload)
     if buckets is not None and generation:
         if generation not in seen:
             _accumulate(totals, model, buckets)
@@ -112,9 +117,7 @@ def _fold_cursor_usage(payload: Mapping[str, Any]) -> SessionUsage:
         save_watermark(session_id, artifact, mark)
     elif buckets is not None:
         return unavailable(CURSOR_NO_TURN_IDENTITY_REASON, source=source)
-    elif (
-        _token_keys_present(payload) and payload.get("is_subagent_session") is not True
-    ):
+    elif _token_keys_present(payload):
         if totals:
             return _reading(totals, source=source, partial=None)
         return unavailable(CURSOR_INCOMPLETE_TOKEN_FIELDS_REASON, source=source)

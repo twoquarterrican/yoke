@@ -1,4 +1,4 @@
-"""Cursor parent-turn token fields fold into existing session usage totals."""
+"""Cursor turn token fields, child-agent turns included, fold into session usage totals."""
 
 from __future__ import annotations
 
@@ -165,11 +165,17 @@ def test_cursor_unnamed_model_cost_names_the_gap_not_a_free_session() -> None:
     assert cost.usd == 0.0
 
 
-def test_cursor_subagent_payload_is_not_folded() -> None:
+def test_cursor_child_agent_turns_add_to_the_session_once_each() -> None:
+    """A child turn folds into the container's totals; a repeat does not."""
     attest_session_usage("cursor", cursor_stop_payload())
     payload = cursor_stop_payload(generation_id="sub-1", output_tokens=80)
     payload["is_subagent_session"] = True
 
-    usage = attest_session_usage("cursor", payload)
+    attest_session_usage("cursor", payload)
+    usage = attest_session_usage(
+        "cursor", dict(payload, hook_event_name="afterAgentResponse")
+    )
 
-    assert usage.models[0].output == 20
+    assert usage.status == USAGE_COMPLETE
+    assert usage.models[0].output == 20 + 80
+    assert usage.models[0].cached_input == 40 + 40

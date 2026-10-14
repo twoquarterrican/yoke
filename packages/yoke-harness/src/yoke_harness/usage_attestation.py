@@ -11,22 +11,23 @@ What each harness reports, measured rather than assumed:
 * **claude** — every assistant row of its transcript carries a
   ``message.usage`` block stating uncached input, cache reads, cache
   writes split by cache lifetime, output, and the thinking tokens inside
-  that output. One logical response is written as several rows sharing a
-  ``message.id`` and repeating the same usage, so summing rows would
-  multiply a turn's cost by its content-block count; the id is the dedup
-  key that prevents it. A transcript row can also be enormous — a pasted
-  file, a tool result — so rows past the reader's record bound are
-  projected down to those fields rather than skipped
-  (:mod:`yoke_harness.claude_artifact_reader`).
+  that output, read by :mod:`yoke_harness.claude_usage_attestation`.
 * **codex** — its rollout carries cumulative ``token_count`` events, read
   by :mod:`yoke_harness.codex_usage_attestation`.
 * **cursor** — optional ``stop`` / ``afterAgentResponse`` token fields
   (inclusive ``input_tokens``) and print-mode result ``usage`` (exclusive
   ``inputTokens``), the latter presented by the reader of a finished
-  native's capture rather than by a hook. A payload that omits them is not
-  zero: the watermarked total is returned when one exists, otherwise
-  ``unavailable`` for that surface. Same ``generation_id`` / ``request_id``
-  is counted once.
+  native's capture rather than by a hook, read by
+  :mod:`yoke_harness.cursor_usage_attestation`.
+
+A session's child agents are charged to it on every harness. Where each
+harness keeps a child's usage is named in
+:mod:`yoke_harness.child_agent_artifacts`; every reader folds what it
+finds there into the same per-model totals (:func:`_accumulate`) that
+the parent's own calls fill, so one pricing covers both. Calls a harness
+never writes a usage row for — context compaction and summarization —
+cannot be counted and are not estimated
+(:data:`yoke_contracts.session_usage_sources.UNRECORDED_USAGE_UNDERCOUNT`).
 
 Three differences between those branches are deliberate, and each
 follows from what its source actually states. Claude accumulates, so its
@@ -53,7 +54,6 @@ from yoke_contracts.timestamps import utc_now
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
-from yoke_contracts.harness_family_identity import CLAUDE_FAMILY
 from yoke_contracts.session_usage_facts import (
     USAGE_FIELDS,
     USAGE_COMPLETE,
@@ -62,22 +62,6 @@ from yoke_contracts.session_usage_facts import (
     normalize_count,
     unavailable,
     with_partial,
-)
-from yoke_contracts.session_usage_sources import usage_source
-from yoke_harness.artifact_scan import scan_rows
-from yoke_harness.claude_artifact_reader import (
-    ASSISTANT_ROW_TYPE,
-    claude_record_decoder,
-    prepare_claude_watermark,
-    stamp_claude_reader,
-)
-from yoke_harness.artifact_watermark import (
-    ArtifactWatermark,
-    load_watermark,
-    partial_reason,
-    save_watermark,
-    stored_totals,
-    watermark_lock,
 )
 
 
@@ -108,112 +92,12 @@ def attest_session_usage(
 
             return attest_codex_usage(payload, session_id)
         if is_claude(executor):
-            return _claude_usage(payload, session_id, transcript_path)
+            from yoke_harness.claude_usage_attestation import attest_claude_usage
+
+            return attest_claude_usage(payload, session_id, transcript_path)
     except Exception:  # noqa: BLE001 — an unreadable source attests nothing
         return unavailable("the harness artifact could not be read")
     return unavailable(f"no usage source is declared for {executor}")
-
-
-def _claude_usage(
-    payload: Mapping[str, Any], session_id: str, transcript_path: str
-) -> SessionUsage:
-    """Fold a Claude transcript's per-message usage into per-model totals.
-
-    A gap here means one assistant row's usage statement could not be
-    read. An oversized row of any other kind is not a gap: it states no
-    consumption, so the projection that dropped its content dropped
-    nothing this fold was reading for.
-    """
-    source = usage_source(CLAUDE_FAMILY)
-    path = _artifact(transcript_path or _text(payload.get("transcript_path")))
-    if path is None:
-        return unavailable(NO_ARTIFACT_REASON, source=source)
-    with watermark_lock(session_id) as folding:
-        if not folding:
-            return _persisted_reading(session_id, path, source)
-        mark = prepare_claude_watermark(load_watermark(session_id, path))
-        totals = _totals_by_model(stored_totals(mark))
-        seen = set(stored_totals(mark).get("message_ids", []))
-        state: dict[str, Any] = {"gap": mark.oversized}
-
-        def mark_gap() -> None:
-            state["gap"] = True
-
-        def fold(row: Mapping[str, Any]) -> None:
-            if row.get("type") != ASSISTANT_ROW_TYPE:
-                return
-            message = row.get("message")
-            if not isinstance(message, dict):
-                return
-            key = _text(message.get("id")) or _text(row.get("requestId"))
-            if not key or key in seen:
-                return
-            model = _text(message.get("model"))
-            usage = message.get("usage")
-            if not model or not isinstance(usage, dict):
-                return
-            seen.add(key)
-            _accumulate(totals, model, _claude_buckets(usage))
-
-        scan = scan_rows(
-            path,
-            mark.offset,
-            fold,
-            record_factory=claude_record_decoder,
-            on_unrecoverable=mark_gap,
-        )
-        mark = ArtifactWatermark(
-            offset=scan.offset,
-            # One id per logical message, no rows or content. Evicting ids
-            # would count compacted history again on a later incremental fold.
-            totals=stamp_claude_reader(
-                {**_totals_document(totals), "message_ids": sorted(seen)}
-            ),
-            truncated=mark.truncated,
-            oversized=bool(state["gap"]),
-            caught_up=scan.caught_up,
-        )
-        save_watermark(session_id, path, mark)
-    return _reading(totals, source=source, partial=partial_reason(mark))
-
-
-def _claude_buckets(usage: Mapping[str, Any]) -> dict[str, int]:
-    """Convert one Claude usage block into the shared disjoint buckets.
-
-    ``cache_creation`` states the same write total as
-    ``cache_creation_input_tokens`` broken out by cache lifetime, so
-    exactly one of the two is read: the split when it is present, because
-    the lifetimes are billed at different rates, and the flat total
-    otherwise. Reading both would count every cache write twice.
-    """
-    creation = usage.get("cache_creation")
-    details = usage.get("output_tokens_details")
-    if isinstance(creation, dict):
-        short = normalize_count(creation.get("ephemeral_5m_input_tokens"))
-        long_lived = normalize_count(creation.get("ephemeral_1h_input_tokens"))
-    else:
-        short = normalize_count(usage.get("cache_creation_input_tokens"))
-        long_lived = 0
-    return {
-        "input": normalize_count(usage.get("input_tokens")),
-        "cached_input": normalize_count(usage.get("cache_read_input_tokens")),
-        "cache_write": short,
-        "cache_write_long": long_lived,
-        "output": normalize_count(usage.get("output_tokens")),
-        "reasoning": normalize_count(
-            details.get("thinking_tokens") if isinstance(details, dict) else None
-        ),
-    }
-
-
-def _persisted_reading(session_id: str, path: Path, source: str) -> SessionUsage:
-    """The totals a concurrent fold already persisted, folding nothing."""
-    mark = load_watermark(session_id, path)
-    return _reading(
-        _totals_by_model(stored_totals(mark)),
-        source=source,
-        partial=partial_reason(mark),
-    )
 
 
 def _reading(

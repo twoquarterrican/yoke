@@ -100,7 +100,7 @@ def test_nonconsecutive_repeated_messages_are_counted_once(
 
 
 def test_complete_older_reader_totals_replay_once(tmp_path: Path, monkeypatch) -> None:
-    from yoke_harness import usage_attestation
+    from yoke_harness import claude_usage_attestation
 
     transcript = write_rows(
         tmp_path / "s.jsonl",
@@ -123,14 +123,14 @@ def test_complete_older_reader_totals_replay_once(tmp_path: Path, monkeypatch) -
     mark = load_watermark("session-1", transcript)
     assert mark.caught_up
 
-    original_scan = usage_attestation.scan_rows
+    original_scan = claude_usage_attestation.scan_rows
     offsets = []
 
     def scan(path, offset, *args, **kwargs):
         offsets.append(offset)
         return original_scan(path, offset, *args, **kwargs)
 
-    monkeypatch.setattr(usage_attestation, "scan_rows", scan)
+    monkeypatch.setattr(claude_usage_attestation, "scan_rows", scan)
     assert _read(transcript).models[0].output == 200
     assert offsets == [transcript.stat().st_size]
 
@@ -138,7 +138,7 @@ def test_complete_older_reader_totals_replay_once(tmp_path: Path, monkeypatch) -
 def test_interrupted_reader_replay_does_not_double_apply(
     tmp_path: Path, monkeypatch
 ) -> None:
-    from yoke_harness import usage_attestation
+    from yoke_harness import claude_usage_attestation
 
     transcript = write_rows(
         tmp_path / "s.jsonl", [claude_row("msg_a"), claude_row("msg_b")]
@@ -156,7 +156,7 @@ def test_interrupted_reader_replay_does_not_double_apply(
         def crash(*args, **kwargs):
             raise OSError("interrupted before atomic save")
 
-        interrupted.setattr(usage_attestation, "save_watermark", crash)
+        interrupted.setattr(claude_usage_attestation, "save_watermark", crash)
         assert _read(transcript).status == USAGE_UNAVAILABLE
     assert load_watermark("session-1", transcript) == stale
     assert _read(transcript).models[0].output == 200

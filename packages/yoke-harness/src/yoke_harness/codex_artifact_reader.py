@@ -1,9 +1,10 @@
 """What a Codex rollout record has to state, and how much of it is kept.
 
-Codex writes two kinds of record this reader cares about: a
-``turn_context`` naming the model a turn ran under, and a ``token_count``
+Codex writes three kinds of record this reader cares about: a
+``turn_context`` naming the model a turn ran under, a ``token_count``
 event whose ``info.total_token_usage`` is the whole thread's cumulative
-consumption. Both are small. Everything else in a rollout — the turns
+consumption, and a ``SubAgentActivity`` item naming a child thread. All
+are small. Everything else in a rollout — the turns
 themselves, and the compacted summaries that can reach tens of megabytes
 — is content, so a record past the ordinary bound keeps only the scalars
 below and forgets the rest as it streams.
@@ -26,11 +27,10 @@ from yoke_harness.artifact_reader_version import replayed_for_reader, stamp_read
 from yoke_harness.artifact_watermark import ArtifactWatermark
 
 
-#: Bumped when this reader recovers something the previous one lost, so
-#: every record the previous one wrote is folded once more. The current
-#: reader finishes a record wider than one scan budget rather than
-#: abandoning it mid-record.
-_READER_VERSION = "projected-v2"
+#: Bumped when this reader recovers something the previous one did not
+#: read, so every rollout the previous one folded is read once more. The
+#: current reader also follows the child-agent threads a rollout names.
+_READER_VERSION = "child-threads-v3"
 _READER_KEY = "codex_reader"
 
 USAGE_INCOMPLETE_KEY = "usage_incomplete"
@@ -42,7 +42,12 @@ _USAGE_KEYS = (
     "output_tokens reasoning_output_tokens"
 ).split()
 _SELECTED_PATHS = frozenset(
-    [("type",), ("payload", "info", "model_context_window")]
+    [
+        ("type",),
+        ("payload", "info", "model_context_window"),
+        ("payload", "item", "type"),
+        ("payload", "item", "agent_thread_id"),
+    ]
     + [("payload", key) for key in _PAYLOAD_KEYS]
     + [("payload", "info", "total_token_usage", key) for key in _USAGE_KEYS]
 )
@@ -83,6 +88,7 @@ def prepare_codex_watermark(mark: ArtifactWatermark) -> ArtifactWatermark:
         reader_version=_READER_VERSION,
         additive=False,
         cleared_keys=(USAGE_INCOMPLETE_KEY, MODEL_HISTORY_INCOMPLETE_KEY),
+        replay_without_loss=True,
     )
 
 
