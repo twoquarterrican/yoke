@@ -172,7 +172,6 @@ class TestDeployPipelineProjectSettings:
                 {"workflow": "ephemeral.yml"},
                 name="verify",
                 run_id="run-1",
-                member_items=["42"],
                 github_repo="owner/repo",
                 project="externalwebapp",
                 project_repo_path="",

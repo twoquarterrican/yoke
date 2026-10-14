@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 def emit_deployment_event(
@@ -59,29 +59,21 @@ def emit_run_event(
     outcome: str,
     context: Dict[str, Any],
     *,
-    member_items: List[str],
     project: str = "",
     sd: Optional[str] = None,
 ) -> None:
-    """Emit stage events per member public ref and one terminal run event."""
-    targets = (
-        [""]
-        if name in {"DeploymentRunSucceeded", "DeploymentRunFailed"}
-        else member_items or [""]
+    """Emit one run-level event; membership lives in ``deployment_run_items``."""
+    emit_deployment_event(
+        name,
+        event_kind="lifecycle",
+        event_type="deployment_run",
+        source_type="system",
+        severity="STATUS",
+        project=project,
+        outcome=outcome,
+        context=context,
+        sd=sd,
     )
-    for item_ref in targets:
-        emit_deployment_event(
-            name,
-            event_kind="lifecycle",
-            event_type="deployment_run",
-            source_type="system",
-            severity="STATUS",
-            project=project,
-            outcome=outcome,
-            context=context,
-            item_ref=item_ref or None,
-            sd=sd,
-        )
 
 
 __all__ = ["emit_deployment_event", "emit_run_event"]

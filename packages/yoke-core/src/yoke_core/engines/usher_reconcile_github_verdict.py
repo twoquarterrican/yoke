@@ -10,7 +10,6 @@ from __future__ import annotations
 from yoke_core.domain.public_item_target import public_item_target
 
 from dataclasses import dataclass
-from typing import List
 
 from yoke_core.api.service_client_structured_api_adapter import call_dispatcher
 from yoke_core.domain.deploy_pipeline_events import emit_run_event as _emit_run_event
@@ -38,7 +37,6 @@ def emit_retroactive_completion(
     run_id: str,
     stage_name: str,
     workflow_run_id: str,
-    member_items: List[str],
     project: str,
 ) -> None:
     _emit_run_event(
@@ -52,7 +50,6 @@ def emit_retroactive_completion(
             "workflow_run": workflow_run_id,
             "reason": "usher-reconcile-github",
         },
-        member_items=member_items,
         project=project,
     )
 
@@ -94,7 +91,6 @@ def reconcile_from_gh_poll(
             run_id=run_id,
             stage_name=stage_name,
             workflow_run_id=workflow_run_id,
-            member_items=[public_ref],
             project=project,
         )
         return ReconcileResult(

@@ -261,7 +261,6 @@ def _dispatch_github_actions_workflow(
                 "workflow_run": ga_run_id,
                 "reason": "prior-run-success",
             },
-            member_items=member_items,
             project=project,
             sd=sd,
         )

@@ -233,7 +233,6 @@ def run_pipeline(
                 "DeploymentRunExecuting",
                 "started",
                 {"run_id": run_id, "flow": flow_id, "project": project},
-                member_items=member_items,
                 project=project,
                 sd=sd,
             )
@@ -253,7 +252,6 @@ def run_pipeline(
                 "step_runner": stage["step_runner"],
                 "flow": flow_id,
             },
-            member_items=member_items,
             project=project,
             sd=sd,
         )
@@ -310,7 +308,6 @@ def run_pipeline(
                 "DeploymentRunStageCompleted",
                 "completed",
                 {"run_id": run_id, "stage": s_name, "result": "success"},
-                member_items=member_items,
                 project=project,
                 sd=sd,
             )

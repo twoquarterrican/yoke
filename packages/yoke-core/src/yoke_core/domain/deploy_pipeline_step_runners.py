@@ -70,7 +70,6 @@ def _dispatch_step_runner(
         return _dispatch_warm_up(
             config,
             run_id=run_id,
-            member_items=member_items,
             project=project,
             environment_name=environment_name,
         )
@@ -131,7 +130,6 @@ def _dispatch_step_runner(
             config,
             name=name,
             run_id=run_id,
-            member_items=member_items,
             github_repo=github_repo,
             project=project,
             project_repo_path=project_repo_path,
@@ -231,7 +229,6 @@ def _dispatch_warm_up(
     config: Dict[str, Any],
     *,
     run_id: str,
-    member_items: List[str],
     project: str,
     environment_name: str = "",
 ) -> tuple[int, str]:
@@ -272,7 +269,6 @@ def _dispatch_warm_up(
             "function": outcome.function_id,
             "latency_ms": outcome.latency_ms,
         },
-        member_items=member_items,
         project=project,
     )
     return 0, ""
@@ -283,7 +279,6 @@ def _dispatch_ephemeral_verify(
     *,
     name: str,
     run_id: str,
-    member_items: List[str],
     github_repo: str,
     project: str,
     project_repo_path: str,
@@ -297,7 +292,6 @@ def _dispatch_ephemeral_verify(
         config,
         name=name,
         run_id=run_id,
-        member_items=member_items,
         github_repo=github_repo,
         project=project,
         branch=branch,
