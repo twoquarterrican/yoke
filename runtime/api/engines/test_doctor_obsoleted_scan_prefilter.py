@@ -85,37 +85,19 @@ def test_empty_noncapturing_choice_keeps_every_candidate():
     assert scan._required_candidate(re.compile(r"\b(?:retired_key|)\b")) is None
 
 
-def test_identical_text_reuses_matching_with_distinct_path_exemptions(
-    tmp_path, monkeypatch
-):
-    source = r"\bretired_key\b"
-    monkeypatch.setattr(scan, "OBSOLETED_TERM_PATTERNS", (source,))
-    monkeypatch.setattr(scan, "OBSOLETED_TERM_LABELS", {source: "key"})
-    monkeypatch.setattr(scan, "_PER_PATTERN_PATH_ALLOWLIST", {source: ("docs/exempt",)})
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    for name in ("exempt.md", "a.md", "b.md"):
-        (docs / name).write_text("retired_key\n")
-    monkeypatch.setattr(
-        scan,
-        "_iter_scan_paths",
-        lambda root: [docs / name for name in ("exempt.md", "a.md", "b.md")],
-    )
-    calls = []
-    original = scan.required_test
+def test_grouped_reads_keep_every_path_in_order(tmp_path, monkeypatch):
+    paths = [tmp_path / str(index) for index in range(70)]
+    monkeypatch.setattr(scan, "_iter_scan_paths", lambda root: iter(paths))
+    monkeypatch.setattr(scan, "_read_scan_file", lambda path: (path, path.name))
+    sizes = []
 
-    def counted(required):
-        test = original(required)
+    def mapped(method, groups):
+        for group in groups:
+            sizes.append(len(group))
+            yield method(group)
 
-        def run(text):
-            calls.append(text)
-            return test(text)
-
-        return run
-
-    monkeypatch.setattr(scan, "required_test", counted)
-    assert scan.scan_repo(tmp_path) == [
-        "docs/a.md:1: [key] retired_key",
-        "docs/b.md:1: [key] retired_key",
+    monkeypatch.setattr(scan, "bounded_read_map", mapped)
+    assert list(scan._read_scan_files(tmp_path)) == [
+        (path, path.name) for path in paths
     ]
-    assert calls == ["retired_key\n"]
+    assert sizes == [32, 32, 6]

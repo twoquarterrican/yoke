@@ -164,4 +164,7 @@ def required_test(required):
     if required.flags & re.IGNORECASE:
         folded = [literal.lower() for literal in literals]
         return lambda text: any(literal in text.lower() for literal in folded)
+    if len(literals) == 1:
+        literal = literals[0]
+        return lambda text: literal in text
     return lambda text: any(literal in text for literal in literals)
