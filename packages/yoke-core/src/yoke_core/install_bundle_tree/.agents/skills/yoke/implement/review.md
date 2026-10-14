@@ -8,8 +8,6 @@ Before each transition, commit all fixes/new files, then refresh affected
 cases against that committed tree. Materialize the target transition's plans
 and execute unsatisfied cases. Browser proof must serve the expected branch
 and SHA; a capture without an accepted verdict is insufficient.
-Run the blocking stale-string verify through the project's source-dev
-authority before the commit. Failures must be repaired and rerun.
 
 Use `lifecycle.transition.execute` for the pinned adjacent stage:
 

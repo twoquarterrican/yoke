@@ -146,19 +146,6 @@ def test_repo_cleanliness_floor_names_its_global_widening_trigger(tmp_path):
     assert "repo_cleanliness_contract:*" in selection.telemetry()
 
 
-def test_tracked_residue_guard_survives_bounded_javascript_deferral(tmp_path):
-    root = _tiny_repo(tmp_path)
-    asset = "packages/yoke-core/src/yoke_core/ui/static/chart.js"
-    residue_guard = "runtime/api/engines/test_doctor_hc_obsoleted_terms.py"
-    _write(root, asset, "export const chart = {};\n")
-    _write(root, residue_guard, "def test_tracked_residue(): pass\n")
-
-    selection = select([asset], build_import_index(root), bounded=True)
-
-    assert residue_guard in selection.files
-    assert "repo_cleanliness_contract:*" in selection.telemetry()
-
-
 def test_cursor_identity_dispatch_survives_bounded_tooling_deferral(tmp_path):
     root = _tiny_repo(tmp_path)
     cursor_payload = "packages/yoke-core/src/yoke_core/hooks/cursor_payload.py"

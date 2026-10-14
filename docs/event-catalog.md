@@ -171,7 +171,6 @@
 | RelayTransportAttemptsExhausted | system | Unknown | relay_telemetry.py | Auto-discovered from packages/yoke-cli/src/yoke_cli/transport/relay_telemetry.py | INFO | active |
 | RelayTransportRetrySucceeded | system | Unknown | relay_telemetry.py | Auto-discovered from packages/yoke-cli/src/yoke_cli/transport/relay_telemetry.py | INFO | active |
 | RenderRelationshipRecorded | lifecycle | path_context | yoke_core.domain.agents_render_path_context | A packet render recorded batch-level provenance for the render-target and render-source relationships it refreshed. | INFO | active |
-| RetiredSchemaResurrectionAttempt | system | schema_guard | yoke_core.domain.retired_schema_registry | Ambient init/bootstrap attempted to re-add a column registered in yoke_core/domain/retired_schema_surfaces.yaml; the ADD COLUMN was skipped. Context names project, table, column, caller, and the retiring migration module. | WARN | active |
 | SMLChangeApproved | lifecycle | strategize | strategize-skill | SML change approved by operator | STATUS | active |
 | SMLChangeProposed | lifecycle | strategize | strategize-skill | SML change proposed to operator | INFO | active |
 | SMLRefreshCompleted | lifecycle | strategize | strategize-skill | SML refresh phase completed | INFO | active |

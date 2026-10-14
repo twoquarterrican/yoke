@@ -21,10 +21,6 @@ from yoke_core.domain.project_github_capability_settings import (
 from yoke_core.domain.project_github_auth_models import GITHUB_CAPABILITY_TYPE
 from yoke_core.domain.projects_restart_schema import create_project_registry_tables
 from yoke_core.domain.projects_seed_data import seed_all
-from yoke_core.domain.retired_schema_registry import (
-    CONTROL_PLANE_OWNER,
-    guard_add_column,
-)
 from yoke_core.domain.schema_common import (
     _column_exists as _schema_column_exists,
     _table_exists as _schema_table_exists,
@@ -32,25 +28,13 @@ from yoke_core.domain.schema_common import (
 from yoke_core.domain.sql_json import json_get
 
 
-_RESTART_CALLER = "yoke_core.domain.projects_restart"
-
-
 def _placeholder(conn) -> str:
     return "%s" if connection_is_postgres(conn) else "?"
 
 
 def _ensure_column(conn, table: str, column: str, ddl: str) -> None:
-    """Idempotent ``ALTER TABLE ... ADD COLUMN`` with retired-schema guard.
-
-    Skips the ADD COLUMN (and emits
-    :event:`RetiredSchemaResurrectionAttempt`) when the column is
-    registered in ``yoke_core/domain/retired_schema_surfaces.yaml``. Skipping is
-    preferred over hard failure so operator-invoked recovery scenarios
-    do not block on the guard.
-    """
+    """Add a live column when it is absent."""
     if _has_column(conn, table, column):
-        return
-    if not guard_add_column(CONTROL_PLANE_OWNER, table, column, caller=_RESTART_CALLER):
         return
     conn.execute(ddl)
     conn.commit()
@@ -168,7 +152,7 @@ def cmd_init(db_path: Optional[str] = None) -> None:
     try:
         create_project_registry_tables(conn)
 
-        # --- Idempotent migrations (retired-schema-guarded ADD COLUMN) ---
+        # --- Idempotent additive columns ---
         _ensure_column(
             conn,
             "projects",

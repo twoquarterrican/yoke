@@ -66,36 +66,6 @@ before retry. Do not use `path-claim-override` for a planned future claim;
 override is last resort for an irreducible live collision and requires
 explicit operator approval.
 
-## Text-sensitive audit — blocking
-
-Only copy/theme/labels/empty or error states and similar user-visible text
-require this gate. Backend/script/config-only changes skip it.
-Before edits, run the source-dev stale-string preflight under this project's
-declared authority and wrapper. Before every relevant commit, run blocking
-verify; source module is `yoke_core.domain.stale_string_audit`.
-These local-code operations are not raw control-plane mutation shortcuts.
-
-The helper consumes context and attached case configuration before
-deterministic discovery. It prefers removed literals from unstaged, staged
-and main...HEAD diffs; before removals it uses quoted spec/body literals.
-Values also added by the candidate are filtered out. Single words match
-whole words, not supported identifier substrings. Audit all discovered
-*.ts/*.tsx/*.js/*.jsx/*.py surfaces, including helpers, fixtures and smoke.
-
-Surface project/source/surfaces/doc_paths, candidate_strings,
-candidate_source (`git_diff_removed`, `spec_body`, `none`), matches and verdict:
-
-| Verdict | Required handling |
-|---|---|
-| matches_found | Mandatory file:line checklist; repair every actual stale reference before commit |
-| clean | Record no stale matches |
-| not_text_sensitive | Record the reason for skip |
-| missing_candidate_strings | Stop; clarify explicit old literals in item context, then rerun preflight |
-
-Verify exit 1 means remaining matches; exit 2 means candidate extraction
-failure. Both block commit, with no override. Repair and rerun.
-A status-write check does not replace the explicit precommit verification.
-
 ## Governed DB evidence
 
 For apply-intent claims declaring migration_modules, the implementation

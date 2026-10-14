@@ -34,7 +34,7 @@ teaching prose helps discovery, while registered results establish live state.
   asserting the id. Resolve GitHub issue numbers through `github_issue`.
 - Purge retired columns/tables/modules/commands/helpers/files from tracked
   content in the retirement commit. An actively supported compatibility alias
-  is not retired. `HC-obsoleted-terms` enforces this.
+  is not retired.
 - Public refs in live code/docs describe active state only. Historical
   provenance belongs in commits; durable architectural reasons belong under
   `docs/archive/decisions/` with a topic name. `HC-historical-yok-n-cruft`

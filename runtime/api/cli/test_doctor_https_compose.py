@@ -182,28 +182,3 @@ def test_unrelated_internal_error_remains_a_failure():
     note_missing_control_plane([record], "example", check)
     assert record.check_id == "HC-internal-error"
     assert record.result == "FAIL"
-
-
-def test_retired_source_finding_survives_unavailable_backlog(tmp_path, monkeypatch):
-    from yoke_project_checks import check_obsoleted_terms as scan
-    from yoke_core.engines import doctor_https_only as project
-    from yoke_core.engines.doctor_project_checks import Discovery
-
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    (docs / "guide.md").write_text("retired token\n", encoding="utf-8")
-    pattern = r"\bretired token\b"
-    monkeypatch.setattr(scan, "OBSOLETED_TERM_PATTERNS", (pattern,))
-    monkeypatch.setattr(scan, "OBSOLETED_TERM_LABELS", {pattern: "Retired token"})
-    monkeypatch.setattr(scan, "_resolve_repo_root", lambda: str(tmp_path))
-    monkeypatch.setattr(project, "checkout_root_for_project", lambda _: tmp_path)
-    monkeypatch.setattr(project, "local_connection_or_none", lambda _: None)
-    monkeypatch.setattr(
-        project,
-        "discover_project_checks",
-        lambda _: Discovery(scan.PROJECT_HEALTH_CHECKS, []),
-    )
-    rows = project.run_local_project_checks(project="example", full=True, slugs=[])
-    assert [row["severity"] for row in rows] == ["WARN", "N/A"]
-    assert "docs/guide.md:1: [Retired token]" in rows[0]["detail"]
-    assert "no local-postgres authority" in rows[1]["detail"]

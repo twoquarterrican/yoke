@@ -17,7 +17,7 @@ Quickstart for session operators: `AGENTS.md` § Code Conventions, § Structured
 
 The [function catalog](db-reference/functions.md) owns registered ids, CLI adapters, claim verification and permanent boundaries. For a source-checkout Atlas, use `yoke dev run -- python3 -m yoke_core.tools.atlas_render_docs render`; this source-dev renderer is not a product command. Mutations use registered function ids; CLI adapters construct the same dispatched request.
 
-This file is the **entry point**: it covers entry points, the bootstrap contract, the retired-schema registry, the domain catalog, timestamp discipline, query-time SQL clock helpers, JSON-payload columns, and common pitfalls. Per-table schema bodies, the qa CLI reference, the body write path, and the status lifecycle live in topic files under [.yoke/docs/reference/db-reference/](db-reference/).
+This file is the **entry point**: it covers entry points, the bootstrap contract, the domain catalog, timestamp discipline, query-time SQL clock helpers, JSON-payload columns, and common pitfalls. Per-table schema bodies, the qa CLI reference, the body write path, and the status lifecycle live in topic files under [.yoke/docs/reference/db-reference/](db-reference/).
 
 ## Common column mistakes to avoid in raw SQL
 
@@ -104,18 +104,6 @@ Normal runtime commands (reads, domain dispatch, structured-field writes) never 
 When a normal command runs against an existing DB whose baseline schema is missing (no `items` table), the router refuses the command and prints remediation pointing at `db_router init`. No silent `CREATE TABLE` as a side effect of a read-looking command.
 
 **Additive schema self-propagates on deploy.** Separately from the CLI bootstrap path above, the API server entrypoint (`yoke_core.api.server_entrypoint.ensure_core_schema`) runs the full idempotent `schema_init.converge_core_schema` — every `CREATE TABLE`/`CREATE INDEX` plus additive `ADD COLUMN` step — on every boot of an already-born universe. So any net-new additive table or column added to the schema-init chain reaches every born universe on its next deploy/restart with no governed migration and no manual catch-up. Foreign keys onto `environments.id` match the live primary-key type so a universe still on text keys reaches the ordered history that converts them, rather than failing the boot. Data-transforming changes — backfills, drops, rewrites — go in the ordered migration history instead, and are applied by the same boot converge.
-
-### Retired schema surface registry
-
-Columns (and tables) retired across a project's governed migration lifecycle are catalogued in the retired-schema registry. The registry is the single live source authorised to name retired columns by their literal identifier.
-
-It feeds these downstream checks:
-
-- The `check_implementing_to_reviewing_implementation_gate` evidence gate performs a post-state verification against the authoritative DB. If a work item's `db_mutation_profile.affected_surfaces[].columns` names a retired column and that column is still present on the authoritative DB, the advance is blocked with remediation.
-- Idempotent `ALTER TABLE ... ADD COLUMN` call sites in init/bootstrap modules consult `yoke_core.domain.retired_schema_registry.guard_add_column` before executing. A registered column skips the `ADD COLUMN` and emits a WARN `RetiredSchemaResurrectionAttempt` event.
-- Doctor health check `HC-retired-schema-resurrection` (`yoke_core.engines.doctor_hc_retired_schema`) verifies each registered column is actually absent on the authoritative DB and surfaces drift as WARN.
-
-Adding a new retirement: the governed cutover lands first (authoritative DB no longer exposes the surface, decision record authored under `docs/archive/decisions/`). Only then does the surface get an entry in the registry. Listing a surface whose column is still present is honest — doctor will surface the drift on the next run.
 
 ## Registered operations
 

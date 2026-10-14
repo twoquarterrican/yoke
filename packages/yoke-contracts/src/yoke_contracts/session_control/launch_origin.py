@@ -18,8 +18,7 @@ never rewrites a constraint that is already there.
 staffing pass that wrote it was gone. Leftover rows with that value fail a
 later CHECK rewrite loudly rather than being rewritten. Databases created
 before the removal may still name it in an old ``CHECK`` until that rewrite
-lands. ``HC-unreachable-vocabulary-value`` is the guard that catches a
-definition with no producer.
+lands.
 """
 
 from __future__ import annotations

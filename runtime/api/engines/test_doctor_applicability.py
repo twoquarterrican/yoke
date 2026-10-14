@@ -193,10 +193,6 @@ class TestDeclarationTable(unittest.TestCase):
         self.assertTrue(declaration.requires_local_control_plane)
         self.assertEqual(declaration.runtimes, frozenset({RUNTIME_LOCAL}))
 
-    def test_retired_schema_resurrection_is_self_scoped(self):
-        declaration = applicability_for("retired-schema-resurrection")
-        self.assertEqual(declaration.project_scope, PROJECT_SCOPE_SELF)
-
 
 class TestNotApplicableReporting(unittest.TestCase):
     def test_not_applicable_is_counted_and_sectioned_separately(self):

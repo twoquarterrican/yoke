@@ -7,19 +7,12 @@ packs/, README.md) for a retired or forbidden pattern.
 These tests do NOT touch the database, git, or any network.
 They are permanent guards owned by the doc-hygiene subsystem.
 
-The Yoke-functions epic adds a recipe-residue check
-that consumes :data:`RECIPE_RESIDUE_PATTERNS` directly so the assertion
-class cannot drift from the canonical vocabulary.
 """
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
-
-from yoke_core.domain.lint_structured_field_transform_shell_messages import (
-    RECIPE_RESIDUE_PATTERNS,
-)
 
 
 def _repo_root() -> Path:
@@ -135,10 +128,7 @@ def test_no_install_sh_in_active_md_docs():
         exclude_archive=True,
         exclude_strategy=True,
     )
-    hits = [
-        hit for hit in hits
-        if "https://claude.ai/install.sh" not in hit
-    ]
+    hits = [hit for hit in hits if "https://claude.ai/install.sh" not in hit]
     assert not hits, (
         "Active markdown docs must not reference install.sh (retired shell wrapper).\n"
         + "\n".join(hits[:20])
@@ -171,14 +161,6 @@ def test_no_start_api_sh_in_active_md_docs():
         "Active markdown docs must not reference start-api.sh (retired shell wrapper).\n"
         + "\n".join(hits[:20])
     )
-
-
-# ---------------------------------------------------------------------------
-# Retired DB columns and other obsoleted surface names are enforced by
-# HC-obsoleted-terms (see runtime/api/engines/check_obsoleted_terms.py and
-# the matching test module). This file keeps only the per-script retired-path
-# guards that predate the generic HC.
-# ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
@@ -298,7 +280,9 @@ class TestArchivedDocNoActiveStubs:
         """
         retired_names = [Path(r).name for r in self._ARCHIVED]
         # Match docs/FILENAME without archive in between
-        pattern = r"docs/(?!archive/)(" + "|".join(re.escape(n) for n in retired_names) + r")"
+        pattern = (
+            r"docs/(?!archive/)(" + "|".join(re.escape(n) for n in retired_names) + r")"
+        )
         hits = _grep_active(
             pattern,
             extensions=(".md",),
@@ -310,30 +294,3 @@ class TestArchivedDocNoActiveStubs:
             "Update links to point to docs/archive/ or remove the reference.\n"
             + "\n".join(hits[:20])
         )
-
-
-# recipe-residue regression keyed on the canonical
-# RECIPE_RESIDUE_PATTERNS constant — single source of truth shared with
-# HC-terminal-recipe-residue and test_recipe_residue_manifest.
-
-
-def test_no_recipe_residue_patterns_in_active_md_docs():
-    """Active markdown docs must contain zero banned residue patterns.
-    Allowlist: docs/archive/**, .yoke/docs/reference/db-reference/**, and
-    ``runtime/api/**/test_fixtures/**`` (intentional regression fixtures).
-    """
-    findings: list[str] = []
-    for pat in RECIPE_RESIDUE_PATTERNS:
-        hits = _grep_active(
-            re.escape(pat), extensions=(".md",), exclude_archive=True,
-        )
-        for hit in hits:
-            if ".yoke/docs/reference/db-reference/" in hit or "/test_fixtures/" in hit:
-                continue
-            findings.append(f"[{pat}] {hit}")
-    assert not findings, (
-        "Active markdown contains banned terminal-soup recipe patterns "
-        "from RECIPE_RESIDUE_PATTERNS (YOK-1665). Allowed surfaces: "
-        "docs/archive/**, .yoke/docs/reference/db-reference/**, "
-        "runtime/api/**/test_fixtures/**.\n" + "\n".join(findings[:20])
-    )

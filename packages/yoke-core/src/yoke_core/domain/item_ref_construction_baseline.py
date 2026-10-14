@@ -56,11 +56,6 @@ BASELINE: dict[str, dict[str, object]] = {
         "reason": "doc_comment_only",
         "note": "documents dual public-ref and legacy resolver schemes",
     },
-    "packages/yoke-core/src/yoke_core/domain/stale_string_audit_extract.py": {
-        "count": 1,
-        "reason": "token_recognition",
-        "note": "filter quoted strings that look like item refs during audit extract",
-    },
     "packages/yoke-core/src/yoke_core/domain/worktree_preflight_steps.py": {
         "count": 1,
         "reason": "doc_comment_only",

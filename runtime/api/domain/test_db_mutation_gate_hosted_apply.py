@@ -17,7 +17,6 @@ from runtime.api.domain.db_mutation_gate_test_helpers import (
     gate_db_context,
     seed_audit_row,
 )
-from yoke_core.domain.retired_schema_registry import load_registry
 from runtime.api.fixtures.backlog import insert_item
 from runtime.api.fixtures.migration_model_test import governed_postgres_test_seed
 
@@ -73,14 +72,3 @@ def test_hosted_postgres_apply_uses_receipt_without_checkout(
     )
 
     assert outcome.passed, outcome.errors
-
-
-def test_retired_schema_registry_ships_with_core_package() -> None:
-    records = load_registry(force_reload=True)
-
-    assert any(
-        record.module == "events_actor_identity"
-        and record.table == "events"
-        and record.column == "user_id"
-        for record in records
-    )
