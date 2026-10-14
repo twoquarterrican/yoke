@@ -140,8 +140,12 @@ def close_out_satisfied_delivery_member(
     if written is None or written.receipt is None:
         return DeliveryMemberCloseOut(applies=True, ok=True, detail="already done")
     conn.commit()
-    failure = steps.run_closed_member_effects(
-        conn, item_id=int(item_id), public_ref=named, receipt=written.receipt
+    from yoke_core.domain.delivery_member_close_effects import (
+        run_closed_member_effects,
+    )
+
+    failure = run_closed_member_effects(
+        item_id=int(item_id), public_ref=named, receipt=written.receipt
     )
     if failure:
         print(

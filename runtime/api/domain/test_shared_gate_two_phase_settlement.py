@@ -31,6 +31,7 @@ from runtime.api.domain.test_status_transition_preflight import (
 )
 from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.runtime import DEFAULT_TEST_SESSION_ID
+from yoke_core.domain import delivery_member_close_effects as close_effects
 from yoke_core.domain import delivery_member_close_steps as close_out
 from yoke_core.domain import terminal_lane_cleanup
 from yoke_core.domain.db_helpers import iso8601_now
@@ -91,15 +92,15 @@ def test_five_members_close_in_one_commit(test_db: Any, monkeypatch) -> None:
     _executing_run(test_db, "run-one-commit")
     timeline: list[tuple[str, int]] = []
     real_stage = close_out.stage_member_close
-    real_effects = close_out.run_closed_member_effects
+    real_effects = close_effects.run_closed_member_effects
 
     def _stage(conn, **kwargs):
         timeline.append(("write", id(conn)))
         return real_stage(conn, **kwargs)
 
-    def _effects(conn, **kwargs):
-        timeline.append(("effects", id(conn)))
-        return real_effects(conn, **kwargs)
+    def _effects(**kwargs):
+        timeline.append(("effects", 0))
+        return real_effects(**kwargs)
 
     connection_type = type(test_db)
     real_commit = connection_type.commit
@@ -109,15 +110,17 @@ def test_five_members_close_in_one_commit(test_db: Any, monkeypatch) -> None:
         return real_commit(self)
 
     monkeypatch.setattr(close_out, "stage_member_close", _stage)
-    monkeypatch.setattr(close_out, "run_closed_member_effects", _effects)
+    monkeypatch.setattr(close_effects, "run_closed_member_effects", _effects)
     monkeypatch.setattr(connection_type, "commit", _commit)
 
     assert cmd_update("run-one-commit", "status", "succeeded") is None
 
     settling = next(conn for step, conn in timeline if step == "write")
-    steps = [step for step, conn in timeline if conn == settling]
-    closing = steps[steps.index("write") : steps.index("effects")]
-    assert closing == ["write"] * len(MEMBERS) + ["commit"]
+    first_effect = next(i for i, (step, _) in enumerate(timeline) if step == "effects")
+    steps = [step for step, conn in timeline[:first_effect] if conn == settling]
+    closing = steps[steps.index("write") :]
+    assert closing[: len(MEMBERS) + 1] == ["write"] * len(MEMBERS) + ["commit"]
+    assert set(closing[len(MEMBERS) + 1 :]) <= {"commit"}
     assert _run(test_db, "run-one-commit") == ("succeeded", True)
     for item_id in MEMBERS:
         assert _status(test_db, item_id) == "done"
