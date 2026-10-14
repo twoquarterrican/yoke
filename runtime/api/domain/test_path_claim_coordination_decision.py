@@ -16,8 +16,9 @@ import pytest
 
 from yoke_core.domain import db_backend
 from yoke_core.domain import path_claim_coordination_decision as pccd
-from yoke_core.domain.items_writes import insert_item, update_structured_field
+from yoke_core.domain.items_writes import update_structured_field
 from yoke_core.domain.project_identity import render_item_ref
+from runtime.api.fixtures.backlog_inserts import insert_item as insert_fixture_item
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 from yoke_contracts.public_ref import ITEM_NOT_FOUND
 
@@ -29,19 +30,22 @@ def _p(conn) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
 
 
+def _seed_item(db_path: str, item_id: int, title: str) -> None:
+    conn = connect_test_db(db_path)
+    try:
+        insert_fixture_item(conn, id=item_id, title=title, workflow_id=ITEM_WORKFLOW)
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def _seed_item_with_spec(
     db_path: str,
     item_id: int,
     title: str,
     spec: str,
 ) -> None:
-    insert_item(
-        project="yoke",
-        item_id=item_id,
-        title=title,
-        workflow=ITEM_WORKFLOW,
-        db_path=db_path,
-    )
+    _seed_item(db_path, item_id, title)
     if spec:
         update_structured_field(item_id, "spec", spec, db_path=db_path)
 
@@ -305,13 +309,7 @@ def test_build_coordination_context_missing_item_raises_value_error(env):
 def test_build_coordination_context_empty_spec_passes_through(env):
     conn = env["conn"]
     # Insert the candidate without writing a spec.
-    insert_item(
-        project="yoke",
-        item_id=150,
-        title="Sparse candidate",
-        workflow=ITEM_WORKFLOW,
-        db_path=env["db_path"],
-    )
+    _seed_item(env["db_path"], 150, "Sparse candidate")
     _seed_item_with_spec(env["db_path"], 250, "Other", "o")
     _seed_path_target(conn, path_string="AGENTS.md")
     claim_id = _seed_claim(conn, item_id=250)

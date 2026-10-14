@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from yoke_core.domain.actors import first_human_actor_id
 from yoke_core.domain.db_helpers import connect, instant_parameter
 from yoke_core.domain.items_bulk_writes import update_item_multi as update_item_multi
 from yoke_core.domain.item_field_parameters import item_field_parameter
@@ -27,118 +26,9 @@ from yoke_core.domain.items_writes_validation import (
 from yoke_core.domain.deployment_flow_validator import (
     require_flow_for_item_binding,
 )
-from yoke_core.domain.project_identity import (
-    allocate_project_sequence,
-    resolve_project,
-)
 from yoke_core.domain.workflow_item_binding_lock import (
     lock_item_workflow_bindings,
 )
-
-
-def insert_item(
-    item_id: int,
-    title: Optional[str] = None,
-    workflow: Optional[str] = None,
-    status: Optional[str] = None,
-    priority: Optional[str] = "medium",
-    frozen: Optional[int] = 0,
-    blocked: Optional[int] = 0,
-    blocked_reason: Optional[str] = None,
-    github_issue: Optional[str] = None,
-    deployed_to: Optional[str] = None,
-    body: Optional[str] = None,
-    created_at: Optional[str] = None,
-    updated_at: Optional[str] = None,
-    source: Optional[str] = None,
-    project: Optional[str] = None,
-    project_sequence: Optional[int] = None,
-    deployment_flow: Optional[str] = None,
-    db_path: Optional[str] = None,
-) -> None:
-    """Insert a new item.
-
-    ``body`` is accepted but ignored: it renders from structured fields.
-
-    ``project`` names the project the item belongs to. Unnamed, it is
-    resolved from the checkout this call is standing in, and refuses when
-    that answers nothing -- never this installation's own project, which
-    would file the work on a backlog nobody chose.
-
-    Raises the active database driver's error on failure.
-    """
-    selected_workflow = (workflow or "").strip()
-    if not selected_workflow:
-        raise ValueError("workflow is required")
-
-    now = _now_utc()
-    if created_at is None:
-        created_at = now
-    if updated_at is None:
-        updated_at = now
-
-    conn = connect(db_path)
-    try:
-        require_flow_for_item_binding(conn, deployment_flow, project)
-        project_identity = resolve_project(conn, project or None)
-        assert project_identity is not None
-        from yoke_core.domain.workflow_registry import (
-            resolve_current_workflow_pin,
-        )
-
-        workflow_id, workflow_version_id = resolve_current_workflow_pin(
-            conn,
-            selected_workflow,
-        )
-        if status is None:
-            from yoke_core.domain.workflow_runtime import load_workflow_runtime
-
-            status = load_workflow_runtime(
-                conn,
-                workflow_id=workflow_id,
-                workflow_version_id=workflow_version_id,
-            ).stage_ids[0]
-        if project_sequence is None:
-            project_sequence = allocate_project_sequence(conn, project_identity.id)
-        if source is None:
-            source = str(first_human_actor_id(conn))
-        conn.execute(
-            """
-            INSERT INTO items (
-                id, title, workflow_id, workflow_version_id,
-                status, priority,
-                frozen, blocked, blocked_reason,
-                github_issue, deployed_to,
-                created_at, updated_at, source,
-                project_id, project_sequence, deployment_flow
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                item_id,
-                title,
-                workflow_id,
-                workflow_version_id,
-                status,
-                priority,
-                frozen,
-                blocked,
-                blocked_reason,
-                github_issue,
-                deployed_to,
-                item_field_parameter(conn, "created_at", created_at),
-                item_field_parameter(conn, "updated_at", updated_at),
-                source,
-                project_identity.id,
-                project_sequence,
-                deployment_flow,
-            ),
-        )
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
 
 
 def update_item_field(

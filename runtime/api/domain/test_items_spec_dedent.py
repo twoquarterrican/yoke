@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from runtime.api.fixtures.file_test_db import init_test_db
+from runtime.api.fixtures.backlog_inserts import insert_item
+from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 from yoke_core.domain import items
 
 import pytest
@@ -25,13 +26,12 @@ def db_path(tmp_path: Path):
 
 
 def _seed_item(db_path: str, item_id: int, title: str) -> None:
-    items.insert_item(
-        item_id=item_id,
-        title=title,
-        workflow="issue",
-        project="yoke",
-        db_path=db_path,
-    )
+    conn = connect_test_db(db_path)
+    try:
+        insert_item(conn, id=item_id, title=title, workflow_id="issue")
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def test_spec_write_dedents_uniform_leading_prefix(db_path: str) -> None:

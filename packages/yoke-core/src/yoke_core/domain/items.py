@@ -5,7 +5,7 @@ DB router and operator-facing item surfaces.
 
 Library usage::
 
-    from yoke_core.domain.items import query_item, query_item_row, insert_item
+    from yoke_core.domain.items import query_item, query_item_row
 
 CLI usage::
 
@@ -15,7 +15,6 @@ Subcommands:
 
     get <id> <field>
     row <id>
-    insert --id N --title T ...
     update <id> <field> <value>
     update-multi <id> field1=val1 ...
     update-structured <id> <field> (--body-file <path> | --stdin) [--force] [--source S]
@@ -30,7 +29,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence
 
 # Public façade: callers import stable names from ``yoke_core.domain.items``
 # while implementations live in responsibility-specific siblings.
@@ -48,7 +47,6 @@ from yoke_core.domain.items_queries import (
     query_items_list,
 )
 from yoke_core.domain.items_writes import (
-    insert_item,
     update_item_field,
     update_item_multi,
     update_structured_field,
@@ -64,7 +62,6 @@ __all__ = [
     "query_item",
     "query_item_row",
     "query_items_list",
-    "insert_item",
     "update_item_field",
     "update_item_multi",
     "update_structured_field",
@@ -93,26 +90,6 @@ def _build_parser() -> argparse.ArgumentParser:
     # row <id>
     p_row = sub.add_parser("row", help="Query full item row (pipe-delimited)")
     p_row.add_argument("id", type=int, help="Item ID (numeric)")
-
-    # insert
-    p_ins = sub.add_parser("insert", help="Insert a new item")
-    p_ins.add_argument("--id", type=int, required=True, help="Item ID")
-    p_ins.add_argument("--title", default=None)
-    p_ins.add_argument("--workflow", default=None)
-    p_ins.add_argument("--status", default=None)
-    p_ins.add_argument("--priority", default=None)
-    p_ins.add_argument("--frozen", type=int, default=None)
-    p_ins.add_argument("--blocked", type=int, default=None)
-    p_ins.add_argument("--blocked-reason", default=None)
-    p_ins.add_argument("--github-issue", default=None)
-    p_ins.add_argument("--deployed-to", default=None)
-    p_ins.add_argument("--body", default=None)
-    p_ins.add_argument("--body-file", default=None, help="Read body from file")
-    p_ins.add_argument("--created-at", default=None)
-    p_ins.add_argument("--updated-at", default=None)
-    p_ins.add_argument("--source", default=None)
-    p_ins.add_argument("--project", default=None)
-    p_ins.add_argument("--deployment-flow", default=None)
 
     # update <id> <field> <value>
     p_upd = sub.add_parser("update", help="Update single non-structured field")
@@ -166,35 +143,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 print(f"Error: no item for {args.id!r}", file=sys.stderr)
                 return 1
             print(result)
-            return 0
-
-        elif args.command == "insert":
-            body = args.body
-            if args.body_file:
-                body = Path(args.body_file).read_text(encoding="utf-8")
-            # Build kwargs, omitting None values so function defaults apply
-            kwargs: Dict[str, Any] = {"item_id": args.id}
-            _cli_field_map = {
-                "title": args.title,
-                "workflow": args.workflow,
-                "status": args.status,
-                "priority": args.priority,
-                "frozen": args.frozen,
-                "blocked": args.blocked,
-                "blocked_reason": args.blocked_reason,
-                "github_issue": args.github_issue,
-                "deployed_to": args.deployed_to,
-                "body": body,
-                "created_at": args.created_at,
-                "updated_at": args.updated_at,
-                "source": args.source,
-                "project": args.project,
-                "deployment_flow": args.deployment_flow,
-            }
-            for k, v in _cli_field_map.items():
-                if v is not None:
-                    kwargs[k] = v
-            insert_item(**kwargs)
             return 0
 
         elif args.command == "update":
