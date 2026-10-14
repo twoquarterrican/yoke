@@ -1,0 +1,9 @@
+{
+ "id": "clipboard-permission",
+ "title": "Clipboard permission",
+ "status": "observed",
+ "summary": "grant_clipboard grants clipboard-read and clipboard-write for the open page's http or https origin through the browser permission API. Navigate to that page first. Another origin fails as clipboard_permission_origin_required; a browser that cannot grant those permissions fails as clipboard_permission_unsupported. Both refusals name the recovery.",
+ "sources": ["docs/public/reference/browser-scenarios.md", "packages/yoke-contracts/src/yoke_contracts/browser_step_schema.json", "packages/yoke-harness/src/yoke_harness/browser_runtime/src/step-actions/permissions.js", "packages/yoke-harness/src/yoke_harness/browser_runtime/tests/step-runner-clipboard.test.js"],
+ "page": "browser-qa",
+ "position": 6
+}

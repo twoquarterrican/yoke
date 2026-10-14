@@ -206,6 +206,14 @@ be a string; an object is refused. A screenshot without `capture: true` is
 refused rather than recorded empty. A navigate that sets `target` instead of
 `route` is refused rather than falling through to the base URL.
 
+### Clipboard permission
+
+`{"action": "grant_clipboard"}` grants `clipboard-read` and
+`clipboard-write` for the open page's http or https origin. Navigate
+there first. Another origin fails as `clipboard_permission_origin_required`;
+a browser that cannot grant those permissions fails as
+`clipboard_permission_unsupported`. Both refusals name the recovery.
+
 ### Absence assertions and what they observed
 
 `hidden`, `count_eq` of 0, and `count_gte` of 0 are all satisfied by a page

@@ -106,6 +106,8 @@ def test_step_help_publishes_the_declared_schema(
 ) -> None:
     help_text = declared_schema_help()
     assert "navigate: route" in help_text
+    assert "grant_clipboard" in help_text
+    assert "clipboard_permission_origin_required" in help_text
     assert "capture=true" in help_text
     assert "selector -> target" in help_text
     with pytest.raises(SystemExit) as raised:
@@ -114,3 +116,4 @@ def test_step_help_publishes_the_declared_schema(
     printed = capsys.readouterr().out
     assert "Declared browser step schema" in printed
     assert "navigate: route" in printed
+    assert "grant_clipboard" in printed

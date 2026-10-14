@@ -10,7 +10,7 @@
  *   resolveUrl(route, baseUrl) -> string
  *
  * Supported actions: navigate, click, fill_form, wait_for, ready, delay,
- *   assert, screenshot, scroll, hover, type, select
+ *   assert, screenshot, scroll, hover, type, select, grant_clipboard
  */
 
 const { buildRefMap } = require('./snapshot');
@@ -18,6 +18,7 @@ const nav = require('./step-actions/navigation');
 const inter = require('./step-actions/interaction');
 const assertions = require('./step-actions/assertion');
 const capture = require('./step-actions/capture');
+const permissions = require('./step-actions/permissions');
 const { refuseStep } = require('./step-schema');
 const {
   authenticationWallError,
@@ -169,6 +170,9 @@ async function executeStep(page, step, options) {
         break;
       case 'select':
         result = await inter.executeSelect(page, step, options, refMap);
+        break;
+      case 'grant_clipboard':
+        result = await permissions.executeGrantClipboard(page, step, options);
         break;
       default:
         throw new Error(`Unknown action: ${step.action}`);
