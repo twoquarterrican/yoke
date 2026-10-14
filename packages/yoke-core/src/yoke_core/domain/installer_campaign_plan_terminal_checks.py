@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from yoke_contracts.first_admin_name import validate_admin_name
+
 from yoke_core.domain.installer_campaign_plan_common import (
     APPLY_SUCCESS_TEXT,
     BROWSER_APPROVAL_TEXT,
@@ -229,6 +231,13 @@ APPLY_HANDOFF = terminal_case(
                 ready_timeout_seconds=180,
             ),
             transition("continue-local-universe", "Enter"),
+            transition(
+                "local-admin-name",
+                validate_admin_name("Installer QA"),
+                "Enter",
+                ready_text=("What's your name?", "Yoke creates this universe's first admin as you."),
+                ready_timeout_seconds=180,
+            ),
             transition("machine-github", *CHOOSE_BACKLOG_KEYS),
             transition(
                 "project-mode",
@@ -244,6 +253,7 @@ APPLY_HANDOFF = terminal_case(
         expected_text=(
             "Starting Yoke setup",
             "Your Yoke lives on this machine.",
+            "What's your name?",
             *REVIEW_TEXT,
             *APPLY_SUCCESS_TEXT,
             *PARENT_HANDOFF_TEXT,
