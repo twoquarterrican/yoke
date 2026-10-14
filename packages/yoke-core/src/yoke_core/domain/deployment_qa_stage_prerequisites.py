@@ -193,6 +193,14 @@ def prior_stage_refusals(
                 refusals.append(f"stage {stage['name']!r}: {owed}")
             continue
         for member in subjects:
+            from yoke_core.domain.deployment_qa_shared_acceptance import (
+                prior_shared_acceptance,
+            )
+
+            shared = prior_shared_acceptance(conn, run_id, stage, member)
+            if shared is not None:
+                refusals.extend(shared)
+                continue
             rows = conn.execute(
                 "SELECT id,waived_at,execution_target_json FROM qa_requirements "
                 "WHERE deployment_run_id=%s AND deployment_stage=%s "

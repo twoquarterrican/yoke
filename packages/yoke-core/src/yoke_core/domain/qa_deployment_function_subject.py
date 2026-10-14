@@ -148,13 +148,32 @@ def resolve_run_qa_subject(
             ).fetchone()
             reviewing_terminal = row is not None and row[0] in {"aborted", "error"}
         try:
-            subject = deployment_qa_stage_subject(
-                conn,
-                run_id=run_id,
-                stage_name=str(stage),
-                member_item_id=member_id,
-                require_active=not reviewing_terminal,
-            )
+            if execution_id:
+                from yoke_core.domain.qa_plan_execution_store import (
+                    select_plan_execution,
+                )
+                from yoke_core.domain.deployment_qa_shared_plans import (
+                    execution_subject,
+                )
+
+                execution = select_plan_execution(conn, execution_id, lock=False)
+                subject = execution_subject(
+                    conn, execution, require_active=not reviewing_terminal
+                )
+            elif request.function == "qa.browser_context.get":
+                from yoke_core.domain.deployment_qa_shared_plans import (
+                    requirement_subject,
+                )
+
+                subject = requirement_subject(conn, int(payload["requirement_id"]))
+            else:
+                subject = deployment_qa_stage_subject(
+                    conn,
+                    run_id=run_id,
+                    stage_name=str(stage),
+                    member_item_id=member_id,
+                    require_active=not reviewing_terminal,
+                )
         except (LookupError, ValueError) as exc:
             raise QaSubjectProjectError(
                 f"deployment QA subject is unavailable: {exc}; use the active "

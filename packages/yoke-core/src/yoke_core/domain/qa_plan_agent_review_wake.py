@@ -20,6 +20,22 @@ def notify_scoped_agent_review(conn: Any, execution: Mapping[str, Any]) -> str:
     member_id = execution.get("deployment_member_item_id")
     run_id = execution.get("deployment_run_id")
     stage = execution.get("deployment_stage")
+    if (
+        not member_id
+        and run_id
+        and stage
+        and ((execution.get("execution_target") or {}).get("deployment") or {}).get(
+            "shared_plan"
+        )
+    ):
+        from yoke_core.domain.deployment_qa_shared_plans import (
+            execution_subject,
+            group_members,
+        )
+
+        group = execution_subject(conn, execution)
+        members = group_members(conn, group, execution["execution_target"])
+        member_id = members[0] if members else None
     if not member_id or not run_id or not stage:
         return ""
     p = marker(conn)

@@ -141,6 +141,7 @@ def run_qa_blockers(
     """Wait for carried decisions before opening a shared human QA request."""
     if (
         member_item_id is None
+        and not subject.get("shared_plan")
         and subject["stage"]["verdict"]["mode"] == "required_human"
     ):
         return member_approval_blockers(conn, run_id)

@@ -13,7 +13,9 @@ release QA does not hold.
 
 Scope is the item being closed, not the whole batch: its own
 item-scoped stages plus every run-scoped stage, which is exactly the
-set of stage verdicts that answer for this item. Another member's
+set of stage verdicts that answer for this item. Within an item-scoped
+stage, attached plan groups share evidence only with members selecting that
+same plan, source revision and observed target. Another member's
 outstanding item-scoped QA is that member's gate, and blocking on it
 would deadlock a batch whose members legitimately finish at different
 times.

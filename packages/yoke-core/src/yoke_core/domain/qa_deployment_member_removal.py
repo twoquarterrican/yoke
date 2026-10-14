@@ -31,6 +31,35 @@ def abort_removed_member_executions(conn: Any, *, run_id: str, item_id: int) -> 
         (run_id, item_id),
     )
     executions = [lock_plan_execution(conn, str(row["id"])) for row in rows]
+    shared_rows = query_rows(
+        conn,
+        "SELECT id FROM qa_plan_executions WHERE deployment_run_id=%s "
+        f"AND deployment_member_item_id IS NULL AND state IN ({LIVE_PLAN_EXECUTION_SQL}) ORDER BY id",
+        (run_id,),
+    )
+    from yoke_core.domain.deployment_qa_shared_plans import resolve_shared_subject
+
+    for row in shared_rows:
+        execution = lock_plan_execution(conn, str(row["id"]))
+        target = execution.get("execution_target") or {}
+        shared = (target.get("deployment") or {}).get("shared_plan")
+        if not shared:
+            continue
+        try:
+            resolve_shared_subject(
+                conn,
+                run_id=run_id,
+                stage_name=execution["deployment_stage"],
+                plan_id=shared["plan_id"],
+                expected_target=target,
+                require_active=False,
+            )
+        except ValueError as exc:
+            if not str(exc).startswith(
+                f"shared_plan_subject_unresolved: plan {shared['plan_id']} has 0 matching"
+            ):
+                raise
+            executions.append(execution)
     executions = [
         e for e in executions if e["state"] not in TERMINAL_PLAN_EXECUTION_STATES
     ]

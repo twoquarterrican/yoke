@@ -158,17 +158,37 @@ def source_obligation_consumed(
     else:
         identity, identity_params = lineage_identity_clause(conn, source, marker=marker)
     member_scope = f"deployment_member_item_id={marker}"
-    if legacy:
+    if legacy or source["plan_id"] is not None:
         member_scope = f"({member_scope} OR deployment_member_item_id IS NULL)"
     rows = conn.execute(
         "SELECT id,deployment_stage,deployment_member_item_id,"
         "waived_at,superseded_by_requirement_id,replacement_requirement_id,"
-        f"{requirement_retracted_at_select(conn)} "
+        f"{requirement_retracted_at_select(conn)},execution_target_digest,execution_target_json "
         "FROM qa_requirements WHERE deployment_run_id="
         f"{marker} AND {member_scope} AND {identity} "
         "ORDER BY id",
         (run_id, int(source["item_id"]), *identity_params),
     ).fetchall()
+    if not legacy and source["plan_id"] is not None:
+        from yoke_core.domain.deployment_qa_shared_plans import (
+            member_group_digests,
+            shared_target_identity,
+        )
+
+        digests = {}
+        selected = []
+        for row in rows:
+            if _row_value(row, "deployment_member_item_id", 2) is not None:
+                selected.append(row)
+                continue
+            if not shared_target_identity(_row_value(row, "execution_target_json", 8)):
+                continue
+            stage = str(_row_value(row, "deployment_stage", 1) or "")
+            if stage not in digests:
+                digests[stage] = member_group_digests(conn, run_id, stage, int(item_id))
+            if _row_value(row, "execution_target_digest", 7) in digests[stage]:
+                selected.append(row)
+        rows = selected
     if not rows:
         return False
     if legacy:
@@ -184,7 +204,7 @@ def source_obligation_consumed(
         row = rows[0]
         stage_name = str(_row_value(row, "deployment_stage", 1) or "")
         member = _row_value(row, "deployment_member_item_id", 2)
-        member_item_id = int(member) if member not in (None, 0) else None
+        member_item_id = int(member) if member not in (None, 0) else int(item_id)
         try:
             subject = deployment_qa_stage_subject(
                 conn,

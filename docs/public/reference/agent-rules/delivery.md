@@ -242,8 +242,7 @@ learns the other's part from its own skill. The split is the whole rule:
   every final member through all item QA, shared gates, and run success. This
   automatic close-out needs no delivery wake and ends an otherwise empty
   holder session. Legacy schema-1 settlement and the terminal done gate credit the run's run-wide
-  post-deploy requirements to its delivered members without source keys; scoped runs keep exact
-  member binding. Failing or unanswered requirements block, and superseded
+  post-deploy requirements to its delivered members without source keys; scoped runs keep exact private-member or attached shared-plan binding. Failing or unanswered requirements block, and superseded
   requirements follow their successors. A wait wake is withdrawn — the
   existing message-cancel path —
   when its run reaches a terminal status or its member is no longer
@@ -254,7 +253,7 @@ learns the other's part from its own skill. The split is the whole rule:
   on the receipt and names that condition, rather than retrying in silence.
 
 **A QA stage credits only requirements bound to its own stage name** — an
-item-scoped stage only ones bound to the member too. So the member owner runs
+item-scoped stage reads the member's private cases and attached shared-plan groups. So the member owner runs
 `yoke qa plan run --deployment-run-id RUN --stage STAGE --member PREFIX-N`, and
 the unscoped run-wide form is refused rather than recording a pass the stage
 ignores. `yoke qa case run --requirement-id N` credits that requirement's

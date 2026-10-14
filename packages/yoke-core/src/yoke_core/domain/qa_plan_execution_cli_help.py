@@ -32,7 +32,15 @@ Select an item, deployment run, or manual project plan.
 Release-time scope: a stage credits only its own name
 -----------------------------------------------------
 A deployment QA stage is satisfied only by requirements bound to that stage's
-own name -- and an item-scoped stage by requirements bound to the member too.
+own name. An item-scoped stage reads private member cases and attached shared
+plan/source/target groups; each member waits only on its attached groups.
+Matching attachments share case rows and an ordered execution, with member
+identity omitted from the shared target. A pass credits every attaching member;
+a shared failure blocks them all. Different plans, sources and targets stay
+separate. The same member command reuses completed group evidence and continues
+its next unfinished group. shared_plan_execution_busy names another group's live
+cursor: continue its owner's watcher and retry when it completes.
+
 So the scope flags are not optional decoration:
 
   * Run-scoped stage  -> --stage STAGE, no --member.
@@ -63,7 +71,7 @@ case reads nothing from the checkout.
 For a deployment member whose cases require several Test Machines, the scoped
 command automatically executes one immutable roster per machine. Each roster
 holds its own lease and participates in that host's FIFO. It keeps the same
-run, stage, member and frozen target, including cases on different plans.
+run, stage and frozen private-member or shared-plan target.
 A waiting host or independent review stops the command; after the wait or
 review settles, rerun the same scoped command to continue the remaining hosts.
 Completed scoped cases with passing evidence are retained. The member is

@@ -28,11 +28,17 @@ def item_scoped_stage_plan_run_command(case: Mapping[str, Any]) -> str | None:
     """
     run_id = str(case.get("deployment_run_id") or "").strip()
     stage = str(case.get("deployment_stage") or "").strip()
-    member_ref = str(case.get("deployment_member_ref") or "").strip()
+    shared = ((case.get("execution_target") or {}).get("deployment") or {}).get(
+        "shared_plan"
+    )
+    refs = case.get("shared_plan_member_refs") or []
+    member_ref = str(
+        (refs[0] if shared and refs else case.get("deployment_member_ref")) or ""
+    ).strip()
     project = str(case.get("project") or "").strip()
     if not run_id or not stage or not member_ref or not project:
         return None
-    if case.get("deployment_member_item_id") is None:
+    if case.get("deployment_member_item_id") is None and not shared:
         return None
     return (
         f"yoke qa plan run --deployment-run-id {run_id} --stage {stage} "
@@ -46,7 +52,10 @@ def item_scoped_stage_credit_refusal(case: Mapping[str, Any]) -> str | None:
     if command is None:
         return None
     stage = str(case["deployment_stage"]).strip()
-    member_ref = str(case["deployment_member_ref"]).strip()
+    refs = case.get("shared_plan_member_refs") or []
+    member_ref = str(
+        case.get("deployment_member_ref") or (refs[0] if refs else "")
+    ).strip()
     run_id = str(case["deployment_run_id"]).strip()
     return (
         f"STAGE CREDIT REFUSAL: this requirement is bound to item-scoped "

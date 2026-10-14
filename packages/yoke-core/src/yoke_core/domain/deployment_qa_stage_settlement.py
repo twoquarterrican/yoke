@@ -33,24 +33,26 @@ def settle_execution(conn: Any, execution: Mapping[str, Any]) -> dict[str, Any] 
     from yoke_core.domain.deployment_qa_execution_target import (
         deployment_qa_execution_target,
     )
-    from yoke_core.domain.deployment_qa_stage_contract import (
-        deployment_qa_stage_subject,
-    )
     from yoke_core.domain.qa_execution_environment_target import target_digest
 
     member = execution.get("deployment_member_item_id")
-    subject = deployment_qa_stage_subject(
-        conn,
-        run_id=run_id,
-        stage_name=stage,
-        member_item_id=int(member) if member is not None else None,
+    from yoke_core.domain.deployment_qa_shared_plans import (
+        execution_subject,
     )
+
+    subject = execution_subject(conn, execution)
     frozen_digest = target_digest(deployment_qa_execution_target(conn, subject))
     if str(execution.get("execution_target_digest") or "") != frozen_digest:
         raise ValueError(
             f"QA execution {execution['id']} targets a different deployment "
             f"candidate than run {run_id} stage {stage!r}; execute this "
             "stage's cases against its frozen target"
+        )
+    if subject.get("shared_plan"):
+        from yoke_core.domain.deployment_qa_shared_acceptance import settle_shared_group
+
+        return settle_shared_group(
+            conn, subject, deployment_qa_execution_target(conn, subject)
         )
     return settle_subject(
         conn,

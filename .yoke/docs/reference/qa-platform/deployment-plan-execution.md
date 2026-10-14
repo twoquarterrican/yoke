@@ -1,0 +1,107 @@
+# Deployment plan execution
+
+Use the attaching member's pinned stage to run or resume its owed cases:
+
+```text
+yoke qa plan run --deployment-run-id RUN --stage STAGE --member PREFIX-N --project P
+```
+
+Read `yoke qa plan run --help` for correction and continuation options.
+[Case attachment](case-attachment.md#binding-a-deployment-case-to-its-stage-and-member)
+owns the scope and target-binding contract.
+
+## Shared plan credit
+
+Members attaching the same post-deploy plan share its case rows and ordered
+execution when the plan id, source revision and observed execution target match.
+The shared target omits `deployment.member_item_id` and records
+`deployment.shared_plan`; the run and stage remain explicit. Each member waits
+only for its attached groups. A failing shared case blocks every attaching
+member; a different plan, source revision or target stays separate. Flow-pinned
+plans and directly authored member cases retain their declared scope.
+
+Use the `--stage` / `--member` command above. It selects that member's
+next unfinished shared group and reuses completed group evidence. Another
+session's live execution remains owned by that session; continue its watcher
+and retry afterward. `shared_plan_execution_busy` names a different group
+already using the stage's ordered cursor. Refresh and declared corrections
+also use an attaching member and keep the failed group's target identity.
+Removing one member preserves shared evidence for the members still attached.
+
+## Machine partitions
+
+For a deployment member whose cases require several Test Machines, the scoped
+command automatically executes one immutable roster per machine. Each roster
+holds its own lease and participates in that host's FIFO. It keeps the same
+run, stage and frozen private-member or shared-plan target.
+A waiting host or independent review stops the command; after the wait or
+review settles, rerun the same scoped command to continue the remaining hosts.
+Completed scoped cases with passing evidence are retained. The member is
+accepted only when every required case passes. Omit --machine for this
+multi-machine form: a single host pin cannot satisfy conflicting constraints.
+
+For one case that needs several hosts simultaneously, declare its driving host
+as `method_config.machine` and every required host in `method_config.machines`:
+`{"machine":"macos-example","machines":["linux-example","macos-example"]}`. Names must be
+registered, unique, and include the driving host. Run this case through
+`yoke qa plan run`; direct case execution refuses it. The
+runner acquires every host through its FIFO in sorted name order, releases
+partial acquisitions on contention, and retains the full set through case
+execution and mission review. Completion or abort releases the set; [completed captures remain reviewable](requirement-state-model.md). Cases
+with different driving hosts or declared sets use separate execution rosters.
+
+## Shared host turns and starting state
+
+An occupied Test Machine is a wait, never a FAIL. Plan acquisition keeps its
+cursor open and queues the host on the existing durable execution. FIFO order
+starts at the first host-wait request and survives retries. Lease release
+reserves the next live waiter's turn and sends its owner the exact resume
+command; stopped owners use the same harness-neutral wake route as other
+control-plane notices. Ended owners leave the queue. A reserved sticky lease
+still uses the documented human-only recovery if its owner dies.
+
+If a walker discovers a second required host is occupied, return
+`WALK_STATUS: HOST_WAIT` and its registered name plus holder evidence. Submit
+through the current bundle's `yoke qa plan review-submit ... --stdin`:
+
+```json
+{"host_wait":{"machine":"linux-example","rationale":"lease holder and resume point"}}
+```
+
+Submit this object alone. It records no verdict or human review request,
+retains the old capture and bundle as history, and queues a new capture against
+the identical immutable target. The same scoped plan-run command resumes it.
+Use a verdict only after the required host was available and the walk ran.
+
+Exploratory mission `method_config` can declare an apt package fixture:
+
+```json
+{
+  "executor":"informed_subagent",
+  "machine":"linux-example",
+  "host_starting_state":{"os_packages":{
+    "absent":["python3-venv","python3.12-venv"],"present":[]
+  }}
+}
+```
+
+`method_config.machine` selects that registered host even when this direct
+requirement has only the generic <!-- qa:test-machine-capability -->`test-machine` capability. Admitted deployment
+copies retain the pin; omitting `--machine` does not permit another host, and a
+conflicting run pin is refused before a lease is acquired.
+
+Only an explicitly declared host baseline restores the golden home. A mission
+declared `as_is` keeps the home it finds and, absent `host_starting_state`, leaves
+packages and their journal untouched. A named baseline or explicit fixture
+undoes only the preceding mission's journal-attributed package delta, applies the declaration and
+records proof before walking. Linux and WSL fixtures use apt; a declaration on another OS
+refuses with the supported host named. Package changes made through
+`yoke qa mission host-command` are journaled, including transitive installs and
+failed commands. The owner-only journal lives beside the golden archive,
+outside the reset home. No arbitrary package cleanup command is accepted.
+Independent host changes outside the journal's changed and declared packages,
+including unattended security upgrades, are preserved and become the new base
+inventory after restore. Missing attribution refuses before package mutation.
+Restoring missing or changed packages requires the recorded versions to remain
+available; a failed restore names apt access and journal reconciliation and
+blocks execution. Continuations preserve the existing walk and journal.

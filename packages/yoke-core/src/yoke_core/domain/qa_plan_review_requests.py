@@ -43,23 +43,13 @@ def ensure_plan_review_requests(
         if row is not None:
             stage_name = row["deployment_stage"] if hasattr(row, "keys") else row[1]
             if stage_name is not None:
-                deployment_run_id = (
-                    row["deployment_run_id"] if hasattr(row, "keys") else row[0]
-                )
-                member = (
-                    row["deployment_member_item_id"] if hasattr(row, "keys") else row[2]
-                )
                 from yoke_core.domain.approval_policy import parse_approval_policy
-                from yoke_core.domain.deployment_qa_stage_contract import (
-                    deployment_qa_stage_subject,
+
+                from yoke_core.domain.deployment_qa_shared_plans import (
+                    requirement_subject,
                 )
 
-                stage_subject = deployment_qa_stage_subject(
-                    conn,
-                    run_id=str(deployment_run_id),
-                    stage_name=str(stage_name),
-                    member_item_id=int(member) if member is not None else None,
-                )
+                stage_subject = requirement_subject(conn, requirement_id)
                 verdict_policy = stage_subject["stage"]["verdict"]
                 allowed = allowed_review_verdicts(verdict_policy.get("mode"))
                 if UNDETERMINED_VERDICT not in allowed:

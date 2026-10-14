@@ -157,6 +157,11 @@ def _settle_stage_status(
     member_item_id: int | None,
 ) -> dict[str, Any]:
     """Settle or describe one active stage/member acceptance boundary."""
+    from yoke_core.domain.deployment_qa_shared_acceptance import shared_member_status
+
+    shared = shared_member_status(conn, subject, target)
+    if shared is not None:
+        return shared
     current_target_digest = target_authority.target_digest(target)
     # Settle against the frozen target recorded on the run, never a live
     # environment snapshot whose URL or settings may have moved since.
