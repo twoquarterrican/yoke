@@ -217,21 +217,14 @@ yoke project install ~/path/to/checkout
 That materializes skills, agents, hooks, and `.yoke/docs` from the engine's
 public docs corpus.
 
-Check readiness in the installed project:
-
-```bash
-yoke doctor run --install --project P
-```
-
-Each failure names its next step. The focused roster checks machine registration,
-relay, hook process version, unattended permissions, configured GitHub auth,
-harness CLI sign-in, dashboard build, this session's hook registration,
-foreign install residue, guidance versions and instruction discovery.
-Intentional GitHub disablement is N/A. Missing or unknown evidence cannot pass.
-Non-interactive setup ends with this result, including machine-only checks when
-no project was selected. A hook configured on disk is separate from a hook
-observed in this session; start a new harness session after installing hooks.
-See [Doctor](events-doctor-ouroboros.md#doctor) for the full health-check surface.
+Check readiness: `yoke doctor run --install --project P`.
+Checks cover machine/relay, hook version, unattended permissions, GitHub auth,
+CLI sign-in, dashboard build, this session's hook delivery, foreign residue,
+guidance versions and instruction discovery. Each failure names its next step.
+Intentional GitHub disablement is N/A; unknown evidence cannot pass.
+Non-interactive setup shows and saves the result; machine-only runs omit project
+checks. Installed hooks need a new harness session to prove actual delivery.
+See [Doctor](events-doctor-ouroboros.md#doctor) for full checks.
 
 The run finishes the job rather than leaving you a commit to push. It fetches
 the branch's remote first and fast-forwards when the checkout is simply
