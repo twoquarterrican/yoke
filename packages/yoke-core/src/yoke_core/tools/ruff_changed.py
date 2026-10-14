@@ -17,6 +17,7 @@ composition, so a green can be read for what it actually covered.
 from __future__ import annotations
 
 import argparse
+import functools
 import os
 import subprocess
 import sys
@@ -89,12 +90,13 @@ def changed_python_paths(base: str, root: Path) -> tuple[str, ...]:
     return select_changed_python_paths(base, root).paths
 
 
+@functools.cache
 def _ruff_environment(root: Path) -> tuple[str, Mapping[str, str]]:
     """Return the interpreter and environment Ruff runs under for ``root``.
 
     Under ``yoke dev run`` this process already runs on the interpreter and
     environment the parent verified for its bound checkout, so that checkout
-    is not resolved again. Any other tree is resolved once here.
+    is not resolved again. Any other tree is resolved once per process.
     """
     bound = os.environ.get(SOURCE_DEV_RUN_ROOT_ENV, "").strip()
     if bound and Path(bound).resolve() == root:
@@ -103,13 +105,12 @@ def _ruff_environment(root: Path) -> tuple[str, Mapping[str, str]]:
     return binding.python, binding.env
 
 
-def _run_ruff(
-    root: Path,
-    environment: tuple[str, Mapping[str, str]],
-    arguments: Sequence[str],
-    paths: Sequence[str],
-) -> int:
-    python, env = environment
+def _run_ruff(root: Path, arguments: Sequence[str], paths: Sequence[str]) -> int:
+    try:
+        python, env = _ruff_environment(root)
+    except source_python_environment.SourceEnvironmentRefusal as exc:
+        print(f"ruff-changed: {exc}", file=sys.stderr)
+        return 1
     completed = subprocess.run(
         [python, "-m", "ruff", *arguments, "--", *paths],
         cwd=root,
@@ -175,15 +176,10 @@ def run(
         f"{base} in {checkout}"
     )
     print(f"ruff-changed: {coverage}")
-    try:
-        environment = _ruff_environment(checkout)
-    except source_python_environment.SourceEnvironmentRefusal as exc:
-        print(f"ruff-changed: {exc}", file=sys.stderr)
-        return 1
     if fix_format:
         # Format before linting so the check sees the bytes a commit will carry:
         # a formatter rewrite can itself introduce or clear a lint diagnostic.
-        format_status = _run_ruff(checkout, environment, ("format",), paths)
+        format_status = _run_ruff(checkout, ("format",), paths)
         if format_status:
             print(
                 f"ruff-changed: ruff format failed with status {format_status}; "
@@ -191,7 +187,7 @@ def run(
                 file=sys.stderr,
             )
             return format_status
-    check_status = _run_ruff(checkout, environment, ("check",), paths)
+    check_status = _run_ruff(checkout, ("check",), paths)
     if check_status:
         print(
             f"ruff-changed: ruff check failed with status {check_status}",
@@ -200,7 +196,7 @@ def run(
         return check_status
 
     if format_check:
-        format_status = _run_ruff(checkout, environment, ("format", "--check"), paths)
+        format_status = _run_ruff(checkout, ("format", "--check"), paths)
         if format_status:
             print(
                 f"ruff-changed: ruff format --check failed with status {format_status}",
