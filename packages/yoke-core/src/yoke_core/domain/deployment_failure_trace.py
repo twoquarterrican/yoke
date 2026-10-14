@@ -28,6 +28,7 @@ _GENERIC_ERRORS = (
     "deployment did not complete",
     "promotion did not complete",
 )
+_CODED_ERROR = re.compile(r"\berror \([^)]+\):")
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,7 @@ class RelaySignal:
     run_refs: tuple[RunRef, ...]
     job_ids: tuple[str, ...]
     observed: bool
+    child_not_failed: bool = False
 
 
 InspectRun = Callable[[RunRef], RunSnapshot]
@@ -90,7 +92,7 @@ def _unique_refs(refs: Iterable[RunRef], current: RunRef) -> tuple[RunRef, ...]:
     return tuple(unique.values())
 
 
-def relay_signal(log: str, current: RunRef) -> RelaySignal:
+def relay_signal(log: str, current: RunRef, *, run_conclusion=None) -> RelaySignal:
     """Identify a downstream-failure relay without treating it as the cause."""
     lines = _clean_lines(log)
     explicit: list[RunRef] = []
@@ -130,7 +132,10 @@ def relay_signal(log: str, current: RunRef) -> RelaySignal:
     if marker_seen:
         return RelaySignal(candidates, (), True)
     if len(candidates) == 1 and terminal_error(log) is None:
-        return RelaySignal(candidates, (), True)
+        child = candidates[0]
+        if run_conclusion is not None and run_conclusion(child) == "failure":
+            return RelaySignal((child,), (), True)
+        return RelaySignal((), (), False, child_not_failed=True)
     return RelaySignal((), (), False)
 
 
@@ -145,16 +150,22 @@ def _error_score(text: str) -> tuple[int, int]:
     if "assertionerror:" in folded:
         return 90, len(text)
     if "must be the same commit" in folded:
-        # A workflow's source-identity guard: the dispatched ref, the
-        # workflow file and the checkout name different commits.
+        # Source-identity guard: dispatched ref, workflow file, and checkout differ.
         return 88, len(text)
     if "error response from daemon:" in folded:
         return 85, len(text)
     if "failed " in folded and " - " in text:
         return 80, len(text)
-    if "error:" in folded or "##[error]" in folded:
+    if "error:" in folded or "##[error]" in folded or _CODED_ERROR.search(folded):
         return 70, len(text)
     return 0, len(text)
+
+
+def _last_useful_line(log: str) -> str:
+    for line in reversed(_clean_lines(log)):
+        if line and not any(generic in line.casefold() for generic in _GENERIC_ERRORS):
+            return line
+    return ""
 
 
 def terminal_error(log: str) -> str | None:
@@ -239,7 +250,20 @@ def walk_failure_chain(
         relay_without_target: list[str] = []
         terminal_candidates: list[tuple[tuple[int, int], str, str, str]] = []
         for job in snapshot.failed_jobs:
-            signal = relay_signal(job.log, current)
+            try:
+                signal = relay_signal(
+                    job.log,
+                    current,
+                    run_conclusion=lambda ref: (
+                        "failure" if inspect_run(ref).failed_jobs else "success"
+                    ),
+                )
+            except Exception as exc:
+                return _stopped(
+                    chain,
+                    f"linked run conclusion unreadable: {current.url}: {exc}",
+                    "restore Actions read permission for that run, then rerun the trace",
+                )
             resolved = list(signal.run_refs)
             for job_id in signal.job_ids:
                 try:
@@ -254,6 +278,10 @@ def walk_failure_chain(
             if error_text:
                 terminal_candidates.append(
                     (_error_score(error_text), job.name, error_text, job.url)
+                )
+            elif signal.child_not_failed and (useful := _last_useful_line(job.log)):
+                terminal_candidates.append(
+                    ((1, len(useful)), job.name, useful, job.url)
                 )
         unique_relays = {
             (ref.repo.casefold(), ref.run_id): (ref, job, job_url)
