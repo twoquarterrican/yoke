@@ -31,9 +31,14 @@ def shared_subject(subject: Mapping, target: Mapping, snapshot: Mapping) -> dict
 
 
 def _member_attached_plan_ids(
-    conn: Any, member: int, snapshot: Mapping | None, environment_id: int | None
+    conn: Any,
+    member: int,
+    snapshot: Mapping | None,
+    target: Mapping,
+    environment_id: int | None,
 ) -> set[int]:
-    """Plans one member attached for this environment, live or frozen at admission."""
+    """Plans one member selects for this stage: attached, frozen or admitted."""
+    from yoke_core.domain.deployment_qa_frozen_plan_selection import member_requirements
     from yoke_core.domain.qa_deployment_member_attached_plans import (
         attached_member_plan_ids,
     )
@@ -46,11 +51,15 @@ def _member_attached_plan_ids(
     for value in (snapshot or {}).get("plans") or []:
         if (value.get("attachment") or {}).get("qa_phase") == "post_deploy":
             ids.add(int(value["plan"]["id"]))
+    admitted = {"member_item_id": member, "member_snapshot": snapshot}
+    for requirement in member_requirements(conn, admitted, target=target):
+        if requirement.get("plan_id") is not None:
+            ids.add(int(requirement["plan_id"]))
     return ids
 
 
 def _other_members_plan_ids(
-    conn: Any, run_id: str, member: int, environment_id: int | None
+    conn: Any, run_id: str, member: int, target: Mapping, environment_id: int | None
 ) -> set[int]:
     """Plans any other member of the run attached for the same environment."""
     import json
@@ -65,7 +74,7 @@ def _other_members_plan_ids(
         raw = row["requirement_snapshot"]
         snapshot = raw if isinstance(raw, Mapping) else json.loads(str(raw or "{}"))
         ids |= _member_attached_plan_ids(
-            conn, int(row["item_id"]), snapshot, environment_id
+            conn, int(row["item_id"]), snapshot, target, environment_id
         )
     return ids
 
@@ -108,9 +117,11 @@ def shareable_snapshots(
         return []
     environment_id = stage_environment_id_for_plan_selection(conn, target)
     ids = _member_attached_plan_ids(
-        conn, int(member), subject.get("member_snapshot"), environment_id
+        conn, int(member), subject.get("member_snapshot"), target, environment_id
     ) & (
-        _other_members_plan_ids(conn, str(subject["id"]), int(member), environment_id)
+        _other_members_plan_ids(
+            conn, str(subject["id"]), int(member), target, environment_id
+        )
         | _formed_group_plan_ids(
             conn, str(subject["id"]), str(subject["stage"]["name"])
         )

@@ -14,6 +14,8 @@ owns the scope and target-binding contract.
 
 Members attaching the same post-deploy plan share its case rows and ordered
 execution when the plan id, source revision and observed execution target match.
+A plan counts as attached when the member selects it at the stage: a live or
+admission-frozen attachment, or an admitted requirement that plan owns.
 A plan only one run member attaches stays that member's private copy and keeps
 its `deployment_member_item_id`; a formed group stays shared until its last
 attaching member leaves.
