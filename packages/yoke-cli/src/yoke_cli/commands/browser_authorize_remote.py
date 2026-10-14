@@ -75,11 +75,14 @@ def authorize_remote(parsed) -> int:
                 + ". Wait for its lease to release, or ask the holder to authorize "
                 "the identity; sign-in stops every automated browser on that host."
             )
-        settings = _read(
-            "projects.capability_settings.get",
-            {"project": project, "cap_type": "browser-control"},
-            actor,
-        ).get("settings_json")
+        settings = (
+            _read(
+                "projects.capability_settings.get",
+                {"project": project, "cap_type": "browser-control"},
+                actor,
+            ).get("settings_json")
+            or "{}"
+        )
         try:
             declarations = (
                 json.loads(settings) if isinstance(settings, str) else settings

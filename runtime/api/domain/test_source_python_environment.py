@@ -26,13 +26,13 @@ def test_disposable_candidate_uses_command_project_without_checkout_mapping(
     )
     reads = []
 
-    def read_settings(project, *, strict=False):
-        reads.append((project, strict))
+    def read_settings(project):
+        reads.append(project)
         return {}
 
     monkeypatch.setattr(declarations, "_read_settings", read_settings)
     binding = environment.resolve(tmp_path, dict(os.environ, YOKE_PROJECT="fixture"))
-    assert reads == [("fixture", True)]
+    assert reads == ["fixture"]
     assert Path(binding.evidence["root"]) == tmp_path
 
 
@@ -183,7 +183,8 @@ def test_only_absent_capability_can_use_default_groups(
         declarations, "required_local_project", lambda *_args: "fixture"
     )
     response = SimpleNamespace(
-        success=False, error=SimpleNamespace(code="not_found", jsonpath=path)
+        success=False,
+        error=SimpleNamespace(code="not_found", jsonpath=path, message="absent"),
     )
     monkeypatch.setattr(
         "yoke_core.api.service_client_structured_api_adapter.call_dispatcher",

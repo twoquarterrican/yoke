@@ -7,8 +7,11 @@ invent a second roots list.
 
 from __future__ import annotations
 
+import functools
+import json
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
 from yoke_core.domain.project_selection import required_local_project
@@ -98,7 +101,12 @@ def load_declaration(
     callers retain their existing default on relay failure.
     """
     slug = required_local_project(checkout or Path.cwd(), project)
-    settings = _read_settings(slug, strict=True) if strict else _read_settings(slug)
+    try:
+        settings = _read_settings(slug)
+    except Exception:  # noqa: BLE001 — strict source checks cannot borrow defaults
+        if strict:
+            raise
+        settings = {}
     return parse_declaration(slug, settings)
 
 
@@ -121,47 +129,38 @@ def resolve_uv_projects(
     return [target]
 
 
-def _read_settings(project: str, *, strict: bool = False) -> dict[str, Any]:
-    import json
+@functools.cache
+def _read_settings(project: str) -> Mapping[str, Any]:
+    """Read one project's declaration once per process.
 
-    from yoke_core.domain.control_plane_transport import relay
+    Each source check resolves its environment from short-lived CLI processes,
+    so one read serves every resolve in the process. A refused read raises and
+    is not remembered.
+    """
+    from yoke_contracts.api.function_call import TargetRef
+    from yoke_core.api.service_client_structured_api_adapter import call_dispatcher
 
-    try:
-        payload = {"project": project, "cap_type": CAPABILITY_TYPE}
-        if strict:
-            from yoke_contracts.api.function_call import TargetRef
-            from yoke_core.api.service_client_structured_api_adapter import (
-                call_dispatcher,
-            )
-
-            response = call_dispatcher(
-                function_id="projects.capability_settings.get",
-                target=TargetRef(kind="global"),
-                payload=payload,
-            )
-            if not response.success:
-                if (
-                    response.error
-                    and response.error.code == "not_found"
-                    and response.error.jsonpath == "$.payload.cap_type"
-                ):
-                    return {}
-                raise RuntimeError("test-environment declaration read refused")
-            result = response.result or {}
-        else:
-            result = relay("projects.capability_settings.get", payload)
-    except Exception:  # noqa: BLE001 — strict source checks cannot borrow defaults
-        if strict:
-            raise
-        return {}
-    raw = result.get("settings_json")
-    try:
-        parsed = json.loads(raw) if isinstance(raw, str) else (raw or {})
-    except (TypeError, ValueError):
-        if strict:
-            raise
-        return {}
-    return parsed if isinstance(parsed, dict) else {}
+    response = call_dispatcher(
+        function_id="projects.capability_settings.get",
+        target=TargetRef(kind="global"),
+        payload={"project": project, "cap_type": CAPABILITY_TYPE},
+    )
+    if not response.success:
+        error = response.error
+        if (
+            error
+            and error.code == "not_found"
+            and error.jsonpath == "$.payload.cap_type"
+        ):
+            # A serving build older than the empty answer reports absence here.
+            return MappingProxyType({})
+        raise RuntimeError(
+            f"{CAPABILITY_TYPE} declaration read refused: "
+            f"{error.message if error else 'no error detail'}"
+        )
+    raw = (response.result or {}).get("settings_json")
+    parsed = json.loads(raw) if isinstance(raw, str) else (raw or {})
+    return MappingProxyType(parsed if isinstance(parsed, dict) else {})
 
 
 def _scalar(settings: Mapping[str, Any], key: str) -> str:

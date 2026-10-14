@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from yoke_contracts.install_binding import SOURCE_DEV_RUN_ROOT_ENV
 from yoke_contracts.project_contract.changed_path_scope import (
     WorkingTreeChangedPaths,
 )
@@ -151,6 +153,41 @@ def test_format_check_runs_after_lint(
     assert phases == [("check",), ("format", "--check")]
 
 
+def test_dev_run_lane_and_environment_are_not_looked_up_again(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """``yoke dev run`` already resolved the lane and verified its interpreter."""
+
+    def _unexpected(*_args, **_kwargs):
+        raise AssertionError("the dev-run parent already answered this")
+
+    monkeypatch.setenv(SOURCE_DEV_RUN_ROOT_ENV, str(tmp_path))
+    monkeypatch.setattr(ruff_changed.source_dev_run, "claimed_lane_root", _unexpected)
+    monkeypatch.setattr(ruff_changed.source_python_environment, "resolve", _unexpected)
+    monkeypatch.setattr(
+        ruff_changed,
+        "select_changed_python_paths",
+        lambda _base, _root: ruff_changed.ChangedPythonSelection(
+            ("module.py",),
+            "base-sha",
+            "head-sha",
+            WorkingTreeChangedPaths(tracked=("module.py",), untracked=()),
+        ),
+    )
+    commands: list[list[str]] = []
+    monkeypatch.setattr(
+        ruff_changed.subprocess,
+        "run",
+        lambda argv, **_kwargs: commands.append(argv) or SimpleNamespace(returncode=0),
+    )
+
+    tree, error = ruff_changed.resolve_tree(None)
+    assert (tree, error) == (tmp_path.resolve(), None)
+    assert ruff_changed.run("main", fix_format=True, root=tree) == 0
+    assert [argv[:3] for argv in commands] == [[sys.executable, "-m", "ruff"]] * 2
+
+
 def test_cli_adapter_uses_the_claimed_source_resolver(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -212,6 +249,7 @@ def test_tree_without_workdir_comes_from_the_claimed_lane(
     lane = tmp_path / "lane"
     lane.mkdir()
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv(SOURCE_DEV_RUN_ROOT_ENV, raising=False)
     monkeypatch.setattr(
         ruff_changed.source_dev_run,
         "claimed_lane_root",
@@ -227,6 +265,7 @@ def test_unresolvable_tree_refuses_and_names_what_it_skipped(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv(SOURCE_DEV_RUN_ROOT_ENV, raising=False)
     monkeypatch.setattr(
         ruff_changed.source_dev_run,
         "claimed_lane_root",

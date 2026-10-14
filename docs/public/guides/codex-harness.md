@@ -119,8 +119,8 @@ selects replacement text.
 
 ## Tool use on Codex
 
-Two Codex tool behaviours cost whole turns when they are met for the first
-time mid-task. Both are harness-owned: nothing in Yoke changes them, so the
+These Codex tool behaviours cost whole turns when they are met for the first
+time mid-task. All are harness-owned: nothing in Yoke changes them, so the
 handling is yours.
 
 - **Run a long `yoke` command alone in its own `exec_command`, and keep the
@@ -132,6 +132,9 @@ handling is yours.
   second `exec_command` beside a live one spends the shared resource twice
   and can cancel work the first was about to finish, and a turn that ends
   before the child exits kills it with no recorded verdict.
+- **Run short blocking checks in the foreground with the default wait,**
+  not a 1-second `yield_time_ms`: `yoke dev ruff-changed`,
+  `yoke dev import-check` and file-line checks.
 - **Replace a whole file with one `Update` hunk, and re-read a file after
   running a formatter.** `apply_patch` matches context exactly, so a
   rewrite expressed as many hunks fails on the first line that moved, and

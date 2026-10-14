@@ -84,8 +84,8 @@ def test_load_declaration_defaults_when_relay_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "yoke_core.domain.control_plane_transport.relay",
-        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("not_found")),
+        "yoke_core.api.service_client_structured_api_adapter.call_dispatcher",
+        lambda **_k: (_ for _ in ()).throw(RuntimeError("unreachable")),
     )
     declaration = load_declaration("yoke")
     assert declaration.extras == ()

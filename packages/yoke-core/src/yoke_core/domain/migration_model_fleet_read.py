@@ -107,8 +107,10 @@ def _read_document(
         )
         return {}, f"{unknown}: {detail}"
     result = response.result if isinstance(response.result, Mapping) else {}
+    if result.get("settings_json") is None:
+        return {}, ""
     try:
-        return validate(json.loads(str(result.get("settings_json") or ""))), ""
+        return validate(json.loads(str(result["settings_json"]))), ""
     except (invalid, TypeError, ValueError) as exc:
         return {}, f"{unknown}: {exc}"
 

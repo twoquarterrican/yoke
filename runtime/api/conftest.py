@@ -237,6 +237,21 @@ def _forget_schema_readiness_verdict():
 
 
 @pytest.fixture(autouse=True)
+def _forget_test_environment_declarations():
+    """Keep one test's declaration read out of the next test's answer.
+
+    Source checks read a project's test-environment declaration once per
+    process; tests share a process but not a control plane.
+    """
+    from yoke_core.domain import qa_environment_declaration
+
+    read_settings = qa_environment_declaration._read_settings
+    read_settings.cache_clear()
+    yield
+    read_settings.cache_clear()
+
+
+@pytest.fixture(autouse=True)
 def _serve_pinned_workflow_definitions(monkeypatch: pytest.MonkeyPatch) -> None:
     """Answer the merge boundary's pinned-definition read from the canon.
 

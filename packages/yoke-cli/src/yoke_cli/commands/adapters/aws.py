@@ -117,7 +117,10 @@ def _aws_admin_settings_or_none(
         actor=build_actor(session_id=session_id),
     )
     if response.success:
-        parsed = json.loads(str((response.result or {}).get("settings_json") or "{}"))
+        raw = (response.result or {}).get("settings_json")
+        if raw is None:
+            return None
+        parsed = json.loads(str(raw))
         return parsed if isinstance(parsed, dict) else {}
     code = response.error.code if response.error is not None else ""
     if code == "not_found":

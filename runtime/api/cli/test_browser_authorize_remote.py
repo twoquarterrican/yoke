@@ -161,7 +161,7 @@ def test_bad_identity_or_conflicting_declarations_never_execute(
     assert not route["argv"]
 
 
-@pytest.mark.parametrize("declarations", ["broken", "[]", None])
+@pytest.mark.parametrize("declarations", ["broken", "[]"])
 def test_unreadable_settings_are_diagnosed(route, declarations, capsys):
     route["declarations"] = declarations
     assert authorize("--json") == 2

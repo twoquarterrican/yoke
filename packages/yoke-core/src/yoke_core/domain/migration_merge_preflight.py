@@ -67,6 +67,12 @@ def _numbered_modules(profile: Mapping[str, Any]) -> dict[int, str]:
 
 
 def _modules_dir(settings_json: str, model_name: str) -> str:
+    if not settings_json:
+        raise HistoryError(
+            f"migration_model capability is not declared, so model {model_name!r} "
+            "has no modules_dir; declare it with `yoke projects "
+            "capability-settings merge --cap-type migration_model`"
+        )
     try:
         raw = json.loads(settings_json)
         capability = validate_capability(raw)

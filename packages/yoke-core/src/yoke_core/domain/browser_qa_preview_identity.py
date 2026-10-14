@@ -67,11 +67,11 @@ def resolve_preview_policy(project: str) -> PreviewIdentityTarget:
         ephemeral_policy_from_capability,
     )
 
-    # Existence is asked first, and separately, because the settings read
-    # answers a missing capability with the same failure shape as a denied
-    # or unavailable one. "This project has no ephemeral-env capability" is
-    # an answer; "we could not ask" is not, and collapsing them would report
-    # every project without previews as an infrastructure problem.
+    # Existence is asked first, and separately, so a failed settings read
+    # below always means denied or unavailable. "This project has no
+    # ephemeral-env capability" is an answer; "we could not ask" is not, and
+    # collapsing them would report every project without previews as an
+    # infrastructure problem.
     try:
         declared = relay(
             "projects.capability.has",
@@ -96,7 +96,9 @@ def resolve_preview_policy(project: str) -> PreviewIdentityTarget:
     try:
         cap = json.loads(raw) if isinstance(raw, str) else (raw or {})
     except (TypeError, ValueError) as exc:
-        return PreviewIdentityTarget(unreadable=f"capability settings are not JSON: {exc}")
+        return PreviewIdentityTarget(
+            unreadable=f"capability settings are not JSON: {exc}"
+        )
     if not isinstance(cap, dict) or not cap:
         return PreviewIdentityTarget(unconfigured=True)
     try:
@@ -112,9 +114,7 @@ def resolve_preview_policy(project: str) -> PreviewIdentityTarget:
     )
 
 
-def resolve_preview_identity_target(
-    project: str, branch: str
-) -> PreviewIdentityTarget:
+def resolve_preview_identity_target(project: str, branch: str) -> PreviewIdentityTarget:
     """Where *project*'s preview **for a branch** publishes its commit.
 
     The branch slugifies through the same derivation the wildcard router and
