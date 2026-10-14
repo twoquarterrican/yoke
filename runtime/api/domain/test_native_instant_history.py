@@ -85,10 +85,19 @@ def blank():
         yield conn
 
 
+#: Instant columns born native TIMESTAMPTZ after the cutover; the frozen
+#: history never converts them, but the live roster still declares them.
+BORN_NATIVE_AFTER_HISTORY = frozenset(
+    {("qa_host_waits", "queued_at"), ("qa_host_waits", "settled_at")}
+)
+
+
 def test_history_freezes_complete_roster_and_serving_floor():
     assert len(history.COLUMNS) == len(set(history.COLUMNS)) == 267
     assert len({table for table, _ in history.COLUMNS}) == 126
-    assert set(history.COLUMNS) == set(STORED_INSTANT_COLUMNS)
+    assert set(history.COLUMNS) == set(STORED_INSTANT_COLUMNS) - (
+        BORN_NATIVE_AFTER_HISTORY
+    )
     assert history.MINIMUM_SERVING_VERSION == "next-release"
 
 

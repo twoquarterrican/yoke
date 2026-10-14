@@ -82,7 +82,8 @@ Yoke source repo only: the corpus in `tests/fixtures/harness-sessions/` records 
 its harness version, and the harmless one-line prompt. Refresh it when a
 harness minimum version changes or a native payload shape changes.
 Use an operator-authorized test account on a registered test host and hold
-its `QA_HOST:<machine>` coordination claim. Wait when another session owns it.
+its `QA_HOST:<machine>` coordination claim. A refused acquire joins the host's
+waiting line; the holder's release wakes you to rerun the same acquire.
 
 ```text
 yoke dev run -- python3 runtime/api/tools/native_hook_capture.py --machine TEST_MACHINE --harness claude --output tests/fixtures/harness-sessions/claude.json # Yoke source repo only

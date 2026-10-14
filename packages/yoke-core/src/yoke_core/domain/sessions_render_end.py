@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yoke_contracts.timestamps import utc_now
+from .qa_host_turns import cancel_host_waits
 from .db_helpers import instant_parameter
 
 from typing import Any, Dict, List, Optional
@@ -135,6 +136,8 @@ def end_session(
     clear_current_item(conn, session_id, commit=False)
     # A document lock is session authority, so it ends with the session.
     release_session_doc_claims_for_session(conn, session_id)
+    # An ended session leaves every Test Machine line it waits in.
+    cancel_host_waits(conn, session_id=session_id)
 
     # Mark session as ended
     conn.execute(

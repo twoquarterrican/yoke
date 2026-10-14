@@ -75,9 +75,9 @@ def set_plan_machine_lease(
     lease_id: int,
 ) -> None:
     """Attach the server-acquired Test Machine lease to the durable plan."""
-    from yoke_core.domain.qa_host_turns import release_host_reservations
+    from yoke_core.domain.qa_host_turns import cancel_host_waits
 
-    release_host_reservations(conn, str(execution["id"]))
+    cancel_host_waits(conn, execution_ids=[str(execution["id"])])
     placeholder = marker(conn)
     now = utc_now()
     cursor = conn.execute(
@@ -129,10 +129,10 @@ def finish_plan_execution(
         )
     terminal_settlement = state in TERMINAL_PLAN_EXECUTION_STATES
     if terminal_settlement:
-        from yoke_core.domain.qa_host_turns import release_host_reservations
+        from yoke_core.domain.qa_host_turns import cancel_host_waits
         from yoke_core.domain.qa_plan_review import begin_plan_review
 
-        release_host_reservations(conn, str(execution["id"]))
+        cancel_host_waits(conn, execution_ids=[str(execution["id"])])
         if state in {"aborted", "error"} and any(
             case.get("verdict_path") == "agent"
             for case in execution.get("roster") or []

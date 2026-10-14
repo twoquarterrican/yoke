@@ -134,8 +134,8 @@ Durable QA run writes normalize owned clock columns before locks or mutations;
 review completion fills only a missing endpoint and preserves capture start and
 raw evidence bytes. Ordered QA execution creation, heartbeat and result endpoints
 bind native clocks. Staleness preserves the exact thirty-minute boundary and
-refuses malformed supplied evidence. Host FIFO compares queue instants and keeps
-execution allocation ties; mutable queue timestamps require governed conversion.
+refuses malformed supplied evidence. The Test Machine waiting line orders
+native `queued_at` instants and breaks ties by wait id.
 Pipe diagnostics format native clocks at presentation, without timestamp
 empty-string SQL predicates. New result JSON uses shared temporal encoding;
 opaque strings and finalized historical roster/digest bytes remain unchanged.

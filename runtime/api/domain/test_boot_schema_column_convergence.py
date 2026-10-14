@@ -92,8 +92,10 @@ _HISTORY_CONVERGED_COLUMNS = frozenset(
 # all born with that table.
 # The visitor link table (actor_visitor_links) is net-new; its visitor id,
 # owning actor, link stamp and refusal record are all born with that table.
+# The Test Machine waiting line (qa_host_waits) is net-new; every waiter,
+# turn and settlement column is born with that table.
 _BORN_WITH_COLUMN_DIGEST = (
-    "998c91af3308d685efadb798347c70578d4ca0964faec44cd979d2edfd1628c2"
+    "9d3dfaf2b677fb2681ef4476e4c044dac135658238e21b257ad31aada02e8d8d"
 )
 
 

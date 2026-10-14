@@ -76,6 +76,12 @@ def cmd_release(conn, claim_id: int, reason: str = "released") -> str:
     if row["rel"]:
         raise PermissionError(f"claim '{claim_id}' has already been released")
     target = _target(row["target_kind"], row["scope"])
+    if target.machine_id:
+        # A Test Machine release must advance the host's waiting line.
+        from yoke_core.domain.coordination_claims import release
+
+        release(conn, claim_id, reason)
+        return f"Released claim: {claim_id} (reason: {reason})"
 
     if target.item_id is not None and row["sid"]:
         release_item_focus_if_current(conn, row["sid"], target.item_id)

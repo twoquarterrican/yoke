@@ -52,7 +52,8 @@ For another mission's occupied host, do nothing there. Return `WALK_STATUS:
 HOST_WAIT`, registered machine name, holder lease and exact resume point. Main
 submits `host_wait` through the bundle review-submit without verdicts. Contention
 keeps requirements open even under pass/fail-only stages; it is not a product
-finding or undetermined verdict. Durable execution queues FIFO and wakes owner.
+finding or undetermined verdict. The host's waiting line queues the owner FIFO
+and wakes it when the release reserves the host.
 
 Before any host command run the dispatch's exact `yoke qa mission walk-start`:
 it applies the declared golden-home/OS-package baseline or `as_is` state.

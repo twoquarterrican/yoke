@@ -145,7 +145,9 @@ CLAIM_WORK_RELEASE_USAGE = (
     "  --process KEY releases this session's active process claim "
     "(STRATEGIZE, FEED, DOCTOR).\n"
     "  --all-mine releases every active liveness-bound claim this session "
-    "holds, without ending the session; sticky resource claims survive."
+    "holds, without ending the session; sticky resource claims survive.\n"
+    "  --claim-id on a QA_HOST:<machine> claim reserves the host for the "
+    "oldest live waiter in its line and wakes that session."
 )
 
 _SELECTOR_ERR = (

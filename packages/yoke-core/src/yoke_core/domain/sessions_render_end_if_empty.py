@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any, Dict, Sequence
 
+from .qa_host_turns import cancel_host_waits
 from . import sessions_analytics as _sa
 from .session_launch_abandonment import settle_and_notify
 from .sessions_analytics import EVENT_HARNESS_SESSION_ENDED
@@ -225,6 +226,7 @@ def end_session_if_empty(
         }
 
     clear_current_item(conn, session_id, commit=False)
+    cancel_host_waits(conn, session_id=session_id)
     conn.execute(
         "UPDATE harness_sessions SET ended_at = %s WHERE session_id = %s",
         (instant_parameter(conn, utc_now()), session_id),

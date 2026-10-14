@@ -3,13 +3,16 @@
 from __future__ import annotations
 from yoke_core.domain.project_identity import render_item_ref
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 
 from yoke_contracts.timestamps import as_utc, format_instant, utc_now
 from typing import Any
 
-from yoke_contracts.coordination_claim_recovery import operator_release_command
+from yoke_contracts.coordination_claim_recovery import (
+    holder_release_command,
+    operator_release_command,
+)
 
 
 def _age_seconds(value: datetime | None, now: datetime) -> int | None:
@@ -44,6 +47,9 @@ class ClaimContention:
     effective_stale_ttl_minutes: int
     holder_stale: bool
     operator_release_command: str
+    #: The refused session's place in a QA_HOST waiting line, once it joined.
+    line_position: int | None = None
+    line_length: int | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "acquired_at", as_utc(self.acquired_at))
@@ -61,8 +67,31 @@ class ClaimContention:
             f"{lead} {self.key} (project {self.project_id}): already held by "
             f"{self.holder_label} since {format_instant(self.acquired_at)}; "
             f"heartbeat age {_age_label(self.heartbeat_age_seconds)} "
-            f"(stale TTL {self.effective_stale_ttl_minutes}m). Steering-seat "
+            f"(stale TTL {self.effective_stale_ttl_minutes}m). Holder's own "
+            f"release: `{self.holder_release_command}`. Steering-seat "
             f"operator release: `{self.operator_release_command}`."
+            f"{self._line_sentence}"
+        )
+
+    @property
+    def holder_release_command(self) -> str:
+        return holder_release_command(self.claim_id)
+
+    @property
+    def _line_sentence(self) -> str:
+        if self.line_position is None:
+            return ""
+        return (
+            f" This session is number {self.line_position} of {self.line_length} "
+            f"in the {self.key} waiting line: the next release reserves the host "
+            "for the oldest live waiter and wakes it with the command that takes "
+            "the turn."
+        )
+
+    def in_line(self, wait: dict[str, Any]) -> "ClaimContention":
+        """Return this report with the refused session's place in line."""
+        return replace(
+            self, line_position=wait["position"], line_length=wait["line_length"]
         )
 
     def claim_evidence(self) -> dict[str, Any]:
@@ -78,7 +107,10 @@ class ClaimContention:
             "effective_stale_ttl_minutes": self.effective_stale_ttl_minutes,
             "holder_stale": self.holder_stale,
             "wait_message": self.message,
+            "holder_release_command": self.holder_release_command,
             "operator_release_command": self.operator_release_command,
+            "line_position": self.line_position,
+            "line_length": self.line_length,
         }
 
 

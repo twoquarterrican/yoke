@@ -1,6 +1,5 @@
 """Removing a release member settles its cursors and every queued host turn."""
 
-import json
 from unittest import mock
 from uuid import uuid4
 
@@ -29,8 +28,8 @@ from yoke_core.domain.deployment_run_membership_removals import (
 from yoke_core.domain.handlers.qa_plan_execution import handle_plan_execution_abort
 from yoke_core.domain.qa_deployment_function_subject import resolve_run_qa_subject
 from yoke_core.domain.qa_host_turns import (
-    HOST_WAIT_KIND,
-    queued_host_turns,
+    host_line,
+    join_host_line,
     reserve_host_turn,
 )
 from yoke_core.domain.qa_plan_execution_store import roster_digest
@@ -47,23 +46,11 @@ def _execution(
     conn, *, member=REMOVED, state="waiting", stage="item-qa", session="removed-qa"
 ):
     execution = str(uuid4())
-    wait = (
-        json.dumps(
-            {
-                "kind": HOST_WAIT_KIND,
-                "machine": "linux-lab",
-                "queued_at": "2026-10-01T10:00:00Z",
-                "resume_command": "resume QA",
-            }
-        )
-        if state == "waiting"
-        else None
-    )
     conn.execute(
         "INSERT INTO qa_plan_executions(id,deployment_run_id,deployment_stage,"
         "deployment_member_item_id,session_id,actor_id,roster_digest,roster_json,"
-        "cursor_ordinal,state,created_at,heartbeat_at,release_reason) "
-        "VALUES(%s,%s,%s,%s,%s,'1',%s,'[]',0,%s,%s,%s,%s)",
+        "cursor_ordinal,state,created_at,heartbeat_at) "
+        "VALUES(%s,%s,%s,%s,%s,'1',%s,'[]',0,%s,%s,%s)",
         (
             execution,
             RUN,
@@ -74,9 +61,17 @@ def _execution(
             state,
             "2026-10-01T10:00:00Z",
             "2026-10-01T10:00:00Z",
-            wait,
         ),
     )
+    if state == "waiting":
+        join_host_line(
+            conn,
+            make_qa_admission_target("linux-lab"),
+            session_id=session,
+            actor_id=1,
+            resume_command="resume QA",
+            execution_id=execution,
+        )
     conn.commit()
     return execution
 
@@ -150,7 +145,7 @@ def test_removal_is_atomic_and_cannot_regrant_another_cursor_of_removed_member(
     remove_member_on(test_db, RUN, REMOVED, reason="blocked QA")
     test_db.commit()
     release(test_db, lease.id, "host free")
-    assert not queued_host_turns(test_db, "linux-lab")
+    assert not host_line(test_db, "linux-lab")
     assert active_claim(test_db, target) is None
 
 
