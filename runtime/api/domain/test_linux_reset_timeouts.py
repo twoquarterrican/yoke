@@ -113,7 +113,9 @@ def _failed_archive(monkeypatch, completed):
     monkeypatch.setattr(
         baseline,
         "reset_preflight",
-        lambda *a: HostActionResult(True, {"preserve_claude": False}),
+        lambda *a: HostActionResult(
+            True, {"sign_in_plan": {"carry": [], "unverified": {}}}
+        ),
     )
     return baseline.archive_operation(control, "reset", "/sealed/golden")
 

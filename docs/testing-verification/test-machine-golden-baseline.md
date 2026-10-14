@@ -3,11 +3,11 @@
 Preparing, signing in, saving, restoring and repairing a Test Machine has one
 complete ordered procedure per OS in the Machine QA Pack:
 
-- [macOS](../../packs/machine-qa/versions/1.3.12/files/docs/packs/machine-qa/macos-host-provisioning.md)
-- [Linux](../../packs/machine-qa/versions/1.3.12/files/docs/packs/machine-qa/linux-host-provisioning.md)
-- [Windows/WSL2](../../packs/machine-qa/versions/1.3.12/files/docs/packs/machine-qa/windows-host-provisioning.md)
+- [macOS](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/macos-host-provisioning.md)
+- [Linux](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/linux-host-provisioning.md)
+- [Windows/WSL2](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/windows-host-provisioning.md)
 
-The [provisioning index](../../packs/machine-qa/versions/1.3.12/files/docs/packs/machine-qa/host-provisioning.md) installs
+The [provisioning index](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/host-provisioning.md) installs
 as `docs/packs/machine-qa/host-provisioning.md`. This page explains the model
 behind its evidence, without providing a second preparation procedure.
 
@@ -22,15 +22,24 @@ macOS capture excludes the exact root:wheel regular audiovisual preference
 `Library/Group Containers/group.com.apple.secure-control-center-preferences/Library/Preferences/group.com.apple.secure-control-center-preferences.av.plist`.
 The shared preservation contract validates its owner/type and rejects symlink
 ancestors, records the exclusion in the sealed manifest, and keeps the live
-entry during reset alongside SSH access, user TCC and the live harness logins:
-the login Keychain (`Library/Keychains`), `.claude/.credentials.json` and
-`.codex/auth.json`. `PRESERVED_HOME_ENTRIES` is the one declared list; capture
-prunes every entry on it, the manifest seals it as `preserved_home_entries`,
-and a reset keeps each one live, requiring only SSH access and user TCC to be
-present. A restored login would be the golden's rotated token. Every other
-foreign entry still refuses. Older manifests remain readable and their captured
-copies of preserved entries are never restored; a present declaration must
-match the contract and its entries must not be captured.
+entry during reset alongside SSH access, user TCC, the live harness logins
+(the login Keychain `Library/Keychains`, `.claude/.credentials.json` and
+`.codex/auth.json`), the browser identity store and Safari's cookie store
+(`Library/Containers/com.apple.Safari/Data/Library/Cookies`).
+`PRESERVED_HOME_ENTRIES` is the one declared list; capture prunes every entry
+on it, the manifest seals it as `preserved_home_entries`, and a reset keeps
+each one live, requiring only SSH access and user TCC to be present. A restored
+login or cookie would be the golden's rotated one. Every other foreign entry
+still refuses. Older manifests remain readable and their captured copies of
+preserved entries are never restored; a present declaration may name only kept
+entries and the entries it declares must not be captured. An entry kept only
+since the seal is inert in that golden.
+
+Safari writes its cookie store when it quits. macOS capture and reset first ask
+a running Safari to quit and wait for it to exit
+(`yoke_harness.ssh_mac_sign_in_apps`); they never force-quit it, and refuse
+`test_machine_sign_in_app_quit_not_proved` before copying or clearing when it
+stays open.
 The archive is private fixture material, not a QA artifact. Whole-home content,
 CLI liveness, persistent OS grants and the actual visible desktop are separate
 proofs: a passing one cannot establish the others.
@@ -78,10 +87,26 @@ inventory probes retain a 30-second limit. Timeout receipts name the command
 and unsettled job. Archive failures preserve bounded, redacted native exit,
 stdout and stderr through mission preparation, including malformed receipts.
 
-The SSH access needed to finish restore remains live. Linux/WSL Claude's
-post-request credential refresh is preserved through the owned restore path,
-matching the macOS reset's live `.claude/.credentials.json`; macOS also keeps
-the login Keychain and Codex login live, as described above. Windows state and WSL registration remain outside the Linux home.
+The SSH access needed to finish restore remains live. Linux/WSL reset never
+rolls a harness sign-in back (`yoke_harness.ssh_linux_sign_in_stores`). Before
+clearing, it runs the sealed `Claude real request`, `Codex real request` and
+`Cursor real request` probes against the live home. Each verified login is
+carried forward over the restore with its own mode. A failing login restores
+from the golden only when it has not changed since the seal; otherwise the
+reset refuses `test_machine_sign_in_newer_than_baseline` before clearing, naming
+the store, the probe and its reason. Windows state and WSL registration remain
+outside the Linux home.
+
+A completed sign-in on any test machine is saved at once with
+`yoke test-machine golden-capture`: it proves the real requests, quits Safari
+on macOS and seals a new baseline, so no later reset rolls the sign-in back.
+Every standard probe failure names this command as its recovery.
+
+A reset or capture receipt names what failed. Each check row's `name` and `ok`
+belong to the operation, never to nested evidence. When the server still
+refuses a receipt, `test_machine_operation_submit_failed` repeats the host's
+own error code, reason and recovery, because the refused receipt is not
+recorded anywhere else.
 System packages remain outside home-only restoration and may additionally be
 owned by a mission fixture's package journal.
 
@@ -129,7 +154,7 @@ checks. Its existing retained host-command keeps the candidate terminal alive;
 `yoke qa browser setup` and `yoke qa browser step` drive candidate Chromium one
 observed step at a time. Read those commands' `--help` before execution. Do not
 add an approval command or extend the scripted terminal recipe contract.
-Follow the Machine QA Pack's [setup responsibilities](../../packs/machine-qa/versions/1.3.12/files/docs/packs/machine-qa/setup-responsibilities.md).
+Follow the Machine QA Pack's [setup responsibilities](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/setup-responsibilities.md).
 Agents complete every software-capable setup step and system permission prompt.
 Only browser sign-in and OS permissions that software cannot grant need the
 operator. Product code alone enters passwords from stored secrets; nobody types

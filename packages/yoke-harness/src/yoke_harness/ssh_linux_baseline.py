@@ -12,9 +12,9 @@ from yoke_contracts.machine_qa_failures import bounded_machine_qa_diagnostic
 from yoke_harness.ssh_linux_reset_cleanup import RESET_WRITERS_PROGRAM
 from yoke_harness.ssh_linux_reset_preconditions import (
     DESKTOP_PROGRAM,
-    CREDENTIAL_PROGRAM,
     reset_preflight,
 )
+from yoke_harness.ssh_linux_sign_in_stores import SIGN_IN_PROGRAM
 from yoke_harness.ssh_linux_reset_services import YOKE_SERVICE_PATTERNS
 from yoke_harness.ssh_test_machine_transport import SSH_TIMEOUT_DIAGNOSTIC
 from yoke_harness.ssh_mac_baseline_probes import (
@@ -45,7 +45,8 @@ _ARCHIVE_PROGRAM = (
     r"""
 import fnmatch, hashlib, json, os, pathlib, shutil, stat, sys, tarfile, tempfile
 operation, expected_home, golden = sys.argv[1:4]
-preserve_claude = len(sys.argv) > 4 and sys.argv[4] == "preserve-claude"
+sign_in_plan = json.loads(sys.argv[4]) if len(sys.argv) > 4 else {"carry": [], "unverified": {}}
+stashes = []
 home = pathlib.Path(os.environ["HOME"])
 baseline = pathlib.Path(golden)
 absent = json.loads(sys.stdin.read())
@@ -147,10 +148,11 @@ else:
         refuse("golden_baseline_identity_mismatch")
     with tarfile.open(baseline / "home.tar.gz", "r:gz") as archive:
         members = validate_archive(archive)
+        refuse_newer_unverified(sign_in_plan)
         # Desktop provisioning can follow the clean golden's capture. Keep its
         # terminal selection, not other live desktop or browser preferences.
         terminal_selection = [line for line in terminal_preference_lines() if selects_terminal(line)]
-        stash = stash_claude() if preserve_claude else None
+        stashes = stash_sign_ins(sign_in_plan)
         try:
             try:
                 stop_desktop()
@@ -176,7 +178,7 @@ else:
         except (OSError, tarfile.TarError):
             refuse("linux_golden_restore_failed", recovery="Repair the sealed archive or destination permissions, then retry; never capture the mixed home.")
         finally:
-            if stash is not None: restore_claude(stash)
+            restore_sign_ins(stashes)
     if terminal_selection:
         lines = [line for line in terminal_preference_lines() if not selects_terminal(line)]
         preferences = home / terminal_preferences_path
@@ -188,12 +190,12 @@ else:
     for value in absent:
         if (home / value).exists() or (home / value).is_symlink(): refuse("reset_absence_not_proved")
 print(json.dumps({"ok":True, "operation":operation, "golden_baseline_path":str(baseline),
-                  "preserved_entries":[".ssh"] + ([".claude/.credentials.json"] if preserve_claude else []) + [name for name in kept_live[1:] if (home / name).is_dir()], "absent_paths":absent if operation == "reset" else [],
+                  "preserved_entries":[".ssh"] + [stash[0] for stash in stashes] + [name for name in kept_live[1:] if (home / name).is_dir()], "absent_paths":absent if operation == "reset" else [],
                   "desktop_terminal_preference_preserved":bool(locals().get("terminal_selection")),
                   "service_cleanup": locals().get("service_cleanup")}))
 """.replace("__YOKE_SERVICE_PATTERNS__", repr(YOKE_SERVICE_PATTERNS))
     .replace("__LIVE_IDENTITY_STORE__", repr(LIVE_IDENTITY_STORE_HOME_ENTRY))
-    .replace("# RESET_PRECONDITION_FUNCTIONS", DESKTOP_PROGRAM + CREDENTIAL_PROGRAM)
+    .replace("# RESET_PRECONDITION_FUNCTIONS", DESKTOP_PROGRAM + SIGN_IN_PROGRAM)
 )
 
 
@@ -215,12 +217,12 @@ def prove_linux_probes(control: Any, document: str) -> HostActionResult:
 def archive_operation(
     control: Any, operation: str, destination: str
 ) -> HostActionResult:
-    preserve_claude = False
+    sign_in_plan = {"carry": [], "unverified": {}}
     if operation == "reset":
         preflight = reset_preflight(control, destination)
         if not preflight.ok:
             return preflight
-        preserve_claude = preflight.evidence["preserve_claude"]
+        sign_in_plan = preflight.evidence["sign_in_plan"]
     command = shlex.join(
         [
             "/usr/bin/python3",
@@ -234,7 +236,7 @@ def archive_operation(
             operation,
             control.home,
             destination,
-            "preserve-claude" if preserve_claude else "golden-credentials",
+            json.dumps(sign_in_plan),
         ]
     )
     started = time.monotonic()
@@ -278,7 +280,8 @@ def archive_operation(
         evidence = {"reason": "linux_golden_operation_failed"}
     if not isinstance(evidence, dict):
         evidence = {"reason": "linux_golden_receipt_invalid"}
-    ok = result.returncode == 0 and evidence.get("ok") is True
+    # The program's own flag becomes the verdict, never a row field.
+    ok = result.returncode == 0 and evidence.pop("ok", None) is True
     if not ok:
         secrets = getattr(control, "secret_values", ())
         evidence.update(

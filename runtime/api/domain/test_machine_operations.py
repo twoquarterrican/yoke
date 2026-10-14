@@ -227,6 +227,79 @@ def test_submit_refuses_a_result_the_contract_never_asked_for(
     assert not operation_receipts(conn)
 
 
+class _ProbeFailsAfterRestore(FakeHostControl):
+    """A Linux-shaped restore whose own receipt says ok, then a failed probe."""
+
+    def reset_installer_test_host(self):
+        restored = super().reset_installer_test_host()
+        return type(restored)(True, {**restored.evidence, "ok": True})
+
+    def prove_user_equivalent(self):
+        failed = super().prove_user_equivalent()
+        return type(failed)(
+            False,
+            {
+                **failed.evidence,
+                "reason": "Claude real request: the harness exited non-zero",
+                "recovery": "Sign in Claude, then save it with golden-capture.",
+            },
+            failed.error_code,
+        )
+
+
+def test_a_restore_receipts_own_ok_never_hides_the_failed_probe(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    conn = make_conn()
+    configure_test_machine(conn, tmp_path, monkeypatch)
+
+    submitted, _execution = run_operation(
+        "reset", control=_ProbeFailsAfterRestore(refuse_user_equivalence=True)
+    )
+
+    assert submitted.primary_success, submitted.error
+    assert submitted.result_payload["error_code"] == "baseline_probe_failed"
+    [receipt] = operation_receipts(conn)
+    assert receipt["checks"][0]["name"] == "fresh-host"
+    assert receipt["checks"][0]["ok"] is False
+
+
+def test_a_refused_receipt_still_names_the_hosts_failure_and_recovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    conn = make_conn()
+    configure_test_machine(conn, tmp_path, monkeypatch)
+    control = FakeHostControl()
+    register_host_control_factory(lambda _material: control)
+    try:
+        begun = handle_operation_begin(
+            operation_request({"project": "yoke", "operation": "reset"})
+        )
+        submission = execute_host_operation_contract(begun.result_payload["execution"])
+    finally:
+        clear_host_control_factory()
+    payload = {"project": "yoke", **submission.payload, "status": "error"}
+    payload["error_code"] = "linux_golden_restore_failed"
+    payload["checks"] = [
+        {
+            "name": "fresh-host",
+            "ok": True,
+            "user_equivalence": {"recovery": "Repair the sealed archive, then retry."},
+        }
+    ]
+
+    submitted = handle_operation_submit(operation_request(payload))
+
+    assert not submitted.primary_success
+    assert submitted.error.code == "test_machine_operation_submit_failed"
+    assert "a failing result must identify what failed" in submitted.error.message
+    assert "the host reported linux_golden_restore_failed" in submitted.error.message
+    assert submitted.error.recovery_hint == "Repair the sealed archive, then retry."
+    assert not operation_receipts(conn)
+
+
 def test_a_machine_declares_which_implementation_drives_it() -> None:
     # Settings that do not say what the host is would leave every operation
     # guessing, and the first wrong guess runs a destructive restore.

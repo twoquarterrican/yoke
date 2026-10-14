@@ -165,7 +165,9 @@ def test_archive_operation_records_malformed_transport_receipt_as_named_failure(
     monkeypatch.setattr(
         ssh_linux_baseline,
         "reset_preflight",
-        lambda *a: HostActionResult(True, {"preserve_claude": False}),
+        lambda *a: HostActionResult(
+            True, {"sign_in_plan": {"carry": [], "unverified": {}}}
+        ),
     )
     control = SimpleNamespace(
         home="/home/tester",

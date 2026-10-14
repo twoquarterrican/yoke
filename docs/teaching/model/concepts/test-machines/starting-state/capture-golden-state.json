@@ -4,5 +4,5 @@
  "status": "observed",
  "page": "test-machines",
  "position": 1,
- "summary": "Capture a new golden through the governed operation to seal current cause-bearing probes. Keep live harness logins and browser identities outside the archive. An undeclared nonzero probe exit retries once with both attempts retained; a declared failure stops immediately."
+ "summary": "Capture a new golden through the governed operation to seal current cause-bearing probes. On macOS it first asks a running Safari to quit and waits for it, never force-quitting, so Safari's state is on disk; macOS harness logins, browser identities and Safari's cookie store stay outside the archive. Saving a completed sign-in is this same capture. An undeclared nonzero probe exit retries once with both attempts retained; a declared failure stops immediately."
 }

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import shlex
+from pathlib import PurePosixPath
 from typing import Any, Protocol
 
 from yoke_contracts.machine_qa_failures import (
@@ -34,6 +35,7 @@ from yoke_harness.ssh_mac_golden_capture_receipt import (
     closed_capture_outcomes,
 )
 from yoke_harness.ssh_mac_golden_capture_script import render_golden_capture_script
+from yoke_harness.ssh_mac_sign_in_apps import quit_sign_in_apps
 from yoke_harness.test_machine_types import HostActionResult
 
 
@@ -282,7 +284,7 @@ def capture_golden_baseline(
     The probes run first and must all pass. A capture taken while a declared
     program is signed out produces a baseline that every later reset restores
     and then rejects as not user-equivalent, so the machine could never pass
-    again.
+    again. Sign-in apps quit before the copy so their state is on disk.
     """
     from yoke_harness.standard_baseline_probes import capture_probes_document
 
@@ -297,6 +299,15 @@ def capture_golden_baseline(
             {"destination": destination, "user_equivalence": proven.evidence},
             proven.error_code,
         )
+    quit_apps = quit_sign_in_apps(
+        control.run_remote_command, PurePosixPath(control.home).name
+    )
+    if not quit_apps.ok:
+        return HostActionResult(
+            False,
+            {"destination": destination, **quit_apps.evidence},
+            quit_apps.error_code,
+        )
     captured = execute_golden_capture(
         run_remote=control.run_remote_command,
         upload_text=control.upload_remote_text,
@@ -309,7 +320,11 @@ def capture_golden_baseline(
         return captured
     return HostActionResult(
         True,
-        {**captured.evidence, "user_equivalence": proven.evidence},
+        {
+            **captured.evidence,
+            **quit_apps.evidence,
+            "user_equivalence": proven.evidence,
+        },
     )
 
 

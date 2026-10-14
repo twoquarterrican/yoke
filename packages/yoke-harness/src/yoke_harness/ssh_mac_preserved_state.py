@@ -32,11 +32,16 @@ HARNESS_LOGIN_HOME_ENTRIES = (
 # restored copy is the golden's stale sign-in for the same reason a restored
 # harness login is; the store stays live and is kept only when present.
 LIVE_IDENTITY_HOME_ENTRIES = (LIVE_IDENTITY_STORE_HOME_ENTRY,)
+# Safari's cookie store, kept live for the same reason. Safari writes it when
+# it quits, so capture and reset quit Safari first (ssh_mac_sign_in_apps).
+SAFARI_COOKIE_HOME_ENTRY = "Library/Containers/com.apple.Safari/Data/Library/Cookies"
+BROWSER_SIGN_IN_HOME_ENTRIES = (SAFARI_COOKIE_HOME_ENTRY,)
 PRESERVED_HOME_ENTRIES = (
     *REQUIRED_PRESERVED_HOME_ENTRIES,
     *HARNESS_LOGIN_HOME_ENTRIES,
     *OS_MANAGED_HOME_ENTRIES,
     *LIVE_IDENTITY_HOME_ENTRIES,
+    *BROWSER_SIGN_IN_HOME_ENTRIES,
 )
 PRESERVED_MANIFEST_KEY = "preserved_home_entries"
 PRESERVED_MANIFEST_VALUE = json.dumps(
@@ -130,8 +135,9 @@ validate_preserved_manifest() {
   # preserved entry, so their captured copies stay inert and the live entries
   # are kept for them too. A present declaration may name only entries the
   # current contract keeps -- a baseline sealed before an entry was added
-  # declares a subset -- and the baseline must not carry any entry kept now.
-  local suffix declared
+  # declares a subset -- and the baseline must not carry an entry it declares.
+  # An entry kept only since the seal is inert in it the same way.
+  local suffix declared remaining
   if /usr/bin/grep -q "^$os_managed_manifest_key " "$golden$manifest_suffix"; then
     /usr/bin/grep -Fxq -- "$os_managed_manifest_line" "$golden$manifest_suffix" || return 1
     for suffix in "${os_managed_entries[@]}"; do
@@ -141,11 +147,13 @@ validate_preserved_manifest() {
   if /usr/bin/grep -q "^$preserved_manifest_key " "$golden$manifest_suffix"; then
     declared=$(/usr/bin/grep -m 1 "^$preserved_manifest_key " "$golden$manifest_suffix")
     declared="${declared#$preserved_manifest_key }"
+    remaining="$declared"
     for suffix in "${preserved_entries[@]}"; do
-      declared="${declared//\"$suffix\"/}"
+      remaining="${remaining//\"$suffix\"/}"
     done
-    [[ "${declared//,/}" == "[]" ]] || return 1
+    [[ "${remaining//,/}" == "[]" ]] || return 1
     for suffix in "${preserved_entries[@]}"; do
+      [[ "$declared" == *"\"$suffix\""* ]] || continue
       lexists "$golden/$suffix" && return 1
     done
   fi

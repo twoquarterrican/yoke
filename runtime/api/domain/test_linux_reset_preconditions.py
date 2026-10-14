@@ -1,4 +1,4 @@
-"""Linux reset refuses before mutation and never rolls back live Claude OAuth."""
+"""Linux reset ends the desktop first and keeps carried sign-ins through a failed clear."""
 
 import io
 import json
@@ -7,83 +7,12 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from types import SimpleNamespace
 
 import pytest
 
-from yoke_harness.ssh_linux_baseline import _ARCHIVE_PROGRAM, archive_operation
-from yoke_harness.ssh_linux_reset_preconditions import reset_preflight
+from yoke_harness.ssh_linux_baseline import _ARCHIVE_PROGRAM
 
-
-def probes(program="claude"):
-    return json.dumps(
-        {"probes": [{"name": "authenticated", "argv": [f"/usr/bin/{program}"]}]}
-    )
-
-
-def control(document, result=None):
-    calls = []
-
-    def request(*args, **kwargs):
-        calls.append(args)
-        if isinstance(result, Exception):
-            raise result
-        return result
-
-    return SimpleNamespace(
-        home="/home/tester",
-        calls=calls,
-        _run=lambda *a, **kw: subprocess.CompletedProcess(a, 0, '{"ok":true}', ""),
-        read_remote_text=lambda _: document,
-        run_command=request,
-    )
-
-
-@pytest.mark.parametrize(
-    "document", [probes("codex"), probes("cursor-agent"), probes("true")]
-)
-def test_claude_not_declared_does_not_probe_or_preserve(document):
-    host = control(document)
-    result = reset_preflight(host, "/golden")
-    assert result.ok and not result.evidence["preserve_claude"]
-    assert host.calls == []
-
-
-@pytest.mark.parametrize(
-    "error,cause",
-    [
-        ("OAuth session expired and could not be refreshed", "auth"),
-        ("Network error: fetch failed", "network"),
-        ("Workspace Trust Required", "request"),
-        (subprocess.TimeoutExpired("claude", 120), "timeout"),
-    ],
-)
-def test_failed_live_request_blocks_archive_and_teaches_specific_recovery(error, cause):
-    host = control(
-        probes(),
-        error
-        if isinstance(error, Exception)
-        else subprocess.CompletedProcess([], 1, "", error),
-    )
-    result = archive_operation(host, "reset", "/golden")
-    assert not result.ok and result.error_code == f"linux_reset_claude_{cause}_failed"
-    assert ("sign in again" in result.evidence["recovery"]) == (cause == "auth")
-    if cause in {"auth", "network"}:
-        assert result.evidence["reason"] == error
-
-
-def test_live_request_uses_native_tool_free_adapter_before_restore():
-    host = control(
-        probes(),
-        subprocess.CompletedProcess(
-            [], 0, '{"type":"result","subtype":"success","result":"OK"}', ""
-        ),
-    )
-    result = reset_preflight(host, "/golden")
-    assert result.ok and result.evidence["preserve_claude"]
-    argv = host.calls[0][0]
-    assert "--safe-mode" in argv and "--strict-mcp-config" in argv
-    assert argv[argv.index("--tools") + 1] == ""
+CARRY_CLAUDE = json.dumps({"carry": [".claude/.credentials.json"], "unverified": {}})
 
 
 @pytest.fixture
@@ -110,7 +39,7 @@ def archive_home(tmp_path):
     return home, golden, credential
 
 
-def execute_reset(monkeypatch, home, golden, program=_ARCHIVE_PROGRAM, preserve=True):
+def execute_reset(monkeypatch, home, golden, program=_ARCHIVE_PROGRAM):
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setattr(
         sys,
@@ -120,7 +49,7 @@ def execute_reset(monkeypatch, home, golden, program=_ARCHIVE_PROGRAM, preserve=
             "reset",
             str(home),
             str(golden),
-            "preserve-claude" if preserve else "golden-credentials",
+            CARRY_CLAUDE,
         ],
     )
     monkeypatch.setattr(sys, "stdin", io.StringIO("[]"))
@@ -177,38 +106,6 @@ def test_live_credential_survives_success_and_midway_failure(
     assert stashes and all(not path.exists() for path in stashes)
 
 
-def test_dead_login_admission_does_not_clear_home_or_stop_processes(
-    archive_home, monkeypatch
-):
-    home, golden, credential = archive_home
-    host = control(
-        probes(),
-        subprocess.CompletedProcess(
-            [], 1, "", "OAuth session expired and could not be refreshed"
-        ),
-    )
-    host.home = str(home)
-    commands = []
-    host._run = lambda *a, **kw: (
-        commands.append(a[0]) or subprocess.CompletedProcess([], 0, '{"ok":true}', "")
-    )
-    before = {
-        str(path.relative_to(home)): path.read_bytes()
-        for path in home.rglob("*")
-        if path.is_file()
-    }
-    signals = []
-    monkeypatch.setattr(os, "kill", lambda *a: signals.append(a))
-    result = archive_operation(host, "reset", str(golden))
-    assert not result.ok and commands == []
-    assert not signals
-    assert before == {
-        str(path.relative_to(home)): path.read_bytes()
-        for path in home.rglob("*")
-        if path.is_file()
-    }
-
-
 @pytest.mark.parametrize("stop_fails", [False, True])
 def test_reset_ends_open_desktop_before_clearing_home(
     archive_home, monkeypatch, capsys, stop_fails
@@ -242,23 +139,16 @@ def stop_desktop():
     assert credential.read_bytes() == b"opaque-live-new-after-refresh"
 
 
-@pytest.mark.parametrize("unsafe", ["symlink", "permissions"])
-def test_unsafe_live_credential_refuses_before_teardown(
-    archive_home, monkeypatch, capsys, unsafe
+def test_symlinked_live_credential_refuses_before_teardown(
+    archive_home, monkeypatch, capsys
 ):
     home, golden, credential = archive_home
-    if unsafe == "symlink":
-        outside = home.parent / "outside"
-        credential.rename(outside)
-        credential.symlink_to(outside)
-    else:
-        credential.chmod(0o644)
+    outside = home.parent / "outside"
+    credential.rename(outside)
+    credential.symlink_to(outside)
     with pytest.raises(SystemExit) as refused:
         execute_reset(monkeypatch, home, golden)
     assert refused.value.code == 64
-    assert (
-        json.loads(capsys.readouterr().out)["reason"]
-        == "linux_claude_credentials_unsafe"
-    )
+    assert json.loads(capsys.readouterr().out)["reason"] == "linux_sign_in_store_unsafe"
     assert (home / "settings").read_text() == "live"
     assert credential.read_bytes() == b"opaque-live-new-after-refresh"
