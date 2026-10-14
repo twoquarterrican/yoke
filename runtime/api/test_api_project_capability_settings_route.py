@@ -187,7 +187,8 @@ def test_https_runner_fleet_invalid_or_unknown_fields_refuse_without_mutation(
     )
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation_error"
-    assert _get(client, "github-actions-runner-fleet").status_code == 404
+    absent = _get(client, "github-actions-runner-fleet").json()["result"]
+    assert absent["settings_json"] is None
 
 
 def test_https_unknown_request_field_is_refused(client):
@@ -204,7 +205,7 @@ def test_https_unknown_request_field_is_refused(client):
     )
     assert response.status_code == 422
     assert response.json()["error"]["code"] in {"invalid_payload", "payload_invalid"}
-    assert _get(client).status_code == 404
+    assert _get(client).json()["result"]["settings_json"] is None
 
 
 def test_https_github_full_document_write_remains_binding_owned(client):

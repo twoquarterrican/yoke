@@ -22,7 +22,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Mapping, Sequence
 
 from yoke_contracts.project_contract.changed_path_scope import (
     ChangedPathError,
@@ -30,6 +30,7 @@ from yoke_contracts.project_contract.changed_path_scope import (
     tracked_changed_paths,
     untracked_paths,
 )
+from yoke_contracts.install_binding import SOURCE_DEV_RUN_ROOT_ENV
 from yoke_core.tools import source_dev_run
 from yoke_core.domain import source_python_environment
 
@@ -88,16 +89,31 @@ def changed_python_paths(base: str, root: Path) -> tuple[str, ...]:
     return select_changed_python_paths(base, root).paths
 
 
-def _run_ruff(root: Path, arguments: Sequence[str], paths: Sequence[str]) -> int:
-    try:
-        binding = source_python_environment.resolve(root, os.environ)
-    except source_python_environment.SourceEnvironmentRefusal as exc:
-        print(f"ruff-changed: {exc}", file=sys.stderr)
-        return 1
+def _ruff_environment(root: Path) -> tuple[str, Mapping[str, str]]:
+    """Return the interpreter and environment Ruff runs under for ``root``.
+
+    Under ``yoke dev run`` this process already runs on the interpreter and
+    environment the parent verified for its bound checkout, so that checkout
+    is not resolved again. Any other tree is resolved once here.
+    """
+    bound = os.environ.get(SOURCE_DEV_RUN_ROOT_ENV, "").strip()
+    if bound and Path(bound).resolve() == root:
+        return sys.executable, os.environ
+    binding = source_python_environment.resolve(root, os.environ)
+    return binding.python, binding.env
+
+
+def _run_ruff(
+    root: Path,
+    environment: tuple[str, Mapping[str, str]],
+    arguments: Sequence[str],
+    paths: Sequence[str],
+) -> int:
+    python, env = environment
     completed = subprocess.run(
-        [binding.python, "-m", "ruff", *arguments, "--", *paths],
+        [python, "-m", "ruff", *arguments, "--", *paths],
         cwd=root,
-        env=binding.env,
+        env=env,
         check=False,
     )
     return completed.returncode
@@ -106,8 +122,9 @@ def _run_ruff(root: Path, arguments: Sequence[str], paths: Sequence[str]) -> int
 def resolve_tree(workdir: str | None) -> tuple[Path | None, str | None]:
     """Return the checkout to lint, or the reason none could be named.
 
-    ``workdir`` wins when given. Otherwise the tree is the session's
-    claimed source lane — never the working directory, which a harness
+    ``workdir`` wins when given. Otherwise the tree is the claimed source
+    lane ``yoke dev run`` bound for this process, or the session's claimed
+    lane when run outside it — never the working directory, which a harness
     may have re-applied from an earlier call.
     """
     if workdir:
@@ -115,6 +132,9 @@ def resolve_tree(workdir: str | None) -> tuple[Path | None, str | None]:
         if not (tree / ".git").exists():
             return None, f"--workdir is not a Git checkout: {tree}"
         return tree, None
+    bound = os.environ.get(SOURCE_DEV_RUN_ROOT_ENV, "").strip()
+    if bound:
+        return Path(bound).resolve(), None
     return source_dev_run.claimed_lane_root()
 
 
@@ -155,10 +175,15 @@ def run(
         f"{base} in {checkout}"
     )
     print(f"ruff-changed: {coverage}")
+    try:
+        environment = _ruff_environment(checkout)
+    except source_python_environment.SourceEnvironmentRefusal as exc:
+        print(f"ruff-changed: {exc}", file=sys.stderr)
+        return 1
     if fix_format:
         # Format before linting so the check sees the bytes a commit will carry:
         # a formatter rewrite can itself introduce or clear a lint diagnostic.
-        format_status = _run_ruff(checkout, ("format",), paths)
+        format_status = _run_ruff(checkout, environment, ("format",), paths)
         if format_status:
             print(
                 f"ruff-changed: ruff format failed with status {format_status}; "
@@ -166,7 +191,7 @@ def run(
                 file=sys.stderr,
             )
             return format_status
-    check_status = _run_ruff(checkout, ("check",), paths)
+    check_status = _run_ruff(checkout, environment, ("check",), paths)
     if check_status:
         print(
             f"ruff-changed: ruff check failed with status {check_status}",
@@ -175,7 +200,7 @@ def run(
         return check_status
 
     if format_check:
-        format_status = _run_ruff(checkout, ("format", "--check"), paths)
+        format_status = _run_ruff(checkout, environment, ("format", "--check"), paths)
         if format_status:
             print(
                 f"ruff-changed: ruff format --check failed with status {format_status}",

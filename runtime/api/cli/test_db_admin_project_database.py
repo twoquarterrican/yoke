@@ -178,18 +178,24 @@ def test_apply_writes_secretless_profile_from_declared_outputs(
     assert not list(tmp_path.rglob("*.dsn"))
 
 
-def test_missing_capability_refuses_with_declaration_teaching(setup_env, capsys):
+@pytest.mark.parametrize(
+    "answer",
+    [
+        {"success": True, "result": {"settings_json": None}},
+        {"success": False, "error": FunctionError(code="not_found", message="no")},
+    ],
+)
+def test_missing_capability_refuses_with_declaration_teaching(
+    setup_env, capsys, answer
+):
     setup_env.state["response"] = FunctionCallResponse(
-        success=False,
-        function="projects.capability_settings.get",
-        version="v1",
-        error=FunctionError(code="not_found", message="no capability"),
+        function="projects.capability_settings.get", version="v1", **answer
     )
 
     assert _setup(setup_env.config_path, "--dry-run") == 1
 
     err = capsys.readouterr().err
-    assert "no declared database location" in err
+    assert "has no migration_model capability" in err
     assert "settings.models.registry.authoritative_db" in err
 
 

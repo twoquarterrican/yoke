@@ -84,10 +84,31 @@ def test_load_declaration_defaults_when_relay_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "yoke_core.domain.control_plane_transport.relay",
-        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("not_found")),
+        "yoke_core.api.service_client_structured_api_adapter.call_dispatcher",
+        lambda **_k: (_ for _ in ()).throw(RuntimeError("unreachable")),
     )
     declaration = load_declaration("yoke")
     assert declaration.extras == ()
     assert declaration.groups == ()
     assert declaration.uv_project == ""
+
+
+def test_load_declaration_reads_an_absent_capability_once_per_process(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    calls = []
+
+    def dispatch(**kwargs):
+        calls.append(kwargs["payload"])
+        return SimpleNamespace(success=True, error=None, result={"settings_json": None})
+
+    monkeypatch.setattr(
+        "yoke_core.api.service_client_structured_api_adapter.call_dispatcher",
+        dispatch,
+    )
+    first = load_declaration("yoke", strict=True)
+    second = load_declaration("yoke", strict=True)
+    assert first == second == TestEnvironmentDeclaration(project="yoke")
+    assert calls == [{"project": "yoke", "cap_type": CAPABILITY_TYPE}]

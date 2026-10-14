@@ -67,19 +67,22 @@ def read_declared_database(
         f"secret_arn_output) on project {project!r}'s {MIGRATION_MODEL_CAPABILITY} "
         f"capability; see {DECLARATION_DOC}"
     )
+    absent = (
+        f"no declared database location: project {project!r} has no "
+        f"{MIGRATION_MODEL_CAPABILITY} capability; {teach}"
+    )
     result = _relay_control_plane_read(
         control_plane_env,
         function_id="projects.capability_settings.get",
         payload={"project": project, "cap_type": MIGRATION_MODEL_CAPABILITY},
         config_path=config_path,
         what=f"{MIGRATION_MODEL_CAPABILITY} declaration read",
-        not_found=(
-            f"no declared database location: project {project!r} has no "
-            f"{MIGRATION_MODEL_CAPABILITY} capability; {teach}"
-        ),
+        not_found=absent,
     )
+    if result.get("settings_json") is None:
+        raise DbAdminSetupError(absent)
     try:
-        settings = json.loads(str(result.get("settings_json") or "{}"))
+        settings = json.loads(str(result["settings_json"]))
     except ValueError as exc:
         raise DbAdminSetupError(
             f"project {project!r} {MIGRATION_MODEL_CAPABILITY} settings are not JSON"

@@ -161,7 +161,7 @@ def test_bad_identity_or_conflicting_declarations_never_execute(
     assert not route["argv"]
 
 
-@pytest.mark.parametrize("declarations", ["broken", "[]", None])
+@pytest.mark.parametrize("declarations", ["broken", "[]"])
 def test_unreadable_settings_are_diagnosed(route, declarations, capsys):
     route["declarations"] = declarations
     assert authorize("--json") == 2
@@ -311,14 +311,23 @@ def test_transport_failures_name_reason_and_recovery(
     assert raised.value.code == error and raised.value.recovery
 
 
-def test_no_browser_capability_still_has_default_identity(route, monkeypatch, capsys):
+@pytest.mark.parametrize(
+    "absent",
+    [
+        SimpleNamespace(success=True, result={"settings_json": None}, error=None),
+        SimpleNamespace(
+            success=False, result=None, error=SimpleNamespace(code="not_found")
+        ),
+    ],
+)
+def test_no_browser_capability_still_has_default_identity(
+    route, monkeypatch, capsys, absent
+):
     original = remote.call_dispatcher
 
     def dispatch(**kwargs):
         if kwargs["function_id"] == "projects.capability_settings.get":
-            return SimpleNamespace(
-                success=False, result=None, error=SimpleNamespace(code="not_found")
-            )
+            return absent
         return original(**kwargs)
 
     monkeypatch.setattr(remote, "call_dispatcher", dispatch)

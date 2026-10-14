@@ -75,7 +75,9 @@ def projects_capability_settings_get(args: List[str]) -> int:
         prog="yoke projects capability-settings get",
         description=(
             "Read one non-sensitive project capability settings document. "
-            "The exact output is the --base token for a CAS set. Aggregate "
+            "The exact output is the --base token for a CAS set. An undeclared "
+            "capability succeeds with empty settings and names how to declare "
+            "it. Aggregate "
             "pulumi-state reads are closed: declare its non-sensitive stacks "
             "inventory with capability-settings merge, initialize an exact "
             "declared stack with yoke pulumi exec, then read stack-scoped "

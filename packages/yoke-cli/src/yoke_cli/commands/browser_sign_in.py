@@ -29,7 +29,8 @@ DECLARATIONS_FLAG_HELP = (
     "cannot read them itself (a Test Machine not connected to the project's "
     "control plane). Read it where the project is reachable with `yoke "
     "projects capability-settings get --project P --cap-type browser-control "
-    "--json` and pass result.settings_json verbatim."
+    "--json` and pass result.settings_json verbatim. A project without that "
+    "capability has only `default` and needs no declarations."
 )
 
 

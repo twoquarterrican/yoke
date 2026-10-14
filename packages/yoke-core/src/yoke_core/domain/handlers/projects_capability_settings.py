@@ -87,11 +87,16 @@ def handle_capability_settings_get(
     except ValueError as exc:
         return _failure("validation_error", str(exc), "$.payload")
     if settings_json is None:
-        return _failure(
-            "not_found",
-            f"capability {parsed.cap_type!r} was not found on project "
-            f"{parsed.project!r}",
-            "$.payload.cap_type",
+        # An undeclared capability is an empty answer, not a failed read.
+        return _success(
+            parsed.project,
+            parsed.cap_type,
+            None,
+            message=(
+                f"capability {parsed.cap_type!r} is not declared on project "
+                f"{parsed.project!r}; declare it with `yoke projects "
+                "capability-settings merge` or `set --new`"
+            ),
         )
     return _success(parsed.project, parsed.cap_type, settings_json)
 

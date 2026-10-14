@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from yoke_contracts.install_binding import SOURCE_DEV_RUN_ROOT_ENV
 from yoke_contracts.project_contract.changed_path_scope import (
     WorkingTreeChangedPaths,
 )
@@ -121,27 +123,32 @@ def test_empty_changed_set_passes_without_invoking_ruff(
     assert "working tree" in output
 
 
-def test_format_check_runs_after_lint(
+def _one_change(_base: str, _root: Path) -> ruff_changed.ChangedPythonSelection:
+    return ruff_changed.ChangedPythonSelection(
+        ("module.py",),
+        "base-sha",
+        "head-sha",
+        WorkingTreeChangedPaths(tracked=("module.py",), untracked=()),
+    )
+
+
+def test_format_check_runs_after_lint_on_one_environment_resolve(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.delenv(SOURCE_DEV_RUN_ROOT_ENV, raising=False)
+    monkeypatch.setattr(ruff_changed, "select_changed_python_paths", _one_change)
+    resolved: list[Path] = []
     monkeypatch.setattr(
-        ruff_changed,
-        "select_changed_python_paths",
-        lambda _base, _root: ruff_changed.ChangedPythonSelection(
-            ("module.py",),
-            "base-sha",
-            "head-sha",
-            WorkingTreeChangedPaths(tracked=("module.py",), untracked=()),
+        ruff_changed.source_python_environment,
+        "resolve",
+        lambda root, _env: (
+            resolved.append(root) or SimpleNamespace(python="py", env={})
         ),
     )
     phases: list[tuple[str, ...]] = []
 
-    def _record(
-        _root: Path,
-        arguments: tuple[str, ...],
-        _paths: tuple[str, ...],
-    ) -> int:
+    def _record(_root, _environment, arguments, _paths) -> int:
         phases.append(arguments)
         return 0
 
@@ -149,6 +156,33 @@ def test_format_check_runs_after_lint(
 
     assert ruff_changed.run("main", format_check=True, root=tmp_path) == 0
     assert phases == [("check",), ("format", "--check")]
+    assert resolved == [tmp_path.resolve()]
+
+
+def test_dev_run_lane_and_environment_are_not_looked_up_again(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """``yoke dev run`` already resolved the lane and verified its interpreter."""
+
+    def _unexpected(*_args, **_kwargs):
+        raise AssertionError("the dev-run parent already answered this")
+
+    monkeypatch.setenv(SOURCE_DEV_RUN_ROOT_ENV, str(tmp_path))
+    monkeypatch.setattr(ruff_changed.source_dev_run, "claimed_lane_root", _unexpected)
+    monkeypatch.setattr(ruff_changed.source_python_environment, "resolve", _unexpected)
+    monkeypatch.setattr(ruff_changed, "select_changed_python_paths", _one_change)
+    commands: list[list[str]] = []
+    monkeypatch.setattr(
+        ruff_changed.subprocess,
+        "run",
+        lambda argv, **_kwargs: commands.append(argv) or SimpleNamespace(returncode=0),
+    )
+
+    tree, error = ruff_changed.resolve_tree(None)
+    assert (tree, error) == (tmp_path.resolve(), None)
+    assert ruff_changed.run("main", fix_format=True, root=tree) == 0
+    assert [command[:3] for command in commands] == [[sys.executable, "-m", "ruff"]] * 2
 
 
 def test_cli_adapter_uses_the_claimed_source_resolver(
@@ -212,6 +246,7 @@ def test_tree_without_workdir_comes_from_the_claimed_lane(
     lane = tmp_path / "lane"
     lane.mkdir()
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv(SOURCE_DEV_RUN_ROOT_ENV, raising=False)
     monkeypatch.setattr(
         ruff_changed.source_dev_run,
         "claimed_lane_root",
@@ -227,6 +262,7 @@ def test_unresolvable_tree_refuses_and_names_what_it_skipped(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv(SOURCE_DEV_RUN_ROOT_ENV, raising=False)
     monkeypatch.setattr(
         ruff_changed.source_dev_run,
         "claimed_lane_root",
