@@ -276,11 +276,11 @@ Open the installed project checkout in a supported harness and run:
 ```
 
 The slash-command skill assumes deterministic setup already ran and does not
-re-create it. It starts from the strategy conversation, derives and confirms
-one execution profile, installs scaffold and infra Packs, verifies hosting,
-registers environments/sites/flows, records the domain posture, runs the
-gated infrastructure apply plus first deploy, seeds first work items, and
-updates checklist rows with evidence as it goes.
+re-create it. It scans existing issues, pull requests and session transcripts,
+settles strategy and CURRENT-PLAN one decision at a time, configures only what
+the first work needs (Packs, hosting, environments, domain, gated first deploy),
+hands that work to `/yoke steer` and records checklist evidence as it goes.
+Onboarding is done when the first item is done.
 
 ## 8. Verify the Installed Project
 

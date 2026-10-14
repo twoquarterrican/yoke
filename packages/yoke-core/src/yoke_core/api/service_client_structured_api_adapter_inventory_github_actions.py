@@ -55,6 +55,14 @@ GITHUB_ACTIONS_ADAPTERS: Tuple[AdapterEntry, ...] = (
         ),
     ),
     _read_entry(
+        function_id="github.open_work.list",
+        cli_invocation="yoke github open-work list --project <project> [--limit N]",
+        notes=(
+            "Lists the bound repository's open issues and open pull requests, "
+            "newest-updated first, through the project's GitHub binding."
+        ),
+    ),
+    _read_entry(
         function_id="github_actions.commit_runs.list",
         cli_invocation=(
             "yoke github-actions commit-runs list <commit-sha> [--workflow NAME] "

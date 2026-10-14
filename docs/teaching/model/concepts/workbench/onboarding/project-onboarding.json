@@ -1,7 +1,9 @@
 {
  "id": "project-onboarding",
  "title": "Project onboarding",
- "status": "draft-copy",
+ "status": "observed",
  "page": "workbench",
- "position": 2
+ "position": 2,
+ "text": "The Run /yoke onboard module completes when the project's first item is done; no separate first-deploy module.",
+ "sources": ["packages/yoke-core/src/yoke_core/domain/overview_activation_read.py", "packages/yoke-core/src/yoke_core/ui/static/universe_onboarding_copy.js"]
 }

@@ -79,6 +79,8 @@ class ChecklistRowSpec:
 
 SOURCE_DEV_ROW_ID = "source-dev-admin-branch"
 SETUP_HANDOFF_ROW_ID = "setup-checklist-handoff"
+#: Activation: observed live from the project's items, never written by hand.
+FIRST_ITEM_DONE_ROW_ID = "lifecycle-readiness"
 
 # Keep the declarative checklist table compact and scan-friendly.
 # fmt: off
@@ -155,15 +157,15 @@ ROW_SPECS = (
                      LAYER_CAPABILITY, "yoke onboard",
                      "Declare the project's governed migration model, or "
                      "record that it has no governed database."),
-    ChecklistRowSpec("work-seeding", "17h", "Work seeding",
+    ChecklistRowSpec("work-seeding", "17h", "Steering handoff",
                      LAYER_AGENTIC, "yoke onboard",
-                     "File the first backlog items from CURRENT-PLAN via idea intake."),
+                     "Hand CURRENT-PLAN to /yoke steer, which files and routes the first work."),
     ChecklistRowSpec("verification", "18", "Verification", LAYER_VERIFICATION,
                      "CLI + yoke onboard",
                      "Run status, auth, command, render, and doctor checks."),
-    ChecklistRowSpec("lifecycle-readiness", "19", "Lifecycle readiness",
+    ChecklistRowSpec(FIRST_ITEM_DONE_ROW_ID, "19", "First item done",
                      LAYER_VERIFICATION, "Lifecycle",
-                     "Enable first project-scoped backlog item."),
+                     "A project item reaches done under its completion obligations."),
     ChecklistRowSpec("later-per-item-facts", "20", "Later per-item facts",
                      LAYER_VERIFICATION, "Lifecycle",
                      "Created when actual work starts."),
@@ -195,7 +197,6 @@ REQUIRED_SETUP_ROW_IDS = frozenset(
         "deterministic-repo-substrate",
         "strategy-setup",
         "human-interview",
-        "verification-command-binding",
     }
 )
 
@@ -210,6 +211,7 @@ __all__ = [
     "CHECKLIST_LAYERS",
     "CHECKLIST_STATUSES",
     "ChecklistRowSpec",
+    "FIRST_ITEM_DONE_ROW_ID",
     "HANDOFF_TO",
     "MACHINE_ROW_IDS",
     "OPERATION",

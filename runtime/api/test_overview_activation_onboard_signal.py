@@ -22,6 +22,7 @@ from yoke_contracts.api.function_call import (
 )
 from yoke_contracts.onboard_checklist import (
     BRANCH_LOCAL_CHECKOUT,
+    FIRST_ITEM_DONE_ROW_ID,
     ROW_IDS,
     STATUS_BLOCKED,
     STATUS_VERIFIED,
@@ -67,7 +68,11 @@ def _seed_run(conn, run_id, *, row_status=None, blocker=None):
 
 
 def _finished_statuses(**overrides):
-    statuses = {row_id: STATUS_VERIFIED for row_id in ROW_IDS}
+    statuses = {
+        row_id: STATUS_VERIFIED
+        for row_id in ROW_IDS
+        if row_id != FIRST_ITEM_DONE_ROW_ID
+    }
     statuses.update(overrides)
     return statuses
 

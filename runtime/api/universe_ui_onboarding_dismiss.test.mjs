@@ -26,7 +26,7 @@ function stubFetch(t) {
 
 const ALL_ACTIVATED = {
   finish_installation_wizard: "activated", connect_harness: "activated",
-  run_onboard: "activated", first_deploy: "activated",
+  run_onboard: "activated",
 };
 
 test("the mount forwards the host machine fact into the read", async (t) => {
@@ -66,7 +66,7 @@ test("dismiss: ✕ on activated modules hides the module for good", async (t) =>
   const { root, mounted } = await mountWorkbench(activationClient(answer));
 
   const dismissButtons = byClass(root, "activation-dismiss");
-  assert.equal(dismissButtons.length, 4);
+  assert.equal(dismissButtons.length, 3);
   assert.equal(
     dismissButtons[1].getAttribute("data-tooltip"),
     "Hide — bring it back from Profile",
@@ -76,7 +76,7 @@ test("dismiss: ✕ on activated modules hides the module for good", async (t) =>
   await settle();
   const cards = byClass(root, "activation-module");
   assert.deepEqual(cards.map((card) => card.attributes.get("data-module")), [
-    "finish_installation_wizard", "run_onboard", "first_deploy",
+    "finish_installation_wizard", "run_onboard",
   ]);
   // No count, no show-again, no restore: the only way back is Profile.
   assert.equal(byClass(root, "activation-restore-line").length, 0);
@@ -118,16 +118,16 @@ test("work still to do shows the control, counted from the read", async (t) => {
   const answer = activationAnswer({
     states: {
       finish_installation_wizard: "activated", connect_harness: "activated",
-      run_onboard: "not_started", first_deploy: "not_started",
+      run_onboard: "not_started",
     },
   });
   const { root, mounted } = await mountWorkbench(activationClient(answer));
 
   const control = byClass(root, "onboarding-control")[0];
   assert.equal(control.hidden, false);
-  assert.equal(byClass(root, "onboarding-trigger")[0].textContent, "Setup · 2/4");
+  assert.equal(byClass(root, "onboarding-trigger")[0].textContent, "Setup · 2/3");
   // The whole stack is one press away, with every module's own actions.
-  assert.equal(byClass(root, "activation-module").length, 4);
+  assert.equal(byClass(root, "activation-module").length, 3);
   // Hovering says which steps are left without opening anything.
   assert.deepEqual(
     byClass(root, "onboarding-summary-step").map(ownTextContent),
@@ -135,7 +135,6 @@ test("work still to do shows the control, counted from the read", async (t) => {
       "✓ Finish the installation wizard",
       "✓ Connect a harness",
       "○ Run /yoke onboard",
-      "○ First deploy",
     ],
   );
   mounted.unmount();
@@ -149,7 +148,7 @@ test("everything complete retires the control entirely", async (t) => {
   assert.equal(byClass(root, "onboarding-control")[0].hidden, true);
   // The modules are still rendered inside the dialog, so Profile's reset
   // brings back a stack that still has its actions.
-  assert.equal(byClass(root, "activation-module").length, 4);
+  assert.equal(byClass(root, "activation-module").length, 3);
   mounted.unmount();
 });
 
@@ -181,11 +180,10 @@ test("all dismissed: nothing is left to count and the control goes", async (t) =
   const answer = activationAnswer({
     states: {
       finish_installation_wizard: "activated", connect_harness: "not_started",
-      run_onboard: "not_started", first_deploy: "not_started",
+      run_onboard: "not_started",
     },
     dismissed: [
       "finish_installation_wizard", "connect_harness", "run_onboard",
-      "first_deploy",
     ],
     dismissAvailable: true,
   });
@@ -202,16 +200,16 @@ test("dismissing a module takes it out of the reckoning too", async (t) => {
   const answer = activationAnswer({
     states: {
       finish_installation_wizard: "activated", connect_harness: "activated",
-      run_onboard: "activated", first_deploy: "not_started",
+      run_onboard: "not_started",
     },
     dismissAvailable: true,
   });
   const { root, mounted } = await mountWorkbench(activationClient(answer));
-  assert.equal(byClass(root, "onboarding-trigger")[0].textContent, "Setup · 3/4");
-  // Hiding one of the finished three leaves two of three still complete.
+  assert.equal(byClass(root, "onboarding-trigger")[0].textContent, "Setup · 2/3");
+  // Hiding one of the finished two leaves one of two still complete.
   byClass(root, "activation-dismiss")[0].dispatchEvent(new Event("click"));
   await settle();
-  assert.equal(byClass(root, "onboarding-trigger")[0].textContent, "Setup · 2/3");
+  assert.equal(byClass(root, "onboarding-trigger")[0].textContent, "Setup · 1/2");
   mounted.unmount();
 });
 
@@ -222,7 +220,7 @@ test("no bound actor: the ✕ never renders even on activated modules", async (t
   });
   const { root, mounted } = await mountWorkbench(activationClient(answer));
 
-  assert.equal(byClass(root, "activation-module").length, 4);
+  assert.equal(byClass(root, "activation-module").length, 3);
   assert.equal(byClass(root, "activation-dismiss").length, 0);
   mounted.unmount();
 });
@@ -256,7 +254,7 @@ test("non-empty reads draw cards while onboarding is still day zero", async (t) 
     activationClient(activationAnswer()),
   );
 
-  assert.equal(byClass(root, "onboarding-trigger")[0].textContent, "Setup · 0/4");
+  assert.equal(byClass(root, "onboarding-trigger")[0].textContent, "Setup · 0/3");
   assert.equal(byClass(root, "work-item-card").length, 1);
   mounted.unmount();
 });

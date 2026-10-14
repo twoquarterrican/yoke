@@ -12,7 +12,7 @@ repo, never deployed. They install Yoke to "make it real".
 |---|---|
 | Fits | Linux install. Clone from GitHub **or** existing folder. Connect GitHub. Skip hosting. Scaffold mapped. |
 | Breaks | Clone path assumes GitHub URL/App. A missing suite needs an explicit test posture before QA binding. |
-| Gaps | "No deploy yet" profile. Teaching that seed work ≠ first production URL. |
+| Gaps | "No deploy yet" profile. Teaching that first item done ≠ first production URL. |
 
 ## Transcript — installer + wizard
 
@@ -56,7 +56,7 @@ product has no host. Step 5 verifies the empty readback and creates no site,
 environment, or flow. Merge-only remains available if they want every item to
 carry the local-merge contract.
 
-Seed from CURRENT-PLAN creates implementation issues without a deploy flow.
+Steering files CURRENT-PLAN's implementation work without a deploy flow.
 
 ## Test setup
 

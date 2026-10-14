@@ -22,7 +22,6 @@ FILING_RECIPES = (
     "dash/file-and-claim.md",
     "idea/infer-and-create.md",
     "curate/cluster-and-work-item.md",
-    "onboard/seed-work.md",
     "conduct/simulation-gate-escalation.md",
     "feed/materialize.md",
 )
@@ -115,19 +114,12 @@ def test_curate_resolves_both_cluster_outputs_and_quick_promotion() -> None:
     assert quick.index(FUNCTION_ID) < quick.index(RESOLVER)
 
 
-def test_onboard_and_conduct_resolve_before_seed_or_gap_filing() -> None:
-    onboard = _read("onboard/seed-work.md")
-    _ordered(
-        onboard,
-        f"{RESOLVER} --workflow issue --project {{project}}",
-        'yoke items create "{title}" issue',
-    )
+def test_conduct_resolves_before_gap_filing() -> None:
     conduct = _read("conduct/simulation-gate-escalation.md")
     assert "[Idea](../idea/SKILL.md)" in conduct
     assert "exact target project" in conduct
     idea = _read("idea/infer-and-create.md")
     _ordered(idea, RESOLVER, "## 5. Create The Item")
-    assert FUNCTION_ID in onboard
     assert FUNCTION_ID in idea
 
 

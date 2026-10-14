@@ -6,7 +6,7 @@
  "when": "Registering existing verification commands",
  "need": "Only a declared eligible Actions test workflow uses command-ci. Deploy/release/build workflows are not that declaration; other CI keeps the documented native-command path.",
  "disclosure": "current cue",
- "surface": "Onboard verification-binding lines 8–31.",
+ "surface": "Onboard verification-binding “Real or scaffold suite”.",
  "gap": "Existing-provider discovery should name this distinction before auto-binding tests or offering a merge queue.",
  "review": "Pending exact recipe proof.",
  "plan_notes": ["JOURNEYS row 13"],

@@ -32,7 +32,7 @@ no default. The team confirms **merge-only**: local merge with no environment
 or Yoke deployment pipeline.
 
 Step 5 creates an active empty-tier flow and verifies it as the project
-default. Idea attaches that flow to seeded work. Usher recognizes the empty
+default. Filing attaches that flow to steering-filed work. Usher recognizes the empty
 target tier semantically and takes Route A (`--skip-deploy`) without creating
 a deployment run; TestFlight remains in the external Actions workflow.
 

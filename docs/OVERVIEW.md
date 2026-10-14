@@ -65,9 +65,10 @@ are governed by `project-policy.settings.board`, not the generated view.
 ## Project adoption and reusable capabilities
 
 Product adoption starts with `yoke setup`, project create/import/install and
-`/yoke onboard`. The phase owners survey strategy and actual execution posture,
-install Packs, verify hosting, register environments/flows, execute the gated
-first delivery and seed work with evidence. GitHub/CI/hosting settings and
+`/yoke onboard`. Onboarding scans existing issues, pull requests and session
+transcripts, settles strategy and CURRENT-PLAN, configures only what the first
+work needs (Packs, hosting, environments/flows, a gated first delivery) and
+hands that work to `/yoke steer`; it is done when the first item is done. GitHub/CI/hosting settings and
 credentials use Yoke-owned previews and resolvers, not ad hoc bootstrap scripts.
 
 Reusable capability behavior ships in immutable versioned `packs/<slug>/`

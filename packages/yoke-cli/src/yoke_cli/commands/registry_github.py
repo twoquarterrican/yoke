@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Tuple
 
 from yoke_cli.commands.adapters.github import github_pr_create
 from yoke_cli.commands.adapters.github_branch import github_branch_head
+from yoke_cli.commands.adapters.github_open_work import github_open_work_list
 from yoke_cli.commands.adapters.github_merge_queue import (
     github_merge_queue_apply,
     github_merge_queue_hold,
@@ -27,6 +28,10 @@ GITHUB_SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
     ),
     ("github", "pr", "create"): ("github.pr.create", github_pr_create),
     ("github", "branch", "head"): ("github.branch.head", github_branch_head),
+    ("github", "open-work", "list"): (
+        "github.open_work.list",
+        github_open_work_list,
+    ),
     ("github", "merge-queue", "apply"): (
         "github.merge_queue.apply",
         github_merge_queue_apply,

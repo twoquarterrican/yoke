@@ -143,7 +143,7 @@ settings TEXT DEFAULT '{}' -- structured site configuration
 UNIQUE(project_id, name)
 ```
 
-Seed data: none — a fresh universe seeds no sites; rows are registered through `projects.site.create` (`yoke projects site create`, idempotent already_present) during onboarding, with settings maintained through the projects settings surfaces.
+Seed data: none — a fresh universe seeds no sites; rows are registered through `projects.site.create` (`yoke projects site create`, idempotent already_present) when the first work that deploys needs one, with settings maintained through the projects settings surfaces.
 
 ## Table: environments
 
@@ -166,7 +166,7 @@ UNIQUE(project_id, name)
 FOREIGN KEY(site, project_id) REFERENCES sites(id, project_id)
 ```
 
-Seed data: a fresh universe seeds no sites or environments — projects enter through onboarding, registering rows via `projects.site.create` / `projects.environment.create` (idempotent already_present), with structured settings maintained through the projects settings surfaces. The operator's own registry rows (sites, environments, capability settings) live in the operator's private ops repo and are applied by operator tooling.
+Seed data: a fresh universe seeds no sites or environments — onboarding registers rows via `projects.site.create` / `projects.environment.create` (idempotent already_present) only when the first work deploys, with structured settings maintained through the projects settings surfaces. The operator's own registry rows (sites, environments, capability settings) live in the operator's private ops repo and are applied by operator tooling.
 
 ## Table: project_capabilities
 

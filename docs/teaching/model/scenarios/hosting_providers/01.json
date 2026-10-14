@@ -6,7 +6,7 @@
  "when": "Survey finds deployed app or CI/release files",
  "need": "Map the existing app and installed Pack receipts. Existing scripts are evidence to inspect, not permission to reinstall infrastructure. Current executor can dispatch a project-owned GitHub Actions workflow.",
  "disclosure": "current cue",
- "surface": "Onboard profile lines 9–42; flow runner contract lines 287–312.",
+ "surface": "Onboard profile “Step 2” through its Pack proposal; flow runner contract lines 287–312.",
  "gap": "Onboarding offers no-host projects only merge-only/no-default although the executor supports external-project Actions delivery. Proposed adoption branch needs to separate infrastructure ownership from delivery orchestration.",
  "review": "Pending exact recipe proof.",
  "recipes": ["yoke deployment-flows stages FLOW-ID", "yoke deployment-flows validate --help"],

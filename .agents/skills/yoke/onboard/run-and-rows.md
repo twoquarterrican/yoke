@@ -24,15 +24,19 @@ confirmation/approval gate. Every gate leaves a coherent resumable partial state
 
 ## Pacing
 
-Exactly two stops on a managed-host run: whole execution-profile confirmation
-(step 2), then full infrastructure preview and explicit yes (step 7);
-`[y/N]` defaults No. No-host `deferred|not-needed` records its terminal
-step-7 answer without that second stop.
+Step 1 sends one message confirming what to scan, then walks decisions one
+at a time. Configuration then follows the first work only: a step it does
+not need writes its rows `deferred` with evidence naming that work and asks
+nothing. Optional environments, test machines, QA plans, governed
+migrations, previews, test registration, Doctor and architecture setup wait
+until selected work needs them; item QA can use local tests or review.
 
-After confirmation, steps 3–6 run unattended. Credential creation always
-requires user-action plus explicit approval; values enter terminal
-`--value-stdin` prompts only. Step 8 separately takes one batched confirmation
-of the item list.
+At most two more stops: confirmation of the profile choices the first work
+needs (step 2), and the infrastructure preview with an explicit yes only when
+it deploys to managed infrastructure (step 7); `[y/N]` defaults No.
+After confirmation, the needed steps among 3–6 run unattended. Credential
+creation always requires user-action plus explicit approval; values enter
+terminal `--value-stdin` prompts only. Step 8 asks nothing: steering files the work.
 
 ## Rows and failure floor
 
@@ -45,7 +49,7 @@ of the item list.
 | 5 | `environment-registration`, `project-structure-setup`, `delivery-setup`, `verification-command-binding`, `migration-model-setup` |
 | 6 | `domain-setup` |
 | 7 | `infra-apply-first-deploy` |
-| 8 | `work-seeding`, `lifecycle-readiness`, `verification` |
+| 8 | `work-seeding`, `verification`; `lifecycle-readiness` is read live |
 
 Every step writes its row and echoes what changed/where:
 `verified` means checked facts; `configured` means applied setup;

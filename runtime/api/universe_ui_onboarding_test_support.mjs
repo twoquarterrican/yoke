@@ -11,7 +11,6 @@ import { FakeDocument, settle } from "./universe_ui_dom_test_support.mjs";
 
 export const MODULE_KEYS = [
   "finish_installation_wizard", "connect_harness", "run_onboard",
-  "first_deploy",
 ];
 
 export function wizardSubmodules(done = {}, machineDetail = null) {

@@ -165,6 +165,7 @@ _BY_ID: dict[str, AuthzSpec] = {
     "github.merge_queue.apply": AuthzSpec(PROJECT, PERM_PROJECT_ADMIN),
     "github.merge_queue.hold": AuthzSpec(PROJECT, PERM_ITEMS_WRITE),
     "github.merge_queue.readiness": AuthzSpec(PROJECT, PERM_ITEMS_READ),
+    "github.open_work.list": AuthzSpec(PROJECT, PERM_ITEMS_READ),
     "conduct.epic_task.update_status": AuthzSpec(PROJECT, PERM_ITEMS_WRITE),
     "conduct.epic.proceed_triage_handoff": AuthzSpec(PROJECT, PERM_ITEMS_WRITE),
     "onboard.checklist.init": AuthzSpec(PROJECT, PERM_PROJECT_INSTALL),

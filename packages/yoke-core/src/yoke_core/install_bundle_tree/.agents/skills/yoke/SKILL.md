@@ -38,9 +38,10 @@ Internal: [amend](amend/SKILL.md) · [approve](approve/SKILL.md) · [implementin
 
 Routing distinctions:
 
-- `/yoke onboard [--project P] [--run-id RUN]` makes a wired project execution-ready:
-  strategy, execution profile, Packs, hosting, environments, gated first deploy
-  and seeded work. Terminal `yoke setup` owns machine/project wire-up.
+- `/yoke onboard [--project P] [--run-id RUN]` adopts a wired project's existing
+  work: strategy and CURRENT-PLAN, only the setup the first work needs, then
+  `/yoke steer` until the first item is done. Terminal `yoke setup` owns
+  machine/project wire-up.
 - `/yoke simulate PREFIX-N` and `/yoke simulate --system` are a harness slash
   skill only — there is no terminal `yoke simulate` adapter.
 - `/yoke steer [STRATEGY-DOC-SLUG]` defaults an omitted slug to `CURRENT-PLAN`

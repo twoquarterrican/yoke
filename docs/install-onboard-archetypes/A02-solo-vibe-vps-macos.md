@@ -96,7 +96,7 @@ Survey maps the existing app and records the no-Yoke-managed-host posture.
 The confirmed profile excludes AWS Packs, credentials and managed environments;
 step 4 records hosting not needed without a probe. Priya chooses merge-only
 or no default, verified by readback in step 5. Manual SSH delivery remains
-operator-owned. Seed work uses only that verified default; no persistent
+operator-owned. Steering-filed work uses only that verified default; no persistent
 flow or stage/prod placeholder is created.
 
 ## Test setup

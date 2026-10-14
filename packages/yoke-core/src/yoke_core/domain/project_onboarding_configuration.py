@@ -7,9 +7,11 @@ from hashlib import sha256
 from typing import Any
 from yoke_contracts.hosting_posture import POSTURE_NO_YOKE_MANAGED_HOST
 from yoke_contracts.onboard_checklist import (
+    FIRST_ITEM_DONE_ROW_ID,
     STATUS_CONFIGURED,
     STATUS_UNKNOWN,
     STATUS_NOT_NEEDED,
+    STATUS_VERIFIED,
 )
 from yoke_core.domain.project_onboarding_schema import _p
 from yoke_core.domain.schema_common import _table_exists
@@ -131,3 +133,52 @@ def project_facts(conn: Any, project_id: int | None) -> dict[str, dict[str, Any]
             [[row[index] for index in range(4)] for row in bindings]
         )
     return facts
+
+
+def first_item_done_fact(
+    conn: Any, project_id: int | None
+) -> dict[str, dict[str, Any]]:
+    """Activation, observed live: the project's first item that reached done.
+
+    Reaching ``done`` already means the item passed its own completion
+    obligations (merge, delivery and QA where its workflow requires them).
+    The fact stays outside the profile fingerprint: finishing work never
+    reopens the confirmed setup profile.
+    """
+    if project_id is None or not (
+        _table_exists(conn, "items") and _table_exists(conn, "projects")
+    ):
+        return {}
+    p = _p(conn)
+    row = conn.execute(
+        "SELECT pr.public_item_prefix, i.project_sequence, i.title "
+        "FROM items i JOIN projects pr ON pr.id = i.project_id "
+        f"WHERE i.project_id = {p} AND i.status = 'done' "
+        "ORDER BY i.id LIMIT 1",
+        (project_id,),
+    ).fetchone()
+    if row is None:
+        return {
+            FIRST_ITEM_DONE_ROW_ID: {
+                "status": STATUS_UNKNOWN,
+                "evidence": {"source": "items", "present": False},
+                "reason": "first_item_not_done",
+                "recovery": (
+                    "Run /yoke steer CURRENT-PLAN to file and route the first "
+                    "work; this row verifies itself when that item reaches done."
+                ),
+            }
+        }
+    return {
+        FIRST_ITEM_DONE_ROW_ID: {
+            "status": STATUS_VERIFIED,
+            "evidence": {
+                "source": "items",
+                "present": True,
+                "public_ref": f"{row[0]}-{row[1]}",
+                "title": str(row[2]),
+            },
+            "reason": "",
+            "recovery": "",
+        }
+    }

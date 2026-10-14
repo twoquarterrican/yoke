@@ -1,6 +1,8 @@
 # Onboard Step 5: Bind The Confirmed Verification Command
 
-Independent of hosting; execute after scaffold tests and workflow actually exist.
+Independent of hosting; execute after scaffold tests and workflow actually exist,
+and only when the first work's verification needs a registered command.
+Otherwise `verification-command-binding=deferred` names that work.
 This applies step 2's accepted box, not a descriptive policy entry.
 
 ## Real or scaffold suite
@@ -76,7 +78,7 @@ yoke onboard checklist --run-id {run_id} --row-status verification-command-bindi
 
 For an attested no-tests posture, mark `verification-command-binding=configured`
 with reason/attestation evidence. Review-only is also configured, naming roots,
-argv, health, advisory command, no default, blocking review and advisory seeding.
+argv, health, advisory command, no default, blocking review and advisory evidence.
 Reserve not-needed for nothing to bind **and** nothing to attest;
-`deferred` for the operator who has not decided.
+`deferred` for the operator who has not decided or a first work that needs no binding.
 Unverifiable argv is blocked with the missing executable and exact refusal.

@@ -11,7 +11,6 @@ export const MODULE_TITLES = {
   finish_installation_wizard: "Finish the installation wizard",
   connect_harness: "Connect a harness",
   run_onboard: "Run /yoke onboard",
-  first_deploy: "First deploy",
 };
 
 export const STATE_PILL_TEXT = {
@@ -74,12 +73,6 @@ export const MODULE_COPY = {
   connect_harness: {
     in_progress: "Open a supported harness in a project directory:",
   },
-  first_deploy: {
-    in_progress:
-      "Approve the gated infra apply + first deploy in your harness — " +
-      "pulumi up stays behind your explicit yes.",
-    activated: "Live — onboarding is done.",
-  },
 };
 
 // Machine rows. Every registered machine answers the harness module for
@@ -115,17 +108,17 @@ export const MACHINE_PENDING_COPY =
 // run exists there is nothing to report but the route; once one exists,
 // every line below names something that run actually did.
 export const ONBOARD_NO_RUN =
-  "In your harness: strategy → execution profile → Packs → envs → " +
-  "domain → infra.";
+  "In your harness: existing work → strategy + CURRENT-PLAN → " +
+  "/yoke steer files the first item → that item done.";
 export const onboardBlockedLine = (step, title, detail) =>
   `Blocked at ${step} ${title}${detail ? ` — ${detail}` : ""}.`;
 export const onboardNextLine = (step, title) => `Next: ${step} ${title}.`;
 export const onboardStepsLine = (done, total) =>
   `${done} of ${total} steps done.`;
 
-// A finished run claims only the outcomes the universe can show. A mapped
-// existing app finishes with no scaffold installed, and a run may finish
-// having deferred its environments, so each clause is earned separately.
+// A finished run means its first item reached done. Beyond that it claims
+// only the outcomes the universe can show: setup the first work did not
+// need stays deferred, so each clause is earned separately.
 export const ONBOARD_OUTCOMES = {
   strategy: "strategy filled",
   scaffold: "webapp-scaffold installed",
@@ -134,8 +127,8 @@ export const onboardEnvironmentsOutcome = (names) =>
   `${names.join(" + ")} provisioned`;
 export const onboardCompleteLine = (outcomes) => (
   outcomes.length
-    ? `Execution-ready — ${outcomes.join(", ")}.`
-    : "Onboarding checklist complete."
+    ? `Activated — first item done; ${outcomes.join(", ")}.`
+    : "Activated — first item done."
 );
 // A project that deployed is past onboarding whatever its checklist says;
 // the engine closed the run and named the deployment that overtook it.

@@ -1,6 +1,10 @@
 # Onboard Steps 4–5: Hosting Capability And Deploy Flow
 
 Registration/verification only; cloud writes wait for step 7 approval.
+Run these steps only for what the first work needs. A first work that ships
+nowhere managed records hosting-setup, capability-setup,
+environment-registration and delivery-setup `deferred` with evidence naming
+that work, and continues at step 8.
 
 ## Step 4: Hosting Capability
 
@@ -44,7 +48,8 @@ Use returned remedy only for missing halves; settings scalar --key/--value
 is not registered (keys belong to secret surface). Rerun status until ready,
 then configured with redacted account/identity evidence and matching posture.
 Operator may explicitly defer hosting (deferred, reason, no posture write):
-step 7 unreachable, step 8 still allowed. Raw yoke aws exec/preflight are
+step 7 unreachable, step 8 still allowed; this is also the record when the
+first work needs no managed host. Raw yoke aws exec/preflight are
 operator CLI choices, not hosting verification/VPS setup.
 
 Remaining capabilities: GitHub app-binding selects exact accessible repository;
@@ -177,7 +182,7 @@ yoke onboard checklist --run-id {run_id} --row-status environment-registration=n
 ```
 
 Removal/readback failure: delivery-setup=blocked with exact command/error/recovery,
-then stop. Do not seed against an unverified default.
+then stop. Do not hand off work against an unverified default.
 
 ### Bind the confirmed test setup
 

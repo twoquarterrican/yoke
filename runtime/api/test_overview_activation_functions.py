@@ -10,7 +10,6 @@ in test_overview_activation_machines.py.
 
 from __future__ import annotations
 
-from runtime.api.fixtures.backlog_inserts import insert_deployment_run
 
 import pytest
 
@@ -69,11 +68,9 @@ def test_day_zero_reports_first_module_in_progress_rest_locked(test_db):
         "finish_installation_wizard",
         "connect_harness",
         "run_onboard",
-        "first_deploy",
     ]
     assert [m["state"] for m in modules] == [
         "in_progress",
-        "not_started",
         "not_started",
         "not_started",
     ]
@@ -150,28 +147,6 @@ def test_tail_signals_fill_submodules_and_fully_complete(test_db):
     wizard = _modules_by_key(result)["finish_installation_wizard"]
     assert all(s["done"] for s in wizard["submodules"])
     assert wizard["fully_complete"] is True
-
-
-def test_deploy_signal_activates_only_on_a_succeeded_run(test_db):
-    # The onboarding signal and the facts its card draws from live in
-    # test_overview_activation_onboard_signal.py.
-    insert_deployment_run(
-        test_db,
-        id="run-20260101-001",
-        project_id=1,
-        flow="flow-x",
-        status="failed",
-        created_at=iso8601_now(),
-    )
-    test_db.commit()
-    # A failed run is not a first deploy.
-    assert _modules_by_key(_get())["first_deploy"]["state"] == "not_started"
-
-    test_db.execute(
-        "UPDATE deployment_runs SET status = 'succeeded' WHERE id = 'run-20260101-001'"
-    )
-    test_db.commit()
-    assert _modules_by_key(_get())["first_deploy"]["state"] == "activated"
 
 
 def test_project_rows_carry_most_recent_workspace_or_none(test_db):

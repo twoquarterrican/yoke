@@ -6,7 +6,7 @@
  "when": "A browser review needs a temporary deployed target",
  "need": "Check ephemeral-env capability and serving support before offering a preview. The shipped Pack depends on host/routing/deploy Packs and application-specific configuration; it is not provider-neutral instant hosting.",
  "disclosure": "current cue",
- "surface": "Onboard profile lines 55–56; Ephemeral Environments Pack introduction and project-specific work.",
+ "surface": "Onboard profile “The delivery box” preview rule; Ephemeral Environments Pack introduction and project-specific work.",
  "gap": "Proposed JOURNEYS branch should offer a supported existing target or preview setup, with unsupported/deferred alternatives visible.",
  "review": "Pending exact recipe proof.",
  "recipes": ["yoke ephemeral-env --help", "yoke deployment-flows validate --help"],

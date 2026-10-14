@@ -34,7 +34,10 @@ from yoke_core.domain.project_onboarding_facts import (
     validate_observations,
     read_saved_metadata,
 )
-from yoke_core.domain.project_onboarding_configuration import project_facts
+from yoke_core.domain.project_onboarding_configuration import (
+    first_item_done_fact,
+    project_facts,
+)
 
 OPERATION_RUN = f"{OPERATION}.run"
 
@@ -195,6 +198,7 @@ def get_run(
             machine_id=machine_id,
             observations=observations or {},
             facts=facts,
+            activation=first_item_done_fact(selected, run["project_id"]),
             project_id=run["project_id"],
             project_access=project_access,
         )

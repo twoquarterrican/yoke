@@ -160,6 +160,13 @@
     "verified_on_surface": "claude-cli",
     "evidence": "No reader is needed and none is built. Claude fires its turn-end hook on every ending observed so far, including failures, so posture is stamped by the hook runner and no wake is left resolving an unsupported operation. A record would be read to answer a question the hook has already answered. Designed deferral: if a Claude ending is ever observed that fires no hook, this entry becomes the gap to close."
   },
+  "session_transcripts": {
+    "source": "yoke_contracts.harness_session_transcripts.HARNESS_SESSION_TRANSCRIPTS",
+    "store": "local_jsonl",
+    "location": "~/.claude/projects/<checkout-key>/<session_id>.jsonl",
+    "project_match": "<checkout-key> is the absolute checkout path with every '/' replaced by '-'; one directory per checkout",
+    "evidence": "yoke_harness.session_relay_claude_transcript derives the same key for stopped-session wake; read on claude-cli."
+  },
   "worktree_hook_enablement": {
     "config_path": ".claude/settings.json",
     "operations": [

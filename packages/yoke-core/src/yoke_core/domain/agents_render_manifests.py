@@ -21,6 +21,9 @@ from yoke_contracts.harness_cli_manifest import (
     harness_cli_manifest,
 )
 from yoke_contracts.harness_command_workdir import command_workdir_source
+from yoke_contracts.harness_session_transcripts import (
+    session_transcripts_for_harness,
+)
 from yoke_contracts.harness_turn_record_capability import (
     turn_record_capability_for_harness,
 )
@@ -59,6 +62,16 @@ def _turn_record(harness_id: str) -> dict:
         ),
     }
     payload.update(turn_record_capability_for_harness(harness_id).to_json())
+    return payload
+
+
+def _session_transcripts(harness_id: str) -> dict:
+    payload: dict = {
+        "source": (
+            "yoke_contracts.harness_session_transcripts.HARNESS_SESSION_TRANSCRIPTS"
+        ),
+    }
+    payload.update(session_transcripts_for_harness(harness_id).to_json())
     return payload
 
 
@@ -105,6 +118,7 @@ CLAUDE_MANIFEST: dict = {
     "session_control": _session_control(_CLAUDE_CLI.harness_id),
     "agent_wake": _agent_wake(_CLAUDE_CLI.harness_id),
     "turn_record": _turn_record(_CLAUDE_CLI.harness_id),
+    "session_transcripts": _session_transcripts(_CLAUDE_CLI.harness_id),
     "worktree_hook_enablement": {
         "config_path": ".claude/settings.json",
         "operations": [
@@ -170,6 +184,7 @@ CODEX_MANIFEST: dict = {
     "session_control": _session_control(_CODEX_CLI.harness_id),
     "agent_wake": _agent_wake(_CODEX_CLI.harness_id),
     "turn_record": _turn_record(_CODEX_CLI.harness_id),
+    "session_transcripts": _session_transcripts(_CODEX_CLI.harness_id),
     "worktree_hook_enablement": {
         "config_path": ".codex/hooks.json",
         "operations": [
@@ -242,6 +257,7 @@ CURSOR_MANIFEST: dict = {
     "session_control": _session_control(_CURSOR_CLI.harness_id),
     "agent_wake": _agent_wake(_CURSOR_CLI.harness_id),
     "turn_record": _turn_record(_CURSOR_CLI.harness_id),
+    "session_transcripts": _session_transcripts(_CURSOR_CLI.harness_id),
     "worktree_hook_enablement": {
         "config_path": ".cursor/hooks.json",
         "operations": [

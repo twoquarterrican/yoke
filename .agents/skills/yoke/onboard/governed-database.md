@@ -1,6 +1,7 @@
 # Onboard Step 5: Declare The Governed Database
 
-Hosting-independent. Entry: confirmed database box. Skip an already
+Hosting-independent. Entry: confirmed database box; a first work that
+changes no database records `migration-model-setup=deferred` naming it. Skip an already
 declared model or terminal migration-model-setup answer after live read:
 
 ```bash

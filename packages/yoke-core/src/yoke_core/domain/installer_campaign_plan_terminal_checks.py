@@ -215,7 +215,7 @@ APPLY_HANDOFF = terminal_case(
         "Run the public {{environment_display_name}} installer with the local-machine destination, "
         "create or verify the local universe, stay disabled for GitHub, "
         "choose machine-only setup, Apply, exit successfully, and capture the "
-        "installer parent's execution-ready handoff."
+        "installer parent's onboarding handoff."
     ),
     expected_outcome=(
         "The local-machine Apply succeeds with a durable report, the wizard "

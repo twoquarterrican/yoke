@@ -278,7 +278,7 @@ print_path_guidance_after_onboard() {
   else
     printf '\n%s☀%s Yoke installation complete.\n\n' "$(c_amber)" "$(sgr_reset)"
   fi
-  printf '%s%sNext: make it execution-ready.%s\n' \
+  printf '%s%sNext: bring your existing work into Yoke.%s\n' \
     "$(handoff_bar)" "$(c_text)" "$(sgr_reset)"
   printf '%s\n' "$(handoff_bar)"
   handoff_step=1

@@ -80,6 +80,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `github.merge_queue.apply` | `none` |
 | `github.merge_queue.hold` | `item` |
 | `github.merge_queue.readiness` | `none` |
+| `github.open_work.list` | `none` |
 | `github.pr.create` | `none` |
 | `github.release.create_next_tag` | `none` |
 | `github.release.create_commit_tag` | `none` |

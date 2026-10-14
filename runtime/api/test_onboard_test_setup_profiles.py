@@ -35,16 +35,16 @@ def test_profile_accepts_native_commands_and_review_only_suites() -> None:
 def test_binding_keeps_non_actions_and_legacy_suites_honest() -> None:
     binding = _read(ONBOARD / "verification-binding.md")
     hosting = _read(ONBOARD / "hosting-and-environments.md")
-    seeding = _read(ONBOARD / "seed-work.md")
+    handoff = _read(ONBOARD / "first-work.md")
 
     assert "one keyed `put` operation per surveyed test tree" in hosting
     assert "Jenkins, GitLab CI, Bitbucket" in binding
     assert "not `ci_workflow_file`" in binding
     assert "blocking `implementation_review` requirement" in binding
-    assert "--qa-kind implementation_review" in seeding
-    assert "--method-id command" in seeding
-    assert "--blocking-mode non_blocking" in seeding
-    assert '"command":"{legacy_argv}"' in seeding
+    assert "--qa-kind implementation_review" in handoff
+    assert "--method-id command" in handoff
+    assert "--blocking-mode non_blocking" in handoff
+    assert '"command":"{legacy_argv}"' in handoff
 
 
 def test_public_map_covers_non_pytest_and_multi_suite_realities() -> None:
@@ -69,7 +69,7 @@ def test_install_bundle_mirrors_the_canonical_guidance() -> None:
         "profile-and-scaffold.md",
         "hosting-and-environments.md",
         "verification-binding.md",
-        "seed-work.md",
+        "first-work.md",
     ):
         source = ONBOARD / name
         packaged = BUNDLE / ".agents" / "skills" / "yoke" / "onboard" / name

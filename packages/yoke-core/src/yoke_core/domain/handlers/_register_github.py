@@ -14,6 +14,7 @@ from yoke_core.domain.handlers import github_commit_release_tag
 from yoke_core.domain.handlers import github_merge_queue_apply
 from yoke_core.domain.handlers import github_merge_queue_hold
 from yoke_core.domain.handlers import github_merge_queue_readiness
+from yoke_core.domain.handlers import github_open_work
 
 
 def register(registry) -> None:
@@ -26,5 +27,6 @@ def register(registry) -> None:
         *github_merge_queue_apply.REGISTRATIONS,
         *github_merge_queue_hold.REGISTRATIONS,
         *github_merge_queue_readiness.REGISTRATIONS,
+        *github_open_work.REGISTRATIONS,
     ):
         registry.register(**entry)

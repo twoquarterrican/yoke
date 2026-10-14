@@ -73,9 +73,10 @@ Coverage: every axis value appears. The sample is not a market-share ranking.
 
 1. **Wire-up** — `curl -fsSL https://upyoke.com/install | sh` then the Textual
    wizard `yoke setup` (PATH, Account, GitHub, Project, Hosting, Review).
-2. **Execution-ready** — harness skill `/yoke onboard`: strategy docs,
-   execution profile, Packs, hosting verification, environments/flows, gated
-   first deploy, seeded work.
+2. **First item done** — harness skill `/yoke onboard`: existing-work scan,
+   strategy and CURRENT-PLAN, only the setup the first work needs (Packs,
+   hosting, environments/flows, gated first deploy), then `/yoke steer` until
+   that item is done.
 
 The installer hand-off after a successful interactive install is
 (`print_path_guidance_after_onboard` in the shim): source the shell startup

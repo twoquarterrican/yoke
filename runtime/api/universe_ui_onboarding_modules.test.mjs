@@ -51,24 +51,23 @@ test("day zero: module one is next up, the rest wait in order", async (t) => {
   const cards = moduleCards(root);
   assert.deepEqual(cards.map((card) => card.attributes.get("data-module")), [
     "finish_installation_wizard", "connect_harness", "run_onboard",
-    "first_deploy",
   ]);
   assert.deepEqual(cards.map((card) => card.attributes.get("data-state")), [
-    "in_progress", "not_started", "not_started", "not_started",
+    "in_progress", "not_started", "not_started",
   ]);
   assert.deepEqual(
     cards.map((card) => byClass(card, "activation-medallion")[0].textContent),
-    ["1", "2", "3", "4"],
+    ["1", "2", "3"],
   );
   assert.deepEqual(
     cards.map((card) => byClass(card, "pill")[0].textContent),
-    ["next up", "waits", "waits", "waits"],
+    ["next up", "waits", "waits"],
   );
   assert.deepEqual(
     cards.map((card) => byClass(card, "activation-title")[0].textContent),
     [
       "Finish the installation wizard", "Connect a harness",
-      "Run /yoke onboard", "First deploy",
+      "Run /yoke onboard",
     ],
   );
   const onboardTitle = byClass(cards[2], "activation-title")[0];
@@ -204,7 +203,7 @@ test("the harness module answers per machine, never for the universe", async (t)
 
   const cards = moduleCards(root);
   assert.deepEqual(cards.map((card) => card.attributes.get("data-state")), [
-    "activated", "activated", "in_progress", "not_started",
+    "activated", "activated", "in_progress",
   ]);
   assert.deepEqual(
     cards.slice(0, 2).map(
@@ -245,8 +244,8 @@ test("the harness module answers per machine, never for the universe", async (t)
   assert.equal(byClass(harness, "activation-project").length, 0);
   // The unlocked third module carries its next-action copy.
   assert.ok(textOf(cards[2]).includes(
-    "In your harness: strategy → execution profile → Packs → envs → " +
-    "domain → infra.",
+    "In your harness: existing work → strategy + CURRENT-PLAN → " +
+    "/yoke steer files the first item → that item done.",
   ));
   mounted.unmount();
 });
@@ -295,12 +294,12 @@ test("an unapproved harness reads red with its remediation", async (t) => {
   mounted.unmount();
 });
 
-test("fully deployed: every module reads activated with its copy", async (t) => {
+test("fully activated: every module reads activated", async (t) => {
   stubFetch(t);
   const answer = activationAnswer({
     states: {
       finish_installation_wizard: "activated", connect_harness: "activated",
-      run_onboard: "activated", first_deploy: "activated",
+      run_onboard: "activated",
     },
   });
   const { root, mounted } = await mountWorkbench(activationClient(answer));
@@ -308,9 +307,8 @@ test("fully deployed: every module reads activated with its copy", async (t) => 
   const cards = moduleCards(root);
   assert.deepEqual(
     cards.map((card) => byClass(card, "pill")[0].textContent),
-    ["activated", "activated", "activated", "activated"],
+    ["activated", "activated", "activated"],
   );
-  assert.ok(textOf(cards[3]).includes("Live — onboarding is done."));
   // The onboarding card draws its own copy from the run's checklist facts;
   // universe_ui_overview_activation_onboard.test.mjs owns those derivations.
   mounted.unmount();
