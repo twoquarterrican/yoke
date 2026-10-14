@@ -49,6 +49,12 @@ as a genuinely different target.
 yoke qa requirement rebind-target --requirement-id N --rationale '...'
 ```
 
+Authority matches waiver: the item's work claim, a live steering seat
+covering the item, or the live driver of the requirement's run. A caller
+with none of those is refused `claim_required`, and the refusal names the
+holder to ask. A done item with no work holder is rebound from the covering
+steering seat.
+
 It is not a waiver and not a re-run. A different environment, a different
 deployment receipt, a different subject, or a repointed host still needs
 a fresh execution or sanctioned retirement/supersession.
