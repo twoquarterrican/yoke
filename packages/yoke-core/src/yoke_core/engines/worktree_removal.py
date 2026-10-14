@@ -24,7 +24,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from yoke_contracts.doctor_budget import remaining_budget
-from yoke_core.domain.python_execution_deadline import native_call
 
 TOMBSTONE_PREFIX = ".removing-"
 # git steps are bounded on their own clock, never the caller's deadline.
@@ -61,7 +60,7 @@ def remove_worktree(
     deferred = removal_deferral()
     if deferred:
         return WorktreeRemoval(False, deferred)
-    return native_call(_remove, Path(repo_root), Path(worktree_path))
+    return _remove(Path(repo_root), Path(worktree_path))
 
 
 def tombstones(repo_root: str | Path) -> list[Path]:
@@ -85,7 +84,7 @@ def finish_tombstones(repo_root: str | Path) -> list[WorktreeRemoval]:
     leftovers = tombstones(repo_root)
     if not leftovers:
         return []
-    return native_call(_finish, Path(repo_root), leftovers)
+    return _finish(Path(repo_root), leftovers)
 
 
 def _tombstone_home(repo_root: Path, path: Path) -> Path:

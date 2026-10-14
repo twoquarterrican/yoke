@@ -180,12 +180,11 @@ def test_this_repository_renders_no_identifier_fragment() -> None:
 
     from yoke_contracts import doctor_budget
     from yoke_core.api.repo_root import find_repo_root
-    from yoke_core.engines.doctor_wall_clock_budget import run_wall_clock_bounded
 
     repo_root = Path(find_repo_root())
     started = time.monotonic()
     with doctor_budget.check_budget():
-        hits = run_wall_clock_bounded(hc.scan, repo_root)
+        hits = hc.scan(repo_root)
     elapsed = time.monotonic() - started
     print(
         f"Complete identifier fragment scan: {elapsed:.3f}s; budget {doctor_budget.CHECK_BUDGET_S}s"

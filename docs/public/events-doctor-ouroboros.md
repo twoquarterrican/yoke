@@ -150,12 +150,12 @@ WSL it also warns when systemd is not PID 1. See
 [Yoke on Windows (WSL)](windows-wsl.md) for the recovery steps. These machine
 checks report N/A on other operating systems.
 
-Each check has a 45-second budget. PostgreSQL statements use the remaining
-budget as a statement timeout. A thread-local Python trace enforces the
-wall-clock deadline even for checks with no SQL or explicit clock probes;
-the caller's trace is restored afterwards. Database operations defer Python
-deadline exceptions until the driver returns, so protocol frames are never
-interrupted. PostgreSQL connections lacking `autocommit` refuse with
+Each check has a 45-second budget. Each PostgreSQL transaction arms the
+remaining budget as its statement timeout once, when it starts. The wall clock
+is checked at I/O boundaries and again when the check returns; running Python,
+subprocesses and driver protocol frames are never interrupted, so a check that
+overruns without blocking I/O reports incomplete once it returns. PostgreSQL
+connections lacking `autocommit` refuse with
 `doctor_postgres_autocommit_unavailable` and teach the required connection.
 Parallel read submission rechecks the remaining budget before admitting each task;
 expiry cancels queued reads without waiting for running I/O to finish.
