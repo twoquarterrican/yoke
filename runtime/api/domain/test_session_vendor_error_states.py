@@ -123,6 +123,53 @@ def test_a_failure_no_attempt_can_move_names_the_seat_immediately():
     assert state["budget"] == 0
 
 
+def test_a_real_usage_limit_names_the_seat_without_retrying():
+    conn = worker_connection()
+    observe_turn_end(
+        conn,
+        error_message=(
+            "You've hit your usage limit. Upgrade to Pro to get more usage, "
+            "or try again at 3:12 PM."
+        ),
+        vendor_code="usage_limit_exceeded",
+    )
+
+    state = one_state(conn, now=TURN_ENDED_AT + timedelta(minutes=30))
+    assert state["status"] == "seat_required"
+    assert state["signature_id"] == "quota_exhausted"
+    assert state["budget"] == 0
+
+
+def test_a_transient_429_throttle_is_retried_on_the_backoff():
+    """The 2026-10-14 throttle: quota remained, so the turn is worth resuming."""
+    conn = worker_connection()
+    observe_turn_end(
+        conn,
+        error_message="exceeded retry limit, last status: 429 Too Many Requests",
+        vendor_code="response_too_many_failed_attempts",
+    )
+
+    early = one_state(conn, now=TURN_ENDED_AT + timedelta(seconds=30))
+    assert early["status"] == "waiting_backoff"
+    assert early["signature_id"] == "rate_limited"
+    assert early["budget"] == len(RESUME_BACKOFF_SECONDS)
+    due = one_state(conn, now=TURN_ENDED_AT + timedelta(seconds=90))
+    assert due["status"] == "due"
+
+
+def test_a_429_message_alone_is_a_throttle_not_a_quota_wall():
+    """The message identifies the throttle even when the code names nothing."""
+    conn = worker_connection()
+    observe_turn_end(
+        conn,
+        error_message="exceeded retry limit, last status: 429 Too Many Requests",
+    )
+
+    state = one_state(conn, now=TURN_ENDED_AT + timedelta(minutes=30))
+    assert state["signature_id"] == "rate_limited"
+    assert state["status"] == "due"
+
+
 def test_a_session_inside_an_unreturned_tool_call_is_never_resumed():
     conn = worker_connection()
     observe_turn_end(conn)

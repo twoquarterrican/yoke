@@ -124,10 +124,23 @@ def terminal_turn(
             "turn_id": str(payload.get("turn_id") or ""),
             # The vendor's own classification, which is the part an
             # operator asks for first when a fleet stalls at once.
-            "codex_error_info": str(error.get("codex_error_info") or ""),
+            "codex_error_info": _error_code(error.get("codex_error_info")),
             "error_message": str(error.get("message") or ""),
         },
     )
+
+
+def _error_code(info: object) -> str:
+    """Name Codex's error variant whether it carries data or not.
+
+    Codex writes a bare variant as a string (``"server_overloaded"``) and
+    one with data as a single-key mapping
+    (``{"response_too_many_failed_attempts": {"http_status_code": 429}}``).
+    The key is the code; a ``str()`` of the mapping would match nothing.
+    """
+    if isinstance(info, Mapping):
+        return str(next(iter(info), ""))
+    return str(info or "")
 
 
 __all__ = [

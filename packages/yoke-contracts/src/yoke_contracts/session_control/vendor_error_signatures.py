@@ -72,13 +72,24 @@ VENDOR_ERROR_SIGNATURES: tuple[VendorErrorSignature, ...] = (
         signature_id="quota_exhausted",
         retryable=False,
         summary="plan quota is spent until the provider's window resets",
-        vendor_codes=("usage_limit_reached", "usage_not_included", "rate_limited"),
-        message_patterns=(
-            "usage limit",
-            "rate limit",
-            "quota",
-            "429",
+        vendor_codes=(
+            "usage_limit_exceeded",
+            "usage_limit_reached",
+            "usage_not_included",
         ),
+        message_patterns=("usage limit", "quota"),
+    ),
+    # An HTTP 429 alone is a throttle, not a spent plan: on 2026-10-14 a
+    # fleet of Codex workers ended turns on "exceeded retry limit, last
+    # status: 429 Too Many Requests" while the plan still had quota. A
+    # real wall names its usage limit and is caught above, so whatever
+    # reaches this entry is worth the ordinary resume backoff.
+    VendorErrorSignature(
+        signature_id="rate_limited",
+        retryable=True,
+        summary="provider throttled the turn's requests; retrying after backoff",
+        vendor_codes=("response_too_many_failed_attempts",),
+        message_patterns=("429 too many requests", "too many requests"),
     ),
     VendorErrorSignature(
         signature_id="server_overloaded",
