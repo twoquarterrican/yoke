@@ -31,6 +31,7 @@ from yoke_harness.session_relay_codex import CodexNativeRequest
 from yoke_harness.session_relay_environment import native_session_environment
 from yoke_harness.session_relay_inventory import ResolvedNativeCli
 from yoke_harness.session_relay_native_streams import BoundedStreams
+from yoke_harness.session_relay_native_diagnostics import native_diagnostic_path
 
 
 PROJECT_BIN = "/Users/example/project/.venv/bin"
@@ -226,6 +227,11 @@ def test_the_codex_turn_binary_starts_without_the_relay_python(
     recorder = _SpawnRecorder()
     monkeypatch.setattr(codex_cli_module.subprocess, "Popen", recorder)
     monkeypatch.setattr(
+        codex_cli_module,
+        "native_diagnostic_path",
+        lambda ref: native_diagnostic_path(ref, state_dir=state_dir),
+    )
+    monkeypatch.setattr(
         codex_cli_module, "record_supervised_native", lambda *a, **k: True
     )
     monkeypatch.setattr(
@@ -237,7 +243,7 @@ def test_the_codex_turn_binary_starts_without_the_relay_python(
     codex_cli_module.CodexCliTransport(worker=True)._spawn(
         CodexNativeRequest(
             job_kind="launch",
-            job_id="launch-1",
+            job_id=str(uuid4()),
             surface="codex-cli",
             surface_version="0.149.0",
             checkout=tmp_path,
