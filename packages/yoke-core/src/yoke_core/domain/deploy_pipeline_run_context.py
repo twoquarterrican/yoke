@@ -177,7 +177,6 @@ def finalize_run_success(
             "project": project,
             "target_environment": environment_name,
         },
-        member_items=member_items,
         project=project,
         sd=sd,
     )

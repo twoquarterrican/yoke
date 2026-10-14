@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import sys
 from contextlib import redirect_stdout
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from yoke_core.domain import deploy_pipeline_control_plane as control_plane
 from yoke_core.domain.deploy_pipeline_events import emit_run_event as _emit_run_event
@@ -17,7 +17,6 @@ def dispatch_ephemeral_verify(
     *,
     name: str,
     run_id: str,
-    member_items: List[str],
     github_repo: str,
     project: str,
     branch: str,
@@ -111,7 +110,6 @@ def dispatch_ephemeral_verify(
                         "result": "success",
                         "preview_url": preview_url,
                     },
-                    member_items=member_items,
                     project=project,
                     sd=sd,
                 )

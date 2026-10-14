@@ -142,7 +142,6 @@ def fail_pipeline_stage(
         "DeploymentRunStageFailed",
         "failed",
         context,
-        member_items=member_items,
         project=project,
         sd=sd,
     )
@@ -164,7 +163,6 @@ def fail_pipeline_stage(
         "DeploymentRunFailed",
         "failed",
         {"run_id": run_id, "stage": stage_name, "flow": flow_id},
-        member_items=member_items,
         project=project,
         sd=sd,
     )

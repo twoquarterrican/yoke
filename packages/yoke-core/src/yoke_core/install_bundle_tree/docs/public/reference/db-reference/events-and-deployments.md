@@ -85,6 +85,8 @@ severity_default TEXT NOT NULL DEFAULT 'INFO' -- default severity level
 
 [Deployment run records](deployment-run-records.md) defines run lineage, composition and custody, stage receipts, membership and settlement, target occupancy and run drivers, idempotent creation, and blocking QA. Read it before creating or executing a run or interpreting release completion.
 
+Run lifecycle events (`type='deployment_run'`, such as `DeploymentRunStageStarted` or `DeploymentRunWarmedUp`) are written once per run, carry `run_id` in their context, and name no member item. Find a run's members in `deployment_run_items`; the events are telemetry, never the record of what a run carried.
+
 ## Table: deployment_preview_environments
 
 Preview environment occupancy tracking for deployment runs.

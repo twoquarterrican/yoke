@@ -50,14 +50,13 @@ def wired(monkeypatch):
             return _proc(0, "success\n")
         return _proc(1, "")
 
-    def fake_emit_run_event(name, outcome, context, *, member_items, project, sd=None):
+    def fake_emit_run_event(name, outcome, context, *, project, sd=None):
         del sd
         emitted_events.append(
             {
                 "name": name,
                 "outcome": outcome,
                 "context": context,
-                "member_items": list(member_items),
                 "project": project,
             }
         )
@@ -116,7 +115,6 @@ def test_alignment_emits_event_and_clears_deploy_stage(wired):
     assert ctx["run_id"] == "run-X"
     assert ctx["reconciled"] is True
     assert ctx["reason"] == "usher-reconcile-github"
-    assert event["member_items"] == [_FIXTURE_ITEM_REF]
     assert event["project"] == "yoke"
 
     assert len(wired.dispatched) == 1
