@@ -57,8 +57,8 @@ _QA_EXITS = {"usage_exit": EXIT_USAGE, "awaiting_qa_exit": EXIT_AWAITING_QA}
 _release_control_plane_env = deploy_env.release_control_plane_env
 
 
-def _finalize(*args, sd):
-    return finalize_after_stages(*args, sd=sd, **_QA_EXITS)
+def _finalize(*args, sd, members):
+    return finalize_after_stages(*args, sd=sd, members=members, **_QA_EXITS)
 
 
 @timed_pipeline
@@ -108,9 +108,7 @@ def run_pipeline(
     run_status = str(run.get("status") or "")
     current_stage = str(run.get("current_stage") or "")
     member_items = [str(member["public_ref"]) for member in members]
-    member_statuses = {
-        str(member["public_ref"]): str(member.get("status") or "") for member in members
-    }
+    member_rows = {str(member["public_ref"]): member for member in members}
     first_member = members[0] if members else {}
     enrollment = describe_enrollment(context.get("enrolled_carried_items") or ())
     if enrollment:
@@ -194,7 +192,7 @@ def run_pipeline(
             if run_status == "succeeded":
                 print(f"Pipeline already complete for run {run_id}")
                 return EXIT_SUCCESS
-            return _finalize(*finish, sd=sd)
+            return _finalize(*finish, sd=sd, members=member_rows)
         else:
             start_stage = current_stage
 
@@ -240,7 +238,7 @@ def run_pipeline(
                 sd=sd,
             )
             for sri_item in member_items:
-                if member_statuses.get(sri_item) == "implemented":
+                if member_rows.get(sri_item, {}).get("status") == "implemented":
                     transition_member_to_release(sri_item, run_id)
             run_started = True
 
@@ -337,7 +335,7 @@ def run_pipeline(
 
     _set_deploy_stage("complete", run_id, member_items, sd=sd)
 
-    return _finalize(*finish, sd=sd)
+    return _finalize(*finish, sd=sd, members=member_rows)
 
 
 def main(argv: Optional[List[str]] = None) -> int:

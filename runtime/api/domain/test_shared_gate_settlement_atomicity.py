@@ -34,7 +34,7 @@ from runtime.api.domain.test_status_transition_preflight import (
     _isolate_status_effects,
 )
 from yoke_core.domain.db_helpers import iso8601_now
-from yoke_core.domain.deployment_run_collective_finalization import HELD_WITH_RUN
+from yoke_core.domain.deployment_run_settlement_refusal import HELD_WITH_RUN
 from yoke_core.domain.deployment_runs_crud_mutate import cmd_update
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.qa_plan_execution_store import roster_digest

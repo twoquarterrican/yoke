@@ -36,12 +36,10 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from yoke_core.domain.db_helpers import instant_parameter, utc_now
-
-#: Why a member that could itself close is still open. Reported instead of a
-#: blocker of its own, so nobody repairs a member that has nothing wrong.
-HELD_WITH_RUN = (
-    "it could close, and is held only because a sibling member could not; "
-    "a shared gate closes every member or none"
+from yoke_core.domain.deployment_run_settlement_refusal import (
+    HELD_WITH_RUN,
+    settle_refusal,
+    unsettled_reason,
 )
 
 _MEMBER_SAVEPOINT = "_yoke_settle_member"
@@ -55,30 +53,6 @@ def mark_settling(conn: Any, run_id: str) -> None:
         (instant_parameter(conn, utc_now()), run_id),
     )
     conn.commit()
-
-
-def _unsettled_reason(conn: Any, run_id: str, item_id: int) -> str:
-    """Why a member this run must close is still at its release wait."""
-    from yoke_core.domain.deployment_delivery_close_out_notice import (
-        delivery_now_discharged,
-    )
-    from yoke_core.domain.no_obligation_member_close_out import (
-        satisfied_delivery_member,
-    )
-
-    if not delivery_now_discharged(conn, item_id):
-        return (
-            "its delivery fact does not read delivered by this run; read "
-            f"`yoke deployment-runs get {run_id}` and repair the run's "
-            "completion authority for it"
-        )
-    if not satisfied_delivery_member(conn, item_id=item_id, run_id=run_id):
-        return (
-            "its post-deploy obligations on this run are not all answered; "
-            "pass or waive each one, or record `yoke qa post-deploy "
-            "record-no-obligation` when nothing is observable once deployed"
-        )
-    return "its close-out has not completed"
 
 
 def _final_members(conn: Any, run_id: str, *, at_wait: bool) -> list[dict[str, Any]]:
@@ -229,63 +203,64 @@ def _stage_members(
     return staged
 
 
-def _settle_refusal(run_id: str, unsettled: list[str], *, closed: bool) -> str:
-    if closed:
-        held = (
-            "every member is already closed and stays closed; only its "
-            "post-close effects are outstanding"
-        )
-    else:
-        held = (
-            "none is closed: the run stays executing and settling and every "
-            "member keeps its claim and lane"
-        )
-    return (
-        f"Error: cannot set status=succeeded -- run {run_id} is settling and "
-        f"{len(unsettled)} member(s) it must close have not settled: "
-        f"{'; '.join(unsettled)}. A shared gate passes for the run, not for "
-        f"one member at a time, so {held}. Repair each named member; "
-        "settlement replays on its own once the last blocker clears. If the "
-        "run stays executing, re-drive it with "
-        f"`yoke deployment-runs update {run_id} status succeeded`."
-    )
-
-
-def _commit_phase(conn: Any, run_id: str) -> tuple[list[Any], Optional[str]]:
-    """Close every cleared member in one commit, or none of them."""
-    from yoke_core.domain.deployment_delivery_close_out_notice import (
-        cleared_release_waits,
-    )
-
-    ready, refusals = _prepared_members(
-        conn, run_id, cleared_release_waits(conn, run_id)
-    )
-    try:
-        staged = _stage_members(conn, ready, refusals)
-    except SettlementTransactionLost as exc:
-        conn.rollback()
-        return [], _settle_refusal(run_id, [str(exc)], closed=False)
-    required, deferred = _split_waiting_members(conn, run_id)
-    if not refusals and not required:
-        from yoke_core.domain.deployment_run_other_target_members import (
-            record_other_target_deliveries,
-        )
-
-        record_other_target_deliveries(conn, run_id, deferred)
-        conn.commit()
-        return staged, None
+def _blocked(
+    conn: Any,
+    run_id: str,
+    required: list[dict[str, Any]],
+    refusals: dict[int, str],
+    held: set[int],
+    cleared: list[dict[str, Any]],
+) -> str:
+    """Roll back and name every member keeping the run from succeeding."""
     conn.rollback()
-    held = {int(written.item_id) for written in staged}
+    named = {member["item_id"] for member in required}
+    members = required + [
+        m for m in cleared if m["item_id"] in refusals and m["item_id"] not in named
+    ]
     unsettled = [
         f"{member['public_ref']}: "
         + (
             refusals.get(member["item_id"])
             or (HELD_WITH_RUN if member["item_id"] in held else "")
-            or _unsettled_reason(conn, run_id, member["item_id"])
+            or unsettled_reason(conn, run_id, member)
         )
-        for member in _split_waiting_members(conn, run_id)[0]
+        for member in members
     ]
-    return [], _settle_refusal(run_id, unsettled, closed=False)
+    return settle_refusal(run_id, unsettled, closed=False)
+
+
+def _commit_phase(conn: Any, run_id: str) -> tuple[list[Any], Optional[str]]:
+    """Close every cleared member in one commit, or none of them.
+
+    Every required member must be cleared and prepared before any is
+    staged: staging re-runs each member's status preflight, so a run that
+    is going to refuse anyway refuses before paying for it.
+    """
+    from yoke_core.domain.deployment_delivery_close_out_notice import (
+        cleared_release_waits,
+    )
+
+    cleared = cleared_release_waits(conn, run_id)
+    ready, refusals = _prepared_members(conn, run_id, cleared)
+    required, deferred = _split_waiting_members(conn, run_id)
+    prepared = {int(member["item_id"]) for member in ready}
+    if refusals or any(m["item_id"] not in prepared for m in required):
+        return [], _blocked(conn, run_id, required, refusals, prepared, cleared)
+    try:
+        staged = _stage_members(conn, ready, refusals)
+    except SettlementTransactionLost as exc:
+        conn.rollback()
+        return [], settle_refusal(run_id, [str(exc)], closed=False)
+    if refusals:
+        held = {int(written.item_id) for written in staged}
+        return [], _blocked(conn, run_id, required, refusals, held, cleared)
+    from yoke_core.domain.deployment_run_other_target_members import (
+        record_other_target_deliveries,
+    )
+
+    record_other_target_deliveries(conn, run_id, deferred)
+    conn.commit()
+    return staged, None
 
 
 def _effects_phase(conn: Any, run_id: str, staged: list[Any]) -> Optional[str]:
@@ -320,7 +295,7 @@ def _effects_phase(conn: Any, run_id: str, staged: list[Any]) -> Optional[str]:
             )
     if not failed:
         return None
-    return _settle_refusal(run_id, failed, closed=True)
+    return settle_refusal(run_id, failed, closed=True)
 
 
 def settle_members(conn: Any, run_id: str) -> Optional[str]:
@@ -343,4 +318,4 @@ def settle_members(conn: Any, run_id: str) -> Optional[str]:
     return _effects_phase(conn, run_id, staged)
 
 
-__all__ = ["HELD_WITH_RUN", "mark_settling", "settle_members"]
+__all__ = ["mark_settling", "settle_members"]

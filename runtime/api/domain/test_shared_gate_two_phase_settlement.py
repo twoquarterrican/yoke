@@ -34,10 +34,8 @@ from runtime.api.fixtures.runtime import DEFAULT_TEST_SESSION_ID
 from yoke_core.domain import delivery_member_close_steps as close_out
 from yoke_core.domain import terminal_lane_cleanup
 from yoke_core.domain.db_helpers import iso8601_now
-from yoke_core.domain.deployment_run_collective_finalization import (
-    HELD_WITH_RUN,
-    mark_settling,
-)
+from yoke_core.domain.deployment_run_collective_finalization import mark_settling
+from yoke_core.domain.deployment_run_settlement_refusal import HELD_WITH_RUN
 from yoke_core.domain.deployment_runs_crud_mutate import cmd_update
 from yoke_core.domain.project_identity import render_item_ref
 

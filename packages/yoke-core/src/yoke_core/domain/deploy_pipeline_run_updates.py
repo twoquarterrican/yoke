@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
+from yoke_cli.transport.relay_telemetry import TRANSPORT_FAILED_CODE
 from yoke_core.domain import deploy_pipeline_control_plane
+from yoke_core.domain.deployment_run_settlement_refusal import (
+    SETTLEMENT_BLOCKED_CODE,
+)
 from yoke_core.domain.deployment_start_timing import timed_call
 
 _MAX_START_RETRIES = 3
@@ -12,7 +16,37 @@ _STALE_ATTESTATION = "candidate_containment_attestation_stale"
 
 
 class DeployPipelineRunUpdateError(RuntimeError):
-    """A deployment-run bookkeeping write did not land."""
+    """A deployment-run bookkeeping write did not land.
+
+    ``code`` is the serving refusal's own error code, or empty when the
+    failure carried none. Only a write that got no answer is ``retryable``;
+    a refusal answers the same way however often it is repeated.
+    """
+
+    def __init__(self, message: str, *, code: str = "") -> None:
+        super().__init__(message)
+        self.code = code
+
+    @property
+    def retryable(self) -> bool:
+        return self.code == TRANSPORT_FAILED_CODE
+
+
+def _write_failure(run_id: str, write: str, code: str, detail: str) -> str:
+    """Name the failed write, its code, and the recovery that code needs."""
+    head = f"deployment run bookkeeping write {write} on {run_id}"
+    if code == TRANSPORT_FAILED_CODE:
+        return (
+            f"{head} got no answer ({code}): {detail}; restore the selected "
+            f"control-plane connection, then re-drive {run_id}"
+        )
+    if code == SETTLEMENT_BLOCKED_CODE:
+        # The refusal names every blocking member and its own recovery.
+        return f"{head} refused ({code}): {detail}"
+    return (
+        f"{head} refused ({code or 'no error code'}): {detail}; repair the "
+        f"named cause, then re-drive {run_id}"
+    )
 
 
 def update_run_field(run_id: str, field: str, value: str) -> None:
@@ -20,11 +54,12 @@ def update_run_field(run_id: str, field: str, value: str) -> None:
     try:
         deploy_pipeline_control_plane.update_run_field(run_id, field, value)
     except Exception as exc:
+        code = ""
+        if isinstance(exc, deploy_pipeline_control_plane.DeploymentControlPlaneError):
+            code = exc.code
         detail = str(exc).strip() or type(exc).__name__
         raise DeployPipelineRunUpdateError(
-            f"deployment run bookkeeping write failed for {run_id} "
-            f"({field}={value}): {detail}; restore the selected control-plane "
-            f"connection, then re-drive {run_id}"
+            _write_failure(run_id, f"{field}={value}", code, detail), code=code
         ) from exc
 
 

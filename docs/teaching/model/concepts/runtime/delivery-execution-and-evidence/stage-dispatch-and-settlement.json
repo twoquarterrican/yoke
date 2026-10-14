@@ -1,8 +1,11 @@
 {
  "id": "stage-dispatch-and-settlement",
  "title": "Stage dispatch and settlement",
- "status": "draft-copy",
+ "status": "observed",
  "audience": "Maintainers",
+ "summary": "A run reads succeeded only after every required member closes together. Settlement refuses before writing any member when a required member is not cleared or a prepare refuses, and names each blocker, open done-gate QA requirements included. The refusal carries `run_settlement_blocked`; the driver stops at once with exit 4 and that recovery, retrying only a write that got no answer, and a re-drive does not re-stamp members already done.",
+ "functions": ["deployment_runs.execution.update", "deployment_runs.update"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/deployment_run_collective_finalization.py", "packages/yoke-core/src/yoke_core/domain/deployment_run_settlement_refusal.py", "packages/yoke-core/src/yoke_core/domain/deploy_pipeline_run_context.py", "runtime/api/domain/test_run_settlement_refusal.py", "docs/state-management/delivery-internals.md"],
  "page": "runtime-evidence",
  "position": 3
 }
