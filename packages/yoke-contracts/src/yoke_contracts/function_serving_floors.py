@@ -45,6 +45,7 @@ FUNCTION_MINIMUM_SERVING_VERSIONS: dict[str, str] = {
     "models.level_proposal.run": "next-release",
     "models.publish.run": "next-release",
     "models.restore.run": "next-release",
+    "onboard.checklist.get": "next-release",
     "operator.data_repair.run": "next-release",
     "organizations.create": "next-release",
     "models.revisions.run": "next-release",

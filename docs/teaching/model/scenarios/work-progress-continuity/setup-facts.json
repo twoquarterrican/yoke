@@ -1,0 +1,16 @@
+{
+ "id": "setup-facts",
+ "title": "Read the saved profile and current setup facts before continuing",
+ "status": "observed",
+ "audience": "both",
+ "when": "Returning to setup in a fresh session or another machine.",
+ "need": "Use yoke onboard checklist get --project SLUG. Reuse the confirmed profile, confirm only changed settings, and check this machine independently. Optional unexamined capabilities stay unknown; required unknown facts block readiness.",
+ "disclosure": "current cue",
+ "surface": "Onboard resume and checklist CLI",
+ "gap": "Installed campaign proof requires the candidate release.",
+ "review": "Source tests pass; no installed campaign proof is claimed.",
+ "recipes": ["yoke onboard checklist get --project SLUG --json"],
+ "plan_refs": ["FIRST-USER.42"],
+ "sources": ["docs/public/guides/terminal-onboarding.md", ".agents/skills/yoke/onboard/run-and-rows.md"],
+ "position": 3
+}

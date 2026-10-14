@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from runtime.api.cli import project_onboarding_test_helpers as https_fixture
+from runtime.api.cli import project_onboarding_api_handler as https_handler
 from runtime.api.tools.source_project_bundle import build_source_bundle
 from yoke_cli.project_install import instruction_discovery, install_recovery
 from yoke_cli.project_install.bundle_apply import apply_bundle
@@ -32,7 +33,7 @@ def test_https_install_and_refresh_need_no_source_in_target(
     monkeypatch,
     bundle,
 ):
-    monkeypatch.setattr(https_fixture, "install_bundle", lambda _: bundle)
+    monkeypatch.setattr(https_handler, "install_bundle", lambda _: bundle)
     target = tmp_path / "unrelated-project"
     target.mkdir()
     (target / "README.md").write_text("This project's own documentation.\n")

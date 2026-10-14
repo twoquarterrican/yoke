@@ -168,6 +168,7 @@ _BY_ID: dict[str, AuthzSpec] = {
     "conduct.epic_task.update_status": AuthzSpec(PROJECT, PERM_ITEMS_WRITE),
     "conduct.epic.proceed_triage_handoff": AuthzSpec(PROJECT, PERM_ITEMS_WRITE),
     "onboard.checklist.init": AuthzSpec(PROJECT, PERM_PROJECT_INSTALL),
+    "onboard.checklist.get": AuthzSpec(PROJECT, PERM_PROJECT_INSTALL),
     "onboard.checklist.run": AuthzSpec(PROJECT, PERM_PROJECT_INSTALL),
     # Actor/session: caller operating on its own session/orchestration.
     "sessions.begin": AuthzSpec(ACTOR_SESSION, None),

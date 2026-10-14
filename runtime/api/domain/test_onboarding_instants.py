@@ -2,10 +2,12 @@
 
 import json
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 import pytest
 from yoke_contracts.timestamps import InvalidInstant, parse_instant, temporal_wire
 from yoke_core.domain import project_onboarding_runs as runs
+from yoke_core.domain import project_onboarding_updates as writes
 from yoke_core.domain import project_onboarding_run_supersede as reconciliation
 from yoke_core.domain import machine_qa_pack as pack
 from runtime.api.domain.test_project_onboarding_runs import _conn
@@ -23,7 +25,8 @@ def test_checklist_update_shares_native_fact_without_interpreting_evidence(
     try:
         conn.execute("SELECT set_config('TimeZone',%s,false)", (zone,))
         clock = [STAMP]
-        monkeypatch.setattr(runs, "utc_now", lambda: clock[0])
+        machine = str(uuid4())
+        monkeypatch.setattr(writes, "utc_now", lambda: clock[0])
         first = runs.init_run(conn=conn, run_id="clock-run", metadata=OPAQUE)
         assert first["created_at"] == STAMP
         assert first["updated_at"] == STAMP
@@ -32,6 +35,8 @@ def test_checklist_update_shares_native_fact_without_interpreting_evidence(
         second = runs.update_run(
             conn=conn,
             run_id="clock-run",
+            machine_id=machine,
+            observations={"machine-profile": {"status": "verified", "evidence": OPAQUE}},
             row_status={"machine-profile": "verified"},
             evidence={"machine-profile": OPAQUE},
             blocker={"machine-profile": None},
@@ -63,7 +68,7 @@ def test_overtaking_deployment_compares_exact_instants_and_formats_only_new_meta
     test_db, monkeypatch, zone
 ):
     test_db.execute("SELECT set_config('TimeZone',%s,false)", (zone,))
-    monkeypatch.setattr(runs, "utc_now", lambda: STAMP)
+    monkeypatch.setattr(writes, "utc_now", lambda: STAMP)
     runs.init_run(conn=test_db, run_id="clock-run", project_id=1, metadata=OPAQUE)
     test_db.execute(
         "INSERT INTO deployment_runs (id,project_id,flow,status,created_at,completed_at) VALUES ('clock-deployment',1,'clock-flow','failed',%s,%s)",

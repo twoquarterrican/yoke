@@ -8,6 +8,7 @@ import pytest
 from yoke_cli import main as yoke_operations_cli
 from runtime.api.cli.onboard_checklist_cli_test_helpers import (
     run_cli,
+    MACHINE_ID,
     run_result,
 )
 
@@ -44,8 +45,6 @@ def test_onboard_checklist_run_dispatches_payload_and_renders_response_view(
             str(project),
             "--project-id",
             "7",
-            "--project-slug",
-            "demo",
             "--github-repo",
             "owner/repo",
             "--row-status",
@@ -66,12 +65,12 @@ def test_onboard_checklist_run_dispatches_payload_and_renders_response_view(
     assert call["function_id"] == "onboard.checklist.run"
     assert call["target"].project_id == "7"
     assert call["payload"] == {
+        "machine_id": MACHINE_ID,
         "run_id": "run-test",
         "branch": "machine-only",
         "checkout_path": str(project),
         "project_root": str(project),
         "project_id": 7,
-        "project_slug": "demo",
         "github_repo": "owner/repo",
         "row_status": {
             "machine-profile": "verified",

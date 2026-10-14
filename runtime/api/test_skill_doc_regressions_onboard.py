@@ -192,9 +192,9 @@ def test_onboard_binds_two_stop_pacing_and_the_apply_gate():
     # Gated-apply failure posture: re-approve + retry; smoke failures stay up.
     assert "re-presents the same gate" in text
     assert "stays up for diagnosis" in text
-    # The confirmed profile is never persisted; resume re-derives it.
-    assert "not persisted" in text
-    assert "re-derives" in text
+    assert "run.execution_profile" in text
+    assert "profile_changed=false" in text
+    assert "confirm only the" in text
 
 
 def test_onboard_teaches_receipt_first_preview_first_packs():

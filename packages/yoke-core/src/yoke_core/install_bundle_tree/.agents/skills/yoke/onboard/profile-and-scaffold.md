@@ -2,9 +2,10 @@
 
 ## Step 2: Derive The Execution Profile
 
-Entry: accepted strategy. Skip only if every step 3–8 predicate is satisfied.
-The confirmed profile is not persisted; resume re-derives and re-confirms it.
-Progress lives in durable rows, not an invented profile record.
+Entry: accepted strategy. Read the project-scoped checklist first.
+Reuse `run.execution_profile` when `profile_changed=false`; recheck local tools
+and each live skip predicate. When facts changed, show and confirm only the
+changed proposal. Shared choices live in the existing run metadata.
 
 Use all five docs, survey and installed .yoke/packs.json baseline.
 Read hosting first; existing artifacts map to profile roles rather than reinstall.
@@ -95,6 +96,17 @@ schema owner or unsupported kind; work-item DB claims none is expected);
 
 Present the whole profile for confirmation/edits; no application/setup mutation
 before approval. Resolve all remaining unknowns or block human-interview and stop.
+After confirmation, write the non-secret profile JSON to a local file, then
+persist it through the existing checklist owner:
+
+```bash
+yoke onboard checklist --project {project} --run-id {run_id} --profile-file /tmp/confirmed-profile.json
+```
+
+The object records Packs, capabilities, hosting, delivery, tests and database
+choices with source evidence; store credential references, never secret values.
+The server captures current project-fact hashes. Resume reuses this confirmation
+until a relevant setting changes, without copying machine verification.
 Record evidence including the chosen delivery meaning, not assumed stage+prod:
 
 ```bash

@@ -8,6 +8,7 @@ import pytest
 from yoke_cli.config.onboard_checklist_schema import (
     CHECKLIST_LAYERS,
     CHECKLIST_STATUSES,
+    SCHEMA_VERSION,
 )
 
 
@@ -167,7 +168,7 @@ def test_onboard_checklist_handoff_json_summarizes_rows(
     payload = json.loads(checklist.dumps_handoff_json(run))
 
     assert payload == {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "handoff_to": "yoke onboard",
         "machine_config_path": str(machine_config),
         "checkout": {"path": str(checkout), "project_id": 7},

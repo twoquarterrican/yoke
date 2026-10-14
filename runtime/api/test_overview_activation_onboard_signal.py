@@ -11,6 +11,8 @@ is closed as superseded on the row itself, naming the deployment.
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 from yoke_contracts.api.function_call import (
     ActorContext,
     FunctionCallRequest,
@@ -20,7 +22,6 @@ from yoke_contracts.onboard_checklist import (
     BRANCH_LOCAL_CHECKOUT,
     ROW_IDS,
     STATUS_BLOCKED,
-    STATUS_NOT_NEEDED,
     STATUS_VERIFIED,
 )
 from yoke_core.domain.db_helpers import iso8601_now
@@ -57,6 +58,7 @@ def _seed_run(conn, run_id, *, row_status=None, blocker=None):
         run_id=run_id,
         project_id=1,
         branch=BRANCH_LOCAL_CHECKOUT,
+        machine_id=str(uuid4()),
         row_status=row_status,
         blocker=blocker,
     )
@@ -84,100 +86,34 @@ def _seed_environments(conn, *names):
     conn.commit()
 
 
-def test_a_blocked_run_stays_unactivated_and_names_its_blocker(test_db):
-    _seed_run(
-        test_db, "run-blocked",
-        row_status={HOSTING_ROW_ID: STATUS_BLOCKED},
-        blocker={HOSTING_ROW_ID: BLOCKER_TEXT},
-    )
-
+def test_saved_completion_does_not_activate_current_readiness(test_db):
+    _seed_run(test_db, "saved-done", row_status=_finished_statuses())
     module = _onboard()
-
     assert module["state"] != "activated"
-    onboard = module["onboard"]
-    assert onboard["run_status"] == "blocked"
-    assert onboard["blocker"] == {
-        "step": "17b", "title": "Hosting setup", "detail": BLOCKER_TEXT,
-    }
-    # The next open row comes from the checklist's own order, never from
-    # sorting the step labels as text ("1", "10", "17a", "9a").
-    assert onboard["next"] == {"step": "1", "title": "Package install"}
-    assert onboard["steps_total"] == len(ROW_IDS)
-    assert 0 < onboard["steps_done"] < onboard["steps_total"]
-
-
-def test_an_open_run_without_a_blocker_reports_only_its_next_step(test_db):
-    _seed_run(test_db, "run-open", row_status=_finished_statuses(**{
-        row_id: "needed" for row_id in (HOSTING_ROW_ID, "domain-setup")
-    }))
-
-    onboard = _onboard()["onboard"]
-
-    assert onboard["run_status"] == "open"
-    assert onboard["blocker"] is None
-    assert onboard["next"] == {"step": "17b", "title": "Hosting setup"}
-    assert onboard["steps_done"] == len(ROW_IDS) - 2
-
-
-def test_a_closed_checklist_activates_and_reports_what_it_produced(test_db):
-    _seed_environments(test_db, "prod", "stage")
-    _seed_run(test_db, "run-done", row_status=_finished_statuses())
-
-    module = _onboard()
-
-    assert module["state"] == "activated"
-    onboard = module["onboard"]
-    assert onboard["run_status"] == "complete"
-    assert onboard["steps_done"] == onboard["steps_total"] == len(ROW_IDS)
-    assert onboard["next"] is None and onboard["blocker"] is None
-    assert onboard["scaffold_installed"] is True
-    assert onboard["strategy_docs"] is False
-    # Every registered environment name, the fixture's own included.
-    assert onboard["environments"] == ["development", "prod", "stage"]
-
-
-def test_a_mapped_existing_app_finishes_claiming_no_scaffold(test_db):
-    _seed_run(test_db, "run-mapped", row_status=_finished_statuses(**{
-        SCAFFOLD_ROW_ID: STATUS_NOT_NEEDED,
-    }))
-
-    module = _onboard()
-
-    assert module["state"] == "activated"
+    assert module["onboard"]["setup_readiness"]["ready"] is False
+    assert module["onboard"]["next"] == {"step": "1", "title": "Package install"}
     assert module["onboard"]["scaffold_installed"] is False
 
 
-def test_a_run_that_registered_no_environment_claims_none(test_db):
-    test_db.execute("DELETE FROM environments")
-    test_db.commit()
-    _seed_run(test_db, "run-no-envs", row_status=_finished_statuses())
-
-    module = _onboard()
-
-    assert module["state"] == "activated"
-    assert module["onboard"]["environments"] == []
+def test_overview_uses_the_same_refreshed_rows_as_checklist(test_db):
+    _seed_run(test_db, "saved-choice", row_status=_finished_statuses())
+    current = get_run("saved-choice", conn=test_db)
+    overview = _onboard()["onboard"]
+    assert overview["setup_readiness"] == current["setup_readiness"]
+    assert overview["steps_total"] == len(current["rows"])
+    assert overview["steps_done"] < overview["steps_total"]
 
 
-def test_the_latest_run_drives_the_card_after_the_module_activated(test_db):
-    _seed_run(test_db, "run-1-done", row_status=_finished_statuses())
-    assert _onboard()["state"] == "activated"
-
-    _seed_run(
-        test_db, "run-2-blocked",
-        row_status={HOSTING_ROW_ID: STATUS_BLOCKED},
-        blocker={HOSTING_ROW_ID: BLOCKER_TEXT},
-    )
-    module = _onboard()
-
-    # The latch is monotone, but the facts under it are live.
-    assert module["state"] == "activated"
-    assert module["onboard"]["run_status"] == "blocked"
-    assert module["onboard"]["blocker"]["detail"] == BLOCKER_TEXT
+def test_registered_environments_are_reported_without_claiming_readiness(test_db):
+    _seed_environments(test_db, "prod", "stage")
+    _seed_run(test_db, "saved-envs", row_status=_finished_statuses())
+    onboard = _onboard()["onboard"]
+    assert onboard["environments"] == ["development", "prod", "stage"]
+    assert onboard["setup_readiness"]["ready"] is False
 
 
 def test_a_universe_with_no_onboarding_run_reports_no_facts(test_db):
     module = _onboard()
-
     assert module["state"] != "activated"
     assert module["onboard"] is None
 
@@ -191,53 +127,35 @@ def _seed_deployment(conn, run_id, *, status, at):
     conn.commit()
 
 
-def test_a_project_that_deployed_reads_its_stalled_checklist_as_done(test_db):
-    _seed_run(
-        test_db, "run-stalled",
-        row_status={HOSTING_ROW_ID: STATUS_BLOCKED},
-        blocker={HOSTING_ROW_ID: BLOCKER_TEXT},
-    )
+def test_delivery_supersession_is_history_not_current_machine_readiness(test_db):
+    _seed_run(test_db, "saved-stalled", row_status={HOSTING_ROW_ID: STATUS_BLOCKED})
     _seed_deployment(test_db, "run-20260101-001", status="succeeded",
                      at="2026-01-01T00:00:00Z")
-
-    module = _onboard()
-
-    assert module["state"] == "activated"
-    onboard = module["onboard"]
+    onboard = _onboard()["onboard"]
     assert onboard["run_status"] == "superseded"
-    assert onboard["superseded_by"]["deployment_run_id"] == "run-20260101-001"
-    assert onboard["superseded_by"]["status"] == "succeeded"
-    assert onboard["next"] is None and onboard["blocker"] is None
-    # Reconciled on the row, not hidden by the read: the run record says why.
-    stored = get_run("run-stalled", conn=test_db)
-    assert stored["status"] == "superseded"
+    assert onboard["setup_readiness"]["ready"] is False
+    assert onboard["next"] is None
+    stored = get_run("saved-stalled", conn=test_db)
+    assert stored["historical_status"] == "superseded"
     assert stored["metadata"][SUPERSEDED_BY_KEY]["deployment_run_id"] == "run-20260101-001"
-    # The checklist rows keep their own truth.
-    assert stored["summary"]["status"] == "blocked"
+    assert stored["summary"]["status"] != "complete"
 
 
-def test_a_failed_deployment_newer_than_the_checklist_also_closes_it(test_db):
-    _seed_run(test_db, "run-open", row_status=_finished_statuses(**{
-        HOSTING_ROW_ID: "needed",
-    }))
+def test_newer_failed_delivery_preserves_supersession_history(test_db):
+    _seed_run(test_db, "saved-open", row_status=_finished_statuses())
     _seed_deployment(test_db, "run-20990101-001", status="failed",
                      at="2099-01-01T00:00:00Z")
-
     onboard = _onboard()["onboard"]
-
     assert onboard["run_status"] == "superseded"
+    assert onboard["setup_readiness"]["ready"] is False
     assert onboard["superseded_by"]["deployment_run_id"] == "run-20990101-001"
 
 
-def test_a_failed_deployment_older_than_the_checklist_leaves_it_open(test_db):
-    _seed_run(test_db, "run-open", row_status=_finished_statuses(**{
-        HOSTING_ROW_ID: "needed",
-    }))
+def test_older_failed_delivery_does_not_supersede_the_current_run(test_db):
+    _seed_run(test_db, "saved-open", row_status=_finished_statuses())
     _seed_deployment(test_db, "run-20000101-001", status="failed",
                      at="2000-01-01T00:00:00Z")
-
     module = _onboard()
-
     assert module["state"] != "activated"
     assert module["onboard"]["run_status"] == "open"
     assert module["onboard"]["superseded_by"] is None

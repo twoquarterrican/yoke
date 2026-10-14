@@ -10,6 +10,7 @@ import pytest
 from runtime.api.cli.onboard_checklist_cli_test_helpers import (
     init_result,
     run_cli,
+    MACHINE_ID,
 )
 
 
@@ -47,6 +48,8 @@ def test_init_installer_shape_dispatches_and_json_is_response_driven(
     assert call["target"].kind == "global"
     assert call["target"].project_id == "7"
     assert call["payload"] == {
+        "machine_id": MACHINE_ID,
+        "observations": {},
         "machine_config_path": str(machine_config),
         "checkout_path": str(checkout),
         "project_id": 7,
@@ -86,6 +89,8 @@ def test_init_standalone_project_ref_replaces_config(
     assert call["target"].kind == "global"
     assert call["target"].project_id == "demo"
     assert call["payload"] == {
+        "machine_id": MACHINE_ID,
+        "observations": {},
         "machine_config_path": None,
         "checkout_path": str(checkout),
         "project_id": None,

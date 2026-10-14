@@ -14,8 +14,11 @@ from yoke_core.tools.build_release import create_seeded_pip_venv
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
+from yoke_contracts.onboard_checklist import SCHEMA_VERSION
 
 
+MACHINE_ID = str(uuid4())
 BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 
@@ -58,6 +61,12 @@ def test_onboard_checklist_product_wheel_renders_with_inert_engine(
     function_server = _FunctionCallServer(expected_token="product-token")
     with function_server as api_url:
         _write_https_config(machine_home, token_file, api_url)
+        default_config = config
+        config = machine_home / "selected.json"
+        config.write_text(default_config.read_text())
+        wrong_connection = json.loads(default_config.read_text())
+        wrong_connection["connections"]["smoke"]["api_url"] = "http://127.0.0.1:1"
+        default_config.write_text(json.dumps(wrong_connection))
 
         # Engine present: the wheel channel ships yoke-core to every machine.
         script = "\n".join(
@@ -79,7 +88,7 @@ def test_onboard_checklist_product_wheel_renders_with_inert_engine(
                 ")",
                 "payload = json.loads(checklist.dumps_handoff_json(run))",
                 "assert payload['handoff_to'] == 'yoke onboard'",
-                "assert payload['machine_config_path'].endswith('config.json')",
+                f"assert payload['machine_config_path'] == {str(config)!r}",
                 "assert payload['rows'] == [",
                 "    {",
                 "        'id': 'machine-config',",
@@ -120,12 +129,17 @@ def test_onboard_checklist_product_wheel_renders_with_inert_engine(
         assert payload["summary"]["status"] == "open"
         assert _tree_snapshot(checkout) == before_checkout
 
-    assert len(function_server.requests) == 1
-    request = function_server.requests[0]
+    assert [r["function"] for r in function_server.requests] == ["onboard.checklist.get", "onboard.checklist.init"]
+    request = function_server.requests[1]
+    observations = request["payload"]["observations"]
+    assert observations["yoke-connection"]["status"] == "configured"
+    assert "credential_source" not in json.dumps(observations)
     assert request["function"] == "onboard.checklist.init"
     assert request["target"]["kind"] == "global"
     assert request["target"]["project_id"] == "7"
     assert request["payload"] == {
+        "machine_id": MACHINE_ID,
+        "observations": observations,
         "machine_config_path": str(config),
         "checkout_path": str(checkout),
         "project_id": 7,
@@ -137,6 +151,7 @@ def _write_https_config(machine_home: Path, token_file: Path, api_url: str) -> N
         json.dumps(
             {
                 "schema_version": 1,
+                "machine_id": MACHINE_ID,
                 "active_env": "smoke",
                 "connections": {
                     "smoke": {
@@ -178,35 +193,38 @@ class _FunctionCallServer:
                 length = int(self.headers.get("Content-Length", "0"))
                 request = json.loads(self.rfile.read(length).decode("utf-8"))
                 owner.requests.append(request)
-                result = {
-                    "schema_version": 1,
-                    "operation": request["function"],
-                    "run_id": "run-wheel-smoke",
-                    "resumed": False,
-                    "machine_config_path": request["payload"]["machine_config_path"],
-                    "checkout_path": request["payload"]["checkout_path"],
-                    "project_id": request["payload"]["project_id"],
-                    "status": "open",
-                    "rows": [
-                        {
-                            "row_id": "machine-config",
-                            "step": "1",
-                            "title": "Machine config",
-                            "layer": "machine",
-                            "owner": "yoke setup",
-                            "status": "needed",
-                            "hint": "Configure the Yoke machine profile.",
-                            "evidence": {},
-                            "blocker": "",
-                            "note": "",
-                        }
-                    ],
-                    "summary": {
+                if request["function"] == "onboard.checklist.get":
+                    result = {"schema_version": SCHEMA_VERSION, "exists": False, "run": None}
+                else:
+                    result = {
+                        "schema_version": SCHEMA_VERSION,
+                        "operation": request["function"],
+                        "run_id": "run-wheel-smoke",
+                        "resumed": False,
+                        "machine_config_path": request["payload"]["machine_config_path"],
+                        "checkout_path": request["payload"]["checkout_path"],
+                        "project_id": request["payload"]["project_id"],
                         "status": "open",
-                        "open_rows": ["machine-config"],
-                        "blocked_rows": [],
-                    },
-                }
+                        "rows": [
+                            {
+                                "row_id": "machine-config",
+                                "step": "1",
+                                "title": "Machine config",
+                                "layer": "machine",
+                                "owner": "yoke setup",
+                                "status": "needed",
+                                "hint": "Configure the Yoke machine profile.",
+                                "evidence": {},
+                                "blocker": "",
+                                "note": "",
+                            }
+                        ],
+                        "summary": {
+                            "status": "open",
+                            "open_rows": ["machine-config"],
+                            "blocked_rows": [],
+                        },
+                    }
                 body = json.dumps(
                     {
                         "success": True,

@@ -6,8 +6,23 @@ from yoke_core.domain.handlers import onboard_checklist as h
 
 
 def register(registry) -> None:
-    # No onboarding-specific event helper exists yet; the function
-    # dispatcher's YokeFunctionCalled event is the durable linkage.
+    registry.register(
+        "onboard.checklist.get",
+        h.handle_onboard_checklist_get,
+        h.OnboardChecklistGetRequest,
+        h.OnboardChecklistGetResponse,
+        stability="beta",
+        owner_module=__name__,
+        target_kinds=["system"],
+        side_effects=[],
+        emitted_event_names=[],
+        guardrails=[],
+        adapter_status="live",
+        claim_required_kind=None,
+        ambient_session_required=False,
+        minimum_serving_version="next-release",
+    )
+    # Run metadata owns saved choices; dispatcher events record calls.
     registry.register(
         "onboard.checklist.init",
         h.handle_onboard_checklist_init,

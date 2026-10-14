@@ -18,7 +18,9 @@ Packs, verified capabilities, delivery/domain registration, gated first deploy,
 and queued work. Read [run-and-rows.md](run-and-rows.md) before step 1.
 
 Arguments: --project P or mapped `yoke projects checkout-context --field slug`;
---run-id RUN resumes the known checklist (initialize only if none exists).
+--run-id RUN resumes the known checklist within the selected project.
+Read `yoke onboard checklist get --project P`; initialize only when it reports
+no saved run. A second machine reuses project choices and checks local prerequisites.
 
 Wire-up belongs to `yoke setup`: missing machine/account/GitHub/project binding
 stops with that terminal recovery. Harness connection is detect-only;
@@ -36,7 +38,7 @@ Propose derived facts, ask only unknowns, and echo evidence after each write.
 | # | Step/home | Entry | Skip |
 |---|---|---|---|
 | 1 | [Strategy Conversation](strategy-conversation.md) | Wired, active run | Five accepted non-placeholder docs |
-| 2 | [Derive The Execution Profile](profile-and-scaffold.md) | Strategy accepted | All steps 3–8 satisfy live predicates; otherwise rederive/reconfirm, profile not persisted |
+| 2 | [Derive The Execution Profile](profile-and-scaffold.md) | Strategy accepted | Saved profile matches refreshed facts; otherwise confirm the changed proposal |
 | 3 | [Install The Scaffold Pack](profile-and-scaffold.md) | Confirmed Pack or existing-app mapping | Installed receipt; updates separate |
 | 4 | [Hosting Capability](hosting-and-environments.md) | No confirmed no-host posture | No-host declaration or capability plus passing identity probe |
 | 5 | [Deploy Flow/policies](hosting-and-environments.md), [verification](verification-binding.md), [governed-database.md](governed-database.md) | Scaffold; live hosting-setup=verified\|configured or deferred\|not-needed | Managed registrations/default/test binding match; or no-host delivery choice is verified as a registered merge-only default or an empty default; independent policies/test binding match; declared `migration_model` capability or a terminal `migration-model-setup` row; Packs skip individually |
@@ -48,5 +50,6 @@ Propose derived facts, ask only unknowns, and echo evidence after each write.
 
 Report project/checkout/run with open rows, docs written/kept, Pack versions,
 redacted capabilities, environments/flows or explicit absence, URL+smoke or
-deferral, seeded refs and blockers. Required unknown/needed/blocked rows prevent
-completion. /yoke steer staffs the queue; /yoke charge selects runnable work.
+deferral, seeded refs and blockers. `setup_readiness.unmet_rows` names required
+unknown/blocked prerequisites; unexamined optional capabilities stay unknown.
+/yoke steer staffs the queue; /yoke charge selects runnable work.

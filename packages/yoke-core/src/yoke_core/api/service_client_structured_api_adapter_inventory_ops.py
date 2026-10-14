@@ -202,7 +202,10 @@ OPS_ADAPTERS: List[AdapterEntry] = [
         cli_invocation="yoke env list [--config PATH] [--json]",
         notes="Client-local sanitized connection inventory.",
     ),
-    # Onboarding checklist run (machine-config seeded rows).
+    # Scoped setup facts and saved choices.
+    _read_entry(
+        function_id="onboard.checklist.get", cli_invocation="yoke onboard checklist get [--project P] [--run-id RUN] [--json]"
+    ),
     AdapterEntry(
         function_id="onboard.checklist.run", cli_invocation="yoke onboard checklist"
     ),

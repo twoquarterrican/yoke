@@ -18,6 +18,8 @@ from yoke_contracts.onboard_checklist import (
     STATUS_VERIFIED,
 )
 from yoke_cli.config.project_github_adoption import GITHUB_ADOPTION_DISABLED
+from yoke_cli.config.onboard_setup_facts import collect
+from yoke_contracts.onboard_checklist import SCHEMA_VERSION
 
 DispatchFn = Callable[[str, Mapping[str, Any], str | Path | None], Mapping[str, Any]]
 
@@ -40,6 +42,27 @@ def create_handoff(
         install=install,
         github_adoption=github_adoption,
     )
+    payload.update(
+        collect(
+            config_path=config_path, checkout_path=root, project_id=int(project["id"])
+        )
+    )
+    support = dispatch_fn(
+        "onboard.checklist.get",
+        {
+            key: value
+            for key, value in payload.items()
+            if key in {"project_id", "machine_id", "observations"}
+        },
+        config_path,
+    )
+    if support.get("schema_version") != SCHEMA_VERSION:
+        from yoke_cli.config.project_onboard_support import ProjectOnboardError
+
+        raise ProjectOnboardError(
+            "setup_facts_unavailable: checklist schema 2 is required; ask the "
+            "control-plane operator to provide a serving release with scoped setup facts."
+        )
     result = dispatch_fn("onboard.checklist.run", payload, config_path)
     run_id = str(result.get("run_id") or "")
     command = _agent_command(run_id or "<run-id>")

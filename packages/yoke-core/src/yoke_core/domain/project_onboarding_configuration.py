@@ -1,0 +1,133 @@
+"""Authoritative project setup reads and safe change fingerprints."""
+
+from __future__ import annotations
+
+import json
+from hashlib import sha256
+from typing import Any
+from yoke_contracts.hosting_posture import POSTURE_NO_YOKE_MANAGED_HOST
+from yoke_contracts.onboard_checklist import (
+    STATUS_CONFIGURED,
+    STATUS_UNKNOWN,
+    STATUS_NOT_NEEDED,
+)
+from yoke_core.domain.project_onboarding_schema import _p
+from yoke_core.domain.schema_common import _table_exists
+from yoke_core.domain.project_onboarding_run_records import ProjectOnboardingRunError
+
+
+def _fact(present: bool, source: str, recovery: str) -> dict[str, Any]:
+    return {
+        "status": STATUS_CONFIGURED if present else STATUS_UNKNOWN,
+        "evidence": {"source": source, "present": present},
+        "reason": "" if present else "setup_fact_missing",
+        "recovery": "" if present else recovery,
+    }
+
+
+def _digest(value: Any) -> str:
+    return sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def project_facts(conn: Any, project_id: int | None) -> dict[str, dict[str, Any]]:
+    """Read existing configuration owners; absent declarations stay unknown."""
+    if project_id is None:
+        return {}
+    p = _p(conn)
+    recovery = f"/yoke onboard --project {project_id}"
+    owners = {
+        "project-identity": "projects",
+        "strategy-setup": "strategy_docs",
+        "hosting-setup": "project_capabilities",
+        "migration-model-setup": "project_capabilities",
+        "delivery-setup": "project_structure",
+        "verification-command-binding": "qa_plan_project_defaults",
+    }
+    facts = {
+        row_id: {**_fact(False, owner, recovery), "reason": "setup_owner_unavailable"}
+        for row_id, owner in owners.items()
+    }
+    if _table_exists(conn, "projects"):
+        present = (
+            conn.execute(
+                f"SELECT 1 FROM projects WHERE id = {p}", (project_id,)
+            ).fetchone()
+            is not None
+        )
+        facts["project-identity"] = _fact(present, "projects", "yoke setup")
+    if _table_exists(conn, "strategy_docs"):
+        docs = conn.execute(
+            "SELECT slug, content FROM strategy_docs "
+            f"WHERE project_id = {p} AND archived_at IS NULL",
+            (project_id,),
+        ).fetchall()
+        present = {str(row[0]) for row in docs if str(row[1] or "").strip()}
+        complete = {"MISSION", "LANDSCAPE", "VISION", "MASTER-PLAN", "CURRENT-PLAN"}
+        facts["strategy-setup"] = _fact(complete <= present, "strategy_docs", recovery)
+        facts["strategy-setup"]["evidence"]["content_sha256"] = _digest(
+            {str(row[0]): str(row[1]) for row in docs}
+        )
+    if _table_exists(conn, "project_capabilities"):
+        settings = {
+            str(row[0]): str(row[1])
+            for row in conn.execute(
+                f"SELECT type, settings FROM project_capabilities WHERE project_id = {p}",
+                (project_id,),
+            ).fetchall()
+        }
+        for row_id, cap_type in (
+            ("hosting-setup", "aws-admin"),
+            ("migration-model-setup", "migration_model"),
+        ):
+            facts[row_id] = _fact(
+                cap_type in settings,
+                "project_capabilities",
+                recovery,
+            )
+            facts[row_id]["evidence"]["settings_sha256"] = _digest(
+                settings.get(cap_type)
+            )
+    if _table_exists(conn, "project_structure"):
+        facts["delivery-setup"] = _fact(False, "project_structure", recovery)
+        rows = conn.execute(
+            "SELECT family, payload FROM project_structure "
+            f"WHERE project_id = {p} AND family IN ('hosting_posture', 'deploy_defaults')",
+            (project_id,),
+        ).fetchall()
+        for family, raw in ((str(row[0]), str(row[1])) for row in rows):
+            try:
+                payload = json.loads(raw)
+                if not isinstance(payload, dict):
+                    raise ValueError("not an object")
+            except ValueError as exc:
+                raise ProjectOnboardingRunError(
+                    "setup_configuration_unreadable: repair the project's "
+                    f"{family} declaration through yoke project-structure patch apply."
+                ) from exc
+            row_id = (
+                "hosting-setup" if family == "hosting_posture" else "delivery-setup"
+            )
+            fact = _fact(True, "project_structure", "")
+            fact["evidence"]["settings_sha256"] = _digest(payload)
+            if (
+                family == "hosting_posture"
+                and payload.get("posture") == POSTURE_NO_YOKE_MANAGED_HOST
+            ):
+                fact["status"] = STATUS_NOT_NEEDED
+            facts[row_id] = fact
+    if _table_exists(conn, "qa_plan_project_defaults"):
+        bindings = conn.execute(
+            "SELECT plan_id, workflow_id, transition_id, qa_phase "
+            f"FROM qa_plan_project_defaults WHERE project_id = {p} "
+            "ORDER BY plan_id, workflow_id, transition_id",
+            (project_id,),
+        ).fetchall()
+        facts["verification-command-binding"] = _fact(
+            bool(bindings), "qa_plan_project_defaults", recovery
+        )
+        facts["verification-command-binding"]["evidence"]["binding_sha256"] = _digest(
+            [[row[index] for index in range(4)] for row in bindings]
+        )
+    return facts

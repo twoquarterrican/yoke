@@ -1,5 +1,22 @@
 # Copy links and codes during onboarding
 
+Read saved setup in the project's checkout:
+
+```text
+yoke onboard checklist get --project P --json
+```
+
+The read resolves that project's run in the connected universe and checks this
+machine's prerequisites. Saved choices and evidence survive a new session or
+machine; current settings determine the observed state. `configured`, `deferred`,
+`not-needed`, `unknown` and `blocked` remain distinct. Optional unexamined
+capabilities stay unknown. `setup_readiness.unmet_rows` names required checks.
+
+Onboard saves the confirmed profile in the existing run. Resume reuses it;
+changed settings require confirming the changed proposal. The checklist Markdown
+is a view. A serving release without checklist schema 2 refuses before new
+scoped writes and names the control-plane operator recovery.
+
 Run `yoke setup` for machine setup. Bare `yoke onboard` points there and lists
 the project commands, including `yoke onboard project`. Selection rows fit the
 terminal's available width, including 80 columns and narrower; a long label

@@ -22,6 +22,7 @@ from yoke_contracts.onboard_checklist import (
     STATUS_DEFERRED,
     STATUS_NEEDED,
     STATUS_NOT_NEEDED,
+    STATUS_UNKNOWN,
     TERMINAL_STATUSES,
 )
 
@@ -178,7 +179,7 @@ def default_status(row_id: str, branch: str) -> str:
         return STATUS_DEFERRED
     if row_id == SETUP_HANDOFF_ROW_ID:
         return STATUS_NEEDED
-    return STATUS_NEEDED
+    return STATUS_UNKNOWN
 
 
 def validate_branch(branch: str) -> None:
