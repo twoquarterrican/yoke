@@ -193,6 +193,10 @@ def test_resume_reuses_hosted_browser_approved_credential(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("ZDOTDIR", str(home))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
     config = home / "config.json"
     token_file = tmp_path / "browser-approved.token"
     token_file.write_text("browser-approved-credential", encoding="utf-8")
