@@ -1,6 +1,7 @@
 """CLI adapters for reading and advancing epic dispatch chains."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import sys
@@ -204,10 +205,7 @@ def epic_dispatch_chain_advance(args: List[str]) -> int:
         return 2
 
     def _write_advance(response, stdout, stderr) -> None:
-        result = response.result or {}
-        stdout.write(
-            f"{result.get('current_index', '')}|{result.get('next_task_num', '')}\n"
-        )
+        write_human(response.result or {}, stdout)
 
     return _dispatch(
         "workflow_item.epic_dispatch_chain.advance",

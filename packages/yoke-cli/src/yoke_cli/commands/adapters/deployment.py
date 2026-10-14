@@ -1,6 +1,7 @@
 """``yoke deployment-flows`` / ``yoke deployment-runs`` adapters."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import Any, List
@@ -135,12 +136,7 @@ def deployment_flows_set_status(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        print(
-            f"{result.get('flow_id', '')}|{result.get('status', '')}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_flows.set_status",
@@ -203,11 +199,7 @@ def deployment_runs_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        fields = result.get("fields") or []
-        for row in result.get("rows") or []:
-            print(_pipe(fields, row), file=stdout)
-        return None
+        write_human(response.result or {}, stdout)
 
     payload = {}
     if parsed.project is not None:
@@ -307,13 +299,7 @@ def deployment_runs_resolve_target(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        fields = ("target_tier", "target_environment")
-        print(
-            "|".join(str(result.get(f) or "") for f in fields),
-            file=stdout,
-        )
-        return None
+        write_human(response.result or {}, stdout)
 
     payload = {"project": parsed.project, "flow": parsed.flow}
     if parsed.environment is not None:

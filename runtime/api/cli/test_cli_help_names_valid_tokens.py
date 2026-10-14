@@ -42,13 +42,14 @@ class TestGroupHelpWhereAGroupExists:
         assert cli_main(["github", "actions", "--help"]) == 0
         out = capsys.readouterr().out
         assert "yoke github actions - subcommand group." in out
-        assert "yoke github-actions poll" in out
+        assert "yoke github actions poll" in out
 
     def test_parent_group_lists_its_hyphenated_members(self, capsys):
         assert cli_main(["github", "--help"]) == 0
         out = capsys.readouterr().out
-        assert "yoke github-actions poll" in out
-        assert "yoke github pr create" in out
+        assert "yoke github actions" in out
+        assert "yoke github pr" in out
+        assert "yoke github pr create" not in out
 
     def test_group_listing_never_repeats_one_command(self, capsys):
         assert cli_main(["github", "actions", "--help"]) == 0

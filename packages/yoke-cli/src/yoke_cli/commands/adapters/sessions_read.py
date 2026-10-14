@@ -6,6 +6,7 @@ the authored-file line cap.
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import Any, Dict, List
@@ -69,14 +70,7 @@ def sessions_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        fields = result.get("fields") or []
-        for row in result.get("rows") or []:
-            print(
-                "|".join(_cell(row, field) for field in fields),
-                file=stdout,
-            )
-        return None
+        write_human(response.result or {}, stdout)
 
     payload: Dict[str, Any] = {
         "detail": "full" if parsed.full else "summary",

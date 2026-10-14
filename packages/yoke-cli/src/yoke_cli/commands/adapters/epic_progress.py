@@ -9,6 +9,7 @@ keep each authored file under the 350-line cap:
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import sys
@@ -166,13 +167,7 @@ def epic_tasks_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        for task in (response.result or {}).get("tasks", []):
-            lane = task.get("lane") or {}
-            stdout.write(
-                f"{task.get('task_num', '')}|{task.get('title', '')}|"
-                f"{task.get('status', '')}|{lane.get('branch', '')}|"
-                f"{task.get('dependencies', '')}\n"
-            )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="epic_tasks.list.run",

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 from typing import List
 
 from yoke_cli.commands._helpers import (
@@ -87,26 +87,7 @@ def session_control_roster_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        if parsed.full:
-            print(json.dumps(result, default=str, ensure_ascii=False), file=stdout)
-        else:
-            for row in result.get("rows", []):
-                print(
-                    "|".join(
-                        str(row.get(key) or "") for key in result.get("fields", [])
-                    ),
-                    file=stdout,
-                )
-            print(
-                "Summary rows; --full adds all sessions and complete roster details.",
-                file=stderr,
-            )
-            if result.get("next_offset") is not None:
-                print(
-                    f"More sessions: repeat with --offset {result['next_offset']} and the same filters/limit.",
-                    file=stderr,
-                )
+        write_human(response.result or {}, stdout)
 
     payload = {
         key: value

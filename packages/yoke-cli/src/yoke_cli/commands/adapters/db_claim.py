@@ -185,5 +185,7 @@ def _prose_check_stdin(
     if json_mode:
         print(json.dumps({"success": True, "result": payload}, sort_keys=True))
     else:
-        print(json.dumps(payload, sort_keys=True))
+        from yoke_cli.transport.human_values import write_human
+
+        write_human(payload, sys.stdout)
     return 0

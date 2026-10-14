@@ -14,6 +14,7 @@ sibling :mod:`yoke_cli.commands.adapters.projects_write`.
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import json
@@ -83,7 +84,7 @@ def projects_get(args: List[str]) -> int:
             if not text.endswith("\n"):
                 stdout.write("\n")
             return None
-        print(json.dumps(result, sort_keys=True), file=stdout)
+        write_human(result, stdout)
         return None
 
     return dispatch_and_emit(
@@ -112,24 +113,7 @@ def projects_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        if not response.success:
-            return None
-        result = response.result or {}
-        fields = result.get("fields") or []
-        rows = result.get("rows") or []
-        print("|".join(str(field) for field in fields), file=stdout)
-        if not rows:
-            print("(no projects)", file=stdout)
-            return None
-        for row in rows:
-            print(
-                "|".join(
-                    "" if row.get(field) is None else str(row.get(field))
-                    for field in fields
-                ),
-                file=stdout,
-            )
-        return None
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="projects.list",
@@ -166,7 +150,7 @@ def projects_resolve_by_github_repo(args: List[str]) -> int:
     def _human_writer(response, stdout, stderr) -> None:
         if not response.success:
             return None
-        print(json.dumps(response.result or {}, sort_keys=True), file=stdout)
+        write_human(response.result or {}, stdout)
         return None
 
     return dispatch_and_emit(

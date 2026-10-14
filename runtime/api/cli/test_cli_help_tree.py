@@ -1,0 +1,69 @@
+"""Every supported help spelling is bounded, discoverable and inert."""
+
+import contextlib
+import io
+import json
+from pathlib import Path
+
+from yoke_cli.commands.command_tree import discovery_routes, immediate_children
+from yoke_cli.main import main
+from yoke_cli.transport.response_evidence import wrapped_lines
+
+
+def test_all_help_routes_are_inert_and_bounded(monkeypatch, tmp_path):
+    def deny(*args, **kwargs):
+        raise AssertionError("Help attempted execution or network access")
+
+    monkeypatch.setattr("subprocess.Popen", deny)
+    monkeypatch.setattr("socket.socket.connect", deny)
+    monkeypatch.setattr(Path, "write_text", deny)
+    evidence = []
+    routes = discovery_routes()
+    prefixes = {route[:n] for route in routes for n in range(1, len(route))}
+    for route in sorted(set(routes) | prefixes | {()}):
+        for flag in ("--help", "-h"):
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                rc = main([*route, flag])
+            text = out.getvalue() + err.getvalue()
+            record = dict(
+                route="yoke " + " ".join(route),
+                flag=flag,
+                exit=rc,
+                lines=wrapped_lines(text),
+                characters=len(text),
+            )
+            evidence.append(record)
+            assert rc == 0, (record, text)
+            assert text.strip(), record
+            assert record["lines"] <= 350, (record, text)
+            for child in immediate_children(route):
+                assert "yoke " + " ".join(child) in text, (record, child)
+            assert "bad/missing flag" not in text
+    # Audit evidence is a fixture report, never a claim of live execution.
+    with (tmp_path / "help-routes.json").open("w") as handle:
+        json.dump(evidence, handle)
+    print(
+        f"Fixture help audit: {len(evidence)} spellings; max lines "
+        f"{max(row['lines'] for row in evidence)}; advisory overruns "
+        f"{sum(row['lines'] > 120 or row['characters'] > 7200 for row in evidence)}"
+    )
+
+
+def test_parent_help_does_not_expand_descendants(capsys):
+    assert main(["items", "--help"]) == 0
+    text = capsys.readouterr().out
+    assert "yoke items structured-field  --help" in text
+    assert "yoke items structured-field replace" not in text
+    assert main(["onboard", "checklist", "--help"]) == 0
+    text = capsys.readouterr().out
+    assert "yoke onboard checklist init" in text
+    assert "options:" in text
+
+
+def test_root_contains_convenience_routes(capsys):
+    assert main(["help"]) == 0
+    text = capsys.readouterr().out
+    assert "yoke dash " in text
+    assert "yoke task " in text
+    assert "yoke items create" not in text

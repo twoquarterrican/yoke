@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 from typing import List, TextIO
 
 from yoke_cli.commands._helpers import (
@@ -118,7 +118,7 @@ def _write_supersede_result(
         if proof_owed:
             print(f"Source retired: {proof_owed}", file=stdout)
     else:
-        print(json.dumps(result, sort_keys=True), file=stdout)
+        write_human(result, stdout)
 
 
 def qa_requirement_supersede(args: List[str]) -> int:

@@ -47,6 +47,16 @@ __all__ = [
 ]
 
 
+def show_delegate_help(args: List[str], usage: str, prerequisite: str) -> bool:
+    """Teach a detached command before identity, authority or process work."""
+    before = args[: args.index("--")] if "--" in args else args
+    if not any(arg in ("--help", "-h") for arg in before):
+        return False
+    print(usage)
+    print(prerequisite)
+    return True
+
+
 def add_session_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--session-id",
@@ -181,7 +191,7 @@ def parse_or_usage_error(
         parser.add_argument(
             "--full",
             action="store_true",
-            help="Uncapped read output.",
+            help="Full read detail. Large human replies save complete evidence.",
         )
     try:
         return parser.parse_args(args)
@@ -205,7 +215,9 @@ def usage_error(message: str) -> int:
 def run_id_receipt(response: Any, stdout: TextIO, stderr: TextIO) -> None:
     del stderr
     result = response.result or {}
-    print(result.get("run_id") or json.dumps(result, sort_keys=True), file=stdout)
+    from yoke_cli.transport.human_values import write_human
+
+    write_human(result, stdout)
 
 
 # Every call that can leave an item terminal, so the machine-local lanes it
@@ -225,6 +237,7 @@ def dispatch_and_emit(
     session_id: Optional[str],
     json_mode: bool,
     human_writer: Optional[Callable[[Any, TextIO, TextIO], None]] = None,
+    machine_mode: bool = False,
     local_only: bool = False,
     timeout_s: Optional[float] = None,
     sensitive_values: tuple[str, ...] = (),
@@ -260,7 +273,10 @@ def dispatch_and_emit(
     if response_recovery is not None:
         response = response_recovery(response, actor)
     result_code = emit_response(
-        response, json_mode=json_mode, human_writer=human_writer
+        response,
+        json_mode=json_mode,
+        human_writer=human_writer,
+        machine_mode=machine_mode,
     )
     sys.stdout.flush()
     sys.stderr.flush()

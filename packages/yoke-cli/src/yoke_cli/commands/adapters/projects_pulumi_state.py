@@ -1,6 +1,7 @@
 """CLI adapter for the typed Pulumi state migration."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import json
@@ -49,11 +50,7 @@ def projects_pulumi_state_migrate(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        stdout.write(
-            f"{result.get('mode', '')}|{result.get('receipt_digest', '')}\n"
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="projects.pulumi_state.migrate",
@@ -85,9 +82,7 @@ def projects_pulumi_state_checkpoint_import(args: List[str]) -> int:
     parser.add_argument("--apply", action="store_true")
     add_session_arg(parser)
     add_json_arg(parser)
-    parsed = parse_or_usage_error(
-        parser, args, PULUMI_STATE_CHECKPOINT_IMPORT_USAGE
-    )
+    parsed = parse_or_usage_error(parser, args, PULUMI_STATE_CHECKPOINT_IMPORT_USAGE)
     if parsed is None:
         return 2
     try:
@@ -98,11 +93,7 @@ def projects_pulumi_state_checkpoint_import(args: List[str]) -> int:
         parser.error(str(exc))
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        stdout.write(
-            f"{result.get('mode', '')}|{result.get('receipt_digest', '')}\n"
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="projects.pulumi_state.checkpoint_import",

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 import sys
 from typing import List
 
@@ -144,7 +144,7 @@ def strategy_doc_create(args: List[str]) -> int:
     )
 
     def _human_writer(response, stdout, stderr) -> None:
-        print(json.dumps(response.result, sort_keys=True), file=stdout)
+        write_human(response.result, stdout)
         for slug, status in report.items():
             print(f"{slug}\t{status}", file=stdout)
         for warning in response.warnings:

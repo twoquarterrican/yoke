@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from typing import Any, Dict, List, TextIO
 
 from yoke_cli.commands._helpers import (
@@ -17,13 +18,13 @@ from yoke_contracts.connection_authority_teaching import DB_GROUP_TEACHING
 
 
 DB_READ_USAGE = (
-    'yoke db read "SELECT ..." [--format json|lines] [--session-id S] [--json]'
+    'yoke db read "SELECT ..." [--format human|json|lines] [--session-id S] [--json]'
 )
 
 _DB_READ_HELP = (
     "Run one read-only diagnostic SQL statement through the registered "
-    "function dispatcher. Default output is the handler result payload "
-    "as JSON; ``--format lines`` emits one pipe-delimited row per line "
+    "function dispatcher. Default output labels the query result. "
+    "``--format json`` emits the result payload; ``--format lines`` emits one pipe-delimited row per line "
     "for shell consumption. ``--json`` emits the full typed "
     "FunctionCallResponse envelope. Bare project_sequence results warn: "
     "join item_refs on item_id and select public_ref to name the project.\n\n"
@@ -53,6 +54,12 @@ def _write_lines(response: Any, stdout: TextIO, stderr: TextIO) -> None:
         print("|".join(values), file=stdout)
 
 
+def _write_json(response: Any, stdout: TextIO, stderr: TextIO) -> None:
+    print(json.dumps(response.result, sort_keys=True), file=stdout)
+    for warning in response.warnings:
+        print(f"warning: {warning.code}: {warning.detail}", file=stderr)
+
+
 def db_read(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="yoke db read",
@@ -62,10 +69,10 @@ def db_read(args: List[str]) -> int:
     parser.add_argument("sql", help="Read-only SQL diagnostic query.")
     parser.add_argument(
         "--format",
-        choices=("json", "lines"),
-        default="json",
+        choices=("human", "json", "lines"),
+        default="human",
         help=(
-            "Result format (default: json). 'lines' emits pipe-delimited "
+            "Result format (default: human). 'lines' emits pipe-delimited "
             "rows in query-column order."
         ),
     )
@@ -77,7 +84,7 @@ def db_read(args: List[str]) -> int:
     sql = parsed.sql.strip()
     if not sql:
         return usage_error("db read requires a SQL string")
-    if parsed.json_mode and parsed.format != "json":
+    if parsed.json_mode and parsed.format == "lines":
         return usage_error("db read --json cannot be combined with --format lines")
     payload: Dict[str, str] = {"sql": sql}
     return dispatch_and_emit(
@@ -86,7 +93,8 @@ def db_read(args: List[str]) -> int:
         payload=payload,
         session_id=parsed.session_id,
         json_mode=parsed.json_mode,
-        human_writer=_write_lines if parsed.format == "lines" else None,
+        human_writer={"lines": _write_lines, "json": _write_json}.get(parsed.format),
+        machine_mode=parsed.format != "human",
     )
 
 

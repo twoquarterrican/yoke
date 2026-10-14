@@ -1,6 +1,7 @@
 """``yoke item-worktrees ...`` flag adapters."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import json
@@ -123,19 +124,7 @@ def item_worktrees_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, _stderr) -> None:
-        for lane in (response.result or {}).get("worktrees") or []:
-            print(
-                "|".join(
-                    [
-                        str(lane.get("id") or ""),
-                        str(lane.get("lane_role") or ""),
-                        str(lane.get("branch") or ""),
-                        str(lane.get("path") or ""),
-                        str(lane.get("state") or ""),
-                    ]
-                ),
-                file=stdout,
-            )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="item_worktrees.list",
@@ -165,20 +154,7 @@ def item_worktrees_inventory(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, _stderr) -> None:
-        for lane in (response.result or {}).get("lanes") or []:
-            print(
-                "|".join(
-                    [
-                        str(lane.get("public_ref") or ""),
-                        str(lane.get("status") or ""),
-                        str(lane.get("branch") or ""),
-                        str(lane.get("path") or ""),
-                        str(lane.get("state") or ""),
-                        str(lane.get("target_branch") or ""),
-                    ]
-                ),
-                file=stdout,
-            )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="item_worktrees.inventory",

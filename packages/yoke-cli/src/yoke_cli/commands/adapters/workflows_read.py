@@ -5,6 +5,7 @@ and deployment flows, plus explicit current-version and item-migration actions.
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import Any, Dict, List
@@ -64,67 +65,7 @@ def workflows_definition_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        print(f"family|{result.get('family') or ''}", file=stdout)
-        print(f"title_max_length|{result.get('title_max_length') or ''}", file=stdout)
-        for workflow in result.get("workflows") or []:
-            definition = workflow.get("definition") or {}
-            stages = ",".join(
-                str(stage.get("id") or "") for stage in definition.get("stages") or []
-            )
-            print(
-                "workflow|"
-                + "|".join(
-                    str(value or "")
-                    for value in (
-                        workflow.get("id"),
-                        workflow.get("current_version"),
-                        workflow.get("current_version_id"),
-                        workflow.get("status"),
-                        stages,
-                    )
-                ),
-                file=stdout,
-            )
-            for stage in definition.get("stages") or []:
-                for gate in stage.get("gates") or []:
-                    print(
-                        f"gate|{workflow.get('id')}|{stage.get('id')}|{gate.get('id')}",
-                        file=stdout,
-                    )
-        for gate in result.get("gate_catalog") or []:
-            print(
-                "catalog-gate|"
-                + "|".join(
-                    str(value or "")
-                    for value in (
-                        gate.get("id"),
-                        gate.get("owner"),
-                        gate.get("description"),
-                    )
-                ),
-                file=stdout,
-            )
-        for flow in result.get("flows") or []:
-            stage_names = ",".join(
-                str(stage.get("name") or "") for stage in flow.get("stages") or []
-            )
-            print(
-                "flow|"
-                + "|".join(
-                    "" if value is None else str(value)
-                    for value in (
-                        flow.get("id"),
-                        flow.get("name"),
-                        flow.get("target_environment") or flow.get("target_tier"),
-                        flow.get("on_failure"),
-                        stage_names,
-                        flow.get("project"),
-                    )
-                ),
-                file=stdout,
-            )
-        return None
+        write_human(response.result or {}, stdout)
 
     payload: Dict[str, Any] = {}
     if parsed.project is not None:
@@ -157,22 +98,7 @@ def workflows_item_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        print(
-            "item-workflow|"
-            + "|".join(
-                str(result.get(key) or "")
-                for key in (
-                    "public_ref",
-                    "workflow_id",
-                    "workflow_version",
-                    "workflow_version_id",
-                    "status",
-                    "worktree_policy",
-                )
-            ),
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="workflows.item.get",
@@ -208,27 +134,7 @@ def workflows_item_migrate(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        after = result.get("after") or {}
-        if result.get("preview"):
-            conflicts = result.get("conflicts") or []
-            print(
-                f"item-workflow-preview|{str(not conflicts).lower()}|"
-                f"{after.get('workflow_id') or ''}|"
-                f"{after.get('workflow_version') or ''}|"
-                f"{after.get('status') or ''}",
-                file=stdout,
-            )
-            for conflict in conflicts:
-                print(f"conflict|{conflict}", file=stdout)
-            return
-        print(
-            f"item-workflow-migrated|{str(bool(result.get('changed'))).lower()}|"
-            f"{after.get('workflow_id') or ''}|"
-            f"{after.get('workflow_version') or ''}|"
-            f"{after.get('status') or ''}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     payload: Dict[str, Any] = {}
     if parsed.version is not None:

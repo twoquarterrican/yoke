@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 from typing import Any, Dict, List
 
 from yoke_contracts.api.function_call import TargetRef
@@ -47,7 +47,7 @@ def projects_github_sync_mode_repair(args: List[str]) -> int:
 
     def _human_writer(response, stdout, stderr) -> None:
         if response.success:
-            print(json.dumps(response.result or {}, sort_keys=True), file=stdout)
+            write_human(response.result or {}, stdout)
         return None
 
     return dispatch_and_emit(

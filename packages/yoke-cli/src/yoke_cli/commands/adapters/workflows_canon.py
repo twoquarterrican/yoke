@@ -7,6 +7,7 @@ arrives by itself.
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import sys
@@ -56,22 +57,8 @@ def _dispatch(
     )
 
 
-def _print_paths(stdout, workflow_id: str, result: Dict[str, Any]) -> None:
-    for label in ("taken", "kept"):
-        for path in result.get(label) or []:
-            print(f"{label}|{workflow_id}|{path}", file=stdout)
-
-
 def _print_applied(stdout, row: Dict[str, Any], from_version: Any) -> None:
-    workflow_id = row.get("workflow_id") or ""
-    print(
-        f"workflow-canon-update-applied|{workflow_id}|"
-        f"from_version={from_version}|to_version={row.get('version') or ''}|"
-        f"canon_version={row.get('canon_version') or ''}|"
-        f"{row.get('definition_digest') or ''}",
-        file=stdout,
-    )
-    _print_paths(stdout, workflow_id, row)
+    write_human({"from_version": from_version, **row}, stdout)
 
 
 def workflows_canon_status_list(args: List[str]) -> int:
@@ -84,31 +71,7 @@ def workflows_canon_status_list(args: List[str]) -> int:
         return 2
 
     def _writer(response, stdout, stderr) -> None:
-        del stderr
-        rows = (response.result or {}).get("rows") or []
-        if not rows:
-            print(
-                "no workflow has a pending published update"
-                if parsed.pending
-                else "no workflow has a published canon",
-                file=stdout,
-            )
-        for row in rows:
-            print(
-                "|".join(
-                    str(value)
-                    for value in (
-                        "workflow-canon",
-                        row.get("workflow_id", ""),
-                        f"current_version={row.get('current_version', '')}",
-                        row.get("state", ""),
-                        f"follow={row.get('follow', '')}",
-                        f"latest_canon_version={row.get('latest_canon_version', '')}",
-                        f"pending={str(bool(row.get('pending'))).lower()}",
-                    )
-                ),
-                file=stdout,
-            )
+        write_human(response.result or {}, stdout)
 
     return _dispatch(
         "workflows.canon_status.list",
@@ -129,24 +92,10 @@ def workflows_canon_update_preview(args: List[str]) -> int:
 
     def _writer(response, stdout, stderr) -> None:
         result = response.result or {}
-        workflow_id = result.get("workflow_id") or parsed.workflow
-        derived = result.get("derived_from_canon_version")
-        print(
-            f"workflow-canon-preview|{workflow_id}|{result.get('state') or ''}|"
-            f"derived_from_canon_version={'' if derived is None else derived}|"
-            f"latest_canon_version={result.get('latest_canon_version') or ''}|"
-            f"clean={str(bool(result.get('clean'))).lower()}",
-            file=stdout,
-        )
-        _print_paths(stdout, workflow_id, result)
-        conflicts = result.get("conflicts") or []
-        for conflict in conflicts:
-            print(f"conflict|{workflow_id}|{conflict.get('path', '')}", file=stdout)
-        if conflicts:
+        write_human(result, stdout)
+        if result.get("conflicts"):
             print(
-                "this update conflicts with local edits and will refuse to "
-                "apply; edit the workflow to resolve each conflict, then "
-                "publish",
+                "workflow_update_conflict: resolve the named local edits in the workflow, then publish before applying.",
                 file=stderr,
             )
 
@@ -225,18 +174,15 @@ def workflows_canon_update_apply_all(args: List[str]) -> int:
         return response
 
     def _writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        for row in result.get("applied") or []:
-            _print_applied(stdout, row, expected.get(row.get("workflow_id")))
+        result = dict(response.result or {})
+        result["applied"] = [
+            {**row, "expected_current_version": expected.get(row.get("workflow_id"))}
+            for row in result.get("applied") or []
+        ]
+        write_human(result, stdout)
         for row in result.get("refused") or []:
             print(
-                f"workflow-canon-update-refused|{row.get('workflow_id', '')}|"
-                f"{row.get('code', '')}|{row.get('message', '')}",
-                file=stdout,
-            )
-            print(
-                f"inspect: yoke workflows canon-update preview "
-                f"{row.get('workflow_id', '')}",
+                f"Inspect recovery: yoke workflows canon-update preview {row.get('workflow_id', '')}",
                 file=stderr,
             )
 
@@ -267,15 +213,7 @@ def workflows_canon_follow_set(args: List[str]) -> int:
         return 2
 
     def _writer(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        previous = result.get("previous_follow")
-        print(
-            f"workflow-canon-follow|{result.get('workflow_id') or ''}|"
-            + (f"{previous}->" if previous else "")
-            + f"{result.get('follow') or ''}",
-            file=stdout,
-        )
+        write_human(response.result or {}, stdout)
 
     return _dispatch(
         "workflows.canon_follow.set",

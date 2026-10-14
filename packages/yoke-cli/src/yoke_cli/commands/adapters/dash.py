@@ -1,6 +1,7 @@
 """Dash survey, evidence, and escalation adapters."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import Dict, List
@@ -18,7 +19,6 @@ from yoke_cli.commands.adapters.dash_survey_recovery import (
     build_survey_timeout_recovery,
 )
 from yoke_cli.commands.adapters.file_line_sizing import (
-    path_existence_label,
     survey_path_sizes,
 )
 from yoke_cli.commands.adapters.lane_tree import (
@@ -90,39 +90,17 @@ def dash_survey(args: List[str]) -> int:
     }
 
     def _human(response, stdout, stderr) -> None:
-        result = response.result or {}
-        if result.get("clear"):
-            print(f"survey-clear|{result.get('fingerprint') or ''}", file=stdout)
-        print(
-            f"survey-touch-path-update|{result.get('touch_path_update') or ''}",
-            file=stdout,
-        )
-        for size in result.get("path_sizes") or []:
-            print(
-                "survey-size|"
-                + "|".join(
-                    str(size.get(key))
-                    for key in (
-                        "path",
-                        "current_line_count",
-                        "remaining_headroom",
-                        "at_or_over_limit",
-                        "limit",
-                        "classification",
-                    )
-                )
-                + f"|{path_existence_label(size, sized_existence)}",
-                file=stdout,
-            )
-        for blocker in result.get("blockers") or []:
-            print(
-                "survey-blocked|"
-                + "|".join(
-                    str(blocker.get(key) or "")
-                    for key in ("kind", "owner_public_ref", "path", "state", "detail")
+        result = dict(response.result or {})
+        result["path_sizes"] = [
+            {
+                **size,
+                "exists": sized_existence.get(
+                    str(size.get("path")), size.get("exists")
                 ),
-                file=stdout,
-            )
+            }
+            for size in result.get("path_sizes") or []
+        ]
+        write_human(result, stdout)
 
     target = item_target("item", parsed.item, parsed.project)
     payload = {

@@ -10,9 +10,10 @@ JSON. Env selection rides the CLI's global ``--env`` flag, which exports
 """
 
 from __future__ import annotations
+import json
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_local
 from typing import List
 
 from yoke_cli.commands._helpers import (
@@ -133,7 +134,8 @@ def _run_install(args: List[str], usage: str, prog: str, operation: str) -> int:
             force=parsed.force,
             commit=not parsed.no_commit,
             publish=not parsed.no_publish,
-        )
+        ),
+        json_mode=parsed.json_mode,
     )
 
 
@@ -174,7 +176,8 @@ def project_refresh(args: List[str]) -> int:
                 apply=parsed.apply,
                 force=parsed.force,
                 commit=not parsed.no_commit,
-            )
+            ),
+            json_mode=parsed.json_mode,
         )
     return _run(
         lambda: _project_install_domain().refresh(
@@ -185,7 +188,8 @@ def project_refresh(args: List[str]) -> int:
             force=parsed.force,
             commit=not parsed.no_commit,
             publish=not parsed.no_publish,
-        )
+        ),
+        json_mode=parsed.json_mode,
     )
 
 
@@ -207,11 +211,12 @@ def project_uninstall(args: List[str]) -> int:
         lambda: domain.uninstall(
             parsed.repo_root,
             config_path=parsed.config_path,
-        )
+        ),
+        json_mode=parsed.json_mode,
     )
 
 
-def _run(operation) -> int:
+def _run(operation, *, json_mode: bool = False) -> int:
     import sys
 
     try:
@@ -219,7 +224,10 @@ def _run(operation) -> int:
     except _install_errors() as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(json.dumps(result, indent=2))
+    if json_mode:
+        print(json.dumps(result, indent=2))
+    else:
+        write_local(result, sys.stdout)
     if publication_outcome.is_publication_pending(result):
         return PUBLICATION_PENDING_EXIT
     return 0

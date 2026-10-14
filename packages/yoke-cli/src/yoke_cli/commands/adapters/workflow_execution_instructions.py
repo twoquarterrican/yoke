@@ -283,7 +283,7 @@ USAGE_BY_FUNCTION_ID = {
 
 def write_transition_instructions(response, stdout, stderr) -> None:
     """Serve entry instructions in full; retain the transition receipt."""
-    import json
+    from yoke_cli.transport.human_values import write_human
 
     del stderr
     result = dict(response.result or {})
@@ -292,7 +292,7 @@ def write_transition_instructions(response, stdout, stderr) -> None:
             result.pop("execution_instructions", []) or []
         )
     )
-    print(json.dumps(result, sort_keys=True), file=stdout)
+    write_human(result, stdout)
 
 
 def write_item_content(response, stdout, stderr, *, item: str | None = None) -> None:

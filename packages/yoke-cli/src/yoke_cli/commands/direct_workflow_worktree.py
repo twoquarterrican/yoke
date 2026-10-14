@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from yoke_cli.commands._helpers import show_delegate_help
 from typing import Callable, Dict, List, Tuple
 
 from yoke_cli.commands._helpers import client_project_context
@@ -18,6 +19,12 @@ PREPARE_USAGE = (
 
 def direct_workflow_worktree_prepare(args: List[str]) -> int:
     """Delegate local engine mutation without importing engine authority."""
+    if show_delegate_help(
+        args,
+        PREPARE_USAGE,
+        "Requires the item work claim; prepares its registered lane from verified upstream.",
+    ):
+        return 0
     forwarded = list(args)
     prefix, sequence = parse_public_item_ref(forwarded[0] if forwarded else None)
     has_project = any(
@@ -40,9 +47,7 @@ def direct_workflow_worktree_prepare(args: List[str]) -> int:
 
 
 TOOL_SHAPED_SUBCOMMANDS: Dict[Tuple[str, ...], AdapterFn] = {
-    ("direct-workflow", "worktree", "prepare"): (
-        direct_workflow_worktree_prepare
-    ),
+    ("direct-workflow", "worktree", "prepare"): (direct_workflow_worktree_prepare),
 }
 TOOL_SHAPED_USAGE = {
     "yoke direct-workflow worktree prepare": PREPARE_USAGE,

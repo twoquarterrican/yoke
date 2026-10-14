@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 
 from yoke_cli.commands._helpers import (
     add_full_arg,
@@ -56,32 +56,4 @@ def qa_plan_list(args: list[str]) -> int:
 
 
 def write_plan_rows(response, stdout, stderr) -> None:
-    result = response.result or {}
-    if result.get("detail") == "full":
-        print(json.dumps(result, default=str, ensure_ascii=False), file=stdout)
-        return
-    for row in result.get("rows", []):
-        print(
-            "|".join(
-                str(row.get(key) or "")
-                for key in (
-                    "id",
-                    "project",
-                    "slug",
-                    "name",
-                    "case_count",
-                    "last_outcome",
-                )
-            ),
-            file=stdout,
-        )
-    if result.get("next_offset") is not None:
-        print(
-            f"More plans: repeat with --offset {result['next_offset']} and the same project/limit.",
-            file=stderr,
-        )
-    if result.get("detail") != "full":
-        print(
-            "Summary rows; --full adds all plans, descriptions, attachments and execution targets.",
-            file=stderr,
-        )
+    write_human(response.result or {}, stdout)

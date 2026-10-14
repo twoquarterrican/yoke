@@ -1,14 +1,11 @@
 """Read-only conflict-survey status CLI adapter for direct workflows."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import List
 
-from yoke_contracts.conflict_survey import (
-    DURABLE_RECORDED,
-    DURABLE_UNREADABLE,
-)
 from yoke_cli.commands._helpers import (
     add_json_arg,
     add_session_arg,
@@ -37,29 +34,7 @@ def conflict_survey_status(args: List[str]) -> int:
         return 2
 
     def _human(response, stdout, stderr) -> None:
-        result = response.result or {}
-        durable_state = str(result.get("durable_state") or DURABLE_UNREADABLE)
-        if durable_state != DURABLE_RECORDED:
-            print(f"survey-{durable_state}", file=stdout)
-            return
-        if result.get("clear"):
-            print("survey-clear", file=stdout)
-            return
-        for blocker in result.get("blockers") or []:
-            print(
-                "survey-blocked|"
-                + "|".join(
-                    str(blocker.get(key) or "")
-                    for key in (
-                        "kind",
-                        "owner_public_ref",
-                        "path",
-                        "state",
-                        "detail",
-                    )
-                ),
-                file=stdout,
-            )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="direct_workflow.conflict_survey.status",

@@ -11,9 +11,11 @@ import io
 import sys
 from typing import Any, TextIO
 
-from yoke_cli.transport.receipt_compaction import (
-    compact_receipt,
-    omission_advisory,
+from yoke_cli.transport.human_values import write_human
+from yoke_cli.transport.response_evidence import (
+    HUMAN_LINE_LIMIT,
+    save_response,
+    wrapped_lines,
 )
 from yoke_contracts.api.function_call import FunctionCallResponse
 
@@ -35,6 +37,7 @@ def emit_response(
     json_mode: bool,
     human_writer=None,
     full: bool = False,
+    machine_mode: bool = False,
 ) -> int:
     from yoke_cli.transport.dispatcher import response_to_dict
 
@@ -55,7 +58,53 @@ def emit_response(
             human_writer(display, stdout, stderr)
         else:
             _default_human_writer(display, stdout, stderr)
-    if output_exceeds_limit(
+    if not json_mode and not machine_mode:
+        for warning in response.warnings:
+            message = f"warning: {warning.code} ({warning.step}): {warning.detail}"
+            if message not in stderr.getvalue():
+                print(message, file=stderr)
+        if wrapped_lines(stdout.getvalue() + stderr.getvalue()) > HUMAN_LINE_LIMIT:
+            try:
+                evidence = save_response(
+                    response_to_dict(prepare_human_response(response)),
+                    stdout.getvalue(),
+                    stderr.getvalue(),
+                )
+            except OSError as exc:
+                print(
+                    f"error (response_evidence_unavailable): complete reply could not be saved: {exc}. Restore writable temporary storage and inspect the result through its read command; do not repeat a mutation.",
+                    file=sys.stderr,
+                )
+                return 1
+            # These are the explicit workflow delivery contracts, not guesses
+            # about which arbitrary result keys might be redundant.
+            essential = io.StringIO()
+            result = response.result or {}
+            if result.get("execution_instructions"):
+                from yoke_cli.commands.adapters.workflow_execution_instructions import (
+                    render_execution_instruction_block,
+                )
+
+                essential.write(
+                    render_execution_instruction_block(result["execution_instructions"])
+                )
+            if result.get("handoff"):
+                write_human({"handoff": result["handoff"]}, essential)
+            essential.write(stderr.getvalue())
+            summary = (
+                f"{response.function}: {'completed' if response.success else 'refused'}. Complete reply saved: {evidence}\n"
+                f"Read {evidence} for all result fields, instructions, stdout and stderr. The command already ran.\n"
+            )
+            if wrapped_lines(summary + essential.getvalue()) > HUMAN_LINE_LIMIT:
+                print(
+                    f"error (essential_output_limit_exceeded): recovery or warnings exceed the display limit. Read the complete reply at {evidence}; resolve its named cause before continuing.",
+                    file=sys.stderr,
+                )
+                return 1
+            sys.stdout.write(summary)
+            sys.stderr.write(essential.getvalue())
+            return 0 if response.success else 1
+    if (json_mode or machine_mode) and output_exceeds_limit(
         response.function, stdout.getvalue(), stderr.getvalue(), full=full
     ):
         refusal = response.model_copy(
@@ -81,18 +130,10 @@ def _default_human_writer(
     response: FunctionCallResponse, stdout: TextIO, stderr: TextIO
 ) -> None:
     if response.success:
-        display, condensed = compact_receipt(
-            response.function, response.model_dump(mode="python")["result"]
-        )
-        print(json.dumps(display, sort_keys=True), file=stdout)
-        if condensed:
-            print(omission_advisory(condensed), file=stderr)
-        for warning in response.warnings:
-            print(
-                f"warning: {warning.code} ({warning.step}): {warning.detail}",
-                file=stderr,
-            )
+        write_human(response.model_dump(mode="python")["result"], stdout)
         return
+    if response.result:
+        write_human(response.result, stdout)
     if response.error is not None:
         print(f"error ({response.error.code}): {response.error.message}", file=stderr)
         if response.error.recovery_hint:

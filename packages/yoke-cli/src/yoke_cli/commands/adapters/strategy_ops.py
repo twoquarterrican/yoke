@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from yoke_cli.transport.human_values import write_human
 import os
 from pathlib import Path
 from typing import Any, Dict, List
@@ -98,19 +99,16 @@ def strategy_carry_register_new(args: List[str]) -> int:
     parser.add_argument("--result-json", action="store_true")
     add_session_arg(parser)
     add_json_arg(parser)
-    parsed = parse_or_usage_error(
-        parser, args, STRATEGY_CARRY_REGISTER_NEW_USAGE,
-    )
+    parsed = parse_or_usage_error(parser, args, STRATEGY_CARRY_REGISTER_NEW_USAGE)
     if parsed is None:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
         result = response.result or {}
         if parsed.result_json:
-            print(json.dumps(result, sort_keys=True), file=stdout)
+            print(json.dumps(result, default=str), file=stdout)
             return
-        for entry in result.get("new_refs") or result.get("new_ids", []):
-            print(entry, file=stdout)
+        write_human(result, stdout)
 
     return dispatch_and_emit(
         function_id="strategy.carry.register_new",
@@ -118,6 +116,7 @@ def strategy_carry_register_new(args: List[str]) -> int:
         payload=_carry_payload(parsed),
         session_id=parsed.session_id,
         json_mode=parsed.json_mode,
+        machine_mode=parsed.result_json,
         human_writer=_human_writer,
     )
 
@@ -133,9 +132,7 @@ def strategy_carry_candidate_set(args: List[str]) -> int:
     parser.add_argument("--pretty", action="store_true")
     add_session_arg(parser)
     add_json_arg(parser)
-    parsed = parse_or_usage_error(
-        parser, args, STRATEGY_CARRY_CANDIDATE_SET_USAGE,
-    )
+    parsed = parse_or_usage_error(parser, args, STRATEGY_CARRY_CANDIDATE_SET_USAGE)
     if parsed is None:
         return 2
     payload = _carry_payload(parsed)
@@ -143,10 +140,7 @@ def strategy_carry_candidate_set(args: List[str]) -> int:
 
     def _human_writer(response, stdout, stderr) -> None:
         data = (response.result or {}).get("candidate_set", {})
-        print(
-            json.dumps(data, indent=2 if parsed.pretty else None, sort_keys=True),
-            file=stdout,
-        )
+        write_human(data, stdout)
 
     return dispatch_and_emit(
         function_id="strategy.carry.candidate_set",
@@ -238,7 +232,9 @@ def strategy_carry_mark(args: List[str]) -> int:
 
 
 def _checkpoint_args(
-    prog: str, usage: str, args: List[str],
+    prog: str,
+    usage: str,
+    args: List[str],
 ) -> argparse.Namespace | None:
     parser = argparse.ArgumentParser(prog=prog, description=usage)
     _add_project_required(parser)
@@ -258,12 +254,7 @@ def strategy_checkpoint_record(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        print(
-            f"Recorded {result.get('kind')} checkpoint for project "
-            f"{result.get('project')}",
-            file=stdout,
-        )
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="strategy.checkpoint.record",
@@ -285,9 +276,7 @@ def strategy_checkpoint_latest(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        latest = (response.result or {}).get("latest")
-        if latest:
-            print(latest, file=stdout)
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="strategy.checkpoint.latest",
@@ -314,11 +303,17 @@ def strategy_master_plan_check(args: List[str]) -> int:
     add_session_arg(parser)
     add_json_arg(parser)
     parsed = parse_or_usage_error(
-        parser, args, STRATEGY_MASTER_PLAN_CHECK_USAGE,
+        parser,
+        args,
+        STRATEGY_MASTER_PLAN_CHECK_USAGE,
     )
     if parsed is None:
         return 2
-    plan_path = Path(parsed.plan_path).resolve() if parsed.plan_path else _default_master_plan_path()
+    plan_path = (
+        Path(parsed.plan_path).resolve()
+        if parsed.plan_path
+        else _default_master_plan_path()
+    )
     if not plan_path.exists():
         return usage_error(f"MASTER-PLAN.md not found at {plan_path}")
     markdown = plan_path.read_text(encoding="utf-8")
@@ -336,7 +331,9 @@ def strategy_master_plan_check(args: List[str]) -> int:
         stdout.write(str((human_response.result or {}).get("markdown_report", "")))
 
     rc = emit_response(
-        response, json_mode=parsed.json_mode, human_writer=_human_writer,
+        response,
+        json_mode=parsed.json_mode,
+        human_writer=_human_writer,
     )
     if (
         rc == 0

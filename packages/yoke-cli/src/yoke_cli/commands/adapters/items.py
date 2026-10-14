@@ -10,7 +10,7 @@ from yoke_cli.commands.adapters.item_flow_output import (
 )
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_human
 import sys
 from typing import Any, Dict, List
 
@@ -127,12 +127,14 @@ def items_get(args: List[str]) -> int:
             for field in requested_fields:
                 value = fields.get(field)
                 text = render_item_field(value)
+                if len(requested_fields) > 1:
+                    print(f"{field}:", file=stdout)
                 stdout.write(text)
                 if not text.endswith("\n"):
                     stdout.write("\n")
             return None
         human_result = compact_item_result(result, parsed.item)
-        print(json.dumps(human_result, sort_keys=True), file=stdout)
+        write_human(human_result, stdout)
         return None
 
     return dispatch_and_emit(

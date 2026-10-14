@@ -1,9 +1,9 @@
 """CLI adapters for deployment inventory and progress inspection."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
-import json
 from typing import Any, List
 
 from yoke_cli.commands._helpers import (
@@ -52,16 +52,7 @@ def deployment_flows_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        fields = result.get("fields") or []
-        for row in result.get("rows") or []:
-            rendered = dict(row)
-            rendered["stages"] = json.dumps(
-                json.loads(str(row["stages"])),
-                separators=(",", ":"),
-            )
-            print(_pipe(fields, rendered), file=stdout)
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_flows.list",
@@ -91,11 +82,7 @@ def deployment_runs_find_by_item(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        del stderr
-        result = response.result or {}
-        fields = result.get("fields") or []
-        for row in result.get("rows") or []:
-            print(_pipe(fields, row), file=stdout)
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_runs.find_by_item",
@@ -122,7 +109,7 @@ def deployment_runs_stages(args: List[str]) -> int:
     def _human_writer(response, stdout, stderr) -> None:
         del stderr
         for stage in (response.result or {}).get("stages") or []:
-            print(json.dumps(stage, sort_keys=True), file=stdout)
+            write_human(stage, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_runs.stages",

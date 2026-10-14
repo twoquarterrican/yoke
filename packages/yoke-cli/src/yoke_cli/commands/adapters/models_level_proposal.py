@@ -1,6 +1,7 @@
 """``yoke models level-proposal`` — propose level changes from the catalog."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import json
@@ -91,7 +92,7 @@ def _print_levels_only(response: Any, stdout: TextIO, stderr: TextIO) -> None:
         print(error.message if error else "level proposal failed", file=stderr)
         return
     levels = (response.result or {}).get("levels") or []
-    print(json.dumps({"levels": levels}, ensure_ascii=False, indent=2), file=stdout)
+    write_human({"levels": levels}, stdout)
 
 
 def models_level_proposal(args: List[str]) -> int:

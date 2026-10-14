@@ -1,6 +1,7 @@
 """``yoke github merge-queue`` adapters: apply, readiness, hold."""
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 import json
@@ -183,10 +184,7 @@ def github_merge_queue_apply(args: List[str]) -> int:
     def _human_writer(response, stdout, stderr) -> None:
         del stderr
         if response.success:
-            print(
-                json.dumps(response.result or {}, sort_keys=True),
-                file=stdout,
-            )
+            write_human(response.result or {}, stdout)
         return None
 
     return dispatch_and_emit(

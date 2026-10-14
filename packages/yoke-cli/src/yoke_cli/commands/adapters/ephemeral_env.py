@@ -41,12 +41,9 @@ def ephemeral_env_get(args: List[str]) -> int:
 
     def _human_writer(response, stdout, stderr) -> None:
         del stderr
-        import json
+        from yoke_cli.transport.human_values import write_human
 
-        print(
-            json.dumps((response.result or {}).get("environment", {}), sort_keys=True),
-            file=stdout,
-        )
+        write_human((response.result or {}).get("environment", {}), stdout)
 
     return dispatch_and_emit(
         function_id="ephemeral_env.get",

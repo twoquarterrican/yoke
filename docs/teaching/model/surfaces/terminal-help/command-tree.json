@@ -1,0 +1,9 @@
+{
+ "id": "command-tree",
+ "title": "Root and category help list immediate children. Leaf help teaches the command before execution.",
+ "status": "observed",
+ "form": "Do",
+ "verification": "Candidate fixtures in runtime/api/cli/test_cli_help_tree.py cover supported registered spellings, alternate routes, prefixes and dual action/group nodes with subprocess, network and source writes refused. This is candidate proof, not live delivery proof.",
+ "topics": ["basics/model", "reference/commands", "documentation/disclosure/reactive-help"],
+ "plan_refs": ["FIRST-USER.35"]
+}

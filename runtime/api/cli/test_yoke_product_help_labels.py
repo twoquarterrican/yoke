@@ -43,14 +43,9 @@ def test_product_wheel_help_labels_non_product_surfaces(
     env = _product_env(machine_home=machine_home, venv_dir=venv_dir)
 
     top_help = _assert_command(yoke, project, env, ["--help"], 0)
-    assert "yoke dev setup [source-dev/admin]" in top_help.stdout
-    assert "yoke qa browser screenshot [client-local]" in top_help.stdout
-    assert "yoke qa browser step [client-local]" in top_help.stdout
-    assert "yoke qa browser run" not in top_help.stdout
-    assert not any(
-        line.startswith("    yoke status [")
-        for line in top_help.stdout.splitlines()
-    )
+    assert "yoke dev" in top_help.stdout
+    assert "yoke qa" in top_help.stdout
+    assert "yoke qa browser screenshot" not in top_help.stdout
 
     for args, expected in (
         (["dev", "--help"], "yoke dev setup [source-dev/admin]"),
@@ -60,13 +55,13 @@ def test_product_wheel_help_labels_non_product_surfaces(
         (["resync", "--help"], "source-dev/admin command surface"),
         (["project", "--help"], "yoke project install"),
         (["projects", "--help"], "yoke projects create"),
-        (["strategy", "--help"], "yoke strategy doc list"),
+        (["strategy", "doc", "--help"], "yoke strategy doc list"),
         (
             ["qa", "browser", "--help"],
             "yoke qa browser screenshot [client-local]",
         ),
         (
-            ["github-actions", "--help"],
+            ["github-actions", "secret", "--help"],
             "yoke github-actions secret set [source-dev/admin]",
         ),
     ):

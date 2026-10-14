@@ -54,6 +54,9 @@ def env_list(args: List[str]) -> int:
 
         print(json.dumps({"active_env": active, "rows": rows}, sort_keys=True))
     else:
+        print("env | active | transport | prod | api_url")
+        if not rows:
+            print("No configured connections.")
         for row in rows:
             print(
                 f"{row['env']}|{str(row['active']).lower()}|"

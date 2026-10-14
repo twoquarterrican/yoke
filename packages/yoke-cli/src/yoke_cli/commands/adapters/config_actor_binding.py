@@ -10,7 +10,7 @@ its own identity.
 from __future__ import annotations
 
 import argparse
-import json
+from yoke_cli.transport.human_values import write_local
 from importlib import import_module
 from typing import Dict, List
 
@@ -104,7 +104,7 @@ def _run(operation) -> int:
     except (writer.MachineConfigWriteError, machine_config.MachineConfigError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(json.dumps(result, indent=2))
+    write_local(result, sys.stdout)
     return 0
 
 

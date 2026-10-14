@@ -6,6 +6,7 @@ release that delivered it.
 """
 
 from __future__ import annotations
+from yoke_cli.transport.human_values import write_human
 
 import argparse
 from typing import List
@@ -58,28 +59,7 @@ def item_landings_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, _stderr) -> None:
-        rows = (response.result or {}).get("rows") or []
-        if not rows:
-            print("no landing recorded", file=stdout)
-            return
-        for landing in rows:
-            pr_number = str(landing.get("pr_number") or "").strip()
-            origin = str(landing.get("origin") or "").strip()
-            print(
-                "|".join(
-                    [
-                        str(landing.get("landed_at") or ""),
-                        str(landing.get("route") or ""),
-                        str(landing.get("merge_sha") or "")[:_SHA_WIDTH],
-                        str(landing.get("candidate_sha") or "")[:_SHA_WIDTH],
-                        f"#{pr_number}" if pr_number else "",
-                        str(landing.get("target_branch") or ""),
-                        origin,
-                        _delivery_label(landing),
-                    ]
-                ),
-                file=stdout,
-            )
+        write_human(response.result or {}, stdout)
 
     return dispatch_and_emit(
         function_id="item_landings.list",
