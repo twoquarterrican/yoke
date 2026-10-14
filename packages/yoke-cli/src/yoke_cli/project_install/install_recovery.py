@@ -25,7 +25,7 @@ def atomic_text(path: Path, content: str) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         descriptor, name = tempfile.mkstemp(prefix="." + path.name, dir=path.parent)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
             handle.write(content)
             handle.flush()
             os.fsync(handle.fileno())
