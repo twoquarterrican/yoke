@@ -12,8 +12,8 @@ for it. The bound answers travel under ``bound_projects`` so one record still
 says everything one release carried.
 
 Succeeded completion and composition freeze always record the answer. A
-failed or cancelled run, and a terminal run a read finds unrecorded, record
-it only when it is permanent — derived, or unknown for a reason that is a
+failed or cancelled transition derives nothing, because it holds the run row;
+a terminal run a read finds unrecorded records it only when it is permanent — derived, or unknown for a reason that is a
 fact about the run's own record — so a transient source failure is derived
 again later rather than kept. ``deployment_runs.carried_work.repair``
 replaces a recorded answer whose comparison could not run.

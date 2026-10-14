@@ -150,9 +150,10 @@ def terminalize_run_on(
     from yoke_core.domain.deployment_qa_stage_wake_withdraw import (
         withdraw_deployment_qa_wait_wakes,
     )
-    from yoke_core.domain.deployment_run_carried_work import record_carried_work
 
-    record_carried_work(conn, run_id, permanent_only=True)
+    # No carried-work derivation here: it walks the repository host, and this
+    # transaction holds the run row. A run that froze its composition already
+    # recorded the answer; a read derives one for a run that never did.
     from yoke_core.domain.qa_deployment_run_settlement import settle_unsuccessful_run
 
     settle_unsuccessful_run(

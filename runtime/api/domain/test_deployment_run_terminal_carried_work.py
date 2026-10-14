@@ -1,4 +1,8 @@
-"""Terminal runs record carried work once, so no read derives it again."""
+"""Terminal runs record carried work once, so no read derives it again.
+
+Failed and cancelled transitions hold the run row, so they derive nothing;
+the first read of such a run derives and records its answer.
+"""
 
 from __future__ import annotations
 
@@ -93,8 +97,15 @@ def _stored(conn: Any, run_id: str) -> dict[str, Any] | None:
     return parse_carried_work(row["carried_work"])
 
 
+def _derived_by_first_read(conn: Any, opened: dict[str, Any], run_id: str, status: str):
+    listed = list_deployment_runs(project=None, status=status, limit=10)
+    assert opened["opens"] == 1
+    assert listed[0]["carried_work"]["commits"] == [opened["head"]]
+    assert _stored(conn, run_id) == listed[0]["carried_work"]
+
+
 @pytest.mark.parametrize("final_status", ["failed", "cancelled"])
-def test_unsuccessful_completion_records_carried_work(
+def test_unsuccessful_completion_reads_no_source_under_the_row_lock(
     test_db: Any, opened: dict[str, Any], final_status: str
 ) -> None:
     _run(
@@ -105,27 +116,28 @@ def test_unsuccessful_completion_records_carried_work(
         deployment_runs.cmd_update("run-terminal-001", "status", final_status) is None
     )
 
-    carried = _stored(test_db, "run-terminal-001")
-    assert carried is not None
-    assert carried["commits"] == [opened["head"]]
+    assert opened["opens"] == 0
+    assert _stored(test_db, "run-terminal-001") is None
+    _derived_by_first_read(test_db, opened, "run-terminal-001", final_status)
 
 
-def test_operator_terminalization_records_carried_work(
-    test_db: Any, opened: dict[str, Any]
+@pytest.mark.parametrize("disposition", ["failed", "cancelled"])
+def test_operator_terminalization_reads_no_source_under_the_row_lock(
+    test_db: Any, opened: dict[str, Any], disposition: str
 ) -> None:
     _run(test_db, "run-terminal-002", opened["head"], "created", "2026-08-30T00:02:00Z")
 
     terminalize_run(
         "run-terminal-002",
-        disposition="cancelled",
+        disposition=disposition,
         reason="superseded",
         actor_id=None,
         session_id="",
     )
 
-    carried = _stored(test_db, "run-terminal-002")
-    assert carried is not None
-    assert carried["commits"] == [opened["head"]]
+    assert opened["opens"] == 0
+    assert _stored(test_db, "run-terminal-002") is None
+    _derived_by_first_read(test_db, opened, "run-terminal-002", disposition)
 
 
 def test_unsaved_terminal_run_is_derived_once_then_read_from_its_record(
