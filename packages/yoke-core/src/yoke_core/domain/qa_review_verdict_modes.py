@@ -59,19 +59,11 @@ def stage_review_verdicts(conn: Any, subject: Any) -> tuple[str, ...]:
     run_id = str(subject.get("deployment_run_id") or "").strip()
     if not stage_name or not run_id:
         return ALL_REVIEW_VERDICTS
-    from yoke_core.domain.deployment_qa_stage_contract import (
-        deployment_qa_stage_subject,
-    )
 
-    member = subject.get("deployment_member_item_id")
     try:
-        stage_subject = deployment_qa_stage_subject(
-            conn,
-            run_id=run_id,
-            stage_name=stage_name,
-            member_item_id=int(member) if member is not None else None,
-            require_active=False,
-        )
+        from yoke_core.domain.deployment_qa_shared_plans import execution_subject
+
+        stage_subject = execution_subject(conn, subject, require_active=False)
     except (ValueError, KeyError, TypeError):
         return ALL_REVIEW_VERDICTS
     return allowed_review_verdicts(stage_subject["stage"]["verdict"].get("mode"))

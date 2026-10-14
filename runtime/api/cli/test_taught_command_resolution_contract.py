@@ -59,7 +59,7 @@ def test_every_taught_yoke_recipe_resolves_and_parses() -> None:
             )
     for relative, count in (
         ("docs/public/reference/exploratory-qa.md", 3),
-        ("docs/public/reference/qa-platform/case-attachment.md", 1),
+        ("docs/public/reference/qa-platform/deployment-plan-execution.md", 1),
     ):
         text = (REPO_ROOT / relative).read_text()
         assert text.count("<!-- qa:test-machine-capability -->") == count

@@ -48,6 +48,10 @@ from yoke_core.domain.workflow_item_binding_lock import (
 )
 
 
+from yoke_core.domain.deployment_qa_shared_execution import route_shared_plan_execution
+
+
+@route_shared_plan_execution
 @rollback_workflow_binding_write_errors
 def begin_plan_execution(
     conn: Any,
@@ -61,6 +65,7 @@ def begin_plan_execution(
     continue_mission: bool = False,
     actor_id: str | None,
     session_id: str,
+    _deployment_subject: dict | None = None,
 ) -> dict[str, Any]:
     """Create or resume the one live execution for a QA subject.
 
@@ -100,7 +105,7 @@ def begin_plan_execution(
             deployment_qa_stage_subject,
         )
 
-        subject = deployment_qa_stage_subject(
+        subject = _deployment_subject or deployment_qa_stage_subject(
             conn,
             run_id=str(deployment_run_id),
             stage_name=deployment_stage,

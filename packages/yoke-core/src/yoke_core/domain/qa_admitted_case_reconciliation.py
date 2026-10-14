@@ -88,15 +88,22 @@ def _live_execution_holds(conn: Any, row: Any) -> bool:
     if not _table_exists(conn, "qa_plan_executions"):
         return False
     member = row["deployment_member_item_id"]
-    return (
-        live_plan_execution_id(
-            conn,
-            deployment_run_id=str(row["deployment_run_id"]),
-            deployment_stage=str(row["deployment_stage"] or ""),
-            deployment_member_item_id=int(member) if member is not None else None,
-        )
-        is not None
+    execution_id = live_plan_execution_id(
+        conn,
+        deployment_run_id=str(row["deployment_run_id"]),
+        deployment_stage=str(row["deployment_stage"] or ""),
+        deployment_member_item_id=int(member) if member is not None else None,
     )
+    if execution_id is None:
+        return False
+    if member is not None:
+        return True
+    execution = query_one(
+        conn,
+        f"SELECT execution_target_digest FROM qa_plan_executions WHERE id={marker(conn)}",
+        (execution_id,),
+    )
+    return execution["execution_target_digest"] == row["execution_target_digest"]
 
 
 def admitted_copies_in_flight(
@@ -125,7 +132,7 @@ def admitted_copies_in_flight(
         )
         identity = (
             f"({identity}) OR ({plan_identity} "
-            f"AND q.deployment_member_item_id={placeholder} "
+            f"AND (q.deployment_member_item_id={placeholder} OR q.deployment_member_item_id IS NULL) "
             f"AND q.host_baseline IS NOT DISTINCT FROM {placeholder} "
             f"AND (CAST({placeholder} AS TEXT) IS NULL OR q.target_env={placeholder}))"
         )
@@ -140,7 +147,7 @@ def admitted_copies_in_flight(
     rows = query_rows(
         conn,
         "SELECT q.id,q.deployment_run_id,q.deployment_stage,"
-        "q.deployment_member_item_id FROM qa_requirements q "
+        "q.deployment_member_item_id,q.execution_target_json,q.execution_target_digest FROM qa_requirements q "
         "JOIN deployment_runs dr ON dr.id=q.deployment_run_id "
         f"WHERE ({identity}) "
         f"AND NOT {settled_obligation_sql(conn, 'q')} "
@@ -153,6 +160,13 @@ def admitted_copies_in_flight(
     )
     copies: list[AdmittedCopy] = []
     for row in rows:
+        if row["deployment_member_item_id"] is None:
+            from yoke_core.domain.deployment_qa_shared_copy_reads import (
+                member_owns_shared_copy,
+            )
+
+            if not member_owns_shared_copy(conn, row, int(source["item_id"])):
+                continue
         copy_id = int(row["id"])
         verdict = determinate_verdict(conn, copy_id)
         if verdict:

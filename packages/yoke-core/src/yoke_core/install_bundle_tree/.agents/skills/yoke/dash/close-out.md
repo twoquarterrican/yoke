@@ -64,8 +64,9 @@ replacement of failed cases with --replaces CASE_KEY=FAILED_REQUIREMENT_ID,
 or --replaces-requirement FAILED_ID to isolate that case's host baseline.
 An unrelated replacement adds duplicate obligations.
 The long step uses qa-plan; qa-case wraps only a requirement and refuses these
-subject flags. An item stage credits exact stage/member binding, never a
-run-wide pass. Requirement-case execution credits its stored binding and does
+subject flags. An item stage credits its exact private-member cases and attached
+shared-plan groups. Matching plan/source/target groups execute once and credit
+every attaching member; an unrelated run-wide pass cannot substitute. Requirement-case execution credits its stored binding and does
 not substitute for stage execution.
 
 Exit12 awaiting_agent_review/review_status=pending is capture only, no pass.

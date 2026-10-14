@@ -31,6 +31,8 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from yoke_core.domain.qa_execution_environment_target import target_digest
+from yoke_core.domain.deployment_qa_shared_corrections import route_shared_refresh
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.db_helpers import instant_parameter, utc_now, query_rows
 from yoke_core.domain.qa_deployment_case_correction_window import (
@@ -98,7 +100,7 @@ def _pinned_target(rows: list[dict[str, Any]], *, subject: str) -> dict[str, Any
     if len(digests) != 1 or not next(iter(digests)):
         raise QaPlanError(
             f"{subject} has ambiguous materialized target history "
-            f"({len(digests)} distinct targets); resolve it against the active "
+            f"({len(digests)} distinct targets); select an attaching --member or resolve it against the active "
             "stage receipt before rematerializing"
         )
     raw = rows[0]["execution_target_json"]
@@ -172,12 +174,14 @@ def _insert_case(
             plan_id=int(plan["id"]),
             case_key=str(case["case_key"]),
             baseline=baseline,
+            execution_target_digest=target_digest(execution_target),
         )
     if inserted is None:
         raise QaPlanError(f"{subject} could not materialize case {case['case_key']!r}")
     return int(inserted)
 
 
+@route_shared_refresh
 def rematerialize_for_deployment_stage(
     conn: Any,
     *,
@@ -186,6 +190,7 @@ def rematerialize_for_deployment_stage(
     deployment_member_item_id: int | None = None,
     plan: str | int | None = None,
     commit: bool = True,
+    _execution_target_digest: str | None = None,
 ) -> dict[str, Any]:
     """Refresh this subject's plan cases from their current plan definitions."""
     subject = (
@@ -198,6 +203,12 @@ def rematerialize_for_deployment_stage(
         deployment_stage=deployment_stage,
         deployment_member_item_id=deployment_member_item_id,
     )
+    if _execution_target_digest is not None:
+        rows = [
+            row
+            for row in rows
+            if row["execution_target_digest"] == _execution_target_digest
+        ]
     if not rows:
         raise QaPlanError(
             f"{subject} has no materialized plan cases to refresh; materialize "

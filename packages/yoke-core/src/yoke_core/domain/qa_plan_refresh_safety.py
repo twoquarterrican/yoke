@@ -39,7 +39,7 @@ LIVE_EXECUTION_MESSAGE = (
 
 #: Subject columns that decide which refresh invocation reaches a row.
 _REFRESH_SUBJECT_SQL = (
-    "SELECT item_id,deployment_run_id,deployment_stage,"
+    "SELECT id,execution_target_json,item_id,deployment_run_id,deployment_stage,"
     "deployment_member_item_id,plan_id,workflow_transition_id "
     "FROM qa_requirements WHERE id="
 )
@@ -56,9 +56,25 @@ def refresh_invocation(conn: Any, row: Any) -> str:
 
     if row["deployment_run_id"]:
         member = row["deployment_member_item_id"]
-        member_arg = (
-            f" --member {render_item_ref(conn, int(member))}" if member else ""
-        )
+        if member is None and "execution_target_json" in row.keys():
+            import json
+
+            target = row["execution_target_json"]
+            target = (
+                target if isinstance(target, dict) else json.loads(str(target or "{}"))
+            )
+            if (target.get("deployment") or {}).get("shared_plan"):
+                from yoke_core.domain.deployment_qa_shared_plans import (
+                    requirement_subject,
+                    group_members,
+                )
+
+                group = requirement_subject(conn, int(row["id"]), require_active=False)
+                members = group_members(conn, group, target)
+                if not members:
+                    return ""
+                member = members[0]
+        member_arg = f" --member {render_item_ref(conn, int(member))}" if member else ""
         return (
             "yoke qa plan rematerialize --deployment-run-id "
             f"{row['deployment_run_id']} --stage {row['deployment_stage']}"
@@ -168,9 +184,7 @@ def require_no_live_execution(
     )
 
 
-def require_reachable_admitted_copies(
-    conn: Any, requirement_ids: list[int]
-) -> None:
+def require_reachable_admitted_copies(conn: Any, requirement_ids: list[int]) -> None:
     """Refuse a refresh that would strand a copy already frozen onto a run.
 
     A refresh rewrites the executable body whole, so every admitted copy of a

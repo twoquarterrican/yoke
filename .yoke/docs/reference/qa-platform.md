@@ -124,7 +124,9 @@ requires every blocking task-verification and parent requirement satisfied.
 ### Deployment Run Requirements
 
 Name the pinned QA stage and member for item scope; stages credit only their
-own requirements and refuse unscoped execution when a stage is pinned:
+own private cases and attached plan/source/target groups. Matching attachments
+share one execution and verdict across their members; other plans and targets
+remain separate. Unscoped execution is refused when a stage is pinned:
 
 ```text
 yoke qa plan run --deployment-run-id {RUN_ID} --stage {STAGE} --member PREFIX-N --plan {PLAN} --project {PROJECT}

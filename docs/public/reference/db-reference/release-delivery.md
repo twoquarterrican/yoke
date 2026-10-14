@@ -137,7 +137,7 @@ owed instead of failing.
 
 Member settlement and the terminal done gate also read blocking `post_deploy` requirements on the run.
 Legacy schema-1 runs credit their shared run-wide requirements without source keys;
-scoped runs keep exact member binding. Failing or unanswered requirements block;
+scoped runs keep exact private-member or attached shared-plan binding. Failing or unanswered requirements block;
 supersession transfers the obligation to the successor requirement.
 
 Owners: `yoke_core.engines.done_transition_run_qa_gates` (the guard),

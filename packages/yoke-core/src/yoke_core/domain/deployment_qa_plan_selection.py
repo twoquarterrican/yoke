@@ -23,6 +23,7 @@ def selected_plans(
     target: Mapping[str, Any],
     admitted: list[dict[str, Any]],
     allow_empty: bool = False,
+    lock_plans: bool = True,
     replacement_keys: set[str] | None = None,
     replacement_scopes: dict[str, list[dict]] | None = None,
 ) -> list[dict[str, Any]]:
@@ -30,7 +31,9 @@ def selected_plans(
         QaCasesNotSelectedError,
     )
 
-    frozen = frozen_stage_plans(conn, subject, target=target, admitted=admitted)
+    frozen = frozen_stage_plans(
+        conn, subject, target=target, admitted=admitted, lock_plans=lock_plans
+    )
     named = agent_plan is not None and stage_names_cases(
         conn, subject, frozen_plans=frozen, admitted=admitted
     )
@@ -48,7 +51,9 @@ def selected_plans(
                 f"agent-selected QA plan {agent_plan!r} is not active in this project"
             )
         agent_plan_id = int(row["id"] if hasattr(row, "keys") else row[0])
-        snapshot = _plan_snapshot(conn, int(agent_plan_id), project_id=plan_project_id)
+        snapshot = _plan_snapshot(
+            conn, int(agent_plan_id), project_id=plan_project_id, lock_plan=lock_plans
+        )
         if named:
             require_correction_only_plan(snapshot, replacement_keys or set())
         if replacement_scopes:

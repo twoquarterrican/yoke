@@ -186,8 +186,8 @@ whatever its runner already resolves, with no execution target recorded.
 
 A deployment run's QA stages declare their own scope. Acceptance reads
 `deployment_stage = <name>` for every one of them, and an item-scoped stage
-reads its member item too, so materializing a plan run-wide — no stage, no
-member — writes rows no stage reads: the owner sees a recorded pass and an
+resolves the member's private cases and attached shared-plan groups. Materializing
+a plan without a stage writes rows no stage reads: the owner sees a recorded pass and an
 unchanged stage that goes on waiting. A run pinning **any** QA stage, of
 either scope, refuses the run-wide form and names the binding invocation; a
 run whose flow pins no QA stage keeps it:
@@ -206,6 +206,9 @@ stage credits.
 `yoke qa plan materialize` takes the same `--stage` / `--member` pair when
 only the requirement rows are wanted. A run-scoped stage takes `--stage`
 alone; `--member` without `--stage` is refused.
+
+Matching member attachments share plan/source/target evidence; see
+[deployment plan execution](deployment-plan-execution.md) for credit and recovery.
 
 Stage materialization stamps the run's **own** observed target — resolved
 from the receipt its deploying stage wrote — onto every case it creates. A
@@ -228,7 +231,7 @@ as `deployment_qa_release_pin_missing` (no pin at that commit),
 it), or `deployment_qa_release_unpublished` (absent from the installer origin).
 
 That snapshot is frozen at first materialization for the run, stage, and
-member **while the producer receipt is unchanged**. Later target resolution
+private member or shared plan group **while the producer receipt is unchanged**. Later target resolution
 reuses it, so a live edit to `environments.url` or environment settings
 cannot move `execution_target_digest` and drop a recorded pass out of
 scope. A newer ready producer attempt is a new identity: the stage
@@ -273,78 +276,5 @@ the same stage/member plan to check the pinned candidate.
 `--allow-tree-mismatch` does not waive this CI refusal.
 
 
-For a deployment member whose cases require several Test Machines, the scoped
-command automatically executes one immutable roster per machine. Each roster
-holds its own lease and participates in that host's FIFO. It keeps the same
-run, stage, member and frozen target, including cases on different plans.
-A waiting host or independent review stops the command; after the wait or
-review settles, rerun the same scoped command to continue the remaining hosts.
-Completed scoped cases with passing evidence are retained. The member is
-accepted only when every required case passes. Omit --machine for this
-multi-machine form: a single host pin cannot satisfy conflicting constraints.
-
-For one case that needs several hosts simultaneously, declare its driving host
-as `method_config.machine` and every required host in `method_config.machines`:
-`{"machine":"macos-example","machines":["linux-example","macos-example"]}`. Names must be
-registered, unique, and include the driving host. Run this case through
-`yoke qa plan run`; direct case execution refuses it. The
-runner acquires every host through its FIFO in sorted name order, releases
-partial acquisitions on contention, and retains the full set through case
-execution and mission review. Completion or abort releases the set; [completed captures remain reviewable](requirement-state-model.md). Cases
-with different driving hosts or declared sets use separate execution rosters.
-
-## Shared host turns and starting state
-
-An occupied Test Machine is a wait, never a FAIL. Plan acquisition keeps its
-cursor open and queues the host on the existing durable execution. FIFO order
-starts at the first host-wait request and survives retries. Lease release
-reserves the next live waiter's turn and sends its owner the exact resume
-command; stopped owners use the same harness-neutral wake route as other
-control-plane notices. Ended owners leave the queue. A reserved sticky lease
-still uses the documented human-only recovery if its owner dies.
-
-If a walker discovers a second required host is occupied, return
-`WALK_STATUS: HOST_WAIT` and its registered name plus holder evidence. Submit
-through the current bundle's `yoke qa plan review-submit ... --stdin`:
-
-```json
-{"host_wait":{"machine":"linux-example","rationale":"lease holder and resume point"}}
-```
-
-Submit this object alone. It records no verdict or human review request,
-retains the old capture and bundle as history, and queues a new capture against
-the identical immutable target. The same scoped plan-run command resumes it.
-Use a verdict only after the required host was available and the walk ran.
-
-Exploratory mission `method_config` can declare an apt package fixture:
-
-```json
-{
-  "executor":"informed_subagent",
-  "machine":"linux-example",
-  "host_starting_state":{"os_packages":{
-    "absent":["python3-venv","python3.12-venv"],"present":[]
-  }}
-}
-```
-
-`method_config.machine` selects that registered host even when this direct
-requirement has only the generic <!-- qa:test-machine-capability -->`test-machine` capability. Admitted deployment
-copies retain the pin; omitting `--machine` does not permit another host, and a
-conflicting run pin is refused before a lease is acquired.
-
-Only an explicitly declared host baseline restores the golden home. A mission
-declared `as_is` keeps the home it finds and, absent `host_starting_state`, leaves
-packages and their journal untouched. A named baseline or explicit fixture
-undoes only the preceding mission's journal-attributed package delta, applies the declaration and
-records proof before walking. Linux and WSL fixtures use apt; a declaration on another OS
-refuses with the supported host named. Package changes made through
-`yoke qa mission host-command` are journaled, including transitive installs and
-failed commands. The owner-only journal lives beside the golden archive,
-outside the reset home. No arbitrary package cleanup command is accepted.
-Independent host changes outside the journal's changed and declared packages,
-including unattended security upgrades, are preserved and become the new base
-inventory after restore. Missing attribution refuses before package mutation.
-Restoring missing or changed packages requires the recorded versions to remain
-available; a failed restore names apt access and journal reconciliation and
-blocks execution. Continuations preserve the existing walk and journal.
+See [deployment plan execution](deployment-plan-execution.md) for shared plan
+credit, machine partitions, host turns and starting-state recovery.

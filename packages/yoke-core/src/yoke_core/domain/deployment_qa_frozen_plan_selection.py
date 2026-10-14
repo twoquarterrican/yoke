@@ -120,17 +120,24 @@ def frozen_stage_plans(
     *,
     target: Mapping[str, Any],
     admitted: list[dict[str, Any]],
+    lock_plans: bool = True,
 ) -> list[dict[str, Any]]:
     """Keep plan-owned obligations on their plan's ordered snapshot path."""
     frozen = [*_flow_plan(subject), *_member_plans(conn, subject, target=target)]
     if not frozen:
-        frozen = attached_member_plans(conn, subject, target=target)
+        frozen = attached_member_plans(
+            conn, subject, target=target, lock_plans=lock_plans
+        )
     selected_ids = {int(snapshot["plan"]["id"]) for snapshot in frozen}
     project_id = int(subject.get("member_project_id") or subject["project_id"])
     for requirement in admitted:
         plan_id = requirement.get("plan_id")
         if plan_id is None or int(plan_id) in selected_ids:
             continue
-        frozen.append(_plan_snapshot(conn, int(plan_id), project_id=project_id))
+        frozen.append(
+            _plan_snapshot(
+                conn, int(plan_id), project_id=project_id, lock_plan=lock_plans
+            )
+        )
         selected_ids.add(int(plan_id))
     return frozen

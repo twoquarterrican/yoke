@@ -149,7 +149,19 @@ def notify_deployment_qa_verdict(
     member_item_id = subject["member_item_id"]
     from yoke_core.domain.deployment_qa_stage_settlement import settle_subject
 
-    settle_subject(conn, run_id=run_id, stage=stage_name, member=member_item_id)
+    from yoke_core.domain.deployment_qa_shared_plans import requirement_subject
+    from yoke_core.domain.deployment_qa_shared_acceptance import settle_shared_group
+    from yoke_core.domain.deployment_qa_execution_target import (
+        deployment_qa_execution_target,
+    )
+
+    resolved = requirement_subject(conn, requirement_id, require_active=False)
+    if resolved.get("shared_plan"):
+        settle_shared_group(
+            conn, resolved, deployment_qa_execution_target(conn, resolved)
+        )
+    else:
+        settle_subject(conn, run_id=run_id, stage=stage_name, member=member_item_id)
     key = verdict_idempotency_key(requirement_id, action)
     if member_item_id is None:
         return push_run_scoped_notice(
@@ -159,7 +171,11 @@ def notify_deployment_qa_verdict(
             body_for_route=lambda route: verdict_message(
                 run_id=run_id,
                 stage_name=stage_name,
-                subject="the whole release batch",
+                subject=(
+                    f"all attaching members of shared plan {resolved['shared_plan']['plan_id']}"
+                    if resolved.get("shared_plan")
+                    else "the whole release batch"
+                ),
                 action=action,
                 note=note,
                 route=route,

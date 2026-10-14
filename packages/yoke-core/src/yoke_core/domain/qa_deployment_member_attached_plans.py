@@ -1,24 +1,9 @@
-"""The member's own post-deploy QA plan, resolved for a deployment stage.
+"""Resolve member post-deploy attachments and credit their delivered plan groups.
 
-An item-scoped QA stage tests one member's behaviour, so the plan that
-belongs to that member is the one it should run. Until now the stage could
-only reach a plan two ways: pinned in the flow, or named by a ``--plan``
-flag at the wake. Neither is the member's own, and the flag is chosen under
-time pressure against an already-deployed candidate -- which is how members
-ended up borrowing another item's criteria, or authoring a probe whose very
-first execution was against production.
-
-An item attaches its plan the ordinary way, through
-``qa_plan_item_attachments`` with the ``post_deploy`` phase, while its cases
-are still editable. This resolves that attachment at stage time so the wake
-needs no plan choice at all.
-
-Resolution is live rather than frozen on purpose, and sits at exactly the
-authority the ``--plan`` flag already had: it selects *which* plan runs,
-while the plan's content is snapshotted onto the requirement rows as it is
-materialized, against the member project's pinned deployed target. A member snapshot that
-already froze plans at admission still wins -- this only answers when
-nothing else selected cases.
+Attachments select a member's obligations. Stage materialization groups each
+attached plan by source revision and observed target, and the shared case
+verdict answers every attaching member. A private source requirement does not
+need a duplicate item-bound execution after its delivery group passed.
 """
 
 from __future__ import annotations
@@ -149,15 +134,31 @@ def delivery_answered_plan_ids(
     placeholders = ", ".join(["%s"] * len(wanted))
     rows = query_rows(
         conn,
-        f"SELECT id,plan_id,plan_case_key,host_baseline,target_env,waived_at,superseded_by_requirement_id,{requirement_retracted_at_select(conn)} "
+        f"SELECT id,plan_id,plan_case_key,host_baseline,target_env,waived_at,superseded_by_requirement_id,{requirement_retracted_at_select(conn)},deployment_run_id,deployment_stage,deployment_member_item_id,execution_target_digest,execution_target_json "
         "FROM qa_requirements "
-        "WHERE deployment_member_item_id=%s AND deployment_run_id IS NOT NULL "
+        "WHERE (deployment_member_item_id=%s OR (deployment_member_item_id IS NULL "
+        "AND EXISTS (SELECT 1 FROM deployment_run_items m WHERE m.run_id=deployment_run_id AND m.item_id=%s))) "
+        "AND deployment_run_id IS NOT NULL "
         f"AND plan_id IN ({placeholders})",
-        (int(member_item_id), *wanted),
+        (int(member_item_id), int(member_item_id), *wanted),
     )
     answered: dict[int, bool] = {}
     targeted: dict[tuple, bool] = {}
+    shared_digests = {}
     for row in rows:
+        if row["deployment_member_item_id"] is None:
+            from yoke_core.domain.deployment_qa_shared_plans import (
+                member_group_digests,
+                shared_target_identity,
+            )
+
+            if not shared_target_identity(row["execution_target_json"]):
+                continue
+            key = (row["deployment_run_id"], row["deployment_stage"])
+            if key not in shared_digests:
+                shared_digests[key] = member_group_digests(conn, *key, member_item_id)
+            if row["execution_target_digest"] not in shared_digests[key]:
+                continue
         plan_id = int(row["plan_id"])
         settled = obligation_settled(row) or _latest_verdict(conn, row["id"]) == "pass"
         answered[plan_id] = answered.get(plan_id, True) and settled
@@ -218,6 +219,7 @@ def attached_member_plans(
     subject: Mapping[str, Any],
     *,
     target: Mapping[str, Any],
+    lock_plans: bool = True,
 ) -> list[dict[str, Any]]:
     """Snapshot the member's attached plans in the shape the stage expects."""
     member_item_id = subject.get("member_item_id")
@@ -243,6 +245,7 @@ def attached_member_plans(
                 project_id=int(
                     subject.get("member_project_id") or subject["project_id"]
                 ),
+                lock_plan=lock_plans,
             ),
         }
         for plan_id in plan_ids

@@ -147,7 +147,9 @@ def _public_bundle(conn: Any, stored: Mapping[str, Any]) -> dict[str, Any]:
     from yoke_core.domain.qa_plan_review_subject import public_review_subject
 
     subject = result.get("subject") or {}
-    allowed_verdicts = stage_review_verdicts(conn, subject)
+    allowed_verdicts = stage_review_verdicts(
+        conn, {**subject, "execution_target": result.get("execution_target")}
+    )
     try:
         result["subject"] = public_review_subject(conn, subject)
     except ValueError as exc:

@@ -127,7 +127,7 @@ returned dispatch has `dispatch_kind=main_agent_mission`. The main agent owns:
 The walker never issues the verdict. Its turn returns one status:
 
 - `WALK_STATUS: COMPLETE` — the walk reached a natural stopping point;
-- `WALK_STATUS: HOST_WAIT` — submit only `host_wait` through the current bundle; [host turns](qa-platform/case-attachment.md#shared-host-turns-and-starting-state) owns queue/resume authority;
+- `WALK_STATUS: HOST_WAIT` — submit only `host_wait` through the current bundle; [host turns](qa-platform/deployment-plan-execution.md#shared-host-turns-and-starting-state) owns queue/resume authority;
 - `WALK_STATUS: HUMAN_GATE` — a person must act before it can continue;
 - `WALK_STATUS: UNDETERMINED` — an essential fact could not be established for
   a reason other than a pending human action.

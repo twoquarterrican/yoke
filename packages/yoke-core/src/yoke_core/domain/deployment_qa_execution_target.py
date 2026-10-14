@@ -9,7 +9,6 @@ from typing import Any
 from yoke_contracts.machine_qa_case_target import DEPLOYMENT_TARGET_SCHEMA
 from yoke_core.domain import db_backend
 from yoke_core.domain.deployment_qa_release_version import pinned_release_endpoints
-from yoke_core.domain.deployment_qa_stage_contract import deployment_qa_stage_subject
 from yoke_core.domain.deployment_qa_target_project import target_project
 from yoke_core.domain.deployment_stage_receipts import deployment_stage_receipt_for_qa
 from yoke_core.domain.qa_execution_environment_target import (
@@ -179,6 +178,10 @@ def deployment_qa_execution_target(
     still be the newest exact ready attempt, and its snapshot is reused only
     while tenant, project, observation, and deployment equal the live subject.
     """
+    if subject.get("shared_plan"):
+        from yoke_core.domain.deployment_qa_shared_plans import frozen_shared_target
+
+        return frozen_shared_target(conn, subject)
     project = target_project(conn, subject)
     if receipt_id is None:
         frozen = first_materialized_execution_target(
@@ -309,15 +312,9 @@ def validate_deployment_execution_target(
     conn: Any, execution: Mapping[str, Any], *, require_active: bool = True
 ) -> None:
     """Reject stale, superseded, cancelled, or cross-subject result writes."""
-    stage = str(execution.get("deployment_stage") or "")
-    member = execution.get("deployment_member_item_id")
-    subject = deployment_qa_stage_subject(
-        conn,
-        run_id=str(execution.get("deployment_run_id") or ""),
-        stage_name=stage,
-        member_item_id=int(member) if member is not None else None,
-        require_active=require_active,
-    )
+    from yoke_core.domain.deployment_qa_shared_plans import execution_subject
+
+    subject = execution_subject(conn, execution, require_active=require_active)
     actual = execution.get("execution_target")
     observation = actual.get("observation") if isinstance(actual, Mapping) else None
     receipt_id = (

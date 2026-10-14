@@ -38,7 +38,12 @@ def member_machine_partition(
     host_sets = {host_group(row) for row in roster if case_machines(row)}
     if (
         not deployment_stage
-        or deployment_member_item_id is None
+        or (
+            deployment_member_item_id is None
+            and not (
+                (roster[0].get("execution_target") or {}).get("deployment") or {}
+            ).get("shared_plan")
+        )
         or (
             len(host_sets) < 2
             and not any(len(hosts) > 1 for _driver, hosts in host_sets)
@@ -67,9 +72,9 @@ def member_machine_partition(
     history = conn.execute(
         "SELECT id,roster_json FROM qa_plan_executions "
         f"WHERE deployment_run_id={p} AND deployment_stage={p} "
-        f"AND deployment_member_item_id={p} AND execution_target_digest={p} "
+        f"AND COALESCE(deployment_member_item_id,0)={p} AND execution_target_digest={p} "
         "AND state='completed' ORDER BY execution_order DESC",
-        (deployment_run_id, deployment_stage, deployment_member_item_id, digest),
+        (deployment_run_id, deployment_stage, deployment_member_item_id or 0, digest),
     ).fetchall()
     covered = {
         int(case["requirement_id"])
