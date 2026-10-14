@@ -155,3 +155,24 @@ def test_symlinked_sign_in_refuses_before_clearing(signed_in_home):
     assert host.archive_runs == 1
     assert not result.ok and result.error_code == "linux_sign_in_store_unsafe"
     assert (home / "settings").read_text() == "live"
+
+
+def test_rotated_refresh_tokens_are_never_rolled_back(signed_in_home):
+    # Every harness rotates its refresh token on use, so the sealed token is
+    # dead once the live one refreshes; restoring it would break the harness
+    # for good (HTTP 401 refresh_token_reused on Codex).
+    home, golden = signed_in_home
+    host = sealed_host(home, set(SIGN_IN_STORES))
+    for rotation in (1, 2):
+        sealed_at = (golden / "manifest.json").stat().st_mtime
+        for relative in (CLAUDE, CODEX, CURSOR):
+            (home / relative).write_text(f"refresh-token-{rotation} {relative}")
+            later = sealed_at + 60 * (rotation + 1)
+            os.utime(home / relative, (later, later))
+        result = archive_operation(host, "reset", str(golden))
+        assert result.ok, result.evidence
+        for relative in (CLAUDE, CODEX, CURSOR):
+            assert (home / relative).read_text() == (
+                f"refresh-token-{rotation} {relative}"
+            )
+            assert "sealed" not in (home / relative).read_text()
