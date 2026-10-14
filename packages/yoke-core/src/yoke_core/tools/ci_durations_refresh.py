@@ -65,6 +65,16 @@ def refresh(root: Path, reports: list[Path], *, expected_shards=SHARD_COUNT) -> 
             "ci_profile_no_current_tests: use reports matching this checkout."
         )
     destination = root / DURATIONS_PATH
+    try:
+        previous = json.loads(destination.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    # Shared fixture setup moves between cases/files and runner contention
+    # varies. Damp that noise instead of reversing the allocation each run.
+    profile = {
+        key: round((value + float(previous.get(key, value))) / 2, 6)
+        for key, value in profile.items()
+    }
     temporary = destination.with_suffix(".refresh")
     temporary.write_text(
         json.dumps(profile, indent=2, sort_keys=True) + "\n", encoding="utf-8"

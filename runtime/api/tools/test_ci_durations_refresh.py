@@ -35,6 +35,14 @@ def test_refresh_scales_times_to_actual_shard_walls(tmp_path):
     }
 
 
+def test_refresh_damps_fixture_attribution_noise_and_drops_deleted_tests(tmp_path):
+    root = _root(tmp_path)
+    key = "tests/test_example.py::Checks::test_case"
+    (root / ".test_durations").write_text(json.dumps({key: 2, "deleted": 50}))
+    refresh.refresh(root, [_report(root, "report.xml")], expected_shards=1)
+    assert json.loads((root / ".test_durations").read_text()) == {key: 6}
+
+
 @pytest.mark.parametrize("problem", ["missing", "duplicate", "failure"])
 def test_bad_report_sets_preserve_prior_profile(tmp_path, problem):
     root = _root(tmp_path)
