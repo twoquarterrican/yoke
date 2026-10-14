@@ -35,7 +35,16 @@ from yoke_core.domain.yoke_function_permissions import check_dispatch_permission
 
 @pytest.fixture
 def conn():
-    yield from authority_conn.__wrapped__()
+    from yoke_core.domain.schema_harness_session_columns import (
+        apply_harness_session_columns,
+    )
+
+    for connection in authority_conn.__wrapped__():
+        # A QA_HOST release goes through the shared claim release, which reads
+        # the holding session's actor.
+        apply_harness_session_columns(connection)
+        connection.commit()
+        yield connection
 
 
 @pytest.mark.parametrize(
