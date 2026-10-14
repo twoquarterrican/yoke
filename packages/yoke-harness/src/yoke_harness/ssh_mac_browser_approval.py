@@ -32,22 +32,52 @@ def _approval_url(verification_url: str, user_code: str) -> tuple[str, str]:
     return coordinates.complete_uri, coordinates.origin
 
 
-def _script(*, expected_url: str) -> list[str]:
-    expected = json.dumps(expected_url)
+def _approval_tab_urls(expected_url: str, user_code: str, observed: list[str]) -> list[str]:
+    """Allow the entry URL or its same-origin, exact-code organization route."""
+    expected = urlsplit(expected_url)
+    allowed = [expected_url]
+    if expected.path != "/connect":
+        return allowed
+    for value in observed:
+        try:
+            parsed = urlsplit(value)
+        except ValueError:
+            continue
+        parts = parsed.path.split("/")
+        if (
+            parsed.scheme == expected.scheme
+            and parsed.netloc == expected.netloc
+            and not parsed.query
+            and not parsed.fragment
+            and len(parts) == 5
+            and parts[1] == "orgs"
+            and parts[2] not in ("", ".", "..")
+            and "%" not in parts[2]
+            and parts[3:] == ["machine-approval", user_code]
+            and value not in allowed
+        ):
+            allowed.append(value)
+    return allowed
+
+
+def _script(*, allowed_urls: list[str]) -> list[str]:
+    allowed = "{" + ", ".join(json.dumps(url) for url in allowed_urls) + "}"
     label = json.dumps("Approve machine")
     return [
-        f"set expectedURL to {expected}",
+        f"set allowedURLs to {allowed}",
         f"set buttonLabel to {label}",
         "set matchedWindow to missing value",
         "set matchedTab to missing value",
         'tell application "Safari"',
         "repeat with browserWindow in windows",
         "repeat with browserTab in tabs of browserWindow",
-        "if (URL of browserTab as text) is expectedURL then",
+        "set tabURL to URL of browserTab as text",
+        "if tabURL is in allowedURLs then",
         "set current tab of browserWindow to browserTab",
         "set index of browserWindow to 1",
         "set matchedWindow to browserWindow",
         "set matchedTab to browserTab",
+        "set matchedStartingURL to tabURL",
         "exit repeat",
         "end if",
         "end repeat",
@@ -55,6 +85,7 @@ def _script(*, expected_url: str) -> list[str]:
         "end repeat",
         'if matchedWindow is missing value then return "browser_tab_missing"',
         "activate",
+        'if (URL of matchedTab as text) is not matchedStartingURL then return "browser_tab_changed"',
         "end tell",
         "delay 0.2",
         "set pressedApproval to false",
@@ -86,7 +117,7 @@ def _script(*, expected_url: str) -> list[str]:
         "delay 0.25",
         "try",
         "set resultURL to URL of matchedTab as text",
-        'if resultURL is not expectedURL then return "approved|" & resultURL',
+        'if resultURL is not matchedStartingURL then return "approved|" & matchedStartingURL & "|" & resultURL',
         "end try",
         "end repeat",
         "end tell",
@@ -115,16 +146,34 @@ def approve_machine_in_safari(
         expected_url, expected_origin = _approval_url(verification_url, user_code)
     except ValueError:
         return BrowserApprovalResult(False, {}, "machine_browser_context_invalid")
-    result = run_osascript(run, _script(expected_url=expected_url))
+    tabs = run_osascript(run, [
+        'tell application "Safari"',
+        'set tabURLs to ""',
+        "repeat with browserWindow in windows",
+        "repeat with browserTab in tabs of browserWindow",
+        "set tabURLs to tabURLs & (URL of browserTab as text) & linefeed",
+        "end repeat",
+        "end repeat",
+        "return tabURLs",
+        "end tell",
+    ])
+    if tabs.returncode:
+        return BrowserApprovalResult(
+            False, {"browser": "Safari"}, "machine_browser_automation_unavailable"
+        )
+    allowed_urls = _approval_tab_urls(expected_url, user_code, tabs.stdout.splitlines())
+    result = run_osascript(run, _script(allowed_urls=allowed_urls))
     if result.returncode:
         return BrowserApprovalResult(
             False,
             {"browser": "Safari"},
             "machine_browser_automation_unavailable",
         )
-    state, separator, raw_url = result.stdout.strip().partition(_RESULT_SEPARATOR)
+    state, separator, navigation = result.stdout.strip().partition(_RESULT_SEPARATOR)
+    starting_url, navigation_separator, raw_url = navigation.partition(_RESULT_SEPARATOR)
     errors = {
         "browser_tab_missing": "machine_browser_tab_missing",
+        "browser_tab_changed": "machine_browser_tab_changed",
         "approval_control_missing": "machine_browser_approval_control_missing",
         "approval_navigation_missing": "machine_browser_approval_navigation_missing",
     }
@@ -133,6 +182,14 @@ def approve_machine_in_safari(
             False,
             {"browser": "Safari", "state": state or "empty"},
             errors.get(state, "machine_browser_approval_failed"),
+        )
+    if (
+        not navigation_separator
+        or starting_url not in allowed_urls
+        or raw_url == starting_url
+    ):
+        return BrowserApprovalResult(
+            False, {"browser": "Safari"}, "machine_browser_approval_navigation_missing"
         )
     safe_url = _result_url(raw_url, expected_origin=expected_origin)
     if safe_url is None:
@@ -145,7 +202,7 @@ def approve_machine_in_safari(
         True,
         {
             "browser": "Safari",
-            "approval_entry": urlsplit(expected_url).path,
+            "approval_entry": urlsplit(starting_url).path,
             "result_url": safe_url,
             "visible_control": "Approve machine",
         },
