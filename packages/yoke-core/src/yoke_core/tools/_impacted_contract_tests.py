@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from yoke_cli.product_boundary_teaching_sources import TEACHING_GLOBS
 from yoke_core.tools import _impacted_ci_only_contract_floor as _ci_only
 from yoke_core.tools._impacted_ci_workflow_contracts import CI_WORKFLOW_CONTRACTS
 from yoke_core.tools._impacted_merge_contracts import MERGE_PREFIX_CONTRACTS
@@ -289,6 +290,11 @@ def contract_selection_for(changed: Sequence[str]) -> ContractSelection:
         widening_triggers.extend(f"{rule}:{path}" for path in hits)
     for rule, prefixes, contract_tests in (
         *PREFIX_CONTRACT_TESTS,
+        (
+            "taught_recipe_contract",
+            tuple(pattern.split("*", 1)[0] for pattern in TEACHING_GLOBS),
+            ("runtime/api/cli/test_taught_command_resolution_contract.py",),
+        ),
         *MERGE_PREFIX_CONTRACTS,
         *WORKFLOW_DEFINITION_PREFIX_CONTRACTS,
     ):

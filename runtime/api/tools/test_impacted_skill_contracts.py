@@ -1,4 +1,4 @@
-"""Impacted-selection contracts for agent skill prose."""
+"""Impacted-selection contracts for agent teaching prose."""
 
 from __future__ import annotations
 
@@ -94,3 +94,24 @@ def test_every_skill_doc_assertion_is_rostered() -> None:
         "AGENT_SKILL_CONTRACT_TESTS, so a skill-doc change does not select "
         f"them: {unrostered}"
     )
+
+
+@pytest.mark.parametrize(
+    "changed",
+    (
+        "docs/public/reference/qa-platform/deployment-plan-execution.md",
+        "docs/testing-verification.md",
+        ".yoke/docs/reference/qa-platform/case-attachment.md",
+        ".agents/skills/yoke/dash/close-out.md",
+    ),
+)
+def test_teaching_change_keeps_recipe_contract_when_bounded(tmp_path, changed):
+    root = _tiny_repo(tmp_path)
+    contract = "runtime/api/cli/test_taught_command_resolution_contract.py"
+    _write(root, changed, "# Teaching\n")
+    _write(root, contract, "def test_recipes(): pass\n")
+
+    selection = select([changed], build_import_index(root), bounded=True)
+
+    assert contract in selection.files
+    assert f"taught_recipe_contract:{changed}" in selection.widening_triggers
