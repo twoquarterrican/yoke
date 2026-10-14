@@ -62,7 +62,12 @@ the run's own candidate, so the run delivers two projects, not one.
   Immediately before dispatch, `deployment_runs.execution.bound_sources_prepare`
   resolves the stage's bound branches and records consumption on their source
   entries before returning authoritative inputs and members to the driver.
-  An unused stale source re-binds and proceeds. Once any stage consumed that
+  An unused stale source re-binds and proceeds. If its containment preview
+  races a landing, preparation rolls back its
+  writes and locks and retries with fresh preview and apply, at most three
+  attempts. Exhaustion reports `candidate_containment_attestation_stale`;
+  re-drive the same run. This retry does not repeat backup or rehearsal.
+  Once any stage consumed that
   source, a moved branch still refuses — `stage 'S' was not dispatched: bound
   source P SHA is stale (current SHA)` — and requires a new run. A retry copies
   consumption and cannot reopen it. A crash after preparation keeps the source

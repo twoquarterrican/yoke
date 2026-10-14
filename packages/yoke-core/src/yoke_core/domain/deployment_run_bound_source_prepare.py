@@ -20,9 +20,26 @@ from yoke_core.domain.deployment_runs_lock import lock_run_with_stable_membershi
 from yoke_core.domain.json_helper import dumps_compact
 from yoke_core.domain.deployment_run_bound_source_consumption import consumed_stage
 from yoke_core.domain.workflow_item_binding_lock import lock_item_workflow_bindings
+from yoke_core.domain.deployment_run_contained_items import CandidateContainmentRefusal
+
+_MAX_PREPARATION_ATTEMPTS = 3
 
 
 def prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str, Any]:
+    """Retry a racing landing with fresh reads and no retained writes or locks."""
+    for attempt in range(_MAX_PREPARATION_ATTEMPTS):
+        try:
+            return _prepare_bound_sources(conn, run_id, stage_name)
+        except CandidateContainmentRefusal as exc:
+            if exc.code != "candidate_containment_attestation_stale":
+                raise
+            conn.rollback()
+            if attempt == _MAX_PREPARATION_ATTEMPTS - 1:
+                raise
+    raise AssertionError("preparation attempt limit must be positive")
+
+
+def _prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str, Any]:
     """Refresh unused sources, recompose, then seal this stage's inputs.
 
     The caller commits before dispatch. A crash after commit conservatively
