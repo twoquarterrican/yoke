@@ -58,12 +58,15 @@ with different driving hosts or declared sets use separate execution rosters.
 ## Shared host turns and starting state
 
 An occupied Test Machine is a wait, never a FAIL. Plan acquisition keeps its
-cursor open and queues the host on the existing durable execution. FIFO order
-starts at the first host-wait request and survives retries. Lease release
-reserves the next live waiter's turn and sends its owner the exact resume
-command; stopped owners use the same harness-neutral wake route as other
-control-plane notices. Ended owners leave the queue. A reserved sticky lease
-still uses the documented human-only recovery if its owner dies.
+cursor open and its session joins the host's waiting line (`qa_host_waits`),
+the same FIFO line a refused manual
+`yoke claims coordination-claim acquire --key QA_HOST:<machine>` joins. A
+session keeps its place from its first wait and across retries. Every release
+of the host — including `yoke claims work release --claim-id N` — reserves it
+for the oldest live waiter and sends that session the exact resume command;
+stopped owners use the same harness-neutral wake route as other control-plane
+notices. Ending the session, settling the execution, or releasing an unused
+reservation cancels the wait and passes a reserved turn to the next waiter.
 
 If a walker discovers a second required host is occupied, return
 `WALK_STATUS: HOST_WAIT` and its registered name plus holder evidence. Submit
