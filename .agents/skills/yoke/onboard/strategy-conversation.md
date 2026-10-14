@@ -20,11 +20,12 @@ will read and ask what else belongs, in one message:
   transcripts, trackers on other systems.
 
 ```bash
-gh issue list --state open --limit 200 --json number,title,labels,updatedAt
-gh pr list --state open --limit 100 --json number,title,headRefName,updatedAt
+yoke github open-work list --project {project} --json
 ```
 
-Another forge uses its own CLI or an export the user provides. Transcript
+It reads through the project's GitHub binding; `truncated` means raise
+`--limit` (max 200). A refusal names its recovery: with no GitHub binding, or
+on another forge, ask the user for an export of open issues and PRs. Transcript
 stores are harness facts: read `session_transcripts` from each
 `.yoke/harness/<harness-dir>/manifest.json` (claude-code → claude) and keep
 only files its `project_match` ties to this checkout. Read summaries and the

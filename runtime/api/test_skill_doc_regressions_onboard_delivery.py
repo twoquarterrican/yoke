@@ -46,8 +46,7 @@ def test_onboard_profile_keeps_task_exempt_and_preview_guarded() -> None:
 def test_strategy_step_confirms_the_scan_before_drafting():
     text = _read(ONBOARD_DIR / "strategy-conversation.md")
     assert text.index("## Confirm what to scan") < text.index("## Draft, then decide")
-    assert "gh issue list --state open" in text
-    assert "gh pr list --state open" in text
+    assert "yoke github open-work list --project {project} --json" in text
     # Transcript stores are harness manifest facts, never restated paths.
     assert "`session_transcripts`" in text and "project_match" in text
     assert "~/.claude" not in text and "~/.codex" not in text
