@@ -50,9 +50,11 @@ attempts previously looked like a 60-second limit. The server reserves five
 seconds for its response and failure evidence. Browser dispatch and the local
 UI proxy use the same handler budget; neither declares an extra browser timer.
 
-Python loops stop on expiry. Each PostgreSQL statement takes the remaining
-budget as its server-side timeout; nested HTTP reads inherit the same deadline.
-Native database protocols finish or cancel before Python unwinds them.
+The budget is checked at native-call boundaries, never by interrupting running
+Python. Each PostgreSQL transaction arms its server-side statement timeout once,
+from the budget remaining when the transaction starts; nested HTTP reads inherit
+the same deadline, and the handler is checked again when it returns. Subprocesses
+and native database protocols always finish or time out on their own terms.
 Mutations retain their existing execution and replay contracts.
 
 An expired read returns `read_deadline_exceeded` (HTTP 408), with a recovery

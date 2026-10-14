@@ -6,13 +6,20 @@ from contextlib import contextmanager
 
 from yoke_contracts.doctor_budget import (
     CHECK_BUDGET_S,
+    DoctorBudgetExhausted,
     remaining_seconds,
 )
 from yoke_core.domain import db_backend
-from yoke_core.engines.doctor_wall_clock_budget import driver_call
-
-
 from yoke_core.domain.bounded_database import BudgetConnection
+
+
+def driver_call(method, *args, **kwargs):
+    try:
+        return method(*args, **kwargs)
+    except Exception as exc:
+        if getattr(exc, "sqlstate", None) == "57014":
+            raise DoctorBudgetExhausted("doctor_check_budget_exhausted") from exc
+        raise
 
 
 @contextmanager

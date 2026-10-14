@@ -1,7 +1,8 @@
-"""Every check has a deadline, including CPU-only and project-local checks."""
+"""Every check has a deadline, enforced at boundaries rather than mid-call."""
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -15,26 +16,23 @@ from yoke_core.engines.doctor_report import DoctorArgs, RecordCollector
 
 
 @pytest.mark.parametrize("worker_thread", [False, True])
-def test_pure_python_check_cannot_run_past_its_budget(monkeypatch, worker_thread):
+def test_overrunning_check_is_incomplete_without_tracing_it(monkeypatch, worker_thread):
     monkeypatch.setattr(doctor_budget, "CHECK_BUDGET_S", 0.02)
+    traces = []
 
     def slow(conn, args, rec):
+        traces.append(sys.gettrace())
         rec.record("HC-partial", "Partial", "PASS", "")
-        try:
-            while True:
-                pass
-        except Exception:
-            rec.record("HC-swallowed", "Swallowed", "PASS", "")
+        time.sleep(0.05)
+        rec.record("HC-finished", "Finished", "PASS", "")
 
     def run():
         previous = sys.gettrace()
         rec = RecordCollector()
-        started = time.monotonic()
         execute_check_isolated(
             object(), DoctorArgs(), rec, HealthCheck("python-loop", "Python loop", slow)
         )
-        assert time.monotonic() - started < 1
-        assert sys.gettrace() is previous
+        assert traces == [previous]
         assert len(rec.results) == 1
         row = rec.results[0]
         assert row.check_id == "HC-check-incomplete"
@@ -47,6 +45,24 @@ def test_pure_python_check_cannot_run_past_its_budget(monkeypatch, worker_thread
             executor.submit(run).result(timeout=2)
     else:
         run()
+
+
+def test_running_subprocess_finishes_before_the_budget_is_enforced(monkeypatch):
+    monkeypatch.setattr(doctor_budget, "CHECK_BUDGET_S", 0.02)
+    finished = []
+
+    def check(conn, args, rec):
+        subprocess.run(
+            [sys.executable, "-c", "import time; time.sleep(0.1)"], check=True
+        )
+        finished.append(True)
+
+    rec = RecordCollector()
+    execute_check_isolated(
+        object(), DoctorArgs(), rec, HealthCheck("subprocess", "Subprocess", check)
+    )
+    assert finished == [True]
+    assert rec.results[0].check_id == "HC-check-incomplete"
 
 
 def test_postgres_connection_without_autocommit_refuses_before_query():

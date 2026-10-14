@@ -94,11 +94,11 @@ def test_safe_point_exhaustion_discards_partial_verdicts(monkeypatch):
     assert "--only slow" in rec.results[-1].detail
 
 
-def test_check_restores_the_callers_trace():
+def test_check_runs_under_the_callers_trace():
     previous = sys.gettrace()
 
     def check(conn, args, rec):
-        assert sys.gettrace() is not previous
+        assert sys.gettrace() is previous
         rec.record("HC-trace", "Trace", "PASS", "")
 
     rec = RecordCollector()
