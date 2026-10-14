@@ -12,6 +12,7 @@ from yoke_core.domain.session_message_service import send_message
 from runtime.api.domain.test_session_message_support import (
     NOW,
     message_connection,
+    pin_message_clocks,
     selector,
 )
 
@@ -164,9 +165,7 @@ def test_list_and_get_handlers_use_stable_envelopes(monkeypatch) -> None:
         now=NOW,
     )["message_id"]
     monkeypatch.setattr(session_messages, "open_connection", lambda: conn)
-    from yoke_core.domain import session_message_delivery
-
-    monkeypatch.setattr(session_message_delivery, "utc_now", lambda: NOW)
+    pin_message_clocks(monkeypatch)
     fetched = session_messages.handle_message_get(
         _request("session_control.message.get", {"message_id": message_id})
     )

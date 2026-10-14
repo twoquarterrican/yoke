@@ -16,24 +16,16 @@ from yoke_core.domain.session_message_cursor import (
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.actor_message_recipients import ACTOR_KIND
-from yoke_core.domain.actor_permissions import PERM_ITEMS_READ
-from yoke_core.domain.actor_project_visibility import (
-    actor_project_ids_with_permission,
-)
 from yoke_contracts.read_detail import DETAIL_FULL, DETAIL_SUMMARY
 from yoke_core.domain.session_message_list_row import message_list_row
-from yoke_core.domain.session_message_queries import (
-    expire_message_receipts,
-    message_visible,
-    message_with_actor_context,
-)
-from yoke_core.domain.session_message_reads import (
-    message_recipient_match_clause,
-    message_summary,
-)
+from yoke_core.domain.session_message_page_rows import page_summaries
+from yoke_core.domain.session_message_queries import message_with_actor_context
+from yoke_core.domain.session_message_reads import message_recipient_match_clause
+from yoke_core.domain.session_message_receipt_expiry import OPEN_SESSION_STATES
 from yoke_core.domain.session_message_types import (
     utc_now,
 )
+from yoke_core.domain.session_message_visibility import visible_clause
 from yoke_core.domain.steering_message_recipients import (
     STATE_AWAITING_SEAT,
     STATE_DELIVERED,
@@ -43,61 +35,11 @@ from yoke_core.domain.steering_message_recipients import (
 
 DEFAULT_SETTLED_LIMIT = 50
 MAX_SETTLED_LIMIT = 500
-OPEN_SESSION_STATES = ("pending", "injected")
 OPEN_STEERING_STATES = (STATE_AWAITING_SEAT, STATE_DELIVERED)
 
 
 def _p(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
-
-
-def _visible_clause(
-    conn: Any,
-    *,
-    actor_id: int,
-    caller_session_id: str | None,
-) -> tuple[str, list[Any]]:
-    p = _p(conn)
-    branches = [
-        f"m.sender_actor_id={p}",
-        "EXISTS (SELECT 1 FROM actor_message_recipients va "
-        f"WHERE va.message_id=m.message_id AND va.recipient_kind={p} "
-        f"AND va.actor_id={p})",
-    ]
-    params: list[Any] = [actor_id, ACTOR_KIND, actor_id]
-    if caller_session_id:
-        branches.extend(
-            [
-                "EXISTS (SELECT 1 FROM session_message_recipients vs "
-                f"WHERE vs.message_id=m.message_id AND vs.session_id={p})",
-                "EXISTS (SELECT 1 FROM actor_message_recipients vst "
-                f"WHERE vst.message_id=m.message_id AND vst.recipient_kind={p} "
-                f"AND vst.seat_session_id={p})",
-            ]
-        )
-        params.extend([caller_session_id, STEERING_KIND, caller_session_id])
-    visible_projects = sorted(
-        actor_project_ids_with_permission(conn, actor_id, PERM_ITEMS_READ) or []
-    )
-    if visible_projects:
-        slots = ",".join(p for _ in visible_projects)
-        branches.append(
-            "("
-            "(EXISTS (SELECT 1 FROM session_message_recipients vp "
-            "WHERE vp.message_id=m.message_id) OR EXISTS (SELECT 1 FROM "
-            "actor_message_recipients vpt WHERE vpt.message_id=m.message_id "
-            f"AND vpt.recipient_kind={p})) "
-            "AND NOT EXISTS (SELECT 1 FROM session_message_recipients vx "
-            f"WHERE vx.message_id=m.message_id AND vx.project_id NOT IN ({slots})) "
-            "AND NOT EXISTS (SELECT 1 FROM actor_message_recipients vxt "
-            f"WHERE vxt.message_id=m.message_id AND vxt.recipient_kind={p} "
-            f"AND vxt.project_id NOT IN ({slots}))"
-            ")"
-        )
-        params.extend(
-            [STEERING_KIND, *visible_projects, STEERING_KIND, *visible_projects]
-        )
-    return "(" + " OR ".join(branches) + ")", params
 
 
 def _project_clause(
@@ -124,34 +66,32 @@ def _project_clause(
     )
 
 
-def _actionable_clause(conn: Any) -> tuple[str, list[Any]]:
+def _actionable_clause(conn: Any, now: Any) -> tuple[str, list[Any]]:
     """A message needs attention while some recipient still owes an answer.
 
-    A steering row cannot carry its own ``expired`` state -- the shared
-    table's kind/state constraint only allows the seat lifecycle states
-    (``awaiting_seat``/``delivered``/``acknowledged``) -- so unlike the
-    session and actor branches, which already converged past-due rows to
-    ``expired`` before this runs, staleness for steering is read straight
-    from the message it belongs to: an ``awaiting_seat`` or ``delivered``
-    row whose message has itself expired is no longer anyone's to act on.
+    Nothing owes an answer once the message itself has expired, whatever
+    its receipt rows still say: reads never write expiry, and the relay
+    cadence persists it later (see
+    :mod:`yoke_core.domain.session_message_receipt_expiry`). Steering rows
+    cannot carry an ``expired`` state at all, so the same message-level
+    test covers them.
     """
     p = _p(conn)
     session_slots = ",".join(p for _ in OPEN_SESSION_STATES)
     steering_slots = ",".join(p for _ in OPEN_STEERING_STATES)
     return (
-        "(m.cancelled_at IS NULL AND (EXISTS (SELECT 1 FROM "
-        "session_message_recipients ao WHERE ao.message_id=m.message_id "
+        f"(m.cancelled_at IS NULL AND m.expires_at>{p} AND (EXISTS (SELECT 1 "
+        "FROM session_message_recipients ao WHERE ao.message_id=m.message_id "
         f"AND ao.state IN ({session_slots})) OR EXISTS (SELECT 1 FROM "
         "actor_message_recipients aa WHERE aa.message_id=m.message_id "
-        f"AND aa.recipient_kind={p} AND aa.state='pending') OR "
-        f"(m.expires_at>{p} AND EXISTS "
+        f"AND aa.recipient_kind={p} AND aa.state='pending') OR EXISTS "
         "(SELECT 1 FROM actor_message_recipients ast WHERE "
         f"ast.message_id=m.message_id AND ast.recipient_kind={p} "
-        f"AND ast.state IN ({steering_slots})))))",
+        f"AND ast.state IN ({steering_slots}))))",
         [
+            now,
             *OPEN_SESSION_STATES,
             ACTOR_KIND,
-            instant_parameter(conn, utc_now()),
             STEERING_KIND,
             *OPEN_STEERING_STATES,
         ],
@@ -191,7 +131,7 @@ def _select_ids(
 
 
 def _summaries(
-    conn: Any,
+    rows: dict[str, dict[str, Any]],
     ids: Sequence[tuple[str, datetime]],
     *,
     actor_id: int,
@@ -199,25 +139,15 @@ def _summaries(
     needs_attention: bool,
     detail: str,
 ) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
+    """Caller-relative rows in page order; ids were already visibility-filtered."""
+    page: list[dict[str, Any]] = []
     for message_id, _created_at in ids:
-        summary = message_summary(conn, message_id)
-        if not message_visible(
-            conn,
-            summary,
-            actor_id=actor_id,
-            session_id=caller_session_id,
-        ):
-            continue
         summary = message_with_actor_context(
-            summary, actor_id=actor_id, session_id=caller_session_id
+            rows[message_id], actor_id=actor_id, session_id=caller_session_id
         )
         summary["needs_attention"] = needs_attention
-        # Visibility above is decided from the recipient rows the compact
-        # projection drops, so the narrowing happens here rather than in
-        # the query it would otherwise have to re-widen.
-        rows.append(summary if detail == DETAIL_FULL else message_list_row(summary))
-    return rows
+        page.append(summary if detail == DETAIL_FULL else message_list_row(summary))
+    return page
 
 
 def read_message_page(
@@ -232,22 +162,27 @@ def read_message_page(
     cursor: str | None = None,
     detail: str = DETAIL_SUMMARY,
 ) -> dict[str, Any]:
-    """Return every matching actionable message and one settled page."""
-    expire_message_receipts(conn)
+    """Return every matching actionable message and one settled page.
+
+    A fixed number of statements answers any page size: two counts, two id
+    selections and the batched summary reads. Nothing here writes.
+    """
     p = _p(conn)
+    now = utc_now()
+    bound_now = instant_parameter(conn, now)
     recipient_clause, recipient_params = message_recipient_match_clause(
-        p, state=state, session_id=session_id, actor_id=actor_id
+        p, state=state, session_id=session_id, actor_id=actor_id, now=bound_now
     )
-    visible_clause, visible_params = _visible_clause(
+    visibility, visible_params = visible_clause(
         conn, actor_id=actor_id, caller_session_id=caller_session_id
     )
-    clauses = [recipient_clause, visible_clause]
+    clauses = [recipient_clause, visibility]
     params = [*recipient_params, *visible_params]
     project_clause, project_params = _project_clause(conn, projects)
     if project_clause:
         clauses.append(project_clause)
         params.extend(project_params)
-    actionable_clause, actionable_params = _actionable_clause(conn)
+    actionable_clause, actionable_params = _actionable_clause(conn, bound_now)
     actionable_where = [*clauses, actionable_clause]
     actionable_values = [*params, *actionable_params]
     actionable_count = _count(conn, actionable_where, actionable_values)
@@ -282,9 +217,12 @@ def read_message_page(
         if has_more and settled_ids
         else None
     )
+    rows = page_summaries(
+        conn, [message_id for message_id, _ in (*actionable_ids, *settled_ids)], now=now
+    )
     messages = [
         *_summaries(
-            conn,
+            rows,
             actionable_ids,
             actor_id=actor_id,
             caller_session_id=caller_session_id,
@@ -292,7 +230,7 @@ def read_message_page(
             detail=detail,
         ),
         *_summaries(
-            conn,
+            rows,
             settled_ids,
             actor_id=actor_id,
             caller_session_id=caller_session_id,

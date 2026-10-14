@@ -13,6 +13,7 @@ from typing import Any
 
 from yoke_contracts.session_control.capabilities import capability_for_surface
 from yoke_core.domain import db_backend
+from yoke_core.domain.actor_message_recipients import expire_due_actor_recipients
 from yoke_core.domain.session_message_delivery_projection import (
     delivery_message_projection,
 )
@@ -83,12 +84,20 @@ def _expire_rows(conn: Any, *, now: datetime) -> int:
 
 
 def expire_due_recipients(conn: Any, *, now: datetime | None = None) -> int:
-    """Converge every due, unacknowledged receipt through one mutation."""
+    """Converge every due, unacknowledged receipt through one mutation.
+
+    Session and person receipts both persist here, set-based. The relay
+    claim cycle runs it on the server's cadence; reads never do, because
+    they already show a due receipt as expired
+    (:mod:`yoke_core.domain.session_message_receipt_expiry`). Returns the
+    number of session receipts expired.
+    """
     now = parse_instant(utc_now() if now is None else now)
     _begin_mutation(conn)
     try:
         stamp = now
         count = _expire_rows(conn, now=stamp)
+        expire_due_actor_recipients(conn, now=stamp)
         from yoke_core.domain.deployment_qa_stage_wake_withdraw import (
             withdraw_deployment_qa_wait_wakes,
         )

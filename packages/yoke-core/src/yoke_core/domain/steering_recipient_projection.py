@@ -53,13 +53,18 @@ def steering_recipient(
     seat_session_id: Optional[str],
     delivered_at: Any = None,
     acknowledged_at: Any = None,
+    reads: Any = None,
 ) -> dict[str, Any]:
-    """Describe one role-addressed recipient for readers and renderers."""
+    """Describe one role-addressed recipient for readers and renderers.
+
+    ``reads`` is an optional per-request ``FleetReportReads`` so a page of
+    recipients resolves each scope's project slug once.
+    """
     from yoke_core.domain.steering_fleet_report_compose import (
         steering_scope_descriptor,
     )
 
-    scope_label = steering_scope_descriptor(conn, scope)
+    scope_label = steering_scope_descriptor(conn, scope, reads)
     seated = seat_session_id is not None
     return {
         "kind": STEERING_KIND,
@@ -81,20 +86,30 @@ def steering_recipient(
     }
 
 
+#: The stored columns :func:`steering_recipient_from_row` reads.
+STORED_COLUMNS = (
+    "state, steering_scope, project_id, sender_item_id, "
+    "seat_session_id, delivered_at, acknowledged_at"
+)
+
+
 def stored_steering_recipient(conn: Any, message_id: str) -> dict[str, Any] | None:
     """The recorded role-addressed recipient of one message, if it has one."""
     from yoke_core.domain import db_backend
 
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
     row = conn.execute(
-        "SELECT state, steering_scope, project_id, sender_item_id, "
-        f"seat_session_id, delivered_at, acknowledged_at FROM {TABLE} "
+        f"SELECT {STORED_COLUMNS} FROM {TABLE} "
         f"WHERE recipient_kind = {marker} AND message_id = {marker}",
         (STEERING_KIND, str(message_id)),
     ).fetchone()
-    if row is None:
-        return None
-    record = dict(row)
+    return None if row is None else steering_recipient_from_row(conn, dict(row))
+
+
+def steering_recipient_from_row(
+    conn: Any, record: Mapping[str, Any], *, reads: Any = None
+) -> dict[str, Any]:
+    """Describe one stored role-addressed row read with ``STORED_COLUMNS``."""
     seat = record.get("seat_session_id")
     return steering_recipient(
         conn,
@@ -109,6 +124,7 @@ def stored_steering_recipient(conn: Any, message_id: str) -> dict[str, Any] | No
         seat_session_id=str(seat) if seat else None,
         delivered_at=record.get("delivered_at"),
         acknowledged_at=record.get("acknowledged_at"),
+        reads=reads,
     )
 
 
@@ -132,6 +148,8 @@ def previewed_steering_recipient(
 __all__ = [
     "PARTY_LABEL",
     "previewed_steering_recipient",
+    "STORED_COLUMNS",
     "steering_recipient",
+    "steering_recipient_from_row",
     "stored_steering_recipient",
 ]

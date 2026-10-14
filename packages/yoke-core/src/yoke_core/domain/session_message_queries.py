@@ -1,54 +1,20 @@
-"""Actor-aware Fleet message visibility and listing operations.
+"""Caller-relative reads of one Fleet message.
 
-Visibility is several separate claims rather than one role check. A sender
-always sees what it sent. An addressed actor and an addressed session always
-see their own mail, and so does the steering seat currently holding a
-role-addressed message -- it was handed that message on acquire and would
-otherwise be unable to read the thing it is expected to answer. Everyone
-else sees a message only when they can read every project it reached.
+Who may read a message is :mod:`yoke_core.domain.session_message_visibility`;
+this module answers a single message read and shapes any message for the
+caller who asked -- their own receipt, their state and, when they still owe
+one, the acknowledgement command.
 """
 
 from __future__ import annotations
 
 from typing import Any, Sequence
 
-from yoke_core.domain.actor_message_recipients import expire_due_actor_recipients
-from yoke_core.domain.session_message_authorization import can_read_project
-from yoke_core.domain.session_message_reads import (
-    list_message_ids,
-    message_details,
-    recipient_project_ids,
-)
-from yoke_core.domain.session_message_types import SessionMessageError
-from yoke_core.domain.steering_message_recipients import holding_seat_session_id
-
-
-def message_visible(
-    conn: Any,
-    details: dict[str, Any],
-    *,
-    actor_id: int,
-    session_id: str | None,
-) -> bool:
-    if details["sender_actor_id"] == actor_id:
-        return True
-    if any(
-        int(row["actor_id"]) == actor_id for row in details.get("actor_recipients", [])
-    ):
-        return True
-    if session_id and any(
-        str(row["session_id"]) == session_id for row in details["recipients"]
-    ):
-        return True
-    if session_id and holding_seat_session_id(conn, details["message_id"]) == str(
-        session_id
-    ):
-        return True
-    project_ids = recipient_project_ids(details)
-    return bool(project_ids) and all(
-        can_read_project(conn, actor_id=actor_id, project_id=project_id)
-        for project_id in project_ids
-    )
+from yoke_contracts.timestamps import parse_instant
+from yoke_core.domain.session_message_reads import message_details
+from yoke_core.domain.session_message_receipt_expiry import project_due_receipts
+from yoke_core.domain.session_message_types import SessionMessageError, utc_now
+from yoke_core.domain.session_message_visibility import message_visible
 
 
 def _actor_receipt(details: dict[str, Any], actor_id: int) -> dict[str, Any]:
@@ -109,14 +75,6 @@ def _caller_state(
     return ""
 
 
-def expire_message_receipts(conn: Any) -> None:
-    from yoke_core.domain.session_message_delivery import expire_due_recipients
-
-    expire_due_recipients(conn)
-    if expire_due_actor_recipients(conn):
-        conn.commit()
-
-
 def get_message(
     conn: Any,
     *,
@@ -131,12 +89,12 @@ def get_message(
         unknown_message_fields,
     )
 
-    expire_message_receipts(conn)
     details = message_details(conn, message_id)
-    if not message_visible(conn, details, actor_id=actor_id, session_id=session_id):
+    if not message_visible(conn, message_id, actor_id=actor_id, session_id=session_id):
         raise SessionMessageError(
             "message_forbidden", "message is not visible to the calling actor"
         )
+    project_due_receipts(details, now=parse_instant(utc_now()))
     message = message_with_actor_context(
         details, actor_id=actor_id, session_id=session_id
     )
@@ -145,54 +103,12 @@ def get_message(
         known = ", ".join(sorted(message))
         raise SessionMessageError(
             "message_field_unknown",
-            f"no such message field: {', '.join(unknown)}. "
-            f"Accepted fields: {known}.",
+            f"no such message field: {', '.join(unknown)}. Accepted fields: {known}.",
         )
     return project_message(message, fields=fields, detail=detail)
 
 
-def list_messages(
-    conn: Any,
-    *,
-    actor_id: int,
-    caller_session_id: str | None,
-    state: str | None = None,
-    session_id: str | None = None,
-    limit: int = 50,
-) -> list[dict[str, Any]]:
-    expire_message_receipts(conn)
-    ids = list_message_ids(
-        conn,
-        state=state,
-        session_id=session_id,
-        actor_id=actor_id,
-        limit=min(500, max(limit * 4, limit)),
-    )
-    visible: list[dict[str, Any]] = []
-    for message_id in ids:
-        details = message_details(conn, message_id)
-        if message_visible(
-            conn,
-            details,
-            actor_id=actor_id,
-            session_id=caller_session_id,
-        ):
-            visible.append(
-                message_with_actor_context(
-                    details,
-                    actor_id=actor_id,
-                    session_id=caller_session_id,
-                )
-            )
-        if len(visible) >= limit:
-            break
-    return visible
-
-
 __all__ = [
-    "expire_message_receipts",
     "get_message",
-    "list_messages",
-    "message_visible",
     "message_with_actor_context",
 ]

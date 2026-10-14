@@ -13,6 +13,11 @@ from yoke_core.domain.actor_message_recipients import (
     actor_recipients_for_message,
 )
 from yoke_core.domain.actor_render import render_actor_name
+from yoke_core.domain.session_message_receipt_expiry import (
+    OPEN_SESSION_STATES,
+    actor_state_sql,
+    session_state_sql,
+)
 from yoke_core.domain.session_message_types import (
     SessionMessageError,
     row_dict,
@@ -111,64 +116,26 @@ def message_details(conn: Any, message_id: str) -> dict[str, Any]:
     return temporal_wire(message)
 
 
-def message_summary(conn: Any, message_id: str) -> dict[str, Any]:
-    """Return the compact message projection used by list surfaces."""
-    marker = _p(conn)
-    row = conn.execute(
-        "SELECT message_id,sender_actor_id,sender_session_id,body,created_at,"
-        "expires_at,cancelled_at,cancellation_reason,sender_surface "
-        f"FROM session_messages WHERE message_id={marker}",
-        (message_id,),
-    ).fetchone()
-    if row is None:
-        raise SessionMessageError(
-            "message_not_found", f"message {message_id!r} not found"
-        )
-    message = row_dict(row)
-    message["recipients"] = [
-        row_dict(value)
-        for value in conn.execute(
-            "SELECT session_id,project_id,executor_surface,machine_id,state,"
-            "created_at,injection_count,last_injected_at,acknowledged_at,expired_at,"
-            "cancelled_at,wake_attempt_count FROM session_message_recipients "
-            f"WHERE message_id={marker} ORDER BY session_id",
-            (message_id,),
-        ).fetchall()
-    ]
-    message["actor_recipients"] = actor_recipients_for_message(conn, message_id)
-    steering = stored_steering_recipient(conn, message_id)
-    if steering is not None:
-        message["steering_recipient"] = steering
-    message.update(
-        sender_identity_projection(
-            conn,
-            message["sender_actor_id"],
-            sender_surface=message.get("sender_surface"),
-        )
-    )
-    return temporal_wire(message)
-
-
-_UNACKNOWLEDGED_STATES: tuple[str, ...] = ("pending", "injected")
-
-
-def _session_state_clause(marker: str, state: str | None) -> tuple[str, list[Any]]:
+def _session_state_clause(
+    marker: str, state: str | None, now: Any
+) -> tuple[str, list[Any]]:
     if state == "unacknowledged":
-        slots = ",".join(marker for _ in _UNACKNOWLEDGED_STATES)
-        return f"r.state IN ({slots})", list(_UNACKNOWLEDGED_STATES)
+        return session_state_sql(marker, OPEN_SESSION_STATES, now)
     if state is not None:
-        return f"r.state={marker}", [state]
+        return session_state_sql(marker, (state,), now)
     return "1=1", []
 
 
-def _actor_state_clause(marker: str, state: str | None) -> tuple[str, list[Any]]:
+def _actor_state_clause(
+    marker: str, state: str | None, now: Any
+) -> tuple[str, list[Any]]:
     mapped = {"unacknowledged": "pending", "acknowledged": "read"}.get(
         str(state), state
     )
     if mapped == "cancelled":
         return "1=0", []
     if mapped is not None:
-        return f"ar.state={marker}", [mapped]
+        return actor_state_sql(marker, mapped, now)
     return "1=1", []
 
 
@@ -200,8 +167,13 @@ def message_recipient_match_clause(
     state: str | None,
     session_id: str | None,
     actor_id: int,
+    now: Any,
 ) -> tuple[str, list[Any]]:
     """Build the shared recipient/state predicate for message list reads.
+
+    ``now`` is the bound read instant: a session or person receipt still
+    open past its message's expiry matches ``expired`` rather than its
+    stored state, so the filter agrees with what the rows display.
 
     The steering branch is unconditional: a role-addressed row has a
     recipient whether or not any session is holding it -- ``awaiting_seat``
@@ -210,7 +182,7 @@ def message_recipient_match_clause(
     ``sr.seat_session_id`` only kicks in when the caller filtered to one
     exact session, matching the plain session-recipient branch above it.
     """
-    session_state, session_params = _session_state_clause(marker, state)
+    session_state, session_params = _session_state_clause(marker, state, now)
     session_filter = ""
     if session_id is not None:
         session_filter = f" AND r.session_id={marker}"
@@ -233,7 +205,7 @@ def message_recipient_match_clause(
     )
     params.extend([STEERING_KIND, *steering_params, *seat_params])
     if session_id is None:
-        actor_state, actor_params = _actor_state_clause(marker, state)
+        actor_state, actor_params = _actor_state_clause(marker, state, now)
         branches.append(
             "EXISTS (SELECT 1 FROM actor_message_recipients ar "
             f"WHERE ar.message_id=m.message_id AND ar.recipient_kind={marker} "
@@ -242,48 +214,6 @@ def message_recipient_match_clause(
         )
         params.extend([ACTOR_KIND, actor_id, actor_id, *actor_params])
     return "(" + " OR ".join(branches) + ")", params
-
-
-def list_message_ids(
-    conn: Any,
-    *,
-    state: str | None,
-    session_id: str | None,
-    actor_id: int,
-    limit: int,
-) -> list[str]:
-    marker = _p(conn)
-    recipient_match, params = message_recipient_match_clause(
-        marker,
-        state=state,
-        session_id=session_id,
-        actor_id=actor_id,
-    )
-    params.append(max(1, min(int(limit), 500)))
-    rows = conn.execute(
-        "SELECT m.message_id,m.created_at FROM session_messages m WHERE "
-        + recipient_match
-        + " ORDER BY m.created_at DESC,m.message_id LIMIT "
-        + marker,
-        tuple(params),
-    ).fetchall()
-    return [str(row[0]) for row in rows]
-
-
-def recipient_project_ids(details: dict[str, Any]) -> set[int]:
-    """Every project a message reached, session/human and steering alike.
-
-    A steering-only message carries no ``session_message_recipients`` row
-    at all -- its reach is the durable role-addressed row's own project --
-    so the project-authorized fallback in ``message_visible`` would
-    otherwise see an empty set and refuse a reader who can read that
-    project just as it would any other recipient kind.
-    """
-    project_ids = {int(row["project_id"]) for row in details.get("recipients", [])}
-    steering = details.get("steering_recipient")
-    if steering is not None:
-        project_ids.add(int(steering["project_id"]))
-    return project_ids
 
 
 def public_recipients(details: dict[str, Any]) -> list[dict[str, Any]]:
@@ -310,11 +240,8 @@ def public_recipients(details: dict[str, Any]) -> list[dict[str, Any]]:
 
 __all__ = [
     "ENGINE_SENDER_LABEL",
-    "list_message_ids",
     "message_details",
     "message_recipient_match_clause",
-    "message_summary",
     "public_recipients",
-    "recipient_project_ids",
     "sender_identity_projection",
 ]

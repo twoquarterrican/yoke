@@ -34,7 +34,7 @@ from yoke_core.domain.session_message_store import (
     body_sha256,
     insert_message,
 )
-from yoke_core.domain.session_message_queries import get_message, list_messages
+from yoke_core.domain.session_message_queries import get_message
 from yoke_core.domain.session_message_reads import public_recipients
 from yoke_core.domain.session_message_substance import validate_body
 from yoke_core.domain.session_message_types import (
@@ -317,4 +317,4 @@ def _record_steering_row(
     )
 
 
-__all__ = ["get_message", "list_messages", "preview_message", "send_message"]
+__all__ = ["get_message", "preview_message", "send_message"]

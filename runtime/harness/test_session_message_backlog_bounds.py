@@ -18,7 +18,7 @@ from yoke_core.domain.session_message_delivery import (
     complete_hook_lease,
     lease_for_hook,
 )
-from yoke_core.domain.session_message_queries import get_message, list_messages
+from yoke_core.domain.session_message_queries import get_message
 from yoke_core.domain.session_message_service import send_message
 from yoke_core.hooks import session_message_delivery as hook_delivery
 from yoke_core.hooks.decision_render import render_claude_decision
@@ -28,6 +28,8 @@ from yoke_core.hooks.session_message_delivery_port import (
 )
 from yoke_core.hooks.types import HookContext
 from runtime.api.domain.test_session_message_support import (
+    page_rows,
+    pin_message_clocks,
     NOW,
     message_connection,
     selector,
@@ -41,9 +43,7 @@ EVENTS = ("PreToolUse", "PostToolUse")
 
 @pytest.fixture(autouse=True)
 def _fixed_message_clock(monkeypatch) -> None:
-    from yoke_core.domain import session_message_delivery
-
-    monkeypatch.setattr(session_message_delivery, "utc_now", lambda: NOW)
+    pin_message_clocks(monkeypatch)
 
 
 @pytest.fixture(autouse=True)
@@ -252,7 +252,7 @@ def test_a_backlog_drains_across_hooks_and_never_receipts_a_missing_body() -> No
         assert _receipts(conn)[message_id] == "injected"
     assert (
         len(
-            list_messages(
+            page_rows(
                 conn,
                 actor_id=10,
                 caller_session_id=RECIPIENT,

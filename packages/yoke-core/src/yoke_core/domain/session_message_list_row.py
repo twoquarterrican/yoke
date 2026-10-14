@@ -21,8 +21,8 @@ recipients are counted in ``recipient_count`` and ``recipient_states``
 but carry no receipt here.
 
 This is a projection of an already-built summary, never a second thinner
-query: visibility is decided from the same recipient rows, so they are
-read either way.
+query: the page reads its summaries in one batch
+(:mod:`yoke_core.domain.session_message_page_rows`) and narrows each here.
 """
 
 from __future__ import annotations
