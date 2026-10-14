@@ -7,14 +7,11 @@ import json
 import os
 import sys
 import time
-import urllib.request
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
 from yoke_cli.config import machine_config
-from yoke_cli.transport.bounded_json_http import request_json
-from yoke_cli.transport.response_limits import SMALL_JSON_RESPONSE_LIMIT_BYTES
 from yoke_contracts.hook_evaluator_protocol import (
     HOOK_CLIENT_WALL_BATCH_FIELD,
     HOOK_CLIENT_WALL_PATH,
@@ -110,14 +107,26 @@ class HookClientWall:
 
 
 def record_client_wall(event_id: str, client_wall_ms: int) -> None:
-    """Complete local or HTTPS telemetry without changing hook outcome."""
+    """Complete local or HTTPS telemetry without changing hook outcome.
+
+    Only the in-process fallback reports from here (the resident reports
+    for itself), so the HTTP transport loads here rather than in every hook.
+    """
     try:
+        import urllib.request
+
+        from yoke_cli.transport.bounded_json_http import request_json
         from yoke_cli.transport.https import resolve_https_connection
+        from yoke_cli.transport.response_limits import (
+            SMALL_JSON_RESPONSE_LIMIT_BYTES,
+        )
 
         connection = resolve_https_connection()
         if connection is None:
             local = machine_config.product_connection()
-            if local.get("transport") not in POSTGRES_TRANSPORTS or connection_is_prod(local):
+            if local.get("transport") not in POSTGRES_TRANSPORTS or connection_is_prod(
+                local
+            ):
                 return
             module = importlib.import_module("yoke_core.domain.hook_client_wall")
             module.record_client_wall_reports([(event_id, client_wall_ms)])

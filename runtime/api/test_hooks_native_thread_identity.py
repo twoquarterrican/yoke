@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from fastapi import BackgroundTasks
 import json
 from types import SimpleNamespace
 
@@ -17,7 +18,7 @@ def test_route_preserves_native_thread_id(monkeypatch) -> None:
         "require_auth_context",
         lambda _request: SimpleNamespace(actor_id=2),
     )
-    monkeypatch.setattr(routes, "_authorize_project", lambda *_args: None)
+    monkeypatch.setattr(routes, "_authorize_project", lambda *_args: ("example", None))
     monkeypatch.setattr(
         routes,
         "evaluate_remote",
@@ -44,7 +45,7 @@ def test_route_preserves_native_thread_id(monkeypatch) -> None:
         native_thread_id="cursor-conversation",
     )
 
-    response = routes.post_hooks_evaluate(object(), request)
+    response = routes.post_hooks_evaluate(object(), request, BackgroundTasks())
 
     assert response.status_code == 200
     assert captured["native_thread_id"] == "cursor-conversation"

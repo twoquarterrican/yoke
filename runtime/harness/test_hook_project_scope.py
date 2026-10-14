@@ -9,7 +9,6 @@ import pytest
 
 from yoke_contracts.hook_runner import project_scope
 from yoke_core.hooks import codex_payload, target
-from yoke_harness.hooks.identity_relay import client_project_id
 
 
 @pytest.fixture
@@ -39,7 +38,7 @@ def test_connection_or_yoke_files_do_not_establish_membership(tmp_path, project_
     assert project_scope.project_id_for_root(root) is None
     assert target.is_yoke_target(str(root), str(db)) is False
     assert codex_payload.is_yoke_target(str(root), str(db)) is False
-    assert client_project_id({"cwd": str(root)}) is None
+    assert project_scope.project_id_for_payload({"cwd": str(root)}) is None
 
 
 def test_registered_folder_and_subdirectory_share_membership(tmp_path, project_map):
@@ -82,13 +81,53 @@ def test_git_worktree_is_managed_but_nested_independent_repo_is_not(
     assert project_scope.project_id_for_root(nested) is None
 
 
+def test_lane_and_main_checkout_share_membership_with_one_git_lookup(
+    tmp_path, project_map, monkeypatch
+):
+    from yoke_contracts.machine_config import checkout
+
+    root = tmp_path / "repo"
+    root.mkdir()
+    _git(root, "init", "-b", "main")
+    _git(
+        root,
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.invalid",
+        "commit",
+        "--allow-empty",
+        "-m",
+        "initialize",
+    )
+    lane = tmp_path / "lane"
+    _git(root, "worktree", "add", "-b", "feature", str(lane))
+    project_map["projects"] = [{"checkout": str(root), "project_id": 7}]
+    lookups: list[list[str]] = []
+    real_run = checkout.subprocess.run
+
+    def counted_run(args, **kwargs):
+        if "worktree" in args:
+            lookups.append(list(args))
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(checkout.subprocess, "run", counted_run)
+
+    assert project_scope.project_id_for_root(lane) == 7
+    assert project_scope.project_id_for_root(root) == 7
+    assert project_scope.project_id_for_root(lane) == 7
+    # The lane's answer names its main checkout too, so a long-lived resident
+    # asks Git once per new directory rather than twice per hook.
+    assert len(lookups) == 1
+
+
 @pytest.mark.parametrize("key", ["cwd", "workspace", "project_dir", "workspace_roots"])
 def test_harness_workspace_facts_share_the_project_resolver(tmp_path, project_map, key):
     root = tmp_path / "managed"
     root.mkdir()
     project_map["projects"] = [{"checkout": str(root), "project_id": 7}]
     value = [str(root)] if key == "workspace_roots" else str(root)
-    assert client_project_id({key: value}) == 7
+    assert project_scope.project_id_for_payload({key: value}) == 7
 
 
 def test_actual_command_workdir_wins_over_managed_session(tmp_path, project_map):
@@ -99,7 +138,7 @@ def test_actual_command_workdir_wins_over_managed_session(tmp_path, project_map)
     project_map["projects"] = [{"checkout": str(managed), "project_id": 7}]
     payload = {"cwd": str(managed), "tool_input": {"workdir": str(unrelated)}}
     assert project_scope.project_id_for_payload(payload) is None
-    assert client_project_id(payload) is None
+    assert project_scope.project_id_for_payload(payload) is None
     assert (
         project_scope.project_id_for_payload(
             {
@@ -154,8 +193,9 @@ def test_unmapped_https_hook_finishes_locally_without_posting(
     monkeypatch.setattr(
         relay, "evaluate_local_subset", local_subset.evaluate_local_subset
     )
+    # The shared relay-protocol fixture pins every relay to project 7.
     monkeypatch.setattr(
-        relay, "project_id_for_payload", project_scope.project_id_for_payload
+        relay, "resolve_hook_project_scope", project_scope.resolve_hook_project_scope
     )
     payload = {
         "cwd": str(root),
@@ -176,6 +216,13 @@ def test_unmapped_https_hook_finishes_locally_without_posting(
         pytest.fail("unmapped hook attempted a project-scoped HTTPS request")
 
     monkeypatch.setattr(relay, "relay_denial_audit", unexpected_http)
+    resolutions: list[dict] = []
+    real_resolve = project_scope.project_id_for_payload
+    monkeypatch.setattr(
+        project_scope,
+        "project_id_for_payload",
+        lambda request: resolutions.append(request) or real_resolve(request),
+    )
     result = relay.relay_hook_event(
         "PreToolUse",
         HttpsConnection("https://example.invalid", "test-token"),
@@ -185,3 +232,6 @@ def test_unmapped_https_hook_finishes_locally_without_posting(
     assert result == 0
     output = capsys.readouterr().out
     assert ("permissionDecision" in output) is denied
+    # One request resolves its project once, for the local subset and the
+    # relay decision alike.
+    assert len(resolutions) == 1

@@ -15,6 +15,7 @@ from yoke_core.domain.execution_provenance import (
 from yoke_cli.transport.https import HttpsConnection
 from yoke_harness.hooks import relay
 from yoke_harness.hooks.local_subset import LocalSubsetEvaluation
+from yoke_contracts.hook_runner.project_scope import HookProjectScope
 
 
 def test_collect_execution_provenance_has_required_keys() -> None:
@@ -64,7 +65,9 @@ def test_explicit_provenance_probe_uses_supplied_build_revision() -> None:
 def test_hook_provenance_is_printed_only_on_allow(path, denied, monkeypatch, capsys):
     reason = "BLOCKED: policy reason" if denied else ""
     monkeypatch.setattr(relay, "detect_executor", lambda: "claude-code")
-    monkeypatch.setattr(relay, "project_id_for_payload", lambda _payload: 1)
+    monkeypatch.setattr(
+        relay, "resolve_hook_project_scope", lambda _payload: HookProjectScope(1)
+    )
     monkeypatch.setattr(relay, "_client_lint_config_snapshot", lambda _p: {})
     monkeypatch.setattr(relay, "stamp_hook_input", lambda *a: ("{}", None))
     monkeypatch.setattr(relay, "settle_projection", lambda *a: None)
@@ -83,7 +86,9 @@ def test_hook_provenance_is_printed_only_on_allow(path, denied, monkeypatch, cap
     monkeypatch.setattr(relay, "relay_denial_audit", lambda *a: None)
     monkeypatch.setattr(relay, "_codex_capture", lambda *a: None)
     monkeypatch.setattr(relay, "deny_unstamped_relay", lambda _p: None)
-    monkeypatch.setattr(relay, "relay_identity_payload", lambda *a: {"project_id": 1})
+    monkeypatch.setattr(
+        relay, "relay_identity_payload", lambda *a, **k: {"project_id": 1}
+    )
     monkeypatch.setattr(relay, "record_model_facts_shipped", lambda *a: None)
     monkeypatch.setattr(
         relay,

@@ -37,7 +37,7 @@ variants use repaired `session_tool_calls` endpoints when present, preserving
 timed, pending, unsupported and unknown distinctions across supported harnesses.
 Duplicate tool completion events share one `(session_id, tool_use_id)` count.
 `HookDispatchTelemetry.duration_ms` measures the evaluator; `client_wall_ms`
-is separately inspected. The semantic operation `session_control.relay.claim`
+and, on a relayed hook, the server's `server_wall_ms` are separately inspected. The semantic operation `session_control.relay.claim`
 identifies a relay long-poll. A stored command summary naming a registered
 `yoke watch` invocation identifies watcher wall time. A slow bare shell is
 still ordinary tool timing; duration alone never classifies a wait.

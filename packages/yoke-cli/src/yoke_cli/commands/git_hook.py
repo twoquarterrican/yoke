@@ -4,7 +4,7 @@ The ``.git/hooks/`` shims installed by ``yoke project install``
 exec these subcommands through the machine-installed ``yoke`` launcher,
 so hooked commits work in external project repos without importing
 ``yoke_core`` or ``runtime``. They are tool-shaped CLI tokens routed by
-:mod:`yoke_cli.main`, deliberately NOT dispatcher function ids (operation
+:mod:`yoke_cli.command_router`, deliberately NOT dispatcher function ids (operation
 inventory: ``status="permanent"``, ``reason="tool_shaped"``).
 
 Transport honesty:

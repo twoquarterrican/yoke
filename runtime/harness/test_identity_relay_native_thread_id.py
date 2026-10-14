@@ -38,7 +38,7 @@ def test_none_when_unset():
 def test_relay_identity_payload_carries_native_thread_id():
     with mock.patch.dict(os.environ, {"CODEX_THREAD_ID": "thread-42"}, clear=True):
         payload = relay_identity_payload(
-            "SessionStart", {"session_id": "s1"}, "codex-desktop"
+            "SessionStart", {"session_id": "s1"}, "codex-desktop", project_id=None
         )
 
     assert payload["native_thread_id"] == "thread-42"
@@ -58,7 +58,10 @@ def test_cursor_uses_the_hook_written_conversation_map(
     )
     assert client_native_thread_id("cursor-desktop", "other-session") is None
     relayed = relay_identity_payload(
-        "SessionStart", {"session_id": "yoke-session"}, "cursor-desktop"
+        "SessionStart",
+        {"session_id": "yoke-session"},
+        "cursor-desktop",
+        project_id=None,
     )
     assert relayed["native_thread_id"] == "cursor-conversation"
 
@@ -117,7 +120,7 @@ def test_claude_uses_a_distinct_native_session(monkeypatch) -> None:
     assert client_native_thread_id("claude-code", "yoke-session") == ("claude-session")
     assert client_native_thread_id("claude-code", "claude-session") is None
     relayed = relay_identity_payload(
-        "SessionStart", {"session_id": "yoke-session"}, "claude-code"
+        "SessionStart", {"session_id": "yoke-session"}, "claude-code", project_id=None
     )
     assert relayed["native_thread_id"] == "claude-session"
 

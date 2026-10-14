@@ -46,7 +46,7 @@ _CORE_DOMAIN_SOURCE_ROOT = "packages/yoke-core/src/yoke_core/domain"
 # deliberately, and the renderer that stamps the directive into the
 # startup rules every session already receives.
 IMPORTING_CONSUMERS: Tuple[str, ...] = (
-    "packages/yoke-cli/src/yoke_cli/main.py",
+    "packages/yoke-cli/src/yoke_cli/command_router.py",
     "packages/yoke-cli/src/yoke_cli/commands/adapters/ouroboros_field_note.py",
     f"{_CORE_DOMAIN_SOURCE_ROOT}/agents_render_field_note.py",
     "packages/yoke-core/src/yoke_core/tools/render_field_note_inline.py",

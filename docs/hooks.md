@@ -163,6 +163,14 @@ The configured in-process path records or relays the same field. An unconfigured
 thin client leaves disposable telemetry unrecorded and never imports the engine
 solely to report it.
 
+`yoke hook evaluate` is answered before the `yoke` command registry loads, so
+the short-lived process imports only the socket client. The resident resolves a
+request's project membership once and keeps each directory's Git main checkout
+for its lifetime. Over https the server opens one database connection before
+the chain (project authorization and scope), writes session registration and
+turn posture before it responds, and writes the telemetry rows after the
+response, adding `server_wall_ms` (auth plus handling) to the dispatch row.
+
 Fallback appends `YOKE_HOOK_PHASE_TIMING` to the machine cache's
 `hook-evaluator/evaluator.log` with `resident_wait_ms`,
 `fallback_ms`, `client_wall_ms` and `fallback_reason`; unmeasured phases say

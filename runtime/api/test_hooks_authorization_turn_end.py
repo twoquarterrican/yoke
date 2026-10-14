@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from fastapi import BackgroundTasks
 import json
 from types import SimpleNamespace
 
@@ -61,7 +62,9 @@ def test_project_denied_turn_end_stamps_owned_session_and_preserves_refusal(
         project_id=project,
         stdin=json.dumps({"session_id": "s2", "identity_stamped": True}),
     )
-    body = json.loads(post_hooks_evaluate(SimpleNamespace(), request).body)
+    body = json.loads(
+        post_hooks_evaluate(SimpleNamespace(), request, BackgroundTasks()).body
+    )
     assert body["outcome"] == "denied"
     assert body["exit_code"] == 1
     assert (
@@ -127,7 +130,9 @@ def test_project_refusal_does_not_grant_foreign_session_or_prompt_authority(
     request = HookEvaluateRequest(
         event_name=event, stdin=json.dumps({"session_id": "s2"})
     )
-    body = json.loads(post_hooks_evaluate(SimpleNamespace(), request).body)
+    body = json.loads(
+        post_hooks_evaluate(SimpleNamespace(), request, BackgroundTasks()).body
+    )
     assert _posture(conn) == "running"
     if actor == 11:
         assert "turn_posture_owner_unverified" in body["stdout"]
@@ -151,7 +156,9 @@ def test_posture_database_failure_keeps_project_refusal_and_teaches_recovery(
     request = HookEvaluateRequest(
         event_name="Stop", stdin=json.dumps({"session_id": "s2"})
     )
-    body = json.loads(post_hooks_evaluate(SimpleNamespace(), request).body)
+    body = json.loads(
+        post_hooks_evaluate(SimpleNamespace(), request, BackgroundTasks()).body
+    )
     assert body["outcome"] == "denied"
     assert "no configured project id" in body["stdout"]
     assert "turn_posture_unavailable" in body["stdout"]

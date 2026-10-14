@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from yoke_cli import command_router
 from yoke_cli import main as cli_main
+from yoke_cli.config import machine_config
 from yoke_contracts.control_plane_locality import (
     RemoteControlPlaneConnectionError,
     refuse_direct_connection,
@@ -16,19 +18,24 @@ from yoke_contracts.machine_config.schema import TRANSPORT_HTTPS
 
 def _connection(monkeypatch, transport, *, raises=None):
     monkeypatch.delenv(PG_DSN_ENV, raising=False)
+
     def active_connection(*_args, **_kwargs):
         if raises is not None:
             raise raises
         return {"transport": transport, "env": "an-env"}
 
     monkeypatch.setattr(
-        cli_main.machine_config, "active_connection", active_connection,
+        machine_config,
+        "active_connection",
+        active_connection,
     )
 
 
 def _run(monkeypatch, adapter):
     monkeypatch.setattr(
-        cli_main, "resolve", lambda argv: (("probe",), "probe.run", adapter, []),
+        command_router,
+        "resolve",
+        lambda argv: (("probe",), "probe.run", adapter, []),
     )
     return cli_main.main(["probe"])
 
@@ -36,18 +43,26 @@ def _run(monkeypatch, adapter):
 def test_https_connection_marks_the_adapter_run(monkeypatch) -> None:
     _connection(monkeypatch, TRANSPORT_HTTPS)
     observed: list[bool] = []
-    assert _run(monkeypatch, lambda _rest: observed.append(
-        remote_control_plane_active()
-    ) or 0) == 0
+    assert (
+        _run(
+            monkeypatch,
+            lambda _rest: observed.append(remote_control_plane_active()) or 0,
+        )
+        == 0
+    )
     assert observed == [True]
 
 
 def test_local_connection_leaves_the_adapter_run_unmarked(monkeypatch) -> None:
     _connection(monkeypatch, "postgres")
     observed: list[bool] = []
-    assert _run(monkeypatch, lambda _rest: observed.append(
-        remote_control_plane_active()
-    ) or 0) == 0
+    assert (
+        _run(
+            monkeypatch,
+            lambda _rest: observed.append(remote_control_plane_active()) or 0,
+        )
+        == 0
+    )
     assert observed == [False]
 
 
@@ -56,9 +71,13 @@ def test_unreadable_machine_config_leaves_the_run_unmarked(monkeypatch) -> None:
     # it says nothing about whether a local database exists.
     _connection(monkeypatch, TRANSPORT_HTTPS, raises=RuntimeError("no config"))
     observed: list[bool] = []
-    assert _run(monkeypatch, lambda _rest: observed.append(
-        remote_control_plane_active()
-    ) or 0) == 0
+    assert (
+        _run(
+            monkeypatch,
+            lambda _rest: observed.append(remote_control_plane_active()) or 0,
+        )
+        == 0
+    )
     assert observed == [False]
 
 
@@ -77,9 +96,13 @@ def test_a_pinned_dsn_settles_locality_before_the_machine_config(
     _connection(monkeypatch, TRANSPORT_HTTPS)
     monkeypatch.setenv(PG_DSN_ENV, "host=localhost dbname=yoke_test_x")
     observed: list[bool] = []
-    assert _run(monkeypatch, lambda _rest: observed.append(
-        remote_control_plane_active()
-    ) or 0) == 0
+    assert (
+        _run(
+            monkeypatch,
+            lambda _rest: observed.append(remote_control_plane_active()) or 0,
+        )
+        == 0
+    )
     assert observed == [False]
 
 

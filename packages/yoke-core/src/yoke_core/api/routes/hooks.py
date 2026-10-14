@@ -9,6 +9,11 @@ is enforced by the app-level bearer-token middleware like every other
 row at relayed ensure-register. The wire contract is frozen: see
 :mod:`yoke_harness.hooks.relay` (client) and
 :mod:`yoke_core.hooks.remote_entry` (evaluation).
+
+One database connection precedes the chain: project authorization and the
+project slug the run is scoped to. Session registration and turn posture are
+written before the response; the disposable telemetry rows are written after
+it, with the server's request wall time on the dispatch row.
 """
 
 from __future__ import annotations
@@ -17,14 +22,19 @@ from datetime import datetime, timezone
 import json
 from typing import Any
 
-from fastapi import Request
+from fastapi import BackgroundTasks, Request
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
 from yoke_contracts.machine_config import runtime as machine_config_runtime
 from yoke_contracts.session_model_facts import facts_from_mapping
 from yoke_core.api.http_auth import require_auth_context
-from yoke_core.api.observability import record_counter, record_histogram
+from yoke_core.api.observability import (
+    now_ms,
+    record_counter,
+    record_histogram,
+    request_phases,
+)
 from yoke_core.domain.execution_provenance import collect_execution_provenance
 from yoke_core.domain.hook_runner_deadline import resolve_total_timeout_ms
 from yoke_core.hooks.relayed_session_identity import (
@@ -49,6 +59,7 @@ router = APIRouter()
 def post_hooks_evaluate(
     http_request: Request,
     request: HookEvaluateRequest,
+    background_tasks: BackgroundTasks,
 ) -> JSONResponse:
     """Evaluate one hook event server-side and relay the rendered decision."""
     stamped = _refuse_conversation_shaped(request)
@@ -76,7 +87,7 @@ def post_hooks_evaluate(
     )
     auth = require_auth_context(http_request)
     observed_at = datetime.now(timezone.utc)
-    auth_error = _authorize_project(auth.actor_id, request)
+    project_slug, auth_error = _authorize_project(auth.actor_id, request)
     if auth_error is not None:
         from yoke_core.hooks.session_turn_posture_tail import (
             persist_authorization_denied_turn_end,
@@ -104,6 +115,7 @@ def post_hooks_evaluate(
         usage_totals=request.usage_totals,
         execution_level=request.execution_level,
         project_id=request.project_id,
+        project_slug=project_slug,
         executor_version=request.executor_version,
         machine_id=request.machine_id,
         native_thread_id=request.native_thread_id,
@@ -125,7 +137,7 @@ def post_hooks_evaluate(
     attributes = {"event": request.event_name, "outcome": result.outcome}
     record_histogram("yoke.hook.wait_ms", result.wait_ms, attributes=attributes)
     record_counter("yoke.hook.requests", attributes=attributes)
-    return JSONResponse(
+    response = JSONResponse(
         content=_with_provenance(
             HookEvaluateResponse(
                 stdout=result.stdout,
@@ -139,6 +151,19 @@ def post_hooks_evaluate(
             ).model_dump()
         )
     )
+    background_tasks.add_task(result.flush_telemetry, _server_wall_ms(http_request))
+    return response
+
+
+def _server_wall_ms(http_request: Request) -> int:
+    """Return the server's time on this request so far: auth plus handling."""
+    from yoke_core.api.app_factory import ADMISSION_STATE_ATTR
+
+    admitted_at = getattr(
+        getattr(http_request, "state", None), ADMISSION_STATE_ATTR, None
+    )
+    handled_ms = now_ms(admitted_at) if isinstance(admitted_at, float) else 0
+    return request_phases(http_request).get("auth", 0) + handled_ms
 
 
 def _with_provenance(content: dict[str, Any]) -> dict[str, Any]:
@@ -254,7 +279,8 @@ def _refuse_conversation_shaped(request: HookEvaluateRequest) -> JSONResponse | 
 def _authorize_project(
     actor_id: int,
     request: HookEvaluateRequest,
-) -> JSONResponse | None:
+) -> tuple[str, JSONResponse | None]:
+    """Return the authorized project's slug, or the denial to send instead."""
     project_id = request.project_id
     if project_id is None:
         reason = (
@@ -267,39 +293,31 @@ def _authorize_project(
             "instead, so shared checkout routing for the real project is "
             "never touched."
         )
-        _emit_route_denial("project_authorization", reason, request)
-        return JSONResponse(
-            content=HookEvaluateResponse(
-                stdout=f"{reason}\n",
-                exit_code=1,
-                wait_ms=0,
-                degraded=[],
-                outcome="denied",
-            ).model_dump(),
-        )
+        return "", _project_denial(reason, request)
     try:
         from yoke_core.domain import db_helpers
         from yoke_core.domain.actor_project_visibility import actor_visible_project_ids
+        from yoke_core.domain.project_identity import resolve_project_slug
 
         with db_helpers.connect() as conn:
             visible = actor_visible_project_ids(conn, actor_id) or set()
+            project_slug = (
+                resolve_project_slug(conn, int(project_id))
+                if int(project_id) in visible
+                else ""
+            )
     except Exception:
         reason = "Yoke hook registration denied: project auth unavailable."
-        _emit_route_denial("project_authorization", reason, request)
-        return JSONResponse(
-            content=HookEvaluateResponse(
-                stdout=f"{reason}\n",
-                exit_code=1,
-                wait_ms=0,
-                degraded=[],
-                outcome="denied",
-            ).model_dump(),
-        )
-    if int(project_id) in visible:
-        return None
+        return "", _project_denial(reason, request)
+    if project_slug:
+        return project_slug, None
     reason = (
         f"Yoke hook registration denied: actor cannot access project {int(project_id)}."
     )
+    return "", _project_denial(reason, request)
+
+
+def _project_denial(reason: str, request: HookEvaluateRequest) -> JSONResponse:
     _emit_route_denial("project_authorization", reason, request)
     return JSONResponse(
         content=HookEvaluateResponse(

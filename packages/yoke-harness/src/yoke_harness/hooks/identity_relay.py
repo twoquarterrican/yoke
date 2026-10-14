@@ -73,12 +73,6 @@ def workspace_path_candidates(payload: dict[str, Any]) -> list[str]:
     return candidates(payload)
 
 
-def client_project_id(payload: dict[str, Any]) -> Optional[int]:
-    from yoke_contracts.hook_runner.project_scope import project_id_for_payload
-
-    return project_id_for_payload(payload)
-
-
 def client_native_thread_id(
     executor: str,
     yoke_session_id: str = "",
@@ -126,13 +120,19 @@ def relay_identity_payload(
     event_name: str,
     payload: dict[str, Any],
     executor: str,
+    *,
+    project_id: Optional[int],
 ) -> dict[str, Optional[str] | Optional[int]]:
+    """Collect the client facts a relayed hook carries to the control plane.
+
+    ``project_id`` is the request's already-resolved project membership.
+    """
     entrypoint = client_entrypoint(executor, payload)
     return {
         "entrypoint": entrypoint,
         **client_model_facts(event_name, payload, executor),
         **client_usage_facts(payload, executor),
-        "project_id": client_project_id(payload),
+        "project_id": project_id,
         "executor_version": client_executor_version(executor, entrypoint),
         "machine_id": client_machine_id(),
         "native_thread_id": client_native_thread_id(
@@ -155,7 +155,6 @@ __all__ = [
     "record_model_facts_shipped",
     "resolve_model_facts",
     "client_native_thread_id",
-    "client_project_id",
     "workspace_path_candidates",
     "relay_identity_payload",
 ]

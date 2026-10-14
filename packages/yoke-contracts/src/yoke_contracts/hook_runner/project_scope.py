@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -67,3 +68,35 @@ def project_id_for_payload(payload: dict[str, Any]) -> int | None:
         if project_id is not None:
             return project_id
     return None
+
+
+class HookProjectScopeUnavailable(RuntimeError):
+    """The hook's project membership could not be resolved."""
+
+
+@dataclass(frozen=True)
+class HookProjectScope:
+    """One hook request's project membership, resolved once and passed on.
+
+    Resolution can read the machine config and ask Git for the main
+    checkout, so a request resolves it once at entry and every consumer
+    reads this value. A failed resolution is kept, not raised, so each
+    consumer still refuses with the same ``hook_scope_unavailable`` reason.
+    """
+
+    project_id: int | None = None
+    failure: str = ""
+
+    def require_project_id(self) -> int | None:
+        """Return the project id, or raise the recorded resolution failure."""
+        if self.failure:
+            raise HookProjectScopeUnavailable(self.failure)
+        return self.project_id
+
+
+def resolve_hook_project_scope(payload: dict[str, Any]) -> HookProjectScope:
+    """Resolve a hook payload's project membership exactly once."""
+    try:
+        return HookProjectScope(project_id=project_id_for_payload(payload))
+    except (ValueError, OSError, RuntimeError) as exc:
+        return HookProjectScope(failure=str(exc))

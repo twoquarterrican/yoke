@@ -8,6 +8,7 @@ refusal shapes used to leave no durable ``HarnessToolCallDenied`` row.
 
 from __future__ import annotations
 
+from fastapi import BackgroundTasks
 import json
 from types import SimpleNamespace
 from unittest import mock
@@ -94,8 +95,9 @@ def test_a_stamp_without_an_identity_still_denies() -> None:
 def test_missing_project_id_denies_and_emits() -> None:
     request = _request({"session_id": "sid-1"}, project_id=None)
     with mock.patch("yoke_core.hooks.denial.emit_denial_event") as canonical:
-        response = _authorize_project(1, request)
+        project_slug, response = _authorize_project(1, request)
     assert response is not None
+    assert project_slug == ""
     canonical.assert_called_once()
     kwargs = canonical.call_args.kwargs
     assert kwargs["check_id"] == "project_authorization"
@@ -116,8 +118,9 @@ def test_actor_without_project_visibility_denies_and_emits() -> None:
         mock.patch("yoke_core.domain.db_helpers.connect"),
         mock.patch("yoke_core.hooks.denial.emit_denial_event") as canonical,
     ):
-        response = _authorize_project(1, request)
+        project_slug, response = _authorize_project(1, request)
     assert response is not None
+    assert project_slug == ""
     canonical.assert_called_once()
     kwargs = canonical.call_args.kwargs
     assert kwargs["check_id"] == "project_authorization"
@@ -167,7 +170,10 @@ def test_skew_annotation_preserves_the_actual_denying_check() -> None:
             "yoke_core.api.routes.hooks.require_auth_context",
             return_value=SimpleNamespace(actor_id=1),
         ),
-        mock.patch("yoke_core.api.routes.hooks._authorize_project", return_value=None),
+        mock.patch(
+            "yoke_core.api.routes.hooks._authorize_project",
+            return_value=("example", None),
+        ),
         mock.patch("yoke_core.api.routes.hooks.evaluate_remote", return_value=denial),
         mock.patch(
             "yoke_core.api.routes.hooks.collect_execution_provenance",
@@ -175,7 +181,7 @@ def test_skew_annotation_preserves_the_actual_denying_check() -> None:
         ),
         mock.patch("yoke_core.hooks.denial.emit_denial_event") as canonical,
     ):
-        response = post_hooks_evaluate(_FakeHttpRequest(), request)
+        response = post_hooks_evaluate(_FakeHttpRequest(), request, BackgroundTasks())
     assert response.status_code == 200
     kwargs = canonical.call_args.kwargs
     assert kwargs["check_id"] == "turn_end_promised_work_gate"

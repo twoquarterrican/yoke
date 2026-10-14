@@ -122,7 +122,6 @@ def test_relay_identity_payload_includes_observed_fields(monkeypatch) -> None:
     monkeypatch.setattr(
         identity_relay, "client_model_facts", lambda *_: {"model": "gpt-test"}
     )
-    monkeypatch.setattr(identity_relay, "client_project_id", lambda *_: 7)
     monkeypatch.setattr(
         identity_relay,
         "client_executor_version",
@@ -138,6 +137,7 @@ def test_relay_identity_payload_includes_observed_fields(monkeypatch) -> None:
         "SessionStart",
         {"session_id": "s-1"},
         "codex",
+        project_id=7,
     )
 
     assert identity["executor_version"] == "0.148.0"
@@ -162,13 +162,13 @@ def test_a_claude_cli_hook_registers_the_version_its_shared_cache_reports(
     monkeypatch.setattr(
         identity_relay, "client_model_facts", lambda *_: {"model": "claude-opus-5"}
     )
-    monkeypatch.setattr(identity_relay, "client_project_id", lambda *_: 1)
     monkeypatch.setattr(identity_relay, "client_machine_id", lambda: "machine-uuid")
 
     identity = identity_relay.relay_identity_payload(
         "SessionStart",
         {"session_id": "s-claude"},
         "claude-code",
+        project_id=1,
     )
 
     assert identity["entrypoint"] == "cli"

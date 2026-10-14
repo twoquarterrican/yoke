@@ -18,7 +18,7 @@ from yoke_cli.transport.https import HttpsConnection
 from yoke_cli.transport.response_limits import SMALL_JSON_RESPONSE_LIMIT_BYTES
 
 from yoke_contracts.hook_runner import lint_policy
-from yoke_contracts.hook_runner.project_scope import project_id_for_payload
+from yoke_contracts.hook_runner.project_scope import resolve_hook_project_scope
 from yoke_contracts.hook_evaluator_protocol import HOOK_MODEL_CONFIRMATION_FIELD
 from yoke_contracts.hook_runner.chain_registry import SESSION_START_EVENT
 from yoke_contracts.hook_runner.failures import render_failure_warning
@@ -158,6 +158,9 @@ def relay_hook_event(
     if stdin_data is None:
         stdin_data = sys.stdin.read()
     payload = parse_hook_payload(stdin_data)
+    # Resolved once: the local subset, the relay decision and the identity
+    # facts all read this one answer instead of re-asking Git each time.
+    project_scope = resolve_hook_project_scope(payload)
     anchor_from_payload = isinstance(payload.get("session_id"), str)
     policy_snapshot = _client_lint_config_snapshot(payload)
     agent_type = os.environ.get(AGENT_TYPE_ENV_VAR, "").strip()
@@ -186,12 +189,13 @@ def relay_hook_event(
         deadline,
         defer_main_commit=True,
         lint_config_snapshot=policy_snapshot,
+        project_scope=project_scope,
     )
     if local.denied:
         write_hook_output(
             local.stdout, local.exit_code, executor, event_name=event_name
         )
-        if local.denial_audit and project_id_for_payload(payload) is not None:
+        if local.denial_audit and project_scope.project_id is not None:
             relay_denial_audit(connection, local.denial_audit)
         return local.exit_code
 
@@ -203,7 +207,7 @@ def relay_hook_event(
         harness_id=canonical_harness_id(executor),
     )
 
-    if project_id_for_payload(payload) is None:
+    if project_scope.project_id is None:
         # The complete machine guard subset is local; project registration is
         # neither required nor meaningful for an unrelated workspace.
         print_execution_provenance()
@@ -216,7 +220,9 @@ def relay_hook_event(
     denied = deny_unstamped_relay(parse_hook_payload(stdin_data))
     if denied is not None:
         return denied
-    identity = relay_identity_payload(event_name, payload, executor)
+    identity = relay_identity_payload(
+        event_name, payload, executor, project_id=project_scope.project_id
+    )
     payload_extra = dict(local.payload_extra or {})
     if policy_snapshot:
         payload_extra[lint_policy.SNAPSHOT_PAYLOAD_KEY] = policy_snapshot

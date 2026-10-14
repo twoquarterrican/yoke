@@ -85,7 +85,7 @@ PERMANENT_ROWS: Tuple[_Row, ...] = (
         REASON_OPERATOR_BREAK_GLASS,
     ),
     # Tool-shaped local git/filesystem operations — deliberately NOT
-    # dispatcher function ids; routed as CLI tokens by yoke_cli.main.
+    # dispatcher function ids; routed as CLI tokens by yoke_cli.command_router.
     _p("yoke git pre-commit", "git", REASON_TOOL_SHAPED),
     _p("yoke git post-commit", "git", REASON_TOOL_SHAPED),
     # Registered CLI commands that intentionally execute on the caller's
