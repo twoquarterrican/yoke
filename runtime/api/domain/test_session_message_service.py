@@ -13,7 +13,7 @@ from yoke_core.domain.session_message_delivery import (
     complete_hook_lease,
     lease_for_hook,
 )
-from yoke_core.domain.session_message_queries import get_message, list_messages
+from yoke_core.domain.session_message_queries import get_message
 from yoke_core.domain.session_message_receipts import (
     acknowledge_message,
     cancel_message,
@@ -22,6 +22,8 @@ from yoke_core.domain.session_message_service import preview_message, send_messa
 from yoke_core.domain.session_message_types import SessionMessageError, parse_timestamp
 from yoke_core.domain.work_claim_targets import make_item_target
 from runtime.api.domain.test_session_message_support import (
+    page_rows,
+    pin_message_clocks,
     NOW,
     message_connection,
     selector,
@@ -30,9 +32,7 @@ from runtime.api.domain.test_session_message_support import (
 
 @pytest.fixture(autouse=True)
 def _fixed_delivery_clock(monkeypatch) -> None:
-    from yoke_core.domain import session_message_delivery
-
-    monkeypatch.setattr(session_message_delivery, "utc_now", lambda: NOW)
+    pin_message_clocks(monkeypatch)
 
 
 def _send(conn, *, target=None, body="Act on this.", key=None, actor_id=10):
@@ -207,7 +207,7 @@ def test_get_and_list_visibility_follows_sender_recipient_or_project_read() -> N
         ]
         == message_id
     )
-    assert len(list_messages(conn, actor_id=11, caller_session_id="s2", limit=10)) == 1
+    assert len(page_rows(conn, actor_id=11, caller_session_id="s2", limit=10)) == 1
     with pytest.raises(SessionMessageError) as denied:
         get_message(conn, message_id=message_id, actor_id=13, session_id="s3")
     assert denied.value.code == "message_forbidden"
@@ -231,25 +231,12 @@ def test_unacknowledged_list_includes_pending_and_injected_receipts() -> None:
         now=NOW,
     )
 
-    unacknowledged = list_messages(
-        conn,
-        actor_id=10,
-        caller_session_id="s1",
-        state="unacknowledged",
-        limit=10,
+    unacknowledged = page_rows(
+        conn, actor_id=10, caller_session_id="s1", state="unacknowledged", limit=10
     )
-    default_view = list_messages(
-        conn,
-        actor_id=10,
-        caller_session_id="s1",
-        limit=10,
-    )
-    pending = list_messages(
-        conn,
-        actor_id=10,
-        caller_session_id="s1",
-        state="pending",
-        limit=10,
+    default_view = page_rows(conn, actor_id=10, caller_session_id="s1", limit=10)
+    pending = page_rows(
+        conn, actor_id=10, caller_session_id="s1", state="pending", limit=10
     )
 
     assert {row["message_id"] for row in unacknowledged} == {

@@ -8,9 +8,11 @@ from yoke_core.domain.session_message_delivery import (
     complete_hook_lease,
     lease_for_hook,
 )
-from yoke_core.domain.session_message_queries import get_message, list_messages
+from yoke_core.domain.session_message_queries import get_message
 from yoke_core.domain.session_message_service import send_message
 from runtime.api.domain.test_session_message_support import (
+    page_rows,
+    pin_message_clocks,
     NOW,
     message_connection,
     selector,
@@ -19,9 +21,7 @@ from runtime.api.domain.test_session_message_support import (
 
 @pytest.fixture(autouse=True)
 def _fixed_delivery_clock(monkeypatch) -> None:
-    from yoke_core.domain import session_message_delivery
-
-    monkeypatch.setattr(session_message_delivery, "utc_now", lambda: NOW)
+    pin_message_clocks(monkeypatch)
 
 
 def _send(conn, *, session_id: str = "s1"):
@@ -42,7 +42,7 @@ def test_get_and_list_print_the_ack_command_for_the_recipient() -> None:
     command = f"yoke messages acknowledge {message_id}"
     details = get_message(conn, message_id=message_id, actor_id=10, session_id="s1")
     assert details["acknowledgement_command"] == command
-    listed = list_messages(conn, actor_id=10, caller_session_id="s1", limit=10)
+    listed = page_rows(conn, actor_id=10, caller_session_id="s1", limit=10)
     assert listed[0]["acknowledgement_command"] == command
     sender = get_message(conn, message_id=message_id, actor_id=10, session_id="s2")
     assert "acknowledgement_command" not in sender

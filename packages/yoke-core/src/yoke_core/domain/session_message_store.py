@@ -17,10 +17,8 @@ from yoke_core.domain.actor_message_recipients import (
     insert_actor_recipient_rows,
 )
 from yoke_core.domain.session_message_reads import (
-    list_message_ids,
     message_details,
     public_recipients,
-    recipient_project_ids,
 )
 from yoke_core.domain.session_message_types import (
     ResolvedRecipient,
@@ -333,8 +331,6 @@ __all__ = [
     "cancel_open_recipients",
     "idempotent_message",
     "insert_message",
-    "list_message_ids",
     "message_details",
     "public_recipients",
-    "recipient_project_ids",
 ]

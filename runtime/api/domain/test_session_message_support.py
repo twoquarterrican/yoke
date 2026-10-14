@@ -198,6 +198,30 @@ def selector(**values: object) -> RecipientSelector:
     return RecipientSelector.model_validate(values)
 
 
+def pin_message_clocks(monkeypatch) -> None:
+    """Pin the clocks sends, the expiry sweep and message reads consult to NOW."""
+    from yoke_core.domain import (
+        session_message_delivery,
+        session_message_page,
+        session_message_queries,
+    )
+
+    for module in (
+        session_message_delivery,
+        session_message_page,
+        session_message_queries,
+    ):
+        monkeypatch.setattr(module, "utc_now", lambda: NOW)
+
+
+def page_rows(conn: sqlite3.Connection, **query: object) -> list[dict]:
+    """Every whole message one mailbox page returns for ``query``."""
+    from yoke_contracts.read_detail import DETAIL_FULL
+    from yoke_core.domain.session_message_page import read_message_page
+
+    return read_message_page(conn, detail=DETAIL_FULL, **query)["messages"]
+
+
 def stamp_activity(
     conn: sqlite3.Connection,
     *,
@@ -280,7 +304,9 @@ __all__ = [
     "NATIVE_WAKE_SESSION_ID",
     "add_coordination_claim_schema",
     "message_connection",
+    "page_rows",
     "park_session",
+    "pin_message_clocks",
     "selector",
     "stamp_activity",
 ]

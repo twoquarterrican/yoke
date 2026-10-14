@@ -11,7 +11,7 @@ one holds it.
 
 from __future__ import annotations
 
-from yoke_core.domain.session_message_queries import get_message, list_messages
+from yoke_core.domain.session_message_queries import get_message
 from yoke_core.domain.session_message_service import preview_message
 from yoke_core.domain.steering_message_drain import drain_to_seat
 from yoke_core.domain.steering_message_recipients import (
@@ -25,6 +25,7 @@ from runtime.api.domain.test_steering_role_addressed_messages import (
     _seat,
 )
 from runtime.api.domain.test_session_message_support import (
+    page_rows,
     NOW,
     message_connection,
     selector,
@@ -109,12 +110,7 @@ def test_a_seat_lists_the_role_addressed_mail_it_holds() -> None:
     )
     conn.commit()
 
-    listed = list_messages(
-        conn,
-        actor_id=10,
-        caller_session_id="s2",
-        session_id="s2",
-    )
+    listed = page_rows(conn, actor_id=10, caller_session_id="s2", session_id="s2")
 
     assert [row["message_id"] for row in listed] == [sent["message_id"]]
     assert listed[0]["steering_recipient"]["session_id"] == "s2"
@@ -131,7 +127,7 @@ def test_an_unfiltered_list_reaches_an_authorized_reader_for_a_parked_row() -> N
     conn = message_connection()
     sent = _say_steering(conn)
 
-    listed = list_messages(
+    listed = page_rows(
         conn, actor_id=11, caller_session_id=None, state="unacknowledged"
     )
 
@@ -159,7 +155,7 @@ def test_an_unfiltered_list_reaches_an_authorized_reader_for_a_drained_row() -> 
     )
     conn.commit()
 
-    listed = list_messages(
+    listed = page_rows(
         conn, actor_id=11, caller_session_id=None, state="unacknowledged"
     )
 
@@ -173,7 +169,7 @@ def test_an_unfiltered_list_still_hides_a_parked_row_from_an_unauthorized_reader
     conn = message_connection()
     _say_steering(conn)
 
-    listed = list_messages(
+    listed = page_rows(
         conn, actor_id=13, caller_session_id=None, state="unacknowledged"
     )
 
