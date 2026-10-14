@@ -92,7 +92,7 @@ def require_run_driver(
 
 
 def _record_bound_sources(
-    run_id_value: str,
+    conn: Any, run_id_value: str
 ) -> Dict[str, Any] | HandlerOutcome:
     """Pin every project's source commit before anything reads one.
 
@@ -106,19 +106,50 @@ def _record_bound_sources(
     re-read, because a database that has not yet converged the column has
     nowhere to store it — and the release carrying that converge is driven
     by this very call, with a bound stage that still has to dispatch a real
-    commit.
+    commit. The record commits on its own, so a composition refusal on the
+    same connection afterwards still leaves the pinned commit in place.
     """
-    from yoke_core.domain.db_helpers import connect
     from yoke_core.domain.deployment_run_bound_sources import record_bound_sources
 
+    try:
+        recorded = record_bound_sources(conn, run_id_value)
+    except (LookupError, ValueError) as exc:
+        conn.rollback()
+        return error("bound_source_unresolved", str(exc))
+    conn.commit()
+    return recorded
+
+
+def _record_and_compose(
+    run_id_value: str, composition_result: Dict[str, Any]
+) -> tuple[Dict[str, Any], tuple[bool, str]] | HandlerOutcome:
+    """Pin bound sources, then validate composition on the same connection.
+
+    One connection keeps the branch heads the record resolved inside this
+    operation's read scope, so validation reuses them instead of asking the
+    repository host again.
+    """
+    from yoke_core.domain.db_helpers import connect
+    from yoke_core.domain.deployment_runs_validation import cmd_validate_composition
+
     with connect() as conn:
-        try:
-            recorded = record_bound_sources(conn, run_id_value)
-        except (LookupError, ValueError) as exc:
+        bound_sources = timed_call(
+            "context_bound_sources", _record_bound_sources, conn, run_id_value
+        )
+        if isinstance(bound_sources, HandlerOutcome):
+            return bound_sources
+        verdict = timed_call(
+            "context_composition",
+            cmd_validate_composition,
+            run_id_value,
+            composition_result=composition_result,
+            connection=conn,
+        )
+        if verdict[0]:
+            conn.commit()
+        else:
             conn.rollback()
-            return error("bound_source_unresolved", str(exc))
-        conn.commit()
-        return recorded
+        return bound_sources, verdict
 
 
 def _member_rows(run_id_value: str, *, connection: Any = None) -> List[Dict[str, Any]]:
@@ -166,20 +197,11 @@ def handle_deployment_execution_context(
         return resolved_run_id
     if refusal := require_run_driver(request, resolved_run_id):
         return refusal
-    bound_sources = timed_call(
-        "context_bound_sources", _record_bound_sources, resolved_run_id
-    )
-    if isinstance(bound_sources, HandlerOutcome):
-        return bound_sources
-    composition_result = {}
-    from yoke_core.domain.deployment_runs_validation import cmd_validate_composition
-
-    valid, composition_message = timed_call(
-        "context_composition",
-        cmd_validate_composition,
-        resolved_run_id,
-        composition_result=composition_result,
-    )
+    composition_result: Dict[str, Any] = {}
+    composed = _record_and_compose(resolved_run_id, composition_result)
+    if isinstance(composed, HandlerOutcome):
+        return composed
+    bound_sources, (valid, composition_message) = composed
     if not valid:
         return error("composition_invalid", composition_message)
     from yoke_core.domain.deployment_run_carried_work import parse_carried_work

@@ -1,7 +1,7 @@
 """Execution context performs one composition pass and preserves its enrollment."""
 
 from contextlib import nullcontext
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import pytest
 from yoke_contracts.api.function_call import (
     ActorContext,
@@ -23,8 +23,11 @@ def test_execution_context_composes_once_and_returns_its_enrollment():
     }
     raw = pipe_row([values.get(field, "") for field in RUN_FIELDS])
 
-    def compose(run_id, *, composition_result):
+    conn = Mock()
+
+    def compose(run_id, *, composition_result, connection):
         assert run_id == "run-once"
+        assert connection is conn
         composition_result["enrolled"] = ["item-ref"]
         return True, "OK"
 
@@ -42,9 +45,7 @@ def test_execution_context_composes_once_and_returns_its_enrollment():
             side_effect=compose,
         ) as composition,
         patch("yoke_core.domain.deployment_runs_crud_query.cmd_get", return_value=raw),
-        patch(
-            "yoke_core.domain.db_helpers.connect", return_value=nullcontext(object())
-        ),
+        patch("yoke_core.domain.db_helpers.connect", return_value=nullcontext(conn)),
         patch("yoke_core.domain.flow.cmd_stages", return_value="[]"),
         patch(
             "yoke_core.domain.deployment_run_contained_items.candidate_containment_basis",
@@ -60,6 +61,7 @@ def test_execution_context_composes_once_and_returns_its_enrollment():
     assert result.primary_success
     assert result.result_payload["enrolled_carried_items"] == ["item-ref"]
     composition.assert_called_once()
+    conn.commit.assert_called_once()
 
 
 def test_a_cached_composition_missing_a_bound_project_refuses():

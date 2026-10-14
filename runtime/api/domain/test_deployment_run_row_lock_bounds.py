@@ -209,6 +209,8 @@ def test_run_creation_leaves_other_runs_writable(
 
     Composition validation runs inside the creating transaction and can take
     seconds; the driver of a run already executing must still heartbeat then.
+    Creation validates twice, before the creation lock and under it, and
+    neither pass may hold that driver up.
     """
     from yoke_core.domain import deployment_runs_validation as validation
 
@@ -240,4 +242,4 @@ def test_run_creation_leaves_other_runs_writable(
     created = dr.cmd_create_run("yoke", "flow-main", db_path=db_path)
 
     assert created != running
-    assert attached_during_create == [True]
+    assert attached_during_create == [True, True]

@@ -36,8 +36,14 @@ when driving the control plane’s own upgrade. Ordinary projects use HTTPS.
 
 Coverage resolves member completion flows as a set, with one project/workflow
 default resolution per distinct pair. The flow and source record are shared
-within a composition operation. Catalog probes share table and column answers
-only inside that operation and only for the same connection. Exiting, including
+within a composition operation, and so are the repository reads: each bound
+branch head resolves once, and each project's commit comparison against its
+preceding release runs once however many readers ask. The execution context
+records bound sources and validates composition on one connection, so its
+validation reuses the heads the record resolved. A comparison whose preceding
+release changed is a different answer and is derived again. Catalog probes
+share table and column answers only inside that operation and only for the
+same connection. Exiting, including
 on refusal, discards the scope; no process-global or cross-request cache exists.
 Mutable member status/intent is read afresh. Freeze reuses one custody resolution
 for both membership and completion-authority checks; unknown custody still refuses.
