@@ -1,7 +1,7 @@
 """Refuse to publish a release the hosted consumer has not been built against.
 
-Pass full --candidate-sha and --consumer-sha commits. An immutable consumer
-tag binds workflow source; identical pairs and retries rejoin the same run.
+Pass full --candidate-sha and --consumer-sha commits. Dispatch follows main
+until sessionless tag creation is served; exact-pair verdicts still refuse drift.
 
 On success it writes ``proven_consumer_sha`` to ``$GITHUB_OUTPUT``.
 Exits 0 when proven, 1 when refused or unattributable, 2 when unavailable.
@@ -19,7 +19,6 @@ import uuid
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from runtime.api.tools.platform_consumer_run_wait import wait_run
-from runtime.api.tools.platform_consumer_dispatch_ref import bound_dispatch_ref
 from yoke_contracts.api_urls import HOSTED_PROD_API_URL
 from yoke_contracts.github_workflow_dispatch import (
     WORKFLOW_DISPATCH_CORRELATION_INPUT,
@@ -28,7 +27,7 @@ from yoke_contracts.github_workflow_dispatch import (
 CONSUMER_REPO = "upyoke/platform"
 CONSUMER_PROJECT = "platform"
 CONSUMER_CHECK_WORKFLOW = "platform-release-pin-check.yml"
-#: Advisory runs follow trunk; exact-pair runs use an immutable commit tag.
+#: Required and advisory runs currently dispatch from the consumer trunk.
 CONSUMER_TRUNK_REF = "main"
 CANDIDATE_INPUT = "product_ref"
 
@@ -43,7 +42,7 @@ _COMMAND_TIMEOUT_SECONDS = 300
 def pair_request_id(candidate_sha: str, consumer_sha: str) -> str:
     """Identical pairs join; different commits never adopt that proof."""
     return (
-        f"consumer-compat:{candidate_sha}:yoke-deploy/consumer-{consumer_sha}:"
+        f"consumer-compat:{candidate_sha}:{consumer_sha}:ref={CONSUMER_TRUNK_REF}:"
         f"{CONSUMER_CHECK_WORKFLOW}"
     )
 
@@ -127,18 +126,8 @@ def dispatch(
     *,
     exact_pair: bool = True,
 ) -> Tuple[str, str]:
-    """Dispatch the bound consumer commit; advisory calls follow trunk."""
+    """Dispatch from trunk without requiring a harness session in CI."""
     ref = CONSUMER_TRUNK_REF
-    if exact_pair:
-        ref, error = bound_dispatch_ref(
-            _yoke,
-            repo=CONSUMER_REPO,
-            project=CONSUMER_PROJECT,
-            sha=consumer_sha,
-            timeout=_COMMAND_TIMEOUT_SECONDS,
-        )
-        if error:
-            return "", error
     request_id = (
         pair_request_id(candidate_sha, consumer_sha)
         if exact_pair

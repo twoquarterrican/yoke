@@ -192,9 +192,7 @@ def test_one_candidate_can_never_adopt_another_candidate_s_run(
         f"{gate.CANDIDATE_INPUT}={CANDIDATE}"
     )
     for argv in seen:
-        assert (
-            argv[argv.index("--ref") + 1] == f"yoke-deploy/consumer-{CONSUMER_REVISION}"
-        )
+        assert argv[argv.index("--ref") + 1] == gate.CONSUMER_TRUNK_REF
         assert argv[argv.index("--request-id") + 1].endswith(
             gate.CONSUMER_CHECK_WORKFLOW
         )
@@ -212,8 +210,7 @@ def test_a_different_consumer_commit_is_a_different_pair(
     request_ids = [argv[argv.index("--request-id") + 1] for argv in seen]
     assert request_ids[0] != request_ids[1]
     assert CONSUMER_REVISION in request_ids[0]
-    # GitHub requires a named ref; this tag is immutable at the bound commit.
-    assert seen[1][seen[1].index("--ref") + 1] == f"yoke-deploy/consumer-{'c' * 40}"
+    assert seen[1][seen[1].index("--ref") + 1] == gate.CONSUMER_TRUNK_REF
     assert not gate.is_full_commit_sha(seen[1][seen[1].index("--ref") + 1])
 
 
