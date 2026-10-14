@@ -1,7 +1,13 @@
 {
  "id": "run-members",
  "title": "Run members",
- "status": "draft-copy",
+ "status": "observed",
  "page": "deployments",
- "position": 1
+ "position": 1,
+ "summary": "Supplemental target custody covers an item only on the same recorded item-project commit, including holders with no frozen selection. Older stage proof enrolls again for a new candidate; a live same-commit holder prevents duplicate enrollment. Final delivery still requires stage proof on its own commit.",
+ "sources": [
+  "packages/yoke-core/src/yoke_core/domain/deployment_run_member_targeting.py",
+  "runtime/api/domain/test_supplemental_holder_commit_enrollment.py",
+  "docs/public/reference/agent-rules/delivery.md"
+ ]
 }
