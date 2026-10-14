@@ -71,7 +71,7 @@ def item_dispatch(conn, monkeypatch):
             }
         )
 
-    monkeypatch.setattr(dispatcher, "invoke_resolved_handler", handler)
+    monkeypatch.setattr(dispatcher, "invoke_handler", handler)
     yield conn, actor_id, project_id, seen
     reset_registry_for_tests()
 
