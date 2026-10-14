@@ -249,8 +249,9 @@ step at a time. Without identities or a Yoke install, use the host browser
 Never install Yoke on a Test Machine to get a browser.
 Agents complete steps that do not need the user; personal credentials, MFA,
 passkeys and permissions return a human gate naming host, substrate and resume state.
-Hosted signed-in missions set `method_config.browser_identities` (e.g. `["operator"]`).
-The walker verifies each and uses `--identity NAME` for its steps. See
+Case `method_config.browser_identities` wins; otherwise dispatch supplies project
+identities covering the target origin. The walker picks the needed account,
+verifies identities and uses `--identity NAME` for its steps. See
 [browser sign-in identities](qa-platform/browser-identities.md).
 The mission execution contract above governs every host command.
 

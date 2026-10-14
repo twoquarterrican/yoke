@@ -10,7 +10,7 @@ from yoke_core.domain.agent_mission_review import agent_mission_dispatch_contrac
 EXECUTION_ID = "01JQ8P4Z9K2M7V6T5R3N1B0AXY"
 
 
-def _walker(executor: str, identities: list[str] | None = None) -> dict:
+def _walker(executor: str, identities: list[str] | None = None, conn=None) -> dict:
     bundle = {
         "bundle_id": "bundle-1",
         "bundle_digest": "d" * 64,
@@ -37,7 +37,7 @@ def _walker(executor: str, identities: list[str] | None = None) -> dict:
             }
         ],
     }
-    return agent_mission_dispatch_contract(bundle)["walker_dispatches"][0]
+    return agent_mission_dispatch_contract(bundle, conn=conn)["walker_dispatches"][0]
 
 
 def test_walker_prompt_uses_yoke_browser_only_when_the_walk_installed_yoke() -> None:
@@ -73,3 +73,55 @@ def test_named_identities_select_managed_browser_without_installing_yoke(
     assert "pass `--identity NAME` to every step" in prompt
     assert "HUMAN_GATE naming the identity, the site and the account" in prompt
     assert "Never install Yoke on a Test Machine to get a browser." in prompt
+
+
+def test_project_identities_covering_target_select_managed_browser(monkeypatch) -> None:
+    from yoke_core.domain import agent_mission_browser_identities as identities
+
+    settings = {
+        "identities": {
+            name: {
+                "sites": [
+                    {
+                        "site": "app",
+                        "origin": "https://stage.example",
+                        "account": f"{name}@example.com",
+                        "probe": {
+                            "url": "https://stage.example/api/me",
+                            "signed_in_status": 200,
+                        },
+                    }
+                ]
+            }
+            for name in ("operator", "admin")
+        }
+    }
+    reads = []
+
+    def read(conn, query, params):
+        reads.append(params)
+        return settings
+
+    monkeypatch.setattr(identities, "query_scalar", read)
+    monkeypatch.setattr(identities, "marker", lambda conn: "%s")
+    walker = _walker("informed_subagent", conn=object())
+    assert reads == [(1, "browser-control")]
+    assert walker["browser_identities"] == ["operator", "admin"]
+    assert "For named browser identities, use the managed browser" in walker["prompt"]
+    assert "Use the identity whose account fits the case" in walker["prompt"]
+    for name, command in zip(
+        walker["browser_identities"], walker["browser_verify_commands"]
+    ):
+        assert f"--identity {name}" in command
+        assert command in walker["prompt"]
+
+
+def test_case_identities_do_not_read_project_defaults(monkeypatch) -> None:
+    from yoke_core.domain import agent_mission_browser_identities as identities
+
+    def unexpected_read(*args):
+        pytest.fail("explicit case identities must avoid a settings read")
+
+    monkeypatch.setattr(identities, "query_scalar", unexpected_read)
+    walker = _walker("informed_subagent", ["reviewer"], conn=object())
+    assert walker["browser_identities"] == ["reviewer"]
