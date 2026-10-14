@@ -1,5 +1,3 @@
-"""Tests for the GitHub backlog sync allow-unclaimed ownership guard."""
-
 from __future__ import annotations
 
 import io
@@ -20,7 +18,9 @@ from yoke_core.api import service_client_backlog_github as relay
 from yoke_core.domain.work_claim_targets import make_item_target
 
 
-_OK_AUTH = ProjectGithubAuth(project="externalwebapp", repo="org/externalwebapp", token="ghs_fake")
+_OK_AUTH = ProjectGithubAuth(
+    project="externalwebapp", repo="org/externalwebapp", token="ghs_fake"
+)
 
 
 def _p(conn: Any) -> str:
@@ -28,23 +28,28 @@ def _p(conn: Any) -> str:
 
 
 def _seed_item(conn: Any, item_id: int) -> None:
-    insert_item(conn, id=item_id, workflow_id="issue", status="implementing", project="externalwebapp", github_issue=f"#{1000 + item_id}", spec="# stub spec")
+    insert_item(
+        conn,
+        id=item_id,
+        workflow_id="issue",
+        status="implementing",
+        project="externalwebapp",
+        github_issue=f"#{1000 + item_id}",
+        spec="# stub spec",
+    )
 
 
 def _ensure_session(conn: Any, session_id: str) -> None:
     p = _p(conn)
     conn.execute(
-        "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, workspace, offered_at, "
-        " last_heartbeat) VALUES "
-        f"({p}, 'claude-code', 'anthropic', '', '/tmp', "
-        " '2026-05-17T13:00:00Z', '2026-05-17T13:00:00Z') "
-        "ON CONFLICT(session_id) DO NOTHING",
+        f"INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace, offered_at,  last_heartbeat) VALUES (1, {p}, 'claude-code', 'anthropic', '', '/tmp',  '2026-05-17T13:00:00Z', '2026-05-17T13:00:00Z') ON CONFLICT(session_id) DO NOTHING",
         (session_id,),
     )
 
 
-def _seed_claim(conn: Any, *, item_id: int, session_id: str, released: bool = False) -> None:
+def _seed_claim(
+    conn: Any, *, item_id: int, session_id: str, released: bool = False
+) -> None:
     _ensure_session(conn, session_id)
     p = _p(conn)
     conn.execute(
@@ -53,7 +58,11 @@ def _seed_claim(conn: Any, *, item_id: int, session_id: str, released: bool = Fa
         " last_heartbeat, released_at) "
         f"VALUES ({p}, 'item', {p}, 'exclusive', "
         f"'2026-05-17T13:00:00Z', '2026-05-17T13:00:00Z', {p})",
-        (session_id, make_item_target(item_id).scope_json(), "2026-05-17T13:05:00Z" if released else None),
+        (
+            session_id,
+            make_item_target(item_id).scope_json(),
+            "2026-05-17T13:05:00Z" if released else None,
+        ),
     )
     conn.commit()
 
@@ -106,7 +115,9 @@ class TestCheckOwnership:
 
     def test_allow_when_only_released_claim(self, db_with_open_conn, monkeypatch):
         _seed_item(db_with_open_conn, 53)
-        _seed_claim(db_with_open_conn, item_id=53, session_id="session-B", released=True)
+        _seed_claim(
+            db_with_open_conn, item_id=53, session_id="session-B", released=True
+        )
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
         allow, _reason, _holder = cli.check_ownership(53)
         assert allow is True
@@ -114,7 +125,9 @@ class TestCheckOwnership:
     def test_allow_when_holder_session_ended(self, db_with_open_conn, monkeypatch):
         _seed_item(db_with_open_conn, 55)
         _seed_claim(db_with_open_conn, item_id=55, session_id="session-B")
-        db_with_open_conn.execute("UPDATE harness_sessions SET ended_at = '2026-05-17T13:10:00Z' WHERE session_id = 'session-B'")
+        db_with_open_conn.execute(
+            "UPDATE harness_sessions SET ended_at = '2026-05-17T13:10:00Z' WHERE session_id = 'session-B'"
+        )
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
         assert cli.check_ownership(55) == (True, "holder-ended", "session-B")
 
@@ -129,13 +142,19 @@ class TestCheckOwnership:
 
 
 class TestDirectCliGuard:
-    def test_sync_body_denied_before_gh_call(self, db_with_open_conn, monkeypatch, capsys):
+    def test_sync_body_denied_before_gh_call(
+        self, db_with_open_conn, monkeypatch, capsys
+    ):
         _seed_item(db_with_open_conn, 60)
         _seed_claim(db_with_open_conn, item_id=60, session_id="session-B")
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
 
         called: list[str] = []
-        with patch.object(_bgs, "sync_body", side_effect=lambda *a, **k: (called.append("sync_body"), 0)[1]):
+        with patch.object(
+            _bgs,
+            "sync_body",
+            side_effect=lambda *a, **k: (called.append("sync_body"), 0)[1],
+        ):
             rc = cli.main(["sync-body", "EXT-60"])
 
         assert rc == 1
@@ -150,7 +169,11 @@ class TestDirectCliGuard:
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
 
         called: list[str] = []
-        with patch.object(_bgs, "sync_title", side_effect=lambda *a, **k: (called.append("sync_title"), 0)[1]):
+        with patch.object(
+            _bgs,
+            "sync_title",
+            side_effect=lambda *a, **k: (called.append("sync_title"), 0)[1],
+        ):
             rc = cli.main(["sync-title", "EXT-61"])
 
         assert rc == 1
@@ -163,7 +186,11 @@ class TestDirectCliGuard:
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
 
         called: list[str] = []
-        with patch.object(_bgs, "sync_body", side_effect=lambda *args, **k: (called.append(args[0]), 0)[1]):
+        with patch.object(
+            _bgs,
+            "sync_body",
+            side_effect=lambda *args, **k: (called.append(args[0]), 0)[1],
+        ):
             rc = cli.main(["sync-body", "EXT-62"])
 
         assert rc == 0
@@ -174,7 +201,11 @@ class TestDirectCliGuard:
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
 
         called: list[str] = []
-        with patch.object(_bgs, "sync_item", side_effect=lambda *args, **k: (called.append(args[0]), 0)[1]):
+        with patch.object(
+            _bgs,
+            "sync_item",
+            side_effect=lambda *args, **k: (called.append(args[0]), 0)[1],
+        ):
             rc = cli.main(["sync-item", "EXT-63"])
 
         assert rc == 0
@@ -187,7 +218,11 @@ class TestDirectCliGuard:
         monkeypatch.setattr(cli, "_dry_run", lambda: True)
 
         called: list[str] = []
-        with patch.object(_bgs, "sync_body", side_effect=lambda *args, **k: (called.append(args[0]), 0)[1]):
+        with patch.object(
+            _bgs,
+            "sync_body",
+            side_effect=lambda *args, **k: (called.append(args[0]), 0)[1],
+        ):
             rc = cli.main(["sync-body", "EXT-64"])
 
         assert rc == 0
@@ -201,7 +236,11 @@ class TestRelayGuard:
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
 
         called: list[str] = []
-        with patch.object(_bgs, "sync_body", side_effect=lambda *a, **k: (called.append("sync_body"), 0)[1]):
+        with patch.object(
+            _bgs,
+            "sync_body",
+            side_effect=lambda *a, **k: (called.append("sync_body"), 0)[1],
+        ):
             rc = relay.cmd_backlog_github(["sync-body", "EXT-70"])
 
         assert rc == 1
@@ -217,7 +256,11 @@ class TestRelayGuard:
 
         called: list[str] = []
         with (
-            patch.object(_bgs, "sync_item", side_effect=lambda *args, **k: (called.append(args[0]), 0)[1]),
+            patch.object(
+                _bgs,
+                "sync_item",
+                side_effect=lambda *args, **k: (called.append(args[0]), 0)[1],
+            ),
         ):
             rc = relay.cmd_backlog_github(["sync-item", "EXT-71"])
 
@@ -229,8 +272,24 @@ class TestBackfillOwnership:
     def test_backfill_skips_claimed_by_other(self, monkeypatch):
         db = _make_db()
         for item_id, issue in ((80, "#180"), (81, "#181"), (82, "#182")):
-            insert_item(db, id=item_id, workflow_id="issue", status="implementing", project="externalwebapp", github_issue=issue, spec=_huge_spec())
-        insert_item(db, id=83, workflow_id="issue", status="implementing", project="externalwebapp", github_issue="#183", spec="# small")
+            insert_item(
+                db,
+                id=item_id,
+                workflow_id="issue",
+                status="implementing",
+                project="externalwebapp",
+                github_issue=issue,
+                spec=_huge_spec(),
+            )
+        insert_item(
+            db,
+            id=83,
+            workflow_id="issue",
+            status="implementing",
+            project="externalwebapp",
+            github_issue="#183",
+            spec="# small",
+        )
         _seed_claim(db, item_id=81, session_id="session-A")
         _seed_claim(db, item_id=82, session_id="session-B")
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
@@ -239,27 +298,35 @@ class TestBackfillOwnership:
         stderr = io.StringIO()
         sync_calls: list[str] = []
         with (
-            patch.object(_bgs, "sync_body", side_effect=lambda i, **_k: (sync_calls.append(str(i)), 0)[1]),
+            patch.object(
+                _bgs,
+                "sync_body",
+                side_effect=lambda i, **_k: (sync_calls.append(str(i)), 0)[1],
+            ),
             patch.object(cli, "resolve_project_github_auth", return_value=_OK_AUTH),
         ):
             rc = cli.backfill_oversized_bodies(conn=db, stdout=stdout, stderr=stderr)
 
-        # Claim-skip alone does not fail the batch.
         assert rc == 0
-        # Item 82 is claimed by another live session and is skipped
-        # before sync_body is called; items 80 and 81 are repaired.
         assert sorted(sync_calls) == ["80", "81"]
         out = stdout.getvalue()
         err = stderr.getvalue()
         assert "skipped_claimed 1" in out
         assert "EXT-82 skipped_claimed" in err
         assert "session-B" in err
-        # Small item (83) never appears in the repair output.
         assert "EXT-83" not in out and "EXT-83" not in err
 
     def test_backfill_dry_run_skips_guard(self, monkeypatch):
         db = _make_db()
-        insert_item(db, id=84, workflow_id="issue", status="implementing", project="externalwebapp", github_issue="#184", spec=_huge_spec())
+        insert_item(
+            db,
+            id=84,
+            workflow_id="issue",
+            status="implementing",
+            project="externalwebapp",
+            github_issue="#184",
+            spec=_huge_spec(),
+        )
         _seed_claim(db, item_id=84, session_id="session-B")
         monkeypatch.setenv("YOKE_SESSION_ID", "session-A")
         monkeypatch.setattr(cli, "_dry_run", lambda: True)
@@ -268,12 +335,15 @@ class TestBackfillOwnership:
         stderr = io.StringIO()
         sync_calls: list[str] = []
         with (
-            patch.object(_bgs, "sync_body", side_effect=lambda i, **_k: (sync_calls.append(str(i)), 0)[1]),
+            patch.object(
+                _bgs,
+                "sync_body",
+                side_effect=lambda i, **_k: (sync_calls.append(str(i)), 0)[1],
+            ),
             patch.object(cli, "resolve_project_github_auth", return_value=_OK_AUTH),
         ):
             rc = cli.backfill_oversized_bodies(conn=db, stdout=stdout, stderr=stderr)
 
         assert rc == 0
-        # Dry-run bypasses the guard so the claimed-by-other item is repaired.
         assert sync_calls == ["84"]
         assert "skipped_claimed 0" in stdout.getvalue()

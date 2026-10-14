@@ -28,7 +28,6 @@ from yoke_core.domain.deployment_qa_execution_target import (
 )
 from yoke_core.domain.deployment_qa_stage_gate import _settle_stage_status
 from yoke_core.domain.qa_plan_execution_state import begin_plan_execution
-from yoke_core.domain.qa_requirement_pass_currency import stamp_executed_method_config
 from yoke_core.domain.qa_execution_environment_target import (
     target_digest,
     canonical_target,
@@ -64,20 +63,7 @@ def _accept_member_qa(conn, *, run_id: str, item_id: int) -> None:
         actor_id="2",
         session_id=f"qa-{run_id}",
     )
-    copy_id = _complete_case(conn, execution)
-    copy = conn.execute(
-        "SELECT method_config,execution_target_digest FROM qa_requirements WHERE id=%s",
-        (copy_id,),
-    ).fetchone()
-    proof = stamp_executed_method_config(
-        None,
-        copy["method_config"],
-        execution_target_digest=copy["execution_target_digest"],
-    )
-    conn.execute(
-        "UPDATE qa_runs SET raw_result=%s WHERE qa_requirement_id=%s", (proof, copy_id)
-    )
-    conn.commit()
+    _complete_case(conn, execution)
     subject = deployment_qa_stage_subject(
         conn, run_id=run_id, stage_name="member-qa", member_item_id=item_id
     )

@@ -112,6 +112,9 @@ def test_human_resolution_projects_same_pending_capture_as_passed(test_db):
         plan_slug="human-capture-outcome",
         decider_roles=("owner",),
         performed_by="browser_substrate",
+        raw_result="captured evidence",
+        case_outcome="needs_review",
+        execution_status="captured",
     )
     replace_plan_cases(
         test_db,
@@ -131,11 +134,6 @@ def test_human_resolution_projects_same_pending_capture_as_passed(test_db):
                 },
             }
         ],
-    )
-    test_db.execute(
-        "UPDATE qa_runs SET case_outcome='needs_review',execution_status='captured',"
-        "raw_result='captured evidence' WHERE id=%s",
-        (seeded["run_id"],),
     )
     test_db.commit()
     before = _capture(test_db, seeded["run_id"])

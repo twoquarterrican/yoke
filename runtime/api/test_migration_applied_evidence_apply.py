@@ -88,8 +88,8 @@ class TestApplyEvidenceGate:
         try:
             conn.execute(
                 "INSERT INTO migration_audit "
-                "(migration_name, state, project_id, model_name, started_at) "
-                "VALUES (%s, 'completed', 1, 'primary', %s)",
+                "(migration_name, state, project_id, model_name, started_at, tables_declared, expected_deltas, pre_row_counts, backup_path) "
+                "VALUES (%s, 'completed', 1, 'primary', %s, '[]', '{}', '{}', 'fixture-restore-point')",
                 ("new_governed_module", "2026-04-23T00:00:00Z"),
             )
             conn.commit()

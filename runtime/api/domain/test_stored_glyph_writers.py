@@ -15,7 +15,7 @@ import pytest
 from yoke_contracts.levels import default_levels, levels_payload
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_contracts.glyph_contract import SAFE_GLYPH_EXAMPLES
 from yoke_core.domain import db_backend
 from yoke_core.domain.builtin_workflow_definitions import builtin_workflow_definition
@@ -38,7 +38,7 @@ def project_db(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
             conn.commit()
         finally:
             conn.close()

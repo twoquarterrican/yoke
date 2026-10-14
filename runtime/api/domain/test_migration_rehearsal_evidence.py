@@ -36,6 +36,7 @@ def test_rehearse_receipt_is_what_the_gate_reader_finds(apply_env) -> None:
 
     result = rehearse(
         5101,
+        session_id="session-a",
         control_db_path=control_db,
         worktree_path=apply_env["worktree"],
     )
@@ -104,7 +105,10 @@ def test_gate_refuses_then_passes_on_the_real_rehearsal_receipt(apply_env) -> No
     assert any("no passing rehearsal receipt" in e for e in before.errors)
 
     result = rehearse(
-        5102, control_db_path=control_db, worktree_path=apply_env["worktree"]
+        5102,
+        control_db_path=control_db,
+        worktree_path=apply_env["worktree"],
+        session_id="session-a",
     )
     assert result.all_succeeded
 

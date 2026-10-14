@@ -145,10 +145,7 @@ class TestQaRequirementClaimDispatch(unittest.TestCase):
                 success_policy="",
             )
             conn.execute(
-                "INSERT INTO harness_sessions "
-                "(session_id, executor, provider, model, workspace, "
-                " offered_at, last_heartbeat) "
-                "VALUES (%s, 'codex', 'openai', 'gpt-5', '/tmp', %s, %s)",
+                "INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace,  offered_at, last_heartbeat) VALUES (1, %s, 'codex', 'openai', 'gpt-5', '/tmp', %s, %s)",
                 (holder_session_id, now, now),
             )
             conn.execute(

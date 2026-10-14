@@ -2,6 +2,7 @@
  "id": "start-and-attach",
  "title": "Start and attach",
  "status": "draft-copy",
+ "sources": ["packages/yoke-core/src/yoke_core/hooks/sessions_lifecycle.py", "packages/yoke-core/src/yoke_core/hooks/sessions_cli.py", "runtime/api/test_secondary_domains_harness_sessions.py"],
  "page": "sessions",
  "position": 0
 }

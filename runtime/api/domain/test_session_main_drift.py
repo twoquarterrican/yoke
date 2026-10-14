@@ -9,7 +9,7 @@ import pytest
 
 from yoke_core.domain import db_backend
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -23,17 +23,12 @@ def drift_db(tmp_path):
     # context's lifetime. The yield keeps the context (and the repointed
     # DSN) open across the whole test so ``check_drift`` and ``_session_row``
     # — both backend-routed through ``connect`` — share this DB.
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             p = "%s" if db_backend.connection_is_postgres(conn) else "?"
             conn.execute(
-                f"""INSERT INTO harness_sessions
-                   (session_id, executor, provider, model, execution_level,
-                    executor_version, machine_id, workspace, mode, offered_at, last_heartbeat)
-                   VALUES
-                   ('sess-drift', 'codex', 'openai', 'test', 'primary', NULL, NULL,
-                    {p}, 'test', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')""",
+                f"INSERT INTO harness_sessions\n                   (project_id, session_id, executor, provider, model, execution_level,\n                    executor_version, machine_id, workspace, mode, offered_at, last_heartbeat)\n                   VALUES\n                   (1, 'sess-drift', 'codex', 'openai', 'test', 'primary', NULL, NULL,\n                    {p}, 'test', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')",
                 (str(tmp_path),),
             )
             conn.commit()

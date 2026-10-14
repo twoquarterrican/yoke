@@ -115,7 +115,7 @@ _PLACEHOLDER_SCHEMA = "CREATE TABLE _placeholder (id INTEGER);"
 def _apply_summary_schema() -> None:
     """``apply_schema`` strategy: build the QA summary schema via the factory.
 
-    Mirrors ``apply_fixture_schema_ddl`` but with the family-local schema.
+    Mirrors ``apply_test_schema`` but with the family-local schema.
     """
     conn = db_backend.connect()
     try:

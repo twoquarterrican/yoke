@@ -9,7 +9,7 @@ from yoke_core.domain import github_rest
 from yoke_core.domain.project_github_auth import ProjectGithubAuth
 from yoke_core.domain.epic_task_scope import set_no_files_scope
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -17,7 +17,7 @@ from runtime.api.fixtures.file_test_db import (
 
 @pytest.fixture
 def db(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         conn.execute(
             """

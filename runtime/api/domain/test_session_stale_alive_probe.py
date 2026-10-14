@@ -8,7 +8,7 @@ from datetime import datetime
 import pytest
 
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -51,7 +51,7 @@ def conn(tmp_path):
     here is the organization, project, and actor authority a probe is sent
     under.
     """
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         connection = connect_test_db(db_path)
         try:
             _seed_message_authority(connection)

@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.backlog_inserts import (
     insert_epic_task,
     insert_item,
@@ -105,6 +106,7 @@ def seed_epic_task(
 
 def seed_item_claim(conn: Any, session_id: str, item_id: int) -> None:
     now = instant_parameter(conn, utc_now())
+    register_session_actor(conn, session_id)
     conn.execute(
         "INSERT INTO work_claims "
         "(session_id, target_kind, scope, claimed_at, last_heartbeat) "
@@ -121,6 +123,7 @@ def seed_epic_task_claim(
     task_num: int,
 ) -> None:
     now = instant_parameter(conn, utc_now())
+    register_session_actor(conn, session_id)
     conn.execute(
         "INSERT INTO work_claims "
         "(session_id, target_kind, scope, "

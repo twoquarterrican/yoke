@@ -7,7 +7,7 @@ import json
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain import db_backend
 from yoke_core.domain.project_identity import resolve_project_id
 from yoke_core.domain.projects_capabilities_settings import (
@@ -28,7 +28,7 @@ def pulumi_state_db(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
             project_id = resolve_project_id(conn, "yoke")
             conn.execute(
                 "INSERT INTO sites "
@@ -86,11 +86,14 @@ def test_dry_run_rolls_back_then_apply_moves_and_converges(pulumi_state_db):
             conn.execute("SELECT settings FROM sites WHERE name='main'").fetchone()[0]
         )
         assert "stack_state" in source["pulumi"]
-        assert conn.execute(
-            "SELECT 1 FROM project_capabilities "
-            "WHERE project_id=%s AND type='pulumi-state'",
-            (resolve_project_id(conn, "yoke"),),
-        ).fetchone() is None
+        assert (
+            conn.execute(
+                "SELECT 1 FROM project_capabilities "
+                "WHERE project_id=%s AND type='pulumi-state'",
+                (resolve_project_id(conn, "yoke"),),
+            ).fetchone()
+            is None
+        )
     finally:
         conn.close()
 
@@ -140,14 +143,16 @@ def test_conflict_and_exact_set_refuse_without_writes(pulumi_state_db):
             (
                 project_id,
                 "pulumi-state",
-                json.dumps({
-                    "stack_state": {
-                        "yoke-infra": {
-                            "secrets_provider": "awskms://alias/yoke-pulumi",
-                            "encrypted_key": "different",
+                json.dumps(
+                    {
+                        "stack_state": {
+                            "yoke-infra": {
+                                "secrets_provider": "awskms://alias/yoke-pulumi",
+                                "encrypted_key": "different",
+                            }
                         }
                     }
-                }),
+                ),
                 "2026-01-01T00:00:00Z",
             ),
         )
@@ -274,8 +279,14 @@ def test_pulumi_state_validator_accepts_component_type_aliases():
         "vps": ["legacy:infra:HostStack"],
     }
 
-    validated = json.loads(validate_json_string(json.dumps({
-        "component_type_aliases": aliases,
-    })))
+    validated = json.loads(
+        validate_json_string(
+            json.dumps(
+                {
+                    "component_type_aliases": aliases,
+                }
+            )
+        )
+    )
 
     assert validated["component_type_aliases"] == aliases

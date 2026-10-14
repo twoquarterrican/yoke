@@ -26,7 +26,7 @@ from yoke_core.domain.epic_task_sync_github_create import (
     _resolve_or_create_epic_issue,
 )
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -37,7 +37,7 @@ _OVER_BUDGET = "x" * (_budget.GITHUB_BODY_BUDGET_BYTES + 500)
 
 @pytest.fixture
 def epic_conn(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         insert_item(
             conn,

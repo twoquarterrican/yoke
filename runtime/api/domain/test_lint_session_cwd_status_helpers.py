@@ -9,6 +9,7 @@ status-gate matrix.
 
 from __future__ import annotations
 
+
 from yoke_contracts.timestamps import parse_instant
 
 import psycopg

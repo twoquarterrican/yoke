@@ -271,6 +271,11 @@ def insert_deployment_run(
             (flow, project_id, flow, "[]", instant_parameter(conn, ts)),
         )
 
+    if kwargs.get("target_environment_id") is not None:
+        from runtime.api.fixtures.backlog_insert_support import ensure_environment_id
+
+        ensure_environment_id(conn, kwargs["target_environment_id"], project_id, ts=ts)
+
     cols = {
         "id": id,
         "project_id": project_id,

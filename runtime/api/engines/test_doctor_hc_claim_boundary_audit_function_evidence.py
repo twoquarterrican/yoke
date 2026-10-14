@@ -27,7 +27,7 @@ from runtime.api.engines.test_doctor_hc_claim_boundary_audit import (
     _sid,
 )
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -35,7 +35,7 @@ from runtime.api.fixtures.file_test_db import (
 
 @pytest.fixture
 def env(tmp_path: Path) -> Iterator[dict]:
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             yield {"conn": conn}
@@ -48,11 +48,17 @@ def _add_harness_preview(conn, caller: str, item_id: int) -> None:
         "event_id": str(uuid.uuid4()),
         "event_name": "HarnessToolCallCompleted",
         "session_id": caller,
-        "context": {"detail": {"tool_response_preview": json.dumps({
-            "success": True,
-            "function": "items.structured_field.replace",
-            "result": {"item_id": item_id},
-        })}},
+        "context": {
+            "detail": {
+                "tool_response_preview": json.dumps(
+                    {
+                        "success": True,
+                        "function": "items.structured_field.replace",
+                        "result": {"item_id": item_id},
+                    }
+                )
+            }
+        },
     }
     p = _p(conn)
     conn.execute(
@@ -92,12 +98,22 @@ def test_typed_target_item_wins_over_divergent_event_index(env):
 def test_target_item_identity_requires_a_bare_integer():
     metadata = FunctionAuditMetadata(("db_write",), "item")
 
-    assert target_item_id(
-        {"target": {"kind": "item", "item_id": 918}}, metadata, None,
-    ) == 918
-    assert target_item_id(
-        {"target": {"kind": "item", "item_id": "ALPHA-918"}}, metadata, None,
-    ) is None
+    assert (
+        target_item_id(
+            {"target": {"kind": "item", "item_id": 918}},
+            metadata,
+            None,
+        )
+        == 918
+    )
+    assert (
+        target_item_id(
+            {"target": {"kind": "item", "item_id": "ALPHA-918"}},
+            metadata,
+            None,
+        )
+        is None
+    )
 
 
 def test_pre_handler_evidence_survives_terminal_claim_release(env):

@@ -16,7 +16,7 @@ import pytest
 def mw_db(tmp_path):
     """Create a minimal DB for merge-worktree engine tests."""
     from runtime.api.fixtures.file_test_db import (
-        apply_fixture_schema_ddl,
+        apply_test_schema,
         connect_test_db,
         init_test_db,
     )
@@ -24,12 +24,16 @@ def mw_db(tmp_path):
     config_path = tmp_path / "config"
     config_path.write_text("base_branch=main\nmerge_conflict_threshold=2\n")
 
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             for table in (
-                "merge_locks", "epic_tasks", "deployment_run_items", "events",
-                "items", "projects",
+                "merge_locks",
+                "epic_tasks",
+                "deployment_run_items",
+                "events",
+                "items",
+                "projects",
             ):
                 try:
                     conn.execute(f"DELETE FROM {table}")

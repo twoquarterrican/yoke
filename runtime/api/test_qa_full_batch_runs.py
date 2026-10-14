@@ -16,8 +16,7 @@ from yoke_core.domain import actors, db_backend, qa, qa_artifacts
 from yoke_core.domain.schema_init_actor_path_claim_tables import (
     create_actor_identity_tables,
 )
-from runtime.api.fixtures.schema_ddl import apply_fixture_ddl
-from runtime.api.fixtures.schema_ddl_runtime_sessions import _SESSIONS_FAMILY_DDL
+from yoke_core.domain.schema_init_tables_sessions import create_session_tables
 from runtime.api.qa_full_test_helpers import conn_with_rows, make_qa_db_file
 from runtime.api.qa_transition_test_support import add_bound_requirement
 
@@ -199,7 +198,10 @@ class TestRunAddBatch:
         session_id = "qa-batch-event-test"
         conn = _conn(db_path)
         create_actor_identity_tables(conn)
-        apply_fixture_ddl(conn, _SESSIONS_FAMILY_DDL)
+        create_session_tables(conn)
+        from yoke_core.domain.schema_init_columns import apply_harness_session_columns
+
+        apply_harness_session_columns(conn)
         actor_id = actors.seed_canonical_human(
             conn,
             local_human_name="qa-batch-event-test-human",

@@ -238,8 +238,7 @@ class TestDefinitionGate:
         )
 
         test_db.execute(
-            "INSERT INTO project_capabilities (project_id, type, settings) "
-            "VALUES (1, %s, %s)",
+            "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
             (IDENTITY_CAPABILITY, "{not json"),
         )
         test_db.commit()
@@ -261,8 +260,7 @@ class TestDefinitionGate:
         )
 
         test_db.execute(
-            "INSERT INTO project_capabilities (project_id, type, settings) "
-            "VALUES (1, %s, %s)",
+            "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
             (IDENTITY_CAPABILITY, '{"identity_path": "/candidate-revision"}'),
         )
         test_db.commit()
@@ -289,8 +287,7 @@ class TestDefinitionGate:
         )
 
         test_db.execute(
-            "INSERT INTO project_capabilities (project_id, type, settings) "
-            "VALUES (1, %s, %s)",
+            "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
             (IDENTITY_CAPABILITY, '{"identity_path": "/candidate-revision"}'),
         )
         test_db.execute(

@@ -21,7 +21,7 @@ from yoke_core.domain import backlog_updates
 from yoke_core.domain import db_backend
 from yoke_core.domain.work_claim_targets import make_item_target
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -49,7 +49,7 @@ def _apply_backlog_fixture_schema() -> None:
         seed_project_identities,
     )
 
-    apply_fixture_schema_ddl()
+    apply_test_schema()
     conn = db_backend.connect()
     try:
         seed_project_identities(conn)
@@ -99,12 +99,7 @@ def _seed_session(path, session_id="sess-1"):
     conn = _conn(path)
     p = _p(conn)
     conn.execute(
-        f"""
-        INSERT INTO harness_sessions
-          (session_id, executor, provider, model, execution_level, executor_version, machine_id, workspace, mode, offered_at, last_heartbeat)
-        VALUES
-          ({p}, 'codex', 'openai', 'test-model', 'primary', NULL, NULL, '/tmp/test', 'test', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
-        """,
+        f"\n        INSERT INTO harness_sessions\n          (project_id, session_id, executor, provider, model, execution_level, executor_version, machine_id, workspace, mode, offered_at, last_heartbeat)\n        VALUES\n          (1, {p}, 'codex', 'openai', 'test-model', 'primary', NULL, NULL, '/tmp/test', 'test', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')\n        ",
         (session_id,),
     )
     conn.commit()

@@ -62,7 +62,7 @@ def _requirement(
         ") VALUES(%s,'plan_case','verification','blocking','flow_derived',"
         "%s,%s,%s,%s,%s,"
         "'Open the dashboard.','The dashboard renders.',"
-        "'{\"base_url\": \"http://localhost:3000\"}',%s) RETURNING id",
+        '\'{"base_url": "http://localhost:3000"}\',%s) RETURNING id',
         (
             int(item_id),
             json.dumps(required),
@@ -275,7 +275,7 @@ def test_mission_needs_its_test_machine_but_no_browser_row(
     assert "browser-control" not in message
 
     test_db.execute(
-        "INSERT INTO project_capabilities(project_id,type) VALUES(1,%s)",
+        "INSERT INTO project_capabilities(created_at, project_id,type) VALUES('2026-01-01T00:00:00Z', 1,%s)",
         (_machine_capability_type("mac-mini-lab"),),
     )
     context = get_case_execution_context(

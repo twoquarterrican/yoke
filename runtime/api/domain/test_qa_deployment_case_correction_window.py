@@ -8,6 +8,8 @@ the row at materialization put them beyond repair the moment they appeared.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import json
 from typing import Any
 
@@ -28,10 +30,14 @@ import pytest
 
 
 def _run_bound_case(conn: Any, *, run_id: str = "run-correction-window") -> int:
-    conn.execute(
-        "INSERT INTO deployment_runs(id,project_id,flow,release_lineage,status,"
-        "created_at) VALUES (%s,1,'flow-correction',%s,'executing',%s)",
-        (run_id, "c" * 40, "2026-09-18T00:00:00Z"),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=1,
+        flow="flow-correction",
+        release_lineage="c" * 40,
+        status="executing",
+        created_at="2026-09-18T00:00:00Z",
     )
     row = conn.execute(
         "INSERT INTO qa_requirements(deployment_run_id,deployment_stage,qa_kind,"

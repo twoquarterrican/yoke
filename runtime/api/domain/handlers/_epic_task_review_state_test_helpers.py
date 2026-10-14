@@ -25,7 +25,7 @@ from yoke_contracts.api.function_call import (
     TargetRef,
 )
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -46,13 +46,14 @@ file_budget: SKIP (no authored code)
 """
 
 FAILING_RECEIPT = VALID_RECEIPT.replace(
-    "clean_worktree: PASS", "clean_worktree: FAIL",
+    "clean_worktree: PASS",
+    "clean_worktree: FAIL",
 )
 
 
 @pytest.fixture
 def db(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             yield conn
@@ -70,8 +71,12 @@ def db_with_task(db):
         status="planning",
     )
     insert_epic_task(
-        db, epic_id=EPIC_ID, task_num=1, title="First task",
-        status="planning", body="task body line",
+        db,
+        epic_id=EPIC_ID,
+        task_num=1,
+        title="First task",
+        status="planning",
+        body="task body line",
     )
     return db
 
@@ -84,8 +89,10 @@ def handler_conns(db_with_task):
     def _cm():
         yield db_with_task
 
-    with patch.object(review_handlers, "_open_connection", _cm), \
-            patch.object(state_handlers, "_open_connection", _cm):
+    with (
+        patch.object(review_handlers, "_open_connection", _cm),
+        patch.object(state_handlers, "_open_connection", _cm),
+    ):
         yield db_with_task
 
 
@@ -126,7 +133,12 @@ def insert_review_row(conn, req_id: int, verdict: str, body: str, ts: str) -> No
 
 
 __all__ = [
-    "EPIC_ID", "VALID_RECEIPT", "FAILING_RECEIPT",
-    "db", "db_with_task", "handler_conns",
-    "make_request", "insert_review_row",
+    "EPIC_ID",
+    "VALID_RECEIPT",
+    "FAILING_RECEIPT",
+    "db",
+    "db_with_task",
+    "handler_conns",
+    "make_request",
+    "insert_review_row",
 ]

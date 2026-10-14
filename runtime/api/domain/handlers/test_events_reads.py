@@ -92,11 +92,7 @@ class TestEventsQuery:
         # Boundary truth is harness_sessions.episode_started_at (stamped
         # by register_session); the rows above are telemetry being filtered.
         test_db.execute(
-            "INSERT INTO harness_sessions (session_id, executor, provider, "
-            "model, workspace, offered_at, last_heartbeat, episode_started_at) "
-            "VALUES ('s-epi', 'claude-code', 'anthropic', 'm', '/tmp', "
-            "'2026-01-02T00:00:00Z', '2026-01-02T00:00:00Z', "
-            "'2026-01-02T00:00:00Z')"
+            "INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace, offered_at, last_heartbeat, episode_started_at) VALUES (1, 's-epi', 'claude-code', 'anthropic', 'm', '/tmp', '2026-01-02T00:00:00Z', '2026-01-02T00:00:00Z', '2026-01-02T00:00:00Z')"
         )
         test_db.commit()
         outcome = events_reads.handle_events_query(

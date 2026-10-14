@@ -16,9 +16,9 @@ from yoke_core.domain.workflow_registry import (
     resolve_current_workflow_pin,
 )
 from yoke_core.domain.workflow_schema import ensure_workflow_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from runtime.api.fixtures.file_test_db import connect_test_db
 from runtime.api.fixtures.backlog import (
-    SCHEMA_DDL,
     insert_epic_task,
     insert_item,
     insert_qa_requirement,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS migration_audit (
 def helper_db(tmp_path: Path):
     db_file = tmp_path / "yoke.db"
     conn = connect_test_db(str(db_file))
-    execute_schema_script(conn, SCHEMA_DDL)
+    initialize_test_schema(conn)
     execute_schema_script(conn, _EXTRA_DDL)
     ensure_workflow_schema(conn)
     converge_builtin_workflows(conn)

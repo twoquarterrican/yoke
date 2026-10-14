@@ -10,9 +10,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from yoke_core.domain.epic_parsing import _placeholder, _require_task_exists
-from yoke_core.domain.epic_task_crud import task_update_field, task_upsert
+from yoke_core.domain.epic_task_crud import task_delete, task_update_field, task_upsert
 from yoke_core.domain.epic_task_scope import reopen_generated_task_scopes
-from yoke_core.domain.path_claim_task_bindings import delete_task_bindings
 
 
 @dataclass
@@ -57,9 +56,15 @@ class MetadataUpdateResult:
     updated_fields: Dict[str, str] = field(default_factory=dict)
 
 
-_METADATA_WHITELIST = frozenset({
-    "title", "context_estimate", "dependencies", "github_issue", "max_attempts",
-})
+_METADATA_WHITELIST = frozenset(
+    {
+        "title",
+        "context_estimate",
+        "dependencies",
+        "github_issue",
+        "max_attempts",
+    }
+)
 
 
 def _split_deps(value: Optional[str]) -> List[str]:
@@ -200,15 +205,7 @@ def task_remove(
                 (joined, epic_key, int(sib_num)),
             )
             cascade[int(sib_num)] = joined
-        delete_task_bindings(
-            conn,
-            item_id=epic_id,
-            task_num=task_num,
-        )
-        conn.execute(
-            f"DELETE FROM epic_tasks WHERE epic_id = {p} AND task_num = {p}",
-            (epic_key, task_num),
-        )
+        task_delete(conn, epic_key, task_num)
         conn.commit()
     except Exception:
         conn.rollback()
@@ -322,15 +319,7 @@ def task_split(
                 (joined, epic_key, int(sib_num)),
             )
             deps_updates[int(sib_num)] = joined
-        delete_task_bindings(
-            conn,
-            item_id=epic_id,
-            task_num=task_num,
-        )
-        conn.execute(
-            f"DELETE FROM epic_tasks WHERE epic_id = {p} AND task_num = {p}",
-            (epic_key, task_num),
-        )
+        task_delete(conn, epic_key, task_num)
         conn.commit()
     except Exception:
         conn.rollback()
@@ -343,7 +332,14 @@ def task_split(
 
 
 __all__ = [
-    "SplitResult", "ReassignResult", "AddResult", "RemoveResult",
-    "MetadataUpdateResult", "task_add", "task_reassign", "task_remove",
-    "task_metadata_update", "task_split",
+    "SplitResult",
+    "ReassignResult",
+    "AddResult",
+    "RemoveResult",
+    "MetadataUpdateResult",
+    "task_add",
+    "task_reassign",
+    "task_remove",
+    "task_metadata_update",
+    "task_split",
 ]

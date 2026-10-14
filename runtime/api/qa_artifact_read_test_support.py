@@ -44,6 +44,8 @@ def seed_artifact(
     *,
     handle: dict,
     metadata: dict | None = None,
+    verdict: str = "pass",
+    performed_by: str = "worktree_run",
 ) -> int:
     insert_item(conn, id=42, title="Evidence owner")
     insert_qa_requirement(
@@ -57,8 +59,9 @@ def seed_artifact(
     run = conn.execute(
         "INSERT INTO qa_runs("
         "qa_requirement_id, performed_by, qa_kind, verdict, created_at"
-        ") VALUES (10, 'worktree_run', 'command', 'pass', "
+        ") VALUES (10, %s, 'command', %s, "
         "'2026-07-26T12:00:00Z') RETURNING id",
+        (performed_by, verdict),
     ).fetchone()
     artifact = conn.execute(
         "INSERT INTO qa_artifacts("
@@ -102,8 +105,7 @@ def seed_s3_configuration(conn, *, bucket: str) -> None:
         (json.dumps({"artifacts": {"bucket": bucket}}),),
     )
     conn.execute(
-        "INSERT INTO project_capabilities (project_id, type, settings) "
-        "VALUES (1, 'aws-admin', %s)",
+        "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, 'aws-admin', %s)",
         (json.dumps({"region": "us-east-1"}),),
     )
     conn.commit()

@@ -28,6 +28,9 @@ def test_non_mission_review_does_not_retain_a_machine_lease() -> None:
     with test_database() as conn:
         execution, _requirement_id, _capture_run_id = _review_execution(conn, 4540)
         create_governed_tables(conn)
+        from runtime.api.fixtures.dispatch_actor import register_session_actor
+
+        register_session_actor(conn, "review-session")
         lease = acquire(
             conn,
             make_qa_admission_target("ordinary-review"),
@@ -53,6 +56,9 @@ def test_request_failure_rolls_back_entire_review_submission(monkeypatch) -> Non
         execution, requirement_id, capture_run_id = _review_execution(conn, 4541)
         bundle = begin_plan_review(conn, execution)
         create_governed_tables(conn)
+        from runtime.api.fixtures.dispatch_actor import register_session_actor
+
+        register_session_actor(conn, "review-session")
         lease = acquire(
             conn,
             make_qa_admission_target("review-atomicity"),

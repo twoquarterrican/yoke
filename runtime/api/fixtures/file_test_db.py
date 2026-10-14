@@ -1,9 +1,9 @@
 """Postgres schema templates for helpers that pass path-shaped test tokens.
 
 :func:`init_test_db` chooses a per-worker template by schema callable identity.
-The default and explicit ``schema.cmd_init`` share the production core schema
-with test-project identities; :func:`apply_fixture_schema_ddl` shares the
-fixture template, and other callables retain their own schema and seed data.
+The default and explicit ``schema.cmd_init`` share the complete production schema
+with test-project identities and sites; :func:`apply_test_schema` selects
+that same template. Other callables retain their own schema and seed data.
 Tests receive reusable clones reset after checkout. Nested contexts receive
 independent template clones that are dropped on exit.
 
@@ -46,17 +46,13 @@ def _repointed_dsn(name: str):
 
 
 def _apply_production_schema() -> None:
-    """Default schema strategy: ``schema.cmd_init`` + test-project identities."""
-    from yoke_core.domain import schema
+    """Production init chain + baseline test-project identities and sites."""
     from yoke_core.domain.db_helpers import connect
-    from yoke_core.domain.project_seed_test_helpers import (
-        seed_project_identities,
-    )
+    from runtime.api.fixtures.production_schema import initialize_test_schema
 
-    schema.cmd_init()
     conn = connect()
     try:
-        seed_project_identities(conn)
+        initialize_test_schema(conn)
     finally:
         conn.close()
 
@@ -64,7 +60,11 @@ def _apply_production_schema() -> None:
 def _schema_strategy(apply_schema):
     from yoke_core.domain import schema
 
-    if apply_schema is None or apply_schema is schema.cmd_init:
+    if (
+        apply_schema is None
+        or apply_schema is schema.cmd_init
+        or apply_schema is apply_test_schema
+    ):
         return _apply_production_schema
     return apply_schema
 
@@ -73,8 +73,6 @@ def _schema_template_db(strategy) -> str:
     """Build each callable's schema once per worker, retaining its seed data."""
     from runtime.api.fixtures import pg_testdb
 
-    if strategy is apply_fixture_schema_ddl:
-        return pg_testdb._fixture_template_db()
     key = id(strategy)
     if key not in _SCHEMA_TEMPLATES:
         name = pg_testdb.create_test_database(pooled=False)
@@ -98,10 +96,8 @@ def _clone_schema_database(strategy) -> str:
 
 def _reusable_checkout(strategy):
     """All schema callables use the existing reusable baseline reset."""
-    from runtime.api.fixtures import pg_reusable_db, pg_testdb
+    from runtime.api.fixtures import pg_reusable_db
 
-    if strategy is apply_fixture_schema_ddl:
-        return pg_testdb.reusable_fixture_database()
     return pg_reusable_db.checkout(
         id(strategy), lambda: _clone_schema_database(strategy)
     )
@@ -135,16 +131,9 @@ def init_test_db(tmp_path: Path, apply_schema=None):
                 pg_testdb.drop_test_database(name)
 
 
-def apply_fixture_schema_ddl() -> None:
-    """``apply_schema`` strategy applying the composed fixture schema."""
-    from yoke_core.domain import db_backend
-    from runtime.api.fixtures.schema_ddl import apply_fixture_schema
-
-    conn = db_backend.connect()
-    try:
-        apply_fixture_schema(conn)
-    finally:
-        conn.close()
+def apply_test_schema() -> None:
+    """Initialize a disposable database through production boot and test seeds."""
+    _apply_production_schema()
 
 
 def iter_sql_script_statements(sql: str) -> Iterator[str]:
@@ -190,7 +179,7 @@ def connect_test_db(path: str):
 
 
 __all__ = [
-    "apply_fixture_schema_ddl",
+    "apply_test_schema",
     "apply_inline_ddl",
     "apply_sql_script",
     "connect_test_db",

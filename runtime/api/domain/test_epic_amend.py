@@ -13,8 +13,8 @@ from typing import Any
 import pytest
 
 from runtime.api.fixtures import pg_testdb
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from runtime.api.fixtures.backlog import insert_item, insert_item_worktree
-from runtime.api.fixtures.schema_ddl import SCHEMA_DDL, apply_fixture_ddl
 from yoke_core.domain import epic_amend
 from yoke_core.domain.epic_task_scope import (
     finalize_generated_task_scopes,
@@ -25,9 +25,10 @@ from yoke_core.domain.epic_task_scope import (
 def _seed_conn() -> Any:
     name = pg_testdb.create_test_database()
     conn = pg_testdb.drop_database_on_close(
-        pg_testdb.connect_test_database(name), name,
+        pg_testdb.connect_test_database(name),
+        name,
     )
-    apply_fixture_ddl(conn, SCHEMA_DDL)
+    initialize_test_schema(conn)
     from yoke_core.domain.workflow_registry import converge_builtin_workflows
 
     converge_builtin_workflows(conn)
@@ -61,9 +62,13 @@ def _add_row(conn, epic_id, task_num, title, **kwargs):
         "context_estimate, dependencies, status, body) VALUES "
         "(%s, %s, %s, %s, %s, %s, %s, %s)",
         (
-            str(epic_id), task_num, title,
-            lane_id, kwargs.get("context_estimate", ""),
-            kwargs.get("dependencies", ""), kwargs.get("status", "planning"),
+            str(epic_id),
+            task_num,
+            title,
+            lane_id,
+            kwargs.get("context_estimate", ""),
+            kwargs.get("dependencies", ""),
+            kwargs.get("status", "planning"),
             kwargs.get("body", ""),
         ),
     )
@@ -81,12 +86,14 @@ class TestTaskAdd(unittest.TestCase):
         conn = _seed_conn()
         _add_row(conn, 100, 1, "first")
         result = epic_amend.task_add(
-            conn, 100, title="second", body="body-text",
+            conn,
+            100,
+            title="second",
+            body="body-text",
         )
         assert result.task_num == 2
         row = conn.execute(
-            "SELECT title, body FROM epic_tasks WHERE epic_id='100' "
-            "AND task_num=2"
+            "SELECT title, body FROM epic_tasks WHERE epic_id='100' AND task_num=2"
         ).fetchone()
         assert row["title"] == "second"
         assert row["body"] == "body-text"
@@ -200,9 +207,10 @@ class TestTaskMetadataUpdate(unittest.TestCase):
         conn = _seed_conn()
         _add_row(conn, 100, 1, "first", context_estimate="2k")
         result = epic_amend.task_metadata_update(
-            conn, 100, 1,
-            {"title": "renamed", "context_estimate": "4k",
-             "github_issue": "#42"},
+            conn,
+            100,
+            1,
+            {"title": "renamed", "context_estimate": "4k", "github_issue": "#42"},
         )
         assert result.updated_fields["title"] == "renamed"
         assert result.updated_fields["context_estimate"] == "4k"
@@ -219,7 +227,10 @@ class TestTaskMetadataUpdate(unittest.TestCase):
         _add_row(conn, 100, 1, "first")
         with pytest.raises(ValueError, match="unknown metadata"):
             epic_amend.task_metadata_update(
-                conn, 100, 1, {"status": "planned"},
+                conn,
+                100,
+                1,
+                {"status": "planned"},
             )
 
     def test_rejects_empty_fields(self):
@@ -240,9 +251,10 @@ class TestTaskSplit(unittest.TestCase):
         _add_row(conn, 100, 1, "parent")
         _add_row(conn, 100, 2, "sibling")
         result = epic_amend.task_split(
-            conn, 100, 1,
-            [{"title": "child-A", "body": "A-body"},
-             {"title": "child-B"}],
+            conn,
+            100,
+            1,
+            [{"title": "child-A", "body": "A-body"}, {"title": "child-B"}],
         )
         assert result.parent_task_num == 1
         assert result.new_task_nums == [3, 4]
@@ -265,7 +277,9 @@ class TestTaskSplit(unittest.TestCase):
         _add_row(conn, 100, 2, "sibling", dependencies="1")
         _add_row(conn, 100, 3, "other", dependencies="1,2")
         result = epic_amend.task_split(
-            conn, 100, 1,
+            conn,
+            100,
+            1,
             [{"title": "child-A"}, {"title": "child-B"}],
         )
         assert result.new_task_nums == [4, 5]
@@ -289,14 +303,20 @@ class TestTaskSplit(unittest.TestCase):
         _add_row(conn, 100, 1, "parent")
         with pytest.raises(ValueError, match="title"):
             epic_amend.task_split(
-                conn, 100, 1, [{"body": "no title"}],
+                conn,
+                100,
+                1,
+                [{"body": "no title"}],
             )
 
     def test_raises_when_parent_missing(self):
         conn = _seed_conn()
         with pytest.raises(LookupError):
             epic_amend.task_split(
-                conn, 100, 99, [{"title": "x"}],
+                conn,
+                100,
+                99,
+                [{"title": "x"}],
             )
 
     def test_reopens_finalized_membership_before_split(self):

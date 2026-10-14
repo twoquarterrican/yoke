@@ -9,7 +9,7 @@ import pytest
 
 from runtime.api.conftest import insert_item
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -19,7 +19,7 @@ from yoke_core.domain.project_identity import render_item_ref
 
 @pytest.fixture
 def db(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             yield conn
@@ -63,7 +63,7 @@ def test_integration_simulation_binds_to_the_qa_gate(db) -> None:
 
 
 def test_simulation_requirement_is_not_an_environment_observation(tmp_path) -> None:
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             insert_item(

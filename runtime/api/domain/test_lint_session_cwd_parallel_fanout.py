@@ -42,10 +42,7 @@ def conn():
 def _seed_session(conn, *, session_id):
     now = iso8601_now()
     conn.execute(
-        "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, workspace, "
-        "offered_at, last_heartbeat) "
-        "VALUES (%s, 'claude', 'anthropic', 'test-model', '/tmp', %s, %s)",
+        "INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace, offered_at, last_heartbeat) VALUES (1, %s, 'claude-code', 'anthropic', 'test-model', '/tmp', %s, %s)",
         (session_id, now, now),
     )
     conn.commit()

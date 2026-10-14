@@ -36,8 +36,7 @@ def test_current_model_seed_converges_without_legacy_settings() -> None:
             command="python3 -m pytest",
         )
         legacy = conn.execute(
-            "SELECT COUNT(*) FROM project_structure "
-            "WHERE family='command_definitions'"
+            "SELECT COUNT(*) FROM project_structure WHERE family='command_definitions'"
         ).fetchone()[0]
         defaults = conn.execute(
             "SELECT workflow_id, transition_id "
@@ -111,8 +110,7 @@ def test_convergence_removes_retired_full_suite_lifecycle_defaults() -> None:
 
 def _declare(conn, settings: dict) -> None:
     conn.execute(
-        "INSERT INTO project_capabilities (project_id, type, settings) "
-        "VALUES (1, %s, %s)",
+        "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
         (CI_WORKFLOW_CAPABILITY_TYPE, json.dumps(settings)),
     )
     conn.commit()
@@ -134,10 +132,16 @@ def test_a_project_can_declare_a_deployed_scope_reachable_from_ci() -> None:
     with test_database() as conn:
         _declare(
             conn,
-            {"workflow_file": "ci.yml", "scope_workflows": {"smoke": "post-deploy.yml"}},
+            {
+                "workflow_file": "ci.yml",
+                "scope_workflows": {"smoke": "post-deploy.yml"},
+            },
         )
         result = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="smoke",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="smoke",
             command="npx playwright test",
             target_environment="development",
         )
@@ -157,13 +161,20 @@ def test_ci_deployed_scope_requires_an_environment_before_plan_writes() -> None:
 
         with pytest.raises(ValueError, match="require --environment"):
             ensure_registered_command_plan(
-                conn, project_id=1, project="yoke", scope="smoke",
+                conn,
+                project_id=1,
+                project="yoke",
+                scope="smoke",
                 command="npx playwright test",
             )
         with pytest.raises(ValueError, match="cannot use --requires-base-url"):
             ensure_registered_command_plan(
-                conn, project_id=1, project="yoke", scope="smoke",
-                command="npx playwright test", requires_base_url=True,
+                conn,
+                project_id=1,
+                project="yoke",
+                scope="smoke",
+                command="npx playwright test",
+                requires_base_url=True,
             )
 
         after = conn.execute("SELECT COUNT(*) FROM qa_plans").fetchone()[0]
@@ -176,15 +187,24 @@ def test_a_declared_scope_dispatches_its_own_workflow_not_the_default() -> None:
     with test_database() as conn:
         _declare(
             conn,
-            {"workflow_file": "ci.yml", "scope_workflows": {"smoke": "post-deploy.yml"}},
+            {
+                "workflow_file": "ci.yml",
+                "scope_workflows": {"smoke": "post-deploy.yml"},
+            },
         )
         smoke = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="smoke",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="smoke",
             command="npx playwright test",
             target_environment="development",
         )
         full = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="python3 -m pytest",
         )
         smoke_case = _case(conn, smoke["plan_id"])
@@ -199,7 +219,10 @@ def test_an_undeclared_deployed_scope_keeps_the_local_runner() -> None:
     with test_database() as conn:
         _declare(conn, {"workflow_file": "ci.yml"})
         result = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="smoke",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="smoke",
             command="npx playwright test",
             requires_base_url=True,
         )
@@ -216,10 +239,16 @@ def test_converge_leaves_a_declared_deployed_scope_alone() -> None:
     with test_database() as conn:
         _declare(
             conn,
-            {"workflow_file": "ci.yml", "scope_workflows": {"smoke": "post-deploy.yml"}},
+            {
+                "workflow_file": "ci.yml",
+                "scope_workflows": {"smoke": "post-deploy.yml"},
+            },
         )
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="smoke",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="smoke",
             command="npx playwright test",
             target_environment="development",
         )
@@ -238,13 +267,19 @@ def test_converge_no_longer_reverts_a_declared_deployed_scope() -> None:
     """
     with test_database() as conn:
         registered = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="smoke",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="smoke",
             command="npx playwright test",
             target_environment="development",
         )
         _declare(
             conn,
-            {"workflow_file": "ci.yml", "scope_workflows": {"smoke": "post-deploy.yml"}},
+            {
+                "workflow_file": "ci.yml",
+                "scope_workflows": {"smoke": "post-deploy.yml"},
+            },
         )
 
         first = converge_registered_command_plans(conn)
@@ -267,13 +302,19 @@ def test_converge_still_corrects_a_binding_that_disagrees() -> None:
     """Dropping the declaration rebinds the scope back to the local runner."""
     with test_database() as conn:
         registered = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="smoke",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="smoke",
             command="npx playwright test",
             target_environment="development",
         )
         _declare(
             conn,
-            {"workflow_file": "ci.yml", "scope_workflows": {"smoke": "post-deploy.yml"}},
+            {
+                "workflow_file": "ci.yml",
+                "scope_workflows": {"smoke": "post-deploy.yml"},
+            },
         )
         converge_registered_command_plans(conn)
         conn.execute(

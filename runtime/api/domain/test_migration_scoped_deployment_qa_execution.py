@@ -44,7 +44,7 @@ def _constraint_names(conn, table: str) -> set[str]:
 
 def _install_legacy_contract(conn) -> tuple[int, int]:
     conn.execute("DROP TABLE qa_plan_execution_results")
-    conn.execute("DROP TABLE qa_plan_executions")
+    conn.execute("DROP TABLE qa_plan_executions CASCADE")
     conn.execute(
         """
         CREATE TABLE qa_plan_executions (

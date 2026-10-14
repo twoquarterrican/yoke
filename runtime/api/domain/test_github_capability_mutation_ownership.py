@@ -8,7 +8,7 @@ from collections.abc import Iterator
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain import db_backend, projects
 from yoke_core.domain.github_app_user_verification import (
     VerifiedProjectGitHubBinding,
@@ -36,7 +36,7 @@ def github_db(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -75,9 +75,7 @@ def test_github_secret_reads_and_writes_stay_closed_with_retired_rows(
     github_db: str,
 ) -> None:
     with pytest.raises(ValueError, match="retired"):
-        projects.cmd_capability_set_secret(
-            "yoke", " GitHub ", "token", "new-token"
-        )
+        projects.cmd_capability_set_secret("yoke", " GitHub ", "token", "new-token")
 
     conn = pg_testdb.connect_test_database(github_db)
     try:
@@ -122,9 +120,7 @@ def test_github_optional_boolean_merge_preserves_binding_projection(
         "yoke", " GitHub ", {"ci_oidc_manage_provider": False}
     )
 
-    stored = json.loads(
-        projects.cmd_capability_get_settings("yoke", "github") or "{}"
-    )
+    stored = json.loads(projects.cmd_capability_get_settings("yoke", "github") or "{}")
     assert stored == {
         "api_url": "https://api.github.com",
         "ci_oidc_manage_provider": False,
@@ -178,26 +174,59 @@ def test_cli_rejects_github_secret_and_full_settings_writes(
     github_db: str,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    assert projects.main([
-        "capability-set-secret", "yoke", "GitHub", "token", "secret",
-    ]) == 2
+    assert (
+        projects.main(
+            [
+                "capability-set-secret",
+                "yoke",
+                "GitHub",
+                "token",
+                "secret",
+            ]
+        )
+        == 2
+    )
     assert "retired" in capsys.readouterr().err
 
-    assert projects.main([
-        "capability-get-secret", "yoke", "github", "token",
-    ]) == 2
+    assert (
+        projects.main(
+            [
+                "capability-get-secret",
+                "yoke",
+                "github",
+                "token",
+            ]
+        )
+        == 2
+    )
     read_error = capsys.readouterr()
     assert "retired and cannot be read" in read_error.err
     assert "token" not in read_error.out
 
-    assert projects.main([
-        "capability-list-secrets", "yoke", "GITHUB",
-    ]) == 2
+    assert (
+        projects.main(
+            [
+                "capability-list-secrets",
+                "yoke",
+                "GITHUB",
+            ]
+        )
+        == 2
+    )
     assert "retired and cannot be read" in capsys.readouterr().err
 
-    assert projects.main([
-        "capability-set-settings", "yoke", "github", "{}", "--new",
-    ]) == 2
+    assert (
+        projects.main(
+            [
+                "capability-set-settings",
+                "yoke",
+                "github",
+                "{}",
+                "--new",
+            ]
+        )
+        == 2
+    )
     assert "binding-owned" in capsys.readouterr().err
 
 

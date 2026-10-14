@@ -134,9 +134,7 @@ def test_native_process_reports_preserve_microsecond_death_order(test_db, zone):
     test_db.execute("SELECT set_config('TimeZone',%s,false)", (zone,))
     session_id = str(uuid4())
     test_db.execute(
-        "INSERT INTO harness_sessions (session_id,executor,provider,model,workspace,"
-        "offered_at,last_heartbeat) VALUES (%s,'codex','openai','gpt-6-sol',"
-        "'/tmp',%s,%s)",
+        "INSERT INTO harness_sessions (project_id, session_id,executor,provider,model,workspace,offered_at,last_heartbeat) VALUES (1, %s,'codex','openai','gpt-6-sol','/tmp',%s,%s)",
         (session_id, MOMENT, MOMENT),
     )
     first = {"pids": [1], "process_start_times": {"1": "opaque-first"}}

@@ -7,7 +7,7 @@ import json
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain import db_backend
 from yoke_core.domain.project_identity import resolve_project_id
 from yoke_core.domain.projects_pulumi_state_checkpoint_import import (
@@ -22,11 +22,10 @@ def checkpoint_state_db(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
             project_id = resolve_project_id(conn, "yoke")
             conn.execute(
-                "INSERT INTO project_capabilities "
-                "(project_id, type, settings) VALUES (%s, %s, %s)",
+                "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', %s, %s, %s)",
                 (project_id, "pulumi-state", '{"state_bucket":"bucket"}'),
             )
             conn.commit()
@@ -45,8 +44,7 @@ def _settings(db_name: str) -> dict:
     conn = pg_testdb.connect_test_database(db_name)
     try:
         raw = conn.execute(
-            "SELECT settings FROM project_capabilities "
-            "WHERE type='pulumi-state'"
+            "SELECT settings FROM project_capabilities WHERE type='pulumi-state'"
         ).fetchone()[0]
         return json.loads(raw) if isinstance(raw, str) else dict(raw)
     finally:
@@ -94,8 +92,9 @@ def test_checkpoint_import_refuses_conflict_without_write(checkpoint_state_db):
     assert raised.value.code == "stack_state_conflict"
     assert "different-ciphertext" not in str(raised.value)
     assert (
-        _settings(checkpoint_state_db)["stack_state"]
-        ["yoke-platform-stage-vps"]["encrypted_key"]
+        _settings(checkpoint_state_db)["stack_state"]["yoke-platform-stage-vps"][
+            "encrypted_key"
+        ]
         == "ciphertext"
     )
 

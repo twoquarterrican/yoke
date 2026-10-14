@@ -35,6 +35,7 @@ _STALE_DB_SCHEMA = f"""
             INSERT INTO items (id, project_id, project_sequence)
             VALUES (99, 1, 99), (9999, 1, 9999);
             CREATE TABLE harness_sessions (
+                project_id INTEGER NOT NULL REFERENCES projects(id),
                 session_id TEXT PRIMARY KEY,
                 executor TEXT NOT NULL,
                 executor_surface TEXT DEFAULT NULL,
@@ -141,6 +142,10 @@ def _apply_stale_db_schema() -> None:
 class TestSessionsDbScript:
     @pytest.fixture
     def db_path(self, tmp_path):
+        from runtime.api.fixtures.machine_config_test import register_machine_checkout
+
+        self.workspace = tmp_path / "workspace"
+        register_machine_checkout(tmp_path / "machine-config", self.workspace, 1)
         # Per-test DB on both engines via init_test_db (SQLite file under
         # tmp_path; disposable per-test Postgres DB with YOKE_PG_DSN repointed
         # for the context). The yield keeps the context open so the subprocess
@@ -175,7 +180,7 @@ class TestSessionsDbScript:
             "claude-code",
             "anthropic",
             TEST_MODEL_ID,
-            "/tmp/work",
+            str(self.workspace),
         )
         assert first.returncode == 0
         claim = self._run_script(
@@ -198,7 +203,7 @@ class TestSessionsDbScript:
             "claude-code",
             "anthropic",
             TEST_MODEL_ID,
-            "/tmp/work",
+            str(self.workspace),
         )
         assert register.returncode == 0
         end = self._run_script(db_path, "end", "sess-1")
@@ -225,7 +230,7 @@ class TestSessionsDbScript:
             "claude-code",
             "anthropic",
             TEST_MODEL_ID,
-            "/tmp/work",
+            str(self.workspace),
         )
         assert register.returncode == 0
 
@@ -256,7 +261,7 @@ class TestSessionsDbScript:
             "claude-code",
             "anthropic",
             TEST_MODEL_ID,
-            "/tmp/work",
+            str(self.workspace),
         )
 
         # Claim an item so the session holds an active claim
@@ -291,7 +296,7 @@ class TestSessionsDbScript:
             "claude-code",
             "anthropic",
             TEST_MODEL_ID,
-            "/tmp/work",
+            str(self.workspace),
         )
 
         stale_instant = utc_now() - timedelta(minutes=120)

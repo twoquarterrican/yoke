@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from runtime.api.domain.qa_review_seed import resolve_capture_review
 from runtime.api.fixtures.backlog_inserts import insert_item
 from runtime.api.fixtures.backlog_qa_inserts import insert_qa_requirement
 from runtime.api.fixtures.pg_testdb import test_database
@@ -325,7 +326,7 @@ def test_approving_pending_review_keeps_capture_script_not_live() -> None:
         conn.commit()
         result = apply_requirement_update(conn, req_id, "method_config", new)
         assert result.ok, result.message
-        apply_qa_review_resolution(
+        resolve_capture_review(
             conn,
             requirement_id=req_id,
             action="approve",

@@ -14,6 +14,7 @@ with it.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
 from typing import Any
 
 from runtime.api.fixtures.deployment_run_driver_fixture import release_seeded_driver
@@ -52,11 +53,14 @@ def _executing_run(conn: Any, run_id: str, members: tuple[int, ...]) -> None:
     resolved.
     """
     now = iso8601_now()
-    conn.execute(
-        "INSERT INTO deployment_runs "
-        "(id,project_id,flow,status,current_stage,created_at) "
-        "VALUES (%s,1,%s,'executing','complete',%s)",
-        (run_id, COMPLETION_FLOW, now),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=1,
+        flow=COMPLETION_FLOW,
+        status="executing",
+        current_stage="complete",
+        created_at=now,
     )
     from runtime.api.fixtures.completed_delivery import pin_run_delivery
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+
 import json
 
 import pytest
@@ -86,7 +88,9 @@ def test_terminal_status_releases_owned_model_territory(test_db, target_status):
     test_db.commit()
 
     assert receipt.migration_territories_released == 1
-    assert active_claim(test_db, make_migration_serialization_target(1, MODEL, 1)) is None
+    assert (
+        active_claim(test_db, make_migration_serialization_target(1, MODEL, 1)) is None
+    )
     settled = get_claim(test_db, lease_id)
     assert settled.release_reason_intent == f"item-terminal:{target_status}"
 
@@ -96,9 +100,9 @@ def test_terminal_status_does_not_release_foreign_holder(test_db):
     _seed_owner(test_db, item_id=item_id, session_id="item-owner")
     owned = active_claim(test_db, make_migration_serialization_target(1, MODEL, 1))
     assert owned is not None
+    register_session_actor(test_db, "foreign-owner")
     test_db.execute(
-        "UPDATE work_claims SET scope=%s, session_id='foreign-owner' "
-        "WHERE id=%s",
+        "UPDATE work_claims SET scope=%s, session_id='foreign-owner' WHERE id=%s",
         (
             make_migration_serialization_target(1, MODEL, 4299).scope_json(),
             owned.id,
@@ -142,6 +146,7 @@ def test_terminal_release_follows_item_owner_not_shared_session(test_db):
     )
     now = iso8601_now()
     target = make_item_target(second_id)
+    register_session_actor(test_db, "shared-owner")
     test_db.execute(
         "INSERT INTO work_claims "
         "(session_id, target_kind, scope, claim_type, claimed_at, last_heartbeat) "
@@ -154,7 +159,9 @@ def test_terminal_release_follows_item_owner_not_shared_session(test_db):
     test_db.commit()
     assert first.migration_territories_released == 1
     assert get_claim(test_db, lease_id).release_reason_intent == "item-terminal:done"
-    assert active_claim(test_db, make_migration_serialization_target(1, MODEL, 1)) is None
+    assert (
+        active_claim(test_db, make_migration_serialization_target(1, MODEL, 1)) is None
+    )
 
     second = _transition(test_db, item_id=second_id, target_status="stopped")
     test_db.commit()
@@ -177,7 +184,10 @@ def test_terminal_release_rolls_back_with_status_transition(test_db):
     finally:
         transition_conn.close()
 
-    assert active_claim(test_db, make_migration_serialization_target(1, MODEL, 1)) is not None
+    assert (
+        active_claim(test_db, make_migration_serialization_target(1, MODEL, 1))
+        is not None
+    )
     status = test_db.execute(
         "SELECT status FROM items WHERE id=%s",
         (item_id,),

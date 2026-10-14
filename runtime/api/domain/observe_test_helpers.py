@@ -20,7 +20,7 @@ block) so the production read path is exercised on the real authority.
   ``<project_dir>/data/yoke.db`` so ``repo_root_for_attribution`` resolves the
   repo root from the path shape while reads route through the backend factory.
   :func:`seed_item` and :func:`seed_session` populate the canonical schema
-  columns the ``SCHEMA_DDL`` fixture creates.
+  columns the production-schema fixture creates.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from typing import Iterator, Optional, Tuple
 from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import instant_parameter
 from yoke_core.domain.workflow_registry import resolve_current_workflow_pin
-from runtime.api.fixtures.file_test_db import apply_fixture_schema_ddl, init_test_db
+from runtime.api.fixtures.file_test_db import apply_test_schema, init_test_db
 
 
 def _fresh_now() -> datetime:
@@ -53,13 +53,13 @@ def observe_events_db() -> Iterator[str]:
     """Yield a backend-appropriate ``db_path`` with the fixture schema applied.
 
     Postgres gets a disposable per-test database with ``YOKE_PG_DSN``
-    repointed for the block. The schema comes from ``apply_fixture_schema_ddl``
-    (the canonical ``SCHEMA_DDL`` fixture, which includes the ``events`` table
+    repointed for the block. The schema comes from ``apply_test_schema``
+    (the canonical production-schema fixture, which includes the ``events`` table
     unlike ``schema.cmd_init``), so ``insert_event`` writes the same columns it
     writes in production.
     """
     with tempfile.TemporaryDirectory() as td:
-        with init_test_db(Path(td), apply_schema=apply_fixture_schema_ddl) as db_path:
+        with init_test_db(Path(td), apply_schema=apply_test_schema) as db_path:
             yield db_path
 
 
@@ -76,7 +76,7 @@ def observe_attribution_db() -> Iterator[Tuple[str, str]]:
         root = Path(td)
         data_dir = root / "data"
         data_dir.mkdir()
-        with init_test_db(data_dir, apply_schema=apply_fixture_schema_ddl) as db_path:
+        with init_test_db(data_dir, apply_schema=apply_test_schema) as db_path:
             yield db_path, str(root)
 
 
@@ -136,11 +136,7 @@ def seed_session(
     recent_clock = instant_parameter(conn, recent_clock)
     p = _p(conn)
     conn.execute(
-        "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, workspace, offered_at, "
-        "last_heartbeat, current_item_id, current_item_set_at, recent_item_id, "
-        "recent_item_recorded_at) "
-        f"VALUES ({p}, 'claude-code', 'test', 'test', '/tmp', {p}, {p}, {p}, {p}, {p}, {p})",
+        f"INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace, offered_at, last_heartbeat, current_item_id, current_item_set_at, recent_item_id, recent_item_recorded_at) VALUES (1, {p}, 'claude-code', 'test', 'test', '/tmp', {p}, {p}, {p}, {p}, {p}, {p})",
         (
             session_id,
             now,

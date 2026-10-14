@@ -1,25 +1,8 @@
-"""Backlog-related test fixtures: schema DDL, test_db, and insert helpers.
+"""Production-schema test_db and insert helpers.
 
-Provides a disposable Postgres database with the full production schema and
-convenience insert helpers for common tables. All Yoke API test modules
-should use the ``test_db`` fixture rather than creating their own schema setup.
-
-The schema DDL here matches ``runtime/api/domain/schema.py`` exactly
-for every column, CHECK constraint, and index — tests need to see the
-same shape production emits. No implicit timestamp-default clauses:
-insert helpers
-below thread :func:`yoke_core.domain.db_helpers.iso8601_now` through
-every ``created_at`` / ``updated_at`` column at insert time.  Raw
-INSERTs in tests that target the ``test_db`` fixture must supply
-``created_at`` themselves; tests that maintain their own in-memory
-schema DDL are outside the fixture's contract.
-
-The ``SCHEMA_DDL`` constant is composed by the assembler at
-``runtime/api/fixtures/schema_ddl.py`` from three table-family siblings;
-the insert helpers live in ``runtime/api/fixtures/backlog_inserts.py``.
-This module keeps the pytest fixture (path-based plugin discovery
-via ``pytest_plugins`` requires the fixture to live here) and
-re-exports the public surface.
+The shared database is a reusable clone of the production initialization
+chain. It carries production constraints and triggers. Insert helpers live in
+backlog_inserts; operating-actor machine configuration is recorded per test.
 """
 
 from __future__ import annotations
@@ -29,9 +12,6 @@ from typing import Any
 import pytest
 
 from yoke_core.domain.actors import seed_canonical_human
-from yoke_core.domain.gate_satisfaction_schema import (
-    create_gate_satisfaction_tables,
-)
 from yoke_core.domain.sql_json import JSONB_COLUMNS  # noqa: F401 — imported for cross-reference
 from runtime.api.fixtures.backlog_inserts import (
     insert_deployment_run,
@@ -45,7 +25,6 @@ from runtime.api.fixtures.backlog_inserts import (
 from runtime.api.fixtures.operating_actor import (
     record_fixture_operating_actor,
 )
-from runtime.api.fixtures.schema_ddl import SCHEMA_DDL
 
 
 def seed_test_canonical_human(conn: Any) -> int:
@@ -58,24 +37,6 @@ def seed_test_canonical_human(conn: Any) -> int:
     exactly like the production helper.
     """
     return seed_canonical_human(conn)
-
-
-def apply_fixture_schema_with_human() -> None:
-    """``apply_schema`` strategy: the fixture schema plus the born human.
-
-    Item writers attribute an unsourced item to the universe's human, so a
-    fixture universe without one refuses those writes.
-    """
-    from yoke_core.domain import db_backend
-    from runtime.api.fixtures.file_test_db import apply_fixture_schema_ddl
-
-    apply_fixture_schema_ddl()
-    conn = db_backend.connect()
-    try:
-        seed_test_canonical_human(conn)
-        conn.commit()
-    finally:
-        conn.close()
 
 
 def seed_fixture_operating_actor(conn: Any) -> int:
@@ -118,14 +79,13 @@ def seed_fixture_operating_actor(conn: Any) -> int:
 def test_db():
     """Connection with the full Yoke schema on a disposable Postgres DB.
 
-    Seeds the canonical yoke-core + local human actors, and records the
+    Carries the born human actor, and records the
     operating-actor binding beside them, so writer tests resolving the
     default actor see the same post-init shape production ships.
     """
     from runtime.api.fixtures.pg_testdb import test_database
 
     with test_database() as conn:
-        create_gate_satisfaction_tables(conn)
         local_human = seed_test_canonical_human(conn)
         conn.commit()
         # A born universe also records which actor this machine operates
@@ -136,7 +96,6 @@ def test_db():
 
 __all__ = (
     "JSONB_COLUMNS",
-    "SCHEMA_DDL",
     "insert_deployment_run",
     "insert_epic_task",
     "insert_event",

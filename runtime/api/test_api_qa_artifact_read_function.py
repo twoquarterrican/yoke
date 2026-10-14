@@ -99,6 +99,8 @@ def test_failed_ci_artifact_round_trips_across_scratch_runs(
         artifact_id = seed_artifact(
             conn,
             handle={"backend": "local", "path": "pending"},
+            verdict="fail",
+            performed_by="ci_run",
         )
         row = conn.execute(
             "SELECT a.qa_run_id FROM qa_artifacts a WHERE a.id=%s",
@@ -113,10 +115,6 @@ def test_failed_ci_artifact_round_trips_across_scratch_runs(
         )
         evidence.write_bytes(b"failed CI output")
         assert evidence.relative_to(tmp_path / "scratch").parts[0] == "1"
-        conn.execute(
-            "UPDATE qa_runs SET performed_by='ci_run', verdict='fail' WHERE id=%s",
-            (run_id,),
-        )
         conn.execute(
             "UPDATE qa_artifacts SET artifact_handle=%s WHERE id=%s",
             (

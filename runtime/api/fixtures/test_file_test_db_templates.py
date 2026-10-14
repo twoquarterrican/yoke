@@ -187,10 +187,10 @@ def test_explicit_production_init_shares_default_flavor(tmp_path):
         assert os.environ[db_backend.PG_DSN_ENV] == first
 
 
-def test_fixture_human_strategy_is_reused_and_resets_actor_data(tmp_path):
-    from runtime.api.fixtures.backlog import apply_fixture_schema_with_human
+def test_production_strategy_is_reused_and_resets_actor_data(tmp_path):
+    from runtime.api.fixtures.file_test_db import apply_test_schema
 
-    with file_test_db.init_test_db(tmp_path, apply_fixture_schema_with_human):
+    with file_test_db.init_test_db(tmp_path, apply_test_schema):
         first = os.environ[db_backend.PG_DSN_ENV]
         with db_backend.connect_psycopg() as conn:
             baseline = conn.execute(
@@ -198,14 +198,14 @@ def test_fixture_human_strategy_is_reused_and_resets_actor_data(tmp_path):
             ).fetchall()
             assert baseline
             conn.execute("UPDATE actors SET name = 'changed'")
-    with file_test_db.init_test_db(tmp_path, apply_fixture_schema_with_human):
+    with file_test_db.init_test_db(tmp_path, apply_test_schema):
         assert os.environ[db_backend.PG_DSN_ENV] == first
         with db_backend.connect_psycopg() as conn:
             assert (
                 conn.execute("SELECT id, name FROM actors ORDER BY id").fetchall()
                 == baseline
             )
-    pg_reusable_db.discard(id(apply_fixture_schema_with_human))
+    pg_reusable_db.discard(id(file_test_db._apply_production_schema))
 
 
 def test_cached_session_schema_records_each_fresh_machine_home(tmp_path, monkeypatch):

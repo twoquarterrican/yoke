@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 from typing import Any
 from unittest import mock
 
@@ -23,10 +25,13 @@ from yoke_core.domain.work_claim_targets import make_item_target
 
 
 def _run(conn: Any, run_id: str) -> None:
-    conn.execute(
-        "INSERT INTO deployment_runs(id,project_id,flow,status,created_at) "
-        "VALUES (%s,1,'flow-x','executing',%s)",
-        (run_id, "2026-09-14T00:00:00Z"),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=1,
+        flow="flow-x",
+        status="executing",
+        created_at="2026-09-14T00:00:00Z",
     )
     conn.commit()
 

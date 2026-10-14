@@ -30,7 +30,7 @@ import pytest
 from runtime.api.fixtures.backlog import seed_test_canonical_human
 from runtime.api.fixtures.operating_actor import record_fixture_operating_actor
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -49,7 +49,7 @@ _SESSION_ID = "fresh-universe-session"
 @pytest.fixture
 def fresh_universe(tmp_path, monkeypatch):
     """A born universe: canonical actors, one project, one claimable item."""
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         monkeypatch.setenv("YOKE_DB", db_path)
         # The claim surfaces resolve the CALLER from ambient identity, so the
         # test process speaks as the session it just registered.

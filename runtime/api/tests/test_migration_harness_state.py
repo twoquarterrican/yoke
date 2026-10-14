@@ -30,7 +30,7 @@ from yoke_core.domain.schema_common import _get_columns
 def _init_full_schema_sqlite(db_path: str) -> None:
     """Build the legacy file-harness schema without touching backend env.
 
-    The fixture ``SCHEMA_DDL`` is native Postgres text, so the SQLite
+    The fixture production-schema is native Postgres text, so the SQLite
     validation file is initialized through canonical schema init instead —
     the same fully schema-inited shape a real install carries.
     """

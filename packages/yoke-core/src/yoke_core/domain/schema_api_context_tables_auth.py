@@ -14,10 +14,10 @@ AUTH_TABLES: dict[str, dict] = {
     "frontend_event_rate_limits": {
         "columns": [
             ("client_key", "TEXT"),
-            ("window_start", "INTEGER"),
+            ("window_start", "TIMESTAMPTZ"),
             ("request_count", "INTEGER"),
         ],
-        "notes": "Disposable shared anonymous collector request counters. client_key hashes trusted transport client identity and organization; counters are atomic and independent of events retention.",
+        "notes": "Disposable shared anonymous collector request counters. window_start is a native instant; the earlier INTEGER packet declaration was wrong. client_key hashes trusted transport client identity and organization; counters are atomic and independent of events retention.",
     },
     "machine_authorization_rate_limits": {
         "columns": [

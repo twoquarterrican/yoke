@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import io
 import json
 import urllib.error
@@ -111,32 +113,32 @@ def test_frozen_target_reads_the_pin_at_the_deployed_candidate_commit(
 def test_bound_project_reads_the_release_pin_output_commit(test_db, monkeypatch):
     _pin_capability(test_db, project_id=2, candidate_pin_file=PIN_FILE)
     consumer, pin_commit = "b" * 40, "c" * 40
-    test_db.execute(
-        "INSERT INTO deployment_runs(id,project_id,flow,release_lineage,status,"
-        "created_at,bound_sources) VALUES(%s,1,'flow-bound',%s,'executing',%s,%s)",
-        (
-            "run-bound-consumer",
-            CANDIDATE,
-            "2026-10-07T00:00:00Z",
-            json.dumps(
-                {
-                    "schema": 1,
-                    "projects": [
-                        {
-                            "project": "consumer",
-                            "project_id": 2,
-                            "commit_sha": consumer,
-                            "outputs": [
-                                {
-                                    "commit_sha": pin_commit,
-                                    "reason": "release_pin_materialization",
-                                }
-                            ],
-                        }
-                    ],
-                    "inputs": {"consumer_sha": consumer},
-                }
-            ),
+    insert_deployment_run(
+        test_db,
+        id="run-bound-consumer",
+        project_id=1,
+        flow="flow-bound",
+        release_lineage=CANDIDATE,
+        status="executing",
+        created_at="2026-10-07T00:00:00Z",
+        bound_sources=json.dumps(
+            {
+                "schema": 1,
+                "projects": [
+                    {
+                        "project": "consumer",
+                        "project_id": 2,
+                        "commit_sha": consumer,
+                        "outputs": [
+                            {
+                                "commit_sha": pin_commit,
+                                "reason": "release_pin_materialization",
+                            }
+                        ],
+                    }
+                ],
+                "inputs": {"consumer_sha": consumer},
+            }
         ),
     )
     reads = _candidate_files(monkeypatch, {(pin_commit, PIN_FILE): NEWER})

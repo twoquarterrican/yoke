@@ -12,7 +12,7 @@ from copy import deepcopy
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain.builtin_workflow_definitions import builtin_workflow_definition
 from yoke_core.domain.project_seed_test_helpers import seed_project_identities
 from yoke_core.domain.workflow_definition_codec import canonical_definition_json
@@ -31,7 +31,7 @@ def conn():
     try:
         connection = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(connection)
+            initialize_test_schema(connection)
             seed_project_identities(connection)
             connection.commit()
             yield connection

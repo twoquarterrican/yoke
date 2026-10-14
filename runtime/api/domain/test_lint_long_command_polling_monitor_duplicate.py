@@ -20,15 +20,13 @@ the Started-row lookup directly against an isolated temp DB.
 
 from __future__ import annotations
 
-import json
 import tempfile
 import unittest
-import uuid
 from pathlib import Path
 from unittest import mock
 
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -98,9 +96,7 @@ class TestDuplicateMonitorDetection(_DuplicateMonitorBase):
         # the prior tool_use_id for the TaskStop workaround.
         with self._patch_armed([("tu-monitor-prior", _CAPTURE_X)]):
             result = lint.evaluate_payload(
-                _monitor_payload(
-                    f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}"
-                )
+                _monitor_payload(f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}")
             )
         self.assertIsNotNone(result)
         assert result is not None
@@ -112,13 +108,16 @@ class TestDuplicateMonitorDetection(_DuplicateMonitorBase):
 
     def test_identical_rearm_denied_deny_mode(self) -> None:
         # Deny mode: verdict is "deny" and reason carries DENIED verb.
-        with mock.patch.object(
-            monitor_dup, "_read_lint_mode", return_value="deny",
-        ), self._patch_armed([("tu-monitor-prior", _CAPTURE_X)]):
+        with (
+            mock.patch.object(
+                monitor_dup,
+                "_read_lint_mode",
+                return_value="deny",
+            ),
+            self._patch_armed([("tu-monitor-prior", _CAPTURE_X)]),
+        ):
             result = lint.evaluate_payload(
-                _monitor_payload(
-                    f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}"
-                )
+                _monitor_payload(f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}")
             )
         self.assertIsNotNone(result)
         assert result is not None
@@ -132,9 +131,7 @@ class TestDuplicateMonitorDetection(_DuplicateMonitorBase):
         # the prior armed Monitor used watch_tail. Same capture file -> deny.
         with self._patch_armed([("tu-monitor-prior", _CAPTURE_X)]):
             result = lint.evaluate_payload(
-                _monitor_payload(
-                    f"tail -f {_CAPTURE_X} | grep --line-buffered FAILED"
-                )
+                _monitor_payload(f"tail -f {_CAPTURE_X} | grep --line-buffered FAILED")
             )
         self.assertIsNotNone(result)
         assert result is not None
@@ -163,9 +160,7 @@ class TestDuplicateMonitorDetection(_DuplicateMonitorBase):
         # whether it has terminated.
         with self._patch_armed([("tu-monitor-completed", _CAPTURE_X)]):
             result = lint.evaluate_payload(
-                _monitor_payload(
-                    f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}"
-                )
+                _monitor_payload(f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}")
             )
         self.assertIsNotNone(result)
         assert result is not None
@@ -211,9 +206,14 @@ class TestDuplicateMonitorSuppression(_DuplicateMonitorBase):
     def test_suppression_token_records_attempt_but_denies(self) -> None:
         # Token detection switches ctx.outcome to suppression_attempted
         # but verdict still fires (mode-pinned).
-        with mock.patch.object(
-            monitor_dup, "_read_lint_mode", return_value="deny",
-        ), self._patch_armed([("tu-monitor-prior", _CAPTURE_X)]):
+        with (
+            mock.patch.object(
+                monitor_dup,
+                "_read_lint_mode",
+                return_value="deny",
+            ),
+            self._patch_armed([("tu-monitor-prior", _CAPTURE_X)]),
+        ):
             result = lint.evaluate_payload(
                 _monitor_payload(
                     f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}  "
@@ -241,14 +241,18 @@ class TestCapturesTargetedLookup(unittest.TestCase):
     def _build_db(self) -> str:
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        ctx = init_test_db(Path(tmp.name), apply_schema=apply_fixture_schema_ddl)
+        ctx = init_test_db(Path(tmp.name), apply_schema=apply_test_schema)
         db_path = ctx.__enter__()
         self.addCleanup(ctx.__exit__, None, None, None)
         return db_path
 
     def _insert_monitor_call(
-        self, db_path: str, tool_use_id: str, command: str = "",
-        *, completed: bool = False,
+        self,
+        db_path: str,
+        tool_use_id: str,
+        command: str = "",
+        *,
+        completed: bool = False,
     ) -> None:
         conn = connect_test_db(db_path)
         try:
@@ -307,14 +311,10 @@ class TestEvaluateDuplicateMonitorEntrypoint(_DuplicateMonitorBase):
     def test_direct_call_returns_same_verdict_as_evaluate_payload(self) -> None:
         with self._patch_armed([("tu-monitor-prior", _CAPTURE_X)]):
             direct = monitor_dup.evaluate_duplicate_monitor(
-                _monitor_payload(
-                    f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}"
-                )
+                _monitor_payload(f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}")
             )
             routed = lint.evaluate_payload(
-                _monitor_payload(
-                    f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}"
-                )
+                _monitor_payload(f"python3 -m yoke_core.tools.watch_tail {_CAPTURE_X}")
             )
         self.assertIsNotNone(direct)
         self.assertEqual(direct, routed)

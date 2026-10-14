@@ -139,7 +139,9 @@ def test_synthesized_start_inside_window_is_pending_not_incomplete(
     assert row["comparison_status"] == "pending"
 
 
-def test_duplicate_completions_count_one_repaired_call(test_db, monkeypatch) -> None:
+def test_duplicate_completion_is_rejected_and_counts_one_call(
+    test_db, monkeypatch
+) -> None:
     _use_fixture_database(monkeypatch, test_db)
     completed = datetime.now(timezone.utc) - timedelta(minutes=20)
     started = completed - timedelta(milliseconds=400)
@@ -159,14 +161,19 @@ def test_duplicate_completions_count_one_repaired_call(test_db, monkeypatch) -> 
         executor="claude-code",
         created_at=stale,
     )
-    _insert_completion(
-        test_db,
-        event_id="dup-b",
-        session_id="dup-session",
-        tool_use_id="tu-dup",
-        executor="claude-code",
-        created_at=stale,
-    )
+    import psycopg
+    import pytest
+
+    with pytest.raises(psycopg.errors.UniqueViolation):
+        _insert_completion(
+            test_db,
+            event_id="dup-b",
+            session_id="dup-session",
+            tool_use_id="tu-dup",
+            executor="claude-code",
+            created_at=stale,
+        )
+    test_db.rollback()
 
     row = next(
         row

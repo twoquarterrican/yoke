@@ -48,8 +48,7 @@ MEMBER_QA_STAGE = "member-qa"
 def intake_requirement(conn: Any, *, item_id: int) -> int:
     """One blocking post-deploy obligation the item owes every delivery."""
     conn.execute(
-        "INSERT INTO project_capabilities(project_id,type) "
-        "VALUES(1,'browser-control') ON CONFLICT DO NOTHING"
+        "INSERT INTO project_capabilities(created_at, project_id,type) VALUES('2026-01-01T00:00:00Z', 1,'browser-control') ON CONFLICT DO NOTHING"
     )
     requirement_id = _original_requirement(
         conn, item_id=item_id, method_id="browser-inspection"
@@ -143,9 +142,7 @@ def execute_member_stage(
 
 
 def succeed_run(conn: Any, run_id: str) -> None:
-    conn.execute(
-        "UPDATE deployment_runs SET status='succeeded' WHERE id=%s", (run_id,)
-    )
+    conn.execute("UPDATE deployment_runs SET status='succeeded' WHERE id=%s", (run_id,))
     conn.commit()
 
 

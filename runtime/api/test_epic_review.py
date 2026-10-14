@@ -12,7 +12,7 @@ import pytest
 from yoke_core.domain import epic
 from runtime.api.conftest import insert_item, insert_epic_task
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -26,7 +26,7 @@ TEST_ITEM_REF = f"YOK-{TEST_ITEM_ID}"
 def db(tmp_path):
     # Backend-aware: SQLite file on SQLite, disposable per-test database on
     # Postgres (YOKE_PG_DSN repointed for the context).
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             yield conn

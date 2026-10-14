@@ -39,17 +39,21 @@ def cmd_begin(
     mode: str = "wait",
     executor_version: Optional[str] = None,
     machine_id: Optional[str] = None,
+    *,
+    project_id: int,
 ) -> str:
+    """Begin a session bound to an explicitly resolved project."""
     now = instant_parameter(conn, utc_now())
     p = _placeholder(conn)
     canonical_executor, display_name = canonicalize_executor(executor, None)
     conn.execute(
         "INSERT INTO harness_sessions "
-        "(session_id, executor, executor_surface, executor_version, machine_id, "
+        "(project_id, session_id, executor, executor_surface, executor_version, machine_id, "
         "provider, model, execution_level, workspace, mode, offered_at, "
         "last_heartbeat) "
-        f"VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p})",
+        f"VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p})",
         (
+            int(project_id),
             session_id,
             canonical_executor,
             display_name,

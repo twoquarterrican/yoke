@@ -285,9 +285,8 @@ def _serve_pinned_workflow_definitions(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Backward-compatible re-exports
+# Insert helpers
 # ---------------------------------------------------------------------------
-# Many test files do ``from runtime.api.conftest import SCHEMA_DDL`` etc.
 # Re-export from non-plugin modules so pytest can import the backlog fixture
 # plugin itself and assertion-rewrite it before collection.
 
@@ -299,4 +298,3 @@ from runtime.api.fixtures.backlog_inserts import (  # noqa: E402, F401
     insert_qa_requirement,
     insert_qa_run,
 )
-from runtime.api.fixtures.schema_ddl import SCHEMA_DDL  # noqa: E402, F401

@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_contracts.api.function_call import (
     ActorContext,
     FunctionCallRequest,
@@ -68,7 +68,7 @@ def test_bind_status_and_unbind_round_trip(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -123,7 +123,7 @@ def test_status_reports_missing_permissions(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -182,7 +182,7 @@ def test_suspended_installation_persists_unavailable_binding(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -219,7 +219,7 @@ def test_registered_dispatcher_bind_surface(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(

@@ -96,10 +96,14 @@ class TestRegisteredCommandSet(unittest.TestCase):
             )[1]
 
         self.assertTrue(runtime.primary_success, runtime.error)
-        self.assertEqual(runtime.result_payload["result"]["target_mode"], "runtime-base-url")
+        self.assertEqual(
+            runtime.result_payload["result"]["target_mode"], "runtime-base-url"
+        )
         self.assertTrue(runtime_case["requires_base_url"])
         self.assertTrue(environment.primary_success, environment.error)
-        self.assertEqual(environment.result_payload["result"]["target_mode"], "environment")
+        self.assertEqual(
+            environment.result_payload["result"]["target_mode"], "environment"
+        )
         self.assertEqual(
             environment.result_payload["result"]["target_environment"],
             "Yoke API/development",
@@ -195,8 +199,7 @@ class TestRegisteredCommandSet(unittest.TestCase):
     def test_declared_ci_workflow_routes_the_case_to_ci(self) -> None:
         with test_database() as conn:
             conn.execute(
-                "INSERT INTO project_capabilities (project_id, type, settings) "
-                "VALUES (1, %s, %s)",
+                "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
                 (CI_WORKFLOW_CAPABILITY_TYPE, json.dumps({"workflow_file": "ci.yml"})),
             )
             conn.commit()

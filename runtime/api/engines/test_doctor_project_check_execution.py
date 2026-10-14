@@ -69,9 +69,7 @@ def _run_checks(checks, conn) -> None:
 def _seed_migration_model(conn) -> None:
     settings = governed_yoke_postgres_seed({"environment_id": "test"})
     conn.execute(
-        "INSERT INTO project_capabilities (project_id, type, settings) "
-        "VALUES (%s, %s, %s) "
-        "ON CONFLICT(project_id, type) DO UPDATE SET settings = excluded.settings",
+        "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', %s, %s, %s) ON CONFLICT(project_id, type) DO UPDATE SET settings = excluded.settings",
         (1, "migration_model", json.dumps(settings)),
     )
     conn.commit()

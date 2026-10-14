@@ -75,7 +75,7 @@ def test_sqlite_session_boundary_is_canonical_and_preserves_null(monkeypatch):
     monkeypatch.setattr(fixtures, "utc_now", lambda: NOW)
     with sqlite3.connect(":memory:") as conn:
         conn.execute(
-            "CREATE TABLE harness_sessions (session_id TEXT, executor TEXT, provider TEXT, "
+            "CREATE TABLE harness_sessions (project_id INTEGER, session_id TEXT, executor TEXT, provider TEXT, "
             "model TEXT, workspace TEXT, offered_at TEXT, last_heartbeat TEXT, "
             "current_item_id TEXT, current_item_set_at TEXT, recent_item_id TEXT, "
             "recent_item_recorded_at TEXT)"

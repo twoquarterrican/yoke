@@ -1,12 +1,4 @@
-"""Regression tests for central fixture DDL application.
-
-``apply_fixture_ddl`` executes native Postgres DDL one statement at a
-time through the canonical schema-script executor — no dialect
-translation happens in the fixture layer. The composed ``SCHEMA_DDL``
-must therefore be native Postgres text, and legacy
-``id INTEGER PRIMARY KEY`` fixture fragments still gain identity through
-the same rewrite production schema init uses.
-"""
+"""Partial DDL execution and complete production-fixture schema guards."""
 
 from __future__ import annotations
 
@@ -15,7 +7,8 @@ import pytest
 import psycopg
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_ddl, apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
+from runtime.api.fixtures.schema_ddl import apply_fixture_ddl
 
 
 @pytest.fixture
@@ -71,61 +64,60 @@ def test_legacy_integer_primary_key_fragments_gain_identity(scratch_db) -> None:
     assert row[0] == 1
 
 
-def test_schema_ddl_carries_no_sqlite_dialect() -> None:
-    """The composed fixture schema is native Postgres text."""
-    from runtime.api.fixtures.schema_ddl import SCHEMA_DDL
-
-    assert "AUTOINCREMENT" not in SCHEMA_DDL
-    assert "WITHOUT ROWID" not in SCHEMA_DDL
-    assert "json_valid" not in SCHEMA_DDL
-    # Fixture tables carry no FK constraints so tests seed in any order.
-    assert "FOREIGN KEY" not in SCHEMA_DDL
-    assert " REFERENCES " not in SCHEMA_DDL
-
-
-def test_composed_fixture_schema_includes_auth_foundation_tables(scratch_db) -> None:
-    from yoke_core.domain.auth_schema import REQUIRED_AUTH_TABLES
-    from yoke_core.domain.schema_common import _get_tables
-
-    apply_fixture_schema(scratch_db)
-    tables = set(_get_tables(scratch_db))
-    assert set(REQUIRED_AUTH_TABLES) <= tables
+def _schema_guards(conn):
+    conn.execute("SET LOCAL search_path TO public,pg_catalog")
+    triggers = conn.execute(
+        "SELECT c.relname,t.tgname,pg_get_triggerdef(t.oid) "
+        "FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid "
+        "JOIN pg_namespace n ON n.oid=c.relnamespace "
+        "WHERE n.nspname='public' AND NOT t.tgisinternal ORDER BY 1,2"
+    ).fetchall()
+    constraints = conn.execute(
+        "SELECT c.relname,k.conname,k.contype,pg_get_constraintdef(k.oid) "
+        "FROM pg_constraint k JOIN pg_class c ON c.oid=k.conrelid "
+        "JOIN pg_namespace n ON n.oid=c.relnamespace "
+        "WHERE n.nspname='public' ORDER BY 1,2"
+    ).fetchall()
+    return triggers, constraints
 
 
-def test_composed_fixture_schema_includes_session_control_tables(scratch_db) -> None:
-    from yoke_core.domain.schema_common import _get_tables
-    from yoke_core.domain.session_control_schema import required_tables
+def test_shared_fixture_keeps_every_production_trigger_and_constraint(
+    test_db, scratch_db
+):
+    initialize_test_schema(scratch_db)
+    expected = _schema_guards(scratch_db)
+    actual = _schema_guards(test_db)
+    for actual_rows, expected_rows in zip(actual, expected, strict=True):
+        actual_set = {tuple(row[i] for i in range(len(row))) for row in actual_rows}
+        expected_set = {tuple(row[i] for i in range(len(row))) for row in expected_rows}
+        assert actual_set == expected_set, (
+            actual_set - expected_set,
+            expected_set - actual_set,
+        )
+    assert any(row[1] == "qa_runs_verdict_immutable" for row in actual[0])
+    assert any(row[2] == "f" for row in actual[1])
 
-    apply_fixture_schema(scratch_db)
-    tables = set(_get_tables(scratch_db))
-    assert set(required_tables()) <= tables
 
-
-def test_composed_fixture_schema_stamps_migration_history_as_birth(
-    scratch_db,
-) -> None:
-    """Fixture DBs match current schema code, so they must not owe history."""
+def test_shared_fixture_has_production_migration_birth(test_db):
     from yoke_core.domain import migrations as migration_history_package
     from yoke_core.domain.migration_boot_apply import pending_entries
     from yoke_core.domain.migration_history import history_dir, ordered_entries
     from yoke_core.domain.migration_yoke_ledger import YOKE_LEDGER_CONTRACT
 
-    apply_fixture_schema(scratch_db)
     history = ordered_entries(history_dir(migration_history_package))
     assert history
-    assert pending_entries(scratch_db, history, YOKE_LEDGER_CONTRACT) == ()
-    rows = scratch_db.execute(
-        "SELECT applied_by FROM applied_migrations ORDER BY migration_name LIMIT 1"
-    ).fetchone()
-    assert rows is not None
-    assert rows[0] == "fixture-birth"
+    assert pending_entries(test_db, history, YOKE_LEDGER_CONTRACT) == ()
+    stamps = test_db.execute(
+        "SELECT DISTINCT applied_by FROM applied_migrations"
+    ).fetchall()
+    assert stamps == [("birth",)]
 
 
-def test_composed_fixture_schema_generates_ids(scratch_db) -> None:
-    """Rows inserted without explicit ids get identity-generated ones."""
-    apply_fixture_schema(scratch_db)
-    row = scratch_db.execute(
-        "INSERT INTO epic_tasks (epic_id, task_num, title) "
-        "VALUES (1, 1, 'probe') RETURNING id"
-    ).fetchone()
-    assert row[0] >= 1
+def test_shared_fixture_includes_auth_and_session_control(test_db):
+    from yoke_core.domain.auth_schema import REQUIRED_AUTH_TABLES
+    from yoke_core.domain.schema_common import _get_tables
+    from yoke_core.domain.session_control_schema import required_tables
+
+    tables = set(_get_tables(test_db))
+    assert set(REQUIRED_AUTH_TABLES) <= tables
+    assert set(required_tables()) <= tables

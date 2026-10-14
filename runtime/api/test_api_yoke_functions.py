@@ -36,7 +36,7 @@ from runtime.api.fixtures.file_test_db import (
     connect_test_db as connect_test_db,
     init_test_db as init_test_db,
 )
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.api.main import app
 from runtime.api.test_api_helpers import _install_overrides
 
@@ -164,7 +164,7 @@ def apply_fixture_ddl_from_active_db() -> None:
 
     conn = db_backend.connect()
     try:
-        apply_fixture_schema(conn)
+        initialize_test_schema(conn)
     finally:
         conn.close()
 

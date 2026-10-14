@@ -13,14 +13,8 @@ def test_item_evidence_reports_revision_and_staleness(test_db) -> None:
         test_db,
         item_id=4911,
         plan_slug="approval-card-proof",
+        raw_result=json.dumps({"verification_tree": {"head_sha": "a" * 40}}),
         decider_roles=("owner",),
-    )
-    test_db.execute(
-        "UPDATE qa_runs SET raw_result=%s WHERE id=%s",
-        (
-            json.dumps({"verification_tree": {"head_sha": "a" * 40}}),
-            seeded["run_id"],
-        ),
     )
     test_db.execute(
         "UPDATE qa_artifacts SET content_type='image/png' WHERE id=%s",

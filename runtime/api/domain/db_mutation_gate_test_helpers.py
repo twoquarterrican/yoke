@@ -24,7 +24,7 @@ from yoke_core.domain import db_backend
 from yoke_core.domain.project_identity import resolve_project_id
 from yoke_core.domain.project_seed_test_helpers import SEED_PROJECT_IDS
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -56,55 +56,18 @@ CREATE TABLE IF NOT EXISTS project_capabilities (
     UNIQUE(project_id, type)
 );
 
-CREATE TABLE IF NOT EXISTS migration_audit (
-    id INTEGER PRIMARY KEY,
-    migration_name TEXT NOT NULL,
-    description TEXT,
-    tables_declared TEXT,
-    expected_deltas TEXT,
-    pre_row_counts TEXT,
-    post_row_counts TEXT,
-    pre_fk_violations INTEGER,
-    post_fk_violations INTEGER,
-    backup_path TEXT,
-    state TEXT,
-    failure_reason TEXT,
-    exception_reason TEXT,
-    source_fingerprint TEXT,
-    rehearsed_at TIMESTAMPTZ,
-    lease_id INTEGER,
-    test_copy_path TEXT,
-    baseline_verify_result TEXT,
-    author_verify_result TEXT,
-    session_id TEXT,
-    model_name TEXT,
-    project_id INTEGER,
-    started_at TIMESTAMPTZ,
-    completed_at TIMESTAMPTZ,
-    duration_ms INTEGER
-);
+
 """
 
 
 def _apply_gate_schema() -> None:
-    """``init_test_db`` apply_schema strategy: fixture ``SCHEMA_DDL`` + relaxed
-    ``migration_audit``.
+    """Production boot plus gate-specific fixture tables.
 
-    ``SCHEMA_DDL`` builds items / projects / project_capabilities /
-    deployment_flows but omits ``migration_audit`` (a governed table that
-    ``cmd_init`` creates separately). The gate reads ``migration_audit`` through
-    ``db_helpers.connect(audit_path)``; on Postgres that resolves to the
-    per-test DSN database, so the table must live there too. ``_EXTRA_DDL``'s
-    relaxed (nullable, no-``CHECK``) shape is used deliberately so the tests'
-    minimal column-subset audit inserts succeed — the canonical
-    ``ensure_migration_audit_table`` DDL marks ``tables_declared`` /
-    ``expected_deltas`` / ``pre_row_counts`` / ``backup_path`` ``NOT NULL``.
-    The ``project_capabilities`` re-declaration inside ``_EXTRA_DDL`` is a
-    no-op (``IF NOT EXISTS``) since ``SCHEMA_DDL`` already created it.
+    Audit inserts carry canonical required evidence fields through seed_audit_row.
     """
     from yoke_core.domain import db_backend
 
-    apply_fixture_schema_ddl()
+    apply_test_schema()
     conn = db_backend.connect()
     try:
         execute_schema_script(conn, _EXTRA_DDL)
@@ -173,6 +136,17 @@ def seed_audit_row(
                     native_values[parameter_index] = parse_instant(value)
             parameter_index += 1
         assert parameter_index == len(native_values)
+        declared_columns = {column.strip() for column in columns.split(",")}
+        for name, value in (
+            ("tables_declared", "[]"),
+            ("expected_deltas", "{}"),
+            ("pre_row_counts", "{}"),
+            ("backup_path", "fixture-restore-point"),
+        ):
+            if name not in declared_columns:
+                columns += "," + name
+                native_placeholders += "," + marker
+                native_values.append(value)
         conn.execute(
             f"INSERT INTO migration_audit ({columns}) VALUES ({native_placeholders})",
             tuple(native_values),

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import json
 import re
 
 import pytest
 
-from runtime.api.fixtures.file_test_db import init_test_db, apply_fixture_schema_ddl
+from runtime.api.fixtures.file_test_db import init_test_db, apply_test_schema
 from runtime.api.fixtures.backlog import insert_item
 from yoke_core.domain.db_helpers import connect
 from yoke_core.domain.project_identity import render_item_ref
@@ -27,7 +29,7 @@ from yoke_core.domain.projects_crud import cmd_list
 
 @pytest.fixture
 def conn(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl):
+    with init_test_db(tmp_path, apply_schema=apply_test_schema):
         c = connect()
         c.execute(
             "INSERT INTO projects (id, slug, name, public_item_prefix, created_at) "
@@ -136,10 +138,13 @@ def test_open_item_refusal_uses_pinned_terminal_membership(conn):
 
 @pytest.mark.parametrize("status", ["created", "executing"])
 def test_in_flight_deployment_refuses(conn, status):
-    conn.execute(
-        "INSERT INTO deployment_runs (id,project_id,flow,status,created_at) "
-        "VALUES ('run-1',30,'fixture-flow',%s,'2026-01-01')",
-        (status,),
+    insert_deployment_run(
+        conn,
+        id="run-1",
+        project_id=30,
+        flow="fixture-flow",
+        status=status,
+        created_at="2026-01-01T00:00:00Z",
     )
     with pytest.raises(
         ProjectRetirementError, match=f"deployment run run-1 \\({status}\\)"

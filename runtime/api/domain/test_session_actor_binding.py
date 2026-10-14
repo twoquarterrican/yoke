@@ -197,8 +197,7 @@ def test_a_control_plane_that_cannot_state_its_identity_is_unproven(conn, config
 def test_persisting_refuses_when_the_universe_cannot_identify_itself(conn, config_path):
     """Refused at write time, so no unprovable binding is ever recorded."""
     actor_id = seed_human_actor(conn, "Ada Lovelace")
-    conn.execute("DELETE FROM projects")
-    conn.execute("DELETE FROM organizations")
+    conn.execute("TRUNCATE organizations CASCADE")
     conn.commit()
 
     with pytest.raises(MachineConfigContractError):

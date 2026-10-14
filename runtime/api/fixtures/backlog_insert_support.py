@@ -84,3 +84,29 @@ def ensure_project_id(conn: Any, project: str, *, ts: datetime) -> int:
         ),
     )
     return project_id
+
+
+def ensure_environment_id(conn, environment_id, project_id, *, ts):
+    """Seed the declared persistent target's parent rows when a test omits them."""
+    if conn.execute(
+        "SELECT 1 FROM environments WHERE id=%s", (environment_id,)
+    ).fetchone():
+        return
+    site = conn.execute(
+        "SELECT id FROM sites WHERE project_id=%s ORDER BY id LIMIT 1", (project_id,)
+    ).fetchone()
+    if site is None:
+        site = conn.execute(
+            "INSERT INTO sites(project_id,name,created_at) VALUES(%s,%s,%s) RETURNING id",
+            (project_id, "Fixture site", instant_parameter(conn, ts)),
+        ).fetchone()
+    conn.execute(
+        "INSERT INTO environments(id,site,project_id,name,created_at) VALUES(%s,%s,%s,%s,%s)",
+        (
+            environment_id,
+            int(site[0]),
+            project_id,
+            f"fixture-{environment_id}",
+            instant_parameter(conn, ts),
+        ),
+    )

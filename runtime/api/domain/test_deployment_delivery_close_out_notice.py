@@ -56,11 +56,20 @@ def _project(conn: Any) -> None:
 
 def _run(conn: Any, run_id: str, *, flow: str, members: tuple[int, ...]) -> None:
     now = iso8601_now()
-    conn.execute(
-        "INSERT INTO deployment_runs (id,project_id,flow,status,created_at) "
-        "VALUES (%s,%s,%s,'succeeded',%s) ON CONFLICT(id) DO NOTHING",
-        (run_id, PROJECT_YOKE, flow, now),
-    )
+    from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
+    if (
+        conn.execute("SELECT 1 FROM deployment_runs WHERE id=%s", (run_id,)).fetchone()
+        is None
+    ):
+        insert_deployment_run(
+            conn,
+            id=run_id,
+            project_id=PROJECT_YOKE,
+            flow=flow,
+            status="succeeded",
+            created_at=now,
+        )
     from runtime.api.fixtures.completed_delivery import pin_run_delivery
 
     pin_run_delivery(conn, run_id)

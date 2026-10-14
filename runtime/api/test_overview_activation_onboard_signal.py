@@ -11,6 +11,8 @@ is closed as superseded on the row itself, naming the deployment.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 from uuid import uuid4
 
 from yoke_contracts.api.function_call import (
@@ -39,16 +41,16 @@ BLOCKER_TEXT = "aws-admin capability row absent"
 
 
 def _onboard(actor_id=None):
-    outcome = handle_overview_activation_get(FunctionCallRequest(
-        function="overview.activation.get",
-        actor=ActorContext(actor_id=actor_id, session_id=""),
-        target=TargetRef(kind="global"),
-        payload={},
-    ))
+    outcome = handle_overview_activation_get(
+        FunctionCallRequest(
+            function="overview.activation.get",
+            actor=ActorContext(actor_id=actor_id, session_id=""),
+            target=TargetRef(kind="global"),
+            payload={},
+        )
+    )
     assert outcome.primary_success, outcome.error
-    modules = {
-        module["key"]: module for module in outcome.result_payload["modules"]
-    }
+    modules = {module["key"]: module for module in outcome.result_payload["modules"]}
     return modules["run_onboard"]
 
 
@@ -73,8 +75,7 @@ def _finished_statuses(**overrides):
 def _seed_environments(conn, *names):
     now = iso8601_now()
     conn.execute(
-        "INSERT INTO sites (id, project_id, name, created_at) "
-        "VALUES (5, 1, 'app', %s)",
+        "INSERT INTO sites (id, project_id, name, created_at) VALUES (5, 1, 'app', %s)",
         (now,),
     )
     for index, name in enumerate(names):
@@ -119,32 +120,40 @@ def test_a_universe_with_no_onboarding_run_reports_no_facts(test_db):
 
 
 def _seed_deployment(conn, run_id, *, status, at):
-    conn.execute(
-        "INSERT INTO deployment_runs (id, project_id, flow, status, created_at, "
-        "completed_at) VALUES (%s, 1, 'flow-x', %s, %s, %s)",
-        (run_id, status, at, at),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=1,
+        flow="flow-x",
+        status=status,
+        created_at=at,
+        completed_at=at,
     )
     conn.commit()
 
 
 def test_delivery_supersession_is_history_not_current_machine_readiness(test_db):
     _seed_run(test_db, "saved-stalled", row_status={HOSTING_ROW_ID: STATUS_BLOCKED})
-    _seed_deployment(test_db, "run-20260101-001", status="succeeded",
-                     at="2026-01-01T00:00:00Z")
+    _seed_deployment(
+        test_db, "run-20260101-001", status="succeeded", at="2026-01-01T00:00:00Z"
+    )
     onboard = _onboard()["onboard"]
     assert onboard["run_status"] == "superseded"
     assert onboard["setup_readiness"]["ready"] is False
     assert onboard["next"] is None
     stored = get_run("saved-stalled", conn=test_db)
     assert stored["historical_status"] == "superseded"
-    assert stored["metadata"][SUPERSEDED_BY_KEY]["deployment_run_id"] == "run-20260101-001"
+    assert (
+        stored["metadata"][SUPERSEDED_BY_KEY]["deployment_run_id"] == "run-20260101-001"
+    )
     assert stored["summary"]["status"] != "complete"
 
 
 def test_newer_failed_delivery_preserves_supersession_history(test_db):
     _seed_run(test_db, "saved-open", row_status=_finished_statuses())
-    _seed_deployment(test_db, "run-20990101-001", status="failed",
-                     at="2099-01-01T00:00:00Z")
+    _seed_deployment(
+        test_db, "run-20990101-001", status="failed", at="2099-01-01T00:00:00Z"
+    )
     onboard = _onboard()["onboard"]
     assert onboard["run_status"] == "superseded"
     assert onboard["setup_readiness"]["ready"] is False
@@ -153,8 +162,9 @@ def test_newer_failed_delivery_preserves_supersession_history(test_db):
 
 def test_older_failed_delivery_does_not_supersede_the_current_run(test_db):
     _seed_run(test_db, "saved-open", row_status=_finished_statuses())
-    _seed_deployment(test_db, "run-20000101-001", status="failed",
-                     at="2000-01-01T00:00:00Z")
+    _seed_deployment(
+        test_db, "run-20000101-001", status="failed", at="2000-01-01T00:00:00Z"
+    )
     module = _onboard()
     assert module["state"] != "activated"
     assert module["onboard"]["run_status"] == "open"
