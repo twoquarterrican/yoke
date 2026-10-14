@@ -140,6 +140,20 @@ def test_work_claim_release_by_id_advances_the_line(test_db, monkeypatch):
     assert len(notices) == 1
 
 
+def test_hook_release_advances_the_line(test_db, monkeypatch):
+    from yoke_core.hooks.sessions_claims import cmd_release
+
+    seed_qa_session(test_db, "owner", "waiter")
+    _notices(monkeypatch)
+    target = make_qa_admission_target(MACHINE)
+    held = acquire(test_db, target, "owner")
+    _manual_acquire(test_db, monkeypatch, "waiter")
+
+    cmd_release(test_db, held.id, "done")
+
+    assert active_claim(test_db, target).session_id == "waiter"
+
+
 def test_session_end_cancels_waits_and_passes_its_reserved_turn(test_db, monkeypatch):
     from yoke_core.domain.sessions_render_end import end_session
 
