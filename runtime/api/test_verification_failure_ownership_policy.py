@@ -52,3 +52,36 @@ def test_lifecycle_verification_surfaces_reference_global_policy():
     assert "Do not use `path-claim-override` for a planned future claim" in home
     assert "override is last resort" in home
     assert "requires a live steering seat covering the project" in home
+
+
+def test_unchanged_consumer_test_failure_routes_to_the_producer():
+    bundle = "packages/yoke-core/src/yoke_core/install_bundle_tree/"
+    rule_homes = [
+        "AGENTS.md",
+        f"{bundle}AGENTS.md",
+        "docs/public/reference/agent-rules/verification.md",
+        f"{bundle}docs/public/reference/agent-rules/verification.md",
+        ".yoke/docs/reference/agent-rules/verification.md",
+    ]
+    for rel_path in rule_homes:
+        text = _read(rel_path)
+        assert (
+            "A consumer test this item did not change that fails against a new "
+            "producer source is evidence against the producer" in text
+        ), rel_path
+        assert "producer commit range or item" in text, rel_path
+        assert "producer's companion item" in text, rel_path
+
+    skills = [
+        "implement/implementing/test-and-record.md",
+        "conduct/dispatch-context-verify.md",
+        "polish/verify-and-commit.md",
+        "usher/merge.md",
+    ]
+    for skill in skills:
+        for root in (".agents/skills/yoke/", f"{bundle}.agents/skills/yoke/"):
+            text = " ".join(_read(root + skill).split())
+            assert (
+                "An unchanged consumer test failing against new producer source "
+                "is evidence against the producer: never edit or weaken it"
+            ) in text, root + skill

@@ -66,6 +66,8 @@ Commit every completed change; no dirty tree between tasks. Update all affected 
 
 Current-item verification failures belong to the current item; a future item or planned path claim is not a waiver. Fix failures here unless a live conflict or explicit operator waiver applies; preserve failure/rerun evidence. Use dependency and claim reconciliation before override. Do not use `path-claim-override` for a planned future claim; irreducible live collisions require a live steering seat covering the project; route the override through `yoke say --steering` and read `yoke claims path override --help`.
 
+A consumer test this item did not change that fails against a new producer source is evidence against the producer: never edit or weaken it; name the producer commit range or item and route it to steering (`yoke say --steering`) or the producer's companion item.
+
 ### Bash tool calls
 
 Capture non-trivial commands once; use watchers for long runs. Iterate with `yoke watch pytest --impacted main --bounded`; the attached QA case owns the final full execution. Continue yielded handles until exit, never relaunch or manually poll. Read verification before local interruption. Shell variables reset per call; Claude's sticky cwd may persist. Use absolute paths, `git -C`, `python3`, quoted patterns and `rg --files`. Commit before CI; workers never push by hand.

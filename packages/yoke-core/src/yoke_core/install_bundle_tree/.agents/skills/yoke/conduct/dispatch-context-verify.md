@@ -42,6 +42,9 @@ Widen/reconcile claims and dependencies before fixing; operator override only
 for irreducible live collision with explicit approval. No green claim by pointing
 at future work or an old baseline. A permitted live conflict/explicit waiver
 names its evidence and remaining obligation.
+An unchanged consumer test failing against new producer source is evidence
+against the producer: never edit or weaken it; route it per AGENTS
+Verification Failure Ownership.
 
 ## Durable verdict
 
