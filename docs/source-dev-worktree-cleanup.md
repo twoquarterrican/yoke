@@ -104,6 +104,21 @@ local-ref cleanup is refused, the item's worktree metadata remains intact so
 ownership is not lost and a later safe sweep can retry; the done runner does
 not complete happy-path close-out while that cleanup is incomplete.
 
+A member a deployment run closes gets the same retirement. Run settlement reads
+the closed item through `items.detail.get` — its project names this machine's
+checkout and target branch, and its lane rows name what to retire — then runs
+the machine-wide merged-lane sweep. Only a machine that maps the project's
+checkout can reach the lanes. Anywhere else, and for any lane cleanup preserved,
+the settling process prints a `Lane cleanup warning:` line for each, followed by
+the recovery: once the lane is resolved, run
+`yoke watch doctor -- --only HC-worktree-health --fix` on the machine holding
+it. A preserved lane never holds the run.
+
+A hosted control plane settles runs where no lane lives, so lane creation is
+the boundary that always reaches them: when a new lane would exceed
+`max_active_worktrees`, creation first runs the same merged-lane sweep against
+the lane's base branch, then counts again and refuses only for what remains.
+
 Unregistered directories, ambiguous owners, dirty or ignored content,
 unavailable claim/DB state, non-ancestor branches, and removal refusals are
 preserved and reported. Automatic cleanup never uses filesystem `rm -rf`,
@@ -140,7 +155,8 @@ same `max_active_worktrees` slot an item lane does.
 
 It is retired from its run's own status instead, by whichever of these comes
 first: a self-deploy sweeping before it pins its own source, the machine-wide
-sweep any landing runs, or the health check's own repair:
+sweep any landing or a full checkout's lane creation runs, or the health
+check's own repair:
 
 ```text
 yoke watch doctor -- --only HC-worktree-health --fix
@@ -157,15 +173,27 @@ Removal is the same two steps the item lanes use: clear named and declared
 caches (a driver that executed there left `__pycache__` behind), then a
 non-force `git worktree remove`. Force is never used.
 
-When the cap refuses a new lane it separates the two kinds and gives each its
-own recovery, because merging is not the recovery for a deploy-run lane:
+When the cap still refuses after that sweep, it sorts the slots by what frees
+them, because merging is the recovery only for an item lane that has not landed:
+
+- unmerged item lanes: merge them;
+- item lanes whose branch the target already carries: retire them with the
+  doctor repair once their items are closed;
+- driver trees whose run is not open: retire the finished ones with the doctor
+  repair;
+- driver trees of an open run: in use by that run's driver, and freed when the
+  run finishes. They are never offered for retirement.
 
 ```text
-max_active_worktrees limit reached (50 active + 1 pending > 50). Merge
-existing worktrees before creating more. Item lanes: .... 36 slot(s) are held
-by deploy-run driver trees, which no merge retires — run `yoke watch doctor --
+max_active_worktrees limit reached (80 active + 1 pending > 80). Merge
+existing worktrees before creating more. Item lanes: .... 52 item lane(s)
+already landed on origin/main, so no merge frees them — run `yoke watch doctor
+-- --only HC-worktree-health --fix` to retire those whose items are closed; the
+rest free when their items close out. Landed lanes: .... 3 slot(s) are held by
+deploy-run driver trees, which no merge retires — run `yoke watch doctor --
 --only HC-worktree-health --fix` to retire the finished ones. Deploy-run
-lanes: ...
+lanes: .... 1 slot(s) are in use by open deploy runs' drivers and free when
+those runs finish. In-use deploy-run lanes: ...
 ```
 
 ## Keep Non-Ancestor Evidence Branches

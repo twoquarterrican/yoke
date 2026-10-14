@@ -1,7 +1,10 @@
 {
  "id": "reuse-and-cleanup",
  "title": "Reuse and cleanup",
- "status": "draft-copy",
+ "status": "observed",
+ "current": "A terminal item's lanes retire on the machine that holds them once each proves clean and landed; a preserved lane is named with its reason. A standalone landing and a deployment run's member close-out both retire the item's own lanes and then run the machine-wide merged-lane sweep; run close-out prints each preserved lane as a `Lane cleanup warning:` with the doctor repair. A hosted control plane settles runs where no lane lives, so lane creation at the `max_active_worktrees` cap runs the same sweep first and then refuses only for what remains, naming unmerged lanes to merge, landed lanes and finished deploy-run driver trees for `yoke watch doctor -- --only HC-worktree-health --fix`, and an open run's driver tree as in use.",
+ "sources": ["docs/source-dev-worktree-cleanup.md", "packages/yoke-core/src/yoke_core/domain/worktree_capacity.py", "packages/yoke-core/src/yoke_core/domain/delivery_member_close_steps.py"],
+ "commands": ["yoke direct-workflow worktree prepare"],
  "page": "coordination",
  "position": 4
 }

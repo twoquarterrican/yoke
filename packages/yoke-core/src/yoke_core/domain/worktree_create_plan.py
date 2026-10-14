@@ -15,46 +15,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
-from yoke_core.engines.deploy_run_worktree_naming import DRIVER_WORKTREE_PREFIX
+from yoke_core.domain.worktree_capacity import capacity_recovery
 from yoke_core.domain.workflow_behavior import LANE_IMPLEMENTATION
 from yoke_core.domain.worktree_lane_plan import (
     resolve_worktree_lanes_for_item,
 )
-
-
-# The resolvable invocation, not the shorthand: a reader copies this out of a
-# refusal, so `yoke doctor --fix` — which routes nowhere — would strand them.
-DOCTOR_RETIRE_RECIPE = "yoke watch doctor -- --only HC-worktree-health --fix"
-
-
-def _capacity_recovery(active_names: Sequence[str]) -> str:
-    """Name what holds the slots and the recovery that actually frees them.
-
-    Merging is only the recovery for item lanes. A checkout that filled up with
-    finished deploy runs' pinned driver trees cannot be merged out of it, and a
-    refusal that said "merge existing worktrees" sent a reader looking for
-    branches none of those directories have. Both kinds are reported, each with
-    the recovery that applies to it.
-    """
-    driver_lanes = [
-        name for name in active_names if name.startswith(DRIVER_WORKTREE_PREFIX)
-    ]
-    item_lanes = [
-        name for name in active_names if not name.startswith(DRIVER_WORKTREE_PREFIX)
-    ]
-    parts: List[str] = []
-    if item_lanes:
-        parts.append(
-            "Merge existing worktrees before creating more. "
-            f"Item lanes: {', '.join(item_lanes)}."
-        )
-    if driver_lanes:
-        parts.append(
-            f"{len(driver_lanes)} slot(s) are held by deploy-run driver trees, "
-            f"which no merge retires — run `{DOCTOR_RETIRE_RECIPE}` to retire "
-            f"the finished ones. Deploy-run lanes: {', '.join(driver_lanes)}."
-        )
-    return " ".join(parts) if parts else "No active worktrees were reported."
 
 
 @dataclass
@@ -87,6 +52,7 @@ class WorktreeCreationPlan:
     primary: Optional[WorktreeCreationEntry] = None
     error: Optional[str] = None
     failed_branch: str = ""
+    capacity_refused: bool = False
 
     @property
     def pending_worktree_count(self) -> int:
@@ -133,12 +99,14 @@ def preflight_worktree_plan(
     max_active_worktrees: int,
     active_count: int,
     active_names: Sequence[str],
+    landed_base: str,
 ) -> WorktreeCreationPlan:
     """Validate the worktree plan all-at-once before any side effects.
 
     Detects duplicate paths, mismatched existing directories, and
     insufficient ``max_active_worktrees`` capacity (counting only the
-    worktrees that need to be created).
+    worktrees that need to be created). ``landed_base`` is the ref lanes
+    land on, so a capacity refusal can tell landed lanes from unmerged ones.
     """
     plan = WorktreeCreationPlan()
     if not raw_worktrees:
@@ -198,8 +166,9 @@ def preflight_worktree_plan(
         plan.error = (
             f"max_active_worktrees limit reached ({active_count} active "
             f"+ {needed} pending > {max_active_worktrees}). "
-            f"{_capacity_recovery(active_names)}"
+            f"{capacity_recovery(repo_root, active_names, landed_base)}"
         )
+        plan.capacity_refused = True
         return plan
 
     return plan
