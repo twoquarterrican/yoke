@@ -279,11 +279,23 @@ def _call_local(
         local_dispatch = getattr(
             dispatch_module, "dispatch_local" if client_local else "dispatch"
         )
-    return local_github_dispatch.call_with_machine_github_authorization(
-        request,
-        local_dispatch,
-        core_available=dispatch_module is not None,
-    )
+    try:
+        return local_github_dispatch.call_with_machine_github_authorization(
+            request,
+            local_dispatch,
+            core_available=dispatch_module is not None,
+        )
+    except Exception as exc:  # noqa: BLE001 -- the HTTPS route answers the same way
+        return _error_response(
+            request,
+            "handler_exception",
+            f"function call {request.function!r} raised {type(exc).__name__}: {exc}",
+            recovery_hint=(
+                "The in-process engine failed outside its typed answers. Rerun "
+                "the command; if it repeats, record it with `yoke ouroboros "
+                "field-note append --kind failed --evidence '<this message>'`."
+            ),
+        )
 
 
 def _apply_version_skew_gate(
