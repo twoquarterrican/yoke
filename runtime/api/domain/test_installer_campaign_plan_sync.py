@@ -173,6 +173,22 @@ def test_export_refuses_dirty_source_and_unreadable_remote(source_checkout):
         sync.export_source_revision()
 
 
+def test_export_uses_remote_tracking_default_branch_when_several_are_configured(
+    source_checkout, tmp_path, capsys
+):
+    root, git = source_checkout
+    added = git(root, "remote", "add", "archive", str(root.parent / "archive"))
+    assert added.returncode == 0
+    revision = git(root, "rev-parse", "HEAD").stdout.strip()
+    snapshot, output = tmp_path / "plan.json", tmp_path / "export.json"
+    snapshot.write_text(json.dumps({"success": True, "result": {"plan": _plan()}}))
+    assert main(["--plan-file", str(snapshot), "--cases-file", str(output)]) == 0
+    exported = json.loads(output.read_text())
+    assert exported["source_revision"] == revision
+    assert exported["cases"] == _plan()["cases"]
+    assert json.loads(capsys.readouterr().out)["source_revision"] == revision
+
+
 def test_export_timeout_has_named_recovery(source_checkout, monkeypatch):
     def timeout(*args):
         raise subprocess.TimeoutExpired("git fetch", 30)
