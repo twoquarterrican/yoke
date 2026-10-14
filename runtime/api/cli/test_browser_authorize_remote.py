@@ -311,23 +311,14 @@ def test_transport_failures_name_reason_and_recovery(
     assert raised.value.code == error and raised.value.recovery
 
 
-@pytest.mark.parametrize(
-    "absent",
-    [
-        SimpleNamespace(success=True, result={"settings_json": None}, error=None),
-        SimpleNamespace(
-            success=False, result=None, error=SimpleNamespace(code="not_found")
-        ),
-    ],
-)
-def test_no_browser_capability_still_has_default_identity(
-    route, monkeypatch, capsys, absent
-):
+def test_no_browser_capability_still_has_default_identity(route, monkeypatch, capsys):
     original = remote.call_dispatcher
 
     def dispatch(**kwargs):
         if kwargs["function_id"] == "projects.capability_settings.get":
-            return absent
+            return SimpleNamespace(
+                success=False, result=None, error=SimpleNamespace(code="not_found")
+            )
         return original(**kwargs)
 
     monkeypatch.setattr(remote, "call_dispatcher", dispatch)

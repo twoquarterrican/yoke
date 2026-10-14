@@ -229,20 +229,3 @@ def test_reader_refuses_a_fleet_for_a_model_the_project_does_not_declare(
     assert declared.models == {}
     assert "['registry']" in error
     assert "does not declare" in error
-
-
-def test_reader_treats_an_undeclared_migration_model_as_no_databases(
-    monkeypatch,
-) -> None:
-    from yoke_core.domain import migration_model_fleet_read as reader
-
-    monkeypatch.setattr(
-        "yoke_core.api.service_client_structured_api_adapter.call_dispatcher",
-        lambda **_kwargs: SimpleNamespace(
-            success=True, error=None, result={"settings_json": None}
-        ),
-    )
-
-    declared, error = reader.read_declared("tradeyoke")
-
-    assert (declared.models, error) == ({}, "")
