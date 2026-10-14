@@ -41,6 +41,7 @@ from yoke_core.domain.post_deploy_verification_answer import (
     member_post_deploy_answer,
 )
 from yoke_core.domain.schema_common import _table_exists
+from yoke_core.domain.schema_read_scope import composition_operation
 from yoke_core.domain.steering_fleet_report_detectors import marker
 
 
@@ -63,19 +64,29 @@ class QaStageOutstanding:
     blocker_counts: tuple[int, ...] = ()
 
 
+@composition_operation
 def qa_stage_outstanding(
-    conn: Any, *, run_id: str, stage_name: str
+    conn: Any, *, run_id: str, stage_name: str, stop_at_first_waiting: bool = False
 ) -> Optional[QaStageOutstanding]:
     """Outstanding waits for *stage_name* when that stage is scoped QA.
 
     ``None`` means the report should keep the completion-boundary readers:
     this is not a QA stage, or the frozen subject cannot be evaluated.
+    ``stop_at_first_waiting`` answers only whether anything is waiting: the
+    walk ends at the first waiting subject, so ``waiting`` and the lines
+    cover only the subjects evaluated up to it. Run-wide facts such as the candidate's
+    pinned release are read once per evaluation and shared by every member.
     """
     stage = _qa_stage(conn, run_id=run_id, stage_name=stage_name)
     if stage is None:
         return None
     try:
-        return _evaluate(conn, run_id=run_id, stage=stage)
+        return _evaluate(
+            conn,
+            run_id=run_id,
+            stage=stage,
+            stop_at_first_waiting=stop_at_first_waiting,
+        )
     except (LookupError, ValueError, TypeError, json.JSONDecodeError):
         return None
 
@@ -167,10 +178,10 @@ def _member_lines(
         member_item_id=member,
         require_active=False,
     )
-    target = deployment_qa_execution_target(conn, subject)
     member_answer = member_post_deploy_answer(conn, subject)
     if member_answer.verdict == NOT_REQUIRED:
         return [], [f"{label}: {reason}" for reason in member_answer.reasons]
+    target = deployment_qa_execution_target(conn, subject)
     if not _has_method_id(
         conn, run_id=run_id, stage_name=str(stage["name"]), member=member
     ):
@@ -191,7 +202,7 @@ def _member_lines(
 
 
 def _evaluate(
-    conn: Any, *, run_id: str, stage: Mapping[str, Any]
+    conn: Any, *, run_id: str, stage: Mapping[str, Any], stop_at_first_waiting: bool
 ) -> QaStageOutstanding:
     members = _subjects(conn, run_id, stage)
     if (
@@ -221,6 +232,8 @@ def _evaluate(
             waiting_members.append(member)
             blocker_counts.append(len(member_lines))
             lines.extend(member_lines)
+            if stop_at_first_waiting:
+                break
     return QaStageOutstanding(
         lines=tuple(lines),
         subjects=len(members),

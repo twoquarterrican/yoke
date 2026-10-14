@@ -20,6 +20,7 @@ from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.qa_plan_attachment_retract import retract_requirements
 from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
 from yoke_core.domain.schema_common import _table_exists
+from yoke_core.domain.schema_read_scope import composition_operation
 from yoke_core.domain.workflow_item_binding_lock import lock_item_workflow_bindings
 
 
@@ -186,6 +187,7 @@ def remove_member_on(
     return ref
 
 
+@composition_operation
 def cmd_remove_item(
     run_id: str,
     item_id: int,

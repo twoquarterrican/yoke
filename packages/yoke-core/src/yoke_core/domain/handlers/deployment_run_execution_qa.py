@@ -11,6 +11,7 @@ from yoke_core.domain.handlers.deployment_common import error, run_id
 from yoke_core.domain.handlers.deployment_run_execution import (
     require_run_driver,
 )
+from yoke_core.domain.schema_read_scope import composition_operation
 
 
 class DeploymentExecutionQaSeedRequest(BaseModel):
@@ -113,6 +114,7 @@ def handle_deployment_execution_qa_record(
     )
 
 
+@composition_operation
 def handle_deployment_execution_qa_pending(
     request: FunctionCallRequest,
 ) -> HandlerOutcome:

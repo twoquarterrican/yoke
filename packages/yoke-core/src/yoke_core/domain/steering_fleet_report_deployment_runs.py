@@ -59,6 +59,7 @@ from yoke_core.domain.deployment_run_unpassable_blocking_qa import (
     diagnose_unpassable_blocking_qa,
 )
 from yoke_core.domain.runs import RunStatus
+from yoke_core.domain.schema_read_scope import composition_operation
 from yoke_core.domain.steering_fleet_report_deployment_run_facts import (
     live_deployment_runs,
     load_live_run_facts,
@@ -204,6 +205,7 @@ def _stage_lines(
     return tuple(run_lines), tuple(member_lines)
 
 
+@composition_operation
 def run_progress(
     conn: Any,
     *,

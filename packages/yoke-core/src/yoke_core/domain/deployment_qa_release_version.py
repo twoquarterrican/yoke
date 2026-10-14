@@ -28,6 +28,7 @@ from yoke_core.domain.project_file_at_commit import (
     read_project_file,
 )
 from yoke_core.domain.release_pin_capability import candidate_pin_file
+from yoke_core.domain.schema_read_scope import shared_read
 
 RELEASE_VERSION_KEY = "release_version"
 _FETCH_TIMEOUT_SECONDS = 15
@@ -78,6 +79,14 @@ def _fetch(url: str) -> bytes:
 
 def require_published(installer_base_url: str, version: str) -> None:
     """Refuse a pinned release the bound installer origin cannot install."""
+    shared_read(
+        None,
+        ("published_release", installer_base_url, version),
+        lambda: _require_published(installer_base_url, version),
+    )
+
+
+def _require_published(installer_base_url: str, version: str) -> bool:
     url = release_records_url(installer_base_url, version)
     recovery = (
         f"publish Yoke {version} to {installer_base_url} (or correct the "
@@ -102,6 +111,7 @@ def require_published(installer_base_url: str, version: str) -> None:
             f"deployment_qa_release_unpublished: {url} lists no published "
             f"wheels; {recovery}"
         )
+    return True
 
 
 def _pin_file(conn: Any, project_id: int) -> str:
@@ -117,24 +127,10 @@ def _pin_file(conn: Any, project_id: int) -> str:
         ) from exc
 
 
-def pinned_release_endpoints(
-    conn: Any, run_id: str, project_id: int, endpoints: dict[str, Any]
-) -> dict[str, Any]:
-    """``endpoints`` plus the release the run's deployed commit pins, if declared."""
-    path = _pin_file(conn, project_id)
-    if not path:
-        return endpoints
-    from yoke_core.domain.deployment_run_project_sources import run_delivered_sha
-
-    sha = run_delivered_sha(conn, run_id, int(project_id))
-    if not sha:
-        raise ValueError(
-            f"deployment_qa_release_pin_source_missing: run {run_id} recorded no "
-            f"deployed commit for project {project_id}, so the release it pins "
-            "cannot be read; repair the run's recorded sources before starting QA"
-        )
+def _pinned_version(conn: Any, project_id: int, sha: str, path: str) -> str:
+    """The one release version *path* holds at the immutable commit *sha*."""
     try:
-        raw = read_project_file(conn, int(project_id), sha, path)
+        raw = read_project_file(conn, project_id, sha, path)
     except ProjectFileAbsent as exc:
         raise ValueError(
             f"deployment_qa_release_pin_missing: {exc}; commit the pinned release "
@@ -154,6 +150,30 @@ def pinned_release_endpoints(
             f"deployment_qa_release_pin_missing: {path} at {sha} does not hold "
             "one release version; correct the pin file and redeploy"
         )
+    return version
+
+
+def pinned_release_endpoints(
+    conn: Any, run_id: str, project_id: int, endpoints: dict[str, Any]
+) -> dict[str, Any]:
+    """``endpoints`` plus the release the run's deployed commit pins, if declared."""
+    path = _pin_file(conn, project_id)
+    if not path:
+        return endpoints
+    from yoke_core.domain.deployment_run_project_sources import run_delivered_sha
+
+    sha = run_delivered_sha(conn, run_id, int(project_id))
+    if not sha:
+        raise ValueError(
+            f"deployment_qa_release_pin_source_missing: run {run_id} recorded no "
+            f"deployed commit for project {project_id}, so the release it pins "
+            "cannot be read; repair the run's recorded sources before starting QA"
+        )
+    version = shared_read(
+        conn,
+        ("pinned_release_version", int(project_id), sha, path),
+        lambda: _pinned_version(conn, int(project_id), sha, path),
+    )
     installer_base_url = str(endpoints.get("installer_base_url") or "")
     if installer_base_url:
         require_published(installer_base_url, version)
