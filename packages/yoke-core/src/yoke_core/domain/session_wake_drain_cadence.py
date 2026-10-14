@@ -43,9 +43,12 @@ from yoke_core.domain import db_backend
 
 
 #: The cadence returned instead of the active interval when a poll leased a
-#: job and left more wake work behind. One second is the long-poll step the
-#: relay already uses to re-check inside a single visit, so a drain runs at
-#: the speed the relay was always willing to work at.
+#: job and left more wake work behind, or while the relay holds a live batch.
+#: A live batch admits newly assigned launches, so the relay comes straight
+#: back and long-polls for them rather than leaving them a minute behind.
+#: One second is the long-poll step the relay already uses to re-check inside
+#: a single visit, so a drain runs at the speed the relay was always willing
+#: to work at.
 RELAY_DRAIN_POLL_SECONDS = 1
 
 
