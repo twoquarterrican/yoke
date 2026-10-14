@@ -14,6 +14,9 @@ owns the scope and target-binding contract.
 
 Members attaching the same post-deploy plan share its case rows and ordered
 execution when the plan id, source revision and observed execution target match.
+A plan only one run member attaches stays that member's private copy and keeps
+its `deployment_member_item_id`; a formed group stays shared until its last
+attaching member leaves.
 The shared target omits `deployment.member_item_id` and records
 `deployment.shared_plan`; the run and stage remain explicit. Each member waits
 only for its attached groups. A failing shared case blocks every attaching
@@ -27,7 +30,9 @@ and retry afterward. `shared_plan_execution_busy` names a different group
 already using the stage's ordered cursor. Refresh and declared corrections
 also use an attaching member and keep the failed group's target identity.
 Removing one member or withdrawing its attachment preserves shared evidence for
-the members still attached. Source-case refresh and withdrawal resolve the same
+the members still attached. Removing the last attaching member with
+`yoke deployment-runs remove-item` retracts the group's unsettled rows, so an
+orphaned group never stays a run-wide blocker. Source-case refresh and withdrawal resolve the same
 shared target; a recorded run keeps the existing retraction refusal.
 At materialization, redundant member copies retire as history. A live cursor
 using those copies refuses as `shared_plan_duplicate_execution_live`: its owner

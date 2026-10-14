@@ -60,12 +60,16 @@ def member_machine_partition(
     from yoke_core.domain.deployment_qa_stage_case_failures import case_failures
 
     digest = str(roster[0]["execution_target_digest"])
+    shared = ((roster[0].get("execution_target") or {}).get("deployment") or {}).get(
+        "shared_plan"
+    ) or {}
     failures = case_failures(
         conn,
         run_id=str(deployment_run_id),
         stage_name=deployment_stage,
         member_item_id=deployment_member_item_id,
         execution_target_digest=digest,
+        shared_plan_id=shared.get("plan_id"),
     )
     unresolved = {failure.requirement_id for failure in failures}
     p = marker(conn)

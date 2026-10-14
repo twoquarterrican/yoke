@@ -233,6 +233,7 @@ def stage_acceptance(
         stage_name=stage_name,
         member_item_id=member_item_id,
         execution_target_digest=digest,
+        shared_plan_id=(subject.get("shared_plan") or {}).get("plan_id"),
     )
     failures = failure_reasons(cases)
     red_ids = tuple(case.requirement_id for case in cases if case.red)

@@ -146,6 +146,8 @@ def remove_member_on(
 ) -> str:
     """Apply the audited removal and retract the member's unsettled run copies.
 
+    Shared-group copies no remaining member attaches are retracted with them.
+
     Caller owns the locks and transaction. Retracted copies keep their verdict
     history; standing item plans survive and the next release materializes
     fresh run-bound copies.
@@ -164,10 +166,12 @@ def remove_member_on(
     )
     from yoke_core.domain.qa_deployment_member_removal import (
         abort_removed_member_executions,
+        retract_orphaned_shared_copies,
     )
 
     abort_removed_member_executions(conn, run_id=run_id, item_id=item_id)
     retract_member_copies(conn, run_id, item_id=item_id, reason=reason)
+    retract_orphaned_shared_copies(conn, run_id=run_id, reason=reason)
     from yoke_core.domain.deployment_qa_stage_wake_withdraw import (
         withdraw_deployment_qa_wait_wakes,
     )

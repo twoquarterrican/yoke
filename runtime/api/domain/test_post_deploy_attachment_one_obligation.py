@@ -79,9 +79,9 @@ def _run_admits_the_member(
         int(row["id"])
         for row in conn.execute(
             "SELECT id FROM qa_requirements WHERE deployment_run_id=%s "
-            "AND deployment_stage=%s AND deployment_member_item_id IS NULL "
+            "AND deployment_stage=%s AND deployment_member_item_id=%s "
             "AND method_id IS NOT NULL ORDER BY id",
-            (run_id, ITEM_QA_STAGE),
+            (run_id, ITEM_QA_STAGE, item_id),
         ).fetchall()
     ]
 

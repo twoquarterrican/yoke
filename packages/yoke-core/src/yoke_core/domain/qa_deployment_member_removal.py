@@ -85,3 +85,56 @@ def abort_removed_member_executions(conn: Any, *, run_id: str, item_id: int) -> 
             reason="deployment-member-removed",
             commit=False,
         )
+
+
+def _plan_still_attached(conn: Any, run_id: str, stage_name: str, plan_id: int) -> bool:
+    """Whether any remaining run member still resolves this shared plan group."""
+    from yoke_core.domain.deployment_qa_shared_plans import resolve_shared_subject
+
+    try:
+        resolve_shared_subject(
+            conn,
+            run_id=run_id,
+            stage_name=stage_name,
+            plan_id=plan_id,
+            require_active=False,
+        )
+    except ValueError as exc:
+        return not str(exc).startswith(
+            f"shared_plan_subject_unresolved: plan {plan_id} has 0 matching"
+        )
+    return True
+
+
+def retract_orphaned_shared_copies(conn: Any, *, run_id: str, reason: str) -> list[int]:
+    """Retract unsettled shared-group rows whose plan no remaining member attaches.
+
+    Run after the member row is deleted. A group another member still attaches
+    keeps its rows; an orphaned group would otherwise stay a run-wide blocker.
+    """
+    from yoke_core.domain.deployment_qa_shared_plans import shared_target_identity
+    from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
+    from yoke_core.domain.qa_plan_attachment_retract import retract_requirements
+
+    if not _table_exists(conn, "qa_requirements"):
+        return []
+    rows = query_rows(
+        conn,
+        "SELECT id,deployment_stage,plan_id,execution_target_json FROM qa_requirements "
+        "WHERE deployment_run_id=%s AND deployment_member_item_id IS NULL "
+        f"AND plan_id IS NOT NULL AND NOT {settled_obligation_sql(conn)} ORDER BY id",
+        (run_id,),
+    )
+    groups: dict[tuple[str, int], list[int]] = {}
+    for row in rows:
+        if shared_target_identity(row["execution_target_json"]):
+            key = (str(row["deployment_stage"]), int(row["plan_id"]))
+            groups.setdefault(key, []).append(int(row["id"]))
+    ids = [
+        requirement_id
+        for (stage_name, plan_id), members in groups.items()
+        if not _plan_still_attached(conn, run_id, stage_name, plan_id)
+        for requirement_id in members
+    ]
+    retract_requirements(conn, ids, reason=reason, source="operator")
+    return ids

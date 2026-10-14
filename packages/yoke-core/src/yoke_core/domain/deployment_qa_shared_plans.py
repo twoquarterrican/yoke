@@ -30,28 +30,91 @@ def shared_subject(subject: Mapping, target: Mapping, snapshot: Mapping) -> dict
     }
 
 
+def _member_attached_plan_ids(
+    conn: Any, member: int, snapshot: Mapping | None, environment_id: int | None
+) -> set[int]:
+    """Plans one member attached for this environment, live or frozen at admission."""
+    from yoke_core.domain.qa_deployment_member_attached_plans import (
+        attached_member_plan_ids,
+    )
+
+    ids = set(
+        attached_member_plan_ids(
+            conn, member_item_id=member, environment_id=environment_id
+        )
+    )
+    for value in (snapshot or {}).get("plans") or []:
+        if (value.get("attachment") or {}).get("qa_phase") == "post_deploy":
+            ids.add(int(value["plan"]["id"]))
+    return ids
+
+
+def _other_members_plan_ids(
+    conn: Any, run_id: str, member: int, environment_id: int | None
+) -> set[int]:
+    """Plans any other member of the run attached for the same environment."""
+    import json
+
+    ids: set[int] = set()
+    for row in query_rows(
+        conn,
+        "SELECT item_id,requirement_snapshot FROM deployment_run_items "
+        "WHERE run_id=%s AND item_id<>%s ORDER BY item_id",
+        (run_id, member),
+    ):
+        raw = row["requirement_snapshot"]
+        snapshot = raw if isinstance(raw, Mapping) else json.loads(str(raw or "{}"))
+        ids |= _member_attached_plan_ids(
+            conn, int(row["item_id"]), snapshot, environment_id
+        )
+    return ids
+
+
+def _formed_group_plan_ids(conn: Any, run_id: str, stage_name: str) -> set[int]:
+    """Plans whose shared group already holds live memberless rows in this stage."""
+    from yoke_core.domain.qa_obligation_settlement import unretracted_requirement_sql
+
+    return {
+        int(row["plan_id"])
+        for row in query_rows(
+            conn,
+            "SELECT DISTINCT plan_id FROM qa_requirements "
+            "WHERE deployment_run_id=%s AND deployment_stage=%s "
+            "AND deployment_member_item_id IS NULL AND plan_id IS NOT NULL "
+            f"AND {unretracted_requirement_sql(conn)}",
+            (run_id, stage_name),
+        )
+    }
+
+
 def shareable_snapshots(
     conn: Any, subject: Mapping, target: Mapping, snapshots: list[dict]
 ) -> list[dict]:
-    """Share member attachments; flow-defined plans keep their declared scope."""
+    """Share a member attachment only when another run member attaches it too.
+
+    Members of one run and stage resolve the same candidate source and stage
+    environment, so a plan two members attach here is one plan, revision and
+    target. A plan only this member attaches stays its private copy and keeps
+    its member, unless its shared group already formed: that group stays
+    shared until its last attaching member leaves. Flow-defined plans keep
+    their declared scope.
+    """
     from yoke_core.domain.qa_deployment_member_attached_plans import (
-        attached_member_plan_ids,
         stage_environment_id_for_plan_selection,
     )
 
     member = subject.get("member_item_id")
     if member is None:
         return []
-    ids = set(
-        attached_member_plan_ids(
-            conn,
-            member_item_id=int(member),
-            environment_id=stage_environment_id_for_plan_selection(conn, target),
+    environment_id = stage_environment_id_for_plan_selection(conn, target)
+    ids = _member_attached_plan_ids(
+        conn, int(member), subject.get("member_snapshot"), environment_id
+    ) & (
+        _other_members_plan_ids(conn, str(subject["id"]), int(member), environment_id)
+        | _formed_group_plan_ids(
+            conn, str(subject["id"]), str(subject["stage"]["name"])
         )
     )
-    for value in (subject.get("member_snapshot") or {}).get("plans") or []:
-        if (value.get("attachment") or {}).get("qa_phase") == "post_deploy":
-            ids.add(int(value["plan"]["id"]))
     return [snapshot for snapshot in snapshots if int(snapshot["plan"]["id"]) in ids]
 
 

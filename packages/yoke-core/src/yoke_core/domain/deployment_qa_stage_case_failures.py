@@ -24,6 +24,7 @@ from yoke_core.domain.qa_requirement_replacement import replacement_note
 from yoke_core.domain.qa_obligation_settlement import (
     obligation_settled,
     requirement_retracted_at_select,
+    unretracted_requirement_sql,
 )
 
 
@@ -123,8 +124,13 @@ def case_failures(
     stage_name: str,
     member_item_id: int | None,
     execution_target_digest: str,
+    shared_plan_id: int | None = None,
 ) -> list[CaseFailure]:
-    """Every blocking case this subject cannot accept, each with its kind."""
+    """Every blocking case this subject cannot accept, each with its kind.
+
+    A shared-plan group has no member, so ``shared_plan_id`` is what keeps its
+    lookups on its own rows rather than every memberless row in the stage.
+    """
     rows = scoped_cases(
         conn,
         run_id=run_id,
@@ -133,6 +139,7 @@ def case_failures(
         execution_target_digest=execution_target_digest,
     )
     if not rows:
+        plan_scope = "" if shared_plan_id is None else "AND plan_id=%s "
         recorded = [
             dict(row)
             for row in query_rows(
@@ -140,13 +147,25 @@ def case_failures(
                 "SELECT id,plan_case_key FROM qa_requirements "
                 "WHERE deployment_run_id=%s AND deployment_stage=%s "
                 "AND COALESCE(deployment_member_item_id,0)=%s "
+                f"{plan_scope}AND {unretracted_requirement_sql(conn)} "
                 "AND method_id IS NOT NULL AND blocking_mode='blocking' "
                 "AND COALESCE(execution_target_digest,'')<>'' "
                 "ORDER BY id",
-                (run_id, stage_name, member_item_id or 0),
+                (
+                    run_id,
+                    stage_name,
+                    member_item_id or 0,
+                    *(() if shared_plan_id is None else (shared_plan_id,)),
+                ),
             )
         ]
         if recorded:
+            if member_item_id is not None:
+                owner = f"member {render_item_ref(conn, member_item_id)}"
+            elif shared_plan_id is not None:
+                owner = f"shared plan {shared_plan_id}"
+            else:
+                owner = "run-level subject"
             named = ", ".join(
                 f"#{row['id']} ({row['plan_case_key']})" for row in recorded
             )
@@ -156,7 +175,7 @@ def case_failures(
                     plan_case_key=str(recorded[0]["plan_case_key"] or ""),
                     kind=FAILURE_UNRUN,
                     detail=(
-                        f"member {render_item_ref(conn, member_item_id)}: recorded requirement {named} "
+                        f"{owner}: recorded requirement {named} "
                         "is out of scope under the current execution target "
                         f"{execution_target_digest}; its execution remains bound "
                         "to the target it was materialized against. Reuse that "

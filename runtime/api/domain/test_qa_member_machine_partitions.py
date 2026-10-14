@@ -185,8 +185,8 @@ def test_each_host_has_its_own_execution_and_member_waits_for_both(
     assert _begin(test_db)["state"] == "completed"
     assert (
         test_db.execute(
-            "SELECT COUNT(*) FROM qa_requirements WHERE deployment_run_id=%s AND deployment_stage='item-qa' AND deployment_member_item_id IS NULL AND method_id IS NOT NULL",
-            (RUN,),
+            "SELECT COUNT(*) FROM qa_requirements WHERE deployment_run_id=%s AND deployment_stage='item-qa' AND deployment_member_item_id=%s AND method_id IS NOT NULL",
+            (RUN, MEMBER),
         ).fetchone()[0]
         == 2
     )
