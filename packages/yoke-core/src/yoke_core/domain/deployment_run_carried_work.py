@@ -83,7 +83,8 @@ def _bound_sources_column(conn: Any) -> str:
     return f"'' AS {BOUND_SOURCES_FIELD}"
 
 
-def _previous_run(conn: Any, run_id: str, project_id: int, environment_id: Any):
+def previous_release_run(conn: Any, run_id: str, project_id: int, environment_id: Any):
+    """The newest other succeeded run for this project and target environment."""
     return conn.execute(
         f"SELECT id,project_id,release_lineage,{_bound_sources_column(conn)},"
         "completed_at "
@@ -140,7 +141,7 @@ def derive_carried_work(
     project_id = int(_cell(row, "project_id", 0))
     environment_id = _cell(row, "target_environment_id", 1)
     release_lineage = str(_cell(row, "release_lineage", 2) or "").strip()
-    previous = _previous_run(conn, run_id, project_id, environment_id)
+    previous = previous_release_run(conn, run_id, project_id, environment_id)
     # A consumer refresh cannot rewrite facts belonging to an unchanged,
     # potentially consumed source, even if the preceding release advanced.
     payload = (
@@ -335,6 +336,7 @@ __all__ = [
     "derive_project_carried_work",
     "derive_carried_work_safely",
     "parse_carried_work",
+    "previous_release_run",
     "require_bound_project_coverage",
     "record_carried_work",
 ]
