@@ -34,7 +34,9 @@ lets this hold on a control plane with no checkout of the project.
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass
+from threading import Lock
 from typing import Any, Optional
 
 from yoke_core.domain.deployment_run_carried_work_source import (
@@ -128,7 +130,7 @@ class CandidateContainment:
                 refusals.append(entry.refusal or ("", ""))
                 continue
             try:
-                verdict = _ask_source(
+                verdict = _cached_source_verdict(
                     entry.source,
                     entry.resolved_candidate(self._candidate),
                     merge,
@@ -213,6 +215,40 @@ def candidate_contains_commit(
         project_id,
         candidate_lineage=candidate_lineage,
     ).contains(commit_sha)
+
+
+# Full object ids are immutable; bounded storage needs no expiry. Source identity
+# separates repositories, and opening the source still checks current authority.
+_VERDICTS: OrderedDict[tuple[str, ...], ContainmentVerdict] = OrderedDict()
+_CACHE_LOCK = Lock()
+_FLIGHTS = tuple(Lock() for _ in range(64))
+CACHE_LIMIT = 8192
+
+
+def _cached_source_verdict(
+    source: CarriedWorkSource, candidate: str, merge: str
+) -> Optional[ContainmentVerdict]:
+    location = getattr(source, "location", "")
+    immutable = all(
+        len(sha) == 40 and all(c in "0123456789abcdef" for c in sha)
+        for sha in (candidate, merge)
+    )
+    if not location or not immutable:
+        return _ask_source(source, candidate, merge)
+    key = (source.origin, location, candidate, merge)
+    with _FLIGHTS[hash(key) % len(_FLIGHTS)]:
+        with _CACHE_LOCK:
+            if key in _VERDICTS:
+                _VERDICTS.move_to_end(key)
+                return _VERDICTS[key]
+        verdict = _ask_source(source, candidate, merge)
+        if verdict is not None and verdict.state in {CONTAINED, NOT_CONTAINED}:
+            with _CACHE_LOCK:
+                _VERDICTS[key] = verdict
+                _VERDICTS.move_to_end(key)
+                while len(_VERDICTS) > CACHE_LIMIT:
+                    _VERDICTS.popitem(last=False)
+        return verdict
 
 
 def _ask_source(

@@ -177,8 +177,8 @@ def test_a_supplemental_holder_carrying_the_landing_still_leaves_it_owed(
     )
 
     monkeypatch.setattr(
-        delivery_landing_custody,
-        "candidate_contains_commit",
+        delivery_landing_custody.CandidateContainment,
+        "contains",
         lambda *_args, **_kwargs: ContainmentVerdict(CONTAINED),
     )
     conn = targeted_out

@@ -194,8 +194,7 @@ def test_a_strictly_ahead_candidate_is_definitely_not_contained(
     ]
     source, _ = _source(monkeypatch, {_COMPARE_PATH: _compare("ahead", files)})
     monkeypatch.setattr(
-        "yoke_core.domain.deployment_run_candidate_containment."
-        "carried_work_sources",
+        "yoke_core.domain.deployment_run_candidate_containment.carried_work_sources",
         lambda conn, project_id: (lambda: source,),
     )
 
@@ -222,7 +221,9 @@ def test_a_listing_past_the_budget_is_unread_rather_than_guessed(
         {"filename": f"file{index}.py", "status": "modified", "sha": "f" * 40}
         for index in range(equivalence.COMPARED_PATH_BUDGET + 1)
     ]
-    source, recorder = _source(monkeypatch, {_COMPARE_PATH: _compare("diverged", files)})
+    source, recorder = _source(
+        monkeypatch, {_COMPARE_PATH: _compare("diverged", files)}
+    )
 
     assert source.adds_nothing(CANDIDATE, COMMIT) is None
     # Nothing was priced, so nothing was read beyond the comparison itself.
@@ -266,8 +267,7 @@ def test_a_base_that_moved_past_the_lane_never_reads_as_not_contained(
         },
     )
     monkeypatch.setattr(
-        "yoke_core.domain.deployment_run_candidate_containment."
-        "carried_work_sources",
+        "yoke_core.domain.deployment_run_candidate_containment.carried_work_sources",
         lambda conn, project_id: (lambda: source,),
     )
 
