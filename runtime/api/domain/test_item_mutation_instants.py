@@ -19,7 +19,7 @@ def test_prepared_item_mutations_retain_native_clocks(monkeypatch):
     monkeypatch.setattr(mutations_create, "utc_now", lambda: STAMP)
     monkeypatch.setattr(mutations_update, "utc_now", lambda: STAMP)
     created = mutations_create.prepare_create(
-        title="Native clock", workflow=workflow, project="yoke"
+        title="Native clock", workflow=workflow, project="yoke", spec="Agreed outcome: done when it shows."
     )
     assert created.success
     assert (

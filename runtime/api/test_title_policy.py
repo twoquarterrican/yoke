@@ -93,11 +93,11 @@ class TestItemValidationFollowsThePolicy:
     def test_create_follows_the_default(self, alternate_limit):
         workflow = builtin_workflow_runtime("issue")
         accepted = prepare_create(
-            title="x" * alternate_limit, workflow=workflow, project="yoke"
+            title="x" * alternate_limit, workflow=workflow, project="yoke", spec="Agreed outcome: done when it shows."
         )
         assert accepted.success is True
         refused = prepare_create(
-            title="x" * (alternate_limit + 1), workflow=workflow, project="yoke"
+            title="x" * (alternate_limit + 1), workflow=workflow, project="yoke", spec="Agreed outcome: done when it shows."
         )
         assert refused.success is False
         assert refused.error_code == "VALIDATION_ERROR"

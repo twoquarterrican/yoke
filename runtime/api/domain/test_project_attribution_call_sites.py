@@ -85,7 +85,7 @@ def test_the_scan_would_catch_the_pattern_it_exists_for(tmp_path) -> None:
 def test_a_create_naming_no_project_is_refused(named) -> None:
     """The sharpest case: filing work on a backlog nobody chose."""
     result = mutations_create.prepare_create(
-        title="a title", workflow=object(), project=named
+        title="a title", workflow=object(), project=named, spec="Agreed outcome: done when it shows."
     )
 
     assert isinstance(result, CreateResult)
