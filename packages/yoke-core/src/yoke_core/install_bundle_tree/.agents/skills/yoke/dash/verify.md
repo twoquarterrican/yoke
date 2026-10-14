@@ -78,7 +78,7 @@ its explicitly attached review cases. Plan selection records only the choice;
 it attaches nothing. Attach review verification explicitly before materializing:
 
 ```text
-yoke qa item-plan attach --item ITEM --project P --plan-id ID --transition reviewing-implementation --qa-phase verification
+yoke qa item-plan attach --item ITEM --project P --plan-id <id> --transition reviewing-implementation --qa-phase verification
 ```
 
 Post-deploy plans attach at release with --qa-phase post_deploy.
