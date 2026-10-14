@@ -146,6 +146,10 @@ def create_session_control_tables(conn: Any) -> None:
             ON session_message_attempts(message_id);
         CREATE INDEX IF NOT EXISTS idx_session_message_attempts_target_session
             ON session_message_attempts(target_session_id);
+        CREATE INDEX IF NOT EXISTS idx_session_message_attempts_open_lease
+            ON session_message_attempts(lease_id) WHERE completed_at IS NULL;
+        CREATE INDEX IF NOT EXISTS idx_session_message_attempts_open_started
+            ON session_message_attempts(started_at, attempt_id) WHERE completed_at IS NULL;
 
         CREATE TABLE IF NOT EXISTS session_launches (
             launch_id TEXT PRIMARY KEY,

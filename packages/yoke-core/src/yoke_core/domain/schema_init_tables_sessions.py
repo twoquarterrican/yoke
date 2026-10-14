@@ -120,6 +120,8 @@ def create_session_tables(conn: Any) -> None:
           ON session_tool_calls(session_id, tool_use_id);
         CREATE INDEX IF NOT EXISTS idx_session_tool_calls_session_started
           ON session_tool_calls(session_id, started_at);
+        CREATE INDEX IF NOT EXISTS idx_session_tool_calls_session_id_id
+          ON session_tool_calls(session_id, id);
         CREATE TABLE IF NOT EXISTS {PROMISED_WORK_HOLDS_TABLE} (
           session_id TEXT NOT NULL,
           item_id INTEGER NOT NULL,
