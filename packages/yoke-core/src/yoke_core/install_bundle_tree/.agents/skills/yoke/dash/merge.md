@@ -61,10 +61,10 @@ command is still running: continue that same call through the background task's
 output. Reading that output continues the call; only ending the turn kills the
 watcher. Never launch another copy beside it.
 
-The wrapper observes through control-plane merge_queue.landing.observe with
-one project-wide GitHub sweep per cadence and streams changed durable records
-and an exit sentinel. The waiting machine issues no `gh`, GitHub, or `git fetch`
-read loop. Named outcomes follow; none of them is silence.
+The wrapper observes through control-plane merge_queue.landing.observe, which
+answers from the stored landing record and reads GitHub only when that record
+is stale, and streams changed durable records and an exit sentinel. The
+waiting machine issues no `gh`, GitHub, or `git fetch` read loop. Named outcomes follow; none of them is silence.
 A tunnel_busy sibling owns authority lifecycle: leave it running and retain
 this invocation through the bounded replacement window.
 Read readiness through `yoke github merge-queue readiness ITEM --json`;

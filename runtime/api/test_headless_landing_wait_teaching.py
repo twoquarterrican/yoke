@@ -162,7 +162,10 @@ def test_dash_merge_phase_routes_every_other_landing_by_harness_wake_capability(
     assert "queue-entry=AWAITING_CHECKS" in content
     assert "consumed and in flight, not cleared" in content
     assert "merge_queue.landing.observe" in content
-    assert "one project-wide GitHub sweep per cadence" in content
+    assert (
+        "answers from the stored landing record and reads GitHub only when that "
+        "record is stale" in content
+    )
     assert "waiting machine issues no `gh`, GitHub, or `git fetch` read loop" in content
     assert "none of them is silence" in content
 

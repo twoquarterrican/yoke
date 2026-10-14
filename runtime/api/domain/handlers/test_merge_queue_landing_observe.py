@@ -1,9 +1,15 @@
 """The waiter-triggered server observation is shared across one project."""
 
+from datetime import timedelta
+
+import pytest
+
 from runtime.api.domain.merge_queue_observer_test_helpers import (
     armed_awaiting_checks,
     checks_running,
+    merged,
     not_queued,
+    observe as relay_sweep,
     observer_connection,
 )
 from runtime.api.domain.test_session_message_support import NOW
@@ -14,7 +20,11 @@ from yoke_contracts.api.function_call import (
 )
 from yoke_core.domain.handlers import merge_queue_landing_observe as handler
 from yoke_core.domain.merge_queue_landing_observer import observe_pending_landings
-from yoke_core.domain.merge_queue_landing_record_state import PENDING
+from yoke_core.domain.merge_queue_landing_record_state import LANDED, PENDING
+from yoke_core.domain.merge_queue_landing_refresh import (
+    LANDING_RECORD_STALE_SECONDS,
+    REFRESH_CADENCE_SECONDS,
+)
 from yoke_core.domain.merge_queue_readiness import (
     ARMED_NOT_ENQUEUED,
     ENTRY_ABSENT,
@@ -153,3 +163,107 @@ def test_item_lookup_uses_the_name_aware_database_row(monkeypatch):
 
     assert outcome.primary_success
     assert len(converted) == 1
+
+
+def _observe_with(monkeypatch, conn, *, now, read_state, reads):
+    """Point the handler at `conn` at `now`, counting every GitHub state read."""
+
+    def counted(ctx, pr_number):
+        reads.append(str(pr_number))
+        return read_state(ctx, pr_number)
+
+    def observe(db, project_ids, *, now):
+        return observe_pending_landings(
+            db,
+            project_ids,
+            now=now,
+            read_state=counted,
+            read_membership=not_queued,
+            read_checks=checks_running,
+        )
+
+    monkeypatch.setattr(handler, "_connect_rw", lambda: conn)
+    monkeypatch.setattr(handler, "utc_now", lambda: now)
+    monkeypatch.setattr(handler, "observe_pending_landings", observe)
+
+
+def test_fresh_record_answers_without_reading_github(monkeypatch):
+    conn = observer_connection()
+    swept_at = NOW - timedelta(seconds=REFRESH_CADENCE_SECONDS)
+    relay_sweep(
+        conn,
+        now=swept_at,
+        read_state=armed_awaiting_checks,
+        read_membership=not_queued,
+    )
+    reads: list[str] = []
+    _observe_with(monkeypatch, conn, now=NOW, read_state=merged, reads=reads)
+
+    outcome = handler.handle_observe_landing(_request(101))
+
+    assert outcome.primary_success
+    assert reads == []
+    assert outcome.result_payload["refreshed"] is False
+    assert outcome.result_payload["stale"] is False
+    assert outcome.result_payload["record"]["state"] == PENDING
+    assert outcome.result_payload["age_seconds"] == REFRESH_CADENCE_SECONDS
+
+
+def test_stale_record_without_relay_refreshes_inline_and_reports_landing(
+    monkeypatch,
+):
+    conn = observer_connection()
+    swept_at = NOW - timedelta(seconds=LANDING_RECORD_STALE_SECONDS + 1)
+    relay_sweep(
+        conn,
+        now=swept_at,
+        read_state=armed_awaiting_checks,
+        read_membership=not_queued,
+    )
+    reads: list[str] = []
+    _observe_with(monkeypatch, conn, now=NOW, read_state=merged, reads=reads)
+
+    outcome = handler.handle_observe_landing(_request(101))
+
+    assert outcome.primary_success
+    assert reads == ["42"]
+    assert outcome.result_payload["refreshed"] is True
+    assert outcome.result_payload["stale"] is False
+    assert outcome.result_payload["record"]["state"] == LANDED
+
+
+@pytest.mark.parametrize("relay_running", [True, False])
+def test_merged_pull_request_is_reported_within_two_refresh_intervals(
+    monkeypatch, relay_running
+):
+    conn = observer_connection()
+    relay_sweep(
+        conn,
+        now=NOW,
+        read_state=armed_awaiting_checks,
+        read_membership=not_queued,
+    )
+    # The pull request merges right after that sweep; the waiter polls
+    # every 15 seconds and the relay, when running, sweeps on cadence.
+    poll_seconds = 15.0
+    reported_after = None
+    for step in range(1, 25):
+        elapsed = step * poll_seconds
+        moment = NOW + timedelta(seconds=elapsed)
+        if relay_running and elapsed % REFRESH_CADENCE_SECONDS == 0:
+            relay_sweep(
+                conn,
+                now=moment,
+                read_state=merged,
+                read_membership=not_queued,
+                cadence_seconds=REFRESH_CADENCE_SECONDS,
+            )
+        _observe_with(monkeypatch, conn, now=moment, read_state=merged, reads=[])
+        outcome = handler.handle_observe_landing(_request(101))
+        assert outcome.result_payload["stale"] is False
+        if outcome.result_payload["record"]["state"] == LANDED:
+            reported_after = elapsed
+            break
+
+    assert reported_after is not None
+    assert reported_after <= LANDING_RECORD_STALE_SECONDS + poll_seconds

@@ -59,7 +59,7 @@ def _read_server_record(
     item_id: str,
     announce: Callable[[str], None],
 ) -> tuple[PublicLandingRecord | None, dict[str, Any], str]:
-    """Refresh the project if due and read this lane through one function."""
+    """Read this lane's server record; the server reads GitHub only when stale."""
     response = control_plane_function_degradation.dispatch_through_paired_admin_on_skew(
         function_id=OBSERVE_FUNCTION_ID,
         target=public_item_target(item_id),
