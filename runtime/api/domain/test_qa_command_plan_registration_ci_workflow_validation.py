@@ -58,8 +58,7 @@ jobs:
 
 def _declare_workflow(conn, workflow_file: str) -> None:
     conn.execute(
-        "INSERT INTO project_capabilities (project_id, type, settings) "
-        "VALUES (1, %s, %s)",
+        "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
         (
             CI_WORKFLOW_CAPABILITY_TYPE,
             json.dumps({"workflow_file": workflow_file}),
@@ -70,8 +69,7 @@ def _declare_workflow(conn, workflow_file: str) -> None:
 
 def _declare_merge_queue(conn) -> None:
     conn.execute(
-        "INSERT INTO project_capabilities (project_id, type, settings) "
-        "VALUES (1, %s, '{}')",
+        "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, '{}')",
         (MERGE_QUEUE_CAPABILITY_TYPE,),
     )
     conn.commit()
@@ -108,7 +106,10 @@ def test_a_reachable_workflow_binds_ci_and_reports_it(monkeypatch, tmp_path):
         _bind_checkout(monkeypatch, tmp_path, REACHABLE)
         _declare_workflow(conn, "ci.yml")
         result = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="make test",
         )
         assert result["method_id"] == CI_COMMAND_METHOD_ID
@@ -116,14 +117,18 @@ def test_a_reachable_workflow_binds_ci_and_reports_it(monkeypatch, tmp_path):
 
 
 def test_registration_refuses_a_workflow_absent_from_the_repository(
-    monkeypatch, tmp_path,
+    monkeypatch,
+    tmp_path,
 ):
     with test_database() as conn:
         _bind_checkout(monkeypatch, tmp_path, None)
         _declare_workflow(conn, "ci.yml")
         with pytest.raises(ValueError) as excinfo:
             ensure_registered_command_plan(
-                conn, project_id=1, project="yoke", scope="full",
+                conn,
+                project_id=1,
+                project="yoke",
+                scope="full",
                 command="make test",
             )
         assert "does not exist" in str(excinfo.value)
@@ -135,14 +140,18 @@ def test_registration_refuses_a_deploy_workflow(monkeypatch, tmp_path):
         _declare_workflow(conn, "ci.yml")
         with pytest.raises(ValueError) as excinfo:
             ensure_registered_command_plan(
-                conn, project_id=1, project="yoke", scope="full",
+                conn,
+                project_id=1,
+                project="yoke",
+                scope="full",
                 command="make test",
             )
         assert "workflow_dispatch" in str(excinfo.value)
 
 
 def test_an_unreadable_declaration_binds_ci_and_names_what_went_unchecked(
-    monkeypatch, tmp_path,
+    monkeypatch,
+    tmp_path,
 ):
     with test_database() as conn:
         monkeypatch.setattr(
@@ -152,7 +161,10 @@ def test_an_unreadable_declaration_binds_ci_and_names_what_went_unchecked(
         )
         _declare_workflow(conn, "ci.yml")
         result = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="make test",
         )
         assert result["method_id"] == CI_COMMAND_METHOD_ID
@@ -160,12 +172,16 @@ def test_an_unreadable_declaration_binds_ci_and_names_what_went_unchecked(
 
 
 def test_a_project_with_no_declaration_reports_no_workflow_verdict(
-    monkeypatch, tmp_path,
+    monkeypatch,
+    tmp_path,
 ):
     with test_database() as conn:
         _bind_checkout(monkeypatch, tmp_path, REACHABLE)
         result = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="make test",
         )
         assert result["method_id"] == LOCAL_COMMAND_METHOD_ID
@@ -173,14 +189,18 @@ def test_a_project_with_no_declaration_reports_no_workflow_verdict(
 
 
 def test_convergence_binds_local_and_names_the_reason_instead_of_raising(
-    monkeypatch, tmp_path,
+    monkeypatch,
+    tmp_path,
 ):
     """A stale declaration must not make the boot converge refuse to boot."""
     with test_database() as conn:
         _bind_checkout(monkeypatch, tmp_path, REACHABLE)
         _declare_workflow(conn, "ci.yml")
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="make test",
         )
         assert _case_method(conn, "full") == CI_COMMAND_METHOD_ID

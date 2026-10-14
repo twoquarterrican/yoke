@@ -60,8 +60,8 @@ def _insert_receipt(
     conn.execute(
         "INSERT INTO deployment_stage_receipts "
         "(id, run_id, stage_name, attempt_number, correlation_id, target_kind, "
-        "target_name, status, observed_url, executor, created_at) "
-        "VALUES (%s, %s, %s, 1, %s, %s, %s, %s, %s, 'github-actions-workflow', %s)",
+        "target_name, status, observed_url, executor, created_at, completed_at, observed_release_lineage) "
+        "VALUES (%s, %s, %s, 1, %s, %s, %s, %s, %s, 'github-actions-workflow', %s, %s, %s)",
         (
             receipt_id,
             run_id,
@@ -72,6 +72,8 @@ def _insert_receipt(
             status,
             observed_url,
             NOW,
+            NOW if status == "ready" else None,
+            SERVED_SHA if status == "ready" else None,
         ),
     )
     conn.commit()

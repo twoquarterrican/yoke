@@ -167,7 +167,7 @@ class TestMergeLockIntegration:
         conn = mw_db["conn"]
         conn.execute(
             "INSERT INTO projects (id, slug, name, public_item_prefix, created_at) "
-            "VALUES (1, 'yoke', 'Yoke', 'YOK', '2025-01-01')"
+            "VALUES (1, 'yoke', 'Yoke', 'YOK', '2025-01-01') ON CONFLICT(id) DO NOTHING"
         )
         conn.execute(
             "INSERT INTO items (id, title, workflow_id, workflow_version_id, status, "

@@ -58,11 +58,7 @@ def _sid(label: str) -> str:
 
 def _add_session(conn: Any, sid: str) -> None:
     conn.execute(
-        "INSERT INTO harness_sessions (session_id, executor, provider,"
-        " model, workspace, mode, offered_at, last_heartbeat)"
-        " VALUES (%s, 'claude-desktop', 'anthropic', 'claude-opus-4-7',"
-        " '/tmp/ws', 'charge', '2026-05-17T11:00:00Z',"
-        " '2026-05-17T11:00:00Z')",
+        "INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace, mode, offered_at, last_heartbeat) VALUES (1, %s, 'claude-desktop', 'anthropic', 'claude-opus-4-7', '/tmp/ws', 'charge', '2026-05-17T11:00:00Z', '2026-05-17T11:00:00Z')",
         (sid,),
     )
     conn.commit()

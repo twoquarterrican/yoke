@@ -49,6 +49,10 @@ def _bind_yoke_repo(path) -> None:
             (GITHUB_SYNC_DISABLED, "yoke"),
         )
         conn.execute(
+            "INSERT INTO github_app_installations(installation_id,account_id,account_login,account_type,created_at,updated_at) VALUES(%s,'fixture-account','fixture-org','Organization','2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+            ("inst-1",),
+        )
+        conn.execute(
             "INSERT INTO project_github_repo_bindings "
             "(project_id, installation_id, repository_id, github_repo, "
             "created_at, updated_at) "

@@ -241,3 +241,19 @@ def task_update_field(
     touch_epic_task_activity(conn, epic_id=epic_id, task_num=task_num)
     conn.commit()
     return f"Updated {field} of {epic_id}/{task_num} to {rendered}"
+
+
+def task_delete(conn, epic_id: str, task_num: int) -> None:
+    """Delete one task's scope and bindings in the caller's transaction."""
+    from yoke_core.domain.path_claim_task_bindings import delete_task_bindings
+
+    p = _placeholder(conn)
+    delete_task_bindings(conn, item_id=int(epic_id), task_num=task_num)
+    conn.execute(
+        f"DELETE FROM epic_task_files WHERE epic_id={p} AND task_num={p}",
+        (str(epic_id), task_num),
+    )
+    conn.execute(
+        f"DELETE FROM epic_tasks WHERE epic_id={p} AND task_num={p}",
+        (str(epic_id), task_num),
+    )

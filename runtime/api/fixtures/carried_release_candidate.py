@@ -14,6 +14,8 @@ landing leaves — and a test proving a different rung simply does not.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -123,20 +125,16 @@ def insert_run(
     ships but does not own; a test that needs a predecessor to have carried
     such a project supplies it directly rather than starting a whole run.
     """
-    conn.execute(
-        "INSERT INTO deployment_runs("
-        "id,project_id,flow,release_lineage,bound_sources,status,created_at,"
-        "completed_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
-        (
-            run_id,
-            project_id,
-            flow,
-            lineage,
-            bound_sources,
-            status,
-            "2026-09-14T00:00:00Z",
-            completed_at,
-        ),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=project_id,
+        flow=flow,
+        release_lineage=lineage,
+        bound_sources=bound_sources,
+        status=status,
+        created_at="2026-09-14T00:00:00Z",
+        completed_at=completed_at,
     )
     conn.commit()
 

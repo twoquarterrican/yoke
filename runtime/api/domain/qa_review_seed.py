@@ -24,6 +24,9 @@ def _seed_undetermined_review(
     plan_slug,
     decider_roles,
     performed_by="agent",
+    raw_result=None,
+    case_outcome=None,
+    execution_status=None,
 ):
     """Seed one blocking plan case whose agent run came back undetermined.
 
@@ -96,12 +99,12 @@ def _seed_undetermined_review(
     run_id = test_db.execute(
         "INSERT INTO qa_runs "
         "(qa_requirement_id, performed_by, qa_kind, verdict, verdict_reason, "
-        "started_at, completed_at, created_at) "
+        "started_at, completed_at, created_at, raw_result, case_outcome, execution_status) "
         "VALUES (%s, %s, 'manual_acceptance', "
         "'undetermined', 'The screenshot does not show the saved state.', "
         "'2026-07-26T00:00:00Z', "
-        "'2026-07-26T00:00:00Z', '2026-07-26T00:00:00Z') RETURNING id",
-        (requirement_id, performed_by),
+        "'2026-07-26T00:00:00Z', '2026-07-26T00:00:00Z', %s, %s, %s) RETURNING id",
+        (requirement_id, performed_by, raw_result, case_outcome, execution_status),
     ).fetchone()[0]
     artifact_id = test_db.execute(
         "INSERT INTO qa_artifacts "
@@ -118,3 +121,31 @@ def _seed_undetermined_review(
         "run_id": int(run_id),
         "artifact_id": int(artifact_id),
     }
+
+
+def resolve_capture_review(
+    conn, *, requirement_id, action, actor_id, note, reviewed_run_id
+):
+    """Exercise the resolved decision that authorizes a provisional judgment."""
+    from yoke_core.domain.qa_review_requests import ensure_qa_review_request
+    from yoke_core.domain.actor_role_grants import grant_actor_project_role
+    from yoke_core.domain.decision_request_resolution import resolve_decision_request
+
+    conn.execute(
+        "INSERT INTO qa_artifacts(qa_run_id,artifact_type,content_type,artifact_handle,created_at) VALUES(%s,'screenshot','image/png',%s,%s)",
+        (
+            reviewed_run_id,
+            '{"backend":"local","path":"/tmp/review.png"}',
+            "2026-09-17T00:00:00Z",
+        ),
+    )
+    grant_actor_project_role(conn, actor_id=actor_id, project_id=1, role_name="owner")
+    request, _ = ensure_qa_review_request(
+        conn,
+        requirement_id=requirement_id,
+        run_id=reviewed_run_id,
+        originator_actor_id=actor_id,
+    )
+    return resolve_decision_request(
+        conn, request["id"], actor_id=actor_id, action=action, note=note
+    )

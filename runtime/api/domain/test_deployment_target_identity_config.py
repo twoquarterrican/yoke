@@ -27,8 +27,7 @@ PATH = "/candidate-revision"
 
 def _declare_identity_capability(conn: Any, settings: Any) -> None:
     conn.execute(
-        "INSERT INTO project_capabilities (project_id, type, settings) "
-        "VALUES (1, %s, %s)",
+        "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
         (IDENTITY_CAPABILITY, settings),
     )
     conn.commit()

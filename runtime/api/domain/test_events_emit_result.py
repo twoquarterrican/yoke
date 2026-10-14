@@ -93,10 +93,7 @@ def test_emitter_owned_connection_commits_event() -> None:
 def test_emit_event_resolves_actor_id_from_session() -> None:
     with test_database() as conn:
         conn.execute(
-            "INSERT INTO harness_sessions "
-            "(session_id, executor, provider, model, execution_level, workspace, "
-            "offered_at, last_heartbeat, actor_id) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, execution_level, workspace, offered_at, last_heartbeat, actor_id) VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 "sess-actor",
                 "codex",

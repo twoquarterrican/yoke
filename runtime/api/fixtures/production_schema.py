@@ -19,6 +19,9 @@ def initialize_test_schema(conn):
     with db_backend.bound_pg_dsn(pg_testdb.dsn_for_test_database(conn.info.dbname)):
         run_init_chain(emit=lambda _line: None)
     seed_project_identities(conn)
+    conn.execute(
+        "UPDATE projects SET created_at=%s WHERE id IN (1,2)", ("2026-01-01T00:00:00Z",)
+    )
     for project_id, name in ((1, "Yoke API"), (2, "External webapp API")):
         conn.execute(
             "INSERT INTO sites(project_id,name,created_at) VALUES(%s,%s,%s) "

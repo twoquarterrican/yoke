@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+
 import json
 from pathlib import Path
 from unittest import mock
@@ -123,6 +125,7 @@ def _stage(
 def _seed_work_claim(conn) -> None:
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
     target = make_item_target(ITEM_ID)
+    register_session_actor(conn, SESSION_ID)
     conn.execute(
         "INSERT INTO work_claims "
         "(session_id, target_kind, scope, claim_type, claimed_at, "

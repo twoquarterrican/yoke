@@ -8,6 +8,8 @@ from there.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 from typing import Any
 
 import pytest
@@ -43,10 +45,13 @@ REASON = "nothing observable once deployed"
 
 def _executing_run(conn: Any, run_id: str, members: tuple[int, ...]) -> None:
     now = iso8601_now()
-    conn.execute(
-        "INSERT INTO deployment_runs (id,project_id,flow,status,created_at) "
-        "VALUES (%s,1,%s,'executing',%s)",
-        (run_id, COMPLETION_FLOW, now),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=1,
+        flow=COMPLETION_FLOW,
+        status="executing",
+        created_at=now,
     )
     from runtime.api.fixtures.completed_delivery import pin_run_delivery
 
@@ -226,10 +231,13 @@ def test_a_cancelled_duplicate_does_not_block_re_driving_the_settling_run(
         "UPDATE deployment_runs SET settling_at=%s, created_at=%s WHERE id=%s",
         ("2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z", "run-delivering"),
     )
-    test_db.execute(
-        "INSERT INTO deployment_runs (id,project_id,flow,status,created_at) "
-        "VALUES ('run-duplicate',1,%s,'cancelled','2026-01-01T00:00:27Z')",
-        (COMPLETION_FLOW,),
+    insert_deployment_run(
+        test_db,
+        id="run-duplicate",
+        project_id=1,
+        flow=COMPLETION_FLOW,
+        status="cancelled",
+        created_at="2026-01-01T00:00:27Z",
     )
     test_db.execute(
         "INSERT INTO deployment_run_items (run_id,item_id,added_at) "

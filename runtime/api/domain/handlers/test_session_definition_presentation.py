@@ -62,7 +62,7 @@ def test_definition_owned_level_and_executor_presentation(test_db) -> None:
         test_db,
         "s-presented",
         last_heartbeat=_iso(),
-        executor="codex-app",
+        executor="codex",
         level="RESEARCH",
     )
 

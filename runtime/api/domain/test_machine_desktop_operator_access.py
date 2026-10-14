@@ -83,6 +83,10 @@ def test_seat_holder_access_audit_persists_through_event_schema(route, monkeypat
     # Exercise the real emitter and schema, including source-type constraints.
     # The handler owns a separate connection, so inspect after it closes.
     with test_database() as conn:
+        conn.execute(
+            "INSERT INTO actors(id,kind,created_at) VALUES(3,'human','2026-01-01T00:00:00Z')"
+        )
+        conn.commit()
         monkeypatch.setattr(handler.db_helpers, "connect", db_backend.connect)
         outcome = handler.handle_desktop_access(request())
         assert outcome.result_payload["operator_access"]["audit_recorded"]

@@ -25,8 +25,7 @@ def checkpoint_state_db(monkeypatch):
             initialize_test_schema(conn)
             project_id = resolve_project_id(conn, "yoke")
             conn.execute(
-                "INSERT INTO project_capabilities "
-                "(project_id, type, settings) VALUES (%s, %s, %s)",
+                "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', %s, %s, %s)",
                 (project_id, "pulumi-state", '{"state_bucket":"bucket"}'),
             )
             conn.commit()

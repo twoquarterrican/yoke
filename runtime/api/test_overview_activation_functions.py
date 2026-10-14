@@ -10,6 +10,8 @@ in test_overview_activation_machines.py.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import pytest
 
 from yoke_contracts.api.function_call import (
@@ -59,16 +61,21 @@ def _seed_session(conn, session_id, *, workspace="/tmp/ws", at=None):
 
 
 def test_day_zero_reports_first_module_in_progress_rest_locked(test_db):
-    test_db.execute("DELETE FROM projects")
+    test_db.execute("TRUNCATE projects CASCADE")
     test_db.commit()
     result = _get(payload={"host_facts": {"machine_connected": False}})
     modules = result["modules"]
     assert [m["key"] for m in modules] == [
-        "finish_installation_wizard", "connect_harness", "run_onboard",
+        "finish_installation_wizard",
+        "connect_harness",
+        "run_onboard",
         "first_deploy",
     ]
     assert [m["state"] for m in modules] == [
-        "in_progress", "not_started", "not_started", "not_started",
+        "in_progress",
+        "not_started",
+        "not_started",
+        "not_started",
     ]
     assert all(m["activated_at"] is None for m in modules)
     assert all(m["dismissed"] is False for m in modules)
@@ -113,6 +120,10 @@ def test_machine_fact_plus_project_activates_and_latches_wizard(test_db):
 def test_tail_signals_fill_submodules_and_fully_complete(test_db):
     now = iso8601_now()
     test_db.execute(
+        "INSERT INTO github_app_installations(installation_id,account_id,account_login,account_type,created_at,updated_at) VALUES(%s,'fixture-account','fixture-org','Organization','2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+        ("11",),
+    )
+    test_db.execute(
         "INSERT INTO project_github_repo_bindings (project_id, "
         "installation_id, repository_id, github_repo, permissions, "
         "created_at, updated_at, status) "
@@ -133,9 +144,7 @@ def test_tail_signals_fill_submodules_and_fully_complete(test_db):
     assert by_key["hosting"]["done"] is True
     assert wizard["fully_complete"] is False
 
-    test_db.execute(
-        "UPDATE project_github_repo_bindings SET status = 'active'"
-    )
+    test_db.execute("UPDATE project_github_repo_bindings SET status = 'active'")
     test_db.commit()
     result = _get(payload={"host_facts": {"machine_connected": True}})
     wizard = _modules_by_key(result)["finish_installation_wizard"]
@@ -146,18 +155,20 @@ def test_tail_signals_fill_submodules_and_fully_complete(test_db):
 def test_deploy_signal_activates_only_on_a_succeeded_run(test_db):
     # The onboarding signal and the facts its card draws from live in
     # test_overview_activation_onboard_signal.py.
-    test_db.execute(
-        "INSERT INTO deployment_runs (id, project_id, flow, status, "
-        "created_at) VALUES ('run-20260101-001', 1, 'flow-x', 'failed', %s)",
-        (iso8601_now(),),
+    insert_deployment_run(
+        test_db,
+        id="run-20260101-001",
+        project_id=1,
+        flow="flow-x",
+        status="failed",
+        created_at=iso8601_now(),
     )
     test_db.commit()
     # A failed run is not a first deploy.
     assert _modules_by_key(_get())["first_deploy"]["state"] == "not_started"
 
     test_db.execute(
-        "UPDATE deployment_runs SET status = 'succeeded' "
-        "WHERE id = 'run-20260101-001'"
+        "UPDATE deployment_runs SET status = 'succeeded' WHERE id = 'run-20260101-001'"
     )
     test_db.commit()
     assert _modules_by_key(_get())["first_deploy"]["state"] == "activated"
@@ -172,10 +183,8 @@ def test_project_rows_carry_most_recent_workspace_or_none(test_db):
         (iso8601_now(),),
     )
     test_db.commit()
-    _seed_session(test_db, "s-old", workspace="/w/old",
-                  at="2026-01-01T00:00:00+00:00")
-    _seed_session(test_db, "s-new", workspace="/w/new",
-                  at="2026-06-01T00:00:00+00:00")
+    _seed_session(test_db, "s-old", workspace="/w/old", at="2026-01-01T00:00:00+00:00")
+    _seed_session(test_db, "s-new", workspace="/w/new", at="2026-06-01T00:00:00+00:00")
     projects = _modules_by_key(_get())["connect_harness"]["projects"]
     by_slug = {p["slug"]: p["workspace"] for p in projects}
     assert by_slug["yoke"] == "/w/new"
@@ -183,31 +192,39 @@ def test_project_rows_carry_most_recent_workspace_or_none(test_db):
 
 
 def test_dismiss_requires_actor_and_scopes_to_the_actor(test_db):
-    refused = handle_overview_module_dismiss(_request(
-        "overview.module.dismiss", {"module_key": "connect_harness"},
-    ))
+    refused = handle_overview_module_dismiss(
+        _request(
+            "overview.module.dismiss",
+            {"module_key": "connect_harness"},
+        )
+    )
     assert refused.primary_success is False
     assert refused.error.code == "actor_required"
 
     actor = test_db.execute(
         "SELECT id FROM actors WHERE kind = 'human' ORDER BY id LIMIT 1"
     ).fetchone()[0]
-    done = handle_overview_module_dismiss(_request(
-        "overview.module.dismiss", {"module_key": "connect_harness"},
-        actor_id=str(actor),
-    ))
+    done = handle_overview_module_dismiss(
+        _request(
+            "overview.module.dismiss",
+            {"module_key": "connect_harness"},
+            actor_id=str(actor),
+        )
+    )
     assert done.primary_success is True
     assert done.result_payload == {
-        "module_key": "connect_harness", "dismissed": True,
+        "module_key": "connect_harness",
+        "dismissed": True,
     }
     # Idempotent re-dismiss keeps one row.
-    handle_overview_module_dismiss(_request(
-        "overview.module.dismiss", {"module_key": "connect_harness"},
-        actor_id=str(actor),
-    ))
-    count = test_db.execute(
-        "SELECT COUNT(*) FROM actor_ui_preferences"
-    ).fetchone()[0]
+    handle_overview_module_dismiss(
+        _request(
+            "overview.module.dismiss",
+            {"module_key": "connect_harness"},
+            actor_id=str(actor),
+        )
+    )
+    count = test_db.execute("SELECT COUNT(*) FROM actor_ui_preferences").fetchone()[0]
     assert int(count) == 1
 
     mine = _modules_by_key(_get(actor_id=str(actor)))
@@ -218,39 +235,53 @@ def test_dismiss_requires_actor_and_scopes_to_the_actor(test_db):
     assert all(m["dismissed"] is False for m in anonymous["modules"])
     assert anonymous["dismiss_available"] is False
 
-    restored = handle_overview_module_restore(_request(
-        "overview.module.restore", {"module_key": "connect_harness"},
-        actor_id=str(actor),
-    ))
+    restored = handle_overview_module_restore(
+        _request(
+            "overview.module.restore",
+            {"module_key": "connect_harness"},
+            actor_id=str(actor),
+        )
+    )
     assert restored.primary_success is True
     assert restored.result_payload["dismissed"] is False
-    remaining = test_db.execute(
-        "SELECT COUNT(*) FROM actor_ui_preferences"
-    ).fetchone()[0]
+    remaining = test_db.execute("SELECT COUNT(*) FROM actor_ui_preferences").fetchone()[
+        0
+    ]
     assert int(remaining) == 0
 
 
 @pytest.mark.parametrize("module_key", [None, "", "nope", 7])
 def test_dismiss_refuses_unknown_module_keys(test_db, module_key):
-    outcome = handle_overview_module_dismiss(_request(
-        "overview.module.dismiss", {"module_key": module_key}, actor_id="1",
-    ))
+    outcome = handle_overview_module_dismiss(
+        _request(
+            "overview.module.dismiss",
+            {"module_key": module_key},
+            actor_id="1",
+        )
+    )
     assert outcome.primary_success is False
     assert outcome.error.code == "payload_invalid"
 
 
 def test_get_validates_target_and_host_facts_shape(test_db):
-    wrong_target = handle_overview_activation_get(_request(
-        "overview.activation.get",
-        target=TargetRef(kind="item", item_id=1),
-    ))
+    wrong_target = handle_overview_activation_get(
+        _request(
+            "overview.activation.get",
+            target=TargetRef(kind="item", item_id=1),
+        )
+    )
     assert wrong_target.error.code == "target_invalid"
-    bad_facts = handle_overview_activation_get(_request(
-        "overview.activation.get", {"host_facts": "yes"},
-    ))
+    bad_facts = handle_overview_activation_get(
+        _request(
+            "overview.activation.get",
+            {"host_facts": "yes"},
+        )
+    )
     assert bad_facts.error.code == "payload_invalid"
-    bad_flag = handle_overview_activation_get(_request(
-        "overview.activation.get",
-        {"host_facts": {"machine_connected": "yes"}},
-    ))
+    bad_flag = handle_overview_activation_get(
+        _request(
+            "overview.activation.get",
+            {"host_facts": {"machine_connected": "yes"}},
+        )
+    )
     assert bad_flag.error.code == "payload_invalid"

@@ -1,5 +1,6 @@
 """Onboarding and projected QA methods keep native clocks at their owners."""
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
 import json
 from datetime import datetime, timedelta
 from uuid import uuid4
@@ -36,7 +37,9 @@ def test_checklist_update_shares_native_fact_without_interpreting_evidence(
             conn=conn,
             run_id="clock-run",
             machine_id=machine,
-            observations={"machine-profile": {"status": "verified", "evidence": OPAQUE}},
+            observations={
+                "machine-profile": {"status": "verified", "evidence": OPAQUE}
+            },
             row_status={"machine-profile": "verified"},
             evidence={"machine-profile": OPAQUE},
             blocker={"machine-profile": None},
@@ -70,9 +73,14 @@ def test_overtaking_deployment_compares_exact_instants_and_formats_only_new_meta
     test_db.execute("SELECT set_config('TimeZone',%s,false)", (zone,))
     monkeypatch.setattr(writes, "utc_now", lambda: STAMP)
     runs.init_run(conn=test_db, run_id="clock-run", project_id=1, metadata=OPAQUE)
-    test_db.execute(
-        "INSERT INTO deployment_runs (id,project_id,flow,status,created_at,completed_at) VALUES ('clock-deployment',1,'clock-flow','failed',%s,%s)",
-        (STAMP, STAMP),
+    insert_deployment_run(
+        test_db,
+        id="clock-deployment",
+        project_id=1,
+        flow="clock-flow",
+        status="failed",
+        created_at=STAMP,
+        completed_at=STAMP,
     )
     test_db.commit()
     assert reconciliation.supersede_overtaken_runs(test_db) == []

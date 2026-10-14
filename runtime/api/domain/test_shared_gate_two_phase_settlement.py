@@ -8,6 +8,7 @@ never reopens a closed member, and the next replay finishes it.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
 from typing import Any
 
 from runtime.api.domain.test_deployment_delivery_close_out_notice import (
@@ -50,10 +51,13 @@ def _holder(item_id: int) -> str:
 
 def _executing_run(conn: Any, run_id: str) -> None:
     now = iso8601_now()
-    conn.execute(
-        "INSERT INTO deployment_runs (id,project_id,flow,status,created_at) "
-        "VALUES (%s,1,%s,'executing',%s)",
-        (run_id, COMPLETION_FLOW, now),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=1,
+        flow=COMPLETION_FLOW,
+        status="executing",
+        created_at=now,
     )
     from runtime.api.fixtures.completed_delivery import pin_run_delivery
 

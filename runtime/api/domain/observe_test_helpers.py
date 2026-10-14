@@ -136,11 +136,7 @@ def seed_session(
     recent_clock = instant_parameter(conn, recent_clock)
     p = _p(conn)
     conn.execute(
-        "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, workspace, offered_at, "
-        "last_heartbeat, current_item_id, current_item_set_at, recent_item_id, "
-        "recent_item_recorded_at) "
-        f"VALUES ({p}, 'claude-code', 'test', 'test', '/tmp', {p}, {p}, {p}, {p}, {p}, {p})",
+        f"INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace, offered_at, last_heartbeat, current_item_id, current_item_set_at, recent_item_id, recent_item_recorded_at) VALUES (1, {p}, 'claude-code', 'test', 'test', '/tmp', {p}, {p}, {p}, {p}, {p}, {p})",
         (
             session_id,
             now,

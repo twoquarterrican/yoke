@@ -8,6 +8,8 @@ each file under the authored line budget.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 from typing import Any
 
 from runtime.api.domain.coordination_claim_test_support import PROJECT_YOKE
@@ -34,10 +36,13 @@ DRIVER_SESSION = "sess-driver"
 
 def _driven_run(conn: Any, run_id: str, session_id: str) -> None:
     """An executing run whose live driver is *session_id*."""
-    conn.execute(
-        "INSERT INTO deployment_runs (id,project_id,flow,status,created_at) "
-        "VALUES (%s,%s,'flow-wake','executing',%s)",
-        (run_id, PROJECT_YOKE, instant_parameter(conn, utc_now())),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=PROJECT_YOKE,
+        flow="flow-wake",
+        status="executing",
+        created_at=instant_parameter(conn, utc_now()),
     )
     attach_driver(conn, run_id, session_id=session_id, pid=4242, phase=PHASE_EXECUTING)
     conn.commit()

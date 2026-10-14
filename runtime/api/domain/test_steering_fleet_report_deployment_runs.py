@@ -8,6 +8,8 @@ asserted alongside the fields, because the operator reads the prose.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import pytest
 
 from runtime.api.steering_fleet_test_helpers import NOW, compose, seed_steering_scope
@@ -21,17 +23,22 @@ STAGE_STARTED = "2026-08-26T08:00:00.000000Z"
 
 
 def _seed_run(conn, *, stage: str = STAGE, status: str = "executing") -> None:
-    conn.execute(
-        "INSERT INTO deployment_runs"
-        "(id,project_id,flow,status,current_stage,created_at,started_at,current_stage_entered_at) "
-        "VALUES (%s,1,'prod-release',%s,%s,%s,%s,%s)",
-        (RUN_ID, status, stage, STAGE_STARTED, STAGE_STARTED, STAGE_STARTED),
+    insert_deployment_run(
+        conn,
+        id=RUN_ID,
+        project_id=1,
+        flow="prod-release",
+        status=status,
+        current_stage=stage,
+        created_at=STAGE_STARTED,
+        started_at=STAGE_STARTED,
+        current_stage_entered_at=STAGE_STARTED,
     )
     conn.execute(
         "INSERT INTO deployment_stage_receipts"
         "(run_id,stage_name,attempt_number,correlation_id,target_kind,"
         "target_name,status,executor,created_at) "
-        "VALUES (%s,%s,1,%s,'environment','prod','running','operator',%s)",
+        "VALUES (%s,%s,1,%s,'persistent_environment','prod','pending','operator',%s)",
         (RUN_ID, stage, f"{RUN_ID}:{stage}:1", STAGE_STARTED),
     )
 

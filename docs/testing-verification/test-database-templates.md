@@ -16,6 +16,10 @@ compares every public trigger and table constraint with a freshly initialized
 production database and checks the migration birth ledger. Verdict evidence
 tests exercise the real binding under the immutable-verdict trigger.
 
+Seed every foreign-key parent and required clock through the shared helpers.
+When a real constraint exposes a runtime defect, fix the runtime operation;
+removing a task must retire its file scope and bindings in the same transaction.
+
 Other schema callables retain separate flavors by callable identity.
 Different functions with the same name remain separate. Callable objects and
 closures retain their identity for the worker's lifetime. Use a distinct

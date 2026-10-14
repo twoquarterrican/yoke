@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
 import pytest
 
 from runtime.api.fixtures.backlog_inserts import insert_item
@@ -72,10 +73,13 @@ def test_primary_lane_filters_role_and_excludes_released_lanes(test_db, lanes):
 def test_deployment_member_reads_newer_merged_integration_lane(test_db, lanes):
     item_id, rows, _ = lanes
     run_id = "run-primary-lane-selection"
-    test_db.execute(
-        "INSERT INTO deployment_runs(id,project_id,flow,status,created_at) "
-        "VALUES (%s,1,'test-flow','created',%s)",
-        (run_id, "2026-10-01T00:00:00Z"),
+    insert_deployment_run(
+        test_db,
+        id=run_id,
+        project_id=1,
+        flow="test-flow",
+        status="created",
+        created_at="2026-10-01T00:00:00Z",
     )
     test_db.execute(
         "INSERT INTO deployment_run_items(run_id,item_id,added_at) VALUES (%s,%s,%s)",

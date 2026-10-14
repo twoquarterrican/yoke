@@ -28,12 +28,7 @@ def drift_db(tmp_path):
         try:
             p = "%s" if db_backend.connection_is_postgres(conn) else "?"
             conn.execute(
-                f"""INSERT INTO harness_sessions
-                   (session_id, executor, provider, model, execution_level,
-                    executor_version, machine_id, workspace, mode, offered_at, last_heartbeat)
-                   VALUES
-                   ('sess-drift', 'codex', 'openai', 'test', 'primary', NULL, NULL,
-                    {p}, 'test', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')""",
+                f"INSERT INTO harness_sessions\n                   (project_id, session_id, executor, provider, model, execution_level,\n                    executor_version, machine_id, workspace, mode, offered_at, last_heartbeat)\n                   VALUES\n                   (1, 'sess-drift', 'codex', 'openai', 'test', 'primary', NULL, NULL,\n                    {p}, 'test', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')",
                 (str(tmp_path),),
             )
             conn.commit()

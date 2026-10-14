@@ -57,10 +57,7 @@ def _operating_actor_id(conn) -> int:
 
 def _insert_session(conn, actor_id: int) -> None:
     conn.execute(
-        "INSERT INTO harness_sessions "
-        "(session_id, executor, provider, model, execution_level, workspace, "
-        "offered_at, last_heartbeat, actor_id) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        "INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, execution_level, workspace, offered_at, last_heartbeat, actor_id) VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (
             SESSION_ID,
             "codex",

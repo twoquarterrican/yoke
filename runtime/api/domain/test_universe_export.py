@@ -185,7 +185,7 @@ def test_resolve_destination_routes_directory_vs_file(tmp_path):
 
 def test_export_refuses_database_without_org_card(tmp_path):
     with _schema_loaded_universe() as (conn, dsn):
-        conn.execute("DELETE FROM organizations")
+        conn.execute("TRUNCATE organizations CASCADE")
         conn.commit()
         with pytest.raises(ux.UniverseExportError) as excinfo:
             ux.export_universe(dsn=dsn, out=tmp_path)

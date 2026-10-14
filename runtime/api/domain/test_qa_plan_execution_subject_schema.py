@@ -29,7 +29,7 @@ def test_subject_convergence_is_idempotent(test_db) -> None:
 
 def test_boot_convergence_expands_exact_legacy_postgres_shape(test_db) -> None:
     test_db.execute("DROP TABLE qa_plan_execution_results")
-    test_db.execute("DROP TABLE qa_plan_executions")
+    test_db.execute("DROP TABLE qa_plan_executions CASCADE")
     test_db.execute(
         """
         CREATE TABLE qa_plan_executions (

@@ -31,6 +31,11 @@ def project_db(monkeypatch):
         conn = pg_testdb.connect_test_database(db_name)
         try:
             initialize_test_schema(conn)
+            # Model the nullable legacy setting this repair consumes.
+            conn.execute(
+                "ALTER TABLE projects ALTER COLUMN github_sync_mode DROP NOT NULL"
+            )
+            conn.execute("UPDATE projects SET github_sync_mode=NULL")
             conn.commit()
         finally:
             conn.close()
@@ -151,14 +156,11 @@ def test_repair_converges_unbound_projections_idempotently(project_db):
             ("example-org/externalwebapp",),
         )
         conn.execute(
-            "INSERT INTO project_capabilities (project_id, type, settings) "
-            "VALUES (2, 'github', %s)",
+            "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 2, 'github', %s)",
             ('{"repo_owner":"example-org","repo_name":"externalwebapp"}',),
         )
         conn.execute(
-            "INSERT INTO capability_secrets "
-            "(project_id, type, key, value, source) "
-            "VALUES (2, 'github', 'token', 'stranded-token', 'literal')"
+            "INSERT INTO capability_secrets (created_at, project_id, type, key, value, source) VALUES ('2026-01-01T00:00:00Z', 2, 'github', 'token', 'stranded-token', 'literal')"
         )
         conn.commit()
 

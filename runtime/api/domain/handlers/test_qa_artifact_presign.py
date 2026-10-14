@@ -96,8 +96,7 @@ def _seed(
         )
     if region:
         conn.execute(
-            "INSERT INTO project_capabilities (project_id, type, settings) "
-            "VALUES (1, 'aws-admin', %s)",
+            "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, 'aws-admin', %s)",
             (json.dumps({"region": region}),),
         )
     conn.commit()

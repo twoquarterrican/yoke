@@ -41,12 +41,15 @@ def test_run_writes_bind_native_clocks_and_preserve_capture_bytes(test_db, zone)
     assert tuple(before) == (instant, None, instant, evidence)
     endpoint = instant + timedelta(microseconds=1)
     update_qa_run(
-        test_db, written.run_id, {"verdict": "fail"}, default_completed_at=endpoint
+        test_db,
+        written.run_id,
+        {"verdict": "fail", "verdict_reason": "captured"},
+        default_completed_at=endpoint,
     )
     update_qa_run(
         test_db,
         written.run_id,
-        {"verdict_reason": "captured"},
+        {},
         default_completed_at=endpoint + timedelta(days=1),
     )
     after = test_db.execute(

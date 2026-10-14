@@ -170,6 +170,10 @@ def apply_env(tmp_db: str, tmp_path: Path, monkeypatch):
     conn = _conn(tmp_db)
     try:
         execute_schema_script(conn, _EXTRA_DDL)
+        from runtime.api.fixtures.dispatch_actor import register_session_actor
+
+        for session_id in ("session-a", "session-b", "session-history", "test-session"):
+            register_session_actor(conn, session_id)
         p = _placeholder(conn)
         register_machine_checkout(
             tmp_path / "machine-config", worktree, SEED_PROJECT_IDS["yoke"]

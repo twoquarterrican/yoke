@@ -21,12 +21,20 @@ from yoke_core.domain.qa_review_requirement_facts import (
 
 def _member_requirement(conn, *, item_id: int, run_id: str, plan_id: int) -> int:
     """One release's check recorded for one member item, as the schema has it."""
-    conn.execute(
-        "INSERT INTO deployment_runs (id, project_id, flow, status, created_at) "
-        "VALUES (%s, 1, 'yoke-hosted-stage', 'executing', '2026-07-26T00:00:00Z') "
-        "ON CONFLICT (id) DO NOTHING",
-        (run_id,),
-    )
+    from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
+    if (
+        conn.execute("SELECT 1 FROM deployment_runs WHERE id=%s", (run_id,)).fetchone()
+        is None
+    ):
+        insert_deployment_run(
+            conn,
+            id=run_id,
+            project_id=1,
+            flow="yoke-hosted-stage",
+            status="executing",
+            created_at="2026-07-26T00:00:00Z",
+        )
     requirement_id = conn.execute(
         "INSERT INTO qa_requirements "
         "(deployment_run_id, deployment_stage, deployment_member_item_id, "

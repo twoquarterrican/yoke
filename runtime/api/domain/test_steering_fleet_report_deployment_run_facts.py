@@ -8,6 +8,8 @@ read does not grow as a sequence of per-run queries.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import json
 import time
 from typing import Any
@@ -52,11 +54,16 @@ def _seed_run(
     started_at: str = STARTED,
     entered_at: str | None = STARTED,
 ) -> None:
-    conn.execute(
-        "INSERT INTO deployment_runs"
-        "(id,project_id,flow,status,current_stage,created_at,started_at,current_stage_entered_at) "
-        "VALUES (%s,1,'prod-release',%s,%s,%s,%s,%s)",
-        (run_id, status, stage, started_at, started_at, entered_at),
+    insert_deployment_run(
+        conn,
+        id=run_id,
+        project_id=1,
+        flow="prod-release",
+        status=status,
+        current_stage=stage,
+        created_at=started_at,
+        started_at=started_at,
+        current_stage_entered_at=entered_at,
     )
     if receipt_at is None:
         return
@@ -64,7 +71,7 @@ def _seed_run(
         "INSERT INTO deployment_stage_receipts"
         "(run_id,stage_name,attempt_number,correlation_id,target_kind,"
         "target_name,status,executor,created_at) "
-        "VALUES (%s,%s,1,%s,'environment','prod','running','operator',%s)",
+        "VALUES (%s,%s,1,%s,'persistent_environment','prod','pending','operator',%s)",
         (run_id, stage, f"{run_id}:{stage}:1", receipt_at),
     )
 
@@ -178,7 +185,7 @@ def test_a_receipt_from_a_later_stage_never_dates_the_current_one(test_db) -> No
         "INSERT INTO deployment_stage_receipts"
         "(run_id,stage_name,attempt_number,correlation_id,target_kind,"
         "target_name,status,executor,created_at,completed_at) "
-        "VALUES (%s,%s,1,%s,'environment','prod','running','operator',%s,%s)",
+        "VALUES (%s,%s,1,%s,'persistent_environment','prod','pending','operator',%s,%s)",
         (
             "run-20260826-021",
             "post-qa-promotion",

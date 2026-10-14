@@ -51,7 +51,8 @@ def _seed_survey(conn, *, item_id, paths=(SURVEYED_PATH,), status=None, frozen=0
         **({"status": status} if status else {}),
     )
     record_conflict_survey(
-        conn, survey_conflicts(conn, item_id=item_id, touch_paths=list(paths)),
+        conn,
+        survey_conflicts(conn, item_id=item_id, touch_paths=list(paths)),
     )
 
 
@@ -93,32 +94,44 @@ def _set_parent(conn, *, child_id, parent_id):
 
 class TestSurveyAdvisory:
     def test_overlap_reports_routes_but_registers_and_activates(
-        self, test_db, monkeypatch,
+        self,
+        test_db,
+        monkeypatch,
     ):
         _seed_survey(test_db, item_id=2260, status="implementing")
         insert_item(test_db, id=2261, workflow_id="issue")
         seed_target(test_db, item_id=2261, path=SURVEYED_PATH)
         actor_id = seed_human_actor(test_db)
         monkeypatch.setattr(
-            claims_path_handler, "_connect_rw", lambda: nullcontext(test_db),
+            claims_path_handler,
+            "_connect_rw",
+            lambda: nullcontext(test_db),
         )
-        outcome = claims_path_handler.handle_register(FunctionCallRequest(
-            function="claims.path.register",
-            actor=ActorContext(
-                actor_id=str(actor_id), session_id="survey-advisory-test",
-            ),
-            target=TargetRef(kind="item", item_id=2261),
-            payload={
-                "actor_id": actor_id,
-                "integration_target": "main",
-                "paths": [SURVEYED_PATH],
-            },
-        ))
+        from runtime.api.fixtures.dispatch_actor import register_session_actor
+
+        register_session_actor(test_db, "survey-advisory-test")
+        outcome = claims_path_handler.handle_register(
+            FunctionCallRequest(
+                function="claims.path.register",
+                actor=ActorContext(
+                    actor_id=str(actor_id),
+                    session_id="survey-advisory-test",
+                ),
+                target=TargetRef(kind="item", item_id=2261),
+                payload={
+                    "actor_id": actor_id,
+                    "integration_target": "main",
+                    "paths": [SURVEYED_PATH],
+                },
+            )
+        )
         assert outcome.primary_success, outcome.error
         claim_id = int(outcome.result_payload["claim_id"])
         advisory = str(outcome.result_payload["advisory"])
         activate(
-            test_db, claim_id=claim_id, base_commit_sha="candidate-base",
+            test_db,
+            claim_id=claim_id,
+            base_commit_sha="candidate-base",
         )
 
         assert "YOK-2260 (implementing)" in advisory
@@ -126,7 +139,8 @@ class TestSurveyAdvisory:
         assert SURVEY_ADVISORY_PROCEED in advisory
         assert SURVEY_ADVISORY_YIELD in advisory
         state = test_db.execute(
-            "SELECT state FROM path_claims WHERE id = %s", (claim_id,),
+            "SELECT state FROM path_claims WHERE id = %s",
+            (claim_id,),
         ).fetchone()[0]
         assert state == "active"
 
@@ -136,7 +150,10 @@ class TestSurveyAdvisory:
         _seed_survey(test_db, item_id=2262, paths=(surveyed,))
         insert_item(test_db, id=2263, workflow_id="issue")
         root_id = seed_target(
-            test_db, item_id=2263, path="packages", kind="directory",
+            test_db,
+            item_id=2263,
+            path="packages",
+            kind="directory",
         )
         package_id = seed_target(
             test_db,
@@ -151,12 +168,15 @@ class TestSurveyAdvisory:
         assert {root_id, package_id, target_id} <= set(
             expand_lineage(test_db, [target_id])
         )
-        assert survey_overlaps(
-            test_db,
-            target_ids=[target_id],
-            integration_target="main",
-            candidate_item_id=2263,
-        ) == []
+        assert (
+            survey_overlaps(
+                test_db,
+                target_ids=[target_id],
+                integration_target="main",
+                candidate_item_id=2263,
+            )
+            == []
+        )
         assert _register(test_db, item_id=2263, target_id=target_id) > 0
 
     def test_terminal_and_frozen_surveys_are_dormant(self, test_db):
@@ -165,37 +185,44 @@ class TestSurveyAdvisory:
         insert_item(test_db, id=2266, workflow_id="issue")
         target_id = seed_target(test_db, item_id=2266, path=SURVEYED_PATH)
 
-        assert survey_overlaps(
-            test_db,
-            target_ids=[target_id],
-            integration_target="main",
-            candidate_item_id=2266,
-        ) == []
+        assert (
+            survey_overlaps(
+                test_db,
+                target_ids=[target_id],
+                integration_target="main",
+                candidate_item_id=2266,
+            )
+            == []
+        )
 
     def test_claim_without_an_owning_item_consults_no_survey(self, test_db):
         _seed_survey(test_db, item_id=2267)
         insert_item(test_db, id=2268, workflow_id="issue")
         target_id = seed_target(test_db, item_id=2268, path=SURVEYED_PATH)
 
-        assert survey_overlaps(
-            test_db,
-            target_ids=[target_id],
-            integration_target="main",
-            candidate_item_id=None,
-        ) == []
+        assert (
+            survey_overlaps(
+                test_db,
+                target_ids=[target_id],
+                integration_target="main",
+                candidate_item_id=None,
+            )
+            == []
+        )
 
     def test_two_shared_paths_agree_with_conflict_survey_blockers(self, test_db):
         snapshot = (
-            "packages/yoke-core/src/yoke_core/domain/"
-            "qa_plan_requirement_snapshot.py"
+            "packages/yoke-core/src/yoke_core/domain/qa_plan_requirement_snapshot.py"
         )
         tables = (
-            "packages/yoke-core/src/yoke_core/domain/"
-            "schema_api_context_tables_qa.py"
+            "packages/yoke-core/src/yoke_core/domain/schema_api_context_tables_qa.py"
         )
         shared = (snapshot, tables)
         _seed_survey(
-            test_db, item_id=2269, paths=shared, status="reviewing-implementation",
+            test_db,
+            item_id=2269,
+            paths=shared,
+            status="reviewing-implementation",
         )
         insert_item(test_db, id=2270, workflow_id="dash")
         record_conflict_survey(
@@ -220,7 +247,9 @@ class TestSurveyAdvisory:
         blocker_paths = {
             row.path
             for row in survey_conflicts(
-                test_db, item_id=2270, touch_paths=list(shared),
+                test_db,
+                item_id=2270,
+                touch_paths=list(shared),
             ).blockers
             if row.kind == "survey_scope" and row.owner_item_id == 2269
         }
@@ -233,7 +262,10 @@ class TestClaimDoorLock:
         insert_item(test_db, id=2281, workflow_id="issue")
         target_id = seed_target(test_db, item_id=2280, path="src/shared.py")
         seed_item_claim(
-            test_db, item_id=2280, target_ids=(target_id,), state="active",
+            test_db,
+            item_id=2280,
+            target_ids=(target_id,),
+            state="active",
         )
 
         with pytest.raises(IncompatibleOverlap, match="active claim"):
@@ -245,7 +277,10 @@ class TestClaimDoorLock:
         insert_item(test_db, id=2283, workflow_id="issue")
         target_id = seed_target(test_db, item_id=2282, path=path)
         seed_item_claim(
-            test_db, item_id=2282, target_ids=(target_id,), state="active",
+            test_db,
+            item_id=2282,
+            target_ids=(target_id,),
+            state="active",
         )
         _link_coordination(
             test_db,
@@ -258,7 +293,8 @@ class TestClaimDoorLock:
         activate(test_db, claim_id=claim_id, base_commit_sha="coordinated-base")
 
         state = test_db.execute(
-            "SELECT state FROM path_claims WHERE id = %s", (claim_id,),
+            "SELECT state FROM path_claims WHERE id = %s",
+            (claim_id,),
         ).fetchone()[0]
         assert state == "active"
 
@@ -266,12 +302,18 @@ class TestClaimDoorLock:
         insert_item(test_db, id=2284, workflow_id="issue")
         insert_item(test_db, id=2285, workflow_id="issue")
         directory_id = seed_target(
-            test_db, item_id=2284, path="src", kind="directory",
+            test_db,
+            item_id=2284,
+            path="src",
+            kind="directory",
         )
         file_id = seed_target(test_db, item_id=2285, path="src/nested.py")
         _set_parent(test_db, child_id=file_id, parent_id=directory_id)
         seed_item_claim(
-            test_db, item_id=2284, target_ids=(directory_id,), state="active",
+            test_db,
+            item_id=2284,
+            target_ids=(directory_id,),
+            state="active",
         )
 
         with pytest.raises(IncompatibleOverlap):

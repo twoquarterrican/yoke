@@ -49,7 +49,7 @@ def _seed_run(conn, *, performed_by: str) -> int:
         qa_phase="verification",
         blocking_mode="blocking",
         success_policy="{}",
-        method_id="agent-mission",
+        method_id="exploratory-mission",
     )
     with patch("yoke_core.domain.qa_events.emit_qa_run_event"):
         outcome = handle_qa_run_add(
@@ -130,8 +130,7 @@ def test_mission_s3_handle_outside_tenant_prefix_is_refused() -> None:
                             "backend": "s3",
                             "bucket": "yoke-prod-artifacts",
                             "key": (
-                                f"tenants/8/qa-artifacts/yoke/42/{run_id}/"
-                                "onboard.log"
+                                f"tenants/8/qa-artifacts/yoke/42/{run_id}/onboard.log"
                             ),
                         },
                     }

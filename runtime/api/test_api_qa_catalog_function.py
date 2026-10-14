@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.dispatch_actor import register_session_actor
 from runtime.api.fixtures.backlog_inserts import insert_item
 from runtime.api.fixtures.pg_testdb import test_database
 from runtime.api.qa_catalog_test_support import (
@@ -202,6 +203,7 @@ def test_machine_methods_and_plan_cases_project_the_active_serial_lease() -> Non
             "updated_at=EXCLUDED.updated_at",
             (MACHINE_TYPE, "2026-07-26T16:00:00Z", "2026-07-26T16:00:00Z"),
         )
+        register_session_actor(conn, "machine-session")
         conn.execute(
             "INSERT INTO work_claims(session_id,target_kind,scope,claimed_at,last_heartbeat) VALUES('machine-session','item',%s,%s,%s)",
             (
@@ -210,6 +212,7 @@ def test_machine_methods_and_plan_cases_project_the_active_serial_lease() -> Non
                 "2026-07-26T16:06:00Z",
             ),
         )
+        register_session_actor(conn, "machine-session")
         conn.execute(
             "INSERT INTO work_claims("
             "id,session_id,target_kind,scope,claimed_at,last_heartbeat,"

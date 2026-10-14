@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+
 from yoke_core.domain.item_ref_resolution import resolve_item_ref
 
 import json
@@ -60,6 +62,7 @@ def test_local_merge_item_closes_only_with_target_ancestry_proof(
     )
     ref = project_identity.render_item_ref(test_db, item_id)
     target = make_item_target(item_id)
+    register_session_actor(test_db, session_id)
     test_db.execute(
         "INSERT INTO work_claims (session_id, target_kind, scope, claim_type, claimed_at, last_heartbeat) "
         "VALUES (%s, %s, %s, 'exclusive', %s, %s)",

@@ -54,33 +54,7 @@ CREATE TABLE IF NOT EXISTS project_capabilities (
     UNIQUE(project_id, type)
 );
 
-CREATE TABLE IF NOT EXISTS migration_audit (
-    id INTEGER PRIMARY KEY,
-    migration_name TEXT NOT NULL,
-    description TEXT,
-    tables_declared TEXT,
-    expected_deltas TEXT,
-    pre_row_counts TEXT,
-    post_row_counts TEXT,
-    pre_fk_violations INTEGER,
-    post_fk_violations INTEGER,
-    backup_path TEXT,
-    state TEXT,
-    failure_reason TEXT,
-    exception_reason TEXT,
-    source_fingerprint TEXT,
-    rehearsed_at TIMESTAMPTZ,
-    lease_id INTEGER,
-    test_copy_path TEXT,
-    baseline_verify_result TEXT,
-    author_verify_result TEXT,
-    session_id TEXT,
-    model_name TEXT,
-    project_id INTEGER,
-    started_at TIMESTAMPTZ,
-    completed_at TIMESTAMPTZ,
-    duration_ms INTEGER
-);
+
 """
 
 

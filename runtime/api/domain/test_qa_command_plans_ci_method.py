@@ -28,8 +28,7 @@ from yoke_core.domain.qa_command_plans import (
 
 def _declare_ci_workflow(conn) -> None:
     conn.execute(
-        "INSERT INTO project_capabilities (project_id, type, settings) "
-        "VALUES (1, %s, %s)",
+        "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
         (CI_WORKFLOW_CAPABILITY_TYPE, json.dumps({"workflow_file": "ci.yml"})),
     )
     conn.commit()
@@ -45,7 +44,10 @@ def test_both_command_bindings_are_registered_scopes() -> None:
 def test_locally_bound_commands_are_listed() -> None:
     with test_database() as conn:
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
 
@@ -58,11 +60,17 @@ def test_ci_bound_commands_are_still_listed() -> None:
     with test_database() as conn:
         _declare_ci_workflow(conn)
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="python3 -m pytest runtime/ tests/",
         )
         bound = conn.execute(
@@ -95,12 +103,13 @@ def test_verification_health_check_passes_on_a_ci_bound_project() -> None:
     with test_database() as conn:
         _declare_ci_workflow(conn)
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
-        slug = conn.execute(
-            "SELECT slug FROM projects WHERE id=1"
-        ).fetchone()["slug"]
+        slug = conn.execute("SELECT slug FROM projects WHERE id=1").fetchone()["slug"]
         collector = _Collector()
         hc_project_verification_configured(conn, None, collector)
 

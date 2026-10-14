@@ -79,7 +79,7 @@ def seed_fixture_operating_actor(conn: Any) -> int:
 def test_db():
     """Connection with the full Yoke schema on a disposable Postgres DB.
 
-    Seeds the canonical yoke-core + local human actors, and records the
+    Carries the born human actor, and records the
     operating-actor binding beside them, so writer tests resolving the
     default actor see the same post-init shape production ships.
     """

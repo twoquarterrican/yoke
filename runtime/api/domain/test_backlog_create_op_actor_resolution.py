@@ -49,9 +49,7 @@ def _no_ambient_session(monkeypatch: pytest.MonkeyPatch) -> None:
 def _seed_session(conn: Any, session_id: str, actor_id: Optional[int]) -> None:
     now = iso8601_now()
     conn.execute(
-        "INSERT INTO harness_sessions (session_id, executor, provider, model, "
-        "workspace, offered_at, last_heartbeat, actor_id) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+        "INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace, offered_at, last_heartbeat, actor_id) VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s)",
         (
             session_id,
             "claude-code",

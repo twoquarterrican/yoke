@@ -183,11 +183,16 @@ def test_the_report_names_an_unpassable_pin_and_moves_the_fingerprint(
     test_db, monkeypatch
 ) -> None:
     conn = seed_steering_scope(test_db)
-    conn.execute(
-        "INSERT INTO deployment_runs"
-        "(id,project_id,flow,status,current_stage,release_lineage,created_at,started_at) "
-        "VALUES (%s,1,'prod-release','executing','item-qa',%s,%s,%s)",
-        (RUN_ID, PIN, "2026-08-26T08:00:00Z", "2026-08-26T08:00:00Z"),
+    insert_deployment_run(
+        conn,
+        id=RUN_ID,
+        project_id=1,
+        flow="prod-release",
+        status="executing",
+        current_stage="item-qa",
+        release_lineage=PIN,
+        created_at="2026-08-26T08:00:00Z",
+        started_at="2026-08-26T08:00:00Z",
     )
     conn.execute(
         "INSERT INTO qa_requirements"
@@ -286,8 +291,6 @@ def test_a_bound_project_member_is_asked_against_its_own_projects_pin(
         test_db, run_id=RUN_ID, containment_cls=_walk(NOT_CONTAINED, built=built)
     )
 
-    # Never the run's own repository and lineage: a Platform merge compared
-    # against a Yoke commit is a 404, not a verdict.
     assert built == [(platform_id, PLATFORM_PIN)]
     assert [item.requirement_id for item in diagnosis.unpassable] == [requirement_id]
     assert diagnosis.unpassable[0].pin == PLATFORM_PIN

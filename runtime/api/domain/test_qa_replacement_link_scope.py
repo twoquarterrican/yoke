@@ -152,6 +152,9 @@ def test_cancelling_a_run_retracts_its_outstanding_member_copies(test_db, surfac
     if surface == "terminalize":
         from yoke_core.domain.deployment_run_terminalization import terminalize_run_on
 
+        test_db.execute(
+            "INSERT INTO actors(id,kind,created_at) VALUES(2,'human','2026-01-01T00:00:00Z') ON CONFLICT DO NOTHING"
+        )
         terminalize_run_on(
             test_db,
             RUN,

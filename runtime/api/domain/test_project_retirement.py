@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import json
 import re
 
@@ -136,10 +138,13 @@ def test_open_item_refusal_uses_pinned_terminal_membership(conn):
 
 @pytest.mark.parametrize("status", ["created", "executing"])
 def test_in_flight_deployment_refuses(conn, status):
-    conn.execute(
-        "INSERT INTO deployment_runs (id,project_id,flow,status,created_at) "
-        "VALUES ('run-1',30,'fixture-flow',%s,'2026-01-01')",
-        (status,),
+    insert_deployment_run(
+        conn,
+        id="run-1",
+        project_id=30,
+        flow="fixture-flow",
+        status=status,
+        created_at="2026-01-01",
     )
     with pytest.raises(
         ProjectRetirementError, match=f"deployment run run-1 \\({status}\\)"

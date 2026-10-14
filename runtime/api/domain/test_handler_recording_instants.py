@@ -43,10 +43,7 @@ def test_stale_inventory_uses_exact_native_heartbeat_and_tool_cutoffs(
         ids, [before, cutoff, before, before], [None, None, before, cutoff]
     ):
         test_db.execute(
-            "INSERT INTO harness_sessions "
-            "(session_id,executor,provider,model,workspace,offered_at,"
-            "last_heartbeat,last_tool_call_at) "
-            "VALUES (%s,'codex','openai','clock-test','/tmp',%s,%s,%s)",
+            "INSERT INTO harness_sessions (project_id, session_id,executor,provider,model,workspace,offered_at,last_heartbeat,last_tool_call_at) VALUES (1, %s,'codex','openai','clock-test','/tmp',%s,%s,%s)",
             (session, MOMENT, heartbeat, tool),
         )
     rows = inventory.cmd_stale(test_db).splitlines()

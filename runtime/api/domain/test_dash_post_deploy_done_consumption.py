@@ -35,8 +35,7 @@ from yoke_core.domain.qa_workflow_binding_validation import (
 
 def _bind_original(conn, *, item_id: int) -> int:
     conn.execute(
-        "INSERT INTO project_capabilities(project_id,type) "
-        "VALUES(1,'browser-control') ON CONFLICT DO NOTHING"
+        "INSERT INTO project_capabilities(created_at, project_id,type) VALUES('2026-01-01T00:00:00Z', 1,'browser-control') ON CONFLICT DO NOTHING"
     )
     original_id = _original_requirement(
         conn, item_id=item_id, method_id="browser-inspection"

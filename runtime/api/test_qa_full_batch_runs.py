@@ -199,6 +199,9 @@ class TestRunAddBatch:
         conn = _conn(db_path)
         create_actor_identity_tables(conn)
         create_session_tables(conn)
+        from yoke_core.domain.schema_init_columns import apply_harness_session_columns
+
+        apply_harness_session_columns(conn)
         actor_id = actors.seed_canonical_human(
             conn,
             local_human_name="qa-batch-event-test-human",

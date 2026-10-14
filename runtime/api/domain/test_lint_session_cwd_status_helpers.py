@@ -9,6 +9,8 @@ status-gate matrix.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+
 from yoke_contracts.timestamps import parse_instant
 
 import psycopg
@@ -117,6 +119,7 @@ class TestValidatorFailOpen:
                 parse_instant("2026-01-01T00:00:00Z"),
             ),
         )
+        register_session_actor(c, "sid-1")
         c.execute(
             "INSERT INTO work_claims (session_id, target_kind, scope) "
             "VALUES (%s, 'item', %s)",

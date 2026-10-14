@@ -71,11 +71,7 @@ def test_unbind_then_rebind_changes_only_the_selected_project(monkeypatch) -> No
         conn = pg_testdb.connect_test_database(db_name)
         try:
             conn.execute(
-                "INSERT INTO capability_secrets "
-                "(project_id, type, key, value, source) VALUES "
-                "(2, ' GitHub ', 'token', 'retired-externalwebapp-token', 'literal'), "
-                "(2, 'docker', 'registry', 'keep-externalwebapp-registry', 'literal'), "
-                "(1, 'github', 'token', 'keep-yoke-token', 'literal')"
+                "INSERT INTO capability_secrets (created_at, project_id, type, key, value, source) VALUES ('2026-01-01T00:00:00Z', 2, ' GitHub ', 'token', 'retired-externalwebapp-token', 'literal'), (2, 'docker', 'registry', 'keep-externalwebapp-registry', 'literal'), (1, 'github', 'token', 'keep-yoke-token', 'literal')"
             )
             conn.commit()
         finally:

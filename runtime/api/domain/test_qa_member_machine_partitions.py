@@ -224,9 +224,14 @@ def test_completed_capture_without_current_passing_evidence_is_retried(
     _seed(test_db, tmp_path, monkeypatch)
     first = _begin(test_db)
     requirement_id = _complete_case(test_db, first)
-    test_db.execute(
-        "UPDATE qa_runs SET verdict='fail' WHERE qa_requirement_id=%s",
-        (requirement_id,),
+    from runtime.api.fixtures.backlog_inserts import insert_qa_run
+
+    insert_qa_run(
+        test_db,
+        qa_requirement_id=requirement_id,
+        verdict="fail",
+        qa_kind="plan_case",
+        performed_by="worktree_run",
     )
     test_db.commit()
     retry = _begin(test_db)

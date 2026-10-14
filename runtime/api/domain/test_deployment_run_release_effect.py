@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from runtime.api.fixtures.backlog_inserts import insert_deployment_run
+
 import pytest
 
 from yoke_core.domain.approval import FlowStage
@@ -124,10 +126,13 @@ def test_the_first_sample_shape_reaches_deploys_nothing(test_db):
     a run carries is a different question from what its flow can reach, so an
     unanswerable one must not push the consequence off `deploys_nothing`.
     """
-    test_db.execute(
-        "INSERT INTO deployment_runs(id, project_id, flow, status, created_at) "
-        "VALUES ('run-effect-first', 1, 'approval-only-proof', 'executing', "
-        "'2026-09-10T00:00:00Z')"
+    insert_deployment_run(
+        test_db,
+        id="run-effect-first",
+        project_id=1,
+        flow="approval-only-proof",
+        status="executing",
+        created_at="2026-09-10T00:00:00Z",
     )
     carried = derive_carried_work(test_db, "run-effect-first")
     assert carried["derivation"]["contents_known"] is False

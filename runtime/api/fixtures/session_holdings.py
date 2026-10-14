@@ -8,6 +8,8 @@ Public names are shared by roster, claim lifecycle and QA suites.
 
 from __future__ import annotations
 
+from runtime.api.fixtures.dispatch_actor import register_session_actor
+
 from datetime import datetime, timedelta
 
 from yoke_contracts.timestamps import parse_instant, utc_now
@@ -77,6 +79,7 @@ def insert_item_claim(
 ) -> None:
     released = _optional_parameter(conn, released_at)
     now = instant_parameter(conn, instant_ago())
+    register_session_actor(conn, session_id)
     conn.execute(
         "INSERT INTO work_claims ("
         "session_id, target_kind, scope, claimed_at, last_heartbeat, reason, "
@@ -105,6 +108,7 @@ def insert_steering_claim(
 ) -> int:
     released = _optional_parameter(conn, released_at)
     now = instant_parameter(conn, instant_ago())
+    register_session_actor(conn, session_id)
     row = conn.execute(
         "INSERT INTO work_claims ("
         "session_id, target_kind, scope, claimed_at, last_heartbeat, reason, "
@@ -176,6 +180,7 @@ def insert_lease(
         target = make_migration_serialization_target(1, resource, int(owner_item_id))
     else:
         target = make_qa_admission_target(resource)
+    register_session_actor(conn, session_id)
     conn.execute(
         "INSERT INTO work_claims ("
         "session_id, target_kind, scope, claimed_at, last_heartbeat, "

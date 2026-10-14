@@ -88,6 +88,8 @@ class TestActorsList:
         # Build a DB with empty actors table — schema only, no canonical seeding.
         with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
             monkeypatch.setenv("YOKE_DB", str(db_path))
+            with db_backend.connect() as conn:
+                conn.execute("TRUNCATE actors CASCADE")
 
             rc, stdout = _capture_stdout(cmd_actors_list, [])
             assert rc == 0

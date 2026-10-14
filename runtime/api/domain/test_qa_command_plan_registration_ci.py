@@ -22,8 +22,7 @@ from yoke_core.domain.qa_command_plan_registration import (
 
 def _declare_ci_workflow(conn, workflow_file: str) -> None:
     conn.execute(
-        "INSERT INTO project_capabilities (project_id, type, settings) "
-        "VALUES (1, %s, %s)",
+        "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
         (CI_WORKFLOW_CAPABILITY_TYPE, json.dumps({"workflow_file": workflow_file})),
     )
     conn.commit()
@@ -54,7 +53,10 @@ def _case(conn, plan_id: int) -> dict:
 def test_project_without_a_declared_workflow_keeps_the_local_runner() -> None:
     with test_database() as conn:
         result = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="python3 -m pytest",
         )
         case = _case(conn, result["plan_id"])
@@ -69,7 +71,10 @@ def test_declared_workflow_routes_repository_scopes_to_ci() -> None:
     with test_database() as conn:
         _declare_ci_workflow(conn, "yoke-ci.yml")
         result = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="python3 -m pytest",
         )
         case = _case(conn, result["plan_id"])
@@ -87,7 +92,10 @@ def test_quick_scope_routes_to_ci_alongside_full() -> None:
     with test_database() as conn:
         _declare_ci_workflow(conn, "yoke-ci.yml")
         result = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
         case = _case(conn, result["plan_id"])
@@ -102,7 +110,10 @@ def test_deployed_environment_scopes_stay_local() -> None:
         _declare_ci_workflow(conn, "yoke-ci.yml")
         for scope in ("e2e", "smoke"):
             result = ensure_registered_command_plan(
-                conn, project_id=1, project="yoke", scope=scope,
+                conn,
+                project_id=1,
+                project="yoke",
+                scope=scope,
                 command="python3 -m pytest tests/e2e",
                 requires_base_url=True,
             )
@@ -115,16 +126,20 @@ def test_deployed_environment_scopes_stay_local() -> None:
 def test_re_registration_moves_an_existing_plan_onto_ci() -> None:
     with test_database() as conn:
         first = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="python3 -m pytest",
         )
-        assert _case(conn, first["plan_id"])["method_id"] == (
-            LOCAL_COMMAND_METHOD_ID
-        )
+        assert _case(conn, first["plan_id"])["method_id"] == (LOCAL_COMMAND_METHOD_ID)
 
         _declare_ci_workflow(conn, "yoke-ci.yml")
         second = ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="full",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="full",
             command="python3 -m pytest",
         )
         case = _case(conn, second["plan_id"])
@@ -136,8 +151,7 @@ def test_re_registration_moves_an_existing_plan_onto_ci() -> None:
 def test_declared_workflow_read_tolerates_a_malformed_settings_payload() -> None:
     with test_database() as conn:
         conn.execute(
-            "INSERT INTO project_capabilities (project_id, type, settings) "
-            "VALUES (1, %s, %s)",
+            "INSERT INTO project_capabilities (created_at, project_id, type, settings) VALUES ('2026-01-01T00:00:00Z', 1, %s, %s)",
             (CI_WORKFLOW_CAPABILITY_TYPE, "not json"),
         )
         conn.commit()
@@ -156,7 +170,10 @@ def test_converge_rebinds_a_project_that_declared_ci_after_registering() -> None
     # again, so without a converge the binding stays local forever.
     with test_database() as conn:
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
         assert _case(conn, _plan_id(conn, "quick"))["method_id"] == (
@@ -178,7 +195,10 @@ def test_converge_writes_nothing_when_bindings_already_agree() -> None:
     with test_database() as conn:
         _declare_ci_workflow(conn, "yoke-ci.yml")
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
 
@@ -189,7 +209,10 @@ def test_converge_rebinds_back_to_local_when_the_declaration_is_removed() -> Non
     with test_database() as conn:
         _declare_ci_workflow(conn, "yoke-ci.yml")
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
         conn.execute(
@@ -210,14 +233,19 @@ def test_converge_follows_a_changed_workflow_filename() -> None:
     with test_database() as conn:
         _declare_ci_workflow(conn, "yoke-ci.yml")
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
         conn.execute(
             "UPDATE project_capabilities SET settings=%s "
             "WHERE project_id=1 AND type=%s",
-            (json.dumps({"workflow_file": "renamed-ci.yml"}),
-             CI_WORKFLOW_CAPABILITY_TYPE),
+            (
+                json.dumps({"workflow_file": "renamed-ci.yml"}),
+                CI_WORKFLOW_CAPABILITY_TYPE,
+            ),
         )
         conn.commit()
 
@@ -232,7 +260,10 @@ def test_ensure_canonicalizes_retired_watch_pytest_command() -> None:
 
     with test_database() as conn:
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command=(
                 "uv run --frozen python3 -m yoke_core.tools.watch_pytest "
                 "--impacted main"
@@ -248,13 +279,13 @@ def test_ensure_canonicalizes_retired_watch_pytest_command() -> None:
 def test_converge_rewrites_retired_watch_pytest_plan_command() -> None:
     from yoke_core.domain.qa_command_invocation import SANCTIONED_WATCH_PYTEST
 
-    retired = (
-        "uv run --frozen python3 -m yoke_core.tools.watch_pytest "
-        "--impacted main"
-    )
+    retired = "uv run --frozen python3 -m yoke_core.tools.watch_pytest --impacted main"
     with test_database() as conn:
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
         plan_id = _plan_id(conn, "quick")
@@ -282,7 +313,10 @@ def test_boot_converge_rebinds_registered_command_plans(monkeypatch) -> None:
     monkeypatch.setenv(RESTORE_POINT_ENV, "qa-command-plan-test-snapshot")
     with test_database() as conn:
         ensure_registered_command_plan(
-            conn, project_id=1, project="yoke", scope="quick",
+            conn,
+            project_id=1,
+            project="yoke",
+            scope="quick",
             command="python3 -m pytest --impacted main",
         )
         _declare_ci_workflow(conn, "yoke-ci.yml")

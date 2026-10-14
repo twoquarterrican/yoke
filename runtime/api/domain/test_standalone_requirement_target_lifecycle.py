@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from runtime.api.domain.qa_review_seed import resolve_capture_review
 from runtime.api.domain.test_standalone_requirement_execution_target import (
     PREVIEW_URL,
     TRANSITION,
@@ -33,7 +34,6 @@ from yoke_core.domain.qa_requirement_pass_currency import (
     recorded_execution_target_digest,
     stamp_executed_method_config,
 )
-from yoke_core.domain.qa_review_requests import apply_qa_review_resolution
 
 
 _BROWSER_STEPS = [
@@ -304,7 +304,7 @@ def test_approving_pending_review_keeps_capture_target_not_live() -> None:
             (req_id,),
         ).fetchone()["execution_target_digest"]
         assert digest_b != digest_a
-        apply_qa_review_resolution(
+        resolve_capture_review(
             conn,
             requirement_id=req_id,
             action="approve",

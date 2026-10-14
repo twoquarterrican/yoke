@@ -86,11 +86,7 @@ def _add_event(
 def _add_session(conn, sid: str) -> None:
     p = _p(conn)
     conn.execute(
-        "INSERT INTO harness_sessions (session_id, executor, provider, model,"
-        " workspace, mode, offered_at, last_heartbeat)"
-        f" VALUES ({p}, 'claude-desktop', 'anthropic', 'claude-opus-4-7',"
-        " '/tmp/ws', 'charge', '2026-05-17T11:00:00Z',"
-        " '2026-05-17T11:00:00Z')",
+        f"INSERT INTO harness_sessions (project_id, session_id, executor, provider, model, workspace, mode, offered_at, last_heartbeat) VALUES (1, {p}, 'claude-code', 'anthropic', 'claude-opus-4-7', '/tmp/ws', 'charge', '2026-05-17T11:00:00Z', '2026-05-17T11:00:00Z')",
         (sid,),
     )
     conn.commit()

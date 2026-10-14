@@ -67,11 +67,11 @@ def test_review_request_rejects_cross_requirement_capture_link(test_db):
         test_db, item_id=9504, plan_slug="review-proof-a", decider_roles=("owner",)
     )
     seeded_b = _seed_undetermined_review(
-        test_db, item_id=9505, plan_slug="review-proof-b", decider_roles=("owner",)
-    )
-    test_db.execute(
-        "UPDATE qa_runs SET raw_result=%s WHERE id=%s",
-        (json.dumps({"capture_run_id": seeded_a["run_id"]}), seeded_b["run_id"]),
+        test_db,
+        item_id=9505,
+        plan_slug="review-proof-b",
+        decider_roles=("owner",),
+        raw_result=json.dumps({"capture_run_id": seeded_a["run_id"]}),
     )
     test_db.commit()
 
