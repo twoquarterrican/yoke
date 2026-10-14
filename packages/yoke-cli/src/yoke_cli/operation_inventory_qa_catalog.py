@@ -15,6 +15,7 @@ WRAPPED_ROWS: tuple[_Row, ...] = (
     _w("yoke qa plan create", "qa.plan"),
     _w("yoke qa plan edit", "qa.plan"),
     _w("yoke qa plan-cases replace", "qa.plan_cases"),
+    _w("yoke qa plan-cases sync", "qa.plan_cases"),
     _w("yoke qa registered-command set", "qa.registered_command"),
     _w("yoke qa no-tests attest", "qa.no_tests"),
     _w("yoke qa no-tests clear", "qa.no_tests"),
