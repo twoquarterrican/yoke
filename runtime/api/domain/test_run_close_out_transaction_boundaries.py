@@ -64,7 +64,9 @@ def test_slow_lane_work_runs_with_every_connection_idle(
         observed.append(_open_transactions(test_db))
         return (), {}
 
-    monkeypatch.setattr(terminal_lane_cleanup, "record_terminal_lane_close_out", _retire)
+    monkeypatch.setattr(
+        terminal_lane_cleanup, "record_terminal_lane_close_out", _retire
+    )
     monkeypatch.setattr(terminal_lane_cleanup, "sweep_managed_lanes", _sweep)
     monkeypatch.setattr(
         terminal_lane_cleanup, "checkout_for_project_id", lambda _id: tmp_path
