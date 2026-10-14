@@ -74,7 +74,14 @@ The target preflight materializes effective attachments before evaluating
 gates. Project defaults apply only where the workflow QA policy declares them.
 Dash optional_item_attachment ignores defaults and does not invent a
 definition-owned verification gate; selected premerge item posture enforces
-its review attachment. A plan already attached for post_deploy stays release-bound.
+its explicitly attached review cases. Plan selection records only the choice;
+it attaches nothing. Attach review verification explicitly before materializing:
+
+```text
+yoke qa item-plan attach --item ITEM --project P --plan-id <id> --transition reviewing-implementation --qa-phase verification
+```
+
+Post-deploy plans attach at release with --qa-phase post_deploy.
 
 For an attached plan at NEXT_STAGE, registered qa.plan.materialize precedes
 qa.requirement.list and case execution:

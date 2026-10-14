@@ -259,7 +259,8 @@ def test_registered_retraction_settles_copies_admitted_after_withdrawal(test_db)
     assert dict(retained) == dict(original)
 
 
-def test_retraction_repair_still_refuses_a_passing_late_copy(test_db):
+@pytest.mark.parametrize("verdict", ["pass", "fail"])
+def test_retraction_repair_refuses_any_executed_late_copy(test_db, verdict):
     item_id = 9862
     run_id = "run-passing-withdrawn-copy"
     plan_id = _frozen_plan_run(
@@ -279,12 +280,12 @@ def test_retraction_repair_still_refuses_a_passing_late_copy(test_db):
     test_db.execute(
         "UPDATE qa_requirements SET retracted_at=NULL WHERE id=%s", (copy_id,)
     )
-    record_case_verdict(test_db, copy_id, "pass", evidence=True)
+    record_case_verdict(test_db, copy_id, verdict, evidence=True)
 
     repaired = _repeat_registered_retraction(test_db, item_id=item_id, plan_id=plan_id)
 
     assert not repaired.primary_success
-    assert "already recorded a passing verdict" in repaired.error.message
+    assert "attachment_has_recorded_run" in repaired.error.message
     assert (
         test_db.execute(
             "SELECT retracted_at FROM qa_requirements WHERE id=%s",

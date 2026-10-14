@@ -43,9 +43,9 @@ ids. Re-drive the run or run its member-scoped QA stage afterward; a
 replacement plan still needs its own evidence.
 
 This path is for a mis-specified attachment, not an unwelcome verdict.
-A verification-phase attachment cannot be retracted here. A post-deploy
-case that already passed refuses, because that would rewrite settled
-delivery evidence.
+Any phase can be retracted before its requirements have recorded runs or
+verdicts. Once a run exists, retraction refuses; preserve that evidence and
+use `yoke qa requirement waive` or `supersede --help` for settlement.
 """
 
 

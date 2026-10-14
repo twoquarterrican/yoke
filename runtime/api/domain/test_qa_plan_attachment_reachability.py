@@ -15,7 +15,6 @@ from yoke_contracts.api.function_call import (
     TargetRef,
 )
 from yoke_core.domain.item_posture_amend import amend_item_posture
-from yoke_core.domain.item_posture_amend_guards import ItemPostureAmendError
 from yoke_core.domain.item_posture_validation import validate_item_posture
 from yoke_core.domain.qa_plan_attachment_validation import (
     UnreachablePlanTargetError,
@@ -154,9 +153,7 @@ def test_unbound_plan_still_attaches_before_delivery(test_db) -> None:
 
 def test_env_bound_plan_attaches_when_not_the_delivery_target(test_db) -> None:
     _seed_item(test_db)
-    plan_id, _env_id, _name = _bound_plan(
-        test_db, slug="dev-bound-not-delivery-target"
-    )
+    plan_id, _env_id, _name = _bound_plan(test_db, slug="dev-bound-not-delivery-target")
     result = attach_plan_to_item(
         test_db,
         plan_id=plan_id,
@@ -218,18 +215,40 @@ def test_verification_posture_allows_an_environment_bound_plan(test_db) -> None:
     assert result["verification"]["plan_id"] == plan_id
 
 
-def test_amend_refuses_when_plan_is_the_delivery_target(test_db) -> None:
+def test_plan_selection_allows_delivery_target_but_review_attachment_refuses(test_db):
     _seed_item(test_db, item_id=33484, workflow_id="dash")
     plan_id, env_id, env_name = _bound_plan(test_db, slug="prod-bound-bind")
     _pin_item_delivery(test_db, 33484, env_id)
-    with pytest.raises(ItemPostureAmendError, match=env_name):
-        amend_item_posture(
+    result = amend_item_posture(
+        test_db,
+        item_id=33484,
+        key="verification",
+        value={"kind": "plan", "plan_id": plan_id},
+        reason="select a delivery-target plan",
+    )
+    assert result["changed"] is True
+    assert result["binding"] is None
+    assert (
+        test_db.execute(
+            "SELECT 1 FROM qa_plan_item_attachments WHERE item_id=%s", (33484,)
+        ).fetchone()
+        is None
+    )
+    with pytest.raises(UnreachablePlanTargetError, match=env_name):
+        attach_plan_to_item(
             test_db,
             item_id=33484,
-            key="verification",
-            value={"kind": "plan", "plan_id": plan_id},
-            reason="select a delivery-target plan as verification",
+            plan_id=plan_id,
+            transition_id="reviewing-implementation",
+            qa_phase="verification",
         )
+    attach_plan_to_item(
+        test_db,
+        item_id=33484,
+        plan_id=plan_id,
+        transition_id="release",
+        qa_phase="post_deploy",
+    )
 
 
 def test_existing_attachment_still_materializes(test_db) -> None:

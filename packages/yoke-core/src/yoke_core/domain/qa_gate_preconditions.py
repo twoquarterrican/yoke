@@ -126,7 +126,7 @@ def requirement_set_result(
             attached = query_scalar(
                 conn,
                 "SELECT COUNT(*) FROM qa_plan_item_attachments "
-                f"WHERE item_id = {marker} AND {live_item_attachment_sql(conn)}",
+                f"WHERE item_id = {marker} AND {live_item_attachment_sql(conn)}{phase_sql}",
                 (item_id,),
             )
         if not attached:

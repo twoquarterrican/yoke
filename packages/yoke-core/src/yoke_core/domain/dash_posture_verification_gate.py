@@ -184,11 +184,33 @@ def verification_gate(
         scored.append(item)
     rows = scored
     if not rows:
+        if kind == "plan":
+            from yoke_core.domain.qa_plan_attachment_reads import (
+                live_item_attachment_sql,
+            )
+
+            scope = (
+                f" AND transition_id={marker} AND qa_phase='verification'"
+                if pre_merge
+                else ""
+            )
+            binding_params = (int(item_id), selector_value)
+            if pre_merge:
+                binding_params += (ITEM_POSTURE_VERIFICATION_TRANSITION,)
+            attached = conn.execute(
+                "SELECT 1 FROM qa_plan_item_attachments "
+                f"WHERE item_id={marker} AND plan_id={marker} "
+                f"AND {live_item_attachment_sql(conn)}{scope} LIMIT 1",
+                binding_params,
+            ).fetchone()
+            if not attached:
+                return None
         # A change visible only once deployed selects a post_deploy case bound
         # to the release stage. It binds the posture here and is consumed at
         # done by the completion run's admitted copy, like any post_deploy row.
         if (
             pre_merge
+            and kind == "ad_hoc"
             and conn.execute(
                 "SELECT 1 FROM qa_requirements r "
                 f"WHERE r.item_id = {marker} AND {selector} "

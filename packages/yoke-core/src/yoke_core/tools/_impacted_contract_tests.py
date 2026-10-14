@@ -83,6 +83,8 @@ ITEM_POSTURE_QA_BINDING_SOURCE_PATHS = frozenset(
 )
 
 ITEM_POSTURE_QA_BINDING_TESTS = (
+    "runtime/api/test_items_create_function.py",
+    "runtime/api/domain/test_qa_plan_attachment_reachability.py",
     "runtime/api/domain/test_dash_posture_gate.py",
     "runtime/api/test_optional_item_qa_bindings.py",
     "runtime/api/test_qa_requirement_transition_binding.py",

@@ -79,8 +79,8 @@ def optional_unattached_qa_permits_empty(conn: Any, item_id: int) -> bool:
     """Whether optional item QA with nothing selected may pass an empty set.
 
     ``optional_item_attachment`` means unattached verification is valid.
-    Selecting a verification posture opts the item into a real requirement
-    set, so emptiness then still refuses.
+    A plan selection alone creates no obligation. An ad-hoc method still
+    requires the executing harness to author its concrete case.
     """
     try:
         effective = load_item_effective_workflow_policies(conn, int(item_id))
@@ -89,7 +89,9 @@ def optional_unattached_qa_permits_empty(conn: Any, item_id: int) -> bool:
     if effective.values.get("qa") != WORKFLOW_QA_OPTIONAL_ITEM_ATTACHMENT:
         return False
     verification = effective.posture.get("verification")
-    return not (isinstance(verification, Mapping) and verification)
+    return not (
+        isinstance(verification, Mapping) and verification.get("kind") == "ad_hoc"
+    )
 
 
 def attachment_transition_for_item(conn: Any, *, item_id: int) -> str:
@@ -192,10 +194,14 @@ def validate_item_qa_transition(
         message += (
             "; premerge optional item QA accepts only the plan or method selected "
             "in workflow_posture.verification, attached at "
-            f"{ITEM_POSTURE_VERIFICATION_TRANSITION}. Select one on this item "
-            "first: yoke workflows item-posture amend <PREFIX-N> "
-            '--verification-plan <ID_OR_SLUG> --reason "<why>" '
-            "(--help for the decision tree), then retry with "
+            f"{ITEM_POSTURE_VERIFICATION_TRANSITION}. Plan selection records only "
+            "the choice: yoke workflows item-posture amend <PREFIX-N> "
+            '--verification-plan <ID_OR_SLUG> --reason "<why>"; then '
+            "yoke qa item-plan attach --item <PREFIX-N> --project <P> "
+            "--plan-id <ID> "
+            f"--transition {ITEM_POSTURE_VERIFICATION_TRANSITION} --qa-phase verification. "
+            "For an ad-hoc method, select --verification-method <METHOD> and "
+            "author its case with "
             f"--workflow-transition {ITEM_POSTURE_VERIFICATION_TRANSITION}. "
             "For post-deploy QA, attach directly at the pinned release stage "
             "with --qa-phase post_deploy; no verification posture selection is required"
