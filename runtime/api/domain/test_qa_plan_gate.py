@@ -29,6 +29,7 @@ CREATE TABLE qa_requirements (
     qa_kind TEXT NOT NULL,
     qa_phase TEXT NOT NULL,
     blocking_mode TEXT NOT NULL DEFAULT 'blocking',
+    workflow_transition_id TEXT,
     waived_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ
 );
@@ -100,12 +101,14 @@ def _add_requirement(
     qa_phase: str = "verification",
     blocking_mode: str = "blocking",
     waived_at: Optional[str] = None,
+    workflow_transition_id: Optional[str] = None,
 ) -> int:
     conn = connect_test_db(db_path)
     cur = conn.execute(
         "INSERT INTO qa_requirements "
-        "(item_id, qa_kind, qa_phase, blocking_mode, waived_at, created_at) "
-        "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        "(item_id, qa_kind, qa_phase, blocking_mode, waived_at, created_at, "
+        "workflow_transition_id) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
         (
             item_id,
             qa_kind,
@@ -113,6 +116,7 @@ def _add_requirement(
             blocking_mode,
             waived_at,
             "2026-04-25T00:00:00Z",
+            workflow_transition_id,
         ),
     )
     req_id = int(cur.fetchone()[0])
@@ -196,6 +200,31 @@ class TestCheckPlanSimulationSatisfied:
         _add_requirement(qa_db, qa_phase="post_deploy")
         result = check_plan_simulation_satisfied(TEST_ITEM_ID, qa_db)
         assert result.passed
+
+    def test_passes_when_only_later_transition_verification_is_open(
+        self, qa_db: str
+    ) -> None:
+        simulation_id = _add_requirement(
+            qa_db, qa_kind="simulation", workflow_transition_id="planned"
+        )
+        _add_run(qa_db, simulation_id, verdict="pass")
+        _add_requirement(
+            qa_db,
+            qa_kind="ac_verification",
+            workflow_transition_id="reviewed-implementation",
+        )
+        result = check_plan_simulation_satisfied(TEST_ITEM_ID, qa_db)
+        assert result.passed
+
+    def test_fails_when_planned_transition_verification_is_open(
+        self, qa_db: str
+    ) -> None:
+        req_id = _add_requirement(
+            qa_db, qa_kind="simulation", workflow_transition_id="planned"
+        )
+        result = check_plan_simulation_satisfied(TEST_ITEM_ID, qa_db)
+        assert not result.passed
+        assert any(f"#{req_id}" in error for error in result.errors)
 
     def test_lists_every_unsatisfied_requirement(self, qa_db: str) -> None:
         req1 = _add_requirement(qa_db, qa_kind="simulation")

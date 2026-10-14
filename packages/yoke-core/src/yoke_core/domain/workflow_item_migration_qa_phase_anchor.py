@@ -71,11 +71,13 @@ def phase_anchored_qa_conflict(
     """Explain why an unlinked QA requirement cannot survive the migration.
 
     Requirements that predate stage linkage carry no
-    ``workflow_transition_id``. Runtime QA gates never read that column —
-    they enforce by phase at whichever stage carries the
-    ``qa_verification`` gate — so compatibility compares the enforcement
-    reachable from that anchor on each side instead of refusing the
-    missing linkage. Nothing stored is rewritten for an unlinked row, so
+    ``workflow_transition_id``. The plan-simulation gate counts a null
+    binding together with rows bound to ``planned``. The
+    ``qa_verification`` gate enforces by phase at whichever stage carries
+    that gate and does not read the column, so compatibility compares the
+    enforcement reachable from that anchor on each side instead of
+    refusing the missing linkage. Nothing stored is rewritten for an
+    unlinked row, so
     per-side anchoring keeps a stage rename compatible whenever the
     enforcement itself is preserved.
     """
