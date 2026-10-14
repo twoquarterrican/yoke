@@ -10,7 +10,7 @@ from yoke_core.domain.qa_plan_execution_store import result_rows, select_plan_ex
 from yoke_core.domain.schema_common import _table_exists
 
 
-def _execution(conn: Any, requirement: dict[str, Any], run_id: int) -> dict | None:
+def _execution(conn: Any, requirement: dict[str, Any], run_id: int | None) -> dict | None:
     """Prefer an exact captured attempt; aggregate obligations use the scoped walk."""
     rows = query_rows(
         conn,
@@ -21,7 +21,9 @@ def _execution(conn: Any, requirement: dict[str, Any], run_id: int) -> dict | No
     )
     for row in rows:
         result = json.loads(row["result_json"])
-        if result.get("qa_run_id") == run_id or result.get("run_id") == run_id:
+        if run_id is not None and (
+            result.get("qa_run_id") == run_id or result.get("run_id") == run_id
+        ):
             return select_plan_execution(conn, str(row["id"]), lock=False)
     if requirement.get("deployment_run_id") and requirement.get("deployment_stage"):
         rows = query_rows(
@@ -68,11 +70,14 @@ def _execution(conn: Any, requirement: dict[str, Any], run_id: int) -> dict | No
     return execution
 
 
-def execution_evidence_payload(conn: Any, run_id: int) -> str | None:
+def execution_evidence_payload(
+    conn: Any, run_id: int | None, *, run: dict[str, Any] | None = None
+) -> str | None:
     """Compose execution and concrete artifact ids without changing other proof."""
     if not _table_exists(conn, "qa_plan_executions"):
         return
-    run = query_one(conn, "SELECT * FROM qa_runs WHERE id=%s", (run_id,))
+    if run is None:
+        run = query_one(conn, "SELECT * FROM qa_runs WHERE id=%s", (run_id,))
     if run is None:
         return
     requirement = query_one(
@@ -82,7 +87,7 @@ def execution_evidence_payload(conn: Any, run_id: int) -> str | None:
     if execution is None:
         return
     evidence_runs = (
-        {run_id}
+        ({run_id} if run_id is not None else set())
         if requirement.get("method_id")
         else {
             int(value)
@@ -115,10 +120,6 @@ def execution_evidence_payload(conn: Any, run_id: int) -> str | None:
 
 def settle_recorded_verdict(conn: Any, run_id: int) -> None:
     """After capture attachments and verdict commit, re-evaluate the active stage."""
-    from yoke_core.domain.qa_run_verdict_record import link_verdict_evidence
-
-    link_verdict_evidence(conn, run_id)
-    conn.commit()
     subject = query_one(
         conn,
         "SELECT q.* "
