@@ -20,11 +20,20 @@ from yoke_contracts.board.config import BoardConfig, parse_config
 class TestBoardConfigDefaults:
     """Default values match documented config semantics."""
 
-    def test_dashboard_velocity_meter_off(self):
-        assert BoardConfig().dashboard_velocity_meter is False
+    def test_dashboard_weather_off(self):
+        assert BoardConfig().dashboard_weather is False
 
-    def test_timeline_widget_idle(self):
-        assert BoardConfig().timeline_widget == "idle"
+    def test_dashboard_velocity_meter_on(self):
+        assert BoardConfig().dashboard_velocity_meter is True
+
+    def test_timeline_widget_always(self):
+        assert BoardConfig().timeline_widget == "always"
+
+    def test_timeline_label_window(self):
+        cfg = BoardConfig()
+        assert cfg.timeline_label_days == 30
+        assert cfg.timeline_label_df_cap_pct == 3
+        assert cfg.timeline_label_min == 8
 
     def test_timeline_scope_defaults_to_board_scope(self):
         assert BoardConfig().timeline_scope == ""
@@ -42,13 +51,13 @@ class TestBoardConfigDefaults:
         assert BoardConfig().art_override == ""
 
     def test_art_weight_frontier(self):
-        assert BoardConfig().art_weight_frontier == 50
+        assert BoardConfig().art_weight_frontier == 20
 
     def test_rainbow_per_variant_mode_off(self):
         assert BoardConfig().rainbow_per_variant_mode is False
 
     def test_done_section_limit_default(self):
-        assert BoardConfig().done_section_limit == 250
+        assert BoardConfig().done_section_limit == 20
 
 
 class TestParseConfig:
@@ -56,14 +65,16 @@ class TestParseConfig:
 
     def test_basic_parsing(self, tmp_path):
         cfg_file = tmp_path / "config"
-        cfg_file.write_text(textwrap.dedent("""\
+        cfg_file.write_text(
+            textwrap.dedent("""\
             dashboard_velocity_meter=true
             timeline_widget=always
             timeline_scope=all
             dashboard_sessions_scope=all
             art_frontier_since=42
             done_section_limit=50
-        """))
+        """)
+        )
         cfg = parse_config(str(cfg_file))
         assert cfg.dashboard_velocity_meter is True
         assert cfg.timeline_widget == "always"
@@ -76,11 +87,13 @@ class TestParseConfig:
         repo = tmp_path / "repo"
         (repo / ".yoke").mkdir(parents=True)
         (repo / ".yoke" / "board.json").write_text(
-            json.dumps({
-                "dashboard_velocity_meter": True,
-                "timeline_widget": "always",
-                "art_frontier_since": 12,
-            }),
+            json.dumps(
+                {
+                    "dashboard_velocity_meter": True,
+                    "timeline_widget": "always",
+                    "art_frontier_since": 12,
+                }
+            ),
             encoding="utf-8",
         )
         cfg = parse_config(None, repo_root=str(repo))
@@ -132,13 +145,15 @@ class TestParseConfig:
 
     def test_bool_values(self, tmp_path):
         cfg_file = tmp_path / "config"
-        cfg_file.write_text(textwrap.dedent("""\
+        cfg_file.write_text(
+            textwrap.dedent("""\
             dashboard_velocity=false
             dashboard_weather=yes
             dashboard_workflows=1
             dashboard_age=0
             dashboard_badges=true
-        """))
+        """)
+        )
         cfg = parse_config(str(cfg_file))
         assert cfg.dashboard_velocity is False
         assert cfg.dashboard_weather is True
@@ -154,13 +169,15 @@ class TestParseConfig:
 
     def test_art_weight_keys(self, tmp_path):
         cfg_file = tmp_path / "config"
-        cfg_file.write_text(textwrap.dedent("""\
+        cfg_file.write_text(
+            textwrap.dedent("""\
             art_weight_rainbow=10
             art_weight_emoji=30
             art_weight_ascii=15
             art_weight_mixed=25
             art_weight_frontier=60
-        """))
+        """)
+        )
         cfg = parse_config(str(cfg_file))
         assert cfg.art_weight_rainbow == 10
         assert cfg.art_weight_emoji == 30
@@ -172,11 +189,13 @@ class TestParseConfig:
         repo = tmp_path / "repo"
         (repo / ".yoke").mkdir(parents=True)
         (repo / ".yoke" / "board.json").write_text(
-            json.dumps({
-                "art_frontier_since": 42,
-                "art_weight_frontier": 80,
-                "art_weight_rainbow_halves": 5,
-            }),
+            json.dumps(
+                {
+                    "art_frontier_since": 42,
+                    "art_weight_frontier": 80,
+                    "art_weight_rainbow_halves": 5,
+                }
+            ),
             encoding="utf-8",
         )
         cfg = parse_config(None, repo_root=str(repo))
@@ -190,15 +209,18 @@ class TestParseConfig:
         cfg = parse_config(str(cfg_file))
         assert cfg.dashboard_meter_cap == 100
 
+
 class TestRainbowSubWeights:
     """Rainbow sub-mode weight parsing and per-variant detection."""
 
     def test_named_sub_weights(self, tmp_path):
         cfg_file = tmp_path / "config"
-        cfg_file.write_text(textwrap.dedent("""\
+        cfg_file.write_text(
+            textwrap.dedent("""\
             art_weight_rainbow_random=10
             art_weight_rainbow_letters=20
-        """))
+        """)
+        )
         cfg = parse_config(str(cfg_file))
         assert cfg.art_weight_rainbow_random == 10
         assert cfg.art_weight_rainbow_letters == 20

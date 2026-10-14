@@ -4,7 +4,11 @@ The universe definition lives in ``universe_settings`` under the ``levels``
 key: one row per universe, written only by an explicit operator command. An
 absent row means the universe reads the shipped scheme
 (:data:`yoke_contracts.level_defaults.DEFAULT_LEVELS`), so a shipped change
-reaches every universe that never customized its levels. A project may
+reaches every universe that never stored the key. A stored row freezes that
+document at write time. Delete it with a reviewed ``yoke operator data-repair``
+to follow shipped defaults again; writing today's document stores a new freeze.
+The same rule applies to every ``universe_settings`` key, including
+``cursor_quota_order``. A project may
 override the universe definition with a ``levels`` document in its
 ``session-routing`` capability; readers take the override when present.
 """

@@ -1,4 +1,9 @@
-"""Universe-wide consumption order of Cursor's two monthly quota pools."""
+"""Universe-wide consumption order of Cursor's two monthly quota pools.
+
+An absent ``universe_settings`` row reads :data:`DEFAULT_CURSOR_QUOTA_ORDER`.
+A stored row freezes the order at write time. Delete that row with a reviewed
+``yoke operator data-repair`` to follow the shipped order again.
+"""
 
 from yoke_contracts.session_control.plan_limits import (
     CURSOR_MODELS_SCOPE,

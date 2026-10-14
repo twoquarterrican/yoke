@@ -3,6 +3,9 @@
 Hard-cut home for every former ``BoardConfig`` / ``.yoke/board.json`` knob
 plus former machine ``projects[].board.scope``. Render path is the fixed
 checkout-relative convention ``.yoke/BOARD.md`` (not a settings key).
+
+:func:`board_settings_defaults` is what a new project stores. A stored
+``board`` object keeps its present keys when shipped defaults later change.
 """
 
 from __future__ import annotations
@@ -68,7 +71,8 @@ def board_settings_from_config(
     payload = asdict(config)
     payload.pop("rainbow_sub_weights", None)
     payload[BOARD_SCOPE_KEY] = (
-        scope.strip() if isinstance(scope, str) and scope.strip()
+        scope.strip()
+        if isinstance(scope, str) and scope.strip()
         else DEFAULT_BOARD_SCOPE
     )
     return payload

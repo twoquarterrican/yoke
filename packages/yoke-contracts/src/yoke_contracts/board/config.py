@@ -16,22 +16,22 @@ class BoardConfig:
 
     # -- dashboard widget toggles (true = show) --------------------------------
     dashboard_velocity: bool = True
-    dashboard_weather: bool = True
+    dashboard_weather: bool = False
     dashboard_workflows: bool = True
     dashboard_age: bool = True
     dashboard_badges: bool = True
     dashboard_recent_sessions: bool = True
     dashboard_sessions_scope: str = ""  # empty = board scope; all = global
-    dashboard_velocity_meter: bool = False
-    done_section_limit: int = 250
+    dashboard_velocity_meter: bool = True
+    done_section_limit: int = 20
 
     # -- timeline widget ------------------------------------------------------
-    timeline_widget: str = "idle"  # always | never | idle
-    timeline_scope: str = ""       # empty = board scope; all = global
-    timeline_label_days: int = 0   # labels window in days; 0 = all-time
-    timeline_label_df_cap_pct: int = 0  # drop labels w/ doc-freq > N% (0 = off)
+    timeline_widget: str = "always"  # always | never | idle
+    timeline_scope: str = ""  # empty = board scope; all = global
+    timeline_label_days: int = 30  # labels window in days; 0 = all-time
+    timeline_label_df_cap_pct: int = 3  # drop labels w/ doc-freq > N% (0 = off)
     timeline_extra_stopwords: str = ""  # comma-sep extra stopwords
-    timeline_label_min: int = 0    # widen window until at least N labels (0 = off)
+    timeline_label_min: int = 8  # widen window until at least N labels (0 = off)
 
     # -- art frontier fill ----------------------------------------------------
     art_frontier_since: int = 0  # item-id threshold; 0 = all items
@@ -47,7 +47,7 @@ class BoardConfig:
     art_weight_emoji: int = 20
     art_weight_ascii: int = 20
     art_weight_mixed: int = 20
-    art_weight_frontier: int = 50
+    art_weight_frontier: int = 20
 
     # -- rainbow sub-mode weights ---------------------------------------------
     # When any key is present, per-variant mode activates for rainbow;
@@ -124,7 +124,9 @@ def config_from_values(values: Mapping[str, Any] | None) -> BoardConfig:
     return cfg
 
 
-def parse_config(config_path: str | None, *, repo_root: str | None = None) -> BoardConfig:
+def parse_config(
+    config_path: str | None, *, repo_root: str | None = None
+) -> BoardConfig:
     """Parse board settings into a :class:`BoardConfig`.
 
     Legacy file path retained for preview fixtures and migration readers.
