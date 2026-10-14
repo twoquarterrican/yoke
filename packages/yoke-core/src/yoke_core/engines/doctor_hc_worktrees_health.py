@@ -36,6 +36,7 @@ from yoke_core.engines.doctor_worktree_terminal_lanes import (
     stranded_summary,
 )
 from yoke_core.engines.lane_residue_declared_paths import declared_disposable_roots
+from yoke_core.engines.worktree_removal import finish_tombstones, tombstones
 from yoke_core.engines.merge_worktree_cleanliness import assess_lane_residue
 
 import yoke_core.engines.doctor_report as _base
@@ -222,6 +223,7 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
                     path=wt_path,
                     target=owner.target_branch,
                     item_id=public_ref,
+                    assessment=assessment,
                 )
                 if not preserved:
                     fixed.append(
@@ -234,6 +236,20 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
             )
             issues.append(
                 f"- Terminal-item lane: {branch} at {wt_path} — {public_ref} is {owner.status}; {label}"
+            )
+
+    # An interrupted removal leaves an unregistered tombstone; --fix finishes it.
+    if repo_root:
+        leftovers = tombstones(repo_root)
+        results = finish_tombstones(repo_root) if args.fix else []
+        for leftover, result in zip(leftovers, results):
+            if result.removed and not result.reason:
+                fixed.append(f"- Fixed: finished interrupted removal {leftover}")
+            else:
+                issues.append(f"- Interrupted removal not finished: {result.reason}")
+        for leftover in leftovers[len(results) :]:
+            issues.append(
+                f"- Interrupted removal left tombstone {leftover}; --fix finishes it"
             )
 
     # Self-deploy driver trees, answered from their run's status rather than
@@ -298,6 +314,7 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
                 path=lane.path,
                 target=lane.target_branch,
                 item_id=lane.public_ref,
+                assessment=assessment,
             )
             if not preserved:
                 fixed.append(f"- Fixed: deleted terminal local branch {branch}")

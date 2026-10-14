@@ -51,7 +51,6 @@ from yoke_core.engines.merge_worktree_cleanliness import (
     clear_lane_residue,
 )
 from yoke_core.engines.git_worktree_registry import (
-    first_output_line,
     is_managed_worktree_path,
     registered_worktrees,
 )
@@ -59,6 +58,7 @@ from yoke_core.engines.remote_branch_cleanup import (
     delete_remote_branch_if_merged,
     unmerged_remote_note,
 )
+from yoke_core.engines.worktree_removal import removal_deferral, remove_worktree
 
 
 def _runtime_git() -> Callable[..., Any]:
@@ -150,17 +150,6 @@ def _lane_worktree(
     return None
 
 
-def _remove_empty_parent(path: Path) -> None:
-    parent = path.parent
-    if "/.worktrees" not in str(parent):
-        return
-    try:
-        if not list(parent.iterdir()):
-            parent.rmdir()
-    except OSError:
-        pass
-
-
 def assess_landed_lane(
     *,
     repo_root: str,
@@ -214,7 +203,7 @@ def assess_landed_lane(
         residue = assess_lane_residue(
             git, worktree_path, declared_disposable_roots(repo_root)
         )
-        if not residue.disposable:
+        if not residue.removable_once_landed:
             return LaneCleanupAssessment(
                 False,
                 f"{lane_name} preserved: {residue.reason}",
@@ -241,6 +230,7 @@ def prune_landed_lane(
     emit: Optional[Callable[..., Any]] = None,
     authority_block: str = "",
     refresh_target: bool = True,
+    assessment: Optional[LaneCleanupAssessment] = None,
 ) -> tuple[str, ...]:
     """Retire one landed lane; return the reasons anything was preserved.
 
@@ -248,20 +238,24 @@ def prune_landed_lane(
     local branch, and a released row. Any other result names what survived and
     why, so the caller can surface it instead of reporting a clean landing over
     a lane that is still on disk. A caller retiring many lanes against one
-    target fetches it once and passes ``refresh_target=False``.
+    target fetches it once and passes ``refresh_target=False``; one that has
+    just proved the lane passes that ``assessment`` instead of proving it twice.
     """
     git = run_git or _runtime_git()
     say = emit or _runtime_emit()
-    assessment = assess_landed_lane(
-        repo_root=repo_root,
-        branch=branch,
-        target=target,
-        run_git=git,
-        refresh_target=refresh_target,
-        authority_block=authority_block,
-    )
+    if assessment is None:
+        assessment = assess_landed_lane(
+            repo_root=repo_root,
+            branch=branch,
+            target=target,
+            run_git=git,
+            refresh_target=refresh_target,
+            authority_block=authority_block,
+        )
     if not assessment.safe:
         return (assessment.reason,)
+    if assessment.worktree_path is not None and (deferred := removal_deferral()):
+        return (f"lane {branch} preserved: {deferred}",)
 
     notes: tuple[str, ...] = ()
     if assessment.has_remote:
@@ -287,24 +281,20 @@ def prune_landed_lane(
         residue = clear_lane_residue(
             git, worktree_path, declared_disposable_roots(repo_root)
         )
-        if not residue.disposable:
+        if not residue.removable_once_landed:
             return (
                 f"lane {branch} preserved: worktree {worktree_path} ({residue.reason})",
             )
-        removed = git(
-            ["worktree", "remove", str(worktree_path)],
-            cwd=repo_root,
-            capture=True,
-        )
-        if removed.returncode != 0:
+        removal = remove_worktree(repo_root, worktree_path)
+        if not removal.removed:
             return (
-                f"lane {branch} preserved: worktree removal refused for "
-                f"{worktree_path} ({first_output_line(removed)})",
+                f"lane {branch} preserved: worktree {worktree_path} ({removal.reason})",
             )
         say(f"Pruned merged worktree: {worktree_path}")
+        if removal.reason:
+            say(f"WARNING: {removal.reason}", err=True)
         if warning := worktree_cleanup_warning(worktree_path):
             say(f"WARNING: {warning}", err=True)
-        _remove_empty_parent(worktree_path)
 
     row_warning = release_lane_row(item_id, branch, emit=say)
     if row_warning:

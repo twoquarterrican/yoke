@@ -54,6 +54,7 @@ class _Residue:
     """A lane holding nothing but disposable generated state."""
 
     disposable = True
+    removable_once_landed = True
     precious_paths: tuple[str, ...] = ()
     reason = ""
 

@@ -32,6 +32,12 @@ def remaining_seconds(timeout: float) -> float:
     return min(timeout, remaining)
 
 
+def remaining_budget() -> float | None:
+    """Seconds left on the active check deadline; ``None`` outside a check."""
+    deadline = _deadline.get()
+    return None if deadline is None else deadline - time.monotonic()
+
+
 def bound_deadline(deadline: float) -> float:
     active = _deadline.get()
     if active is None:

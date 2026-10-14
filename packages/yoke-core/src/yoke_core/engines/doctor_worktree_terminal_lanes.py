@@ -77,9 +77,16 @@ class TerminalLaneRetirer:
         )
 
     def prune(
-        self, *, root: str, branch: str, path: str, target: str, item_id: str
+        self,
+        *,
+        root: str,
+        branch: str,
+        path: str,
+        target: str,
+        item_id: str,
+        assessment: LaneCleanupAssessment,
     ) -> tuple[str, ...]:
-        """Retire one proved lane now; return what was preserved and why."""
+        """Retire one lane ``assess`` just proved; return what was kept and why."""
         return prune_landed_lane(
             repo_root=root,
             branch=branch,
@@ -89,6 +96,7 @@ class TerminalLaneRetirer:
             emit=lambda *_a, **_kw: None,
             authority_block=self._authority.block(branch, path),
             refresh_target=False,
+            assessment=assessment,
         )
 
     def _refresh(self, root: str, target: str) -> str:
@@ -112,7 +120,7 @@ def stranded_category(entry: dict, residue, assessment) -> tuple[str, str]:
     """Name why a terminal item's lane is still on disk, operator-first."""
     if "locked" in entry:
         return "locked", entry["locked"]
-    if residue is not None and not residue.disposable:
+    if residue is not None and not residue.removable_once_landed:
         count = len(residue.precious_paths)
         if not count:
             return "preserved", residue.reason

@@ -38,8 +38,8 @@ def _lane_branches(repo: Path) -> set[str]:
 
 
 @pytest.fixture
-def landed_lanes(tmp_path: Path, monkeypatch) -> Tuple[Path, List[Path]]:
-    """A checkout with an origin and LANES clean lanes already on main."""
+def landed_lanes(tmp_path: Path, monkeypatch, request) -> Tuple[Path, List[Path]]:
+    """A checkout with an origin and LANES (or the parametrized count) clean lanes."""
     origin = tmp_path / "origin.git"
     subprocess.run(
         ["git", "init", "--bare", "--initial-branch=main", str(origin)],
@@ -60,7 +60,7 @@ def landed_lanes(tmp_path: Path, monkeypatch) -> Tuple[Path, List[Path]]:
     _git(repo, "remote", "add", "origin", str(origin))
     _git(repo, "push", "origin", "main")
     lanes = []
-    for i in range(LANES):
+    for i in range(getattr(request, "param", LANES)):
         lane = repo / ".worktrees" / f"YOK-{i}"
         _git(repo, "worktree", "add", "-b", f"YOK-{i}", str(lane), "main")
         lanes.append(lane)
@@ -169,3 +169,19 @@ def test_a_run_the_budget_aborts_keeps_the_lanes_it_already_retired(
     assert [lane.name for lane in retired] == prunes
     assert len(retired) == retired_before_abort
     assert _lane_branches(repo) == {lane.name for lane in lanes} - set(prunes)
+
+
+@pytest.mark.parametrize("landed_lanes", [2], indirect=True)
+def test_fix_finishes_a_tombstone_an_interrupted_removal_left(
+    landed_lanes, relay_calls
+):
+    repo, lanes = landed_lanes
+    tombstone = lanes[0].parent / ".removing-YOK-0-interrupted"
+    lanes[0].rename(tombstone)
+
+    rec = _fix_within_budget()
+
+    [result] = rec.results
+    assert f"Fixed: finished interrupted removal {tombstone}" in result.detail
+    assert not tombstone.exists()
+    assert "YOK-0\n" not in _git(repo, "worktree", "list", "--porcelain")

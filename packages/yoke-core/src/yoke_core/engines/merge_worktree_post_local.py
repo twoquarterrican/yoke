@@ -137,24 +137,25 @@ def _remove_lane(ctx: MergeContext) -> None:
         ctx.worktree_path,
         declared_disposable_roots_for_project(ctx.project),
     )
-    if not residue.disposable:
+    if not residue.removable_once_landed:
         _print(
             f"WARNING: Preserving worktree {ctx.worktree_path}: {residue.reason}",
             err=True,
         )
         return
 
-    removed = _run_git(
-        ["worktree", "remove", ctx.worktree_path],
-        cwd=ctx.repo_root,
-        capture=True,
-    )
-    if removed.returncode != 0:
+    from yoke_core.engines.worktree_removal import remove_worktree
+
+    removal = remove_worktree(ctx.repo_root, ctx.worktree_path)
+    if not removal.removed:
         _print(
-            f"WARNING: Worktree removal refused; preserving branch {ctx.args.branch}",
+            f"WARNING: Worktree removal refused ({removal.reason}); preserving "
+            f"branch {ctx.args.branch}",
             err=True,
         )
         return
+    if removal.reason:
+        _print(f"WARNING: {removal.reason}", err=True)
 
     _print(f"Cleaned up worktree: {ctx.worktree_path}")
     if warning := worktree_cleanup_warning(ctx.worktree_path):
