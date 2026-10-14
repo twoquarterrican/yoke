@@ -13,6 +13,7 @@ from yoke_cli.commands.adapters.github_merge_queue import (
 )
 from yoke_cli.commands.adapters.github_release import (
     github_release_create_next_tag,
+    github_release_create_commit_tag,
 )
 
 
@@ -20,6 +21,10 @@ AdapterFn = Callable[[List[str]], int]
 
 
 GITHUB_SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
+    ("github", "release", "create-commit-tag"): (
+        "github.release.create_commit_tag",
+        github_release_create_commit_tag,
+    ),
     ("github", "pr", "create"): ("github.pr.create", github_pr_create),
     ("github", "branch", "head"): ("github.branch.head", github_branch_head),
     ("github", "merge-queue", "apply"): (

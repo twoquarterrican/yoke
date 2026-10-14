@@ -1,0 +1,8 @@
+{
+ "id": "commit-release-promotion-proof",
+ "title": "Prove exact main artifacts and consumer proof reach release promotion",
+ "status": "observed",
+ "text": "The commit tag API and identity contract exist in source. The hosted bridge still creates launch tags and factories rebuild at tag time. After the API is served, switch bridge and factories together, retire tag allocation, prove identical main wheel bytes and image digests, reuse the same product/consumer proof across environments, and measure the release critical path. No live performance improvement is claimed yet.",
+ "sources": ["docs/releases/README.md", ".github/workflows/platform-release-bridge.yml", ".github/workflows/yoke-release.yml", ".github/workflows/yoke-server-image.yml"],
+ "position": 21
+}

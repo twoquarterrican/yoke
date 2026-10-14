@@ -231,6 +231,11 @@ CLI_ADAPTERS: List[AdapterEntry] = [
     *OPS_ADAPTERS,
     *GITHUB_ACTIONS_ADAPTERS,
     AdapterEntry(
+        function_id="github.release.create_commit_tag",
+        cli_invocation="yoke github release create-commit-tag OWNER/REPO SOURCE-SHA --summary TEXT --project P",
+        notes="Immutable commit UTC clock tag with a declared serving floor.",
+    ),
+    AdapterEntry(
         function_id="github.pr.create",
         cli_invocation=(
             "yoke github pr create --title TITLE --head BRANCH "

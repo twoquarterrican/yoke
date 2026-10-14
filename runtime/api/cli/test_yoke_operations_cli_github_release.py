@@ -27,3 +27,14 @@ def test_release_tag_allocation_allows_the_server_to_batch_a_large_history() -> 
         github_release.RELEASE_TAG_REQUEST_TIMEOUT_SECONDS
     )
     assert dispatch.call_args.kwargs["payload"]["source_sha"] == source_sha
+
+
+def test_commit_tag_adapter_dispatches_the_commit_api():
+    with patch.object(github_release, "dispatch_and_emit", return_value=0) as dispatch:
+        result = github_release.github_release_create_commit_tag(
+            ["upyoke/yoke", "a" * 40, "--summary", "Release.", "--project", "yoke"]
+        )
+    assert result == 0
+    assert (
+        dispatch.call_args.kwargs["function_id"] == "github.release.create_commit_tag"
+    )

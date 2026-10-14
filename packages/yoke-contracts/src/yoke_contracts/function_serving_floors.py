@@ -32,6 +32,7 @@ FUNCTION_MINIMUM_SERVING_VERSIONS: dict[str, str] = {
     "deployment_runs.execution.release_driver": "next-release",
     "deployment_runs.remove_item": "next-release",
     "github.branch.head": "next-release",
+    "github.release.create_commit_tag": "next-release",
     "github_actions.dispatch_tag.ensure": "next-release",
     "github_actions.run.rerun_failed": "next-release",
     "item_landings.list": "next-release",

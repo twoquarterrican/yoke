@@ -6,6 +6,18 @@ GitHub Releases; this directory contains no per-release notes.
 
 ## Cut a release
 
+The registered `github.release.create_commit_tag` operation creates an annotated
+`BASE.YYYYMMDDHHMM` tag from the exact source commit's UTC committer clock.
+Its CLI is `yoke github release create-commit-tag OWNER/REPO SOURCE-SHA
+--summary TEXT --project P`; consult `--help` before use.
+A retry recovers the same annotated tag. A tag naming another commit, including
+another commit in the same UTC minute, refuses without moving the ref; create
+a new source commit with a distinct minute before retrying.
+The operation has a declared serving floor: the control-plane operator must
+serve its carrying release before callers use it. The hosted bridge and release
+factories currently continue the launch-tag procedure below; their activation
+must change together after the commit-tag operation is served.
+
 1. Run the canonical test gate on the exact release commit and merge it to
    `main`. When the change breaks a consumer that must land alongside it,
    record the run before either side merges — `yoke deployment-runs
