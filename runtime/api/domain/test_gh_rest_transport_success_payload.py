@@ -10,7 +10,7 @@ from yoke_contracts.api.function_call import (
     TargetRef,
 )
 from yoke_core.domain import gh_rest_transport
-from yoke_core.domain.handlers import github_release_tag
+from yoke_core.domain.handlers import github_commit_release_tag as github_release_tag
 
 
 class _Response:
@@ -41,45 +41,26 @@ def test_release_tag_accepts_commit_and_tag_messages_with_numeric_content(monkey
                 {
                     "sha": source_sha,
                     "message": "Merge pull request #1500 from upyoke/example",
+                    "committer": {"date": "2026-10-14T09:41:59Z"},
                 }
             )
-        if path == "/graphql":
-            return _Response(
-                {
-                    "data": {
-                        "repository": {
-                            "refs": {
-                                "nodes": [
-                                    {
-                                        "name": "v0.1.1+launch.499",
-                                        "target": {
-                                            "__typename": "Tag",
-                                            "target": {
-                                                "__typename": "Commit",
-                                                "oid": "b" * 40,
-                                            },
-                                        },
-                                    }
-                                ],
-                                "pageInfo": {"hasNextPage": False, "endCursor": None},
-                            }
-                        }
-                    }
-                }
-            )
+        if "/git/ref/tags/" in path:
+            import urllib.error
+
+            raise urllib.error.HTTPError(request.full_url, 404, "missing", {}, None)
         if path == "/repos/upyoke/yoke/git/tags":
             return _Response(
                 {
                     "sha": "c" * 40,
                     "message": (
-                        "Yoke 0.1.1+launch.500\n\n"
+                        "Yoke 0.2.0.202610140941\n\n"
                         "Automated hosted release for deployment run run-20260927-001."
                     ),
                 },
                 status=201,
             )
         if path == "/repos/upyoke/yoke/git/refs":
-            return _Response({"ref": "refs/tags/v0.1.1+launch.500"}, status=201)
+            return _Response({"ref": "refs/tags/0.2.0.202610140941"}, status=201)
         raise AssertionError(path)
 
     monkeypatch.setattr(gh_rest_transport, "urlopen", open_github)
@@ -94,7 +75,7 @@ def test_release_tag_accepts_commit_and_tag_messages_with_numeric_content(monkey
         ),
     )
     request = FunctionCallRequest(
-        function="github.release.create_next_tag",
+        function="github.release.create_commit_tag",
         actor=ActorContext(actor_id="1", session_id="release-test"),
         target=TargetRef(kind="global", project_id="yoke"),
         payload={
@@ -105,14 +86,14 @@ def test_release_tag_accepts_commit_and_tag_messages_with_numeric_content(monkey
         },
     )
 
-    outcome = github_release_tag.handle_create_next_release_tag(request)
+    outcome = github_release_tag.handle_create_commit_release_tag(request)
 
     assert outcome.primary_success is True
-    assert outcome.result_payload["tag"] == "v0.1.1+launch.500"
+    assert outcome.result_payload["tag"] == "0.2.0.202610140941"
     assert outcome.result_payload["created"] is True
     assert paths == [
         f"/repos/upyoke/yoke/git/commits/{source_sha}",
-        "/graphql",
+        "/repos/upyoke/yoke/git/ref/tags/0.2.0.202610140941",
         "/repos/upyoke/yoke/git/tags",
         "/repos/upyoke/yoke/git/refs",
     ]

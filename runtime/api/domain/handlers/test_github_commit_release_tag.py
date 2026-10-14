@@ -10,7 +10,6 @@ from yoke_contracts.api.function_call import (
     TargetRef,
 )
 from yoke_core.domain.gh_rest_transport_errors import (
-    RestNotFoundError,
     RestUnprocessableError,
 )
 from yoke_core.domain.handlers import github_commit_release_tag as subject
@@ -55,7 +54,7 @@ def setup(monkeypatch):
         if "/git/ref/" in path:
             assert path.endswith(TAG)
             if state["ref"] is None:
-                raise RestNotFoundError("missing", status=404)
+                return None
             return state["ref"]
         if "/git/tags/" in path:
             return {

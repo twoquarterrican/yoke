@@ -10,7 +10,6 @@ from yoke_contracts.github_app_installation_permissions import (
 )
 from yoke_contracts.release_version import commit_version
 from yoke_core.domain.gh_rest_transport_errors import (
-    RestNotFoundError,
     RestTransportError,
     RestUnprocessableError,
 )
@@ -28,9 +27,8 @@ from yoke_core.domain.handlers.github_release_tag import (
 
 
 def _existing(repo: str, tag: str, source: str, token: str) -> bool:
-    try:
-        ref = rest_get(f"/repos/{repo}/git/ref/tags/{tag}", token=token)
-    except RestNotFoundError:
+    ref = rest_get(f"/repos/{repo}/git/ref/tags/{tag}", token=token)
+    if ref is None:
         return False
     obj = ref.get("object", {}) if isinstance(ref, dict) else {}
     if obj.get("type") != "tag":
