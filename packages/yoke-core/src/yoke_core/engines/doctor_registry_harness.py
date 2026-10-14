@@ -100,6 +100,7 @@ from yoke_core.engines.doctor_hc_session_relay_orphans import (
     hc_session_relay_orphans,
 )
 from yoke_core.engines.doctor_registry_types import HealthCheck
+from yoke_core.engines.doctor_install import INSTALL_HEALTH_CHECKS
 from yoke_core.engines.doctor_hc_hook_resident import (
     SLUG as HOOK_RESIDENT_SLUG,
     TITLE as HOOK_RESIDENT_TITLE,
@@ -195,5 +196,6 @@ HARNESS_HEALTH_CHECKS: List[HealthCheck] = [
     ),
 ]
 
+HARNESS_HEALTH_CHECKS.extend(INSTALL_HEALTH_CHECKS)
 
 __all__ = ["HARNESS_HEALTH_CHECKS"]

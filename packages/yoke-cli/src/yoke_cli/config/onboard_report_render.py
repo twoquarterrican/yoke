@@ -61,6 +61,21 @@ def render_human(report: Dict[str, Any]) -> str:
     project_report = report.get("project_onboarding")
     if isinstance(project_report, dict):
         _append_project_handoff(lines, project_report)
+    health = report.get("install_health")
+    if isinstance(health, dict):
+        lines.extend(
+            [
+                "",
+                "Install readiness: "
+                + ("ready" if health.get("ready") else "needs attention"),
+            ]
+        )
+        for row in health.get("results", []):
+            lines.append(
+                f"  {row.get('severity')}: {row.get('hc')} — {row.get('detail')}"
+            )
+        if health.get("error"):
+            lines.append(f"  {health['error'].get('code')}: {health['recovery']}")
     lines.extend(["", "Next steps:"])
     lines.extend(f"  - {step}" for step in report["next_steps"])
     lines.append("")

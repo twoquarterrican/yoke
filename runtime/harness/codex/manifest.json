@@ -11,6 +11,16 @@
     "bundled_candidates": [
       "/Applications/ChatGPT.app/Contents/Resources/codex"
     ],
+    "authentication": {
+      "status_args": [
+        "login",
+        "status"
+      ],
+      "signed_in_key": "",
+      "login_args": [
+        "login"
+      ]
+    },
     "project_discovery": {
       "instruction_file": "AGENTS.md",
       "skill_source": ".agents/skills/yoke",

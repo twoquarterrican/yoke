@@ -127,3 +127,56 @@ def test_warning_state_failure_preserves_hook_fallback(monkeypatch, tmp_path, ca
     monkeypatch.setattr(hooks, "_evaluate_inprocess", lambda *a, **kw: 7)
     assert hooks.hook_evaluate(["PreToolUse"]) == 7
     assert "WARNING:" not in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "loaded,expected,version,installed,reason",
+    [
+        ("a" * 40, "a" * 40, "", "", ""),
+        ("b" * 40, "a" * 40, "", "", "YOKE_HOOK_VERSION_MISMATCH"),
+        ("unknown", "unknown", "0.1.1+launch.400", "0.1.1+launch.400", ""),
+        (
+            "unknown",
+            "unknown",
+            "0.1.1+launch.399",
+            "0.1.1+launch.400",
+            "YOKE_HOOK_VERSION_MISMATCH",
+        ),
+        ("unknown", "unknown", "", "", "YOKE_HOOK_REVISION_UNKNOWN"),
+    ],
+)
+def test_health_reads_identity_without_evaluating_or_restarting(
+    monkeypatch, loaded, expected, version, installed, reason
+):
+    import socket
+    import tempfile
+    import threading
+    from pathlib import Path
+    from yoke_contracts.hook_evaluator_protocol import receive_frame
+    from yoke_harness import hook_resident_probe
+
+    monkeypatch.setattr(
+        "yoke_contracts.engine_version.installed_engine_version", lambda: installed
+    )
+    monkeypatch.setattr(hook_resident_probe, "_LOADED_VERSION", version)
+    frames = []
+    with tempfile.TemporaryDirectory(dir="/tmp", prefix="hh-") as directory:
+        address = Path(directory) / "socket"
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+            listener.bind(str(address))
+            listener.listen()
+
+            def answer():
+                peer, _ = listener.accept()
+                with peer:
+                    frame = receive_frame(peer)
+                    frames.append(frame)
+                    assert hook_resident_probe.answer_probe(peer, frame, loaded)
+
+            worker = threading.Thread(target=answer)
+            worker.start()
+            result = health.resident_revision_problem(address, expected)
+            worker.join(timeout=2)
+            assert not worker.is_alive()
+    assert frames == [{"kind": "health"}]
+    assert reason in result if reason else result == ""

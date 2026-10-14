@@ -18,6 +18,9 @@ class HarnessCliManifest:
     minimum_engine_version: str = "0.0.0"
     version_args: tuple[str, ...] = ("--version",)
     bundled_candidates: tuple[str, ...] = ()
+    auth_args: tuple[str, ...] = ()
+    auth_signed_in_key: str = ""
+    login_args: tuple[str, ...] = ("login",)
 
     def to_json(self) -> dict[str, object]:
         return {
@@ -26,6 +29,11 @@ class HarnessCliManifest:
             "quota_source": self.quota_source,
             "version_args": list(self.version_args),
             "bundled_candidates": list(self.bundled_candidates),
+            "authentication": {
+                "status_args": list(self.auth_args),
+                "signed_in_key": self.auth_signed_in_key,
+                "login_args": list(self.login_args),
+            },
             "project_discovery": {
                 "instruction_file": "AGENTS.md",
                 "skill_source": ".agents/skills/yoke",
@@ -47,6 +55,9 @@ HARNESS_CLI_MANIFESTS = (
         "claude",
         "anthropic_oauth_usage",
         CLAUDE_AGENTS_MINIMUM_VERSION,
+        auth_args=("auth", "status", "--json"),
+        auth_signed_in_key="loggedIn",
+        login_args=("auth", "login"),
     ),
     HarnessCliManifest(
         "codex",
@@ -55,9 +66,16 @@ HARNESS_CLI_MANIFESTS = (
         "codex_account_rate_limits",
         "0.161.0",
         bundled_candidates=("/Applications/ChatGPT.app/Contents/Resources/codex",),
+        auth_args=("login", "status"),
     ),
     HarnessCliManifest(
-        "cursor", "cursor-cli", "cursor-agent", "cursor_dashboard_usage", "2026.10.01"
+        "cursor",
+        "cursor-cli",
+        "cursor-agent",
+        "cursor_dashboard_usage",
+        "2026.10.01",
+        auth_args=("status", "--format", "json"),
+        auth_signed_in_key="isAuthenticated",
     ),
 )
 

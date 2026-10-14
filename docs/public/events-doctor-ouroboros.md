@@ -227,12 +227,27 @@ The CLI runs machine-local checks on the client even when the control plane
 is hosted. A machine-only `--only` selection stays local; a mixed selection
 relays the control-plane checks and combines their results. New client checks
 do not depend on the server having the same roster. The `hook-resident` check
-reports an unavailable resident as WARN while hooks continue through their
-canonical in-process fallback:
+requires a live resident running the installed build. A missing, stale or
+unknown build fails with a new-session recovery; its read-only health probe
+does not evaluate hooks or restart the process:
 
 ```bash
 yoke watch doctor -- --only hook-resident
 ```
+
+For first-use readiness, select the install roster:
+
+```bash
+yoke doctor run --install --project P
+```
+
+This checks machine registration, relay, hook version, unattended permissions,
+configured GitHub auth, native CLI sign-in, dashboard build, observed session
+hook registration, foreign install residue, installed guidance and instruction
+discovery. Each failure gives one next step. Intentional GitHub disablement is
+N/A; absent or unknown evidence is not a pass. Guidance checks prove installed
+configuration, while the session check requires both registration and confirmed
+hook delivery. Full-corpus audits remain in the full Doctor selection.
 
 ## Ouroboros
 

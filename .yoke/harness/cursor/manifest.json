@@ -9,6 +9,17 @@
       "--version"
     ],
     "bundled_candidates": [],
+    "authentication": {
+      "status_args": [
+        "status",
+        "--format",
+        "json"
+      ],
+      "signed_in_key": "isAuthenticated",
+      "login_args": [
+        "login"
+      ]
+    },
     "project_discovery": {
       "instruction_file": "AGENTS.md",
       "skill_source": ".agents/skills/yoke",

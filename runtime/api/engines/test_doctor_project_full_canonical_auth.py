@@ -184,7 +184,7 @@ class TestProjectGhAuthCanonical:
         assert "GitHub App capability row" in rec.results[0].detail
         assert "projects github-binding bind" in rec.results[0].detail
 
-    def test_disabled_without_github_capability_is_a_healthy_skip(
+    def test_disabled_without_github_capability_is_not_applicable(
         self,
         db_path: str,
     ):
@@ -212,7 +212,7 @@ class TestProjectGhAuthCanonical:
         finally:
             conn.close()
 
-        assert rec.results[0].result == "SKIP"
+        assert rec.results[0].result == "N/A"
         assert "github_sync_mode=disabled" in rec.results[0].detail
         assert "project auth check skipped" in rec.results[0].detail
 

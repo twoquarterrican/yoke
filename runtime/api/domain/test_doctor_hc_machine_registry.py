@@ -6,7 +6,6 @@ import pytest
 
 from yoke_core.domain import machine_registry
 from yoke_core.engines import doctor_hc_machine_registry as check
-from yoke_core.engines.doctor_applicability import NOT_APPLICABLE
 from yoke_core.engines.doctor_report import DoctorArgs, RecordCollector
 from runtime.api.domain.machine_registry_test_support import (
     MACHINE_ID,
@@ -48,7 +47,8 @@ def test_an_unregistered_machine_fails_with_the_registration_repair(local_machin
     assert "yoke machine register" in result.detail
 
 
-def test_a_machine_with_no_id_yet_is_not_applicable(monkeypatch):
+def test_a_machine_with_no_id_fails_with_setup_recovery(monkeypatch):
     monkeypatch.setattr(check, "_local_machine_id", lambda: "")
     result = _run(registry_connection()).results[0]
-    assert result.result == NOT_APPLICABLE
+    assert result.result == "FAIL"
+    assert "yoke setup" in result.detail

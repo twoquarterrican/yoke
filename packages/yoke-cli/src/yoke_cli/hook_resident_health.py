@@ -10,7 +10,6 @@ from pathlib import Path
 
 
 WARNING_INTERVAL_SECONDS = 300
-_PROBE_TIMEOUT_SECONDS = 0.2
 
 
 def claim_fallback_warning(state_dir: Path) -> bool:
@@ -44,12 +43,35 @@ def claim_fallback_warning(state_dir: Path) -> bool:
         return False
 
 
-def resident_socket_problem(socket_path: Path) -> str:
-    """Probe the listener without starting a resident or evaluating a hook."""
+def resident_revision_problem(socket_path: Path, expected: str) -> str:
+    """Read loaded identity without evaluating hooks or restarting the process."""
+    from yoke_contracts.hook_evaluator_protocol import receive_frame, send_frame
+    from yoke_contracts.hook_evaluator_protocol import HookEvaluatorProtocolError
+
+    from yoke_contracts.engine_version import installed_engine_version
+
+    version = installed_engine_version()
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as peer:
-            peer.settimeout(_PROBE_TIMEOUT_SECONDS)
+            peer.settimeout(1.0)
             peer.connect(str(socket_path))
-    except OSError as exc:
-        return f"YOKE_HOOK_RESIDENT_UNREACHABLE: {type(exc).__name__} at {socket_path}"
+            send_frame(peer, {"kind": "health"})
+            response = receive_frame(peer)
+    except (OSError, HookEvaluatorProtocolError) as exc:
+        return f"YOKE_HOOK_RESIDENT_UNREACHABLE: {type(exc).__name__}"
+    loaded = response.get("loaded_revision")
+    if response.get("status") != "health":
+        return (
+            "YOKE_HOOK_REVISION_UNKNOWN: resident health requires the protocol from "
+            f"installed build {expected if expected != 'unknown' else version or 'unknown'}"
+        )
+    if expected and expected != "unknown":
+        if loaded != expected:
+            return f"YOKE_HOOK_VERSION_MISMATCH: loaded {loaded}, installed {expected}"
+    elif version and version != "0.1.0":
+        observed = response.get("engine_version")
+        if observed != version:
+            return f"YOKE_HOOK_VERSION_MISMATCH: loaded {observed or 'unknown'}, installed {version}"
+    else:
+        return "YOKE_HOOK_REVISION_UNKNOWN: installed build identity is unavailable"
     return ""

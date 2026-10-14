@@ -9,11 +9,14 @@ every ``yoke`` call by hand, including the recovery commands Yoke tells them
 to run when something breaks.
 
 One record per harness the machine actually has. A harness that is not
-installed is SKIP, not a pass: there is no posture to report.
+installed is N/A, not a pass: there is no posture to report.
 """
 
 from __future__ import annotations
 
+import os
+
+from yoke_cli.config.path_harness_clis import resolve_harness_clis
 from yoke_contracts.harness_unattended_posture import (
     CLAUDE_FAMILY,
     CODEX_FAMILY,
@@ -30,17 +33,27 @@ TITLE = "Every installed harness runs yoke without approval prompts"
 
 
 def hc_harness_unattended_posture(
-    conn, args: DoctorArgs, rec: RecordCollector,
+    conn,
+    args: DoctorArgs,
+    rec: RecordCollector,
 ) -> None:
     """HC-harness-unattended-posture: no harness prompts on yoke commands."""
     prompting: list[str] = []
     unattended: list[str] = []
     absent: list[str] = []
+    installed = {
+        entry.harness_id
+        for entry in resolve_harness_clis(os.environ.get("PATH"))
+        if entry.path
+    }
     for harness_id in (CLAUDE_FAMILY, CODEX_FAMILY, CURSOR_FAMILY):
         path = managed_config_paths()[harness_id]
         config, reason = read_posture_config(harness_id, path)
         if config is None:
-            absent.append(reason)
+            if path.exists() or harness_id in installed:
+                prompting.append(f"HARNESS_POSTURE_UNVERIFIED: {harness_id}: {reason}")
+            else:
+                absent.append(reason)
             continue
         problems = posture_problems(harness_id, config)
         if problems:
@@ -49,19 +62,26 @@ def hc_harness_unattended_posture(
             unattended.append(harness_id)
     if prompting:
         rec.record(
-            SLUG, TITLE, "FAIL",
-            "A session you open in these harnesses asks before every yoke "
-            "command.\n  " + "\n  ".join(prompting) + f"\n  {POSTURE_RECOVERY}",
+            SLUG,
+            TITLE,
+            "FAIL",
+            "Unattended permission configuration is missing, unreadable, or still prompts.\n  "
+            + "\n  ".join(prompting)
+            + f"\n  {POSTURE_RECOVERY}",
         )
         return
     if not unattended:
         rec.record(
-            SLUG, TITLE, "SKIP",
+            SLUG,
+            TITLE,
+            "N/A",
             "No managed harness is set up on this machine: " + "; ".join(absent),
         )
         return
     rec.record(
-        SLUG, TITLE, "PASS",
+        SLUG,
+        TITLE,
+        "PASS",
         f"{', '.join(unattended)} run yoke unattended"
         + (f"; not installed here: {len(absent)}" if absent else ""),
     )

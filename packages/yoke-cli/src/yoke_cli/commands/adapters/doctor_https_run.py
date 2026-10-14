@@ -23,6 +23,7 @@ from yoke_cli.commands._helpers import (
     build_actor,
     call_dispatcher,
 )
+from yoke_cli.commands.adapters.doctor_install import normalize_install_result
 from yoke_cli.commands.adapters.doctor_https_receipt import (
     persist_composed_receipt,
 )
@@ -196,6 +197,7 @@ def dispatch_chunked(
             composed.append("relayed_control_plane")
         result["composed"] = "+".join(composed)
 
+    normalize_install_result(payload, result)
     final = FunctionCallResponse(
         success=not relay_failed,
         function=response.function,

@@ -60,6 +60,11 @@ def _run_locked_apply(
             report_path=summary.get("path"),
             resume_command=summary.get("resume_command"),
         ) from exc
+    if tui_progress is None:
+        from yoke_cli.commands.adapters.doctor_install import setup_readiness
+
+        report["install_health"] = setup_readiness(report, kwargs)
+        writer.payload["install_health"] = report["install_health"]
     writer.finish()
     report["apply_report"] = writer.summary()
     return report
