@@ -11,7 +11,7 @@ from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import query_rows
 from yoke_core.domain.project_identity import resolve_project
 from yoke_core.domain.qa_execution_proof import qa_run_outcome
-from yoke_core.domain.qa_latest_execution import latest_execution_id_sql
+from yoke_core.domain.qa_latest_execution import latest_execution_sql
 from yoke_core.domain.qa_method_definitions import method_presentations
 from yoke_core.domain.qa_obligation_settlement import (
     unanswered_attempt_sql,
@@ -86,14 +86,15 @@ def list_plans(
         case = dict(raw)
         case["host_baselines"] = _json(case["host_baselines"])
         cases_by_plan[int(case["plan_id"])].append(case)
-    # The plan_id index bounds this to the page's own requirements, so the
-    # cost follows page size rather than the whole requirement history.
+    # The plan_id index bounds this to the page's own requirements and the
+    # lateral LIMIT 1 reads each one's newest run through its index, so the
+    # cost follows the page rather than the whole requirement and run history.
     outcomes = query_rows(
         conn,
         "SELECT DISTINCT ON (q.plan_id) q.plan_id, q.id, q.waived_at, r.verdict, "
         "r.verdict_reason, r.case_outcome, "
         "COALESCE(r.completed_at, r.created_at, q.created_at) AS happened_at "
-        f"FROM qa_requirements q LEFT JOIN qa_runs r ON r.id=({latest_execution_id_sql('q.id')}) "
+        f"FROM qa_requirements q LEFT JOIN LATERAL ({latest_execution_sql('q.id')}) r ON TRUE "
         f"WHERE q.plan_id IN ({markers}) AND {unretracted_requirement_sql(conn, 'q')} "
         f"AND {unanswered_attempt_sql(conn, 'q')} "
         "ORDER BY q.plan_id, happened_at DESC, q.id DESC",

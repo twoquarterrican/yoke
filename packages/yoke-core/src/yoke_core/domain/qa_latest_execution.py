@@ -25,13 +25,18 @@ def actual_execution_sql(alias: str) -> str:
 
 
 def latest_execution_id_sql(requirement_id: str) -> str:
-    """Newest actual start, with id breaking equal starts, on PostgreSQL.
+    """Newest actual start, with id breaking equal starts, on PostgreSQL."""
+    return latest_execution_sql(requirement_id, "latest.id")
+
+
+def latest_execution_sql(requirement_id: str, columns: str = "latest.*") -> str:
+    """The newest actual start's row, for a ``LEFT JOIN LATERAL`` per requirement.
 
     Starts are native instants. NULL starts sort first so an
     ambiguous attempt cannot be hidden by an older passing attempt.
     """
     return (
-        "SELECT latest.id FROM qa_runs latest "
+        f"SELECT {columns} FROM qa_runs latest "
         f"WHERE latest.qa_requirement_id = {requirement_id} "
         f"AND {actual_execution_sql('latest')} "
         "ORDER BY latest.started_at DESC NULLS FIRST, "
