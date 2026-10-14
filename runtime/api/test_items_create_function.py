@@ -16,6 +16,7 @@ real ``execute_create`` against a disposable DB.
 
 from __future__ import annotations
 
+import json
 import os
 from unittest import mock
 
@@ -190,7 +191,7 @@ class TestItemsCreateHandler:
 
 
 class TestItemsCreateEndToEnd:
-    def test_plan_posture_creates_item_attachment_at_dash_review(
+    def test_plan_posture_records_choice_without_item_attachment(
         self,
         tmp_db,
         monkeypatch,  # noqa: F811
@@ -258,9 +259,13 @@ class TestItemsCreateEndToEnd:
         finally:
             conn.close()
 
-        assert int(attachment["plan_id"]) == int(plan["id"])
-        assert attachment["transition_id"] == "reviewing-implementation"
-        assert attachment["qa_phase"] == "verification"
+        assert attachment is None
+        assert json.loads(_item_field(tmp_db, item_id, "workflow_posture"))[
+            "verification"
+        ] == {
+            "kind": "plan",
+            "plan_id": plan["id"],
+        }
         assert int(requirement_count) == 0
 
     def test_web_form_create_stores_spec_and_posture_atomically(
