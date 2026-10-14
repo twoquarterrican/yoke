@@ -9,17 +9,15 @@ PASS-when-WARN-expected assertions.
 The fixture points ``yoke_core.engines.doctor_report._resolve_repo_root`` at
 a per-session empty temp directory and points ``YOKE_MACHINE_CONFIG_FILE`` at
 an empty per-session JSON config. Tests that DO want to exercise
-repo-root-dependent paths or cutoff values layer their own ``patch(...)`` /
-``patch.dict(...)`` context manager INSIDE the test, which takes precedence
-over the outer autouse patch.
+repo-root-dependent paths or cutoff values layer their own ``patch(...)``,
+``patch.dict(...)`` or ``monkeypatch`` override INSIDE the test, which takes
+precedence over the autouse isolation.
 """
 
 from __future__ import annotations
 
-import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -40,28 +38,22 @@ def _engines_isolated_repo_root():
 
 
 @pytest.fixture(autouse=True)
-def _isolate_engines_from_live_config(_engines_isolated_repo_root):
+def _isolate_engines_from_live_config(_engines_isolated_repo_root, monkeypatch):
     """Block engines tests from reading the live machine config by default.
 
-    Per-test overrides via ``with patch(...)`` continue to win because
-    ``unittest.mock.patch`` uses a stack.
+    The isolation shares ``monkeypatch``'s undo stack with the test's own
+    ``monkeypatch.setenv`` calls, so teardown unwinds them in reverse order and
+    no test's temporary ``HOME`` survives into the next test. Per-test
+    overrides via ``with patch(...)`` or ``monkeypatch`` still win.
     """
     repo_root, config_path = _engines_isolated_repo_root
-    with (
-        patch(
-            "yoke_core.engines.doctor_report._resolve_repo_root",
-            return_value=repo_root,
-        ),
-        patch.dict(
-            os.environ,
-            {
-                "YOKE_MACHINE_CONFIG_FILE": config_path,
-                "YOKE_MACHINE_HOME": "",
-                "HOME": repo_root,
-            },
-        ),
-    ):
-        yield
+    monkeypatch.setattr(
+        "yoke_core.engines.doctor_report._resolve_repo_root",
+        lambda *_args, **_kwargs: repo_root,
+    )
+    monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", config_path)
+    monkeypatch.setenv("YOKE_MACHINE_HOME", "")
+    monkeypatch.setenv("HOME", repo_root)
 
 
 @pytest.fixture()
