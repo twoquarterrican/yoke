@@ -173,9 +173,10 @@ def handle_plan_case_begin(request: FunctionCallRequest) -> HandlerOutcome:
                 machine=held.machine,
                 rationale=f"lease {held.lease.id} held by {held.lease.session_id}",
             )
-            waiting["lease_context"] = waiting_claim_evidence(
-                held.lease, held.contention
+            contention = held.contention and held.contention.in_line(
+                waiting["host_wait"]
             )
+            waiting["lease_context"] = waiting_claim_evidence(held.lease, contention)
             return HandlerOutcome(primary_success=True, result_payload=waiting)
     except (MachineQaProtocolError, TestMachineCapabilityError, ValueError) as exc:
         conn.rollback()

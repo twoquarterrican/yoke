@@ -1,4 +1,8 @@
-"""Canonical steering-seat recovery command for a stranded coordination claim."""
+"""Canonical release commands for a held coordination claim.
+
+The holder releases its own claim; a steering seat recovers one stranded
+by another session.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +16,17 @@ OPERATOR_RELEASE_USAGE = (
     "--holder-session-id S --reason R [--json]"
 )
 OPERATOR_RELEASE_REASON_EXAMPLE = "stale holder confirmed"
+HOLDER_RELEASE_REASON_EXAMPLE = "work finished"
+
+
+def holder_release_command(
+    claim_id: int, *, reason: str = HOLDER_RELEASE_REASON_EXAMPLE
+) -> str:
+    """Render the holder's own release, which also advances any waiting line."""
+    return (
+        f"yoke claims coordination-claim release --claim-id {int(claim_id)} "
+        f"--reason {shlex.quote(str(reason))}"
+    )
 
 
 def operator_release_command(
@@ -48,7 +63,9 @@ def operator_release_command(
 
 
 __all__ = [
+    "HOLDER_RELEASE_REASON_EXAMPLE",
     "OPERATOR_RELEASE_REASON_EXAMPLE",
     "OPERATOR_RELEASE_USAGE",
+    "holder_release_command",
     "operator_release_command",
 ]

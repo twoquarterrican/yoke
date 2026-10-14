@@ -251,7 +251,7 @@ def release(
     claim = get_claim(conn, claim_id)
     if not claim.is_active:
         return claim
-    from yoke_core.domain.qa_host_turns import lock_host_turn, reserve_host_turn
+    from yoke_core.domain.qa_host_turns import host_claim_released, lock_host_turn
 
     lock_host_turn(conn, claim.target)
     conn.execute(
@@ -262,7 +262,7 @@ def release(
     from yoke_core.domain.claim_chain_state import record_release_intent
 
     record_release_intent(conn, claim_id=int(claim_id), intent=reason)
-    reserve_host_turn(conn, claim.target)
+    host_claim_released(conn, claim)
     if commit:
         conn.commit()
     released = get_claim(conn, claim_id)

@@ -159,6 +159,16 @@ def release_claim_by_id(
             f"Claim {claim_id} has already been released.",
         )
     target = work_claim_target_from_row(dict(row))
+    if target.machine_id:
+        # A Test Machine release must advance the host's waiting line.
+        from .coordination_claims import release
+
+        release(conn, claim_id, reason, canonical_reason=canonical_reason)
+        claim_row = _get_claim(conn, claim_id)
+        if isinstance(claim_row, dict):
+            claim_row["linked_path_claim_ids"] = []
+            claim_row["document_claim"] = None
+        return claim_row
 
     paired_document_claim: Optional[Dict[str, Any]] = None
     if target.kind == TARGET_KIND_STEERING:

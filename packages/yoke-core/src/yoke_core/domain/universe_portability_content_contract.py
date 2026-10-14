@@ -12,6 +12,7 @@ ARCHIVE_OMITTABLE_TARGET_TABLES = frozenset(
         "item_strategy_docs",
         "migration_content_adoptions",
         "ouroboros_entry_dispositions",
+        "qa_host_waits",
         "qa_methods",
         "qa_plan_cases",
         "qa_plan_item_attachments",

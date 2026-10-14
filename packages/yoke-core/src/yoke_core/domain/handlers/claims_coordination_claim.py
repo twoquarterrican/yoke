@@ -152,12 +152,51 @@ def handle_acquire(request: FunctionCallRequest) -> HandlerOutcome:
             return _err("payload_invalid", str(exc))
         try:
             claim = acquire(conn, target, request.actor.session_id, reason=body.reason)
-        except CoordinationClaimStaleHolderError as exc:
-            return _err("claim_stale_holder", str(exc))
         except CoordinationClaimHeldError as exc:
-            return _err("claim_held", str(exc))
+            code = (
+                "claim_stale_holder"
+                if isinstance(exc, CoordinationClaimStaleHolderError)
+                else "claim_held"
+            )
+            return _err(
+                code, _join_host_line(conn, request, body, identity, target, exc)
+            )
 
     return HandlerOutcome(result_payload={"claim": claim_as_dict(claim)})
+
+
+def _join_host_line(conn: Any, request, body, identity, target, exc) -> str:
+    """Queue a refused QA_HOST acquire; the release wakes it to rerun the same command.
+
+    The commit also keeps any turn the refused acquire reserved for an
+    earlier waiter.
+    """
+    import shlex
+
+    from yoke_core.domain.coordination_claims import active_claim
+    from yoke_core.domain.qa_host_turns import join_host_line
+
+    held = active_claim(conn, target)
+    if not target.machine_id or exc.contention is None or held is None:
+        return str(exc)
+    if held.session_id == request.actor.session_id:
+        return str(exc)  # this session already holds the host
+    command = (
+        f"yoke claims coordination-claim acquire --project {shlex.quote(identity.slug)} "
+        f"--key {shlex.quote(body.key)}"
+    )
+    if body.reason:
+        command += f" --reason {shlex.quote(body.reason)}"
+    wait = join_host_line(
+        conn,
+        target,
+        session_id=request.actor.session_id,
+        actor_id=int(request.actor.actor_id),
+        resume_command=command,
+        rationale=body.reason or "",
+    )
+    conn.commit()
+    return exc.contention.in_line(wait).message
 
 
 def handle_heartbeat(request: FunctionCallRequest) -> HandlerOutcome:

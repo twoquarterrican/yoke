@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from yoke_contracts.timestamps import utc_now
 
+from .qa_host_turns import cancel_host_waits
 from .db_helpers import instant_parameter
 
 from . import sessions_analytics as _sa
@@ -150,6 +151,7 @@ def reclaim_stale_session(
     from .strategy_doc_session_claims import release_session_doc_claims_for_session
 
     release_session_doc_claims_for_session(conn, session_id, reason="reclaimed")
+    cancel_host_waits(conn, session_id=session_id)
     clear_chain_checkpoint(conn, session_id)
     conn.execute(
         "UPDATE harness_sessions SET ended_at = %s WHERE session_id = %s",

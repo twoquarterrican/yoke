@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yoke_core.domain.db_helpers import query_rows
+from yoke_core.domain.qa_host_turns import cancel_host_waits
 from yoke_core.domain.qa_plan_execution_lifecycle import finish_plan_execution
 from yoke_core.domain.qa_plan_execution_schema import (
     LIVE_PLAN_EXECUTION_SQL,
@@ -17,8 +18,8 @@ from yoke_core.domain.schema_common import _table_exists
 def abort_removed_member_executions(conn: Any, *, run_id: str, item_id: int) -> None:
     """Abort only this run/member's live executions in the caller's transaction.
 
-    Clear every queue intent before releasing any reservation: releasing one
-    host must never grant it to another cursor of the same removed member.
+    Cancel every waiting-line entry before releasing any reservation: releasing
+    one host must never grant it to another cursor of the same removed member.
     Existing terminal evidence and other members' executions survive.
     """
     if not _table_exists(conn, "qa_plan_executions"):
@@ -75,11 +76,7 @@ def abort_removed_member_executions(conn: Any, *, run_id: str, item_id: int) -> 
     executions = [
         e for e in executions if e["state"] not in TERMINAL_PLAN_EXECUTION_STATES
     ]
-    for execution in executions:
-        conn.execute(
-            "UPDATE qa_plan_executions SET release_reason=NULL WHERE id=%s",
-            (execution["id"],),
-        )
+    cancel_host_waits(conn, execution_ids=[str(e["id"]) for e in executions])
     for execution in executions:
         finish_plan_execution(
             conn,
