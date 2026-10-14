@@ -148,10 +148,6 @@ def _invoke_missing_context_boundary(name: str, monkeypatch) -> str:
         from yoke_core.domain import verify_claim
 
         return str(verify_claim.main(["--item-id", "2318"]))
-    if name == "stale-string-audit":
-        from yoke_core.domain import stale_string_audit
-
-        return str(stale_string_audit.main(["discover-surfaces", "2318"]))
     if name == "render-body":
         from yoke_core.domain import render_body
 
@@ -219,7 +215,6 @@ def _invoke_missing_context_boundary(name: str, monkeypatch) -> str:
         "conduct-handoff",
         "shepherd-gate",
         "verify-claim",
-        "stale-string-audit",
         "render-body",
         "db-claim-prose",
         "path-claim-coverage",

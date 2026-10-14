@@ -11,14 +11,7 @@ prefixes almost always already says what the code or test does.
 
 This module deliberately never spells a literal criterion token in its own
 prose. It scans ``.yoke/doctor/`` along with every other live tree, so an
-illustrative example here would make the check flag itself — the same
-self-reference trap ``HC-obsoleted-terms`` avoids by escaping the separator
-in its pattern declarations.
-
-``HC-obsoleted-terms`` covers retired surface names and
-``HC-historical-yok-n-cruft`` covers work-item references. Neither covers
-acceptance-criterion labels, which is why they accumulated unchecked in test
-prose long after live modules were swept clean.
+illustrative example here would make the check flag itself.
 
 Exemptions
 ----------

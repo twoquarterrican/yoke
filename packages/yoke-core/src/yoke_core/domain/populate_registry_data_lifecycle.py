@@ -129,7 +129,6 @@ EXPECTED_LOW_CADENCE_ACTIVE: Tuple[str, ...] = (
     "PreviewEnvCleaned",
     "PreviewEnvCreated",
     "PreviewEnvOverwritten",
-    "RetiredSchemaResurrectionAttempt",
     "SMLRefreshCompleted",
     "SessionCwdBindingFailOpen",
     "SessionCwdBindingHealthCheckFailed",

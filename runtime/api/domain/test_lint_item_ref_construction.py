@@ -75,7 +75,7 @@ def test_unrelated_uppercase_dashes_not_flagged(tmp_path: Path) -> None:
     _write(
         tmp_path,
         "packages/pkg/src/slugs.py",
-        'SLUG = "HC-obsoleted-terms"\nAC = "AC-1"\nENC = "UTF-8"\n',
+        'SLUG = "HC-example-check"\nAC = "AC-1"\nENC = "UTF-8"\n',
     )
     assert scan(tmp_path, _PREFIXES) == []
 
@@ -181,9 +181,7 @@ def test_repository_item_ref_policy_has_no_stale_allowances() -> None:
     counts = counts_by_relpath(root, scan(root, [DEFAULT_PUBLIC_ITEM_PREFIX]))
     allowed = baseline_counts()
     offenders = {
-        path: count
-        for path, count in counts.items()
-        if count > allowed.get(path, 0)
+        path: count for path, count in counts.items() if count > allowed.get(path, 0)
     }
     stale = {
         path: (counts.get(path, 0), count)
@@ -200,7 +198,11 @@ def test_repository_item_ref_policy_has_no_stale_allowances() -> None:
         for hit in scan_bare_internal_cli_token(root)
     ]
     assert (offenders, stale, policy, stale_policy, cli_hits) == (
-        {}, {}, [], [], [],
+        {},
+        {},
+        [],
+        [],
+        [],
     )
 
 
@@ -231,9 +233,7 @@ def test_flags_str_item_id_wrapped_across_lines(tmp_path: Path) -> None:
     _write(
         tmp_path,
         "packages/pkg/src/wrapped.py",
-        "run_scan(\n"
-        "    str(item_id), stdout=buf, stderr=sys.stderr\n"
-        ")\n",
+        "run_scan(\n    str(item_id), stdout=buf, stderr=sys.stderr\n)\n",
     )
     hits = scan_bare_internal_cli_token(tmp_path)
     assert len(hits) == 1

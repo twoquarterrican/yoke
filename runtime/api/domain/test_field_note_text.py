@@ -69,7 +69,7 @@ def test_footer_does_not_carry_old_cardinality_string() -> None:
     # The fixed-count cardinality string was retired in favor of a
     # cardinality-free phrase so the catalog can grow / shrink without
     # drifting the inline-short footer. Construct the retired literal
-    # dynamically so the obsoleted-terms grep stays clean.
+    # from its words to keep the fixture easy to read.
     retired = " ".join(("7", "worked", "failure", "modes"))
     assert retired not in fnt.FOOTER
 
@@ -112,18 +112,20 @@ def test_failure_mode_titles_unique() -> None:
     assert len(set(titles)) == len(titles), titles
 
 
-_PURE_DATA_NAMES = frozenset({
-    "DIRECTIVE",
-    "BASIC_RECIPE",
-    "HELP_POINTER",
-    "FOOTER",
-    "KIND_VALUES",
-    "EVIDENCE_MAX_CHARS",
-    "KIND_OBSERVATION_DEFINITION",
-    "FailureMode",
-    "FAILURE_MODES",
-    "HELP_BODY",
-})
+_PURE_DATA_NAMES = frozenset(
+    {
+        "DIRECTIVE",
+        "BASIC_RECIPE",
+        "HELP_POINTER",
+        "FOOTER",
+        "KIND_VALUES",
+        "EVIDENCE_MAX_CHARS",
+        "KIND_OBSERVATION_DEFINITION",
+        "FailureMode",
+        "FAILURE_MODES",
+        "HELP_BODY",
+    }
+)
 
 
 def test_pure_data_surface_remains_pure_data() -> None:
@@ -138,8 +140,7 @@ def test_pure_data_surface_remains_pure_data() -> None:
         value = getattr(fnt, name)
         if inspect.isfunction(value) or inspect.ismethod(value):
             raise AssertionError(
-                f"field_note_text pure-data names must not be callable; "
-                f"found {name!r}"
+                f"field_note_text pure-data names must not be callable; found {name!r}"
             )
 
 
@@ -166,10 +167,15 @@ def test_format_failure_modes_for_help_includes_decision_tree_and_vocabulary() -
         assert kind in rendered
 
 
-def test_format_failure_modes_for_help_decision_tree_branches_on_observation_first() -> None:
+def test_format_failure_modes_for_help_decision_tree_branches_on_observation_first() -> (
+    None
+):
     rendered = fnt.format_failure_modes_for_help()
     # The decision tree's top branch now asks the bug-observation question first.
-    assert "Did you observe a minor bug or surprise unrelated to current scope?" in rendered
+    assert (
+        "Did you observe a minor bug or surprise unrelated to current scope?"
+        in rendered
+    )
 
 
 def test_format_failure_modes_for_help_does_not_carry_old_cardinality() -> None:
@@ -204,7 +210,10 @@ def test_help_body_lists_exactly_four_kinds() -> None:
 
 def test_help_body_includes_decision_tree_with_observation_top_branch() -> None:
     assert "Decision tree" in fnt.HELP_BODY
-    assert "Did you observe a minor bug or surprise unrelated to current scope?" in fnt.HELP_BODY
+    assert (
+        "Did you observe a minor bug or surprise unrelated to current scope?"
+        in fnt.HELP_BODY
+    )
 
 
 def test_help_body_includes_exactly_ten_worked_examples() -> None:

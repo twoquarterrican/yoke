@@ -18,7 +18,6 @@ own files (``test_hook_runner_chain_registry.py``,
 from __future__ import annotations
 
 import importlib
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -160,47 +159,6 @@ def test_chain_module_is_typed_or_subprocess_carveout(module_id: str) -> None:
         f"{module_id} is neither in any capability.subprocess_modules nor "
         f"exposes a callable evaluate(); the runner would emit "
         f"HookExecutionFailed{{failure='missing_evaluate'}} on first dispatch."
-    )
-
-
-# ---------------------------------------------------------------------------
-# The deleted Codex service-bridge module has no live consumers
-# ---------------------------------------------------------------------------
-
-
-def test_obsoleted_service_bridge_has_no_live_references() -> None:
-    """``codex_hooks_service_bridge`` is gone from the live runtime tree.
-
-    The target term is split at construction time so this enforcement test
-    is not itself a grep hit. The hit-filter additionally excludes (a) any
-    ``docs/archive/`` decision records that legitimately preserve history,
-    (b) this file (the term must appear here to be searched for), and (c)
-    ``check_obsoleted_terms.py`` — the canonical registry where retired
-    terms are enumerated by name so the HC scanner can detect them in other
-    files. References inside the registry are the contract surface; they
-    are not "live" consumers.
-    """
-    target = "codex_hooks_service" + "_bridge"
-    repo_root = Path(__file__).resolve().parents[2]
-    runtime_dir = repo_root / "runtime"
-    completed = subprocess.run(
-        ["grep", "-rn", "--exclude-dir=__pycache__", target, str(runtime_dir)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if completed.returncode == 1:
-        return  # grep exit 1 = no matches at all
-    hits = [
-        line
-        for line in completed.stdout.splitlines()
-        if line.strip()
-        and "/docs/archive/" not in line
-        and Path(__file__).name not in line
-        and "check_obsoleted_terms.py" not in line
-    ]
-    assert hits == [], f"{target} still referenced in live runtime tree:\n" + "\n".join(
-        hits
     )
 
 

@@ -41,5 +41,5 @@ Do not omit required scope to avoid a holder.
 | Tests/QA evidence | [test-and-record.md](test-and-record.md) |
 | Begin implementation | [implementation.md](implementation.md) |
 
-Context must precede audit and discovery. Applicable phase docs may be read
+Context must precede discovery. Applicable phase docs may be read
 together before executing them; Browser depth is conditional.

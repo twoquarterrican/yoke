@@ -276,8 +276,8 @@ contract floor adds tests that import reachability cannot discover. Those
 lines append `widening=<rule>:<path>` tokens. A `*` path means every change
 activates that floor; a concrete path identifies the source mapping that
 added its companion tests. For example,
-`widening=repo_cleanliness_contract:*` explains why the live-tree retired-term
-scan runs for an otherwise unrelated tracked-content change.
+`widening=repo_cleanliness_contract:*` explains why the documentation hygiene
+tests run for an otherwise unrelated tracked-content change.
 
 ## When CI disagrees with the local run
 

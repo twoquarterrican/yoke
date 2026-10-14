@@ -7,7 +7,7 @@ obsoleted path: any tracked file that still teaches it would point
 agents at files that no longer exist. Exclusions:
 
 * ``docs/archive/`` + ``docs/archive/legacy-plan-artifacts/`` — historical record
-  surfaces (the obsoleted-terms precedent).
+  surfaces.
 * ``.yoke/strategy/`` — the doc BODIES are DB content; self-references
   inside them are updated through the ingest/replace path, not git.
 * This gate and the resolver tests, which assert the legacy shape is
@@ -22,8 +22,16 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _DOC_SLUGS = (
-    "MISSION", "VISION", "PAD", "PROMPTS", "WISPS",
-    "LANDSCAPE", "MASTER-PLAN", "CURRENT-PLAN", "LEGACY-NOTES", "FUTURE-NOTES",
+    "MISSION",
+    "VISION",
+    "PAD",
+    "PROMPTS",
+    "WISPS",
+    "LANDSCAPE",
+    "MASTER-PLAN",
+    "CURRENT-PLAN",
+    "LEGACY-NOTES",
+    "FUTURE-NOTES",
 )
 
 _NEEDLES = tuple(f"strategy/{slug}.md" for slug in _DOC_SLUGS)
@@ -45,7 +53,10 @@ _EXEMPT_PREFIXES = (
 def _tracked_files() -> list:
     result = subprocess.run(
         ["git", "ls-files", "-z"],
-        cwd=_REPO_ROOT, capture_output=True, text=True, timeout=30,
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
         check=True,
     )
     return [p for p in result.stdout.split("\0") if p]
@@ -62,7 +73,7 @@ def _violations_in(rel: str, text: str) -> list:
             start = idx + 1
             # The current location embeds the same substring after
             # ".yoke/" — only the bare root form is a violation.
-            if text[max(0, idx - 6):idx] == ".yoke/":
+            if text[max(0, idx - 6) : idx] == ".yoke/":
                 continue
             line = text.count("\n", 0, idx) + 1
             hits.append(f"{rel}:{line}: {needle}")

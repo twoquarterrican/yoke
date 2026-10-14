@@ -16,10 +16,8 @@ The shapes:
     checkout can answer it.
 There is deliberately no general self-project shape here. A check that
 only describes the project owning this installation belongs in that
-project's own ``.yoke/doctor/`` folder. The one engine exception is
-``retired-schema-resurrection``, which inspects this installation's
-schema history and is declared ``project_scope=self``.
-The engine roster is otherwise what is true of any project Yoke manages.
+project's own ``.yoke/doctor/`` folder. The engine roster describes what
+is true of any project Yoke manages.
 ``_EXT`` / ``_EXT_SRC``
     Diagnoses a project other than the one that owns the installation.
 ``_MIGRATION`` / ``_EXT_HEALTH`` / ``_EXT_VPS``
@@ -34,7 +32,6 @@ from typing import Dict, List
 from yoke_core.engines.doctor_applicability import (
     CheckApplicability,
     PROJECT_SCOPE_EXTERNAL,
-    PROJECT_SCOPE_SELF,
     RUNTIME_LOCAL,
     UNIVERSAL,
 )
@@ -50,7 +47,6 @@ _LOCAL_CONTROL_PLANE = CheckApplicability(
     runtimes=frozenset({RUNTIME_LOCAL}),
     requires_local_control_plane=True,
 )
-_SELF = CheckApplicability(project_scope=PROJECT_SCOPE_SELF)
 _SRC = CheckApplicability(requires_source_checkout=True)
 _EXT = CheckApplicability(project_scope=PROJECT_SCOPE_EXTERNAL)
 _EXT_SRC = CheckApplicability(
@@ -224,10 +220,6 @@ _SHAPES = (
     (
         _LOCAL_CONTROL_PLANE,
         ("local-operating-actor-authority",),
-    ),
-    (
-        _SELF,
-        ("retired-schema-resurrection",),
     ),
     (
         _EXT,

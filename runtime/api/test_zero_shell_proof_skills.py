@@ -1,17 +1,4 @@
-"""Task 7: skill-file regression guards for the zero-shell-proof suite.
-
-The Yoke-functions epic extends this suite with
-assertions keyed on the canonical
-``RECIPE_RESIDUE_PATTERNS`` vocabulary plus per-skill-family function-call
-expectations. Each new test below documents which AC family it covers:
-
-* Banned-pattern hits in skill prose use the same
-  ``RECIPE_RESIDUE_PATTERNS`` constant as the manifest test and Doctor HC.
-* False-Teacher Eradication Contract — Progress Log writes teach the
-  ``items.progress_log.append`` adapter; structured-field writes teach the
-  ``items update --stdin`` shape (the retained operator surface) without
-  the discouraged ``mktemp`` read-then-upsert choreography.
-"""
+"""Skill-file regression guards for the zero-shell-proof suite."""
 
 from __future__ import annotations
 
@@ -19,9 +6,6 @@ import re
 from typing import List, Set, Tuple
 
 from yoke_contracts.session_identity import AMBIENT_ENV_VARS
-from yoke_core.domain.lint_structured_field_transform_shell_messages import (
-    RECIPE_RESIDUE_PATTERNS,
-)
 from runtime.api.test_zero_shell_proof_test_helpers import (
     _MKTEMP_ALLOWLIST,
     _live_doc_files,
@@ -102,7 +86,7 @@ def test_no_service_client_script_path_in_skills() -> None:
     ``python3 "$_workspace/runtime/api/service_client.py"`` — they must
     use ``python3 -m yoke_core.api.service_client`` instead.
     """
-    pattern = re.compile(r'service_client\.py')
+    pattern = re.compile(r"service_client\.py")
     offenders: List[Tuple[str, int, str]] = []
     for skill in _skill_files():
         rel = _skill_relative(skill)
@@ -160,48 +144,6 @@ def test_no_items_update_body_file_examples_in_live_docs() -> None:
         "Live docs/skills still teach ``items update ... --body-file`` "
         "as the default transport path. Prefer stdin-first examples.\n"
         + "\n".join(f"  {f}:{n}: {line}" for f, n, line in offenders)
-    )
-
-
-# ---------------------------------------------------------------------------
-# Yoke-functions epic: banned-pattern coverage keyed on
-# ``RECIPE_RESIDUE_PATTERNS`` plus per-skill-family function-call
-# expectations.
-# ---------------------------------------------------------------------------
-
-
-def test_no_recipe_residue_patterns_in_skill_files() -> None:
-    """Skill prose contains zero banned residue patterns.
-
-    Single source of truth is
-    ``yoke_core.domain.lint_structured_field_transform_shell_messages.
-    RECIPE_RESIDUE_PATTERNS``. Update both the messages module and the
-    Doctor HC together when the canonical vocabulary changes. This test
-    fails when any banned literal appears in a skill markdown file.
-    """
-    offenders: List[Tuple[str, int, str, str]] = []
-    for skill in _skill_files():
-        rel = _skill_relative(skill)
-        try:
-            text = skill.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            continue
-        for lineno, line in enumerate(text.splitlines(), start=1):
-            for pat in RECIPE_RESIDUE_PATTERNS:
-                if pat in line:
-                    offenders.append(
-                        (rel, lineno, pat, line.rstrip()[:160])
-                    )
-                    break
-    assert not offenders, (
-        "Skill prose contains banned terminal-soup recipes from "
-        "``RECIPE_RESIDUE_PATTERNS`` (YOK-1665). Rewrite each hit to "
-        "teach the function-call adapter (``yoke_function_dispatch`` "
-        "or the matching ``--json`` CLI shape).\n"
-        + "\n".join(
-            f"  {rel}:{lineno}: [{pat}] {snippet}"
-            for rel, lineno, pat, snippet in offenders[:40]
-        )
     )
 
 
@@ -276,26 +218,4 @@ def test_structured_writes_use_stdin_or_body_file_not_mktemp() -> None:
         "path; the CLI adapter accepts ``--stdin`` and ``--body-file`` "
         "as the two sanctioned content sources.\n"
         + "\n".join(f"  {f}:{n}: {snip}" for f, n, snip in offenders[:40])
-    )
-
-
-def test_recipe_residue_patterns_used_canonically() -> None:
-    """This test module imports ``RECIPE_RESIDUE_PATTERNS`` directly
-    so the assertion class cannot drift from the canonical vocabulary.
-
-    A future refactor that copies the patterns into a sibling module
-    instead of importing them must fail this check. The HC and the
-    manifest test both pin the same dependency.
-    """
-    assert RECIPE_RESIDUE_PATTERNS, (
-        "RECIPE_RESIDUE_PATTERNS must remain non-empty. The constant "
-        "lives in "
-        "yoke_core.domain.lint_structured_field_transform_shell_messages; "
-        "both this suite and the Doctor HC consume it directly."
-    )
-    # The constant must be a tuple so callers cannot mutate it by mistake.
-    assert isinstance(RECIPE_RESIDUE_PATTERNS, tuple), (
-        "RECIPE_RESIDUE_PATTERNS must be a tuple. The Doctor HC, the "
-        "lint module, and the regression-test suite all consume it as "
-        "an immutable shared vocabulary."
     )

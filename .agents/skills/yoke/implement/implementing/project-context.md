@@ -1,6 +1,6 @@
 # Active — Project Context Preflight
 
-Run after QA seeding and before the text-sensitive audit or discovery.
+Run after QA seeding and before implementation discovery.
 Implement and Conduct use this same registered read and selection recipe.
 
 ## Read configured context
@@ -57,6 +57,5 @@ Surface only concrete paths and patterns from files actually read:
 - Likely test/doc surfaces: helpers, fixtures, directories and file patterns.
 - Known implementation, route, structure or workflow patterns.
 
-The audit uses those surfaces before broadening to its minimum coverage.
 Implementation discovery starts with those files and patterns.
 Broad exploration is a fallback for areas the docs did not cover.
