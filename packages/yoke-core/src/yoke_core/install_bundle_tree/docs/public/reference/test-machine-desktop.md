@@ -53,6 +53,14 @@ fixture desktop, waits for its X socket to disappear, then starts a replacement.
 A connected RDP client blocks this repair; close it and rerun desktop access.
 GUI commands continue using their existing display without this access repair.
 
+To sign a browser identity in, run `yoke browser authorize --project P
+--identity NAME --machine MACHINE` from the connected workstation. It reads
+the project's declarations and opens the authorization window on that Test
+Machine's GUI desktop, then verifies after the operator closes it. No settings
+JSON or control-plane connection is needed on the Test Machine. Read
+`yoke browser authorize --help` and [browser identities](qa-platform/browser-identities.md)
+for SSH, lease and GUI prerequisites.
+
 The resizable viewer scales the shared desktop to fit its window. The initial
 window fits within 1280 by 800 logical pixels, with a doubled framebuffer on
 macOS for Retina readability. Resizing the window changes only the local view;

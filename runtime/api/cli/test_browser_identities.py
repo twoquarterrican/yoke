@@ -257,3 +257,70 @@ def test_a_host_without_the_control_plane_verifies_from_supplied_declarations(
     assert (
         browser_verify.browser_verify(["--project", "acme", "--identity", "buyer"]) == 2
     )
+
+
+def test_a_host_without_control_plane_authorizes_from_supplied_declarations(
+    buyer, monkeypatch, capsys
+):
+    monkeypatch.setattr(
+        browser_identities,
+        "declared_identities",
+        lambda *a, **k: pytest.fail("offline authorization read control plane"),
+    )
+    buyer["states"] = dict.fromkeys(SITES, "expired")
+    buyer["after_window"] = dict.fromkeys(SITES, "signed_in")
+    document = json.dumps({"identities": {"buyer": {"sites": list(SITES.values())}}})
+    assert _authorize("--declarations-json", document, "--json") == 0
+    assert len(buyer["windows"][0]) == 3
+    assert json.loads(capsys.readouterr().out)["ok"] is True
+
+
+def test_remote_route_runs_local_human_gate_and_verifies_after_window(
+    buyer, monkeypatch, capsys
+):
+    from types import SimpleNamespace
+    from yoke_cli.commands import browser_authorize_remote as remote
+    from yoke_harness import test_machine_gui_command as gui
+
+    document = {"identities": {"buyer": {"sites": list(SITES.values())}}}
+    monkeypatch.setattr(remote, "ensure_handlers_loaded", lambda: None)
+    monkeypatch.setattr(
+        remote, "build_actor", lambda: SimpleNamespace(session_id="own")
+    )
+    monkeypatch.setattr(
+        remote,
+        "call_dispatcher",
+        lambda **kw: SimpleNamespace(
+            success=True,
+            error=None,
+            result=(
+                {
+                    "machine": "fixture",
+                    "settings": {"os": "macos"},
+                    "active_lease": None,
+                }
+                if kw["function_id"] == "test_machine.get"
+                else {"settings_json": json.dumps(document)}
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        browser_identities,
+        "declared_identities",
+        lambda *a, **k: pytest.fail("remote host read control plane"),
+    )
+    buyer["states"] = {"google": "signed_in", "yoke": "expired", "paypal": "signed_in"}
+    buyer["after_window"] = {"yoke": "signed_in"}
+
+    def execute(**kwargs):
+        assert "--machine" not in kwargs["argv"]
+        code = browser_authorize.browser_authorize(kwargs["argv"][3:])
+        return subprocess.CompletedProcess([], code, capsys.readouterr().out, "")
+
+    monkeypatch.setattr(gui, "run_gui_command", execute)
+    assert _authorize("--machine", "fixture", "--json") == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["machine"] == "fixture" and payload["ok"]
+    assert buyer["windows"] == [[SITES["yoke"]["origin"]]]
+    assert buyer["gate"][0]["identity"] == "buyer"
+    assert all(s["state"] == "signed_in" for s in payload["sites"])

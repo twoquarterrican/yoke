@@ -145,3 +145,43 @@ def test_back_from_local_summary_repicks_cleanly(monkeypatch) -> None:
             assert "Which hosted environment" not in _body_text(app)
 
     asyncio.run(scenario())
+
+
+def test_body_swap_stops_if_shutdown_begins_during_child_unmount():
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    from yoke_cli.config.onboard_wizard_body_swap import BodySwap
+
+    calls = []
+    app = SimpleNamespace(is_running=True)
+
+    async def remove_children():
+        calls.append("remove")
+        # Textual shutdown sets is_running false before removing the shell.
+        await asyncio.sleep(0)
+        app.is_running = False
+
+    body = SimpleNamespace(remove_children=remove_children)
+    app._history = [
+        SimpleNamespace(builder=lambda: pytest.fail("view built after shutdown"))
+    ]
+    app.batch_update = nullcontext
+
+    def query(selector):
+        assert selector == "#onboard-body", "shell queried after shutdown"
+        return body
+
+    app.query_one = query
+    asyncio.run(BodySwap._swap_body(app))
+    assert calls == ["remove"]
+
+
+def test_pending_body_swap_is_discarded_after_shutdown():
+    from types import SimpleNamespace
+    from yoke_cli.config.onboard_wizard_body_swap import BodySwap
+
+    async def swap():
+        pytest.fail("queued swap ran after shutdown")
+
+    app = SimpleNamespace(is_running=False, _swap_pending=True, _swap_body=swap)
+    asyncio.run(BodySwap._apply_pending_swap(app))
