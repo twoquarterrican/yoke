@@ -69,7 +69,9 @@ def test_pipe_install_restores_terminal_on_interrupt_and_suspend(tmp_path, actio
         command = f"curl -fsSL {shlex.quote(INSTALL_SHIM_PATH.as_uri())} | sh\n"
         shell.send(command.encode())
         shell.wait_for(b"PIPE_SETUP_READY", after=start)
-        assert json.loads(evidence.read_text()) == {
+        terminal = json.loads(evidence.read_text())
+        wizard_pid = terminal.pop("pid")
+        assert terminal == {
             "stdin_tty": True,
             "foreground": True,
         }
@@ -80,7 +82,8 @@ def test_pipe_install_restores_terminal_on_interrupt_and_suspend(tmp_path, actio
             os.killpg(os.tcgetpgrp(shell.fd), signal.SIGTSTP)
             paused = shell.wait_for(shell.prompt, after=len(shell.output))
             assert b"Stopped" in paused
-            shell.wait_for(b"\x1b[?1049l", after=start)
+            shell.wait_stopped(wizard_pid)
+            shell.wait_for(b"\x1b[?1004l", after=start)
             assert_restored(bytes(shell.output[start:]))
             resumed = len(shell.output)
             shell.send(b"fg\n")

@@ -47,6 +47,22 @@ class TerminalShell:
                 self.output.extend(os.read(self.fd, 65536))
         return bytes(self.output[after:])
 
+    def wait_stopped(self, pid):
+        """Wait for setup itself, not just the pipeline shell, to stop."""
+        deadline = time.monotonic() + 12
+        while True:
+            state = subprocess.run(
+                ["ps", "-o", "stat=", "-p", str(pid)],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            if state.startswith("T"):
+                return
+            assert time.monotonic() < deadline, f"setup did not stop: {state}"
+            if select.select([self.fd], [], [], 0.02)[0]:
+                self.output.extend(os.read(self.fd, 65536))
+
     def close(self):
         # Failed assertions must also retire the foreground pipeline, not just
         # its shell. Each test owns a separate controlling terminal/session.
@@ -72,10 +88,22 @@ def wizard():
     from yoke_cli.config.onboard_terminal_driver import run_wizard_app
     from yoke_cli.config.onboard_wizard_app import OnboardWizardApp
 
+    # Make the shell-prompt/child-stop race deterministic: a loaded host can
+    # schedule the shell before setup reaches its final SIGSTOP. The real stop
+    # still happens, and the test must observe it before sending fg/SIGCONT.
+    original_kill = os.kill
+
+    def delayed_stop(pid, signum):
+        if pid == os.getpid() and signum == signal.SIGSTOP:
+            time.sleep(0.5)
+        return original_kill(pid, signum)
+
+    os.kill = delayed_stop
     assert sys.argv[1:] == ["setup", "--post-install"]
     Path(os.environ["TERMINAL_EVIDENCE"]).write_text(
         json.dumps(
             {
+                "pid": os.getpid(),
                 "stdin_tty": os.isatty(0),
                 "foreground": os.tcgetpgrp(0) == os.getpgrp(),
             }
