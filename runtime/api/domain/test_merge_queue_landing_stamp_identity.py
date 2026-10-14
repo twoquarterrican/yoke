@@ -72,14 +72,16 @@ def _wire(monkeypatch, *, batch: Any, failure: Any = None) -> dict:
 
 
 def test_the_stamp_names_the_merge_this_landing_resolved(monkeypatch) -> None:
+    """The batch names its train's tip; the stamp names this member's merge."""
     batch = BatchReceipt(
         pr_num="42",
-        merge_sha=MERGE_SHA,
+        merge_sha="t" * 40,
         members=("YOK-200",),
         head_sha=COMBINED_SHA,
         run_url="https://runs/42",
     )
     stamped = _wire(monkeypatch, batch=batch)
+    monkeypatch.setattr(close_out_mod, "_landing_merge", lambda *_a: MERGE_SHA)
 
     close_out_mod.record_landing(
         _ctx(),

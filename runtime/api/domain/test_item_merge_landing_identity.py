@@ -246,7 +246,11 @@ def test_local_publication_records_own_landing_after_later_push(checkout):
     assert stamps[-1]["merge_sha"] == candidate
 
 
-def test_delayed_pr_close_outs_do_not_share_the_last_items_merge(checkout, monkeypatch):
+@pytest.mark.parametrize("batch_names_train_tip", [False, True])
+def test_delayed_pr_close_outs_do_not_share_the_last_items_merge(
+    checkout, monkeypatch, batch_names_train_tip
+):
+    """Each member records its own merge, even when its batch names the tip."""
     from yoke_core.domain.merge_queue_batch_receipt import BatchReceipt
 
     repo, _, _, records, _, _ = checkout
@@ -268,7 +272,7 @@ def test_delayed_pr_close_outs_do_not_share_the_last_items_merge(checkout, monke
     def observe(_ctx, *, pr_num, **_kwargs):
         return BatchReceipt(
             pr_num=pr_num,
-            merge_sha=landings[pr_num][1],
+            merge_sha=final_merge if batch_names_train_tip else landings[pr_num][1],
             head_sha=final_merge,
             run_url="https://runs/shared-train",
         ), None

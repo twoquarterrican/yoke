@@ -226,7 +226,6 @@ def run(argv: List[str]) -> int:
         branch=branch,
         target=target,
         repo_root=str(repo_root),
-        landed_lane=landed_lane,
         outcome=outcome,
         queue_pr_number=str(queue.get("pr_number") or ""),
         queue_landed_at=queue.get("landed_at"),

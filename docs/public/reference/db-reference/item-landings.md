@@ -48,6 +48,9 @@ governed backfill, which calls the same `landing_route` classifier and the
 same append, keyed on `(item_id, merge_sha)`, so a merge close-out already
 recorded is left untouched. The append is idempotent on that key: a close-out
 re-entered after a dead wait converges on the landing it already recorded.
+Close-out records the commit and merge its merge or convergence resolved, not
+the earlier read of whether the lane had landed: a rebased lane that lands a
+second time can still match the first landing's receipt in that read.
 
 Read them with `yoke item-landings list PREFIX-N`, which also names the
 release that delivered each landing, or that none has, and whether the

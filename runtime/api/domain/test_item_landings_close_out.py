@@ -68,7 +68,6 @@ def test_a_standalone_merge_records_its_own_merge_commit(monkeypatch):
         branch="ITEM-41",
         target="main",
         repo_root="/repo",
-        landed_lane=None,
         outcome=_outcome(),
     )
 
@@ -94,7 +93,6 @@ def test_a_queue_landing_records_its_pull_request_and_the_moment_it_merged(
         branch="ITEM-42",
         target="main",
         repo_root="/repo",
-        landed_lane=None,
         outcome=_outcome(pr_num="1288"),
         queue_pr_number="1288",
         queue_landed_at=QUEUE_LANDED_AT,
@@ -117,7 +115,6 @@ def test_a_landing_with_no_distinct_merge_commit_is_keyed_on_what_landed(
         branch="ITEM-43",
         target="main",
         repo_root="/repo",
-        landed_lane=None,
         outcome=_outcome(merge_sha=""),
     )
 
@@ -125,31 +122,6 @@ def test_a_landing_with_no_distinct_merge_commit_is_keyed_on_what_landed(
     assert payload["merge_sha"] == LANE_SHA
     assert payload["candidate_sha"] == LANE_SHA
     assert payload["route"] == ROUTE_FAST_FORWARD
-
-
-def test_a_landed_lane_records_the_landing_that_carried_it(monkeypatch):
-    """Convergence on an already-landed lane is still that lane's landing."""
-    sent = _recorded(monkeypatch)
-
-    lane, note = landings.close_out_lane(
-        item_id="ITEM-44",
-        branch="ITEM-44",
-        target="main",
-        repo_root="/repo",
-        landed_lane=landed.LandedLane(
-            branch="ITEM-44",
-            target="main",
-            commit_sha=LANE_SHA,
-            merge_sha=MERGE_SHA,
-            touched_files=("a.py",),
-            source="lane branch",
-        ),
-        outcome=_outcome(already_merged=True),
-    )
-
-    assert note == ""
-    assert lane.source == "lane branch"
-    assert sent[0][1]["merge_sha"] == MERGE_SHA
 
 
 def test_a_landing_with_no_commit_at_all_names_why_and_does_not_write(
@@ -162,7 +134,6 @@ def test_a_landing_with_no_commit_at_all_names_why_and_does_not_write(
         branch="ITEM-45",
         target="main",
         repo_root="/repo",
-        landed_lane=None,
         outcome=_outcome(commit_sha="", merge_sha=""),
     )
 
@@ -191,7 +162,6 @@ def test_a_refused_record_warns_and_never_unwinds_the_merge(monkeypatch):
         branch="ITEM-46",
         target="main",
         repo_root="/repo",
-        landed_lane=None,
         outcome=_outcome(),
     )
 
@@ -199,8 +169,7 @@ def test_a_refused_record_warns_and_never_unwinds_the_merge(monkeypatch):
     assert note == "landing not recorded: control plane unreachable"
 
 
-def test_the_merge_command_records_the_landing_it_closed_out(monkeypatch, capsys):
-    """End to end through ``yoke merge item``'s own orchestration."""
+def _wire_merge_command(monkeypatch, landed_lane=None) -> list:
     item = {
         "id": 47,
         "public_ref": "ITEM-47",
@@ -217,7 +186,7 @@ def test_the_merge_command_records_the_landing_it_closed_out(monkeypatch, capsys
         "_resolve_checkout",
         lambda *_a: (Path("/repo"), "main"),
     )
-    monkeypatch.setattr(merge_cli.landed, "landed_lane", lambda **_kw: None)
+    monkeypatch.setattr(merge_cli.landed, "landed_lane", lambda **_kw: landed_lane)
     monkeypatch.setattr(
         merge_cli.stale_lane,
         "stale_unlanded_work",
@@ -246,14 +215,44 @@ def test_the_merge_command_records_the_landing_it_closed_out(monkeypatch, capsys
         "run_terminal_transition",
         lambda **_k: 0,
     )
-    sent = _recorded(monkeypatch)
     monkeypatch.setattr(merge_cli, "run_terminal_transition", lambda **_k: 0)
+    return _recorded(monkeypatch)
 
-    exit_code = merge_cli.run(
+
+def _run_merge_command() -> int:
+    return merge_cli.run(
         ["ITEM-47", "--result", "landed", "--verification", "suite green"],
     )
 
-    assert exit_code == 0
+
+def test_the_merge_command_records_the_landing_it_closed_out(monkeypatch, capsys):
+    """End to end through ``yoke merge item``'s own orchestration."""
+    sent = _wire_merge_command(monkeypatch)
+
+    assert _run_merge_command() == 0
     assert [function_id for function_id, _ in sent] == ["item_landings.record"]
     assert sent[0][1]["pr_number"] == "1290"
     assert sent[0][1]["route"] == ROUTE_MERGE_QUEUE
+
+
+def test_a_converged_landing_records_the_outcome_not_the_pre_converge_read(
+    monkeypatch, capsys
+):
+    """The landed-lane read can still name the landing a rebased lane replaced."""
+    replaced = landed.LandedLane(
+        branch="ITEM-47",
+        target="main",
+        commit_sha="3" * 40,
+        merge_sha="4" * 40,
+        source="rebased copy of the landed lane",
+    )
+    sent = _wire_merge_command(monkeypatch, landed_lane=replaced)
+    monkeypatch.setattr(
+        merge_cli.converge,
+        "converge",
+        lambda **_k: _outcome(already_merged=True, pr_num="1290"),
+    )
+
+    assert _run_merge_command() == 0
+    _, payload = sent[0]
+    assert (payload["candidate_sha"], payload["merge_sha"]) == (LANE_SHA, MERGE_SHA)

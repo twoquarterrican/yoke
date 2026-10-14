@@ -137,6 +137,37 @@ def test_a_copied_lane_closes_out_on_the_merge_identity_it_already_has(
     assert stale_lane.stale_unlanded_work(**_look(repo)) == ""
 
 
+def test_a_second_landing_from_a_rebased_lane_names_its_own_merge(
+    tmp_path, monkeypatch
+):
+    """A correction landed after the receipt is not the receipt's landing."""
+    repo, base, lane_head, merge_commit = _landed_lane_repo(tmp_path)
+    _git(repo, "checkout", "-q", BRANCH)
+    correction = _commit(repo, "correction.py", "fix\n")
+    _git(repo, "checkout", "-q", "main")
+    _git(repo, "merge", "--no-ff", BRANCH, "-m", f"Merge pull request #2 from {BRANCH}")
+    second_merge = _git(repo, "rev-parse", "HEAD")
+    tree = _git(repo, "rev-parse", f"{correction}^{{tree}}")
+    copy = _git(repo, "commit-tree", tree, "-p", base, "-m", "rebased correction")
+    _git(repo, "branch", "-f", BRANCH, copy)
+    assert not _contains(repo, copy)
+    monkeypatch.setattr(
+        landed.receipts, "load", lambda *_a, **_k: _receipt(lane_head, merge_commit)
+    )
+
+    rebased = landed.landed_lane(**_look(repo), project="yoke")
+    recorded = landed.landed_lane(
+        **_look(repo), project="yoke", recorded_head=correction
+    )
+
+    assert rebased is not None and (rebased.commit_sha, rebased.merge_sha) == (
+        copy,
+        "",
+    )
+    assert recorded is not None
+    assert (recorded.commit_sha, recorded.merge_sha) == (correction, second_merge)
+
+
 def test_the_copied_lane_is_the_one_whose_diff_would_revert_later_merges(
     tmp_path,
     monkeypatch,

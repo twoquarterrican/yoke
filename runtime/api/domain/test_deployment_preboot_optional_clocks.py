@@ -67,7 +67,6 @@ def test_empty_optional_queue_clocks_close_out_from_commit_evidence(
         branch="feature",
         target="main",
         repo_root="/repo",
-        landed_lane=None,
         outcome=SimpleNamespace(
             commit_sha="a" * 40, merge_sha="b" * 40, touched_files=()
         ),
