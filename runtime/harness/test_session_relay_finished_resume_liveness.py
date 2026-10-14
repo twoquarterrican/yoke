@@ -60,3 +60,29 @@ def test_a_dead_resume_names_its_own_process_not_the_spent_launch(
         assert dead[0].evidence["launch_id"] == "launch-resume-outrank"
     finally:
         handle.unlink(missing_ok=True)
+
+
+def test_contained_resume_without_handle_or_anchor_is_reported(tmp_path):
+    resume = supervision_record_path("resume-without-hook", tmp_path)
+    resume.parent.mkdir(parents=True, exist_ok=True)
+    resume.write_text(
+        json.dumps(
+            {
+                "launch_id": "resume-without-hook",
+                "pid": 4004,
+                "process_start_time": RECORDED_START,
+                "target_session_id": DEAD_SESSION,
+                "supervision_kind": "resume",
+                "containment_reason": "inactivity",
+            }
+        )
+    )
+    dead = verified_dead_sessions(
+        state_dir=tmp_path,
+        anchors_dir=tmp_path / "empty-anchors",
+        start_time_of=lambda pid: None,
+    )
+    entry = next(entry for entry in dead if entry.session_id == DEAD_SESSION)
+    assert entry.evidence["pids"] == [4004]
+    assert entry.evidence["containment_reason"] == "inactivity"
+    assert entry.record_paths == (resume,)

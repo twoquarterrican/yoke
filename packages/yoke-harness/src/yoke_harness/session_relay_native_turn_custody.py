@@ -252,7 +252,11 @@ def finished_resume_for_session(
     if not wanted:
         return None
     start_time_of = start_time_of or process_start_time
-    for _path, record in supervised_records(custody_state_dir):
+    for _path, record in sorted(
+        supervised_records(custody_state_dir),
+        key=lambda entry: int(entry[1].get("recorded_at") or 0),
+        reverse=True,
+    ):
         if str(record.get("supervision_kind") or "") != "resume":
             continue
         if wanted not in {

@@ -190,6 +190,9 @@ def test_cli_instruction_crosses_stdin_not_process_arguments(
     )
 
     monkeypatch.setattr(cli_module, "record_supervised_native", lambda *a, **kw: True)
+    monkeypatch.setattr(
+        cli_module, "native_diagnostic_path", lambda ref: tmp_path / "native.capture"
+    )
     process, binary_source = cli_module.CodexCliTransport(
         binary="/opt/codex",
         worker=True,

@@ -13,9 +13,9 @@ from __future__ import annotations
 
 from yoke_core.domain.db_helpers import instant_parameter
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Mapping
-from uuid import NAMESPACE_URL, uuid5
+from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from yoke_contracts.session_control.capabilities import (
     capability_for_surface,
@@ -32,6 +32,9 @@ from yoke_core.domain.session_surface_policy import (
     WAKE_SKIP_SURFACE_DISABLED,
     live_mark,
 )
+from yoke_core.domain.session_message_authorization import project_policy
+from yoke_core.domain.session_message_types import parse_timestamp
+from yoke_core.domain.session_wake_failure_notice import notify_failed_wake
 
 
 _WAKE_SKIP_ADAPTER_REVISION = "session-wake-eligibility-v1"
@@ -93,6 +96,12 @@ def record_wake_skip(
     result_code, driver, reason = _wake_skip_result(
         row, operation, relay_versions, conn=conn
     )
+    operator_route = reason == "surface_wake_operator_driven"
+    policy = project_policy(conn, int(row["project_id"]))
+    previous = parse_timestamp(row.get("last_wake_at"))
+    if not operator_route and previous is not None:
+        if previous + timedelta(seconds=policy.wake_after_idle_seconds) > now:
+            return
     driver_version = relay_versions.get(driver or "")
     evidence = {
         "result_code": result_code,
@@ -105,6 +114,30 @@ def record_wake_skip(
         "driver_version": str(driver_version or ""),
     }
     placeholder = marker(conn)
+    charged = None
+    if not operator_route:
+        charged = conn.execute(
+            "UPDATE session_message_recipients SET wake_attempt_count=wake_attempt_count+1,"
+            f"last_wake_at={placeholder},wake_after={placeholder} "
+            f"WHERE message_id={placeholder} AND session_id={placeholder} AND state='pending' "
+            f"AND wake_attempt_count<{placeholder} "
+            f"AND (last_wake_at IS NULL OR last_wake_at<={placeholder}) "
+            "RETURNING wake_attempt_count",
+            (
+                instant_parameter(conn, now),
+                instant_parameter(
+                    conn, now + timedelta(seconds=policy.wake_after_idle_seconds)
+                ),
+                message_id,
+                session_id,
+                policy.max_wake_attempts,
+                instant_parameter(
+                    conn, now - timedelta(seconds=policy.wake_after_idle_seconds)
+                ),
+            ),
+        ).fetchone()
+        if charged is None:
+            return
     conn.execute(
         "INSERT INTO session_message_attempts "
         "(attempt_id,message_id,target_session_id,attempt_kind,adapter_revision,"
@@ -112,7 +145,9 @@ def record_wake_skip(
         f"VALUES ({','.join(placeholder for _ in range(9))}) "
         "ON CONFLICT(attempt_id) DO NOTHING",
         (
-            str(uuid5(NAMESPACE_URL, f"yoke:wake-skip:{message_id}:{session_id}")),
+            str(uuid5(NAMESPACE_URL, f"yoke:wake-skip:{message_id}:{session_id}"))
+            if operator_route
+            else str(uuid4()),
             message_id,
             session_id,
             "wake_relay",
@@ -123,6 +158,13 @@ def record_wake_skip(
             redacted_evidence(evidence),
         ),
     )
+    if not operator_route:
+        notify_failed_wake(
+            conn,
+            dict(row, wake_attempt_count=int(charged[0])),
+            now=now,
+            max_attempts=policy.max_wake_attempts,
+        )
 
 
 __all__ = ["record_wake_skip"]

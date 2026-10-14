@@ -3,22 +3,9 @@
 The control plane waits out a heartbeat TTL; this machine proves native exit.
 Group custody survives the supervisor until its remaining members also exit.
 
-Two record families name a session's process, both written by paths that
-already exist for other reasons:
-
-* the launch handle (``session-native-handles/<launch-id>.json``) the hook
-  writes when a launched native registers, so termination can still reach a
-  process containment has released. It lives in the machine cache rather than
-  in this relay's state directory, because the hook that writes it belongs to
-  the launched session rather than to any relay instance;
-* the process-anchor registry (``session-anchors/<anchor-pid>.json``) the
-  hooks write to resolve ambient identity.
-
-A record proves death only against itself: the recorded pid must still be
-the recorded process, compared by start time so a reused pid reads as gone
-rather than as alive. A session with no record at all proves nothing and is
-left to the control plane's TTL sweep — this path only ever shortens the
-wait for a death it can actually demonstrate.
+Launch handles, process anchors and supervised resumes all name processes.
+A reused pid reads as gone; absent records prove nothing. Resume records
+must participate even when the session never wrote a handle or anchor.
 
 A record only ever proves its own process gone, never the session's silence.
 A session whose first launch exited and was later woken has a spent launch
@@ -28,8 +15,7 @@ custody reader whether this machine is still running a native for it.
 Records are pruned only after their custody is gone and the control plane
 accounts for them. Claim-holding sessions report again after claims release.
 
-The report carries the launch id and the native's last line, so a launch
-whose worker died before registration can settle on proven process death.
+Reports carry the launch id and native's last line to settle pre-registration deaths.
 """
 
 from __future__ import annotations
@@ -60,6 +46,7 @@ from yoke_harness.session_relay_native_diagnostics import (
 )
 from yoke_harness.session_relay_report_delivery import RELAY_REPORT_TIMEOUT_SECONDS
 from yoke_harness.session_relay_termination import read_local_record
+from yoke_harness.session_launch_containment import supervised_records
 
 
 LAUNCH_HANDLE_SOURCE = "launch_handle"
@@ -139,6 +126,7 @@ def _observed(
 
 def session_process_records(
     *,
+    state_dir: Path | None = None,
     anchors_dir: Path | None = None,
     start_time_of: StartTimeOf = process_start_time,
 ) -> tuple[SessionProcessRecord, ...]:
@@ -171,6 +159,19 @@ def session_process_records(
         )
         if entry is not None:
             observed.append(entry)
+    for path, record in supervised_records(state_dir):
+        if record.get("supervision_kind") != "resume":
+            continue
+        entry = _observed(
+            path,
+            record.get("target_session_id") or record.get("native_session_id"),
+            record.get("pid"),
+            record.get("process_start_time"),
+            "resume_custody",
+            start_time_of,
+        )
+        if entry is not None:
+            observed.append(entry)
     return tuple(observed)
 
 
@@ -191,6 +192,7 @@ def verified_dead_sessions(
 
     by_session: dict[str, list[SessionProcessRecord]] = {}
     for record in session_process_records(
+        state_dir=state_dir,
         anchors_dir=anchors_dir,
         start_time_of=start_time_of,
     ):
@@ -246,12 +248,7 @@ def verified_dead_sessions(
 
 
 def native_account(launch_id: str, *, state_dir: Path | None) -> dict[str, Any]:
-    """Read what this launch's native said, for a report that must explain itself.
-
-    The capture is machine-local and the seat reading the report may be on
-    another machine entirely, so the reference travels for anyone who can
-    fetch it and the last line travels for everyone who cannot.
-    """
+    """Read the native's capture reference and last line for remote readers."""
     try:
         reference = diagnostic_reference(launch_id)
         capture = read_native_capture(

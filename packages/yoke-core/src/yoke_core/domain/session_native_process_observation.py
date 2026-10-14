@@ -201,6 +201,9 @@ def record_native_process_gone(
         f"WHERE session_id={placeholder}",
         (instant_parameter(conn, stamp), payload, session_id),
     )
+    from yoke_core.domain.session_wake_hold_recovery import recover_dead_native_holds
+
+    recover_dead_native_holds(conn, session_id, evidence, death_at=stamp)
     return {
         "state": NATIVE_PROCESS_GONE_STATE,
         "observed_at": timestamp(stamp),

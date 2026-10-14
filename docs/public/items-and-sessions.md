@@ -82,6 +82,14 @@ open the chat and start a turn. A missing relay leaves messaging available;
 the card explains that hook delivery can proceed and automatic wake waits
 for the relay to reconnect. Active sessions keep their normal hook delivery.
 
+Native wake routes that refuse delivery spend a bounded retry budget. Exhaustion
+sends the named failure and recovery to the original sender and the covering
+steering seat; read `yoke messages get MESSAGE-ID` for the receipt and attempts.
+Operator-driven hook delivery keeps its own wait without spending that budget.
+Detached turns keep their capture current while waiting on a command. If the
+relay contains a native, verified custody death reopens pending wakes held by
+that exact process and retires Fleet's old `native_turn_running` label.
+
 Sessions own work claims. Implementation lanes require an active claim and a
 registered worktree. A persisted active work claim keeps its session live
 through stale, idle, parked, process-gone, and startup sweeps. This includes

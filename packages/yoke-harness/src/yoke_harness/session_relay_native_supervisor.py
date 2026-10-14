@@ -34,6 +34,7 @@ import subprocess
 import sys
 from types import FrameType
 from typing import Sequence
+from threading import Thread
 
 from yoke_contracts.timestamps import format_instant, parse_instant, utc_now
 from yoke_cli.config.session_relay_instance import strip_relay_owned_python_state
@@ -124,6 +125,18 @@ def supervise(capture: Path, native: Sequence[str]) -> int:
         if started is not None
     )
     _install_stop_handler(process)
+    retain_native_capture(capture, process, streams, drains)
+    return 0
+
+
+def retain_native_capture(
+    capture: Path,
+    process: subprocess.Popen[bytes],
+    streams: BoundedStreams,
+    drains: Sequence[Thread] = (),
+) -> None:
+    """Keep an already-started native's capture fresh through its exit."""
+    _write(capture, streams, state=STATE_RUNNING)
     # The native has said nothing yet, so its clock starts at the spawn: a
     # turn that never speaks is silent from the moment it began, which is
     # exactly what a reader measuring a stall needs it to say.
@@ -150,7 +163,6 @@ def supervise(capture: Path, native: Sequence[str]) -> int:
         exit_code=exit_code,
         last_output_at=spoke_at,
     )
-    return 0
 
 
 def _install_stop_handler(process: subprocess.Popen[bytes]) -> None:
@@ -203,4 +215,4 @@ if __name__ == "__main__":  # pragma: no cover - process entrypoint
     raise SystemExit(main())
 
 
-__all__ = ["FLUSH_INTERVAL_SECONDS", "main", "supervise"]
+__all__ = ["FLUSH_INTERVAL_SECONDS", "main", "retain_native_capture", "supervise"]

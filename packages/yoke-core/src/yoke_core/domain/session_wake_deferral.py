@@ -30,6 +30,10 @@ the envelope, which is the cheap route this whole path exists to fall back
 from. What changes is that a recipient no route is reaching stops consuming a
 wake slot every minute and becomes a row the seat can act on, rather than an
 invisible loop that resets itself forever.
+
+Verified death of that exact native releases its pending holds through
+session_wake_hold_recovery. It resets their budget and escalation so explicit
+wakes can resume too; a newer native or open delivery attempt keeps its custody.
 """
 
 from __future__ import annotations

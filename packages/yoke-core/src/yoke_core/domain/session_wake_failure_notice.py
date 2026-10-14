@@ -25,6 +25,8 @@ from yoke_core.domain.session_message_starvation import turn_in_flight
 from yoke_core.domain.session_message_types import parse_timestamp
 from yoke_core.domain.session_relay_storage import marker
 from yoke_core.domain.steering_message_recipients import record_steering_recipient
+from yoke_core.domain.actor_message_recipients import ResolvedActorRecipient
+from yoke_core.domain.session_explicit_wake import explicit_stopped_wake_requested
 
 
 NOTICE_PREFIX = "native-wake-failed"
@@ -55,7 +57,8 @@ def notify_failed_wake(
     if not reason:
         return None
     original = conn.execute(
-        "SELECT m.idempotency_key,r.state,r.acknowledged_at FROM session_messages m "
+        "SELECT m.idempotency_key,r.state,r.acknowledged_at,"
+        "m.sender_session_id,m.sender_actor_id FROM session_messages m "
         "JOIN session_message_recipients r ON r.message_id=m.message_id "
         f"WHERE m.message_id={p} AND r.session_id={p}",
         (message_id, session_id),
@@ -72,7 +75,14 @@ def notify_failed_wake(
         # Hook delivery on the operator's next turn is this surface's route.
         # Having no relay wake is intentional, not a failed delivery.
         return None
-    if attempt[0] == "outcome_unknown" or skipped:
+    explicit_skip = skipped and explicit_stopped_wake_requested(
+        row.get("routing_snapshot")
+    )
+    if (
+        (attempt[0] == "outcome_unknown" or skipped)
+        and not exhausted
+        and not explicit_skip
+    ):
         # A busy target still has a hook coming. Only a completed tool call
         # after the uncertain or skipped wake proves another opportunity passed.
         completed = parse_timestamp(attempt[2])
@@ -104,26 +114,55 @@ def notify_failed_wake(
         if seat_id
         else []
     )
+    sender_session = str(original[3] or "")
+    sender_actor = original[4]
+    if sender_session:
+        senders = resolve_recipients(
+            conn, RecipientSelector(session_ids=[sender_session]), now=now
+        )
+        recipients = list({r.session_id: r for r in [*recipients, *senders]}.values())
+    actors = []
+    if sender_actor is not None:
+        actor = conn.execute(
+            f"SELECT kind FROM actors WHERE id={p}", (sender_actor,)
+        ).fetchone()
+        if actor is not None and actor[0] == "human":
+            org = conn.execute(
+                f"SELECT org_id FROM projects WHERE id={p}", (project_id,)
+            ).fetchone()
+            actors = [
+                ResolvedActorRecipient(
+                    int(sender_actor), None, {int(org[0])}, ["original_sender"]
+                )
+            ]
     details, created = insert_message(
         conn,
         sender_actor_id=None,
         sender_session_id=None,
         sender_surface=None,
         body=(
-            f"Native message wake needs steering: {failure}. Session {session_id}, "
+            f"Native message wake failed: {failure}. Session {session_id}, "
             f"message {message_id}: {reason}. "
             f"Read yoke messages get {message_id} and yoke session-control evidence "
             f"get --session {session_id}; repair the named cause before waking or "
             "relaunching the holder through the existing session-control path."
         ),
-        selector_snapshot={"steering": True, "steering_scope": address.scope},
+        selector_snapshot={
+            "steering": True,
+            "steering_scope": address.scope,
+            "session_ids": [sender_session] if sender_session else [],
+            "actors": [str(sender_actor)] if actors else [],
+        },
         idempotency_key=f"{NOTICE_PREFIX}:{message_id}:{session_id}:{failure}",
         idempotency_intent_only=True,
         created_at=now,
         expires_at=now + timedelta(hours=policy.expiry_hours),
         recipients=recipients,
-        actor_recipients=[],
-        wake_after_by_project={project_id: now},
+        actor_recipients=actors,
+        wake_after_by_project={
+            project_id: now,
+            **{r.project_id: now for r in recipients},
+        },
     )
     if not created:
         return None
