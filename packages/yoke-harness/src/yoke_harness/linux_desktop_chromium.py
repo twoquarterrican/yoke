@@ -33,7 +33,11 @@ TAB_WAIT_SECONDS = 15
 CONTROL_ATTEMPTS = 40
 NAVIGATION_ATTEMPTS = 40
 POLL_SECONDS = 0.25
-SET_DEFAULT = "xdg-settings set default-web-browser chromium.desktop"
+PROVISION = (
+    "Provision the desktop with the Machine QA Pack's "
+    "ops/machine-qa/provision_linux_desktop.py (linux-host-provisioning.md section 4); "
+    "it installs Chromium and makes it the default browser. Then rerun."
+)
 
 
 class ChromiumRefusal(RuntimeError):
@@ -124,7 +128,7 @@ def prepare():
     if default not in CHROMIUM_DESKTOP_ENTRIES:
         raise ChromiumRefusal(
             "linux_desktop_default_browser_not_chromium",
-            f"The installer opens approval links in the desktop's default browser, which is {default or 'unset'}. Install Chromium for the test user and run `{SET_DEFAULT}` in the desktop session, then rerun.",
+            f"The installer opens approval links in the desktop's default browser, which is {default or 'unset'}. {PROVISION}",
         )
     if devtools_port() is not None:
         return {"chromium": "reused"}
@@ -132,7 +136,7 @@ def prepare():
     if executable is None:
         raise ChromiumRefusal(
             "linux_desktop_chromium_missing",
-            "Install the Chromium package for the test machine's desktop, then rerun.",
+            PROVISION,
         )
     restarted = quit_chromium()
     for directory in user_data_dirs():

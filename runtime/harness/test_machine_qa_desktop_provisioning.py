@@ -261,3 +261,28 @@ def test_wsl_lifetime_does_not_normalize_an_already_effective_setting(provisione
     _, windows = provisioners
     content = "[General]\n  instanceIdleTimeout = -1  # preserve comment\n"
     assert windows.persistent_instance_config(content) == content
+
+
+@pytest.mark.parametrize(
+    "existing",
+    [
+        "",
+        "[Added Associations]\ntext/plain=gedit.desktop\n",
+        "[Default Applications]\ntext/html=firefox.desktop\n"
+        "application/pdf=evince.desktop\n[Added Associations]\nx=y.desktop\n",
+    ],
+)
+def test_chromium_becomes_the_default_browser_without_erasing_other_defaults(
+    provisioners, existing
+):
+    linux, _ = provisioners
+    selected = linux.browser_defaults(existing)
+    assert linux.browser_selected(selected)
+    assert linux.browser_defaults(selected) == selected
+    assert "firefox.desktop" not in selected
+    for line in existing.splitlines():
+        if "firefox" not in line:
+            assert line in selected.splitlines()
+    for kind in linux.BROWSER_TYPES:
+        assert f"{kind}={linux.CHROMIUM_DESKTOP_ENTRY}" in selected.splitlines()
+    assert not linux.browser_selected(existing)

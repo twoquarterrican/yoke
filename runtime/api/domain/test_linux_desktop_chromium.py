@@ -178,7 +178,7 @@ def test_prepare_refuses_when_the_default_browser_is_not_chromium(monkeypatch):
     with pytest.raises(host.ChromiumRefusal) as refusal:
         host.prepare()
     assert refusal.value.reason == "linux_desktop_default_browser_not_chromium"
-    assert host.SET_DEFAULT in refusal.value.recovery
+    assert "provision_linux_desktop.py" in refusal.value.recovery
 
 
 def test_prepare_restarts_a_running_chromium_with_a_devtools_port(
