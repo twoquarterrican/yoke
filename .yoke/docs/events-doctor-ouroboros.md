@@ -164,7 +164,9 @@ bounded reader pool and use mandatory syntax and identifier literals to avoid
 regex backtracking; their matching rules, source inventory and exemptions are unchanged.
 The shared HTTP and subprocess helpers consume the same deadline. A timeout reports
 `HC-check-incomplete` with `doctor_check_budget_exhausted` and a recovery step;
-partial pass/fail verdicts are discarded. Transaction recovery completes before
+partial pass/fail verdicts are discarded. Repairs a `--fix` run already
+committed are kept, and its recovery step repeats `--fix` so a retry continues
+from them. Transaction recovery completes before
 the next check runs, and recovery failures remain visible in the incomplete result.
 Project checks must use bounded I/O helpers for blocking operations.
 Provenance, hook-boundary and file-line checks overlap their complete inventories'

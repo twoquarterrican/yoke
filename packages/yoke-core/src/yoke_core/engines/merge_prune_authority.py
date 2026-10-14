@@ -5,8 +5,9 @@ owner for it, that owner is terminal, and nothing live still holds it — a
 work claim, a planned or active path claim, or a session whose workspace is
 the lane. Every lookup failure reads as "cannot prove", which preserves the
 lane; the git-side sweep in ``merge_worktree_safe_prune`` consumes these
-verdicts through ``merge.prune.authority_verdict`` so they run wherever the
-control plane lives.
+verdicts through ``merge.prune.authority_verdict``, and the worktree-health
+check through the batched ``merge.prune.authority_verdicts``, so they run
+wherever the control plane lives.
 """
 
 from __future__ import annotations

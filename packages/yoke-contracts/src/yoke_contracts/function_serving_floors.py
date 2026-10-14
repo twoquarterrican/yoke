@@ -41,6 +41,7 @@ FUNCTION_MINIMUM_SERVING_VERSIONS: dict[str, str] = {
     "item_landings.record": "next-release",
     "items.github_link": "next-release",
     "items.progress_log.get": "next-release",
+    "merge.prune.authority_verdicts": "next-release",
     "merge_receipt.commits.attest": "next-release",
     "models.diff.run": "next-release",
     "models.level_proposal.run": "next-release",

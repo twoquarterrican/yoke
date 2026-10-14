@@ -6,7 +6,7 @@ Postgres):
 
 * the fail-closed prune authority verdict (does a DB-owned terminal
   worktree / branch still hold active authority, or is it safe to prune?),
-  and
+  per lane or batched for a machine-wide sweep, and
 * the integration-tree verification resolution (materialize any attached
   release-transition QA plan, then resolve a project-owned registered
   verification command).
@@ -52,6 +52,14 @@ class PruneAuthorityRequest(BaseModel):
 class PruneAuthorityResponse(BaseModel):
     prunable: bool
     reason: str
+
+
+class PruneAuthorityBatchRequest(BaseModel):
+    lanes: list[PruneAuthorityRequest]
+
+
+class PruneAuthorityBatchResponse(BaseModel):
+    verdicts: list[PruneAuthorityResponse]
 
 
 class PostRebaseRequirementRequest(BaseModel):
@@ -161,25 +169,49 @@ def handle_prune_authority_verdict(request: FunctionCallRequest) -> HandlerOutco
     except Exception as exc:  # noqa: BLE001 - surface a structured payload error
         return _err("payload_invalid", f"prune authority payload invalid: {exc}")
 
+    try:
+        with _connect_rw() as conn:
+            verdict = _prune_verdict(conn, body)
+    except Exception as exc:  # noqa: BLE001 - connect failure == authority unavailable
+        return _err("prune_authority_read_failed", str(exc))
+
+    return HandlerOutcome(result_payload=verdict, primary_success=True)
+
+
+def handle_prune_authority_verdicts(request: FunctionCallRequest) -> HandlerOutcome:
+    """Return the fail-closed prune verdict for many lanes in one read.
+
+    A caller sweeping every lane on a machine pays one round trip and one
+    connection instead of one each. ``verdicts`` answers ``lanes`` in order,
+    with the same per-lane meaning as ``merge.prune.authority_verdict``.
+    """
+    try:
+        body = PruneAuthorityBatchRequest.model_validate(request.payload)
+    except Exception as exc:  # noqa: BLE001 - surface a structured payload error
+        return _err("payload_invalid", f"prune authority payload invalid: {exc}")
+
+    try:
+        with _connect_rw() as conn:
+            verdicts = [_prune_verdict(conn, lane) for lane in body.lanes]
+    except Exception as exc:  # noqa: BLE001 - connect failure == authority unavailable
+        return _err("prune_authority_read_failed", str(exc))
+
+    return HandlerOutcome(result_payload={"verdicts": verdicts}, primary_success=True)
+
+
+def _prune_verdict(conn: Any, lane: PruneAuthorityRequest) -> dict[str, Any]:
     from yoke_core.engines.merge_prune_authority import (
         has_active_authority,
         terminal_owner,
     )
 
-    path = Path(body.path) if body.path else None
-    try:
-        with _connect_rw() as conn:
-            owner = terminal_owner(conn, branch=body.branch, path=path)
-            if owner is None:
-                verdict = {"prunable": False, "reason": "no_terminal_owner"}
-            elif has_active_authority(conn, owner, path):
-                verdict = {"prunable": False, "reason": "active_authority"}
-            else:
-                verdict = {"prunable": True, "reason": "prunable"}
-    except Exception as exc:  # noqa: BLE001 - connect failure == authority unavailable
-        return _err("prune_authority_read_failed", str(exc))
-
-    return HandlerOutcome(result_payload=verdict, primary_success=True)
+    path = Path(lane.path) if lane.path else None
+    owner = terminal_owner(conn, branch=lane.branch, path=path)
+    if owner is None:
+        return {"prunable": False, "reason": "no_terminal_owner"}
+    if has_active_authority(conn, owner, path):
+        return {"prunable": False, "reason": "active_authority"}
+    return {"prunable": True, "reason": "prunable"}
 
 
 def handle_post_rebase_requirement(request: FunctionCallRequest) -> HandlerOutcome:
@@ -287,8 +319,11 @@ def handle_post_rebase_requirement(request: FunctionCallRequest) -> HandlerOutco
 __all__ = [
     "PostRebaseRequirementRequest",
     "PostRebaseRequirementResponse",
+    "PruneAuthorityBatchRequest",
+    "PruneAuthorityBatchResponse",
     "PruneAuthorityRequest",
     "PruneAuthorityResponse",
     "handle_post_rebase_requirement",
     "handle_prune_authority_verdict",
+    "handle_prune_authority_verdicts",
 ]

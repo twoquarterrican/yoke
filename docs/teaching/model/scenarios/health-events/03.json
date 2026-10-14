@@ -4,12 +4,12 @@
  "status": "draft-copy",
  "audience": "both",
  "when": "A check times out, source is absent remotely, or install just completed",
- "need": "Preserve exact failure/partial result, use the named check recovery and scoped rerun. Remote and local source halves have different authority. The focused install check in E is planned, not the current general Doctor.",
+ "need": "Preserve exact failure/partial result, use the named check recovery and scoped rerun; a timed-out --fix run keeps its committed repairs and its recovery repeats --fix. Remote and local source halves have different authority. The focused install check in E is planned, not the current general Doctor.",
  "disclosure": "planned cue",
  "surface": "Existing Doctor contract supports named recovery; FIRST-USER E adds install selection and plain next steps.",
  "review": "Pending exact recipe proof.",
  "recipes": ["yoke doctor run --help", "yoke doctor last-run get --help"],
  "plan_notes": ["FIRST-USER E", "FIRST-USER D", "FIRST-USER item 29"],
- "sources": [".agents/skills/yoke/doctor/SKILL.md", "docs/public/events-doctor-ouroboros.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/doctor.py"],
+ "sources": [".agents/skills/yoke/doctor/SKILL.md", "docs/public/events-doctor-ouroboros.md", "packages/yoke-cli/src/yoke_cli/commands/adapters/doctor.py", "packages/yoke-core/src/yoke_core/engines/doctor_check_execution.py"],
  "position": 2
 }

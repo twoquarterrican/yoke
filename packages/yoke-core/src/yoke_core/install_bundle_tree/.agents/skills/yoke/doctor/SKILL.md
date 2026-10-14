@@ -31,7 +31,8 @@ Include `yoke events anomalies --since "24 hours ago"` as diagnostic context.
 Each check has a 45-second budget; timeout is incomplete FAIL evidence.
 HTTPS chunks have 60 seconds/two attempts and a 15-minute remote-roster
 deadline. Preserve partial reports/error identities; after provider recovery
-retry the named check with `yoke watch doctor -- --only <slug>`.
+retry the named check with `yoke watch doctor -- --only <slug>`, adding `--fix`
+when the timed-out run had it: its committed repairs are kept.
 Project checks use bounded I/O helpers.
 
 ## Phase map — read before acting

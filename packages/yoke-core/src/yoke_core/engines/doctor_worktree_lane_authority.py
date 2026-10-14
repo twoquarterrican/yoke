@@ -12,16 +12,24 @@ unreadable inventory is ``None``, which the check reports as N/A: a caller that
 read zero lanes from an unreachable control plane would otherwise conclude the
 machine has nothing to retire. An unreadable authority verdict reads as still
 held, because an unprovable claim is not an absent one.
+
+Authority verdicts for every lane the check may retire arrive in one batched
+read, so a machine holding dozens of landed lanes pays one round trip rather
+than one per lane against the check's budget.
 """
 
 from __future__ import annotations
 
-from typing import Dict, List
+from dataclasses import dataclass
+from typing import Dict, Iterable, List, Tuple
 
 from yoke_core.domain.control_plane_transport import relay
 
 
-ACTIVE_AUTHORITY_BLOCK = "cleanup authority is active or unreadable"
+ACTIVE_AUTHORITY_BLOCK = "cleanup authority is active"
+UNREADABLE_AUTHORITY_BLOCK = "cleanup authority is unreadable"
+
+LaneKey = Tuple[str, str]
 
 
 class LaneRow:
@@ -59,15 +67,52 @@ def lane_inventory(project: str) -> List[LaneRow] | None:
     return [LaneRow(row) for row in rows if isinstance(row, dict)]
 
 
-def authority_block(branch: str, path: str) -> str:
-    """Why cleanup authority forbids pruning this lane; empty when idle."""
-    payload: Dict[str, object] = {"branch": branch}
-    if path:
-        payload["path"] = path
+@dataclass(frozen=True)
+class AuthorityBlocks:
+    """Why cleanup authority forbids pruning each (branch, path) lane.
+
+    An empty block means the lane is prunable. ``failure`` names why the
+    batched read could not answer; every lane then reads as still held.
+    """
+
+    blocks: Dict[LaneKey, str]
+    failure: str = ""
+
+    def block(self, branch: str, path: str) -> str:
+        return self.blocks.get((branch, path), UNREADABLE_AUTHORITY_BLOCK)
+
+
+def authority_blocks(lanes: Iterable[LaneKey]) -> AuthorityBlocks:
+    """Read every lane's prune verdict through one control-plane call."""
+    keys = list(dict.fromkeys(lanes))
+    if not keys:
+        return AuthorityBlocks({})
+    payload = {
+        "lanes": [
+            {"branch": branch, **({"path": path} if path else {})}
+            for branch, path in keys
+        ]
+    }
     try:
-        verdict = relay("merge.prune.authority_verdict", payload)
-    except Exception:  # noqa: BLE001 - fail closed: unprovable == still held
-        return ACTIVE_AUTHORITY_BLOCK
+        verdicts = relay("merge.prune.authority_verdicts", payload).get("verdicts")
+        if not isinstance(verdicts, list) or len(verdicts) != len(keys):
+            raise ValueError(
+                f"answered {len(verdicts) if isinstance(verdicts, list) else 'no'} "
+                f"verdicts for {len(keys)} lanes"
+            )
+    except Exception as exc:  # noqa: BLE001 - fail closed: unprovable == still held
+        failure = str(exc) or type(exc).__name__
+        return AuthorityBlocks(
+            {key: UNREADABLE_AUTHORITY_BLOCK for key in keys}, failure
+        )
+    return AuthorityBlocks(
+        {key: _verdict_block(verdict) for key, verdict in zip(keys, verdicts)}
+    )
+
+
+def _verdict_block(verdict: object) -> str:
+    if not isinstance(verdict, dict):
+        return UNREADABLE_AUTHORITY_BLOCK
     if verdict.get("prunable"):
         return ""
     reason = str(verdict.get("reason") or "")
@@ -78,7 +123,10 @@ def authority_block(branch: str, path: str) -> str:
 
 __all__ = [
     "ACTIVE_AUTHORITY_BLOCK",
+    "AuthorityBlocks",
+    "LaneKey",
     "LaneRow",
-    "authority_block",
+    "UNREADABLE_AUTHORITY_BLOCK",
+    "authority_blocks",
     "lane_inventory",
 ]

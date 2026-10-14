@@ -110,6 +110,16 @@ preserved and reported. Automatic cleanup never uses filesystem `rm -rf`,
 forced worktree removal, or forced branch deletion. `--keep-remote` remains
 the only intentional skip of remote delete (ephemeral environments).
 
+### Health-check repair
+
+`yoke watch doctor -- --only HC-worktree-health --fix` retires terminal item
+lanes a landing sweep missed, under the same proof. It reads every lane's
+cleanup-authority verdict in one `merge.prune.authority_verdicts` call and
+fetches each target branch once per run, then retires each lane as soon as it
+is proved. A run that exhausts the check budget keeps the lanes it already
+retired, so rerunning the same command continues from there. If the authority
+read fails, the check names the failure and preserves every lane.
+
 ### Lane residue and project-declared renders
 
 A lane directory is disposable only when everything git reports in it is a

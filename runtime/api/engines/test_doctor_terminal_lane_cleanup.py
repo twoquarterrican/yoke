@@ -13,6 +13,7 @@ from runtime.api.engines._doctor_hc_git_test_helpers import (
     _run_hc,
 )
 from yoke_core.engines.doctor import hc_worktree_health
+from yoke_core.engines.doctor_worktree_lane_authority import AuthorityBlocks
 
 
 BRANCH = "YOK-20"
@@ -24,6 +25,14 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
         check=True,
         capture_output=True,
         text=True,
+    )
+
+
+def _idle_authority():
+    """Every lane the check asks about reads as prunable authority-wise."""
+    return patch(
+        "yoke_core.engines.doctor_worktree_terminal_lanes.authority_blocks",
+        side_effect=lambda lanes: AuthorityBlocks({key: "" for key in lanes}),
     )
 
 
@@ -89,10 +98,7 @@ def test_doctor_reports_and_fixes_only_a_verified_safe_terminal_lane(
             "yoke_core.engines.doctor_report._resolve_repo_root",
             return_value=str(repo),
         ),
-        patch(
-            "yoke_core.engines.doctor_hc_worktrees_health.authority_block",
-            return_value="",
-        ),
+        _idle_authority(),
     ):
         detected = _run_hc(hc_worktree_health, conn)
         # The terminal transaction already released the seeded lane row.
@@ -132,10 +138,7 @@ def test_doctor_fix_preserves_and_names_unignored_content(tmp_path, monkeypatch)
             "yoke_core.engines.doctor_report._resolve_repo_root",
             return_value=str(repo),
         ),
-        patch(
-            "yoke_core.engines.doctor_hc_worktrees_health.authority_block",
-            return_value="",
-        ),
+        _idle_authority(),
     ):
         fixed = _run_hc(hc_worktree_health, conn, fix=True)
 
@@ -151,10 +154,7 @@ def _doctor_patches(repo: Path):
             "yoke_core.engines.doctor_report._resolve_repo_root",
             return_value=str(repo),
         ),
-        patch(
-            "yoke_core.engines.doctor_hc_worktrees_health.authority_block",
-            return_value="",
-        ),
+        _idle_authority(),
     )
 
 

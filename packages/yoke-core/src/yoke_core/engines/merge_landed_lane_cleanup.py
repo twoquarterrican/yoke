@@ -240,13 +240,15 @@ def prune_landed_lane(
     run_git: Optional[Callable[..., Any]] = None,
     emit: Optional[Callable[..., Any]] = None,
     authority_block: str = "",
+    refresh_target: bool = True,
 ) -> tuple[str, ...]:
     """Retire one landed lane; return the reasons anything was preserved.
 
     An empty result means the lane is gone: no remote branch, no worktree, no
     local branch, and a released row. Any other result names what survived and
     why, so the caller can surface it instead of reporting a clean landing over
-    a lane that is still on disk.
+    a lane that is still on disk. A caller retiring many lanes against one
+    target fetches it once and passes ``refresh_target=False``.
     """
     git = run_git or _runtime_git()
     say = emit or _runtime_emit()
@@ -255,6 +257,7 @@ def prune_landed_lane(
         branch=branch,
         target=target,
         run_git=git,
+        refresh_target=refresh_target,
         authority_block=authority_block,
     )
     if not assessment.safe:

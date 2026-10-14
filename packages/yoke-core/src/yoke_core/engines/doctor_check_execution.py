@@ -96,13 +96,20 @@ def _run_isolated(
                 "Recovery: restore the database connection and rerun Doctor."
             )
         del rec.results[recorded_before:]
+        retry = f"yoke watch doctor -- --only {health_check.slug}"
+        if args.fix:
+            retry += " --fix"
+            recovery_detail = (
+                " Repairs this --fix run already committed are kept, so each "
+                "retry continues from them." + recovery_detail
+            )
         rec.record(
             "HC-check-incomplete",
             health_check.name,
             "FAIL",
             f"doctor_check_budget_exhausted: {health_check.slug} exceeded "
             f"its {CHECK_BUDGET_S:g}s check budget; evidence is incomplete. "
-            f"Recovery: retry `yoke watch doctor -- --only {health_check.slug}` "
+            f"Recovery: retry `{retry}` "
             "after the named database or provider recovers; optimize "
             "the check if the budget is exhausted again." + recovery_detail,
         )

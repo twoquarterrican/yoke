@@ -233,6 +233,22 @@ def test_budget_recovery_failure_still_records_incomplete(monkeypatch):
     assert "Transaction recovery failed: connection lost" in rec.results[-1].detail
 
 
+def test_budget_exhaustion_under_fix_teaches_a_fix_retry():
+    def exhausted(conn, args, rec):
+        raise doctor_budget.DoctorBudgetExhausted()
+
+    rec = RecordCollector()
+    execute_check_isolated(
+        object(),
+        DoctorArgs(fix=True),
+        rec,
+        HealthCheck("worktree-health", "Worktree health", exhausted),
+    )
+    detail = rec.results[-1].detail
+    assert "retry `yoke watch doctor -- --only worktree-health --fix`" in detail
+    assert "Repairs this --fix run already committed are kept" in detail
+
+
 def test_statement_timeout_escapes_best_effort_after_commit(monkeypatch):
     from yoke_core.domain import db_backend
 
