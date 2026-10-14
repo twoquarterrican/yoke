@@ -105,8 +105,8 @@ def seed_epic_task(
 
 
 def seed_item_claim(conn: Any, session_id: str, item_id: int) -> None:
-    register_session_actor(conn, session_id)
     now = instant_parameter(conn, utc_now())
+    register_session_actor(conn, session_id)
     conn.execute(
         "INSERT INTO work_claims "
         "(session_id, target_kind, scope, claimed_at, last_heartbeat) "
@@ -122,8 +122,8 @@ def seed_epic_task_claim(
     epic_id: int,
     task_num: int,
 ) -> None:
-    register_session_actor(conn, session_id)
     now = instant_parameter(conn, utc_now())
+    register_session_actor(conn, session_id)
     conn.execute(
         "INSERT INTO work_claims "
         "(session_id, target_kind, scope, "
