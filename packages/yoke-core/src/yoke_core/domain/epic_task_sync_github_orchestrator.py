@@ -9,6 +9,7 @@ import yoke_core.domain.epic_task_sync_github as _etsg
 import yoke_core.domain.epic_task_sync_github_orchestrator_body as _body
 from yoke_core.domain import github_rest
 from yoke_core.domain.github_constraints import is_real_issue_num
+from yoke_core.domain.github_dedup import IssueSearchCache
 from yoke_core.domain.item_worktrees import record_worker_item_worktree
 from yoke_core.domain.worktree_naming import worktree_name_for_item
 from yoke_core.domain.epic_task_sync import (
@@ -105,6 +106,8 @@ def sync_epic_tasks(
         has_sub_issue = not dry_run
 
         task_rows = load_task_rows(conn, placeholder=p, epic_name=epic_name)
+        # The parent and every child issue share one search per sync.
+        search_cache: IssueSearchCache = {}
 
         epic_issue_num = _etsg._resolve_or_create_epic_issue(
             epic_name=epic_name,
@@ -116,6 +119,7 @@ def sync_epic_tasks(
             conn=conn,
             stdout=stdout,
             stderr=stderr,
+            search_cache=search_cache,
         )
         if not dry_run and not is_real_issue_num(epic_issue_num):
             print("Error: epic parent issue create failed; aborting", file=stderr)
@@ -249,6 +253,7 @@ def sync_epic_tasks(
                     gh_project=gh_project,
                     stdout=stdout,
                     stderr=stderr,
+                    search_cache=search_cache,
                     conn=conn,
                     epic_id=str(parent_item_id) if parent_item_id else "",
                     task_num=int(db_tnum),

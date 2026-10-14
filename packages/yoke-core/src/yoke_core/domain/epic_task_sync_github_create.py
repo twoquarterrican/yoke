@@ -1,7 +1,8 @@
 """Issue-creation and dedup helpers for epic-task GitHub sync.
 
 Owns parent-epic resolution, child-task dedup, and parent github_issue
-backfill. Both create paths route through the typed
+backfill. One sync passes a single ``IssueSearchCache`` to every create here,
+so the parent and all child issues share one GitHub search. Both create paths route through the typed
 :func:`yoke_core.domain.github_rest.create_issue` surface with the
 compact-mirror budget guard applied via ``select_body_for_github`` so an
 over-budget epic/task body swaps to the compact mirror instead of being
@@ -24,7 +25,7 @@ from yoke_core.domain import backlog_github_body_writer as _writer
 from yoke_core.domain import backlog_github_label_sync_rest as _label_rest
 from yoke_core.domain import github_rest
 from yoke_core.domain.epic_task_sync import _placeholder
-from yoke_core.domain.github_dedup import search_existing_issue
+from yoke_core.domain.github_dedup import IssueSearchCache, search_existing_issue
 from yoke_core.domain.project_github_auth import resolve_project_github_auth
 from yoke_core.domain.project_identity import render_item_ref
 
@@ -85,6 +86,7 @@ def _resolve_issue_with_body_budget(
     conn: Optional[Any],
     stderr: TextIO,
     stdout: TextIO,
+    search_cache: IssueSearchCache,
 ) -> Optional[github_rest.Issue]:
     """Adopt matching outgoing content or create the budgeted issue."""
     selected_body, mode = _budget.select_body_for_github(
@@ -93,7 +95,9 @@ def _resolve_issue_with_body_budget(
         conn=conn,
         item_id=item_id,
     )
-    found = search_existing_issue(title, selected_body, project=project, stderr=stderr)
+    found = search_existing_issue(
+        title, selected_body, project=project, stderr=stderr, cache=search_cache
+    )
     if found:
         number, matched_title = found
         print(
@@ -130,6 +134,7 @@ def _resolve_or_create_epic_issue(
     conn: Any,
     stdout: TextIO,
     stderr: TextIO,
+    search_cache: IssueSearchCache,
 ) -> str:
     """Resolve, reuse, or create the epic parent GitHub issue. Returns
     the issue number as a string."""
@@ -209,6 +214,7 @@ def _resolve_or_create_epic_issue(
         conn=conn,
         stderr=stderr,
         stdout=stdout,
+        search_cache=search_cache,
     )
     if issue is None:
         print("Error: Failed to create epic issue", file=sys.stderr)
@@ -229,11 +235,13 @@ def _dedup_or_create_task_issue(
     gh_project: str,
     stdout: TextIO,
     stderr: TextIO,
+    search_cache: IssueSearchCache,
     conn: Optional[Any] = None,
     epic_id: str = "",
     task_num: int = 0,
 ) -> str:
-    """Search for existing task issue or create a new one. Returns issue number."""
+    """Adopt the exact-content task issue from the sync's shared search
+    results, or create a new one. Returns the issue number."""
     epic_ref = backlog_id
     if not epic_ref and epic_id:
         epic_ref = render_item_ref(conn, int(epic_id))
@@ -257,6 +265,7 @@ def _dedup_or_create_task_issue(
         conn=conn,
         stderr=stderr,
         stdout=stdout,
+        search_cache=search_cache,
     )
     if issue is None:
         print("Warning: Failed to create task issue", file=sys.stderr)

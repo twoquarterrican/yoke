@@ -27,8 +27,11 @@ Before creating a backlog item, epic parent or task issue, Yoke adopts an
 existing issue only when its complete title and outgoing body match after
 whitespace normalization. Matching remains case-sensitive; a matching item
 prefix alone is insufficient. Oversized bodies compare the compact mirror
-that creation would send. A search failure skips adoption and creation makes
-a new issue, with a warning naming the failed search.
+that creation would send. Each sync runs one GitHub search per item-ref
+title prefix: an epic parent and all its task issues share one search, and
+each task is matched against those results locally. A search failure skips
+adoption and creation makes new issues, with one warning naming the failed
+search; that sync does not retry the search for later issues.
 
 ```bash
 yoke claims work acquire --item PREFIX-N --reason "repair GitHub issue link"

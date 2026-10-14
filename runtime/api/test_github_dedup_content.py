@@ -27,6 +27,7 @@ def test_task_requires_full_content(monkeypatch, body):
         gh_project="example",
         stdout=io.StringIO(),
         stderr=io.StringIO(),
+        search_cache={},
     )
     assert result == ("7" if body == "Body" else "8")
     assert create.call_count == (0 if body == "Body" else 1)
@@ -49,6 +50,7 @@ def test_old_task_title_format_is_not_adopted(monkeypatch):
             gh_project="example",
             stdout=io.StringIO(),
             stderr=io.StringIO(),
+            search_cache={},
         )
         == "8"
     )
@@ -75,6 +77,7 @@ def test_compact_payload_is_compared_and_created_once(monkeypatch):
         conn=None,
         stdout=io.StringIO(),
         stderr=io.StringIO(),
+        search_cache={},
     )
     select.assert_called_once()
     assert create.call_args.kwargs["body"] == "Compact mirror"
