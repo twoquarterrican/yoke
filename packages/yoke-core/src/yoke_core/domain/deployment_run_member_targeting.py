@@ -170,15 +170,16 @@ def covering_holder_pairs(
     Holding is per target environment. A holder on the item's final target
     keeps final-target custody. For a supplemental run, only a holder on the
     same environment and item-project commit can answer its targeted obligations,
-    so a production run
-    on the same lineage never holds an item away from the stage run that owes
-    it stage QA. A final-target holder that pinned a different commit for the
-    item's project does hold it: close-out credits supplemental proof only on
-    the final run's own commit, so enrolling would compose proof nothing reads.
+    so a production run that pinned or delivered this run's commit never holds
+    an item away from the stage run that owes it stage QA. A final-target
+    holder that neither pinned nor delivered this run's item-project commit
+    does hold it: close-out credits supplemental proof only on the final run's
+    pinned or delivered commit, so enrolling would compose proof nothing reads.
     """
     from yoke_core.domain.deployment_item_flow_resolution import item_completion_flows
     from yoke_core.domain.deployment_run_project_sources import (
         recorded_source_sha,
+        run_recorded_and_delivered_shas,
         run_source_facts,
     )
 
@@ -228,8 +229,8 @@ def covering_holder_pairs(
         elif str(row["run_environment"] or "") != run_environment:
             project_id = int(row["item_project_id"])
             keep = not holder_supplemental and recorded_source_sha(
-                dict(row), project_id
-            ) != recorded_source_sha(current, project_id)
+                current, project_id
+            ) not in run_recorded_and_delivered_shas(conn, key[0], project_id)
         else:
             project_id = int(row["item_project_id"])
             same_commit = recorded_source_sha(

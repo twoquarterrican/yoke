@@ -38,7 +38,11 @@ _EPILOG = (
     "target and this command refuses. The result reports the endpoint "
     "delta and stores the previous execution_target_json so a later reader "
     "can see what moved. It is not a waiver and not re-verification. A "
-    "live item requirement cannot be superseded; this is its path."
+    "live item requirement cannot be superseded; this is its path. The "
+    "environment row is the snapshot's environment id, else the "
+    "requirement's own target_env on the snapshot's (or plan target's) "
+    "site, else the plan's default target, else the snapshot's site and "
+    "environment names."
 )
 
 

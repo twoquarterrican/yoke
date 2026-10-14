@@ -110,8 +110,15 @@ def cmd_add_item(
         # check and can close is what the membership is for, and the attach
         # is the last moment the caller can choose a run that does either.
         coverage = member_coverage_notice(conn, run_id=run_id, item_id=int(item_id))
+        from yoke_core.domain.deployment_item_completion_runs import (
+            uncredited_supplemental_notice,
+        )
+
+        uncredited = uncredited_supplemental_notice(
+            conn, run_id=run_id, item_id=int(item_id)
+        )
         conn.commit()
-        notes = [note for note in (coverage, unadmitted) if note]
+        notes = [note for note in (coverage, uncredited, unadmitted) if note]
         return " ".join([f"Added {ref} to run {run_id}.", *notes])
     finally:
         conn.close()

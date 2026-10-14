@@ -6,7 +6,7 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from yoke_core.domain.db_helpers import query_one, query_rows
+from yoke_core.domain.db_helpers import query_one
 from yoke_core.domain.qa_execution_environment_target import (
     canonical_target,
     target_digest,
@@ -142,72 +142,6 @@ def _identity_row(conn: Any, environment_id: int) -> dict[str, Any] | None:
     return dict(row) if row is not None else None
 
 
-def _environment_row(conn: Any, environment_id: int) -> dict[str, Any] | None:
-    if not _table_exists(conn, "environments"):
-        return None
-    row = query_one(
-        conn,
-        "SELECT e.id AS environment_id, e.name AS environment_name, e.url, "
-        "e.settings, s.name AS site_name FROM environments e "
-        "JOIN sites s ON s.id=e.site WHERE e.id=%s",
-        (int(environment_id),),
-    )
-    return dict(row) if row is not None else None
-
-
-def _row_id(row: Any) -> int:
-    if hasattr(row, "keys"):
-        return int(row["id"])
-    return int(row[0])
-
-
-def _resolve_live_environment_id(
-    conn: Any,
-    stored: Mapping[str, Any],
-    *,
-    plan_id: int | None,
-) -> tuple[int, str]:
-    """Pick the environment row: stored id, plan target, then site plus name."""
-    stored_id = _int(_mapping(stored.get("environment")).get("id"))
-    if stored_id:
-        return stored_id, "stored environment.id"
-    if plan_id:
-        plan = query_one(
-            conn,
-            "SELECT target_environment_id FROM qa_plans WHERE id=%s",
-            (int(plan_id),),
-        )
-        plan_target = 0 if plan is None else _int(plan["target_environment_id"])
-        if plan_target:
-            return plan_target, "qa_plans.target_environment_id"
-    site_name = str(_mapping(stored.get("site")).get("name") or "")
-    env_name = str(_mapping(stored.get("environment")).get("name") or "")
-    if site_name and env_name:
-        rows = query_rows(
-            conn,
-            "SELECT e.id FROM environments e JOIN sites s ON s.id=e.site "
-            "WHERE s.name=%s AND e.name=%s",
-            (site_name, env_name),
-        )
-        if len(rows) == 1:
-            return _row_id(rows[0]), "stored site.name and environment.name"
-        if len(rows) > 1:
-            raise QaRebindError(
-                f"stored site {site_name!r} and environment {env_name!r} "
-                f"resolve to {len(rows)} rows; start a fresh execution or "
-                "use sanctioned retirement or supersession"
-            )
-        raise QaRebindError(
-            f"no environment row named {site_name}/{env_name}; start a "
-            "fresh execution or use sanctioned retirement or supersession"
-        )
-    raise QaRebindError(
-        "stored target records no environment identity; start a fresh "
-        "deployment/plan execution or use sanctioned retirement or "
-        "supersession"
-    )
-
-
 def _identity_from_stored(
     stored: Mapping[str, Any], env_row: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -271,6 +205,7 @@ def _live_target(
     stored: Mapping[str, Any],
     *,
     plan_id: int | None = None,
+    target_env: str = "",
 ) -> tuple[dict[str, Any], int, str]:
     from yoke_core.domain.deployment_qa_execution_target import (
         is_deployment_execution_target,
@@ -283,10 +218,15 @@ def _live_target(
         environment_row_endpoints,
     )
 
-    environment_id, resolved_from = _resolve_live_environment_id(
-        conn, stored, plan_id=plan_id
+    from yoke_core.domain.qa_requirement_rebind_environment import (
+        environment_row,
+        resolve_live_environment_id,
     )
-    env_row = _environment_row(conn, environment_id)
+
+    environment_id, resolved_from = resolve_live_environment_id(
+        conn, stored, plan_id=plan_id, target_env=target_env
+    )
+    env_row = environment_row(conn, environment_id)
     if env_row is None:
         raise QaRebindError(
             f"environment id {environment_id} from {resolved_from} could "
