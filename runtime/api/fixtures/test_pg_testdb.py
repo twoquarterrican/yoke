@@ -73,3 +73,36 @@ def test_refuses_to_drop_another_invocations_database(monkeypatch):
 def test_refuses_to_operate_on_a_non_test_database():
     with pytest.raises(RuntimeError, match="non-test database"):
         pg_testdb.drop_test_database("production")
+
+
+def test_production_init_uses_captured_cluster_credentials(monkeypatch):
+    from types import SimpleNamespace
+    from runtime.api.fixtures import production_schema
+
+    name = pg_test_db_namespace.database_name("authenticated")
+    original = "dbname=owned password=fixture-secret"
+    bindings = []
+    monkeypatch.setattr(
+        pg_testdb,
+        "dsn_for_test_database",
+        lambda supplied: (
+            original if supplied == name else pytest.fail("wrong database")
+        ),
+    )
+    monkeypatch.setattr(
+        production_schema,
+        "run_init_chain",
+        lambda **_kwargs: bindings.append(pg_testdb.db_backend.resolve_pg_dsn()),
+    )
+    monkeypatch.setattr(
+        production_schema, "seed_project_identities", lambda _conn: None
+    )
+    conn = SimpleNamespace(
+        info=SimpleNamespace(dbname=name, dsn="dbname=owned"),
+        execute=lambda *_args: None,
+        commit=lambda: None,
+    )
+    before = pg_testdb.db_backend.resolve_pg_dsn()
+    production_schema.initialize_test_schema(conn)
+    assert bindings == [original]
+    assert pg_testdb.db_backend.resolve_pg_dsn() == before

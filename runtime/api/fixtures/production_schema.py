@@ -9,13 +9,14 @@ def initialize_test_schema(conn):
     """Run the production chain on this connection's database, then seed tests.
 
     Initialization opens its own connections. Binding the supplied connection's
-    DSN prevents an ambient connection override from selecting another universe.
+    name through the captured test-cluster DSN preserves authentication and
+    prevents an ambient override from selecting another universe.
     The schema, triggers and constraints retain their production definitions.
     """
     from runtime.api.fixtures import pg_testdb
 
     pg_testdb._assert_test_db(conn.info.dbname)
-    with db_backend.bound_pg_dsn(conn.info.dsn):
+    with db_backend.bound_pg_dsn(pg_testdb.dsn_for_test_database(conn.info.dbname)):
         run_init_chain(emit=lambda _line: None)
     seed_project_identities(conn)
     for project_id, name in ((1, "Yoke API"), (2, "External webapp API")):
