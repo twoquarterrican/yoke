@@ -96,9 +96,13 @@ def _live_execution_holds(conn: Any, row: Any) -> bool:
     )
     if execution_id is None:
         return False
-    from yoke_core.domain.qa_plan_execution_store import select_plan_execution
-
-    execution = select_plan_execution(conn, execution_id, lock=False)
+    if member is not None:
+        return True
+    execution = query_one(
+        conn,
+        f"SELECT execution_target_digest FROM qa_plan_executions WHERE id={marker(conn)}",
+        (execution_id,),
+    )
     return execution["execution_target_digest"] == row["execution_target_digest"]
 
 
