@@ -82,6 +82,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `github.merge_queue.readiness` | `none` |
 | `github.pr.create` | `none` |
 | `github.release.create_next_tag` | `none` |
+| `github.release.create_commit_tag` | `none` |
 | `github_actions.check_ci` | `none` |
 | `github_actions.commit_runs.list` | `none` |
 | `github_actions.dispatch_tag.ensure` | `none` |

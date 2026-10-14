@@ -190,6 +190,7 @@ from yoke_cli.commands.adapters.github import (
 )
 from yoke_cli.commands.adapters.github_release import (
     github_release_create_next_tag,
+    github_release_create_commit_tag,
 )
 from yoke_cli.commands.adapters.github_actions import (
     github_actions_check_ci,

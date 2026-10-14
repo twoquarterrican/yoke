@@ -25,6 +25,7 @@ from yoke_core.domain.function_authz_types import PROJECT, AuthzSpec
 
 
 RELEASE_CI_AUTHZ_BY_ID = {
+    "github.release.create_commit_tag": AuthzSpec(PROJECT, PERM_GITHUB_RELEASE_CREATE),
     "release_pin.record": AuthzSpec(PROJECT, PERM_RELEASE_PIN_RECORD),
     # The bridge attributes the version-pin commit its own promotion pushed.
     # Carved out of the deployment_runs.* org-admin prefix for the same

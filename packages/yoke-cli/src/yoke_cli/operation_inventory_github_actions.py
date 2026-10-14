@@ -9,6 +9,7 @@ from yoke_cli.operation_inventory_model import _Row, _w
 
 WRAPPED_ROWS: Tuple[_Row, ...] = (
     _w("yoke github release create-next-tag", "github_release"),
+    _w("yoke github release create-commit-tag", "github_release"),
     _w("yoke github branch head", "github_branch"),
     _w("yoke github-actions run rerun-failed", "github_actions"),
     _w("yoke github-actions check-ci", "github_actions"),

@@ -1,8 +1,11 @@
 {
  "id": "runtime-and-image-publication",
  "title": "Runtime and image publication",
- "status": "draft-copy",
+ "status": "observed",
  "audience": "Maintainers",
  "page": "contributing-guides",
- "position": 1
+ "position": 1,
+ "current": "Source defines github.release.create_commit_tag with a serving floor and BASE.YYYYMMDDHHMM from the UTC committer clock. Repeated calls recover an identical annotated tag; minute collisions refuse. The bridge and factories still use launch tags.",
+ "desired": "After the API is served, activate commit tags and exact main-push wheel and image promotion together. Prove the real consumer and measure release duration before claiming live improvement.",
+ "sources": ["docs/releases/README.md", "packages/yoke-core/src/yoke_core/domain/handlers/github_commit_release_tag.py"]
 }
