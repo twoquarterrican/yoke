@@ -23,13 +23,13 @@ from yoke_core.domain.project_identity import (
     render_item_ref,
     resolve_project,
 )
-from yoke_core.domain.backlog_create_body_completeness import warn_when_body_is_empty
 from yoke_core.domain.backlog_github_mirror_state import sync_and_record_mirror
 from yoke_core.domain.backlog_item_db_writes import _insert_item
 from yoke_core.domain.backlog_session_attribution import (
     record_touched_item,
 )
 from yoke_core.domain.item_entry_surface import enforce_item_entry_allowed
+from yoke_core.domain.item_spec_completeness import SPEC_REQUIRED_CODE
 from yoke_core.domain.item_source_actor import (
     ItemSourceActorResolutionError,
     coerce_explicit_item_source,
@@ -58,6 +58,7 @@ def execute_create(
 
     ``strategy_doc`` links the item to its steering scope in the creation
     transaction. Persistent creates require a permitted typed entry surface.
+    Every create, preview included, requires a spec beyond the title.
     """
     from yoke_core.domain import mutations
 
@@ -143,17 +144,6 @@ def execute_create(
         if intake_block:
             return {"success": False, "error": intake_block}
         clean_spec = None if spec is None else str(spec)
-        if workflow_id in ("dash", "task") and not (clean_spec or "").strip():
-            return {
-                "success": False,
-                "error": f"{workflow_id} item creation requires a nonblank spec; "
-                "pass --spec-file PATH or --stdin with a nonblank spec",
-            }
-        if entry_surface == "web_form" and not (clean_spec or "").strip():
-            return {
-                "success": False,
-                "error": "web-form item creation requires a spec; fill Spec or pass --spec-file PATH / --stdin",
-            }
         from yoke_core.domain.item_posture_validation import (
             ItemPostureError,
             validate_item_posture,
@@ -199,13 +189,17 @@ def execute_create(
             flow_project=flow_project,
             status=status,
             title_max_length=resolve_title_max_length(conn, project_identity.id),
+            spec=clean_spec,
         )
 
         if not result.success:
-            return {
+            refusal = {
                 "success": False,
                 "error": result.error or "Unknown validation error",
             }
+            if result.error_code == "SPEC_REQUIRED":
+                refusal["error_code"] = SPEC_REQUIRED_CODE
+            return refusal
 
         if dry_run:
             next_id = _get_next_id(conn)
@@ -313,13 +307,6 @@ def execute_create(
         public_ref = render_item_ref(conn, current_id)
         print(f"Created: {public_ref}", file=out)
 
-        warn_when_body_is_empty(
-            public_ref=public_ref,
-            title=title,
-            body=body,
-            spec=clean_spec,
-            out=out,
-        )
         # A create is authoritative on its own; the mirror is a second write
         # that can fail, so record what the mirror became instead of
         # reporting success over an issue that was never opened.

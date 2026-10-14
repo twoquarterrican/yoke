@@ -1,6 +1,6 @@
 # ruff: noqa: F811
-"""Tests for service_client execute-structured-write, execute-create-cli,
-execute-batch-update-cli, and apply-approval commands."""
+"""Tests for service_client execute-structured-write, execute-batch-update-cli,
+and apply-approval commands."""
 
 from __future__ import annotations
 
@@ -83,81 +83,6 @@ class TestExecuteStructuredWriteCli:
         assert rc == 2
         assert data["success"] is False
         assert "requires --file or --stdin" in data["error"]
-
-
-class TestExecuteCreateCli:
-    """Tests for execute-create-cli public backlog add parsing."""
-
-    def test_execute_create_cli_routes_positional_shape(self, monkeypatch, capsys):
-        import yoke_core.api.service_client as service_client
-        from yoke_core.domain import backlog
-
-        called: dict = {}
-
-        def _record_execute_create(**kwargs):
-            called.update(kwargs)
-            print("Created item", file=kwargs["out"])
-            return {"success": True, "item_id": 42}
-
-        monkeypatch.setattr(backlog, "execute_create", _record_execute_create)
-
-        rc = service_client.cmd_execute_create_cli(
-            [
-                "--project",
-                "yoke",
-                "--deployment-flow",
-                "main-flow",
-                "Title",
-                "issue",
-                "idea",
-                "high",
-            ]
-        )
-
-        captured = capsys.readouterr()
-        data = json.loads(captured.out)
-        assert rc == 0
-        assert data["success"] is True
-        assert called["title"] == "Title"
-        assert called["workflow"] == "issue"
-        assert called["status"] == "idea"
-        assert called["priority"] == "high"
-        assert called["project"] == "yoke"
-        assert called["deployment_flow"] == "main-flow"
-        assert "Created item" in data["log"]
-
-    def test_execute_create_cli_shell_mode_prints_log_not_json(
-        self, monkeypatch, capsys
-    ):
-        import yoke_core.api.service_client as service_client
-        from yoke_core.domain import backlog
-
-        def _record_execute_create(**kwargs):
-            print("Created YOK-9999", file=kwargs["out"])
-            return {"success": True, "item_id": 9999}
-
-        monkeypatch.setattr(backlog, "execute_create", _record_execute_create)
-        monkeypatch.setenv("YOKE_SERVICE_CLIENT_SHELL", "1")
-
-        rc = service_client.cmd_execute_create_cli(["Title", "issue", "idea", "medium"])
-
-        captured = capsys.readouterr()
-        assert rc == 0
-        assert captured.err == ""
-        assert captured.out == "Created YOK-9999\n"
-
-    def test_execute_create_cli_rejects_retired_epic_arg(self, capsys):
-        import yoke_core.api.service_client as service_client
-
-        rc = service_client.cmd_execute_create_cli(
-            ["Title", "issue", "idea", "high", "123"]
-        )
-
-        captured = capsys.readouterr()
-        data = json.loads(captured.out)
-        assert rc == 1
-        assert data["success"] is False
-        assert "retired" in data["error"]
 
 
 class TestExecuteBatchUpdateCli:

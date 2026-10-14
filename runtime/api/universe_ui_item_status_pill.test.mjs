@@ -74,11 +74,26 @@ test("a wait that names no blocking item is held, not a dependency", async (t) =
   const card = await bandCard(t, "hold", {
     "frontier.list": {
       ready_rows: [],
-      blocked_rows: [blockedRow(null, "Idea body is title-only.")],
+      blocked_rows: [blockedRow(null, "A prior owner still defends it.")],
       dependency_edges: [],
     },
   });
   const pill = byClass(card, "item-status-pill")[0];
   assert.equal(descendantText(pill), "Held");
   assert.ok(pill.classList.contains("is-blocked"));
+});
+
+test("an item saved with only its title reads Needs a spec, not a dependency", async (t) => {
+  const why = "Needs a spec: YOK-1 was saved with only its title.";
+  const card = await bandCard(t, "hold", {
+    "frontier.list": {
+      ready_rows: [],
+      blocked_rows: [{ ...blockedRow(null, why), needs_spec: true }],
+      dependency_edges: [],
+    },
+  });
+  const pill = byClass(card, "item-status-pill")[0];
+  assert.equal(descendantText(pill), "Needs a spec");
+  assert.ok(pill.classList.contains("is-blocked"));
+  assert.match(byClass(card, "item-status-detail-copy")[0].textContent, /saved with only its title/);
 });

@@ -35,12 +35,9 @@ _FAMILY_GROUPS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     (
         "Items / Backlog mutations",
         (
-            "create-item",
             "validate-update",
             "update-item",
             "apply-approval",
-            "execute-create-cli",
-            "execute-create",
             "execute-update-cli",
             "execute-update",
             "execute-batch-update-cli",

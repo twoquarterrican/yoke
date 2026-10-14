@@ -22,13 +22,10 @@ from .frontier_sql import (
 )
 from .frontier_types import AdapterCategory, FrontierItem, FrontierResult
 from .frontier_workflow_versions import load_frontier_workflow_versions
-from .idea_body_completeness import (
-    INCOMPLETE_REASON as _IDEA_INCOMPLETE_REASON,
-    is_idea_body_incomplete,
-)
+from .item_spec_completeness import item_needs_spec, needs_spec_reason
 from .frontier_compute_telemetry import _emit_frontier_computed
 from .item_ref_resolution import remap_ref_keys_to_internal
-from .project_identity import resolve_project_slug
+from .project_identity import render_item_ref, resolve_project_slug
 from .project_scope import normalize_project_scope
 from .project_settings import resolve_default_wip_cap
 from .queries import is_blocked, is_frozen
@@ -213,18 +210,13 @@ def compute_frontier(
                 for detail in fi.blocker_details
             )
 
-        idea_incomplete = status == workflow.stage_ids[0] and is_idea_body_incomplete(
-            item
-        )
-        if idea_incomplete:
+        fi.needs_spec = status == workflow.stage_ids[0] and item_needs_spec(item)
+        if fi.needs_spec:
             fi.blocked_reasons.append(
-                f"{_IDEA_INCOMPLETE_REASON}: idea body is title-only "
-                "(no spec content yet). Either /yoke idea is still in flight "
-                "or a prior draft session crashed before persisting the spec. "
-                "Run /yoke doctor to inspect."
+                needs_spec_reason(render_item_ref(conn, internal_item_id))
             )
 
-        if flag_blocked or status == "blocked" or blockers or idea_incomplete:
+        if flag_blocked or status == "blocked" or blockers or fi.needs_spec:
             fi.adapter = AdapterCategory.WAIT
             blocked.append(fi)
         elif internal_item_id in defended_items:

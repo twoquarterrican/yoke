@@ -65,11 +65,10 @@ def _next_project_sequence(conn, project_id: int) -> int:
 
 
 @router.post("/items", response_model=_main.ItemObject, status_code=201)
-def create_item(request: Request, req: _main.CreateItemRequest) -> _main.ItemObject | JSONResponse:
-    """Create a new item via the shared mutation layer.
+def create_item(request: Request, req: _main.CreateItemRequest):
+    """Create an item with its spec as the ``web_form`` entry surface.
 
-    The route is the ``web_form`` entry surface. The selected workflow
-    definition decides whether web filing is allowed.
+    The selected workflow definition decides whether web filing is allowed.
     """
     from yoke_core.domain.deployment_flow_validator import (
         normalize_deployment_flow_value,
@@ -99,11 +98,7 @@ def create_item(request: Request, req: _main.CreateItemRequest) -> _main.ItemObj
             workflow_version_id=workflow_version_id,
         )
     except WorkflowRegistryError as exc:
-        return _main._error_response(
-            422,
-            "VALIDATION_ERROR",
-            str(exc),
-        )
+        return _main._error_response(422, "VALIDATION_ERROR", str(exc))
     finally:
         conn.close()
 
@@ -118,6 +113,7 @@ def create_item(request: Request, req: _main.CreateItemRequest) -> _main.ItemObj
         deployment_flow=deployment_flow,
         flow_project=flow_project,
         title_max_length=title_limit,
+        spec=req.spec,
     )
 
     if not result.success:
@@ -141,7 +137,8 @@ def create_item(request: Request, req: _main.CreateItemRequest) -> _main.ItemObj
         )
 
     field_writes = dict(result.field_writes)
-    field_writes["source"] = str(require_auth_context(request).actor_id)
+    actor = str(require_auth_context(request).actor_id)
+    field_writes.update(source=actor, spec_updated_by=actor)
 
     conn = _main.get_db_readwrite()
     try:

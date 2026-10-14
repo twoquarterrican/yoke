@@ -2,7 +2,6 @@
 
 * RULE_TEXT_DONE — Check 9 (block direct status=done writes; YOKE_FORCE
   / YOKE_DONE_RECOVERY override guard).
-* RULE_TEXT_ADD_PROJECT — Check 14 (advisory: items add without --project).
 * RULE_TEXT_LIFECYCLE — Check 10 (qa-db.sh browser_substrate run-add),
   the shared _LIFECYCLE_TABLES / _EVENT_TABLE definitions, Check 15
   (lifecycle DML via raw DB query), Check 15b (lifecycle mutation in
@@ -12,7 +11,6 @@
 from __future__ import annotations
 
 __all__ = (
-    "RULE_TEXT_ADD_PROJECT",
     "RULE_TEXT_DONE",
     "RULE_TEXT_LIFECYCLE",
 )
@@ -74,35 +72,6 @@ if "status" in command and "done" in command and "# lint:no-done-check" not in c
 
 # Check 12 (block direct status=passed writes) removed — `passed` is
 # no longer a canonical status. The `# lint:no-passed-check` bypass is also retired.
-
-"""
-RULE_TEXT_ADD_PROJECT = r"""
-# --- Check 14: Advisory for items add without --project ---
-# Automated work-item creation (conduct gaps, curate, import) should always
-# pass --project explicitly; repo config no longer defines project context.
-# Suppression: add "# lint:no-project-check" comment to the command.
-if "items" in command and "add" in command and "# lint:no-project-check" not in command_stripped:
-    _items_add_pat = re.compile(
-        r"yoke-db\.sh\s+items\s+add\b"
-    )
-    if _items_add_pat.search(command_stripped) and "--project" not in command_stripped:
-        result = {
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "allow",
-                "permissionDecisionReason": (
-                    "WARNING: items add called without --project.\n"
-                    "Without --project, the item cannot inherit project context "
-                    "from repo config. For automated work-item creation "
-                    "(conduct gaps, curate promotions, bulk imports), always pass "
-                    "--project explicitly to inherit the correct project scope.\n"
-                    "Add %s# lint:no-project-check%s comment to suppress this warning."
-                    % (chr(39), chr(39))
-                ),
-            }
-        }
-        print(json.dumps(result))
-        sys.exit(0)
 
 """
 RULE_TEXT_LIFECYCLE = r"""

@@ -25,7 +25,7 @@ from yoke_contracts.api.function_call import TargetRef
 
 ITEMS_CREATE_USAGE = (
     "yoke items create (TITLE | --title-file PATH) WORKFLOW "
-    "[--spec-file PATH | --stdin] --execution-instructions-considered "
+    "(--spec-file PATH | --stdin) --execution-instructions-considered "
     "[--project P] [--priority P] [--entry-surface SURFACE] [--dry-run] [--json]"
 )
 
@@ -39,7 +39,7 @@ def items_create(args: list[str], *, shortcut: str | None = None) -> int:
         )
     usage = (
         f"{command} (TITLE | --title-file PATH) "
-        "[SPEC | --spec-file PATH | --stdin] --execution-instructions-considered"
+        "(SPEC | --spec-file PATH | --stdin) --execution-instructions-considered"
         if shortcut
         else ITEMS_CREATE_USAGE
     )
@@ -49,6 +49,7 @@ def items_create(args: list[str], *, shortcut: str | None = None) -> int:
         "task  Laneless, merge-free work.\n"
         "dash  Focused repository work with a lane or selected gates.\n"
         "idea  Use /yoke idea for planned intake and scaffolding.\n"
+        "Every item is created with its spec: the agreed outcome.\n"
         "First: yoke workflow execution-instruction resolve --workflow W --project P --full\n"
         "pass --execution-instructions-considered after reading them.",
     )
@@ -152,11 +153,10 @@ def items_create(args: list[str], *, shortcut: str | None = None) -> int:
     payload = {
         "title": title,
         "workflow": workflow,
+        "spec": spec,
         "dry_run": parsed.dry_run,
         "execution_instructions_considered": parsed.execution_instructions_considered,
     }
-    if spec is not None:
-        payload["spec"] = spec
     if workflow in ("dash", "task") or posture:
         payload["workflow_posture"] = posture
     for key in (

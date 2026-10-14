@@ -12,6 +12,7 @@ from .mutation_fields import (
     validate_priority,
     validate_title,
 )
+from .item_spec_completeness import missing_spec_refusal
 from .workflow_runtime import WorkflowRuntime
 from yoke_core.domain.project_attribution import resolved_project
 
@@ -26,6 +27,7 @@ def prepare_create(
     flow_project: Optional[str] = None,
     status: Optional[str] = None,
     title_max_length: Optional[int] = None,
+    spec: Optional[str] = None,
 ) -> CreateResult:
     """Validate and prepare an item creation.
 
@@ -47,6 +49,8 @@ def prepare_create(
             Validated against the selected workflow version.
         title_max_length: DB-resolved title-length limit for *project*,
             pre-loaded by the adapter. Falls back to the shipped default.
+        spec: The agreed outcome stored with the item. Required: a missing
+            or title-only spec refuses with ``SPEC_REQUIRED``.
 
     Returns:
         CreateResult with success=True and field_writes on valid input,
@@ -56,6 +60,12 @@ def prepare_create(
     err = validate_title(title, project=project, limit=title_max_length)
     if err:
         return CreateResult(success=False, error=err, error_code="VALIDATION_ERROR")
+
+    spec_refusal = missing_spec_refusal(title, spec)
+    if spec_refusal:
+        return CreateResult(
+            success=False, error=spec_refusal, error_code="SPEC_REQUIRED"
+        )
 
     # Validate priority
     err = validate_priority(priority)
@@ -115,6 +125,8 @@ def prepare_create(
         "status": effective_status,
         "project": project,
         "deployment_flow": deployment_flow,
+        "spec": spec,
+        "spec_updated_at": now,
         "frozen": False,
         "blocked": False,
         "blocked_reason": None,

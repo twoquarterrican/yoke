@@ -47,10 +47,9 @@ def insert_item(
     if not title:
         title = f"Item {item_id}"
     if spec is None:
-        # Default spec is non-trivial so frontier_compute's idea-body
-        # completeness check classifies the row as runnable. Tests that
-        # specifically want a title-only body must pass spec="" or a
-        # spec equal to "# {title}".
+        # Default spec is non-trivial so the frontier does not hold the row
+        # as needing a spec. Tests that want a title-only item pass spec=""
+        # or a spec equal to "# {title}".
         spec = f"# {title}\n\nDefault spec body for fixture {item_id}."
     project_id = int(project) if str(project).isdigit() else PROJECT_IDS.get(project, 1)
     workflow_id, workflow_version_id = resolve_current_workflow_pin(
@@ -63,11 +62,18 @@ def insert_item(
         "workflow_id, workflow_version_id) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (
-            item_id, title, status, priority,
+            item_id,
+            title,
+            status,
+            priority,
             project_id,
             project_sequence if project_sequence is not None else item_id,
             frozen,
-            created_at, created_at, spec, workflow_id, workflow_version_id,
+            created_at,
+            created_at,
+            spec,
+            workflow_id,
+            workflow_version_id,
         ),
     )
 
@@ -89,7 +95,12 @@ def insert_dep(
     conn.execute(
         "INSERT INTO item_dependencies (dependent_item_id, blocking_item_id, gate_point, satisfaction, source, created_at) "
         "VALUES (%s, %s, %s, %s, 'test', '2026-01-01T00:00:00Z')",
-        (_stored_item_id(dependent), _stored_item_id(blocking), gate_point, satisfaction),
+        (
+            _stored_item_id(dependent),
+            _stored_item_id(blocking),
+            gate_point,
+            satisfaction,
+        ),
     )
 
 

@@ -107,6 +107,7 @@ class TestExecuteCreateEntrySurface:
             result = backlog.execute_create(
                 project="yoke",
                 title="Dry run only",
+                spec="Agreed outcome: the item shows on the board.",
                 workflow="issue",
                 dry_run=True,
                 out=out,
@@ -126,6 +127,7 @@ class TestExecuteCreateEntrySurface:
             result = backlog.execute_create(
                 project="yoke",
                 title="Harness-created item",
+                spec="Agreed outcome: the item shows on the board.",
                 workflow="issue",
                 entry_surface="harness_skill",
             )
@@ -145,6 +147,7 @@ class TestExecuteCreateEntrySurface:
             result = backlog.execute_create(
                 project="yoke",
                 title="Environment-routed item",
+                spec="Agreed outcome: the item shows on the board.",
                 workflow="issue",
             )
         assert result["success"] is True
@@ -176,48 +179,15 @@ class TestExecuteCreateEntrySurface:
 
 
 class TestCreateAdapters:
-    def test_cli_forwards_workflow_and_surface(self, monkeypatch):
-        from yoke_core.api import service_client_backlog_create as adapter
-        from yoke_core.domain import backlog as backlog_module
-
-        captured = {}
-
-        def _record(**kwargs):
-            captured.update(kwargs)
-            return {"success": True, "item_id": 1}
-
-        monkeypatch.setattr(backlog_module, "execute_create", _record)
-        rc = adapter.cmd_execute_create_cli(
-            [
-                "--entry-surface",
-                "harness_skill",
-                "Harness title",
-                "issue",
-            ]
-        )
-        assert rc == 0
-        assert captured["workflow"] == "issue"
-        assert captured["entry_surface"] == "harness_skill"
-
-    def test_cli_default_forwards_no_surface(self, monkeypatch):
-        from yoke_core.api import service_client_backlog_create as adapter
-        from yoke_core.domain import backlog as backlog_module
-
-        captured = {}
-
-        def _record(**kwargs):
-            captured.update(kwargs)
-            return {"success": True, "item_id": 1}
-
-        monkeypatch.setattr(backlog_module, "execute_create", _record)
-        assert adapter.cmd_execute_create_cli(["Default title"]) == 0
-        assert captured["workflow"] is None
-        assert captured["entry_surface"] is None
-
     def test_web_form_rejects_issue_workflow(self, client):
         response = client.post(
             "/v1/items",
-            json={"title": "Web issue", "workflow": "issue", "project": "yoke"},
+            json={
+                "title": "Web issue",
+                "spec": "Agreed outcome for the web issue.",
+                "workflow": "issue",
+                "project": "yoke",
+            },
         )
         assert response.status_code == 403
         assert response.json()["error"]["code"] == "ENTRY_SURFACE_DENIED"
@@ -225,7 +195,12 @@ class TestCreateAdapters:
     def test_web_form_allows_dash_workflow(self, client):
         response = client.post(
             "/v1/items",
-            json={"title": "Web dash", "workflow": "dash", "project": "yoke"},
+            json={
+                "title": "Web dash",
+                "spec": "Agreed outcome for the web dash.",
+                "workflow": "dash",
+                "project": "yoke",
+            },
         )
         assert response.status_code == 201
         assert response.json()["workflow_id"] == "dash"

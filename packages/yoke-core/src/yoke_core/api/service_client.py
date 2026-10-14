@@ -29,12 +29,6 @@ Read/decision commands:
         When --workflow is omitted, uses the built-in Epic workflow.
 
 Mutation commands (return structured JSON for shell adapters to apply):
-    create-item --title TITLE --workflow WORKFLOW [--priority P] [--project P]
-                [--deployment-flow F]
-        Validate and prepare an item creation.  Returns JSON with
-        field_writes, events, and defaults.  The shell adapter applies
-        the DB insert and post-insert side effects.
-
     validate-update <item-id> --field FIELD --value VALUE
                 [--done-nonce-verified] [--force] [--qa-bypass]
         Preflight only: validates and prepares a single-field item update.
@@ -50,11 +44,6 @@ Mutation commands (return structured JSON for shell adapters to apply):
     execute-update-cli <item-id> <update-args...>
         Parse the public backlog-registry update CLI shape in Python and
         delegate to execute_update / execute_structured_write.
-
-    execute-create-cli [--dry-run] [--project P] [--deployment-flow F]
-                       <title> <workflow> [status] [priority]
-        Parse the public backlog-registry add CLI shape in Python and
-        delegate to execute_create.
 
     execute-batch-update-cli <field=value> <item-id>...
         Parse the public backlog-registry batch-update CLI shape in Python
@@ -203,13 +192,10 @@ from yoke_core.api.service_client_delivery import (  # noqa: F401
     cmd_backlog_dedup_search,
     cmd_backlog_github,
     cmd_backlog_list_cli,
-    cmd_create_item,
     cmd_evaluate_gate,
     cmd_execute_batch_update,
     cmd_execute_batch_update_cli,
     cmd_execute_close,
-    cmd_execute_create,
-    cmd_execute_create_cli,
     cmd_execute_structured_write,
     cmd_execute_update,
     cmd_execute_update_cli,
@@ -258,7 +244,6 @@ COMMANDS = {
     "classify-status": cmd_classify_status,
     "validate-status": cmd_validate_status,
     "validate-transition": cmd_validate_transition,
-    "create-item": cmd_create_item,
     "validate-update": cmd_update_item,
     "update-item": cmd_update_item,  # DEPRECATED: use validate-update
     "apply-approval": cmd_apply_approval,
@@ -287,8 +272,6 @@ COMMANDS = {
     "backlog-cli": cmd_backlog_cli,
     "backlog-list-cli": cmd_backlog_list_cli,
     "backlog-github": cmd_backlog_github,
-    "execute-create-cli": cmd_execute_create_cli,
-    "execute-create": cmd_execute_create,
     "execute-batch-update": cmd_execute_batch_update,
     "execute-batch-update-cli": cmd_execute_batch_update_cli,
     "execute-close": cmd_execute_close,

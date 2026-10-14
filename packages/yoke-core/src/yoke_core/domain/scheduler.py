@@ -189,7 +189,7 @@ def compute_schedule(
     for fi in raw.blocked:
         gate_evals: List[GateEvaluation] = []
         # Only typed dependency-edge blockers produce GateEvaluation rows.
-        # Non-edge causes (idea_incomplete, operator-flagged, legacy
+        # Non-edge causes (needs_spec, operator-flagged, legacy
         # status='blocked' drift) carry no gate point or blocking item;
         # blocked_reasons is the operator-facing message channel for those.
         if fi.blocker_details:
@@ -228,6 +228,7 @@ def compute_schedule(
             else str(fi.adapter),
             blocked_by=fi.blocked_by,
             blocked_reasons=fi.blocked_reasons,
+            needs_spec=fi.needs_spec,
             unblocks_count=fi.unblocks_count,
             downstream_depth=fi.downstream_depth,
             created_at=fi.created_at,

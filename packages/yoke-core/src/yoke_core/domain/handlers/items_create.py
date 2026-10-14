@@ -82,7 +82,13 @@ class ItemCreateRequest(BaseModel):
     entry_surface: Optional[str] = Field(
         None, description="Typed creation surface allowed by the workflow."
     )
-    spec: Optional[str] = Field(None, description="Initial spec stored with the item.")
+    spec: Optional[str] = Field(
+        None,
+        description=(
+            "Initial spec stored with the item: the agreed outcome. Required; "
+            "a missing or title-only spec refuses with spec_required."
+        ),
+    )
     strategy_doc: Optional[str] = Field(
         None,
         description=(
@@ -212,7 +218,7 @@ def handle_item_create(request: FunctionCallRequest) -> HandlerOutcome:
 
     if not result.get("success"):
         message = str(result.get("error") or "item create failed")
-        code = (
+        code = result.get("error_code") or (
             "entry_surface_denied"
             if message == MISSING_ENTRY_SURFACE_MESSAGE or "does not allow" in message
             else "create_failed"

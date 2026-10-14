@@ -12,13 +12,29 @@ from yoke_core.domain.db_helpers import connect
 class DemoItemSpec:
     title: str
     priority: str
+    spec: str
     workflow: str = "issue"
 
 
 DEFAULT_DEMO_ITEMS: tuple[DemoItemSpec, ...] = (
-    DemoItemSpec("Local installer smoke first item", "medium"),
-    DemoItemSpec("Local installer smoke second item", "low"),
-    DemoItemSpec("Local smoke dashboard check", "high"),
+    DemoItemSpec(
+        "Local installer smoke first item",
+        "medium",
+        "Demo item seeded by the local installer smoke. Done when it shows "
+        "on the board and can be claimed.",
+    ),
+    DemoItemSpec(
+        "Local installer smoke second item",
+        "low",
+        "Second demo item seeded by the local installer smoke. Done when the "
+        "board lists it below the first item.",
+    ),
+    DemoItemSpec(
+        "Local smoke dashboard check",
+        "high",
+        "Demo item seeded by the local installer smoke. Done when the local "
+        "dashboard shows it among the ready work.",
+    ),
 )
 
 
@@ -49,6 +65,7 @@ def seed_demo_items(
             source=str(source_actor),
             owner=str(source_actor),
             entry_surface="harness_skill",
+            spec=spec.spec,
         )
         if not result.get("success"):
             raise LocalDemoSeedError(str(result.get("error") or "item create failed"))

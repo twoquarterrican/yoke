@@ -33,7 +33,6 @@ from yoke_core.api.service_client_delivery_dependency import (  # noqa: F401
     cmd_plan_candidates,
 )
 from yoke_core.api.service_client_delivery_item_mutation import (  # noqa: F401
-    cmd_create_item,
     cmd_update_item,
 )
 
@@ -50,8 +49,6 @@ from yoke_core.api.service_client_backlog import (  # noqa: F401
     cmd_execute_batch_update,
     cmd_execute_batch_update_cli,
     cmd_execute_close,
-    cmd_execute_create,
-    cmd_execute_create_cli,
     cmd_execute_structured_write,
     cmd_execute_update,
     cmd_execute_update_cli,
