@@ -8,8 +8,12 @@ boundary instead of collapsing into one ambiguous non-zero exit.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
-from yoke_harness.baseline_harness_requests import HarnessRequest
+from yoke_harness.baseline_harness_requests import (
+    HarnessRequest,
+    read_rejection_record,
+)
 
 
 @dataclass(frozen=True)
@@ -128,6 +132,47 @@ def classify_declared_failure(
     return failure_evidence(DECLARED_PROBE_EXPECTATION_UNMET, name)
 
 
+#: A sealed probe that printed no valid record was sealed before records existed.
+REJECTION_RECORD_MISSING = (
+    "No sanitized rejection record came back, so the rejected reply cannot be "
+    "diagnosed; a golden sealed before rejection records keeps none. Capture a "
+    "new golden so its sealed probes return one."
+)
+
+
+def with_reply_rejection(
+    failure: dict[str, Any],
+    *,
+    request: HarnessRequest | None,
+    exit_code: int,
+    stdout: str,
+) -> dict[str, Any]:
+    """Keep a rejected reply's sanitized record and branch on its failure.
+
+    A declared harness probe's reply is parsed here; a sealed standard probe
+    parses on the host and prints only its record, which is re-validated.
+    """
+    if failure["cause"] != REPLY_UNANSWERED.cause:
+        return failure
+    if request is not None:
+        record = request.reply_rejection(stdout)
+        if record is not None:
+            record["harness_exit_code"] = exit_code
+    else:
+        record = read_rejection_record(stdout)
+    if record is None:
+        return {**failure, "reason": f"{failure['reason']} {REJECTION_RECORD_MISSING}"}
+    return {
+        **failure,
+        "reason": (
+            f"{failure['reason']} {record['harness']} reply rejected at "
+            f"`{record['rejection']}` (events: "
+            f"{', '.join(str(kind) for kind in record['event_types']) or 'none'})."
+        ),
+        "reply_rejection": record,
+    }
+
+
 __all__ = [
     "CHECK_UNMET",
     "DECLARED_PROBE_EXIT_NONZERO",
@@ -137,10 +182,12 @@ __all__ = [
     "LAUNCH_FAILED",
     "PROBE_EXIT_CODES",
     "PROBE_FAILURE_CAUSES",
+    "REJECTION_RECORD_MISSING",
     "REPLY_UNANSWERED",
     "REQUEST_TIMED_OUT",
     "UNDECLARED_EXIT",
     "ProbeFailureCause",
     "classify_declared_failure",
     "failure_evidence",
+    "with_reply_rejection",
 ]

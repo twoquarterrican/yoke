@@ -118,7 +118,7 @@ def settle_unreviewed_execution_captures(
         f"(qa_requirement_id={placeholder} AND id={placeholder})" for _ in captures
     )
     unjudged = conn.execute(
-        f"SELECT id FROM qa_runs WHERE ({bindings}) "
+        f"SELECT id, verdict_reason FROM qa_runs WHERE ({bindings}) "
         f"AND performed_by IN ({runners}) AND verdict IS NULL ORDER BY id",
         (*(value for binding in captures for value in binding), *CAPTURE_RUNNERS),
     ).fetchall()
@@ -131,7 +131,17 @@ def settle_unreviewed_execution_captures(
             int(row["id"] if hasattr(row, "keys") else row[0]),
             {
                 "verdict": UNREVIEWED_CAPTURE_VERDICT,
-                "verdict_reason": UNREVIEWED_CAPTURE_REASON,
+                # A reason recorded with the capture, such as a rejected
+                # probe reply, stays beside why the capture was settled.
+                "verdict_reason": "; ".join(
+                    filter(
+                        None,
+                        (
+                            UNREVIEWED_CAPTURE_REASON,
+                            row["verdict_reason"] if hasattr(row, "keys") else row[1],
+                        ),
+                    )
+                ),
             },
             unjudged_only=True,
             default_completed_at=now,

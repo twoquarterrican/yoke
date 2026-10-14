@@ -43,6 +43,11 @@ def record_machine_case_result(
         store_artifact_bytes,
         store_artifact_file,
     )
+    from yoke_core.domain.probe_reply_rejection_evidence import (
+        record_reply_rejections,
+        rejection_verdict_reason,
+        reply_rejections,
+    )
 
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
     verdict = {
@@ -53,6 +58,7 @@ def record_machine_case_result(
         "waiting": None,
     }[result.verdict]
     waiting = result.case_outcome == "waiting"
+    rejections = reply_rejections(result.evidence)
     now = utc_now()
     raw_result = json.dumps(
         {
@@ -80,6 +86,7 @@ def record_machine_case_result(
         performed_by="host_control",
         qa_kind=str(case["qa_kind"]),
         verdict=verdict,
+        verdict_reason=rejection_verdict_reason(rejections),
         case_outcome=result.case_outcome,
         capture_degraded_reason=result.capture_degraded_reason,
         raw_result=raw_result,
@@ -133,6 +140,17 @@ def record_machine_case_result(
             "application/json",
             evidence_handle,
             metadata,
+        )
+        recorded.extend(
+            record_reply_rejections(
+                conn,
+                requirement_id=int(case["requirement_id"]),
+                run_id=run_id,
+                rejections=rejections,
+                metadata=metadata,
+                created_at=now,
+                before_local_write=local_artifact_created,
+            )
         )
         for key, raw_handle in _artifact_handles(result.evidence):
             handle = parse_handle(raw_handle)

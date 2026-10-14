@@ -5,12 +5,28 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import PurePosixPath
+import re
 import shlex
-from typing import Sequence
+from typing import Any, Sequence
 
 PROBE_REPLY = "OK"
 PROBE_PROMPT = f"Reply exactly {PROBE_REPLY}. Do not use any tools."
 REQUEST_WORKSPACE = "/tmp"
+REJECTION_EVENT_TYPE_LIMIT = 40
+_TOKEN = re.compile(r"[A-Za-z][A-Za-z0-9_.:-]{0,63}")
+_FINAL_EVENT_FIELDS = {"type", "subtype", "is_error", "answer_type", "answer_length"}
+#: A rejected reply's sanitized record; the probe adds the harness exit code.
+REJECTION_RECORD_FIELDS = {
+    "harness",
+    "rejection",
+    "event_count",
+    "event_types",
+    "final_event",
+    "exact_ok_reply",
+    "tool_use",
+    "degraded_context",
+    "harness_exit_code",
+}
 
 
 @dataclass(frozen=True)
@@ -40,47 +56,149 @@ class HarnessRequest:
             }
         return None
 
-    def answered(self, stdout: str) -> bool:
-        """Require a successful native response with no tool calls; discard output."""
-        try:
-            events = [json.loads(line) for line in stdout.splitlines() if line.strip()]
-        except (TypeError, ValueError):
-            return False
-        if not events or any(not isinstance(event, dict) for event in events):
-            return False
+    def reply_rejection(self, stdout: str) -> dict[str, Any] | None:
+        """Accept a successful native reply with no tool calls, or describe why not.
+
+        The returned record is sanitized: event types, the final event's shape
+        and booleans, never reply text, account output or a transcript.
+        """
+        lines = [line for line in stdout.splitlines() if line.strip()]
+        types: list[str] = []
+        rejection = None if lines else "no_events"
         answer = None
-        completed = False
-        for event in events:
+        completed = degraded = tool_use = False
+        final: dict[str, Any] | None = None
+
+        def reject(branch: str) -> None:
+            nonlocal rejection
+            rejection = rejection or branch
+
+        for line in lines:
+            try:
+                event = json.loads(line)
+            except ValueError:
+                event = None
+            if not isinstance(event, dict):
+                degraded = True
+                types.append("<not-an-event>")
+                reject("malformed_stream")
+                continue
             kind = event.get("type")
+            types.append(_token(kind))
             if kind in {"tool_call", "error", "turn.failed"}:
-                return False
+                tool_use = tool_use or kind == "tool_call"
+                reject(kind.replace(".", "_") + "_event")
             if kind in {"item.started", "item.completed"}:
                 item = event.get("item", {})
-                if not isinstance(item, dict) or item.get("type") not in {
-                    "agent_message",
-                    "reasoning",
-                }:
-                    return False
-                if kind == "item.completed" and item.get("type") == "agent_message":
+                if not isinstance(item, dict):
+                    reject("item_malformed")
+                elif item.get("type") not in {"agent_message", "reasoning"}:
+                    tool_use = tool_use or isinstance(item.get("type"), str)
+                    reject("item_not_a_message")
+                elif kind == "item.completed" and item.get("type") == "agent_message":
                     answer = item.get("text")
             if kind == "assistant":
                 message = event.get("message")
-                if not isinstance(message, dict):
-                    return False
-                content = message.get("content", [])
+                content = (
+                    message.get("content", []) if isinstance(message, dict) else None
+                )
                 if not isinstance(content, list) or any(
-                    not isinstance(block, dict) or block.get("type") == "tool_use"
-                    for block in content
+                    not isinstance(block, dict) for block in content
                 ):
-                    return False
+                    reject("assistant_message_malformed")
+                elif any(block.get("type") == "tool_use" for block in content):
+                    tool_use = True
+                    reject("assistant_tool_use")
             if kind == "result":
                 if event.get("is_error") or event.get("subtype") != "success":
-                    return False
+                    reject("result_error")
                 answer = event.get("result")
                 completed = True
+                final = event
             if kind == "turn.completed":
                 completed = True
-        return completed and isinstance(answer, str) and answer.strip() == PROBE_REPLY
+                final = event
+        exact = isinstance(answer, str) and answer.strip() == PROBE_REPLY
+        if not completed:
+            reject("no_completion_event")
+        elif not exact:
+            reject("reply_not_exact")
+        if rejection is None:
+            return None
+        return {
+            "harness": self.name,
+            "rejection": rejection,
+            "event_count": len(lines),
+            "event_types": types[:REJECTION_EVENT_TYPE_LIMIT],
+            "final_event": None
+            if final is None
+            else {
+                "type": _token(final.get("type")),
+                "subtype": _token(final.get("subtype")),
+                "is_error": final.get("is_error")
+                if isinstance(final.get("is_error"), bool)
+                else None,
+                "answer_type": type(answer).__name__,
+                "answer_length": len(answer) if isinstance(answer, str) else None,
+            },
+            "exact_ok_reply": exact,
+            "tool_use": tool_use,
+            # Lines that were not JSON event objects: the stream itself was damaged.
+            "degraded_context": degraded,
+        }
+
+
+def _token(value: object) -> str | None:
+    """Keep a harness event label only when it is a short identifier."""
+    if value is None:
+        return None
+    if isinstance(value, str) and _TOKEN.fullmatch(value):
+        return value
+    return "<other>"
+
+
+def read_rejection_record(stdout: str) -> dict[str, Any] | None:
+    """Accept a sealed program's printed record only in its exact sanitized shape."""
+    lines = [line for line in stdout.splitlines() if line.strip()]
+    try:
+        record = json.loads(lines[-1]) if lines else None
+    except ValueError:
+        return None
+    if not isinstance(record, dict) or set(record) != REJECTION_RECORD_FIELDS:
+        return None
+    final = record["final_event"]
+    types = record["event_types"]
+    valid = (
+        record["harness"] in {"Claude", "Codex", "Cursor"}
+        and _token(record["rejection"]) == record["rejection"]
+        and all(
+            isinstance(record[key], bool)
+            for key in ("exact_ok_reply", "tool_use", "degraded_context")
+        )
+        and all(
+            isinstance(record[key], int) and not isinstance(record[key], bool)
+            for key in ("event_count", "harness_exit_code")
+        )
+        and isinstance(types, list)
+        and len(types) <= REJECTION_EVENT_TYPE_LIMIT
+        and all(t is None or t == _token(t) or t == "<not-an-event>" for t in types)
+        and (
+            final is None
+            or (
+                isinstance(final, dict)
+                and set(final) == _FINAL_EVENT_FIELDS
+                and _token(final["type"]) == final["type"]
+                and _token(final["subtype"]) == final["subtype"]
+                and final["is_error"] in (True, False, None)
+                and _token(final["answer_type"]) == final["answer_type"]
+                and (
+                    final["answer_length"] is None
+                    or isinstance(final["answer_length"], int)
+                )
+            )
+        )
+    )
+    return record if valid else None
 
 
 def harness_request(argv: Sequence[str]) -> HarnessRequest | None:

@@ -220,7 +220,7 @@ def test_a_request_that_uses_tools_cannot_pass(program, trace):
 )
 def test_missing_failed_or_malformed_native_completion_is_refused(stdout):
     request = harness_request(["/bin/codex"])
-    assert not request.answered(stdout)
+    assert request.reply_rejection(stdout) is not None
 
 
 @pytest.mark.parametrize("platform", ["macos", "linux"])
