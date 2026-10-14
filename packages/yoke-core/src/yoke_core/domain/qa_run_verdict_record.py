@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from yoke_contracts.timestamps import parse_instant
-from yoke_core.domain.db_helpers import instant_parameter
+from yoke_core.domain.db_helpers import instant_parameter, query_one
 from typing import Any
 
 from yoke_core.domain.qa_plan_execution_store import marker
@@ -87,15 +87,34 @@ def link_verdict_evidence(conn: Any, run_id: int) -> None:
     """Enrich the run's proof through the sole qa_runs writer."""
     from yoke_core.domain.qa_run_execution_evidence import execution_evidence_payload
 
-    raw = execution_evidence_payload(conn, run_id)
+    run = query_one(conn, "SELECT * FROM qa_runs WHERE id=%s FOR UPDATE", (run_id,))
+    if run is None or run.get("verdict") is not None:
+        return
+    raw = execution_evidence_payload(conn, run_id, run=run)
     if raw is not None:
         conn.execute("UPDATE qa_runs SET raw_result=%s WHERE id=%s", (raw, run_id))
+
+
+def _bind_evidence(conn: Any, run_id: int | None, columns: dict[str, Any]) -> None:
+    """Compose the final proof before a verdict can make it immutable."""
+    from yoke_core.domain.qa_run_execution_evidence import execution_evidence_payload
+
+    run = (
+        query_one(conn, "SELECT * FROM qa_runs WHERE id=%s FOR UPDATE", (run_id,))
+        if run_id is not None else {}
+    )
+    if run is None or run.get("verdict") is not None:
+        return
+    raw = execution_evidence_payload(conn, run_id, run={**run, **columns})
+    if raw is not None:
+        columns["raw_result"] = raw
 
 
 def insert_qa_run(conn: Any, **columns: Any) -> QaRunWrite:
     """Insert one run on the caller's transaction; a pass discharges its replacements."""
     columns = _clock_columns(conn, columns)
     lock_requirement_scope(conn, int(columns["qa_requirement_id"]))
+    _bind_evidence(conn, None, columns)
     p = marker(conn)
     names = list(columns)
     row = conn.execute(
@@ -104,7 +123,6 @@ def insert_qa_run(conn: Any, **columns: Any) -> QaRunWrite:
         tuple(columns.values()),
     ).fetchone()
     run_id = int(row["id"] if hasattr(row, "keys") else row[0])
-    link_verdict_evidence(conn, run_id)
     return QaRunWrite(
         run_id,
         _discharge_on_pass(
@@ -140,6 +158,7 @@ def update_qa_run(
     ).fetchone()
     if subject is not None:
         lock_requirement_scope(conn, int(subject[0]))
+    _bind_evidence(conn, int(run_id), columns)
     assignments = [f"{name}={p}" for name in columns]
     params: list[Any] = list(columns.values())
     if default_completed_at is not None:
@@ -152,7 +171,6 @@ def update_qa_run(
     cursor = conn.execute(sql, tuple(params))
     if not getattr(cursor, "rowcount", 1):
         return QaRunWrite(int(run_id))
-    link_verdict_evidence(conn, int(run_id))
     if columns.get("verdict") != PASS_VERDICT:
         return QaRunWrite(int(run_id))
     requirement = conn.execute(

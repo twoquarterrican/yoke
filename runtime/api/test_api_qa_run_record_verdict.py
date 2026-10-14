@@ -77,7 +77,7 @@ class TestQaRunRecordVerdict(unittest.TestCase):
                 with (
                     patch("yoke_core.domain.qa_events.emit_qa_run_event") as emit,
                     patch(
-                        "yoke_core.domain.qa_run_verdict_record.link_verdict_evidence"
+                        "yoke_core.domain.qa_run_verdict_record._bind_evidence"
                     ),
                     patch(
                         "yoke_core.domain.qa_run_execution_evidence.settle_recorded_verdict"
