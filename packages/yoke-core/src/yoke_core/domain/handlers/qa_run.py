@@ -228,10 +228,15 @@ def handle_qa_run_record_verdict(request: FunctionCallRequest) -> HandlerOutcome
                     str(exc),
                     jsonpath="$.payload.performed_by",
                 )
-        conn.commit()
-        from yoke_core.domain.qa_run_execution_evidence import settle_recorded_verdict
+        from yoke_core.domain.qa_run_execution_evidence import (
+            VerdictSettlementRefused,
+            commit_settled_verdict,
+        )
 
-        settle_recorded_verdict(conn, run_id)
+        try:
+            commit_settled_verdict(conn, run_id)
+        except VerdictSettlementRefused as exc:
+            return _error(exc.code, str(exc))
         qa_events.emit_qa_run_event(
             conn,
             db_path=None,

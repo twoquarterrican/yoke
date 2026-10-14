@@ -23,6 +23,10 @@ from yoke_core.domain.qa_capture_agreement import (
     run_artifact_count,
 )
 from yoke_core.domain.qa_pending_agent_review import pending_review_verdict_refusal
+from yoke_core.domain.qa_run_execution_evidence import (
+    VerdictSettlementRefused,
+    commit_settled_verdict,
+)
 from yoke_core.domain.qa_run_verdict_record import insert_qa_run, update_qa_run
 from yoke_core.domain.qa_constants import (
     NEEDS_REVIEW_OUTCOME,
@@ -162,13 +166,10 @@ def handle_qa_run_add(request: FunctionCallRequest) -> HandlerOutcome:
             completed_at=completed_at_value,
             created_at=now,
         ).run_id
-        conn.commit()
-        if verdict is not None:
-            from yoke_core.domain.qa_run_execution_evidence import (
-                settle_recorded_verdict,
-            )
-
-            settle_recorded_verdict(conn, int(run_id))
+        try:
+            commit_settled_verdict(conn, int(run_id))
+        except VerdictSettlementRefused as exc:
+            return _error(exc.code, str(exc))
         event_name = (
             "QARunCompleted"
             if verdict is not None
@@ -307,13 +308,10 @@ def handle_qa_run_complete(request: FunctionCallRequest) -> HandlerOutcome:
         if duration_ms is not None:
             columns["duration_ms"] = duration_ms
         update_qa_run(conn, int(run_id), columns)
-        conn.commit()
-        if verdict is not None:
-            from yoke_core.domain.qa_run_execution_evidence import (
-                settle_recorded_verdict,
-            )
-
-            settle_recorded_verdict(conn, int(run_id))
+        try:
+            commit_settled_verdict(conn, int(run_id))
+        except VerdictSettlementRefused as exc:
+            return _error(exc.code, str(exc))
         event_name = "QARunCompleted" if verdict is not None else "QARunCaptured"
         qa_events.emit_qa_run_event(
             conn,
