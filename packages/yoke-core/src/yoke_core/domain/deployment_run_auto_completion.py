@@ -15,6 +15,7 @@ from typing import Any
 
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.db_helpers import utc_now
+from yoke_core.domain.schema_read_scope import composition_operation
 
 
 @dataclass(frozen=True)
@@ -75,8 +76,17 @@ def _drive(run_id: str) -> str:
     return watch_deploy_command(run_id)
 
 
-def _readiness(conn: Any, run_id: str) -> tuple[dict[str, Any] | None, str]:
+def _qa_waiting(conn: Any, run_id: str, stage_name: str) -> bool:
     from yoke_core.domain.deployment_qa_stage_outstanding import qa_stage_outstanding
+
+    outstanding = qa_stage_outstanding(
+        conn, run_id=run_id, stage_name=stage_name, stop_at_first_waiting=True
+    )
+    return outstanding is None or bool(outstanding.waiting)
+
+
+@composition_operation
+def _readiness(conn: Any, run_id: str) -> tuple[dict[str, Any] | None, str]:
     from yoke_core.domain.deployment_run_completion_preconditions import (
         unresolved_blocking_qa,
     )
@@ -124,26 +134,21 @@ def _readiness(conn: Any, run_id: str) -> tuple[dict[str, Any] | None, str]:
         name = str(stage.get("name") or "")
         runner = str(stage.get("step_runner") or "")
         if runner == "qa":
-            outstanding = qa_stage_outstanding(conn, run_id=run_id, stage_name=name)
-            if outstanding is None or outstanding.waiting:
+            if _qa_waiting(conn, run_id, name):
                 return None, f"QA stage {name!r} is not fully accepted"
         elif runner == "human-approval":
             if not _approved(conn, run_id, name):
                 return None, f"approval stage {name!r} has no resolved approval"
         elif runner != "auto":
             return None, f"stage {name!r} still needs its {runner!r} driver"
-    # Earlier QA is checked as well: a later approval must not make a red
+    # Earlier stages are checked as well: a later approval must not make a red
     # item subject disappear merely because the stage cursor moved on.
-    for stage in stages:
-        if stage.get("step_runner") == "human-approval":
-            name = str(stage.get("name") or "")
-            if not _approved(conn, run_id, name):
-                return None, f"approval stage {name!r} has no resolved approval"
-        if stage.get("step_runner") != "qa":
-            continue
+    for stage in stages[: len(stages) - len(remaining)]:
         name = str(stage.get("name") or "")
-        outstanding = qa_stage_outstanding(conn, run_id=run_id, stage_name=name)
-        if outstanding is None or outstanding.waiting:
+        runner = stage.get("step_runner")
+        if runner == "human-approval" and not _approved(conn, run_id, name):
+            return None, f"approval stage {name!r} has no resolved approval"
+        if runner == "qa" and _qa_waiting(conn, run_id, name):
             return None, f"QA stage {name!r} is not fully accepted"
     unresolved = unresolved_blocking_qa(conn, run_id)
     if unresolved:
