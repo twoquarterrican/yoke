@@ -1,241 +1,210 @@
-"""The earlier report tells the truth about what it did and did not check.
-
-An advisory that goes quiet is worse than none: silence reads as a clean
-answer. So each of its three outcomes has to stay distinguishable — the
-change did not touch the shared surface, the consumer was asked and
-answered, or nothing was checked because no scoped credential reached the
-run. That last one is the ordinary fork case, and it must say so.
-"""
+"""Every candidate gets truthful, independent, content-keyed advisory evidence."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Sequence
+import subprocess
 
 import pytest
-
 from yoke_core.domain.yaml_helper import load_document
-
 from runtime.api.tools import consumer_compatibility_advisory as advisory
 from runtime.api.tools import require_platform_consumer_compatibility as gate
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-YOKE_CI = REPO_ROOT / ".github" / "workflows" / "yoke-ci.yml"
-MERGE_QUEUE = REPO_ROOT / ".yoke" / "merge-queue.json"
+YOKE_CI = REPO_ROOT / ".github/workflows/yoke-ci.yml"
+MERGE_QUEUE = REPO_ROOT / ".yoke/merge-queue.json"
 ADVISORY_MODULE = "runtime.api.tools.consumer_compatibility_advisory"
 CANDIDATE = "a" * 40
-CONTRACT_VERSION_ASSET = (
-    "packages/yoke-core/src/yoke_core/ui/static/contract-version.js"
-)
-MODEL_REFERENCE_REVISION_CHANGE = (
-    "packages/yoke-contracts/src/yoke_contracts/model_reference_catalog.py",
-    "packages/yoke-core/src/yoke_core/domain/model_reference_store.py",
-    "packages/yoke-core/src/yoke_core/domain/schema_init.py",
-)
+TREE = "d" * 40
+CONSUMER = "b" * 40
 
 
-class _Scope:
-    """The one changed-path scope the repo-contracts job resolves."""
-
-    def __init__(self, paths: Sequence[str]) -> None:
-        self.base_sha = "base"
-        self.paths = tuple(paths)
-
-
-def _never_called(*_args: Any, **_kwargs: Any):
-    raise AssertionError("the consumer must not be asked in this case")
-
-
-def _scope_of(monkeypatch: pytest.MonkeyPatch, *paths: str) -> None:
+@pytest.fixture
+def proof(monkeypatch):
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.setenv(gate.CONSUMER_TOKEN_ENV, "scoped-token")
+    monkeypatch.setattr(gate, "bind_consumer_authority", lambda: "")
+    monkeypatch.setattr(advisory, "candidate_tree", lambda _: TREE)
+    reads, dispatches = [], []
+    receipts = {}
+    head = {"sha": CONSUMER}
+
+    def read(argv):
+        reads.append(argv)
+        if argv[:3] == ["github", "branch", "head"]:
+            return {"head_sha": head["sha"]}
+        return receipts.get(argv[3], {"found": False})
+
+    def dispatch(candidate, consumer, *, exact_pair, request_id):
+        dispatches.append((candidate, consumer, request_id))
+        assert exact_pair is False
+        if request_id in receipts:
+            prior = receipts[request_id]
+            if prior["inputs"]["product_ref"] != candidate:
+                return "", "request_id is bound to a different payload"
+            prior["run_id"] = prior.get("run_id") or "recovered"
+            return prior["run_id"], ""
+        run = str(len(receipts) + 1)
+        receipts[request_id] = {
+            "found": True,
+            "inputs": {"product_ref": candidate},
+            "run_id": run,
+        }
+        return run, ""
+
+    monkeypatch.setattr(advisory, "_read", read)
+    monkeypatch.setattr(gate, "dispatch", dispatch)
     monkeypatch.setattr(
-        advisory,
-        "resolve_changed_path_scope",
-        lambda _root, _base: _Scope(paths),
+        gate,
+        "await_verdict",
+        lambda run_id, **_: (
+            {
+                "state": "success",
+                "head_sha": head["sha"],
+                "html_url": f"https://example.invalid/run/{run_id}",
+            },
+            "",
+        ),
     )
-    monkeypatch.setattr(advisory.gate, "prove", _never_called)
+    return reads, dispatches, receipts, head
 
 
-def test_the_watched_surface_is_derived_from_the_shipped_asset_contract() -> None:
-    # A hand-kept path list goes stale in silence: the asset moves, the list
-    # keeps matching nothing, and the advisory never fires again.
-    paths = advisory.host_consumed_paths()
-
-    assert CONTRACT_VERSION_ASSET in paths
-    for path in paths:
-        assert (REPO_ROOT / path).is_file(), path
-
-
-def test_a_contract_change_puts_the_consumer_in_play() -> None:
-    assert advisory.touches_hosted_consumer_surface([CONTRACT_VERSION_ASSET])
-    assert advisory.touches_hosted_consumer_surface(
-        ["packages/yoke-core/src/yoke_core/ui/contracts/universe-app.ts"]
-    )
-    assert (
-        advisory.touches_hosted_consumer_surface(["docs/testing-verification.md"]) == ()
-    )
+def test_identical_trees_under_different_commits_share_one_platform_run(proof):
+    reads, dispatches, _, _ = proof
+    assert advisory.check(CANDIDATE, timeout_sec=1)[0] == 0
+    assert advisory.check("c" * 40, timeout_sec=1)[0] == 0
+    assert len(dispatches) == 1
+    assert TREE in dispatches[0][2] and CONSUMER in dispatches[0][2]
+    assert sum(argv[:3] == ["github", "branch", "head"] for argv in reads) == 2
 
 
-def test_a_model_reference_revision_change_puts_the_consumer_in_play() -> None:
-    assert advisory.touches_hosted_consumer_surface(
-        MODEL_REFERENCE_REVISION_CHANGE
-    ) == (MODEL_REFERENCE_REVISION_CHANGE)
+def test_consumer_movement_and_product_tree_changes_get_new_runs(proof, monkeypatch):
+    _, dispatches, _, head = proof
+    advisory.check(CANDIDATE, timeout_sec=1)
+    head["sha"] = "e" * 40
+    advisory.check(CANDIDATE, timeout_sec=1)
+    monkeypatch.setattr(advisory, "candidate_tree", lambda _: "f" * 40)
+    advisory.check(CANDIDATE, timeout_sec=1)
+    assert len({entry[2] for entry in dispatches}) == 3
 
 
-@pytest.mark.parametrize(
-    "path",
-    [
-        "packages/yoke-core/src/yoke_core/domain/session_control_schema.py",
-        "packages/yoke-core/src/yoke_core/domain/schema_init_columns.py",
-        "packages/yoke-core/src/yoke_core/domain/migrations/0047_example.py",
-    ],
-)
-def test_control_plane_schema_changes_put_the_consumer_in_play(path: str) -> None:
-    assert advisory.touches_hosted_consumer_surface([path]) == (path,)
-
-
-def test_an_unrelated_domain_change_does_not_put_the_consumer_in_play() -> None:
-    path = "packages/yoke-core/src/yoke_core/domain/sessions_list_rows.py"
-
-    assert advisory.touches_hosted_consumer_surface([path]) == ()
-
-
-@pytest.mark.parametrize(
-    "path",
-    [
-        "packages/yoke-core/src/yoke_core/domain/project_scratch_identity.py",
-        "packages/yoke-core/src/yoke_core/domain/project_scratch_dir.py",
-        "packages/yoke-core/src/yoke_core/domain/qa_artifacts.py",
-        "packages/yoke-core/src/yoke_core/tools/_watch_capture_binding.py",
-        "packages/yoke-core/src/yoke_core/tools/watch_pytest.py",
-    ],
-)
-def test_capture_runtime_changes_dispatch_the_consumer(monkeypatch, capsys, path):
-    _scope_of(monkeypatch, path)
-    monkeypatch.setenv(gate.CONSUMER_TOKEN_ENV, "scoped-token")
-    checked = []
-
-    def prove(candidate, consumer_ref, *, timeout_sec, exact_pair):
-        checked.append(candidate)
-        assert consumer_ref == gate.CONSUMER_TRUNK_REF
-        assert exact_pair is False
-        return 0, "consumer candidate service suite passed", "b" * 40
-
-    monkeypatch.setattr(gate, "prove", prove)
-    assert advisory.main(["--base", "origin/main", "--candidate-sha", CANDIDATE]) == 0
-    assert checked == [CANDIDATE]
-    assert "consumer candidate service suite passed" in capsys.readouterr().out
-
-
-def test_a_run_without_the_scoped_credential_says_it_did_not_check(
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    # The fork case. Reporting nothing here would read as a clean answer.
-    _scope_of(monkeypatch, CONTRACT_VERSION_ASSET)
-    monkeypatch.delenv(gate.CONSUMER_TOKEN_ENV, raising=False)
-
-    code = advisory.main(["--base", "origin/main", "--candidate-sha", CANDIDATE])
-    printed = capsys.readouterr().out
-
-    assert code == 0
-    assert "NOT CHECKED" in printed
-    assert "::warning" in printed
-
-
-def test_an_unrelated_change_reports_not_applicable_and_asks_nothing(
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    _scope_of(monkeypatch, "docs/testing-verification.md")
-
-    code = advisory.main(["--base", "origin/main", "--candidate-sha", CANDIDATE])
-
-    assert code == 0
-    assert "not applicable" in capsys.readouterr().out
-
-
-def test_an_unreadable_scope_reports_rather_than_going_quiet(
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    def _explode(_root: Path, _base: str) -> _Scope:
-        raise RuntimeError("no such ref")
-
-    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
-    monkeypatch.setattr(advisory, "resolve_changed_path_scope", _explode)
-    monkeypatch.setattr(advisory.gate, "prove", _never_called)
-
-    code = advisory.main(
-        [
-            "--base",
-            "origin/nowhere",
-            "--candidate-sha",
-            CANDIDATE,
-        ]
-    )
-    printed = capsys.readouterr().out
-
-    assert code == 0
-    assert "unresolvable" in printed
-    assert "::warning" in printed
-
-
-@pytest.mark.parametrize("conclusion", ["failure", "cancelled", "timed_out"])
-def test_a_refusal_is_reported_as_a_warning_and_a_non_zero_status(
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-    tmp_path: Path,
-    conclusion: str,
-) -> None:
-    _scope_of(monkeypatch, *MODEL_REFERENCE_REVISION_CHANGE)
-    summary = tmp_path / "summary.md"
-    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
-    monkeypatch.setenv(gate.CONSUMER_TOKEN_ENV, "scoped-token")
-
-    consumer_revision = "b" * 40
-
-    def _refuse(
-        candidate: str,
-        consumer_ref: str,
-        *,
-        timeout_sec: int,
-        exact_pair: bool,
-    ) -> tuple[int, str, str]:
-        assert candidate == CANDIDATE
-        assert consumer_ref == gate.CONSUMER_TRUNK_REF
-        assert timeout_sec == 1800
-        assert exact_pair is False
-        return gate.classify(
+def test_failed_proof_is_reused_without_redispatch(proof, monkeypatch):
+    _, dispatches, _, _ = proof
+    monkeypatch.setattr(
+        gate,
+        "await_verdict",
+        lambda *_, **__: (
             {
                 "state": "failed",
-                "conclusion": conclusion,
-                "head_sha": consumer_revision,
-                "html_url": "https://example.invalid/platform-run/42",
+                "conclusion": "failure",
+                "head_sha": CONSUMER,
             },
-            candidate_sha=candidate,
-            consumer_sha=consumer_ref,
-            run_id="42",
-            exact_pair=False,
-        )
-
-    monkeypatch.setattr(
-        advisory.gate,
-        "prove",
-        _refuse,
+            "",
+        ),
     )
+    assert advisory.check(CANDIDATE, timeout_sec=1)[0] == gate.UNPROVEN
+    assert advisory.check(CANDIDATE, timeout_sec=1)[0] == gate.UNPROVEN
+    assert len(dispatches) == 1
 
-    code = advisory.main(["--base", "origin/main", "--candidate-sha", CANDIDATE])
-    printed = capsys.readouterr().out
 
+def test_racing_identical_trees_recover_the_winners_original_input(proof, monkeypatch):
+    _, dispatches, receipts, _ = proof
+    original_dispatch = gate.dispatch
+
+    def race(candidate, consumer, **kwargs):
+        receipts[kwargs["request_id"]] = {
+            "found": True,
+            "inputs": {"product_ref": "c" * 40},
+            "run_id": "winner",
+        }
+        return original_dispatch(candidate, consumer, **kwargs)
+
+    monkeypatch.setattr(gate, "dispatch", race)
+    assert advisory.check(CANDIDATE, timeout_sec=1)[0] == 0
+    assert len(dispatches) == 1
+
+
+def test_missing_run_recovers_pending_receipt_with_original_payload(proof):
+    _, dispatches, receipts, _ = proof
+    key = f"consumer-advisory:{TREE}:{CONSUMER}:{gate.CONSUMER_CHECK_WORKFLOW}"
+    receipts[key] = {"found": True, "inputs": {"product_ref": "c" * 40}, "run_id": ""}
+    assert advisory.check(CANDIDATE, timeout_sec=1)[0] == 0
+    assert dispatches[0][0] == "c" * 40
+
+
+def test_wrong_original_tree_refuses_before_dispatch(proof, monkeypatch):
+    _, dispatches, receipts, _ = proof
+    key = f"consumer-advisory:{TREE}:{CONSUMER}:{gate.CONSUMER_CHECK_WORKFLOW}"
+    receipts[key] = {"found": True, "inputs": {"product_ref": "c" * 40}, "run_id": "1"}
+    monkeypatch.setattr(
+        advisory, "candidate_tree", lambda sha: TREE if sha == CANDIDATE else "f" * 40
+    )
+    with pytest.raises(RuntimeError, match="advisory_proof_identity_mismatch"):
+        advisory.check(CANDIDATE, timeout_sec=1)
+    assert not dispatches
+
+
+def test_moved_trunk_cannot_be_reported_as_the_keyed_proof(proof, monkeypatch):
+    monkeypatch.setattr(
+        gate,
+        "await_verdict",
+        lambda *_, **__: (
+            {
+                "state": "success",
+                "head_sha": "e" * 40,
+            },
+            "",
+        ),
+    )
+    code, narrative = advisory.check(CANDIDATE, timeout_sec=1)
     assert code == gate.UNPROVEN
-    assert CANDIDATE in printed
-    assert consumer_revision in printed
-    assert f"concluded {conclusion}" in printed
-    assert f"concluded {conclusion}" in summary.read_text()
-    assert "https://example.invalid/platform-run/42" in printed
-    assert "::warning" in printed
+    assert "stale pair" in narrative
+
+
+def test_docs_only_candidate_is_checked_without_a_path_filter(proof, capsys):
+    assert advisory.main(["--candidate-sha", CANDIDATE]) == 0
+    assert len(proof[1]) == 1
+    assert "hosted consumer builds" in capsys.readouterr().out
+
+
+def test_fork_missing_credential_reports_not_checked(monkeypatch, capsys):
+    monkeypatch.delenv(gate.CONSUMER_TOKEN_ENV, raising=False)
+    assert advisory.main(["--candidate-sha", CANDIDATE]) == 0
+    assert "consumer_credential_missing" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "error", ["function_version_skew: next-release", "relay unavailable"]
+)
+def test_unavailable_evidence_names_recovery(proof, monkeypatch, capsys, error):
+    def refuse(_):
+        raise RuntimeError(error)
+
+    monkeypatch.setattr(advisory, "_read", refuse)
+    assert advisory.main(["--candidate-sha", CANDIDATE]) == gate.UNAVAILABLE
+    printed = capsys.readouterr().out
+    assert "NOT CHECKED" in printed and error in printed
+    assert "control-plane operator" in printed
+
+
+def test_real_git_commits_with_identical_contents_have_one_tree(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    def git(*args):
+        return subprocess.check_output(["git", *args], text=True).strip()
+
+    git("init", "-q")
+    git("config", "user.name", "Test")
+    git("config", "user.email", "test@example.invalid")
+    (tmp_path / "file").write_text("same content")
+    git("add", "file")
+    git("commit", "-qm", "first")
+    first = git("rev-parse", "HEAD")
+    git("commit", "--allow-empty", "-qm", "second")
+    second = git("rev-parse", "HEAD")
+    assert first != second
+    assert advisory.candidate_tree(first) == advisory.candidate_tree(second)
 
 
 CONSUMER_ADVISORY_WORKFLOW = (
@@ -251,7 +220,6 @@ def test_advisory_timeout_cannot_cancel_the_required_qa_workflow() -> None:
     assert evidence["name"] != required["name"]
     assert set(evidence[True]) == {
         "pull_request",
-        "merge_group",
         "push",
         "workflow_dispatch",
     }

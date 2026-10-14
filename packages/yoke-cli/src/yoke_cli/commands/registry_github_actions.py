@@ -29,10 +29,19 @@ from yoke_cli.commands.adapters.github_actions_failed_log import (
 from yoke_cli.commands.adapters.github_actions_rerun import github_actions_rerun_failed
 
 
+from yoke_cli.commands.adapters.github_actions_dispatch_receipt import (
+    github_actions_dispatch_receipt_get,
+)
+
+
 AdapterFn = Callable[[List[str]], int]
 
 
 GITHUB_ACTIONS_SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
+    ("github-actions", "dispatch-receipt", "get"): (
+        "github_actions.dispatch_receipt.get",
+        github_actions_dispatch_receipt_get,
+    ),
     ("github-actions", "run", "rerun-failed"): (
         "github_actions.run.rerun_failed",
         github_actions_rerun_failed,

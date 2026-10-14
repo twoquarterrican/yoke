@@ -1,117 +1,28 @@
-"""Warn during tree contracts when the hosted consumer refuses a candidate.
+"""Check every upstream PR, main push and manual candidate against Platform.
 
-Publication is where consumer proof is mandatory — see
-:mod:`require_platform_consumer_compatibility`, which the release bridge runs
-before it allocates the annotated tag. This is the earlier, advisory half:
-it runs in its own independent CI workflow (see
-``.github/workflows/consumer-compatibility-advisory.yml``) so an author
-changing a surface the hosted service consumes gets an early signal rather
-than first learning at the release, and it never decides any required check's
-verdict — nor does the tree-contracts job or the shard matrix wait on it. A
-fast landing can beat this advisory; the mandatory exact-pair release proof
-remains the authority.
-
-Three outcomes, and the difference between them is the point:
-
-* **not applicable** — the change does not touch the surface the host
-  consumes, so there is nothing to prove.
-* **not checked** — no scoped consumer credential reached this run. A fork
-  pull request never receives one, and public CI stays fully usable without
-  it, so this says so plainly instead of implying a clean answer.
-* **checked** — the consumer's own required check built its host against
-  this exact candidate, and its conclusion is reported. A refusal names both
-  revisions and the run.
-
-Only the third outcome can be a non-zero exit. That conclusion belongs to
-the advisory workflow alone; required CI and its QA verdict stay independent.
+This independent advisory never decides required CI or release publication.
+Identical product trees at the same observed consumer commit join one durable
+Platform run. Release publication still requires its exact commit pair.
+Forks without the scoped credential report NOT CHECKED explicitly.
 
 Usage::
 
-    python3 -m runtime.api.tools.consumer_compatibility_advisory \\
-        --base origin/main --candidate-sha <40-hex>
+    python3 -m runtime.api.tools.consumer_compatibility_advisory \
+        --candidate-sha <40-hex>
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import subprocess
 import sys
-from pathlib import Path
-from typing import Optional, Sequence, Tuple
-
-from yoke_contracts.universe_asset_contract import UNIVERSE_ASSETS
-from yoke_core.tools.ci_repo_contracts import resolve_changed_path_scope
+from typing import Optional, Sequence
 
 from runtime.api.tools import require_platform_consumer_compatibility as gate
 
-#: Where the host-consumed asset members live in this repository's tree.
-_PACKAGE_SOURCE_ROOT = "packages/yoke-core/src/"
-#: Declaration-emitting sources for the same contract, which change the
-#: shared surface without changing a shipped asset byte-for-byte.
-_CONTRACT_SOURCE_ROOT = "packages/yoke-core/src/yoke_core/ui/contracts/"
-#: Control-plane schema, boot seeds and scratch paths exercised by the
-#: hosted consumer's candidate service check.
-_CONTROL_PLANE_DOMAIN_ROOT = "packages/yoke-core/src/yoke_core/domain/"
-_WATCHER_TOOLS_ROOT = "packages/yoke-core/src/yoke_core/tools/"
-_MODEL_REFERENCE_CONTRACT_ROOT = (
-    "packages/yoke-contracts/src/yoke_contracts/model_reference_"
-)
-
 _ANNOTATION_TITLE = "consumer-compatibility"
-
-
-def host_consumed_paths() -> Tuple[str, ...]:
-    """Repository paths of the assets the host consumes, from one source."""
-    return tuple(
-        f"{_PACKAGE_SOURCE_ROOT}{asset.artifact_member}" for asset in UNIVERSE_ASSETS
-    )
-
-
-def _touches_control_plane_runtime(path: str) -> bool:
-    """Whether *path* changes hosted data or the consumer's capture runtime."""
-    if path.startswith(_MODEL_REFERENCE_CONTRACT_ROOT):
-        return True
-    if path.startswith(_WATCHER_TOOLS_ROOT):
-        relative = path[len(_WATCHER_TOOLS_ROOT) :]
-        return relative == "_watch_capture_binding.py" or relative.startswith(
-            "watch_pytest"
-        )
-    if not path.startswith(_CONTROL_PLANE_DOMAIN_ROOT):
-        return False
-
-    relative = path[len(_CONTROL_PLANE_DOMAIN_ROOT) :]
-    return (
-        relative == "schema.py"
-        or relative == "schema_init.py"
-        or relative == "model_reference_store.py"
-        or relative.startswith("schema_")
-        or relative.endswith("_schema.py")
-        or relative.startswith("migrations/")
-        or relative.startswith("project_scratch_")
-        or relative == "qa_artifacts.py"
-    )
-
-
-def touches_hosted_consumer_surface(paths: Sequence[str]) -> Tuple[str, ...]:
-    """The changed paths that require the hosted consumer advisory."""
-    consumed = set(host_consumed_paths())
-    return tuple(
-        path
-        for path in paths
-        if (
-            path in consumed
-            or path.startswith(_CONTRACT_SOURCE_ROOT)
-            or _touches_control_plane_runtime(path)
-        )
-    )
-
-
-def _repo_root() -> Path:
-    cwd = Path.cwd().resolve()
-    for parent in (cwd, *cwd.parents):
-        if (parent / "runtime" / "api" / "tools").is_dir():
-            return parent
-    return cwd
 
 
 def _report(message: str, *, warn: bool = False) -> None:
@@ -124,70 +35,206 @@ def _report(message: str, *, warn: bool = False) -> None:
             handle.write(f"- **{_ANNOTATION_TITLE}**: {message}\n")
 
 
+def _read(argv: Sequence[str]) -> dict:
+    code, stdout, stderr = gate._yoke(argv, timeout=gate._COMMAND_TIMEOUT_SECONDS)
+    try:
+        payload = json.loads(stdout)
+    except ValueError:
+        payload = None
+    if code or not isinstance(payload, dict) or not payload.get("success"):
+        raise RuntimeError(gate._detail(stdout, stderr))
+    result = payload.get("result")
+    if not isinstance(result, dict):
+        raise RuntimeError("the control plane returned no readable result")
+    return result
+
+
+def candidate_tree(candidate: str) -> str:
+    """Read the exact candidate's tree, including a recovered earlier PR commit."""
+
+    def read() -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", "rev-parse", "--verify", f"{candidate}^{{tree}}"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+    result = read()
+    if result.returncode:
+        # A force-pushed PR can leave its original proof's commit outside the
+        # fresh checkout. Fetch only that immutable object, never a moving ref.
+        fetched = subprocess.run(
+            ["git", "fetch", "--no-tags", "origin", candidate],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        if fetched.returncode:
+            raise RuntimeError(f"candidate_tree_unreadable: {fetched.stderr.strip()}")
+        result = read()
+    tree = result.stdout.strip().lower()
+    if result.returncode or not gate.is_full_commit_sha(tree):
+        raise RuntimeError(f"candidate_tree_unreadable: {result.stderr.strip()}")
+    return tree
+
+
+def _receipt(request_id: str) -> dict:
+    receipt = _read(
+        [
+            "github-actions",
+            "dispatch-receipt",
+            "get",
+            request_id,
+            "--project",
+            gate.CONSUMER_PROJECT,
+            "--json",
+        ]
+    )
+    if not isinstance(receipt.get("found"), bool) or (
+        receipt["found"]
+        and (
+            not isinstance(receipt.get("inputs"), dict)
+            or not isinstance(receipt.get("run_id"), str)
+        )
+    ):
+        raise RuntimeError(
+            "dispatch_receipt_unreadable: restore the receipt read's serving floor"
+        )
+    return receipt
+
+
+def _original_candidate(receipt: dict, candidate: str, tree: str) -> str:
+    if not receipt.get("found"):
+        return candidate
+    original = str((receipt.get("inputs") or {}).get(gate.CANDIDATE_INPUT) or "")
+    if not gate.is_full_commit_sha(original) or candidate_tree(original) != tree:
+        raise RuntimeError(
+            "advisory_proof_identity_mismatch: the recorded candidate does not "
+            "name this product tree; inspect the dispatch receipt before retrying"
+        )
+    return original
+
+
+def check(candidate: str, *, timeout_sec: int) -> tuple[int, str]:
+    unavailable = gate.bind_consumer_authority()
+    if unavailable:
+        raise RuntimeError(unavailable)
+    tree = candidate_tree(candidate)
+    trunk = _read(
+        [
+            "github",
+            "branch",
+            "head",
+            gate.CONSUMER_TRUNK_REF,
+            "--project",
+            gate.CONSUMER_PROJECT,
+            "--json",
+        ]
+    )
+    consumer = str(trunk.get("head_sha") or "").lower()
+    if not gate.is_full_commit_sha(consumer):
+        raise RuntimeError("consumer_head_unreadable: trunk read named no full commit")
+    request_id = f"consumer-advisory:{tree}:{consumer}:{gate.CONSUMER_CHECK_WORKFLOW}"
+    receipt = _receipt(request_id)
+    original = _original_candidate(receipt, candidate, tree)
+    run_id = str(receipt.get("run_id") or "")
+    if not run_id:
+        run_id, error = gate.dispatch(
+            original,
+            consumer,
+            exact_pair=False,
+            request_id=request_id,
+        )
+        if error:
+            # Another identical-tree caller can win between the read and POST.
+            # Recover its original input; never mutate a colliding payload.
+            receipt = _receipt(request_id)
+            winner = _original_candidate(receipt, candidate, tree)
+            run_id = str(receipt.get("run_id") or "")
+            if not run_id and winner != original:
+                run_id, error = gate.dispatch(
+                    winner,
+                    consumer,
+                    exact_pair=False,
+                    request_id=request_id,
+                )
+            if not run_id:
+                raise RuntimeError(error)
+            original = winner
+    result, error = gate.await_verdict(run_id, timeout_sec=timeout_sec)
+    if error:
+        raise RuntimeError(error)
+    code, narrative, _ = gate.classify(
+        result,
+        candidate_sha=candidate,
+        consumer_sha=consumer,
+        run_id=run_id,
+    )
+    if code:
+        proven = str(result.get("head_sha") or "")
+        reason = "consumer_check_failed"
+        recovery = (
+            "Repair the product or consumer so the next check names a new content pair."
+        )
+        if result.get("state") == "timeout":
+            reason = "consumer_check_timeout"
+            recovery = "Re-run the advisory to rejoin the same run after it concludes."
+        elif not gate.is_full_commit_sha(proven):
+            reason = "consumer_evidence_missing"
+            recovery = "Restore the run's head-commit evidence and re-run the advisory."
+        elif proven.lower() != consumer:
+            reason = "stale pair: consumer_commit_mismatch"
+            recovery = "Re-run the advisory to read the current consumer commit."
+        narrative = (
+            f"{reason}: product tree {tree} at {candidate} (checked commit {original}), "
+            f"consumer bound {consumer}, actual {proven or 'unnamed'}, run {run_id} "
+            f"({result.get('html_url') or 'no run URL'}) concluded "
+            f"{result.get('conclusion') or result.get('state') or 'unknown'}. "
+            f"{recovery} Required CI stays independent; publication still requires exact-pair proof."
+        )
+    else:
+        narrative = f"product tree {tree} at {candidate}, checked commit {original}: {narrative}"
+    return code, narrative
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="consumer_compatibility_advisory",
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--base", default="")
     parser.add_argument("--candidate-sha", default="")
     parser.add_argument("--timeout", type=int, default=1800, dest="timeout_sec")
     args = parser.parse_args(list(sys.argv[1:] if argv is None else argv))
-
-    base = args.base.strip()
-    try:
-        scope = resolve_changed_path_scope(_repo_root(), base)
-    except (OSError, RuntimeError) as exc:
-        # Unreadable scope is reported, never treated as "nothing changed":
-        # an advisory that goes quiet because it could not look is the same
-        # silence the publication gate exists to stop being the first news.
-        _report(
-            f"not checked — changed-path scope against {base or '<unset>'} "
-            f"was unresolvable: {exc}",
-            warn=True,
-        )
-        return 0
-
-    touched = touches_hosted_consumer_surface(scope.paths)
-    if not touched:
-        _report(
-            "not applicable — this change does not touch the surface the "
-            "hosted service consumes"
-        )
-        return 0
-
     candidate = args.candidate_sha.strip().lower()
     if not gate.is_full_commit_sha(candidate):
         _report(
-            "not checked — no full 40-hex candidate commit was supplied, and "
-            "the consumer resolves anything shorter against whatever it names "
-            "there",
+            "NOT CHECKED — candidate_commit_required: supply a full 40-hex "
+            "--candidate-sha and re-run the advisory",
             warn=True,
         )
         return 0
     if not os.environ.get(gate.CONSUMER_TOKEN_ENV, "").strip():
         _report(
-            "NOT CHECKED — this change touches "
-            f"{', '.join(touched)}, and no scoped consumer credential reached "
-            "this run, so the hosted host was not built against it. A fork "
-            "pull request never receives that credential; the pair is proven "
-            "before publication either way, and a maintainer can run the "
-            "check from a branch in this repository.",
+            "NOT CHECKED — consumer_credential_missing: no scoped consumer "
+            "credential reached this run. Fork PRs never receive it; a "
+            "maintainer can run the advisory from an upstream branch. "
+            "Publication still requires exact-pair proof.",
             warn=True,
         )
         return 0
-
-    # No durable driver authority resolves an exact consumer commit here
-    # (this runs on hosted CI, not the release bridge's own machine), so
-    # this dispatches onto trunk by name and trusts the run's own report
-    # instead of demanding an exact-pair match.
-    code, narrative, _proven = gate.prove(
-        candidate,
-        gate.CONSUMER_TRUNK_REF,
-        timeout_sec=args.timeout_sec,
-        exact_pair=False,
-    )
+    try:
+        code, narrative = check(candidate, timeout_sec=args.timeout_sec)
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+        _report(
+            f"NOT CHECKED — advisory_evidence_unavailable: {exc}. Restore the "
+            "named read or credential and re-run the advisory; if a function "
+            "floor is named, ask the control-plane operator to serve it. "
+            "Publication still requires exact-pair proof.",
+            warn=True,
+        )
+        return gate.UNAVAILABLE
     _report(narrative, warn=bool(code))
     return code
 

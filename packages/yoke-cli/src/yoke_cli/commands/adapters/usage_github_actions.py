@@ -41,7 +41,13 @@ from yoke_cli.commands.adapters.github_actions_workflow import (
 )
 
 
+from yoke_cli.commands.adapters.github_actions_dispatch_receipt import (
+    GITHUB_ACTIONS_DISPATCH_RECEIPT_USAGE,
+)
+
+
 USAGE_BY_FUNCTION_ID: Dict[str, str] = {
+    "github_actions.dispatch_receipt.get": GITHUB_ACTIONS_DISPATCH_RECEIPT_USAGE,
     "github_actions.run.rerun_failed": GITHUB_ACTIONS_RERUN_FAILED_USAGE,
     "github_actions.check_ci": GITHUB_ACTIONS_CHECK_CI_USAGE,
     "github_actions.failed_log": GITHUB_ACTIONS_FAILED_LOG_USAGE,
