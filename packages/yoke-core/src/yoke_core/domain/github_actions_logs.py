@@ -47,13 +47,14 @@ from yoke_core.domain.gh_rest_transport import (
 )
 from yoke_core.domain.gh_rest_operation_deadline import (
     GitHubRestOperationDeadlineError,
+    deadline_cut_error,
+    operation_deadline_after,
     require_remaining,
     wait_before_retry,
 )
 from yoke_core.domain.github_response_safety import (
     GITHUB_SMALL_RESPONSE_LIMIT_BYTES,
     GitHubResponseTooLargeError,
-    deadline_after,
     read_bounded_response,
     redact_exact_secrets,
     safe_diagnostic_text,
@@ -146,7 +147,7 @@ def _fetch_with_retry(url: str, *, token: str, limit_bytes: int | None = None) -
     if limit_bytes is None:
         limit_bytes = GITHUB_ACTIONS_JOB_LOG_LIMIT_BYTES
     headers = _headers(token)
-    operation_deadline = deadline_after(_FETCH_TIMEOUT_SECONDS)
+    operation_deadline = operation_deadline_after(_FETCH_TIMEOUT_SECONDS)
     last_exc: Optional[RestTransportError] = None
     for attempt in range(1, gh_retry.MAX_RETRIES + 1):
         try:
@@ -162,7 +163,7 @@ def _fetch_with_retry(url: str, *, token: str, limit_bytes: int | None = None) -
                 deadline=operation_deadline,
             )
         except GitHubRestOperationDeadlineError as exc:
-            raise RestNetworkError(str(exc)) from None
+            raise deadline_cut_error(exc, last_exc) from None
         except RestTransportError as exc:
             if not _is_retryable(exc) or attempt >= gh_retry.MAX_RETRIES:
                 raise
@@ -183,7 +184,7 @@ def _fetch_with_retry(url: str, *, token: str, limit_bytes: int | None = None) -
                 sleeper=sleep,
             )
         except GitHubRestOperationDeadlineError as exc:
-            raise RestNetworkError(str(exc)) from None
+            raise deadline_cut_error(exc, last_exc) from None
 
     if last_exc is not None:
         raise last_exc
@@ -299,7 +300,7 @@ def job_log_download_url(repo: str, job_id: int | str, *, token: str) -> str:
     request = urllib.request.Request(
         _job_logs_url(repo, job_id), headers=_headers(token), method="GET"
     )
-    deadline = deadline_after(_FETCH_TIMEOUT_SECONDS)
+    deadline = operation_deadline_after(_FETCH_TIMEOUT_SECONDS)
     try:
         opened = open_replay_safe(
             request,

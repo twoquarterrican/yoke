@@ -6,7 +6,11 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from yoke_contracts.api.function_call import FunctionCallRequest, HandlerOutcome
+from yoke_contracts.api.function_call import (
+    FunctionCallRequest,
+    FunctionError,
+    HandlerOutcome,
+)
 from yoke_contracts.github_app_installation_permissions import (
     GITHUB_ACTIONS_READ_PERMISSION_LEVELS,
 )
@@ -68,6 +72,14 @@ class FailedLogResponse(BaseModel):
     jobs: List[FailedJobSummary] = Field(default_factory=list)
 
 
+def _not_found(message: str) -> HandlerOutcome:
+    return HandlerOutcome(
+        result_payload={},
+        primary_success=False,
+        error=FunctionError(code="not_found", message=message),
+    )
+
+
 def _resolve_run_id(
     payload: FailedLogRequest,
     *,
@@ -76,7 +88,10 @@ def _resolve_run_id(
     if str(payload.run_id or "").strip():
         return str(payload.run_id), None
 
-    from yoke_core.domain.gh_rest_transport import RestTransportError
+    from yoke_core.domain.gh_rest_transport import (
+        RestNotFoundError,
+        RestTransportError,
+    )
     from yoke_core.domain.github_actions_rest import latest_workflow_run
 
     try:
@@ -87,12 +102,16 @@ def _resolve_run_id(
             head_sha=payload.head_sha,
             token=token,
         )
+    except RestNotFoundError as exc:
+        return None, _not_found(f"workflow run lookup found nothing: {exc}")
     except RestTransportError as exc:
         return None, _transport_failed(f"workflow run lookup failed: {exc}")
 
     if not run or not run.get("id"):
-        return None, _transport_failed(
-            "no workflow run found for the requested selector",
+        return None, _not_found(
+            f"no {payload.workflow} run found on branch {payload.branch!r}"
+            + (f" at commit {payload.head_sha}" if payload.head_sha else "")
+            + ": check --workflow, --branch and --head-sha, or pass the run id",
         )
     return str(run["id"]), None
 
@@ -112,7 +131,11 @@ def handle_failed_log(request: FunctionCallRequest) -> HandlerOutcome:
         return resolve_error
     assert run_id is not None
 
-    from yoke_core.domain.gh_rest_transport import RestAuthError, RestTransportError
+    from yoke_core.domain.gh_rest_transport import (
+        RestAuthError,
+        RestNotFoundError,
+        RestTransportError,
+    )
     from yoke_core.domain.github_actions_failed_jobs import (
         collect_failed_jobs,
         resolve_log_downloads,
@@ -124,6 +147,8 @@ def handle_failed_log(request: FunctionCallRequest) -> HandlerOutcome:
         return _transport_failed(
             f"GitHub auth failure fetching logs for run {run_id}: {exc}",
         )
+    except RestNotFoundError as exc:
+        return _not_found(f"run {run_id} not found: {exc}")
     except RestTransportError as exc:
         return _transport_failed(f"failed to fetch logs for run {run_id}: {exc}")
 
