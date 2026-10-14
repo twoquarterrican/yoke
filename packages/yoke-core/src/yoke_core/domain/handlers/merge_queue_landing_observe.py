@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
@@ -15,6 +16,7 @@ from yoke_core.domain.merge_queue_landing_observer import observe_pending_landin
 from yoke_core.domain.merge_queue_landing_record import read_landing_record
 from yoke_core.domain.merge_queue_landing_refresh import (
     LANDING_RECORD_STALE_SECONDS,
+    LandingRefresh,
     read_refresh,
     record_age_seconds,
 )
@@ -57,8 +59,44 @@ def _placeholder(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
 
 
+def _stored_record(conn: Any, item_id: int, pr_number: str) -> Any:
+    """This lane's durable record, or None when it describes another PR."""
+    record = read_landing_record(conn, item_id)
+    if record is not None and record.pr_number != pr_number:
+        return None
+    return record
+
+
+def _stale(record: Any, refresh: LandingRefresh, *, now: datetime) -> bool:
+    """Whether the stored answer is too old or too doubtful to return as is.
+
+    A sweep still running inside the stale window is about to write a fresh
+    answer. Otherwise the record ages from its own observation; before the
+    first record exists, the project's last sweep is the newest evidence.
+    A sweep that ended in error leaves every stored answer doubtful.
+    """
+    refresh_age = record_age_seconds(refresh.started_at, now=now)
+    if refresh.in_progress and (
+        refresh_age is not None and refresh_age <= LANDING_RECORD_STALE_SECONDS
+    ):
+        return False
+    if record is not None:
+        age = record_age_seconds(record.observed_at, now=now)
+        stale = age is None or age > LANDING_RECORD_STALE_SECONDS
+    else:
+        stale = refresh_age is None or refresh_age > LANDING_RECORD_STALE_SECONDS
+    return stale or bool(refresh.last_error)
+
+
 def handle_observe_landing(request: FunctionCallRequest) -> HandlerOutcome:
-    """Refresh one project if due, then return this lane's durable record."""
+    """Return this lane's durable record, reading GitHub only when it is stale.
+
+    Relay upkeep keeps records current on the shared project cadence, so a
+    fresh record answers without any GitHub read. When no relay sweep has
+    kept it current (no relay running, or a single-machine install), this
+    call refreshes the project inline, so a waiter never waits on a record
+    nobody refreshes.
+    """
     if request.target.item_id is None:
         return _error("target_invalid", "landing.observe requires target.public_ref")
     try:
@@ -81,31 +119,21 @@ def handle_observe_landing(request: FunctionCallRequest) -> HandlerOutcome:
             project_id = int(item["project_id"])
             pr_number = str(item.get("merge_queue_pr_number") or "")
             before = read_refresh(conn, project_id)
+            after = before
+            record = _stored_record(conn, item_id, pr_number)
             observation_error = ""
-            try:
-                observe_pending_landings(conn, [project_id], now=current)
-            except Exception as exc:  # The refresh row carries this evidence.
-                observation_error = str(exc)
-            after = read_refresh(conn, project_id)
-            record = read_landing_record(conn, item_id)
-            if record is not None and record.pr_number != pr_number:
-                record = None
+            if _stale(record, before, now=current):
+                try:
+                    observe_pending_landings(conn, [project_id], now=current)
+                except Exception as exc:  # The refresh row carries this evidence.
+                    observation_error = str(exc)
+                after = read_refresh(conn, project_id)
+                record = _stored_record(conn, item_id, pr_number)
+            stale = _stale(record, after, now=current) or bool(observation_error)
             age = record_age_seconds(
                 record.observed_at if record is not None else None,
                 now=current,
             )
-            refresh_age = record_age_seconds(after.started_at, now=current)
-            if after.in_progress and (
-                refresh_age is not None and refresh_age <= LANDING_RECORD_STALE_SECONDS
-            ):
-                stale = False
-            elif record is not None:
-                stale = age is None or age > LANDING_RECORD_STALE_SECONDS
-            else:
-                stale = (
-                    refresh_age is None or refresh_age > LANDING_RECORD_STALE_SECONDS
-                )
-            stale = stale or bool(observation_error or after.last_error)
     except Exception as exc:  # noqa: BLE001 - named server-side refusal
         return _error(
             "landing_observation_failed",
