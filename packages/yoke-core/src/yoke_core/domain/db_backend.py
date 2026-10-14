@@ -16,14 +16,17 @@ from typing import Optional
 
 from yoke_contracts import control_plane_locality
 from yoke_contracts.control_plane_locality import PG_DSN_ENV, PG_DSN_FILE_ENV
+from yoke_core.domain import postgres_connection_reuse
 from yoke_core.domain.db_row import PostgresRow, postgres_row_factory
-from yoke_core.domain.postgres_control_plane_connection import open_guarded_postgres
+from yoke_core.domain.postgres_control_plane_connection import (
+    bind_read_deadline,
+    connect_guarded_socket,
+    open_guarded_postgres,
+)
 
 POSTGRES = "postgres"
 POSTGRES_TEST_DB_PREFIX = "yoke_test_"
-TEST_TRACK_CONNECTIONS_ENV = "YOKE_TEST_TRACK_PG_CONNECTIONS"
 
-_TRACKED_TEST_CONNECTIONS = []
 _BOUND_PG_DSN: ContextVar[Optional[str]] = ContextVar(
     "yoke_bound_pg_dsn",
     default=None,
@@ -119,12 +122,25 @@ def resolve_pg_dsn(dbname: Optional[str] = None) -> str:
 
 
 def _open_native_postgres(dsn: str, *, autocommit: bool = False):
-    """Open a native psycopg authority connection with name-aware rows."""
-    return _track_test_connection(
+    """Open a native psycopg connection to *dsn* that closes on ``close()``."""
+    return postgres_connection_reuse.track_test_connection(
         open_guarded_postgres(
             dsn, autocommit=autocommit, row_factory=postgres_row_factory
         )
     )
+
+
+def _lease_ambient_postgres(
+    dsn: str, *, autocommit: bool = False, row_factory=postgres_row_factory
+):
+    """Lease a reused guarded authority connection; ``close()`` returns it."""
+    conn = postgres_connection_reuse.lease(
+        dsn,
+        autocommit=autocommit,
+        row_factory=row_factory,
+        connect=connect_guarded_socket,
+    )
+    return postgres_connection_reuse.track_test_connection(bind_read_deadline(conn))
 
 
 def _managed_secret_is_active_authority() -> bool:
@@ -180,46 +196,13 @@ def _open_with_managed_rotation_recovery(opener, current_dsn: str):
             return opener(previous_dsn)
 
 
-def _track_test_connection(conn):
-    if os.environ.get(TEST_TRACK_CONNECTIONS_ENV) == "1":
-        _TRACKED_TEST_CONNECTIONS.append(conn)
-    return conn
-
-
-def tracked_test_connection_count() -> int:
-    """Return the current test connection tracker position."""
-    return len(_TRACKED_TEST_CONNECTIONS)
-
-
-def close_tracked_test_connections_since(index: int) -> None:
-    """Close tracked Postgres connections opened after *index*."""
-    if index >= len(_TRACKED_TEST_CONNECTIONS):
-        return
-    connections = list(reversed(_TRACKED_TEST_CONNECTIONS[index:]))
-    del _TRACKED_TEST_CONNECTIONS[index:]
-    for conn in connections:
-        try:
-            conn.close()
-        except Exception:
-            pass
-
-
-def close_tracked_test_connections() -> None:
-    """Close Postgres connections leaked by the current pytest item.
-
-    The active runtime does not enable tracking. Pytest turns it on so native
-    psycopg connections left open by legacy fixture shapes cannot accumulate
-    across a broad xdist run and exhaust the shared test Postgres service.
-    """
-    close_tracked_test_connections_since(0)
-
-
 def connect(path: Optional[str] = None, *, busy_timeout_ms: Optional[int] = None):
     """Return a connection to the Postgres authority.
 
     The *path* and *busy_timeout_ms* arguments are ignored compatibility slots.
     Rows are native psycopg values with name and positional access; callers use
     psycopg paramstyle (``%s``) and explicit ``RETURNING`` for generated ids.
+    ``close()`` returns the socket for reuse; see :mod:`postgres_connection_reuse`.
 
     Routed through the connected-env readiness layer: when the operator's local
     Aurora SSH forward is down (e.g. after a WiFi change), the failed connect is
@@ -238,7 +221,7 @@ def connect(path: Optional[str] = None, *, busy_timeout_ms: Optional[int] = None
 
     def _open_resolved():
         return _open_with_managed_rotation_recovery(
-            lambda target: _open_native_postgres(target),
+            lambda target: _lease_ambient_postgres(target),
             resolve_pg_dsn(),
         )
 
@@ -248,34 +231,36 @@ def connect(path: Optional[str] = None, *, busy_timeout_ms: Optional[int] = None
 
 
 def connect_psycopg(dsn: Optional[str] = None, *, autocommit: bool = False):
-    """Return a tuple-row psycopg connection with connected-env readiness +
-    reactive self-heal.
+    """Return a tuple-row psycopg connection with connected-env self-heal.
 
     For callers that need psycopg-native APIs (e.g. the board renderer's
     ``BoardDB``, which branches on ``psycopg.errors.*`` and returns positional
     tuples). Shares the same acquisition-time readiness + single-retry
     self-heal contract as :func:`connect`.
 
-    The no-*dsn* form acquires the ambient authority and carries the same
-    remote-control-plane refusal as :func:`connect`. Passing an explicit *dsn*
+    The no-*dsn* form leases a reused ambient authority connection and carries
+    the same remote-control-plane refusal as :func:`connect`. An explicit *dsn*
     names a specific database — a migration validation surface, a maintenance
-    connection — so it is the caller's authority to open, not the ambient one.
+    connection — so it is the caller's to open, and ``close()`` closes it.
     """
     if dsn is None:
         control_plane_locality.refuse_direct_connection("db_backend.connect_psycopg()")
 
     from yoke_core.domain import connected_env_readiness as _readiness
 
-    def _open_target(target: str):
-        return _track_test_connection(
-            open_guarded_postgres(target, autocommit=autocommit)
-        )
+    from psycopg.rows import tuple_row
 
     def _open():
-        target = dsn if dsn is not None else resolve_pg_dsn()
         if dsn is not None:
-            return _open_target(target)
-        return _open_with_managed_rotation_recovery(_open_target, target)
+            return postgres_connection_reuse.track_test_connection(
+                open_guarded_postgres(dsn, autocommit=autocommit)
+            )
+        return _open_with_managed_rotation_recovery(
+            lambda target: _lease_ambient_postgres(
+                target, autocommit=autocommit, row_factory=tuple_row
+            ),
+            resolve_pg_dsn(),
+        )
 
     if dsn is not None or pg_dsn_is_bound():
         return _open()
@@ -352,16 +337,12 @@ __all__ = [
     "PG_DSN_ENV",
     "PG_DSN_FILE_ENV",
     "POSTGRES_TEST_DB_PREFIX",
-    "TEST_TRACK_CONNECTIONS_ENV",
     "bound_pg_dsn",
     "pg_dsn_is_bound",
     "is_postgres",
     "resolve_pg_dsn",
     "connect",
     "connect_psycopg",
-    "close_tracked_test_connections",
-    "close_tracked_test_connections_since",
-    "tracked_test_connection_count",
     "integrity_error_types",
     "database_error_types",
     "operational_error_types",

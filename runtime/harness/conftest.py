@@ -22,8 +22,9 @@ from yoke_core.hooks import (
 )
 
 from yoke_core.domain import db_backend as _db_backend
+from yoke_core.domain import postgres_connection_reuse as _connection_reuse
 
-os.environ.setdefault(_db_backend.TEST_TRACK_CONNECTIONS_ENV, "1")
+os.environ.setdefault(_connection_reuse.TEST_TRACK_CONNECTIONS_ENV, "1")
 if not (
     os.environ.get(_db_backend.PG_DSN_ENV)
     or os.environ.get(_db_backend.PG_DSN_FILE_ENV)

@@ -93,8 +93,9 @@ os.environ.setdefault("YOKE_MIGRATION_RESTORE_POINT", "pytest-fixture-restore-po
 # through to the connected Aurora environment.
 
 from yoke_core.domain import db_backend as _db_backend  # noqa: E402
+from yoke_core.domain import postgres_connection_reuse as _connection_reuse  # noqa: E402
 
-os.environ.setdefault(_db_backend.TEST_TRACK_CONNECTIONS_ENV, "1")
+os.environ.setdefault(_connection_reuse.TEST_TRACK_CONNECTIONS_ENV, "1")
 if not (
     os.environ.get(_db_backend.PG_DSN_ENV)
     or os.environ.get(_db_backend.PG_DSN_FILE_ENV)
@@ -197,9 +198,9 @@ def _clear_ci_authority_selection_env(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture(autouse=True)
 def _close_leaked_pg_connections():
     """Restore ambient Postgres authority and close leaked native handles."""
-    baseline = _db_backend.tracked_test_connection_count()
+    baseline = _connection_reuse.tracked_test_connection_count()
     yield
-    _db_backend.close_tracked_test_connections_since(baseline)
+    _connection_reuse.close_test_connections_since(baseline)
     if _AMBIENT_TEST_PG_DSN is not None:
         os.environ[_db_backend.PG_DSN_ENV] = _AMBIENT_TEST_PG_DSN
     else:

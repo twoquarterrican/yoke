@@ -50,7 +50,11 @@ import weakref
 
 import psycopg
 
-from yoke_core.domain import db_backend, pg_test_db_namespace
+from yoke_core.domain import (
+    db_backend,
+    pg_test_db_namespace,
+    postgres_connection_reuse,
+)
 
 TEST_DB_PREFIX = db_backend.POSTGRES_TEST_DB_PREFIX
 AMBIENT_DB_PURPOSE = "ambient"
@@ -123,7 +127,9 @@ def maintenance_dsn() -> str:
 
 def _admin_execute(sql: str) -> None:
     # CREATE/DROP DATABASE cannot run inside a transaction; use autocommit on
-    # the maintenance database.
+    # the maintenance database. An idle reused connection still counts as a
+    # session on its database and would block cloning it as a template.
+    postgres_connection_reuse.close_idle_connections()
     with psycopg.connect(maintenance_dsn(), autocommit=True) as admin:
         admin.execute(sql)
 
