@@ -15,6 +15,7 @@ import pytest
 from yoke_harness.baseline_probe_failure_causes import PROBE_EXIT_CODES
 from yoke_harness.ssh_linux_baseline import _ARCHIVE_PROGRAM, archive_operation
 from yoke_harness.ssh_linux_reset_preconditions import reset_preflight
+from yoke_harness.ssh_mac_sign_in_apps import SIGN_IN_APP_QUIT_NOT_PROVED
 from yoke_harness.ssh_linux_sign_in_stores import (
     SIGN_IN_NEWER_THAN_BASELINE,
     SIGN_IN_STORES,
@@ -36,7 +37,8 @@ def sealed_host(home: Path, signed_in: set[str]) -> SimpleNamespace:
     the remote-only writer stop that would reach this machine's daemons.
     """
     probes = {tuple(probe["argv"]): probe["name"] for probe in SEALED_PROBES}
-    host = SimpleNamespace(home=str(home), probed=[], archive_runs=0)
+    host = SimpleNamespace(home=str(home), probed=[], archive_runs=0, calls=[])
+    host.chromium_quit = '{"ok": true, "quit": true}'
 
     def run_command(argv, timeout=None):
         name = probes[tuple(argv)]
@@ -46,6 +48,10 @@ def sealed_host(home: Path, signed_in: set[str]) -> SimpleNamespace:
         )
 
     def run_archive(command, input_text=None, timeout=None):
+        if "def quit_chromium" in command:
+            host.calls.append("quit chromium")
+            return subprocess.CompletedProcess(command, 0, host.chromium_quit, "")
+        host.calls.append("archive")
         host.archive_runs += 1
         arguments = shlex.split(command)[3:]
         # This is the fake remote's interpreter; it only owns pytest's temp home.
@@ -176,3 +182,36 @@ def test_rotated_refresh_tokens_are_never_rolled_back(signed_in_home):
                 f"refresh-token-{rotation} {relative}"
             )
             assert "sealed" not in (home / relative).read_text()
+
+
+def test_chromium_quits_before_capture_or_reset_touches_the_home(
+    signed_in_home, tmp_path
+):
+    # Chromium writes its cookie store when it quits; a capture taken while it
+    # runs can miss the operator's newest sign-in.
+    home, golden = signed_in_home
+    host = sealed_host(home, set(SIGN_IN_STORES))
+    captured = archive_operation(host, "capture", str(tmp_path / "recaptured"))
+    assert captured.ok, captured.evidence
+    result = archive_operation(host, "reset", str(golden))
+    assert result.ok, result.evidence
+    assert host.calls == ["quit chromium", "archive"] * 2
+
+
+def test_chromium_that_does_not_quit_refuses_before_clearing(signed_in_home):
+    home, golden = signed_in_home
+    host = sealed_host(home, set(SIGN_IN_STORES))
+    host.chromium_quit = json.dumps(
+        {
+            "ok": False,
+            "reason": "linux_desktop_chromium_quit_not_proved",
+            "recovery": "Close Chromium.",
+        }
+    )
+    result = archive_operation(host, "reset", str(golden))
+    assert not result.ok
+    assert result.error_code == SIGN_IN_APP_QUIT_NOT_PROVED
+    assert result.evidence["app"] == "Chromium"
+    assert result.evidence["recovery"] == "Close Chromium."
+    assert host.archive_runs == 0
+    assert (home / "settings").read_text() == "live"

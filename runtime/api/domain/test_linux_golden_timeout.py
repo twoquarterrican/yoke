@@ -110,10 +110,22 @@ def test_timeout_names_elapsed_time_destination_and_safe_recovery(
         assert "partly restored" in result.evidence["recovery"]
 
 
-def test_unavailable_ssh_executable_is_not_reported_as_timeout(monkeypatch):
-    def unavailable(*args, **kwargs):
-        raise OSError("SSH executable unavailable")
+@pytest.mark.parametrize(
+    ("step", "error_code"),
+    [
+        ("archive", "linux_golden_operation_failed"),
+        # Quitting desktop Chromium is the first SSH step and names its own failure.
+        ("quit", "linux_desktop_chromium_unreadable"),
+    ],
+)
+def test_unavailable_ssh_executable_is_not_reported_as_timeout(
+    monkeypatch, step, error_code
+):
+    def unavailable(argv, **kwargs):
+        if step == "quit" or DESTINATION in shlex.split(argv[-1]):
+            raise OSError("SSH executable unavailable")
+        return subprocess.CompletedProcess(argv, 0, '{"ok": true, "quit": false}', "")
 
     monkeypatch.setattr(subprocess, "run", unavailable)
     result = baseline.archive_operation(_control(), "capture", DESTINATION)
-    assert not result.ok and result.error_code == "linux_golden_operation_failed"
+    assert not result.ok and result.error_code == error_code

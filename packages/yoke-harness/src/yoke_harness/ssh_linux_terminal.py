@@ -1,4 +1,4 @@
-"""Bounded tmux sessions with transcripts for headless Linux QA."""
+"""Bounded tmux sessions with transcripts for Linux QA, optionally on the desktop."""
 
 from __future__ import annotations
 
@@ -20,7 +20,19 @@ class LinuxTerminal:
     def command(self, *args: str):
         return self.control._run(shlex.join(["tmux", *args]), timeout=20)
 
-    def open(self, entry_surface: str, size: tuple[int, int] = (120, 40)) -> bool:
+    def open(
+        self,
+        entry_surface: str,
+        size: tuple[int, int] = (120, 40),
+        environment: Mapping[str, str] | None = None,
+    ) -> bool:
+        """Start the session; *environment* places it on the test user's desktop."""
+        variables = [
+            argument
+            for name, value in sorted((environment or {}).items())
+            if value
+            for argument in ("-e", f"{name}={value}")
+        ]
         result = self.command(
             "new-session",
             "-d",
@@ -30,6 +42,7 @@ class LinuxTerminal:
             str(size[0]),
             "-y",
             str(size[1]),
+            *variables,
         )
         if result.returncode:
             return False

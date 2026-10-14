@@ -3,11 +3,11 @@
 Preparing, signing in, saving, restoring and repairing a Test Machine has one
 complete ordered procedure per OS in the Machine QA Pack:
 
-- [macOS](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/macos-host-provisioning.md)
-- [Linux](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/linux-host-provisioning.md)
-- [Windows/WSL2](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/windows-host-provisioning.md)
+- [macOS](../../packs/machine-qa/versions/1.3.24/files/docs/packs/machine-qa/macos-host-provisioning.md)
+- [Linux](../../packs/machine-qa/versions/1.3.24/files/docs/packs/machine-qa/linux-host-provisioning.md)
+- [Windows/WSL2](../../packs/machine-qa/versions/1.3.24/files/docs/packs/machine-qa/windows-host-provisioning.md)
 
-The [provisioning index](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/host-provisioning.md) installs
+The [provisioning index](../../packs/machine-qa/versions/1.3.24/files/docs/packs/machine-qa/host-provisioning.md) installs
 as `docs/packs/machine-qa/host-provisioning.md`. This page explains the model
 behind its evidence, without providing a second preparation procedure.
 
@@ -94,12 +94,16 @@ clearing, it runs the sealed `Claude real request`, `Codex real request` and
 carried forward over the restore with its own mode. A failing login restores
 from the golden only when it has not changed since the seal; otherwise the
 reset refuses `test_machine_sign_in_newer_than_baseline` before clearing, naming
-the store, the probe and its reason. Windows state and WSL registration remain
+the store, the probe and its reason. Linux capture and reset first ask a
+running desktop Chromium to quit and wait for it to exit
+(`yoke_harness.ssh_linux_browser_approval`), the same rule macOS applies to
+Safari, refusing `test_machine_sign_in_app_quit_not_proved` before copying or
+clearing when it stays open. Windows state and WSL registration remain
 outside the Linux home.
 
 A completed sign-in on any test machine is saved at once with
 `yoke test-machine golden-capture`: it proves the real requests, quits Safari
-on macOS and seals a new baseline, so no later reset rolls the sign-in back.
+on macOS or the desktop Chromium on Linux and seals a new baseline, so no later reset rolls the sign-in back.
 Every standard probe failure names this command as its recovery.
 
 A reset or capture receipt names what failed. Each check row's `name` and `ok`
@@ -154,7 +158,7 @@ checks. Its existing retained host-command keeps the candidate terminal alive;
 `yoke qa browser setup` and `yoke qa browser step` drive candidate Chromium one
 observed step at a time. Read those commands' `--help` before execution. Do not
 add an approval command or extend the scripted terminal recipe contract.
-Follow the Machine QA Pack's [setup responsibilities](../../packs/machine-qa/versions/1.3.23/files/docs/packs/machine-qa/setup-responsibilities.md).
+Follow the Machine QA Pack's [setup responsibilities](../../packs/machine-qa/versions/1.3.24/files/docs/packs/machine-qa/setup-responsibilities.md).
 Agents complete every software-capable setup step and system permission prompt.
 Only browser sign-in and OS permissions that software cannot grant need the
 operator. Product code alone enters passwords from stored secrets; nobody types

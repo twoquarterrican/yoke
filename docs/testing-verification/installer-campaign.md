@@ -83,16 +83,26 @@ machine_browser_approval_context_invalid with recovery. Self-hosted
 machine/code links preserve the exact wizard-opened path. Coordinate validation
 does not grant approval authority; keep the selected human/fixture boundary.
 
-With the dedicated-machine approval exception, the visible Safari helper
-also accepts the declared origin's `/orgs/<org>/machine-approval/<code>`
-redirect from `/connect`. The code must match the displayed one-time code
-exactly. The redirect may carry one canonical `selection=all` or a comma-separated
-list of unique positive project IDs. Unknown, repeated, empty or encoded query
-parameters, extra path segments, fragments and other origins refuse.
+With the dedicated-machine approval exception, the visible native browser
+helper (Safari on macOS, the desktop Chromium on a Linux test machine; one
+shared matcher in `yoke_harness.machine_browser_approval`) also accepts the
+declared origin's `/orgs/<org>/machine-approval/<code>` redirect from `/connect`.
+The code must match the displayed one-time code exactly. The redirect may carry
+one canonical `selection=all` or a comma-separated list of unique positive
+project IDs. Unknown, repeated, empty or encoded query parameters, extra path
+segments, fragments and other origins refuse.
 The helper presses the visible approval control only in an exact validated
 tab and requires navigation from that tab's own starting URL. An unchanged
 redirect page is not approval evidence. Full hosted setup still requires the
 run-bound case verdict and independent inspection review.
+
+On Linux the gate first starts the fixture desktop and its Chromium with a
+loopback DevTools port and runs the installer's tmux session on that desktop,
+so the wizard's link opens in the browser the operator signed in to. The step
+always attaches a desktop screenshot. A host without a desktop refuses
+`headless_linux_browser_approval_unavailable`; the Machine QA Pack's
+[Linux browser approval gates](../../packs/machine-qa/versions/1.3.24/files/docs/packs/machine-qa/linux-host-provisioning.md#browser-approval-gates)
+list every refusal and its recovery.
 
 ## Isolated welcome frame
 
