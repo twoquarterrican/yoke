@@ -73,8 +73,8 @@ served pin's forward edge when a later definition differs.
 The target preflight materializes effective attachments before evaluating
 gates. Project defaults apply only where the workflow QA policy declares them.
 Dash optional_item_attachment ignores defaults and does not invent a
-definition-owned verification gate; selected item posture still enforces
-its attached plan.
+definition-owned verification gate; selected premerge item posture enforces
+its review attachment. A plan already attached for post_deploy stays release-bound.
 
 For an attached plan at NEXT_STAGE, registered qa.plan.materialize precedes
 qa.requirement.list and case execution:
@@ -122,7 +122,8 @@ selecting a plan for only one live run (not a standing item attachment).
 None is a way past a real unplanned obligation.
 
 Otherwise author/edit the plan before admission, attach at the unique pinned
-release stage (board_bucket=release), and materialize:
+release stage (board_bucket=release), and materialize. Attach directly without
+selecting verification posture; postdeploy proof creates no review requirements:
 
 ```text
 yoke qa plan create <slug> --project P --environment <env>
@@ -133,6 +134,8 @@ yoke qa plan get <id> --project P --full
 ```
 
 Missing/ambiguous release stage goes to its workflow owner.
+To recover an existing mistaken review selection, clear it with
+`yoke workflows item-posture amend ITEM --key verification --clear --reason TEXT`.
 Cases prove this item's AC. Commands read BASE_URL, DEPLOYMENT_RUN_ID and
 DEPLOYMENT_MEMBER_REF from runner exports; never embed one release's IDs.
 Read the cases now: wrong expectations are editable before admission and

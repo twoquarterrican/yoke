@@ -28,10 +28,12 @@ ITEM_PLAN_ATTACH_EPILOG = (
     "`--acknowledge-unreachable-target`. A mis-specified post-deploy "
     "attachment is withdrawn with `yoke qa item-plan retract` — the row "
     "stays as retracted history; there is no detach. On a workflow whose "
-    "QA policy is optional item attachment, attach accepts only the plan "
+    "QA policy is optional item attachment, premerge attach accepts only the plan "
     "or method already selected in workflow_posture.verification; select "
     f"it first with `{WORKFLOWS_ITEM_POSTURE_AMEND_RECIPE}`, then attach "
-    "and `yoke qa plan materialize`."
+    "and `yoke qa plan materialize`. Post-deploy plans attach directly at "
+    "the pinned release stage with `--qa-phase post_deploy`; no verification "
+    "posture selection is required."
 )
 
 #: Read as ``yoke qa plan-cases replace --help``. What an author has to know
