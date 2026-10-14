@@ -186,7 +186,7 @@ def test_a_membership_copy_failure_leaves_no_usable_empty_retry(
 
     boom = RuntimeError("membership copy failed mid-transaction")
     with patch(
-        "yoke_core.domain.deployment_run_create_write.copy_frozen_members",
+        "yoke_core.domain.deployment_run_create_composition.copy_frozen_members",
         side_effect=boom,
     ):
         with pytest.raises(RuntimeError, match="membership copy failed"):

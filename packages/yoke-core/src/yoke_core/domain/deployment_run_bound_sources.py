@@ -183,6 +183,26 @@ def _resolve_branch_head(
     )
 
 
+def resolve_bound_branch_head(
+    conn: Any, *, project: str, project_id: int, branch: str
+) -> str:
+    """Resolve one bound branch once per operation, however many runs ask.
+
+    A branch moves, so one operation must not answer it twice: run creation
+    validates before its lock and again under it, and both have to pin the
+    same commit without a second network read.
+    """
+    from yoke_core.domain.schema_read_scope import shared_read
+
+    return shared_read(
+        conn,
+        ("bound_branch_head", int(project_id), branch),
+        lambda: _resolve_branch_head(
+            conn, project=project, project_id=int(project_id), branch=branch
+        ),
+    )
+
+
 def copy_bound_sources(conn: Any, source_run_id: str, run_id: str) -> None:
     """Carry one run's recorded source commits onto its retry, unresolved.
 
@@ -246,7 +266,7 @@ def record_bound_sources(conn: Any, run_id: str) -> dict[str, Any]:
         project_id = resolve_project_id(conn, project)
         existing = projects.get(project)
         if existing is None:
-            sha = _resolve_branch_head(
+            sha = resolve_bound_branch_head(
                 conn, project=project, project_id=int(project_id), branch=branch
             )
             projects[project] = {

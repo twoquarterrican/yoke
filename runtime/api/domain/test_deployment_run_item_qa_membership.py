@@ -231,7 +231,7 @@ def test_validate_and_pre_start_refuse_a_run_owing_delivery_without_members(
     )
     monkeypatch.setattr(
         "yoke_core.domain.handlers.deployment_run_execution._record_bound_sources",
-        lambda _run_id: {},
+        lambda _conn, _run_id: {},
     )
     outcome = handle_deployment_execution_context(
         deployment_request(

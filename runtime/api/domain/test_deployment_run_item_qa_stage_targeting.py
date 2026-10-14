@@ -84,7 +84,7 @@ def _pre_start(monkeypatch: pytest.MonkeyPatch, run_id: str):
     _isolate_candidate_reads(monkeypatch)
     for name, value in (
         ("require_run_driver", lambda _request, _run_id: None),
-        ("_record_bound_sources", lambda _run_id: {}),
+        ("_record_bound_sources", lambda _conn, _run_id: {}),
     ):
         monkeypatch.setattr(
             f"yoke_core.domain.handlers.deployment_run_execution.{name}", value

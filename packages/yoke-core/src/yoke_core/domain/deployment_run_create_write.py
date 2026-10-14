@@ -17,12 +17,15 @@ from typing import NamedTuple, Optional
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import connect, utc_now
-from yoke_core.domain.deployment_flow_state import require_flow_for_new_run
-from yoke_core.domain.deployment_run_bound_sources import copy_bound_sources
 from yoke_core.domain import deployment_run_create_idempotency as idempotency
-from yoke_core.domain.deployment_run_insert import insert_run
-from yoke_core.domain.deployment_run_retry_membership import copy_frozen_members
+from yoke_core.domain.deployment_run_create_composition import (
+    compose_run,
+    refuse_run_that_cannot_execute,
+    run_target,
+    validate_before_lock,
+)
 from yoke_core.domain.project_identity import resolve_project_id
+from yoke_core.domain.schema_read_scope import composition_reads
 
 
 class CompositionRefused(DomainRefusal, ValueError):
@@ -37,10 +40,10 @@ class CompositionRefused(DomainRefusal, ValueError):
     """
 
 
-#: Serializes run creation against other creation only. Creation holds this
-#: lock through composition validation, which can take seconds of git reads; a
-#: table lock held that long stalled every other write to ``deployment_runs``,
-#: and a deploy driver's heartbeat timed out behind it.
+#: Serializes run creation against other creation only; a table lock stalled
+#: every other write to ``deployment_runs`` and a deploy driver's heartbeat
+#: timed out behind it. Composition's repository reads happen before this lock
+#: (see :mod:`deployment_run_create_composition`), so it covers database work.
 _CREATE_LOCK_SQL = "SELECT pg_advisory_xact_lock(hashtext('deployment_runs.create'))"
 
 
@@ -77,20 +80,6 @@ def _next_run_id(conn, now: datetime) -> str:
         if (match := pattern.fullmatch(str(row[0]))) is not None
     ]
     return f"{prefix}{max(suffixes, default=0) + 1:03d}"
-
-
-def _refuse_run_that_cannot_execute(
-    conn, flow: str, release_lineage: Optional[str]
-) -> None:
-    """Apply the dispatch stage's lineage requirement at creation time."""
-    from yoke_core.domain import deployment_run_lineage_requirement as lineage
-    from yoke_core.domain.json_helper import loads_text
-
-    row = conn.execute(
-        "SELECT stages FROM deployment_flows WHERE id = %s", (flow,)
-    ).fetchone()
-    stages = loads_text(row[0]) if row and row[0] else []
-    lineage.require_lineage_for_stages(stages, release_lineage, flow=flow)
 
 
 def cmd_create_run(
@@ -163,112 +152,98 @@ def create_run(
     leave a member-less retry behind any copy failure, and a member-less
     item-bound retry is precisely what cannot reach its completion gate.
     """
+    run = {
+        "flow": flow,
+        "release_lineage": release_lineage,
+        "created_by": created_by,
+        "artifact_identity": artifact_identity,
+        "inherit_members_from": inherit_members_from,
+        "allow_pending_pair_merges": allow_pending_pair_merges,
+    }
+    request = {
+        "environment": environment,
+        "idempotency_key": idempotency_key,
+        "create_request": create_request,
+    }
     conn = connect(db_path)
     try:
-        if db_backend.connection_is_postgres(conn):
-            conn.execute(_CREATE_LOCK_SQL)
-        project_id = resolve_project_id(conn, project)
-        basis = None
-        if idempotency_key:
-            basis = (
-                idempotency.BASIS_RECORDED_KEY
-                if idempotency.key_columns_converged(conn)
-                else idempotency.BASIS_UNCONVERGED_REQUEST_MATCH
-            )
-        if basis == idempotency.BASIS_RECORDED_KEY:
-            existing = idempotency.existing_run(
-                conn, project_id, idempotency_key, create_request
-            )
-            if existing is not None:
-                conn.rollback()
-                return CreatedRun(existing, True, basis)
-        _flow_project_id, target_tier, target_environment_id = require_flow_for_new_run(
-            conn,
-            flow,
-            project_id=project_id,
-        )
-        if environment:
-            from yoke_core.domain.environment_delivery_record import (
-                require_registered_environment,
-            )
-
-            target_tier = "persistent"
-            target_environment_id = require_registered_environment(
-                conn,
-                project_id,
-                environment,
-            )
-
-        if basis == idempotency.BASIS_UNCONVERGED_REQUEST_MATCH:
-            existing = idempotency.unconverged_match(
-                conn,
-                idempotency_key,
-                project_id=project_id,
-                flow=flow,
-                target_environment_id=target_environment_id,
-                release_lineage=release_lineage,
-                artifact_identity=artifact_identity,
-                created_by=created_by,
-            )
-            if existing is not None:
-                conn.rollback()
-                return CreatedRun(existing, True, basis)
-
-        _refuse_run_that_cannot_execute(conn, flow, release_lineage)
-
-        # Allocation and insertion share this serialized transaction. The
-        # standalone next-id command remains a non-reserving preview.
-        now = utc_now()
-        run_id = _next_run_id(conn, now)
-
-        inserted = insert_run(
-            conn,
-            run_id=run_id,
-            project_id=project_id,
-            flow=flow,
-            target_tier=target_tier,
-            target_environment_id=target_environment_id,
-            release_lineage=release_lineage,
-            created_by=created_by,
-            created_at=now,
-            artifact_identity=artifact_identity,
-            create_idempotency_key=(
-                idempotency_key if basis == idempotency.BASIS_RECORDED_KEY else None
-            ),
-            create_request=(
-                create_request if basis == idempotency.BASIS_RECORDED_KEY else None
-            ),
-        )
-        if inserted is None:
-            raise RuntimeError(f"deployment run ID {run_id} was claimed concurrently")
-        if inherit_members_from:
-            copy_frozen_members(conn, inherit_members_from, run_id)
-            # A retry is the same candidate, which includes every project's
-            # source commit and not only its own lineage. Re-resolving the
-            # bound branches here would let a retry ship a consumer revision
-            # the run it retries never carried.
-            copy_bound_sources(conn, inherit_members_from, run_id)
-        from yoke_core.domain.deployment_runs_validation import (
-            cmd_validate_composition,
-        )
-
-        # The row and any inherited members are provisional until the same
-        # validator used by the explicit command has checked the pinned
-        # sources, carried work, member flows, and dependencies. A refusal
-        # rolls back the row, so it consumes no run ID.
-        valid, message = cmd_validate_composition(
-            run_id,
-            allow_pending_pair_merges=allow_pending_pair_merges,
-            connection=conn,
-            # Itemless creation precedes add-item; start checks the count.
-            require_item_qa_members=False,
-        )
-        if not valid:
-            raise CompositionRefused(message)
-        conn.commit()
-        return CreatedRun(run_id, False, basis)
+        with composition_reads():
+            if db_backend.connection_is_postgres(conn):
+                validate_before_lock(conn, project, **request, **run)
+                conn.execute(_CREATE_LOCK_SQL)
+            return _create_locked(conn, project, **request, **run)
     finally:
         conn.close()
+
+
+def _create_locked(
+    conn,
+    project: str,
+    *,
+    environment: Optional[str],
+    idempotency_key: Optional[str],
+    create_request: Optional[str],
+    **run,
+) -> CreatedRun:
+    """Replay, or allocate and insert, while holding the creation lock.
+
+    Validation repeats here on the real row. Inside the caller's read scope
+    the unlocked pass already resolved its repository reads, so this pass
+    re-checks the database facts the lock protects.
+    """
+    project_id = resolve_project_id(conn, project)
+    basis = None
+    if idempotency_key:
+        basis = (
+            idempotency.BASIS_RECORDED_KEY
+            if idempotency.key_columns_converged(conn)
+            else idempotency.BASIS_UNCONVERGED_REQUEST_MATCH
+        )
+    if basis == idempotency.BASIS_RECORDED_KEY:
+        existing = idempotency.existing_run(
+            conn, project_id, idempotency_key, create_request
+        )
+        if existing is not None:
+            conn.rollback()
+            return CreatedRun(existing, True, basis)
+    target = run_target(conn, run["flow"], project_id, environment)
+
+    if basis == idempotency.BASIS_UNCONVERGED_REQUEST_MATCH:
+        existing = idempotency.unconverged_match(
+            conn,
+            idempotency_key,
+            project_id=project_id,
+            flow=run["flow"],
+            target_environment_id=target[1],
+            release_lineage=run["release_lineage"],
+            artifact_identity=run["artifact_identity"],
+            created_by=run["created_by"],
+        )
+        if existing is not None:
+            conn.rollback()
+            return CreatedRun(existing, True, basis)
+
+    refuse_run_that_cannot_execute(conn, run["flow"], run["release_lineage"])
+
+    # Allocation and insertion share this serialized transaction. The
+    # standalone next-id command remains a non-reserving preview.
+    now = utc_now()
+    run_id = _next_run_id(conn, now)
+    keyed = basis == idempotency.BASIS_RECORDED_KEY
+    valid, message = compose_run(
+        conn,
+        run_id,
+        created_at=now,
+        project_id=project_id,
+        target=target,
+        create_idempotency_key=idempotency_key if keyed else None,
+        create_request=create_request if keyed else None,
+        **run,
+    )
+    if not valid:
+        raise CompositionRefused(message)
+    conn.commit()
+    return CreatedRun(run_id, False, basis)
 
 
 __all__ = [
