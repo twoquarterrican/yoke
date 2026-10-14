@@ -220,15 +220,16 @@ def _dispatch_observing_locally(
     A repair can ask twice. Rewriting the spec unbinds the reading that
     drove it, so the host publishes a second request covering the spec it
     now holds, and answering that one is what verifies the repair. The
-    repairs are idempotent — each re-runs readiness first and does
-    nothing when it passes — so the extra pass confirms rather than
-    repeats. The rounds are bounded because the loop is driven by the
+    stale-count write receipt is retained while the next call checks
+    readiness against the updated spec. Other repairs re-dispatch their
+    idempotent repair call. The rounds are bounded because the loop is driven by the
     host asking, and a host that kept asking would otherwise spin.
     """
 
     def observe_then_redispatch(response, actor):
         from yoke_cli.commands.adapters import readiness_local_compose as local
 
+        repair_receipt = None
         for _round in range(_MAX_OBSERVATION_ROUNDS):
             request = local.local_execution_request(response)
             if request is None:
@@ -236,12 +237,32 @@ def _dispatch_observing_locally(
             observations = local.collect_observations(request)
             if observations is None:
                 return response
+            if (
+                function_id == "readiness.repair_stale_count"
+                and (response.result or {}).get("field_written") == "spec"
+            ):
+                repair_receipt = dict(response.result)
             response = call_dispatcher(
-                function_id=function_id,
+                function_id="readiness.check.run" if repair_receipt else function_id,
                 target=target,
                 payload={**payload, "local_observations": observations},
                 actor=actor,
             )
+            if repair_receipt and response.success:
+                checked = response.result or {}
+                response = response.model_copy(
+                    update={
+                        "result": {
+                            **repair_receipt,
+                            "rerun_verdict": checked["verdict"],
+                            "rerun_issues": checked.get("issues", []),
+                            "unavailable_checks": checked.get("unavailable_checks", []),
+                            "local_execution_request": checked.get(
+                                "local_execution_request"
+                            ),
+                        }
+                    }
+                )
         return response
 
     return dispatch_and_emit(

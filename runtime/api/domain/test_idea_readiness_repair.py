@@ -209,9 +209,9 @@ class TestAttemptStaleCountRepair(unittest.TestCase):
             if rerun_pass
             else [
                 Issue(
-                    code="STALE_LINE_COUNT",
-                    message="stale",
-                    remediation="refresh",
+                    code="FILE_BUDGET_NOT_IN_CLAIM",
+                    message="claim coverage missing",
+                    remediation="refine coverage",
                     context={},
                 ),
             ],
@@ -264,52 +264,29 @@ class TestAttemptStaleCountRepair(unittest.TestCase):
         self.assertEqual(outcome.refused_paths[0]["reason"], "missing_file")
         self.assertEqual(self.db.fetch(item_id), spec_text)
 
-    def test_sibling_threshold_blocks_repair(self):
+    def test_large_count_refreshes_without_sibling_plan(self):
         item_id = 1605002
         self.db.insert(item_id, _spec((_OTHER_PATH, 200)))
         self._write_repo_file(_OTHER_PATH, 340)
-        outcome = self._attempt_raw(item_id, [_stale_issue(_OTHER_PATH, 200, 340)])
-        self.assertFalse(outcome.success)
-        self.assertTrue(
-            any(
-                r.get("reason") == "missing_sibling_plan" for r in outcome.refused_paths
-            )
-        )
-
-    def test_sibling_threshold_with_plan_allows_repair(self):
-        item_id = 1605003
-        spec_text = (
-            _spec((_OTHER_PATH, 200))
-            + "\nPlan: extract a new sibling module for the heavy logic.\n"
-        )
-        self.db.insert(item_id, spec_text)
-        self._write_repo_file(_OTHER_PATH, 340)
-        outcome = self._attempt(
-            item_id,
-            [_stale_issue(_OTHER_PATH, 200, 340)],
-        )
+        outcome = self._attempt(item_id, [_stale_issue(_OTHER_PATH, 200, 340)])
         self.assertTrue(outcome.success, msg=outcome.error)
-        self.assertIn(
-            f"`{_OTHER_PATH}` — current 340 lines",
-            self.db.fetch(item_id) or "",
-        )
+        self.assertIn("current 340 lines", self.db.fetch(item_id))
 
-    def test_mixed_classification_refuses(self):
+    def test_mixed_findings_refresh_counts_and_report_blocked_rerun(self):
         item_id = 1605004
-        spec_text = _spec((_SAMPLE_PATH, 50))
-        self.db.insert(item_id, spec_text)
+        self.db.insert(item_id, _spec((_SAMPLE_PATH, 50)))
         self._write_repo_file(_SAMPLE_PATH, 100)
         issues = [
             _stale_issue(_SAMPLE_PATH, 50, 100),
             {"code": "FILE_BUDGET_NOT_IN_CLAIM", "context": {"path": _OTHER_PATH}},
         ]
-        outcome = self._attempt_raw(item_id, issues)
-        self.assertFalse(outcome.success)
-        self.assertEqual(
-            outcome.classification, idea_readiness_repair.CLASS_MIXED_STALE_COUNT
-        )
-        self.assertIn("pure stale-count", outcome.error)
-        self.assertEqual(self.db.fetch(item_id), spec_text)
+        outcome = self._attempt(item_id, issues, rerun_pass=False)
+        self.assertTrue(outcome.success, msg=outcome.error)
+        self.assertEqual(outcome.field_written, "spec")
+        self.assertTrue(outcome.audit_emitted)
+        self.assertEqual(outcome.rerun_verdict, "block")
+        self.assertEqual(outcome.rerun_issues[0]["code"], "FILE_BUDGET_NOT_IN_CLAIM")
+        self.assertIn("current 100 lines", self.db.fetch(item_id))
 
     def test_empty_spec_refuses(self):
         item_id = 1605005

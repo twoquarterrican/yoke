@@ -12,7 +12,7 @@ idea_readiness_repair) classifies issues; unavailable is run-level.
 | Class | Evidence and action |
 |---|---|
 | pass | No issues: continue |
-| pure_stale_count | All STALE_LINE_COUNT: registered numeric repair, rerun, keep claim on pass; refusal blocks |
+| pure_stale_count | All STALE_LINE_COUNT: registered numeric repair, inspect rerun separately; repair refusal blocks |
 | mixed_stale_count | Only MISSING_FILE_BUDGET, FILE_BUDGET_NOT_IN_CLAIM, CLAIM_NOT_IN_FILE_BUDGET, cross_item_overlap and optional STALE_LINE_COUNT: repair coverage, classify overlap; on residual/refusal continue into refine critique, final rerun still mandatory |
 | unrecoverable | Other/mixed nonrecoverable issues: checkpoint, release readiness-check-blocked, exit1 |
 | unavailable | Unperformed host checks with retryable:false: no repair/retry here; checkpoint, release readiness-validation-unavailable, report every check/recovery |
@@ -41,13 +41,17 @@ yoke readiness repair-stale-count --item "$ITEM_REF"
 yoke readiness repair-claim-coverage --item "$ITEM_REF"
 ```
 
-The stale helper rechecks pure classification, reads canonical spec, updates
-only numeric counts from live files and refuses absent files, missing/nonnumeric
-counts, >=330 (SIBLING_REQUIRED_THRESHOLD) without sibling plan, and missing
-or multiply matched path=count substrings. It uses guarded structured writes:
+The stale helper refreshes STALE_LINE_COUNT entries even alongside other
+findings. It reads canonical spec, updates only numeric sizing from live files
+and refuses absent files, missing/nonnumeric counts, and missing or multiply
+matched path=count substrings. It uses guarded structured writes:
 empty/shrinkage/freeze refusal is not bypassed. Rerun verdict/remaining issues
 and best-effort IdeaReadinessAutofixApplied record the outcome.
-The **work claim stays** held on successful repair.
+Repair success means the counts were written; it does not mean readiness
+passed. Inspect rerun_verdict and rerun_issues, resolve remaining findings
+through refine, and rerun readiness before closure. Hosted callers retain the
+write receipt while collecting a fresh reading for that rerun. The **work
+claim stays** held on successful repair.
 
 Mixed recoverable refusal means **continuing into refine** critique;
 final readiness still owns closure. Coverage repair preserves amendment history,
