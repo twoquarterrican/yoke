@@ -26,6 +26,7 @@ from runtime.api.domain.test_function_target_row_project import (
     conn as project_connection,
     _project_owner,
     _seed_item,
+    _seed_path_claim,
 )
 
 conn = project_connection
@@ -38,6 +39,7 @@ def item_dispatch(conn, monkeypatch):
     project_id = resolve_project_id(conn, "externalwebapp")
     actor_id = _project_owner(conn, project_id)
     _seed_item(conn, item_id=42, project_id=project_id)
+    _seed_path_claim(conn, claim_id=1048, item_id=42)
     seen = []
     monkeypatch.setattr(dispatcher, "_ensure_handlers_registered", lambda: None)
     monkeypatch.setattr(
@@ -104,6 +106,8 @@ def test_every_registered_item_target_resolves_its_stored_project(item_dispatch)
     )
     for entry in entries:
         request = _request(entry.function_id, actor_id, payload={"project": "yoke"})
+        if entry.function_id == "claims.path.override":
+            request.payload["path_claim_id"] = 1048
         assert resolve_project_context(connection, entry, request) == (
             project_id,
             "externalwebapp",
@@ -134,3 +138,22 @@ def test_missing_item_cannot_authorize_using_project_hint(item_dispatch):
     assert not response.success
     assert response.error.code == "permission_denied"
     assert not seen
+
+
+def test_item_permission_uses_stored_project_instead_of_hints(item_dispatch):
+    connection, actor_id, project_id, _ = item_dispatch
+    request = _request(
+        "items.structured_field.replace", actor_id, payload={"project": "yoke"}
+    )
+    entry = lookup(request.function)
+    allowed = check_dispatch_permission(connection, entry, request)
+    assert allowed.error is None
+    assert allowed.permission_key == "items.write"
+    assert allowed.project_id == project_id
+    other_project = resolve_project_id(connection, "yoke")
+    _seed_item(connection, item_id=43, project_id=other_project)
+    request.target.item_id = 43
+    request.payload["project"] = "externalwebapp"
+    denied = check_dispatch_permission(connection, entry, request)
+    assert denied.error.error.code == "permission_denied"
+    assert denied.project_id == other_project
