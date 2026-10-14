@@ -68,7 +68,7 @@ def _display_usage(
         return usage_cell(usage, None)
     when = parse_instant(offered_at)
     sql = (
-        "SELECT revision_id,effective_at,catalog_json "
+        "SELECT revision_id,effective_at "
         "FROM model_reference_revisions WHERE effective_at <= %s "
         "ORDER BY effective_at DESC,published_at DESC,revision_id DESC LIMIT 1"
     )
@@ -79,7 +79,15 @@ def _display_usage(
     rows = db.query(sql, params)
     if not rows:
         raise ValueError("no model catalog revision covers this session; publish one")
-    revision_id, effective_at, document = rows[0]
+    revision_id, effective_at = rows[0]
+    # Key the large immutable document by revision, not each session's clock.
+    catalog_rows = db.query(
+        "SELECT catalog_json FROM model_reference_revisions WHERE revision_id = %s",
+        (revision_id,),
+    )
+    if not catalog_rows:
+        raise ValueError("session model catalog revision is missing; publish it again")
+    document = catalog_rows[0][0]
     revision = {
         "revision_id": revision_id,
         "effective_at": effective_at,
