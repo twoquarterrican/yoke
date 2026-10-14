@@ -135,8 +135,8 @@ Next: [close-out.md](close-out.md).
 
 Before recording a landing, the merge boundary fetches the remote default
 branch and requires it to contain the exact candidate commit. The recorded
-merge SHA is the item's own merged PR commit reported by GitHub and verified
-on that fetched branch. Local merges record the first carrying merge or the
+merge SHA is the item's own PR merge on that fetched branch's first-parent
+history, never a queue batch's train tip. Local merges record the first carrying merge or the
 fast-forward candidate. Later target pushes never become the item landing.
 A failed fetch or missing candidate
 returns a named refusal, retains the lane, and leaves the item before landing.
