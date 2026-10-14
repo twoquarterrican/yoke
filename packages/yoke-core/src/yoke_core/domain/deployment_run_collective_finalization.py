@@ -24,7 +24,9 @@ mid-way and however the process stops.
 
 **Effects: after the commit, idempotent and replayable.** GitHub sync,
 terminal lane cleanup, and ending the holders' now-empty sessions run over
-every member the run has closed. A failure here never reopens a closed
+every member the run has closed. Each member's cleanup retires only that
+member's lanes. The machine-wide merged-lane sweep then runs once for each
+distinct checkout. A failure here never reopens a closed
 member: the run stays ``executing`` and settling, and the next re-drive of
 ``status succeeded`` (or the replay a cleared blocker triggers) finds the
 commit phase already done and finishes the effects before the run is
@@ -269,14 +271,17 @@ def _effects_phase(conn: Any, run_id: str, staged: list[Any]) -> Optional[str]:
     The members this run has closed are read from the database rather than
     from ``staged``, so a replay finishes effects an earlier pass left
     undone. Only the pass that committed a member holds its effect receipt.
+    After the loop, each distinct checkout is swept once.
     """
     from yoke_core.domain.delivery_member_close_steps import (
         run_closed_member_effects,
+        sweep_closed_member_checkouts,
     )
 
     receipts = {int(written.item_id): written.receipt for written in staged}
     failed: list[str] = []
-    for member in _final_members(conn, run_id, at_wait=False):
+    members = _final_members(conn, run_id, at_wait=False)
+    for member in members:
         item_id = int(member["item_id"])
         print(
             f"Run {run_id}: finishing {member['public_ref']} close-out effects",
@@ -293,6 +298,10 @@ def _effects_phase(conn: Any, run_id: str, staged: list[Any]) -> Optional[str]:
                 f"{member['public_ref']}: its post-close effects did not "
                 f"finish: {failure}"
             )
+    for warning in sweep_closed_member_checkouts(
+        [str(member["public_ref"]) for member in members]
+    ):
+        print(f"Lane cleanup warning: {warning}", flush=True)
     if not failed:
         return None
     return settle_refusal(run_id, failed, closed=True)

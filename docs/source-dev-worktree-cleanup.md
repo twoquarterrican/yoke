@@ -117,11 +117,13 @@ local-ref cleanup is refused, the item's worktree metadata remains intact so
 ownership is not lost and a later safe sweep can retry; the done runner does
 not complete happy-path close-out while that cleanup is incomplete.
 
-A member a deployment run closes gets the same retirement. Run settlement reads
-the closed item through `items.detail.get` — its project names this machine's
-checkout and target branch, and its lane rows name what to retire — then runs
-the machine-wide merged-lane sweep. Only a machine that maps the project's
-checkout can reach the lanes. Anywhere else, and for any lane cleanup preserved,
+A member a deployment run closes gets the same retirement of its own lanes.
+Run settlement reads the closed item through `items.detail.get` — its project
+names this machine's checkout and target branch, and its lane rows name what
+to retire. After every member has closed, the run runs the machine-wide
+merged-lane sweep once for each distinct checkout, not once per member. Only
+a machine that maps the project's checkout can reach the lanes. Anywhere else,
+and for any lane cleanup preserved,
 the settling process prints a `Lane cleanup warning:` line for each, followed by
 the recovery: once the lane is resolved, run
 `yoke watch doctor -- --only HC-worktree-health --fix` on the machine holding

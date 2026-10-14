@@ -2,9 +2,9 @@
 
 The control plane releases lane rows and claims in the status transaction.
 This module owns the matching machine-local obligation: prove that each lane
-is clean and merged, then remove its worktree and branch, and then run the
-machine-wide merged-lane sweep so a lane an earlier landing preserved is
-examined again now. Refusal is evidence, not a reason to unwind the committed
+is clean and merged, then remove its worktree and branch. A standalone
+close-out then runs the machine-wide sweep; a deployment run runs that sweep
+once after every member closes. Refusal is evidence, not a reason to unwind the committed
 terminal transition: each preserved lane of the item's own is named on the
 returned warnings and recorded as a ``LandedLanePreserved`` event, so the
 refusal outlives the terminal output that first showed it.
@@ -127,6 +127,44 @@ def _record_preserved_lane(
     return f"{LANE_PRESERVED_EVENT_NAME} not recorded for {branch}: {detail}"
 
 
+def item_lane_checkout(
+    item: dict[str, Any],
+    *,
+    repo_root: str | Path | None = None,
+    target_branch: str = "",
+) -> tuple[Path, str] | None:
+    """Checkout and target branch for *item* when the checkout exists."""
+    project = item.get("project") or {}
+    project_id = int(project["id"]) if project.get("id") is not None else None
+    root = Path(repo_root) if repo_root else checkout_for_project_id(project_id)
+    if root is None or not root.is_dir():
+        return None
+    target = target_branch or str(project.get("default_branch") or "main")
+    return root.resolve(), target
+
+
+def sweep_managed_lanes(
+    *,
+    repo_root: str | Path,
+    target: str,
+    emit: Optional[Callable[..., Any]] = None,
+    sweep: Callable[..., WorktreeSweep] = prune_managed_worktrees,
+    owner: str = "",
+) -> tuple[tuple[str, ...], dict[str, Any]]:
+    """Run the machine-wide sweep once. A refusal is a warning, not a raise."""
+    try:
+        swept = sweep(repo_root=str(repo_root), target=target, emit=emit)
+    except Exception as exc:  # noqa: BLE001 - the caller's own lanes are done
+        whose = f"{owner}'s own lanes" if owner else "Member lanes"
+        warning = (
+            "machine-wide merged-lane sweep stopped after an unexpected "
+            f"refusal: {exc}. {whose} were handled above; "
+            "the next landing boundary runs the sweep again."
+        )
+        return (warning,), {}
+    return (), swept.payload()
+
+
 def _cleanup_terminal_item_lanes(
     item: dict[str, Any],
     *,
@@ -139,6 +177,7 @@ def _cleanup_terminal_item_lanes(
     prune: Callable[..., tuple[str, ...]] = prune_landed_lane,
     discard: Callable[..., DiscardedLane] = discard_cancelled_lane,
     sweep: Callable[..., WorktreeSweep] = prune_managed_worktrees,
+    machine_sweep: bool = True,
 ) -> TerminalLaneCloseOut:
     """Retire every surviving lane, then sweep lanes earlier landings kept.
 
@@ -156,20 +195,14 @@ def _cleanup_terminal_item_lanes(
     if not _terminal_status(item, target_status) and not landing_recorded:
         return TerminalLaneCloseOut()
     public_ref = str(item.get("public_ref") or "<public-ref-unavailable>")
-    project = item.get("project") or {}
-    root = (
-        Path(repo_root)
-        if repo_root
-        else checkout_for_project_id(
-            int(project.get("id")) if project.get("id") is not None else None
-        )
+    resolved = item_lane_checkout(
+        item, repo_root=repo_root, target_branch=target_branch
     )
-    if root is None or not root.is_dir():
+    if resolved is None:
         return TerminalLaneCloseOut(
             (f"{public_ref}: terminal lane cleanup preserved: checkout unavailable",)
         )
-    root = root.resolve()
-    target = target_branch or str(project.get("default_branch") or "main")
+    root, target = resolved
     authority_block = _foreign_claim_reason(item, session_id)
     cancelled = target_status == CANCELLED_STATUS
     warnings: list[str] = []
@@ -225,19 +258,13 @@ def _cleanup_terminal_item_lanes(
     if refused := record_discarded_lanes(public_ref, tuple(discarded)):
         warnings.append(refused)
 
-    # The machine-wide sweep examines lanes belonging to OTHER items, so its
-    # failures are reported as its own. Folding them into the item's warning
-    # made one close-out appear to have tried to remove a sibling item's lane.
-    try:
-        swept = sweep(repo_root=str(root), target=target, emit=emit)
-    except Exception as exc:  # noqa: BLE001 - the item's own lanes are done
-        warnings.append(
-            f"machine-wide merged-lane sweep stopped after an unexpected "
-            f"refusal: {exc}. {public_ref}'s own lanes were handled above; "
-            "the next landing boundary runs the sweep again."
+    sweep_payload: dict[str, Any] = {}
+    if machine_sweep:
+        sweep_warnings, sweep_payload = sweep_managed_lanes(
+            repo_root=root, target=target, emit=emit, sweep=sweep, owner=public_ref
         )
-        return TerminalLaneCloseOut(tuple(warnings))
-    return TerminalLaneCloseOut(tuple(warnings), swept.payload())
+        warnings.extend(sweep_warnings)
+    return TerminalLaneCloseOut(tuple(warnings), sweep_payload)
 
 
 def cleanup_terminal_item_lanes(
@@ -252,6 +279,7 @@ def cleanup_terminal_item_lanes(
     prune: Callable[..., tuple[str, ...]] = prune_landed_lane,
     discard: Callable[..., DiscardedLane] = discard_cancelled_lane,
     sweep: Callable[..., WorktreeSweep] = prune_managed_worktrees,
+    machine_sweep: bool = True,
 ) -> TerminalLaneCloseOut:
     """Retire terminal lanes without unwinding the committed transition."""
     try:
@@ -266,6 +294,7 @@ def cleanup_terminal_item_lanes(
             prune=prune,
             discard=discard,
             sweep=sweep,
+            machine_sweep=machine_sweep,
         )
     except Exception as exc:  # noqa: BLE001 - terminal state is already committed
         public_ref = str(item.get("public_ref") or "<public-ref-unavailable>")
@@ -286,6 +315,7 @@ def record_terminal_lane_close_out(
     repo_root: str | Path | None = None,
     target_branch: str = "",
     landing_recorded: bool = False,
+    machine_sweep: bool = True,
 ) -> None:
     """Retire the item's lanes and report the outcome on a result envelope.
 
@@ -301,6 +331,7 @@ def record_terminal_lane_close_out(
         repo_root=repo_root,
         target_branch=target_branch,
         landing_recorded=landing_recorded,
+        machine_sweep=machine_sweep,
         emit=lambda message, **_kw: print(message, file=sys.stderr, flush=True),
     )
     envelope.setdefault("warnings", []).extend(close.warnings)
@@ -311,5 +342,7 @@ __all__ = [
     "LANE_PRESERVED_EVENT_NAME",
     "TerminalLaneCloseOut",
     "cleanup_terminal_item_lanes",
+    "item_lane_checkout",
     "record_terminal_lane_close_out",
+    "sweep_managed_lanes",
 ]
