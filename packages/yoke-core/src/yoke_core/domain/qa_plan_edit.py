@@ -113,6 +113,12 @@ def edit_plan(
         raise QaPlanError(f"QA plan {project}/{slug} not found")
     if plan["retired_at"] is not None:
         raise QaPlanError(f"QA plan {project}/{slug} is retired")
+    if dict(plan).get("source_revision"):
+        raise QaPlanError(
+            "qa_plan_source_revision_required: this plan is source-bound; "
+            "sync a merged source export with qa plan-cases sync "
+            "instead of editing its recorded source definitions."
+        )
     if target_environment is not None:
         from yoke_core.domain.qa_hosted_runtime_identity import (
             resolve_plan_environment_reference,

@@ -22,6 +22,7 @@ PRODUCT_ADAPTER_EXPORTS = {
                 "qa_method_get",
                 "qa_method_list",
                 "qa_plan_cases_replace",
+                "qa_plan_cases_sync",
                 "qa_plan_create",
                 "qa_plan_get",
                 "qa_plan_item_attach",

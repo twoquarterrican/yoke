@@ -46,6 +46,17 @@ expected_outcome, and the method's own method_config. `position` is optional
 -- omit it and each case takes its place in the array, which is the order you
 wrote them in. Supply it only to state an order the array does not.
 
+Source-authored plans
+--------------------
+Generated input is an object with source_revision and cases; qa plan-cases sync
+records its provenance atomically. qa plan-cases replace accepts manual arrays.
+--source-revision FULL_SHA records the merged exporter commit with the cases.
+It must be an ancestor of the project's verified default branch. Once recorded,
+every replacement needs source provenance; interactive editing refuses. Release
+materialization and refresh refuse qa_plan_source_candidate_mismatch when that
+source is not carried by the candidate: sync candidate definitions or deliver
+the newer source. A serving build missing source binding refuses before writing.
+
 Case environment obligations
 ----------------------------
 `target_envs` is an optional JSON list of unique registered environment names,
@@ -89,6 +100,9 @@ its old body here; `yoke qa plan rematerialize` is what brings it current.
 --replaces CASE_KEY=FAILED_REQUIREMENT_ID declares the corrected case the
 replacement of a failed one. A case it names gets no second, automatic
 correction from the stage's own corrected plan, so the two never collide.
+Use --replaces-requirement FAILED_REQUIREMENT_ID when that key spans host
+baselines: the corrected plan keeps the failed case's key and creates only
+its exact baseline. Other baselines keep their own obligations and evidence.
 """
 
 #: Read as ``yoke qa plan rematerialize --help``. The one route from a
@@ -175,6 +189,7 @@ USAGE_BY_FUNCTION_ID = {
     ),
     "qa.plan.create": ("yoke qa plan create SLUG --project P --environment ENV"),
     "qa.plan_cases.replace": "yoke qa plan-cases replace --project P --plan-id N --stdin",
+    "qa.plan_cases.sync": "yoke qa plan-cases sync --project P --plan-id N --cases-file SOURCE_EXPORT",
     "qa.registered_command.set": (
         "yoke qa registered-command set --project P "
         "--scope quick|full|e2e|smoke --command ARGV "

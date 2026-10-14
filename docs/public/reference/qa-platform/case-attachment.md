@@ -104,15 +104,15 @@ Epic-task attachment remains operator-debug only, through
 
 ## Machine case starting state
 
-A case that runs on a Test Machine (`host_control` methods such as
-`terminal-check`, and `exploratory-mission`) declares the machine state it
-starts from. Authoring (`yoke qa plan edit`, `yoke qa plan-cases replace`),
-`qa.requirement.add`, and every materialization refuse a case that declares
-none, naming the choices and baselines; `HC-qa-plan-machine-starting-state`
-fails while a stored plan has one, and `yoke qa plan get` shows each choice:
+Test Machine cases (`host_control` and `exploratory-mission`) declare starting
+state. Authoring, `qa.requirement.add`, and materialization refuse missing state;
+`HC-qa-plan-machine-starting-state` fails stored cases missing it, and
+`yoke qa plan get` shows each choice:
 
 - `host_baselines: ["fresh-host"]` (or `shell-preconfigured`, or both): the
   runner resets to each named baseline; one requirement row per baseline. [Temporary cleanup](../test-machine-desktop.md) preserves baseline/home/live scratch and reports freed space.
+  Correct only one failed baseline with `--replaces-requirement FAILED_ID` on
+  `yoke qa plan run` or materialize; the correction plan retains its case key.
 - `"starting_state": "inherit"`: start on the machine exactly as the case
   directly before it in the plan left it, at the same baseline position. The
   first case cannot inherit, nor can a case follow or be a mission.

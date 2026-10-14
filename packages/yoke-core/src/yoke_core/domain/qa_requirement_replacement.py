@@ -47,7 +47,12 @@ def _row(conn: Any, requirement_id: int) -> dict[str, Any] | None:
 
 
 def _replacement_for(
-    conn: Any, failed: dict[str, Any], case_key: str, candidates: Sequence[int]
+    conn: Any,
+    failed: dict[str, Any],
+    case_key: str,
+    candidates: Sequence[int],
+    *,
+    exact_scope: bool = False,
 ) -> dict[str, Any]:
     rows = [row for row in (_row(conn, rid) for rid in candidates) if row]
     matches = [
@@ -57,13 +62,15 @@ def _replacement_for(
         and int(row["id"]) != int(failed["id"])
         and not obligation_settled(row)
         and not row["replacement_requirement_id"]
+        and (not exact_scope or not same_scope(failed, row))
     ]
     if len(matches) != 1:
         found = ", ".join(str(row["id"]) for row in matches) or "none"
         raise QaReplacementError(
             f"replacement case key {case_key!r} for requirement {failed['id']} "
             f"matched {found} among the cases this materialization produced. "
-            "Name the key of exactly one corrected case in this plan; the "
+            "Use --replaces-requirement FAILED_REQUIREMENT_ID to select its "
+            "exact host baseline, or name one unambiguous corrected key; the "
             "materialized cases are unchanged, so re-run the same command with "
             "the corrected --replaces."
         )
@@ -222,7 +229,11 @@ def declare_replacements(
         if failed is None:
             raise QaReplacementError(f"replaced requirement {failed_id} not found")
         replacement = _replacement_for(
-            conn, failed, str(entry["case_key"]), materialized_requirement_ids
+            conn,
+            failed,
+            str(entry["case_key"]),
+            materialized_requirement_ids,
+            exact_scope=bool(entry.get("exact_scope")),
         )
         replacement_id = int(replacement["id"])
         if failed.get("replacement_requirement_id") == replacement_id:

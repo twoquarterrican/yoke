@@ -16,6 +16,7 @@ PLAN_FIELDS = (
     "success_policy_id",
     "success_policy_params",
     "target_environment_id",
+    "source_revision",
 )
 CASE_FIELDS = (
     "id",

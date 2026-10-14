@@ -53,6 +53,22 @@ def add_replaces_argument(parser: argparse.ArgumentParser) -> None:
         metavar=REPLACES_METAVAR,
         help=REPLACES_HELP,
     )
+    parser.add_argument(
+        "--replaces-requirement",
+        dest="replaces",
+        action="append",
+        type=_requirement_argument,
+        metavar="REQUIREMENT_ID",
+        help="Replace this exact failed requirement using its case key and host baseline; the corrected plan must contain that key. Repeatable.",
+    )
+
+
+def _requirement_argument(value: str) -> dict[str, Any]:
+    if not value.isdigit() or int(value) < 1:
+        raise argparse.ArgumentTypeError(
+            "--replaces-requirement requires a positive failed requirement id"
+        )
+    return {"requirement_id": int(value), "case_key": None}
 
 
 __all__ = [

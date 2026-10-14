@@ -58,6 +58,9 @@ def materialize_deployment_plan(
     )
     if plan_row is None:
         raise QaPlanError(f"QA plan {plan!r} not found in project {run['project']!r}")
+    from yoke_core.domain.qa_plan_source_revision import require_candidate_plan
+
+    require_candidate_plan(conn, dict(plan_row), str(deployment_run_id))
     plan_id = int(plan_row["id"])
     execution_target = resolve_plan_execution_target(conn, plan_id=plan_id)
     cases = plan_cases(conn, plan_id)

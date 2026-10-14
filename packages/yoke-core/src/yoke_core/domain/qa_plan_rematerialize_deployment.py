@@ -231,6 +231,10 @@ def rematerialize_for_deployment_stage(
             if plan_id in selected
         }
 
+    from yoke_core.domain.qa_plan_source_revision import require_candidate_plan
+
+    for plan_id in rows_by_plan:
+        require_candidate_plan(conn, _plan_row(conn, plan_id), str(deployment_run_id))
     created: list[int] = []
     refreshed: list[int] = []
     retained: set[int] = set()

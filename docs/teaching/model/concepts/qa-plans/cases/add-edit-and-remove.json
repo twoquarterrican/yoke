@@ -3,5 +3,7 @@
  "title": "Add, edit and remove",
  "status": "draft-copy",
  "page": "qa-plans",
- "position": 6
+ "position": 6,
+ "summary": "Source-generated shared cases sync from clean, merged source and retain the full source revision. Deployment QA uses frozen candidate definitions and refuses source newer than the candidate. Exact failed-requirement correction isolates one host baseline; lanes use item-scoped or run-bound proof.",
+ "sources": ["docs/testing-verification/installer-campaign.md"]
 }

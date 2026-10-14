@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Sequence
@@ -13,6 +14,7 @@ from yoke_core.domain.installer_campaign_execution_target import (
     installer_campaign_cases_for_target,
 )
 from yoke_core.domain import pack_catalog
+from yoke_cli.config import repo_upstream_git as source_git
 
 
 _CASE_DEFAULTS: dict[str, Any] = {
@@ -32,6 +34,10 @@ _CASE_DEFAULTS: dict[str, Any] = {
 }
 
 
+class SourceSyncRefused(ValueError):
+    """The source is not proven safe for the shared saved plan."""
+
+
 def _authored(case: dict[str, Any], field: str) -> Any:
     """One authored field, with a stored baseline case's normalized state.
 
@@ -44,12 +50,18 @@ def _authored(case: dict[str, Any], field: str) -> Any:
     return value
 
 
-def _source_cases(plan: dict[str, Any], primary_machine=None, joining_machine=None) -> list[dict]:
+def _source_cases(
+    plan: dict[str, Any], primary_machine=None, joining_machine=None
+) -> list[dict]:
     slug = plan["slug"]
     if slug == "installer-campaign":
         configured = {case["case_key"]: case for case in plan["cases"]}
-        primary_machine = primary_machine or configured.get("path-on-shell", {}).get("method_config", {}).get("machine")
-        joining_machine = joining_machine or configured.get("second-machine-join", {}).get("method_config", {}).get("machine")
+        primary_machine = primary_machine or configured.get("path-on-shell", {}).get(
+            "method_config", {}
+        ).get("machine")
+        joining_machine = joining_machine or configured.get(
+            "second-machine-join", {}
+        ).get("method_config", {}).get("machine")
         return installer_campaign_cases_for_target(
             plan["execution_target"],
             primary_machine=primary_machine,
@@ -60,8 +72,9 @@ def _source_cases(plan: dict[str, Any], primary_machine=None, joining_machine=No
         version = descriptor["versions"][descriptor["latest_version"]]
         source = pack_catalog.server_tree_root() / "packs" / "machine-qa"
         return json.loads(
-            (source / version["source"] / "qa/examples/installer-exploration.json")
-            .read_text()
+            (
+                source / version["source"] / "qa/examples/installer-exploration.json"
+            ).read_text()
         )
     raise ValueError(
         f"unsupported installer plan {slug!r}; read installer-campaign or "
@@ -69,7 +82,9 @@ def _source_cases(plan: dict[str, Any], primary_machine=None, joining_machine=No
     )
 
 
-def compare_plan(plan: dict[str, Any], *, primary_machine=None, joining_machine=None) -> tuple[list[dict], dict]:
+def compare_plan(
+    plan: dict[str, Any], *, primary_machine=None, joining_machine=None
+) -> tuple[list[dict], dict]:
     """Compare authored fields, excluding row identity and historical proof."""
     cases = _source_cases(plan, primary_machine, joining_machine)
     installed = {case["case_key"]: case for case in plan["cases"]}
@@ -102,6 +117,48 @@ def compare_plan(plan: dict[str, Any], *, primary_machine=None, joining_machine=
     }
 
 
+def export_source_revision() -> str:
+    """Only landed, clean source may feed the shared saved-plan sync."""
+    root = str(pack_catalog.server_tree_root())
+    recovery = (
+        "sync after merge from a clean checkout of the repository's default "
+        "branch; use item-scoped or run-bound correction cases for lane proof."
+    )
+    try:
+        remote, count = source_git.resolve_remote(root)
+        branch = source_git.resolve_base_branch(root, remote)
+        if not remote or not branch:
+            raise ValueError(f"default branch unavailable ({count} configured remotes)")
+        fetched = source_git.fetch_branch(root, remote, branch)
+        if fetched.returncode:
+            raise ValueError(source_git.reason(fetched))
+        head = source_git.git(root, "rev-parse", "HEAD^{commit}")
+        upstream = source_git.git(
+            root, "rev-parse", source_git.tracking_ref(remote, branch) + "^{commit}"
+        )
+        dirty = source_git.git(
+            root, "status", "--porcelain", "--untracked-files=normal"
+        )
+        for result in (head, upstream, dirty):
+            if result.returncode:
+                raise ValueError(source_git.reason(result))
+        if source_git.out(dirty):
+            raise ValueError("source checkout has uncommitted changes")
+        revision = source_git.out(head)
+        ancestry = source_git.git(
+            root, "merge-base", "--is-ancestor", revision, source_git.out(upstream)
+        )
+        if ancestry.returncode == 1:
+            raise ValueError(f"source commit {revision} is not on {remote}/{branch}")
+        if ancestry.returncode:
+            raise ValueError(source_git.reason(ancestry))
+        return revision
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        raise SourceSyncRefused(
+            f"qa_plan_source_unmerged_or_unverified: {exc}; {recovery}"
+        ) from exc
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -113,10 +170,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--cases-file",
         type=Path,
-        help="Export generated cases for qa.plan_cases.replace.",
+        help="Export source-proven cases for qa.plan_cases.sync; sync after merge.",
     )
-    parser.add_argument("--primary-machine", help="Registered primary Test Machine for campaign cases.")
-    parser.add_argument("--joining-machine", help="Distinct registered Test Machine for the joining case.")
+    parser.add_argument(
+        "--primary-machine", help="Registered primary Test Machine for campaign cases."
+    )
+    parser.add_argument(
+        "--joining-machine",
+        help="Distinct registered Test Machine for the joining case.",
+    )
     parser.add_argument(
         "--check",
         action="store_true",
@@ -127,13 +189,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         receipt = json.loads(args.plan_file.read_text())
         if receipt.get("success") is not True:
             raise ValueError("plan read did not succeed")
+        source_revision = export_source_revision() if args.cases_file else None
         cases, report = compare_plan(
             receipt["result"]["plan"],
             primary_machine=args.primary_machine,
             joining_machine=args.joining_machine,
         )
         if args.cases_file:
-            args.cases_file.write_text(json.dumps(cases, indent=2) + "\n")
+            args.cases_file.write_text(
+                json.dumps(
+                    {"source_revision": source_revision, "cases": cases}, indent=2
+                )
+                + "\n"
+            )
+            report["source_revision"] = source_revision
+    except SourceSyncRefused as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     except (OSError, ValueError, KeyError, TypeError) as exc:
         print(
             f"installer_campaign_plan_snapshot_invalid: {exc}; "
@@ -146,8 +218,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.check and not report["matches_source"]:
         print(
             "installer_campaign_plan_source_drift: installed cases differ; "
-            "export with --cases-file, review the differences, then install "
-            "with yoke qa plan-cases replace and check a fresh plan receipt.",
+            "sync after merge: export clean merged source with --cases-file, "
+            "review the differences, then install "
+            "with yoke qa plan-cases sync and check a fresh plan receipt.",
             file=sys.stderr,
         )
         return 1

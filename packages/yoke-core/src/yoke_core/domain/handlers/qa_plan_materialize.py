@@ -25,7 +25,7 @@ class MaterializeRequest(BaseModel):
 
 
 class ReplacementDeclaration(BaseModel):
-    case_key: str = Field(..., min_length=1)
+    case_key: str | None = Field(default=None, min_length=1)
     requirement_id: int = Field(..., gt=0)
 
 
@@ -66,6 +66,13 @@ def handle_materialize(request: FunctionCallRequest) -> HandlerOutcome:
 
     try:
         with connect() as conn:
+            from yoke_core.domain.qa_requirement_correction_selection import (
+                resolve_correction_selection,
+            )
+
+            replacements, replacement_scopes = resolve_correction_selection(
+                conn, [entry.model_dump() for entry in payload.replacements]
+            )
             if request.target.kind == "item":
                 item_id = request.target.item_id
                 if item_id is None:
@@ -136,13 +143,12 @@ def handle_materialize(request: FunctionCallRequest) -> HandlerOutcome:
                         deployment_stage=payload.deployment_stage,
                         deployment_member_item_id=member_id,
                         agent_plan=payload.plan,
-                        replacement_keys={
-                            entry.case_key for entry in payload.replacements
-                        },
+                        replacement_keys={entry["case_key"] for entry in replacements},
                         replaced_requirement_ids=frozenset(
                             entry.requirement_id for entry in payload.replacements
                         ),
                         commit=not payload.replacements,
+                        replacement_scopes=replacement_scopes,
                     )
                 else:
                     result = materialize_for_deployment_run(
@@ -160,7 +166,7 @@ def handle_materialize(request: FunctionCallRequest) -> HandlerOutcome:
             if payload.replacements:
                 result["replacements"] = declare_replacements(
                     conn,
-                    [entry.model_dump() for entry in payload.replacements],
+                    replacements,
                     materialized_requirement_ids=[
                         *result.get("created_requirement_ids", []),
                         *result.get("existing_requirement_ids", []),

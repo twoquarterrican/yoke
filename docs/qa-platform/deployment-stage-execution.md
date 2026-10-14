@@ -197,6 +197,10 @@ case is materialized:
     --plan CORRECTED_PLAN --project P --replaces CASE_KEY=FAILED_REQUIREMENT_ID
   ```
 
+  For a case spanning host baselines, pass `--replaces-requirement FAILED_ID`
+  instead. The corrected plan retains that failed case's key; materialization
+  creates and links only its baseline, preserving all sibling rows and proof.
+
   (`yoke qa plan materialize ... --replaces` declares without running; an
   item subject declares there before `yoke qa plan run --item`.) The failed
   row records `replacement_requirement_id` and keeps blocking, but no later

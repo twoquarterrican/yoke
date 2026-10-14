@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS qa_plans (
     slug TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
+    source_revision TEXT,
     success_policy_id TEXT NOT NULL DEFAULT 'all-pass',
     success_policy_params TEXT NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL,
@@ -299,9 +300,7 @@ def create_qa_catalog_tables(
         "required_capability_kinds",
         "TEXT NOT NULL DEFAULT '[]'",
     )
-    # The environment reference is added here rather than declared in the
-    # table above so one call decides its type: a universe still on text
-    # environment keys cannot accept an integer foreign key onto them.
+    _add_column_if_not_exists(conn, "qa_plans", "source_revision", "TEXT")
     _add_column_if_not_exists(
         conn,
         "qa_plans",

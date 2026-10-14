@@ -65,6 +65,7 @@ FUNCTION_MINIMUM_SERVING_VERSIONS: dict[str, str] = {
     "qa.requirement.list": "next-release",
     "qa.plan.get": "next-release",
     "qa.plan.list": "next-release",
+    "qa.plan_cases.sync": "next-release",
     "qa.activity.list": "next-release",
     "qa.plan_execution.begin": "next-release",
     "qa.plan_execution.heartbeat": "next-release",

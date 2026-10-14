@@ -88,6 +88,10 @@ QA_ADAPTERS: List[AdapterEntry] = [
         "yoke qa plan-cases replace --project P --plan-id N --stdin",
     ),
     AdapterEntry(
+        "qa.plan_cases.sync",
+        "yoke qa plan-cases sync --project P --plan-id N --stdin",
+    ),
+    AdapterEntry(
         "qa.registered_command.set",
         "yoke qa registered-command set --project P --scope SCOPE --command ARGV "
         "[--environment SITE/NAME|ENV_ID | --requires-base-url]",

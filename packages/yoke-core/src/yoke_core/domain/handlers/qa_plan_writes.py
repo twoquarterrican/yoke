@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from yoke_contracts.api.function_call import (
     FunctionCallRequest,
@@ -61,6 +61,7 @@ class ProjectMethodRegisterResponse(BaseModel):
 
 
 class PlanCasesReplaceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     project: str = Field(..., min_length=1)
     plan_id: int
     cases: List[Dict[str, Any]]
@@ -217,8 +218,6 @@ def handle_plan_cases_replace(
                 plan_id=payload.plan_id,
                 cases=payload.cases,
             )
-            # The replacement writes the plan and nothing else by design;
-            # naming the rows it left behind is what keeps that honest.
             result.update(plan_drift_report(conn, int(result["plan_id"])))
     except QaPlanError as exc:
         return _error("incompatible", str(exc), "$.payload")
