@@ -251,3 +251,45 @@ def test_required_tail_filter_never_discards_a_valid_match(pattern, text):
     assert compiled.search(text)
     candidate = scan._required_candidate(compiled)
     assert candidate is None or candidate.search(text)
+
+
+def test_duplicate_content_reuses_matching_with_path_specific_exemptions(
+    tmp_path, monkeypatch
+):
+    patterns = (r"retired", r"other")
+    monkeypatch.setattr(scan, "OBSOLETED_TERM_PATTERNS", patterns)
+    monkeypatch.setattr(
+        scan, "OBSOLETED_TERM_LABELS", {"retired": "first", "other": "second"}
+    )
+    monkeypatch.setattr(
+        scan, "_PER_PATTERN_PATH_ALLOWLIST", {"other": ("docs/exempt",)}
+    )
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    files = [docs / name for name in ("a.md", "copy.md", "exempt.md")]
+    for path in files:
+        path.write_text("retired other\n")
+    monkeypatch.setattr(scan, "_iter_scan_paths", lambda _: files)
+    calls = []
+    original = scan.required_test
+
+    def measured(candidate):
+        required = original(candidate)
+        if required is None:
+            return None
+
+        def test(text):
+            calls.append(text)
+            return required(text)
+
+        return test
+
+    monkeypatch.setattr(scan, "required_test", measured)
+    assert scan.scan_repo(tmp_path) == [
+        "docs/a.md:1: [first] retired other",
+        "docs/a.md:1: [second] retired other",
+        "docs/copy.md:1: [first] retired other",
+        "docs/copy.md:1: [second] retired other",
+        "docs/exempt.md:1: [first] retired other",
+    ]
+    assert len(calls) == 3

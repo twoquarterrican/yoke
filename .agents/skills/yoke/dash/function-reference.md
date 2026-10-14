@@ -15,6 +15,9 @@ Each CLI adapter dispatches the same typed function authority.
 | direct_workflow.dash.survey | Full replacing paths or grounded no_changes; yoke direct-workflow dash survey |
 | direct_workflow.conflict_survey.status | Read actual full survey; yoke direct-workflow conflict-survey status |
 | items.structured_field.section_upsert | Spec's complete enabled File Budget |
+| claims.path.coordination_decision_build | Overlap evidence packet; yoke claims path coordination-decision-build |
+| items.dependency.add | Dash independence attestation with source dash and evidence rationale; yoke items dependency add |
+| workflows.item_posture.amend | Holder or covering steering changes path_claims selection; yoke workflows item-posture amend |
 | claims.path.register / claims.path.widen | Complete selected coverage; yoke claims path register / widen |
 | qa.plan.materialize | Target transition's immutable snapshots; `qa.plan.materialize`, yoke qa plan materialize |
 | qa.requirement.list | Read roster; `qa.requirement.list`, yoke qa requirement list |

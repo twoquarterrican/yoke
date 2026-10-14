@@ -288,6 +288,9 @@ def test_clearing_path_claims_refuses_while_its_claims_are_live() -> None:
                 reason="drop the coverage gate mid-flight",
             )
         assert "registered and non-terminal" in str(excinfo.value)
+        assert "yoke claims path release --help" in str(excinfo.value)
+        assert "--key path_claims --clear" in str(excinfo.value)
+        assert "yoke say --steering" in str(excinfo.value)
         assert _stored(conn, item_id) == {"path_claims": True}
 
 

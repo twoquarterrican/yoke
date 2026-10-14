@@ -2,7 +2,8 @@
 
 Re-survey every actual touched file immediately before merge.
 Contacts stay advisory: independent proceed, ordered wait for landing proof
-and re-survey, unresolved release/name holder/path/evidence.
+and re-survey. Use [survey and isolation](survey-and-isolate.md) to attest
+independence or route an actual scope/authority decision.
 Require clean HEAD matching every accepted SHA-bound verdict.
 Edit/commit/amend/rebase invalidates affected proof. No hand merge,
 force-push, CI bypass or landing around a registered claim.

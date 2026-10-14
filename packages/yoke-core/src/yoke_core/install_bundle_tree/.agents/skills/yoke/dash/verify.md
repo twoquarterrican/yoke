@@ -32,7 +32,8 @@ yoke direct-workflow dash survey ITEM --no-changes --json
 
 The second is genuine no-change only. A reported overlap remains advisory:
 independent may proceed, ordered waits for actual landing proof and re-survey,
-unresolved releases the claim and names holder/path/evidence to the operator.
+a shared filename alone does not stop Dash; classify it through
+[survey and isolation](survey-and-isolate.md).
 Both `worktree_run` and `ci_run` record verification_tree.head_sha.
 A local case can read dirt while recording older HEAD; running it before the commit
 creates stale proof. Any tree change requires re-survey/commit and

@@ -118,6 +118,9 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "keyed on session_id. A supplied `actor_id` that disagrees "
             "with the resolved value is rejected with `actor_id_mismatch`. "
             "The dispatcher entrypoint is `yoke_function_dispatch.dispatch`; "
+            "source tests initialize handlers with "
+            "`handlers.__init_register__.register_all_handlers`; wrong guess: "
+            "importing `ensure_handlers_registered` from yoke_function_dispatch. "
             "the HTTP route `POST /v1/functions/call` accepts the same "
             "envelope."
         ),

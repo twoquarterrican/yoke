@@ -200,7 +200,9 @@ Use registered `yoke items dependency add` with gate_point coordination_only
 or activation. Rationale cites shared paths, independence/order and ISO timestamp
 of informing decision-build. No empty/boilerplate attestation. Missing wrapper
 goes to parent, never raw Python fallback. Engineer/Tester/Boss/Conduct/Polish/
-Advance/Usher do not author these edges; runtime collisions route `/yoke refine`.
+Advance/Usher do not author these edges; their runtime collisions route `/yoke refine`.
+Dash work holders also attest independent overlaps during their survey/isolation,
+using the same evidence rules and source dash.
 
 ## Technical Plan Template
 

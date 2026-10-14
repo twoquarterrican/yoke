@@ -1,7 +1,9 @@
 {
  "id": "collision-recovery",
  "title": "Collision recovery",
- "status": "draft-copy",
+ "status": "observed",
  "page": "coordination",
- "position": 5
+ "position": 5,
+ "sources": [".agents/skills/yoke/dash/survey-and-isolate.md", "packages/yoke-core/src/yoke_core/domain/path_claim_register.py"],
+ "description": "Dash work holders classify overlaps during survey/isolation: independent edits use evidence-backed coordination_only; ordered edits wait for proven landing; scope or authority decisions route to steering."
 }

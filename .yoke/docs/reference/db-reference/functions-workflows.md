@@ -54,7 +54,11 @@ Migration requires operator authority and preserves representable stages,
 lanes/claims, approvals, QA and delivery bindings; retroactively unsatisfied
 gates refuse. Read the live half-open binding before dispatching a skill.
 
-Posture amendment changes one allowlisted key with its declared guard. Refuse
+Posture amendment changes one allowlisted key with its declared guard.
+The item holder or covering live steering seat may amend path_claims; other
+keys retain their item-claim and per-key approval authority. Clear restores
+the pinned default after live coverage is released. Read `yoke workflows
+item-posture amend --help` for the complete recipe and served release recovery. Refuse
 terminal state, an executed verification selection, registered claims under a
 selection being cleared, or an open owner decision for cleared approval.
 Replacement atomically waives unexecuted superseded requirements, detaches the

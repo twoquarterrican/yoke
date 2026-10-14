@@ -149,14 +149,21 @@ def guard_path_claims(
     live = _non_terminal_claim_ids(conn, int(item_id))
     if not live:
         return
+    from yoke_core.domain.project_identity import render_item_ref
+
+    ref = render_item_ref(conn, item_id, required=True)
     named = ", ".join(str(value) for value in live)
     raise ItemPostureAmendError(
         "path-claims posture cannot be cleared: path claim(s) "
         f"{named} are registered and non-terminal under it, and the "
         "activation and coverage gates that read them would silently stop "
-        "running. Keep the selection for the life of this item, or "
-        "terminalize its coverage first; `yoke claims path list --item "
-        f"{item_id}` names every claim and state."
+        "running. Read `yoke claims path list --item "
+        f"{ref}`. The item holder must release its live coverage through "
+        "`yoke claims path release --help`, then retry "
+        f"`yoke workflows item-posture amend {ref} --key path_claims "
+        '--clear --reason "<why>"`. If release is unavailable on the serving '
+        "CLI, route the claim ids and refusal via yoke say --steering; "
+        "the control-plane operator must provide the registered release surface."
     )
 
 

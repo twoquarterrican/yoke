@@ -23,3 +23,10 @@ def test_all_harnesses_declare_the_same_canonical_instruction_source():
         assert manifest["cli"]["project_discovery"]["instruction_file"] == "AGENTS.md"
     for name in ("CLAUDE.md", "CODEX.md", "CURSOR.md"):
         assert not (REPO / name).exists()
+
+
+def test_shared_rules_allow_dash_to_attest_its_own_survey_overlap():
+    text = (REPO / "AGENTS.md").read_text()
+    assert "Dash holders at survey/isolation attest independent overlaps" in text
+    assert "Dash holders classify their survey overlaps" in text
+    assert "other runtime coordination decisions route to Refine" in text
