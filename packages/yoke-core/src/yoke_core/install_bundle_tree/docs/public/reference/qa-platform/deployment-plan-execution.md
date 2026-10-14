@@ -23,6 +23,14 @@ only for its attached groups. A failing shared case blocks every attaching
 member; a different plan, source revision or target stays separate. Flow-pinned
 plans and directly authored member cases retain their declared scope.
 
+Recording a case verdict while its stage is executing settles that stage in
+the same write: a shared case settles its group and credits every attaching
+member. When the stage cannot settle, the write refuses as
+`qa_verdict_settlement_refused` with the cause and whether the verdict
+persisted. Record an unpersisted verdict again after repairing the cause; for a
+persisted one, re-drive the run with `yoke watch deploy -- RUN` so its runner
+adopts it.
+
 Use the `--stage` / `--member` command above. It selects that member's
 next unfinished shared group and reuses completed group evidence. Another
 session's live execution remains owned by that session; continue its watcher

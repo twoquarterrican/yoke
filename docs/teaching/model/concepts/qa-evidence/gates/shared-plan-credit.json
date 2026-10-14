@@ -2,8 +2,8 @@
  "id": "shared-plan-credit",
  "title": "Shared release plan credit",
  "status": "observed",
- "commands": ["yoke qa plan run", "yoke qa plan rematerialize"],
- "functions": ["qa.plan_execution.begin", "qa.plan.materialize", "qa.plan.rematerialize"],
+ "commands": ["yoke qa plan run", "yoke qa plan rematerialize", "yoke qa run complete"],
+ "functions": ["qa.plan_execution.begin", "qa.plan.materialize", "qa.plan.rematerialize", "qa.run.complete"],
  "page": "qa-evidence",
  "position": 2
 }

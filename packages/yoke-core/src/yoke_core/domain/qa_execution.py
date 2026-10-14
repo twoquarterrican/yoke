@@ -40,6 +40,7 @@ from yoke_core.domain.qa_run_reads import (  # noqa: F401  (re-exported)
 )
 from yoke_core.domain import qa_undetermined_evidence as _qa_review_evidence
 from yoke_core.domain.qa_run_verdict_record import insert_qa_run, update_qa_run
+from yoke_core.domain.qa_run_execution_evidence import commit_settled_verdict_or_exit
 
 _resolve_requirement_event_target = qa_events.resolve_requirement_event_target
 _emit_qa_requirement_event = qa_events.emit_qa_requirement_event
@@ -220,13 +221,7 @@ def cmd_run_add(
             artifact_count=1 if artifact_path is not None else 0,
             rollback=conn.rollback,
         )
-        conn.commit()
-        if verdict is not None:
-            from yoke_core.domain.qa_run_execution_evidence import (
-                settle_recorded_verdict,
-            )
-
-            settle_recorded_verdict(conn, inserted_id)
+        commit_settled_verdict_or_exit(conn, inserted_id)
         _event_name = (
             "QARunCompleted"
             if verdict is not None
@@ -318,14 +313,9 @@ def cmd_run_complete(
         if duration_ms is not None:
             columns["duration_ms"] = duration_ms
         update_qa_run(conn, run_id, columns)
-        conn.commit()
+        commit_settled_verdict_or_exit(conn, run_id)
 
         if verdict is not None:
-            from yoke_core.domain.qa_run_execution_evidence import (
-                settle_recorded_verdict,
-            )
-
-            settle_recorded_verdict(conn, run_id)
             check = query_scalar(
                 conn, "SELECT verdict FROM qa_runs WHERE id = %s", (run_id,)
             )

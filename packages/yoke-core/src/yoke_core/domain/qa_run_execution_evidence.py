@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import Any
 
 from yoke_core.domain.db_helpers import query_one, query_rows
@@ -10,7 +11,9 @@ from yoke_core.domain.qa_plan_execution_store import result_rows, select_plan_ex
 from yoke_core.domain.schema_common import _table_exists
 
 
-def _execution(conn: Any, requirement: dict[str, Any], run_id: int | None) -> dict | None:
+def _execution(
+    conn: Any, requirement: dict[str, Any], run_id: int | None
+) -> dict | None:
     """Prefer an exact captured attempt; aggregate obligations use the scoped walk."""
     rows = query_rows(
         conn,
@@ -118,8 +121,58 @@ def execution_evidence_payload(
     return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
-def settle_recorded_verdict(conn: Any, run_id: int) -> None:
-    """After capture attachments and verdict commit, re-evaluate the active stage."""
+class VerdictSettlementRefused(ValueError):
+    """The active deployment stage could not settle a just-written verdict."""
+
+    code = "qa_verdict_settlement_refused"
+
+
+def commit_settled_verdict(conn: Any, run_id: int) -> None:
+    """Commit a pending run write together with its active stage's settlement.
+
+    Settlement commits the verdict once the stage reaches a final outcome, so
+    a failure after that point leaves the verdict durable; the refusal reads
+    back which side of that commit it reached.
+    """
+    try:
+        _settle_recorded_verdict(conn, run_id)
+    except ValueError as exc:
+        conn.rollback()
+        recorded = query_one(
+            conn,
+            "SELECT r.verdict,q.deployment_run_id FROM qa_runs r "
+            "JOIN qa_requirements q ON q.id=r.qa_requirement_id WHERE r.id=%s",
+            (run_id,),
+        )
+        state = (
+            "The verdict is recorded; re-drive its deployment run with "
+            f"`yoke watch deploy -- {recorded['deployment_run_id']}` so the "
+            "runner adopts it."
+            if recorded and recorded["verdict"] is not None
+            else "The verdict was not recorded; repair the named cause, then "
+            "record the same verdict again."
+        )
+        raise VerdictSettlementRefused(
+            f"{VerdictSettlementRefused.code}: QA run {run_id}'s deployment "
+            f"stage could not settle: {exc}. {state}"
+        ) from exc
+    except BaseException:
+        conn.rollback()
+        raise
+    conn.commit()
+
+
+def commit_settled_verdict_or_exit(conn: Any, run_id: int) -> None:
+    """Exit the CLI writer with the named refusal when settlement fails."""
+    try:
+        commit_settled_verdict(conn, run_id)
+    except VerdictSettlementRefused as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        raise SystemExit(2) from exc
+
+
+def _settle_recorded_verdict(conn: Any, run_id: int) -> None:
+    """Re-evaluate the active stage a verdict belongs to, if one is executing."""
     subject = query_one(
         conn,
         "SELECT q.* "
@@ -141,6 +194,24 @@ def settle_recorded_verdict(conn: Any, run_id: int) -> None:
             or run["status"] != "executing"
             or run["current_stage"] != subject["deployment_stage"]
         ):
+            return
+        from yoke_core.domain.deployment_qa_shared_plans import (
+            requirement_subject,
+            shared_target_identity,
+        )
+
+        if shared_target_identity(subject.get("execution_target_json")):
+            from yoke_core.domain.deployment_qa_execution_target import (
+                deployment_qa_execution_target,
+            )
+            from yoke_core.domain.deployment_qa_shared_acceptance import (
+                settle_shared_group,
+            )
+
+            group = requirement_subject(conn, int(subject["id"]))
+            settle_shared_group(
+                conn, group, deployment_qa_execution_target(conn, group)
+            )
             return
         from yoke_core.domain.deployment_qa_stage_settlement import settle_subject
 
