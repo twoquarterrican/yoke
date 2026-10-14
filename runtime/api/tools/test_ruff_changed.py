@@ -123,32 +123,27 @@ def test_empty_changed_set_passes_without_invoking_ruff(
     assert "working tree" in output
 
 
-def _one_change(_base: str, _root: Path) -> ruff_changed.ChangedPythonSelection:
-    return ruff_changed.ChangedPythonSelection(
-        ("module.py",),
-        "base-sha",
-        "head-sha",
-        WorkingTreeChangedPaths(tracked=("module.py",), untracked=()),
-    )
-
-
-def test_format_check_runs_after_lint_on_one_environment_resolve(
+def test_format_check_runs_after_lint(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    monkeypatch.delenv(SOURCE_DEV_RUN_ROOT_ENV, raising=False)
-    monkeypatch.setattr(ruff_changed, "select_changed_python_paths", _one_change)
-    resolved: list[Path] = []
     monkeypatch.setattr(
-        ruff_changed.source_python_environment,
-        "resolve",
-        lambda root, _env: (
-            resolved.append(root) or SimpleNamespace(python="py", env={})
+        ruff_changed,
+        "select_changed_python_paths",
+        lambda _base, _root: ruff_changed.ChangedPythonSelection(
+            ("module.py",),
+            "base-sha",
+            "head-sha",
+            WorkingTreeChangedPaths(tracked=("module.py",), untracked=()),
         ),
     )
     phases: list[tuple[str, ...]] = []
 
-    def _record(_root, _environment, arguments, _paths) -> int:
+    def _record(
+        _root: Path,
+        arguments: tuple[str, ...],
+        _paths: tuple[str, ...],
+    ) -> int:
         phases.append(arguments)
         return 0
 
@@ -156,7 +151,6 @@ def test_format_check_runs_after_lint_on_one_environment_resolve(
 
     assert ruff_changed.run("main", format_check=True, root=tmp_path) == 0
     assert phases == [("check",), ("format", "--check")]
-    assert resolved == [tmp_path.resolve()]
 
 
 def test_dev_run_lane_and_environment_are_not_looked_up_again(
@@ -171,7 +165,16 @@ def test_dev_run_lane_and_environment_are_not_looked_up_again(
     monkeypatch.setenv(SOURCE_DEV_RUN_ROOT_ENV, str(tmp_path))
     monkeypatch.setattr(ruff_changed.source_dev_run, "claimed_lane_root", _unexpected)
     monkeypatch.setattr(ruff_changed.source_python_environment, "resolve", _unexpected)
-    monkeypatch.setattr(ruff_changed, "select_changed_python_paths", _one_change)
+    monkeypatch.setattr(
+        ruff_changed,
+        "select_changed_python_paths",
+        lambda _base, _root: ruff_changed.ChangedPythonSelection(
+            ("module.py",),
+            "base-sha",
+            "head-sha",
+            WorkingTreeChangedPaths(tracked=("module.py",), untracked=()),
+        ),
+    )
     commands: list[list[str]] = []
     monkeypatch.setattr(
         ruff_changed.subprocess,
@@ -182,7 +185,7 @@ def test_dev_run_lane_and_environment_are_not_looked_up_again(
     tree, error = ruff_changed.resolve_tree(None)
     assert (tree, error) == (tmp_path.resolve(), None)
     assert ruff_changed.run("main", fix_format=True, root=tree) == 0
-    assert [command[:3] for command in commands] == [[sys.executable, "-m", "ruff"]] * 2
+    assert [argv[:3] for argv in commands] == [[sys.executable, "-m", "ruff"]] * 2
 
 
 def test_cli_adapter_uses_the_claimed_source_resolver(
