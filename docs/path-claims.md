@@ -31,7 +31,7 @@ Break-glass activation, amendment, release, and override surfaces remain command
 
 | Subcommand | Purpose |
 |---|---|
-| `yoke claims path register --item YOK-N --paths a,b,c [--allow-planned] [--tentative-paths a]` | Declare a path claim for an item. Resolves paths to canonical `path_targets` rows, runs overlap classification, transitions to `planned` (or `blocked` when a serial-via-dep upstream is named). `--integration-target` defaults to the project trunk (`projects.default_branch`, fallback `main`). With `--allow-planned`, missing paths mint as `planned`; `--tentative-paths` (subset of `--paths`, requires `--allow-planned`) mints that subset as `tentative`. Every path is validated before any is resolved or planned; the whole call refuses with a named code and recovery step: `path_set_empty` (no paths), `path_malformed` (quote, wildcard `*`/`?`, backslash or control characters; brackets stay legal for routed files such as `app/[slug]/page.tsx`), `path_not_project_relative` (absolute, or `.`, `..` or empty segments), `path_target_unknown` (unregistered without `--allow-planned`). The CLI refuses malformed and non-project-relative paths before any network call. Registration is one transaction: a refused call stores no claim and no planned path target; widen returns the same codes. |
+| `yoke claims path register --item YOK-N --paths a,b,c [--allow-planned] [--tentative-paths a]` | Declare a path claim for an item. Resolves paths to canonical `path_targets` rows, runs overlap classification, transitions to `planned` (or `blocked` while a serial-via-dep ordering remains unmet). `--integration-target` defaults to the project trunk (`projects.default_branch`, fallback `main`). With `--allow-planned`, missing paths mint as `planned`; `--tentative-paths` (subset of `--paths`, requires `--allow-planned`) mints that subset as `tentative`. Every path is validated before any is resolved or planned; the whole call refuses with a named code and recovery step: `path_set_empty` (no paths), `path_malformed` (quote, wildcard `*`/`?`, backslash or control characters; brackets stay legal for routed files such as `app/[slug]/page.tsx`), `path_not_project_relative` (absolute, or `.`, `..` or empty segments), `path_target_unknown` (unregistered without `--allow-planned`). The CLI refuses malformed and non-project-relative paths before any network call. Registration is one transaction: a refused call stores no claim and no planned path target; widen returns the same codes. |
 | `yoke claims path register --item YOK-N --paths "" --mode exception --exception-reason "<why>" [--integration-target T]` | Record a no-claim exception for items that legitimately touch no repo surface (validation work items, evidence-only items). Pass non-empty `--exception-reason` text so the rendered body can surface the operator's justification verbatim. `--integration-target` defaults to project trunk. |
 | `yoke claims path get <claim-id>` | Rich projection: state, declared coverage as readable paths, amendment history, current blocking conflicts. |
 | `yoke claims path list --item YOK-N [--state X]` | Same projection, every claim attached to the item, filterable by state. |
@@ -108,7 +108,8 @@ yoke claims path register \
 
 The planned target carries `materialization_state='planned'` until
 git observes the file, at which point the snapshot scanner flips
-the same row to `observed` and emits `PathTargetMaterialized`. Claim
+the same row to `observed`. Snapshot refresh batches the updates and emits
+one `PathTargetMaterialized` summary carrying the target ids and count. Claim
 identity survives the transition. Renames work the same way: claim
 the observed source and the planned destination together.
 
@@ -145,29 +146,21 @@ amendment history, and current blocking conflicts. The rendered
 section is GitHub-synced through the existing body-sync path — no
 extra command is needed.
 
-## Item terminal transitions
+## Landing and terminal transitions
 
-When the owning item reaches a lifecycle terminal, every non-
-terminal item-linked claim is auto-finalized via the status-write
-chokepoint:
+A recorded landing releases open item claims with reason `landed`. Terminal
+status writes are backstops: normal completion releases remaining claims,
+while `cancelled` or `stopped` cancels them with `item-<status>` reasons.
+Already-terminal claims are skipped; release and cancel do not cross-convert.
 
-| Item status → | Claim outcome | Reason |
-|---|---|---|
-| merge-complete `release` | released | `item-release` |
-| `done` (backstop) | released | `item-done` |
-| `cancelled` | cancelled | `item-cancelled` |
-| `stopped` | cancelled | `item-stopped` |
-
-Successful completion uses release semantics (emits
-`PathClaimReleased`); abandonment uses cancel semantics (emits
-`PathClaimCancelled`). Already-terminal claims are skipped — release
-and cancel are idempotent and do not cross-convert.
-
-Some pipelines enter item status `release` before the merge starts so
-the item reflects pipeline entry. That pre-merge status write does not
-finalize path claims. The automatic `item-release` path only fires for
-merge-complete owners (`done-transition` or deploy-pipeline handoff);
-`done` remains the universal backstop.
+The landing writer releases all open item-owned claims on the same transaction
+and unblocks downstream claims. The work claim remains held through delivery.
+Holder-only manual ending uses `yoke claims path release --item PREFIX-N
+--claim-id N --reason TEXT` or `yoke claims path cancel` with the same flags.
+Before reopening landed work or editing its lane, register fresh coverage with
+`yoke claims path register --item PREFIX-N --paths ... --allow-planned`, then
+prepare the lane. Terminal claims cannot be widened or reactivated.
+Released coverage remains evidence for the merge boundary.
 
 ## No-touch-shrink rule
 
@@ -179,7 +172,7 @@ If Work item A actively claims `foo.py` and `bar.py` but only commits
 changes to `foo.py`, Work item B cannot claim `bar.py` merely because
 A's diff doesn't touch it. Free `bar.py` for B by (a) narrowing A
 explicitly (which runs the boundary check first — see "Narrowing
-safety" above) or (b) waiting for A to terminate. Touched files are
+safety" above) or (b) waiting for A to land. Touched files are
 an artifact of in-flight work, not a narrowing signal.
 
 ## Stale-base-on-new-claim
@@ -233,10 +226,11 @@ next.
    coverage is wider than they need.
 2. **Add or verify serial dependency ordering** — register with
    `--upstream-claim-id <holder-id>`; the candidate lands in
-   `blocked` and unblocks once the upstream releases.
+   `blocked` only while ordering is unmet; a satisfied `fact:merged`, status
+   or deployment condition permits overlap without rewriting the edge.
 3. **Wait for release / cancel** — the holder's `release` (or
-   `done` backstop) emits `PathClaimReleased` automatically (see
-   "Item terminal transitions" above).
+   recorded landing) emits `PathClaimReleased` automatically (see
+   "Landing and terminal transitions" above).
 4. **Route a narrow / cancel request to the active holder** —
    cross-session emission is deferred to a future work item; for now
    this collapses to manual operator coordination (reach the holder
@@ -317,8 +311,9 @@ separate `PathClaimException` event.
 ## Catch-up audit
 
 The path-integrity verifier runs `check_path_claim_coverage` for
-every project, flagging any non-terminal issue/epic item that
-carries no non-terminal path claim and no active no-claim exception.
+every project, flagging any non-terminal item whose effective workflow requires
+claims but carries no open claim or active no-claim exception. Landed items
+waiting in a pinned stage that implies merge are exempt until reopened.
 Use the `yoke_core.domain.path_integrity` verifier for catch-up
 audits; no wrapped product CLI exists for that verifier yet.
 

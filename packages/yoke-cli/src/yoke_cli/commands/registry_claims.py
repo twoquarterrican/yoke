@@ -16,6 +16,10 @@ from yoke_cli.commands.adapters.claims_steering import (
     claims_steering_verify,
     claims_steering_release,
 )
+from yoke_cli.commands.adapters.claims_path_terminal import (
+    claims_path_release,
+    claims_path_cancel,
+)
 from yoke_cli.commands.adapters.steering_report import steering_report_get
 from yoke_cli.commands import flag_adapters as _adapters
 
@@ -24,6 +28,8 @@ AdapterFn = Callable[[List[str]], int]
 
 
 CLAIMS_SUBCOMMAND_REGISTRY: Dict[Tuple[str, ...], Tuple[str, AdapterFn]] = {
+    ("claims", "path", "release"): ("claims.path.release", claims_path_release),
+    ("claims", "path", "cancel"): ("claims.path.cancel", claims_path_cancel),
     ("claims", "steering", "acquire"): (
         "claims.steering.acquire",
         claims_steering_acquire,

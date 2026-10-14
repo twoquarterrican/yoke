@@ -256,7 +256,7 @@ def narrow(
     if not keep_ids:
         raise InvalidTargetSet(
             "narrow rejected: at least one target must remain — "
-            "release or cancel the claim instead"
+            "use `yoke claims path release` or `yoke claims path cancel` with --item, --claim-id and --reason instead"
         )
     project_id = _project_for_claim(conn, claim)
     if not project_id:

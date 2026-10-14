@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional
 
+from yoke_core.domain.path_claims_landing import evaluate_rework_coverage
 from yoke_core.domain import db_helpers
 from yoke_core.domain.workflow_delivery_status_gates import (
     activation_stage_index,
@@ -46,6 +47,11 @@ def evaluate_spec_coverage(
 
     if generates_task_graph(workflow) or target_status in workflow.terminal_stage_ids:
         return None
+    if workflow.stage_implies_merge(target_status):
+        from yoke_core.domain.path_claims_landed_boundary import landing_for_boundary
+
+        if landing_for_boundary(conn, item_id) is not None:
+            return None
     activation = activation_stage_index(workflow)
     position = workflow.stage_index(target_status)
     if activation is None or position < activation:
@@ -75,6 +81,7 @@ Evaluator = Callable[..., Optional[dict]]
 
 _NEVER_BYPASSED: tuple[Evaluator, ...] = (
     evaluate_task_existence,
+    evaluate_rework_coverage,
     evaluate_spec_coverage,
 )
 _FORCE_BYPASSABLE: tuple[Evaluator, ...] = (

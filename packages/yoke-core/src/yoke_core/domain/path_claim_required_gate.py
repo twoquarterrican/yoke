@@ -90,6 +90,14 @@ def evaluate_required_coverage(
 ) -> Dict[str, object]:
     """Evaluate concrete claim coverage without applying workflow opt-outs."""
     public_ref = public_ref or render_item_ref(conn, item_id)
+    from yoke_core.domain.path_claims_landing import awaits_delivery
+
+    if awaits_delivery(conn, item_id):
+        return {
+            "verdict": GATE_PASS,
+            "reason": f"item {public_ref} landed; delivery needs no path claim",
+            "satisfying_claims": [],
+        }
     if task_scoped:
         from yoke_core.domain.path_claim_task_coverage import (
             evaluate_task_coverage,

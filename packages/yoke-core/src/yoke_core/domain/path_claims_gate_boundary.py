@@ -1,43 +1,12 @@
-"""Lifecycle-gate adapter that runs the boundary check at status writes.
+"""Enforce committed touch coverage at the pinned merge boundary.
 
-Composed into :func:`yoke_core.domain.backlog_authoritative_status_gate.
-_run_authoritative_status_gate` so the boundary check fires at these
-gates:
+Before landing, use open claims and the registered lane's committed diff.
+After landing, released coverage remains evidence for the recorded merge's
+first-parent diff. Rework selects fresh open coverage and a new lane head.
 
-* the gate into ``reviewed-implementation``,
-* the gate into ``implemented``, and
-* the gate into ``release`` (usher / pre-merge).
-
-The adapter:
-
-* Loads every non-terminal path claim attached to the item.
-* Resolves the worktree path from this machine's checkout mapping plus
-  the item's recorded worktree branch.
-* Runs :func:`yoke_core.domain.path_claims_boundary.boundary_check_for_claim`
-  on each claim.
-* Blocks the transition with ``GATE_PATH_CLAIM_BOUNDARY`` and the
-  rejection diagnostic when any claim returns ``conflict``.
-
-Once a landing is recorded for the item's current work, the boundary is
-proved from that merge instead (:mod:`path_claims_landed_boundary`).
-
-The gate never passes on an unexamined boundary. An item with zero
-non-terminal claims has genuinely nothing to enforce and returns clear;
-every other shortage is a named refusal:
-
-* The ``path_claims`` table cannot be read — the control plane cannot
-  say whether coverage was declared, which is not the same as no
-  coverage being declared.
-* The item holds claims but has no resolvable worktree — there is no
-  committed tree to compare the coverage against.
-* Neither integration ref resolves — see
-  :mod:`yoke_core.domain.path_claims_boundary_ladder`, which owns the
-  ordered ladder (remote ref, then local ref) and the refusal narrative.
-
-When a rung does resolve, the item records which one through
-:func:`yoke_core.domain.gate_satisfier_stamp.record_rung`, so a reader
-can later tell a boundary proved against the shared remote from one
-proved against a local trunk.
+Unreadable claims, unresolved lanes or integration refs refuse by name and
+teach recovery. An item that declared no claims has no boundary to enforce.
+Recorded rung facts distinguish remote proof, local proof and landed proof.
 """
 
 from __future__ import annotations
@@ -145,6 +114,12 @@ def claims_for_boundary(conn: Any, item_id: int) -> List[Tuple[int, str]]:
             "schema (restart the server, which applies the pending schema on "
             "boot) and retry the transition."
         ) from exc
+    if not rows:
+        from yoke_core.domain.path_claims_landing_boundary import (
+            released_claims_for_boundary,
+        )
+
+        return released_claims_for_boundary(conn, item_id)
     return [(int(r[0]), str(r[1] or "")) for r in rows]
 
 

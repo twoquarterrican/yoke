@@ -23,3 +23,8 @@ not scope. Verification fixes and main merges also require widening first.
 
 Apply AGENTS Verification Failure Ownership to test repairs; planned future
 claims are not failure waivers or grounds for bypassing reconciliation.
+
+Landing releases item-owned path claims with reason `landed`. Delivery retains
+the work claim. Before reopened lane edits, register fresh coverage with
+`yoke claims path register --item PREFIX-N --paths ... --allow-planned` and
+prepare the lane to activate it; released claims cannot be widened or reactivated.

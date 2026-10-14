@@ -21,6 +21,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `claims.path.list` | `none` |
 | `claims.path.override` | `steering` |
 | `claims.path.register` | `item` |
+| `claims.path.cancel` | `item` |
 | `claims.path.release` | `item` |
 | `claims.path.required_gate` | `none` |
 | `claims.path.survey_ensure` | `item` |

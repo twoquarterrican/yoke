@@ -71,14 +71,10 @@ def evaluate_payload(
     *,
     conn: Optional[Any] = None,
 ) -> Verdict:
-    """Decide allow / deny for one Edit/Write/apply_patch record.
+    """Enforce declared coverage or require fresh coverage after landing.
 
-    ``claim`` may be passed explicitly (test injection) or resolved
-    against the live DB via the session id on the record. When no
-    active claim exists and the record changes paths, the verdict is
-    ``allow`` — claim-coverage enforcement is opt-in via an active
-    claim. The deny shape only fires when the session HAS a claim and
-    the changed path falls outside it.
+    Explicit claims support test injection; ordinary unclaimed work is opt-in.
+    Landed coverage cannot authorize reopened lane edits.
     """
     if record.tool_kind not in _INSPECTED_KINDS:
         return Verdict(outcome="allow")
@@ -153,6 +149,13 @@ def _format_narrative(
     * ``out-of-claim`` — claim coverage misses the target. Carries the
       ``yoke claims path widen`` template.
     """
+    from yoke_core.domain.path_claims_rework_guard import (
+        REWORK_COVERAGE_REQUIRED,
+        recovery,
+    )
+
+    if failure.mode == REWORK_COVERAGE_REQUIRED:
+        return recovery(ctx.public_ref or "<item>")
     if failure.mode == WORKTREE_UNRESOLVED:
         from yoke_core.domain.path_claim_bash_guard_narrative import (
             worktree_unresolved_narrative,

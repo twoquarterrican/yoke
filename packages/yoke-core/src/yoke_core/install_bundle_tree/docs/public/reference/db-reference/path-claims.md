@@ -98,3 +98,44 @@ source-tree skill doc `.agents/skills/yoke/idea/path-claim-blocking.md`.
 Section 0 names this auto-classification so operators understand why
 some overlaps that would have required `coordination_only` edges now
 resolve silently.
+
+## Ending coverage and reopening work
+
+The holder may end an item-owned claim through `claims.path.release` or
+`claims.path.cancel`:
+
+```text
+yoke claims path release --item PREFIX-N --claim-id N --reason "coverage finished"
+yoke claims path cancel --item PREFIX-N --claim-id N --reason "coverage abandoned"
+```
+
+Acquire the owning item's work claim first. Release completes coverage; cancel
+abandons it. These commands are idempotent for the same terminal state and
+refuse another owner's claim. A released or cancelled claim cannot reopen.
+
+Recording the merge landing releases every open item-owned path claim with
+reason `landed`, on the landing's transaction, and unblocks downstream claims.
+The work claim stays held through delivery. Landed items in a pinned stage
+that implies merge need no open path coverage; released coverage remains
+evidence for the merge boundary. Snapshot materialization writes all observed
+planned targets together and emits one summary event, whose loss changes no fact.
+
+Before reopening landed work, register fresh coverage for the complete touch
+set, then prepare the lane to activate it:
+
+```text
+yoke claims path register --item PREFIX-N --paths path/to/file,path/to/other --allow-planned
+```
+
+The lifecycle rework gate and shared Bash/edit guards refuse missing fresh
+coverage as `path_claim_rework_coverage_required`; the merge boundary still
+checks the committed touched files. Use `--help` for release/cancel variants.
+
+## Satisfied ordering
+
+An ordering edge serializes overlapping claims only while its persisted
+`satisfaction` is unmet. The classifier uses the same satisfaction evaluator
+as lifecycle dependencies: recorded `fact:merged`, pinned status conditions
+and attributed deployment facts all count. A satisfied edge permits overlap
+without changing the stored `gate_point`; another unmet edge still serializes
+the dependent. Unknown or unproven satisfaction never clears ordering.

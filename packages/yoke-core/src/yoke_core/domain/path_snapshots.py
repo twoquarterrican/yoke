@@ -34,7 +34,7 @@ from yoke_core.domain.path_snapshot_context_cache import read_snapshot_context_v
 from yoke_core.domain.path_snapshot_targets import resolve_snapshot_target_ids
 from yoke_core.domain.project_identity import resolve_project_id
 from yoke_core.domain.project_checkout_locations import checkout_for_project_id
-from yoke_core.domain.path_targets_materialization import materialize_planned_target
+from yoke_core.domain.path_snapshot_materialization import materialize_snapshot_targets
 
 
 class PathSnapshotError(RuntimeError):
@@ -156,12 +156,12 @@ def _materialize_snapshot(
             entries=entries,
             context_values=context_values,
         )
-        for tid in resolution.materialize_target_ids:
-            materialize_planned_target(
-                conn,
-                target_id=tid,
-                commit_sha=commit_sha,
-            )
+        materialize_snapshot_targets(
+            conn,
+            target_ids=resolution.materialize_target_ids,
+            project_id=project_id,
+            commit_sha=commit_sha,
+        )
         conn.commit()
         return snapshot_id
     except Exception:

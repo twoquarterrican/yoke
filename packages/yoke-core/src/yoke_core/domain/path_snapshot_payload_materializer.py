@@ -24,7 +24,7 @@ from yoke_core.domain.path_snapshot_context_cache import (
 )
 from yoke_core.domain.path_snapshot_enrichment import _DEFAULT_DIRECTORY_TUPLE
 from yoke_core.domain.path_snapshot_targets import resolve_snapshot_target_ids
-from yoke_core.domain.path_targets_materialization import materialize_planned_target
+from yoke_core.domain.path_snapshot_materialization import materialize_snapshot_targets
 from yoke_core.domain.project_identity import resolve_project_id
 
 
@@ -127,12 +127,12 @@ def materialize_snapshot_payload(
             target_ids=resolution.target_ids,
             payload=payload,
         )
-        for target_id in resolution.materialize_target_ids:
-            materialize_planned_target(
-                conn,
-                target_id=target_id,
-                commit_sha=payload.commit_sha,
-            )
+        materialize_snapshot_targets(
+            conn,
+            target_ids=resolution.materialize_target_ids,
+            project_id=project_id,
+            commit_sha=payload.commit_sha,
+        )
         conn.commit()
         return PayloadMaterializeResult(
             status="created",

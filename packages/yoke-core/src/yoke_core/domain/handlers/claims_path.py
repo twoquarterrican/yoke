@@ -241,39 +241,6 @@ def handle_widen(request: FunctionCallRequest) -> HandlerOutcome:
     )
 
 
-def handle_release(request: FunctionCallRequest) -> HandlerOutcome:
-    body, err = _validate(ReleaseRequest, request.payload, "release")
-    if err is not None:
-        return err
-
-    from yoke_core.domain.path_claims import (
-        ClaimNotFound,
-        PathClaimError,
-        release,
-    )
-
-    with _connect_rw() as conn:
-        try:
-            release(conn, claim_id=int(body.claim_id), reason=body.reason)
-        except ClaimNotFound as exc:
-            return _err("claim_not_found", str(exc))
-        except PathClaimError as exc:
-            return _err("release_failed", f"{type(exc).__name__}: {exc}")
-        p = _p(conn)
-        row = conn.execute(
-            f"SELECT state, released_at FROM path_claims WHERE id = {p}",
-            (int(body.claim_id),),
-        ).fetchone()
-
-    return HandlerOutcome(
-        result_payload={
-            "claim_id": int(body.claim_id),
-            "state": str(row["state"]) if row else "released",
-            "released_at": row["released_at"] if row else None,
-        },
-    )
-
-
 def handle_override(request: FunctionCallRequest) -> HandlerOutcome:
     body, err = _validate(OverrideRequest, request.payload, "override")
     if err is not None:
@@ -326,6 +293,5 @@ __all__ = [
     "OverrideResponse",
     "handle_register",
     "handle_widen",
-    "handle_release",
     "handle_override",
 ]
