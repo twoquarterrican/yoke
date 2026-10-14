@@ -14,7 +14,7 @@ from yoke_core.domain.migration_serving_version import NEXT_RELEASE, declared_mi
 from yoke_core.domain.schema_common import _column_exists
 from yoke_core.domain.schema_init import converge_core_schema
 
-ENTRY_NAME = "0076_event_registry_catalog_shape"
+ENTRY_NAME = "0077_event_registry_catalog_shape"
 
 
 def _entry():
