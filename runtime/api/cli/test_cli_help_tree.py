@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from yoke_cli.commands.command_tree import discovery_routes, immediate_children
+from yoke_cli.commands.group_help import can_route_group
 from yoke_cli.main import main
 from yoke_cli.transport.response_evidence import wrapped_lines
 
@@ -21,7 +22,8 @@ def test_all_help_routes_are_inert_and_bounded(monkeypatch, tmp_path):
     routes = discovery_routes()
     prefixes = {route[:n] for route in routes for n in range(1, len(route))}
     for route in sorted(set(routes) | prefixes | {()}):
-        for flag in ("--help", "-h"):
+        flags = ("--help", "-h", "help") if can_route_group(route) else ("--help", "-h")
+        for flag in flags:
             out, err = io.StringIO(), io.StringIO()
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 rc = main([*route, flag])
@@ -32,6 +34,11 @@ def test_all_help_routes_are_inert_and_bounded(monkeypatch, tmp_path):
                 exit=rc,
                 lines=wrapped_lines(text),
                 characters=len(text),
+                advisory_lines=40
+                if not route
+                else 80
+                if can_route_group(route)
+                else 120,
             )
             evidence.append(record)
             assert rc == 0, (record, text)
@@ -46,8 +53,14 @@ def test_all_help_routes_are_inert_and_bounded(monkeypatch, tmp_path):
     print(
         f"Fixture help audit: {len(evidence)} spellings; max lines "
         f"{max(row['lines'] for row in evidence)}; advisory overruns "
-        f"{sum(row['lines'] > 120 or row['characters'] > 7200 for row in evidence)}"
+        f"{sum(row['lines'] > row['advisory_lines'] or row['characters'] > row['advisory_lines'] * 60 for row in evidence)}"
     )
+    for row in evidence:
+        if (
+            row["lines"] > row["advisory_lines"]
+            or row["characters"] > row["advisory_lines"] * 60
+        ):
+            print("Advisory review:", row)
 
 
 def test_parent_help_does_not_expand_descendants(capsys):

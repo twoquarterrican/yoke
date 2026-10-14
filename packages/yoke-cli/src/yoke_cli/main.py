@@ -241,6 +241,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             group_result = emit_group_help_if_available(argv)
             if prefix not in command_routes():
                 return group_result if group_result is not None else 0
+            argv[-1] = "--help"
 
     _function_id = None
     try:

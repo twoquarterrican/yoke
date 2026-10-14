@@ -23,9 +23,14 @@ def response(function, result):
 
 
 @pytest.mark.parametrize(
-    "function", sorted({fid for fid, _ in command_routes().values() if fid})
+    "route,function",
+    [
+        (" ".join(route), fid or "client-local")
+        for route, (fid, _) in sorted(command_routes().items())
+    ],
 )
-def test_each_registered_response_boundary(function, capsys):
+def test_each_registered_response_boundary(route, function, capsys):
+    # These are shared-boundary fixtures, not live adapter executions.
     for result, expected in [
         (
             {"public_ref": "APP-7", "status": "ready", "scope": "checkout"},
@@ -35,7 +40,7 @@ def test_each_registered_response_boundary(function, capsys):
     ]:
         assert emit_response(response(function, result), json_mode=False) == 0
         output = capsys.readouterr()
-        assert expected in output.out
+        assert expected in output.out, route
         assert wrapped_lines(output.out + output.err) <= 350
         assert emit_response(response(function, result), json_mode=True, full=True) == 0
         assert json.loads(capsys.readouterr().out)["result"] == result
@@ -54,6 +59,15 @@ def test_each_registered_response_boundary(function, capsys):
     assert "permission_denied" in output.err
     assert "Ask the project owner" in output.err
     assert "project_required" not in output.err
+    large = {"body": "record\n" * 400}
+    assert emit_response(response(function, large), json_mode=False) == 0
+    output = capsys.readouterr()
+    assert wrapped_lines(output.out + output.err) <= 350, route
+    artifact = Path(re.search(r"Complete reply saved: (.+)", output.out)[1])
+    assert json.loads(artifact.read_text())["response"]["result"] == large
+    artifact.unlink()
+    assert emit_response(response(function, large), json_mode=True, full=True) == 0
+    assert json.loads(capsys.readouterr().out)["result"] == large
 
 
 def test_large_receipt_saves_complete_evidence_and_preserves_instructions(capsys):
