@@ -267,14 +267,14 @@ class TestHCEventRegistryCoverage:
     def test_warn_stale_entries(self, test_db):
         """WARN on stale registry entries."""
         test_db.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            ("StaleEvent", "system", "generic", "cli", "test", "active"),
+            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            ("StaleEvent", "system", "generic", "cli", "test"),
         )
         test_db.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            ("FreshEvent", "system", "generic", "cli", "test", "active"),
+            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            ("FreshEvent", "system", "generic", "cli", "test"),
         )
         insert_event(test_db, event_id="evt-fresh-1", event_name="FreshEvent")
         rec = _run_hc(hc_event_registry_coverage, test_db)
@@ -283,17 +283,16 @@ class TestHCEventRegistryCoverage:
         assert "Stale registry entries" in r.detail
         assert "StaleEvent" in r.detail
 
-    def test_pass_expected_low_cadence_active_without_recent_emission(self, test_db):
-        """Expected low-cadence active entries do not warn solely for no emission."""
+    def test_pass_expected_low_cadence_without_recent_emission(self, test_db):
+        """Expected low-cadence entries do not warn solely for no emission."""
         test_db.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) VALUES (%s, %s, %s, %s, %s, %s)",
+            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description) VALUES (%s, %s, %s, %s, %s)",
             (
                 "BrowserDaemonStartupFailed",
                 "system",
                 "browser_daemon",
                 "browser_qa",
                 "rare failure path",
-                "active",
             ),
         )
         assert _result(_run_hc(hc_event_registry_coverage, test_db)).result == "PASS"
@@ -310,9 +309,9 @@ class TestHCEventRegistryCoverage:
     def test_pass_when_clean(self, test_db):
         """PASS when registry and emissions are clean."""
         test_db.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            ("GoodEvent", "system", "generic", "cli", "test", "active"),
+            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            ("GoodEvent", "system", "generic", "cli", "test"),
         )
         insert_event(test_db, event_id="evt-good-1", event_name="GoodEvent")
         rec = _run_hc(hc_event_registry_coverage, test_db)
@@ -322,14 +321,18 @@ class TestHCEventRegistryCoverage:
 class TestHCEventCallsiteRegistrySync:
     """Tests for HC-event-callsite-registry-sync."""
 
-    def test_pass_no_registry_table(self, test_db):
-        """PASS when event_registry table absent."""
-        test_db.execute("DROP TABLE IF EXISTS event_registry")
-        test_db.commit()
-        rec = _run_hc(hc_event_callsite_registry_sync, test_db)
+    def test_warn_names_a_call_site_missing_from_the_catalog(self, test_db):
+        """WARN names each discovered emitter the code catalog does not list."""
+        discovered = "ItemStatusChanged|a.py\nUncataloguedCallSite|b.py\n"
+        with patch(
+            "yoke_project_checks.check_event_catalog.cmd_registry_discover",
+            return_value=discovered,
+        ):
+            rec = _run_hc(hc_event_callsite_registry_sync, test_db)
         r = _result(rec)
-        assert r.result == "PASS"
-        assert "event_registry table not present" in r.detail
+        assert r.result == "WARN"
+        assert "- UncataloguedCallSite (b.py)" in r.detail
+        assert "ItemStatusChanged" not in r.detail
 
     def test_pass_no_repo_root(self, test_db):
         """PASS when repo root cannot be resolved."""

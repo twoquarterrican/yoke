@@ -184,32 +184,17 @@ class TestSameSessionWorktreeScopeDocs:
         assert "no manual relaunch" in text
 
 
-class TestWorktreeHandoffEmittedRetired:
-    """The retired event surface must be marked retired in event-catalog."""
+class TestRetiredEventNamesLeaveTheCatalog:
+    """A name whose producer is gone has no catalog row, so boot deletes it."""
 
-    def test_event_catalog_marks_handoff_event_retired(self):
-        text = _read(REPO / "docs" / "event-catalog.md")
-        # Find the row that references WorktreeHandoffEmitted
-        line = next(
-            (line for line in text.splitlines() if "WorktreeHandoffEmitted" in line),
-            "",
-        )
-        assert "RETIRED" in line or "retired" in line, line
+    @pytest.mark.parametrize(
+        "name", ["WorktreeHandoffEmitted", "SessionExecutionScopeChanged"]
+    )
+    def test_retired_name_has_no_catalog_row(self, name):
+        from yoke_core.domain.event_catalog import EVENT_CATALOG
 
-    def test_event_catalog_marks_session_execution_scope_event_retired(self):
-        text = _read(REPO / "docs" / "event-catalog.md")
-        # SessionExecutionScopeChanged retired together with the session
-        # envelope; the per-call claim-based lint authority replaced it.
-        # The catalog row stays as a historical entry for visibility.
-        line = next(
-            (
-                line
-                for line in text.splitlines()
-                if "SessionExecutionScopeChanged" in line
-            ),
-            "",
-        )
-        assert "RETIRED" in line or "retired" in line, line
+        assert name not in EVENT_CATALOG
+        assert f"| {name} |" not in _read(REPO / "docs" / "event-catalog.md")
 
 
 class TestPortableOwnerReferences:

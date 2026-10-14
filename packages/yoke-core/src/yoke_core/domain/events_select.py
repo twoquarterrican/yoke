@@ -66,9 +66,7 @@ EVT_COLUMN_NAMES = (
 
 # Registry SELECT columns
 _REG_SELECT_COLS = (
-    "event_name, event_kind, event_type, owner_service, "
-    "description, COALESCE(context_schema,''), severity_default, "
-    "COALESCE(added_in,''), status"
+    "event_name, event_kind, event_type, owner_service, description, severity_default"
 )
 
 

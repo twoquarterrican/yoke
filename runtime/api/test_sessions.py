@@ -267,9 +267,9 @@ EMIT_PATH_TABLES = """
         turn_id TEXT, hook_event_name TEXT, client_timing_id TEXT, envelope TEXT,
         created_at TIMESTAMPTZ NOT NULL
     );
-    CREATE TABLE IF NOT EXISTS event_registry (
-        event_name TEXT PRIMARY KEY, owner_service TEXT, status TEXT
-    );
+    CREATE TABLE IF NOT EXISTS event_registry (event_name TEXT PRIMARY KEY,
+        event_kind TEXT NOT NULL, event_type TEXT NOT NULL, owner_service TEXT NOT NULL,
+        description TEXT NOT NULL, severity_default TEXT NOT NULL DEFAULT 'INFO');
 """
 
 

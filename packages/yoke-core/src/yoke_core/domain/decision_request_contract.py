@@ -75,36 +75,7 @@ DECISION_RECORDED_EVENT = "DecisionRecorded"
 REQUEST_RESOLVED_EVENT = "DecisionRequestResolved"
 REQUEST_WITHDRAWN_EVENT = "DecisionRequestWithdrawn"
 
-DECISION_EVENT_ROWS = (
-    (
-        REQUEST_CREATED_EVENT,
-        "lifecycle",
-        "decision_request",
-        "A typed human decision request was created for a governed subject.",
-    ),
-    (
-        DECISION_RECORDED_EVENT,
-        "lifecycle",
-        "decision_request",
-        "An authorized actor answered a typed human decision request.",
-    ),
-    (
-        REQUEST_RESOLVED_EVENT,
-        "lifecycle",
-        "decision_request",
-        "Recorded decisions satisfied a request's approval policy.",
-    ),
-    (
-        REQUEST_WITHDRAWN_EVENT,
-        "lifecycle",
-        "decision_request",
-        "A pending decision request was withdrawn because its subject ended.",
-    ),
-)
-
-
 __all__ = [
-    "DECISION_EVENT_ROWS",
     "DECISION_RECORDED_EVENT",
     "DECISION_KINDS",
     "DECISION_REQUEST_KINDS",

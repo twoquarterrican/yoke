@@ -83,19 +83,6 @@ def test_batch_resume_continues_leftovers(db_path: str) -> None:
     assert _count(db_path) == 0
 
 
-def test_skips_obsolete_by_default(db_path: str) -> None:
-    _insert(
-        db_path,
-        "obsolete-now",
-        severity="STATUS",
-        days=0,
-        event_name="Gen3I6CleanRoomSmoke",
-    )
-    result = ec.cmd_prune(db_path)
-    assert "obsolete=0" in result
-    assert _count(db_path, "obsolete-now") == 1
-
-
 def test_referenced_expired_info_is_kept(db_path: str) -> None:
     conn = connect_test_db(db_path)
     try:
@@ -174,7 +161,7 @@ def test_restores_preexisting_nonzero_timeout(db_path: str) -> None:
         current_statement_timeout,
         execute_with_deadline,
     )
-    from yoke_core.domain.events_prune import _purged_event_where, _severity_where
+    from yoke_core.domain.events_prune import _severity_where
     from yoke_core.domain.events_prune_report import dry_run_report
 
     conn = connect_test_db(db_path)
@@ -188,10 +175,8 @@ def test_restores_preexisting_nonzero_timeout(db_path: str) -> None:
             conn,
             10,
             False,
-            False,
             deadline=time.monotonic() + 30,
             severity_where=_severity_where,
-            purged_event_where=_purged_event_where,
         )
         assert current_statement_timeout(conn) == incoming
         try:
@@ -213,7 +198,6 @@ def test_prune_cli_kwargs_parses_bounds() -> None:
     kwargs = ec.prune_cli_kwargs(
         [
             "--dry-run",
-            "--purge-obsolete",
             "--batch-size",
             "10",
             "--max-seconds",
@@ -224,7 +208,6 @@ def test_prune_cli_kwargs_parses_bounds() -> None:
     )
     assert kwargs == {
         "dry_run": True,
-        "purge_obsolete": True,
         "batch_size": 10,
         "max_seconds": 5.0,
         "max_batches": 3,

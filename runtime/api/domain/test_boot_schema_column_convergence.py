@@ -94,8 +94,10 @@ _HISTORY_CONVERGED_COLUMNS = frozenset(
 # owning actor, link stamp and refusal record are all born with that table.
 # The Test Machine waiting line (qa_host_waits) is net-new; every waiter,
 # turn and settlement column is born with that table.
+# An ordered history entry retires event_registry's born-with status,
+# added_in and context_schema columns; the code event catalog owns the rest.
 _BORN_WITH_COLUMN_DIGEST = (
-    "9d3dfaf2b677fb2681ef4476e4c044dac135658238e21b257ad31aada02e8d8d"
+    "31f261c0a9f1a8c6de4d15ec6048b44030e16fa7dd69fc6b8cf535dcf9c05ebc"
 )
 
 

@@ -252,13 +252,13 @@ observation batch.
 
 ### Registering New Events
 
-Registry mutation is a source-dev/admin boundary, not an installed external-project recipe. Add new event names to the authoritative registry seed/discovery source in the Yoke checkout, run the registry population flow from that checkout, and commit the resulting `docs/event-catalog.md` update. DB-admin one-offs stay in operator-debug runbooks until a product `yoke events registry ...` writer exists.
+The code event catalog, `packages/yoke-core/src/yoke_core/domain/event_catalog.py`, is the only source of registry membership. Registering a name is a source change in the Yoke checkout: add its row in name order, run `python3 -m yoke_core.domain.event_catalog_render`, and commit the catalog with the regenerated `docs/event-catalog.md`. Every server boot then makes `event_registry` equal the catalog on every universe. Installed external projects do not mutate the registry.
 
 ### Registry Lifecycle
 
-- **active** -- Event is in production use. Emission is allowed.
-- **deprecated** -- Event is phased out. Emission triggers a warning but is not blocked. Consumers should stop depending on it.
-- Removing a registry entry blocks emission entirely (lint hook denies unregistered names).
+- A name is registered exactly while it has a catalog row. There is no status: a registered name may be emitted.
+- Retiring a name means deleting its row in the change that removes its last producer; the next boot deletes the registry row. Historical events keep their rows in the ledger.
+- Emitting an unregistered name still records the event; the registry audit and `HC-event-registry-coverage` report it as rogue, and the `emit-event.sh` lint hook denies it before the call runs.
 
 ---
 

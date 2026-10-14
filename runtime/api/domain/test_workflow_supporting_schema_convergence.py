@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yoke_core.domain.decision_request_contract import DECISION_EVENT_ROWS
+from yoke_core.domain.event_catalog import EVENT_CATALOG
 from yoke_core.domain.migration_restore_point import RESTORE_POINT_ENV
 from yoke_core.domain.qa_catalog_schema import BUILTIN_QA_METHODS
 from yoke_core.domain.schema_common import _column_exists, _table_exists
@@ -55,12 +55,11 @@ def test_boot_converges_supporting_schema_and_code_owned_seeds(
     }
     assert expected_methods <= actual_methods
 
-    expected_events = {str(row[0]) for row in DECISION_EVENT_ROWS}
     actual_events = {
         str(row[0])
         for row in test_db.execute("SELECT event_name FROM event_registry").fetchall()
     }
-    assert expected_events <= actual_events
+    assert actual_events == set(EVENT_CATALOG)
 
     seeded_counts = {
         table: _row_count(test_db, table) for table in ("qa_methods", "event_registry")

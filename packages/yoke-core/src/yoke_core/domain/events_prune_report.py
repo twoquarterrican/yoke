@@ -46,14 +46,11 @@ def dry_run_report(
     conn: Any,
     batch: int,
     has_tool_calls: bool,
-    purge_obsolete: bool,
     *,
     deadline: float,
     severity_where,
-    purged_event_where,
 ) -> str:
     parts: list[str] = []
-    obsolete_note = "obsolete=skipped"
     stopped = False
     prior_timeout = current_statement_timeout(conn)
     try:
@@ -68,17 +65,6 @@ def dry_run_report(
                 restore_timeout=prior_timeout,
             )
             parts.append(f"{severity}={format_bounded_count(count, partial)}")
-        if purge_obsolete:
-            where, params = purged_event_where(conn)
-            count, partial = bounded_event_count(
-                conn,
-                where,
-                params,
-                limit=batch,
-                deadline=deadline,
-                restore_timeout=prior_timeout,
-            )
-            obsolete_note = f"obsolete={format_bounded_count(count, partial)}"
     except StatementBudgetExceeded:
         stopped = True
     finally:
@@ -92,7 +78,7 @@ def dry_run_report(
         )
     counted = ", ".join(parts) if parts else "(timeout before first count)"
     lines = [
-        f"Would prune: {counted}, {obsolete_note}",
+        f"Would prune: {counted}",
         "(STATUS/ERROR/FATAL retained indefinitely; STATUS not counted)",
         f"function_call_ledger: {function_call_ledger.count_expired(conn)} "
         f"rows past {function_call_ledger.LEDGER_TTL_DAYS}d replay TTL",
@@ -116,7 +102,6 @@ def dry_run_report(
 def emit_audit(
     *,
     pruned: dict[str, int],
-    purged_events: int,
     event_deleted: int,
     ledger_pruned: int,
     intents_pruned: int,
@@ -146,8 +131,7 @@ def emit_audit(
             "(pending never age-pruned); "
             f"session_tool_calls rows older than "
             f"{SESSION_TOOL_CALLS_RETENTION_DAYS}d="
-            f"{tool_calls_pruned}; obsolete event rows="
-            f"{purged_events}{stop_note}"
+            f"{tool_calls_pruned}{stop_note}"
         ),
         tables=[
             "events",
@@ -175,8 +159,7 @@ def emit_audit(
             "idempotency-ledger rows past their replay TTL; "
             "terminal workflow-dispatch intents past their TTL, while "
             "pending ambiguous intents are preserved indefinitely; "
-            "session_tool_calls rows past rolling-state retention; "
-            "opt-in named obsolete events with no live producer). STATUS "
+            "session_tool_calls rows past rolling-state retention). STATUS "
             "rows are preserved indefinitely. Event preview/delete uses "
             "indexed created_at selection with LIMIT batches; table-wide "
             "events COUNT is skipped. GovernedMigration wrap is "

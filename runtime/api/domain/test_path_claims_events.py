@@ -53,29 +53,13 @@ _REQUIRED_EVENT_NAMES = (
 
 
 class TestEventRegistration:
-    def test_all_required_events_in_authoritative_metadata(self):
-        from yoke_core.domain.populate_registry_data_authoritative import (
-            AUTHORITATIVE_METADATA,
-        )
+    def test_required_events_are_lifecycle_path_claim_catalog_rows(self):
+        from yoke_core.domain.event_catalog import EVENT_CATALOG
 
-        registered_names = {row[0] for row in AUTHORITATIVE_METADATA}
         for name in _REQUIRED_EVENT_NAMES:
-            assert name in registered_names, (
-                f"{name} missing from AUTHORITATIVE_METADATA"
-            )
-
-    def test_event_payload_shape_is_lifecycle_path_claim(self):
-        from yoke_core.domain.populate_registry_data_authoritative import (
-            AUTHORITATIVE_METADATA,
-        )
-
-        for row in AUTHORITATIVE_METADATA:
-            if row[0] not in _REQUIRED_EVENT_NAMES:
-                continue
-            # (name, kind, event_type, service, severity, description)
-            assert row[1] == "lifecycle"
-            assert row[2] == "path_claim"
-            assert row[5]  # description present
+            spec = EVENT_CATALOG[name]
+            assert (spec.kind, spec.event_type) == ("lifecycle", "path_claim")
+            assert spec.description
 
 
 class TestEmitHelpers:
@@ -110,8 +94,11 @@ class TestEmitHelpers:
             (
                 emit_amended,
                 dict(
-                    claim=sample_claim, amendment_id=1,
-                    amendment_kind="widen", payload={}, reason="r",
+                    claim=sample_claim,
+                    amendment_id=1,
+                    amendment_kind="widen",
+                    payload={},
+                    reason="r",
                 ),
             ),
             (
@@ -143,7 +130,8 @@ class TestRegistrationEmits:
             return "evt-1"
 
         monkeypatch.setattr(
-            path_claims_register, "register_for_item",
+            path_claims_register,
+            "register_for_item",
             path_claims_register.register_for_item,
         )
         # Patch the module-local import inside register_for_item via the
@@ -173,7 +161,8 @@ class TestRegistrationEmits:
     def test_register_emits_blocked_on_overlap(self, conn, monkeypatch):
         from yoke_core.domain import path_claims_events, path_claims_register
         from yoke_core.domain.path_claims import (
-            activate, register as raw_register,
+            activate,
+            register as raw_register,
         )
 
         emitted = []
@@ -183,7 +172,9 @@ class TestRegistrationEmits:
             return "evt-2"
 
         monkeypatch.setattr(
-            path_claims_events, "emit_registration_blocked", _capture_blocked,
+            path_claims_events,
+            "emit_registration_blocked",
+            _capture_blocked,
         )
 
         actor = local_human(conn)
@@ -202,8 +193,11 @@ class TestRegistrationEmits:
         )
         conn.commit()
         cid = raw_register(
-            conn, actor_id=actor, integration_target="main",
-            target_ids=[target], item_id=12101,
+            conn,
+            actor_id=actor,
+            integration_target="main",
+            target_ids=[target],
+            item_id=12101,
         )
         activate(conn, claim_id=cid, base_commit_sha=SNAP)
         with pytest.raises(Exception):
@@ -224,7 +218,8 @@ class TestActivationWrapperEmits:
 
         emitted = []
         monkeypatch.setattr(
-            path_claims_events, "emit_activated",
+            path_claims_events,
+            "emit_activated",
             lambda *, conn, claim, project=None: emitted.append(claim["id"]),
         )
         actor = local_human(conn)
@@ -237,10 +232,15 @@ class TestActivationWrapperEmits:
         )
         conn.commit()
         cid = raw_register(
-            conn, actor_id=actor, integration_target="main",
-            target_ids=[target], item_id=12201,
+            conn,
+            actor_id=actor,
+            integration_target="main",
+            target_ids=[target],
+            item_id=12201,
         )
         path_claims_register.activate_with_events(
-            conn, claim_id=cid, base_commit_sha=SNAP,
+            conn,
+            claim_id=cid,
+            base_commit_sha=SNAP,
         )
         assert emitted == [cid]

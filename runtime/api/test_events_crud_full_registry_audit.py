@@ -7,38 +7,44 @@ from unittest.mock import patch
 import pytest
 
 from yoke_core.domain import events_crud
-from runtime.api.events_crud_full_test_helpers import (  # noqa: F401
+from runtime.api.events_crud_full_test_helpers import (
     _THIRTY_DAYS_AGO,
     _insert_event_direct,
-    db_path,
-    empty_db_path,
+    db_path as db_path,
+    empty_db_path as empty_db_path,
 )
 from runtime.api.fixtures.file_test_db import connect_test_db
 
 
+def _seed_registry(db_path: str, name: str, description: str) -> None:
+    conn = connect_test_db(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO event_registry "
+            "(event_name, event_kind, event_type, owner_service, description) "
+            "VALUES (%s, 'lifecycle', 'test', 'cli', %s)",
+            (name, description),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 class TestRegistryAudit:
     def test_cmd_registry_audit_reports_all_categories(self, db_path):
+        _seed_registry(db_path, "StaleEvent", "Never emitted")
+        _seed_registry(db_path, "SharedEvent", "Emitted and discovered")
         conn = connect_test_db(db_path)
-        conn.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) "
-            "VALUES ('StaleEvent', 'lifecycle', 'test', 'cli', 'Never emitted', 'active')"
-        )
-        conn.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) "
-            "VALUES ('DepActive', 'lifecycle', 'test', 'cli', 'Deprecated active', 'deprecated')"
-        )
-        conn.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) "
-            "VALUES ('DepHistorical', 'lifecycle', 'test', 'cli', 'Deprecated historical', 'deprecated')"
-        )
         _insert_event_direct(conn, event_name="RogueEvent")
-        _insert_event_direct(conn, event_name="DepActive")
-        _insert_event_direct(conn, event_name="DepHistorical")
+        _insert_event_direct(conn, event_name="SharedEvent")
         conn.commit()
         conn.close()
 
-        discovered = "DepActive|scripts/emit.sh\nUnregisteredEvent|skills/flow.md"
-        with patch("yoke_core.domain.events_crud.cmd_registry_discover", return_value=discovered):
+        discovered = "SharedEvent|scripts/emit.sh\nUnregisteredEvent|skills/flow.md"
+        with patch(
+            "yoke_core.domain.events_crud.cmd_registry_discover",
+            return_value=discovered,
+        ):
             result = events_crud.cmd_registry_audit(db_path)
 
         assert "### Stale Entries" in result
@@ -47,18 +53,18 @@ class TestRegistryAudit:
         assert "- RogueEvent" in result
         assert "### Unregistered Call Sites" in result
         assert "- UnregisteredEvent (file: skills/flow.md)" in result
-        assert "### Deprecated With Active Call Sites" in result
-        assert "- DepActive (" in result
-        assert "### Deprecated Historical Only (no active call sites)" in result
-        assert "- DepHistorical (" in result
-        assert "1 stale, 1 rogue, 1 unregistered, 1 deprecated-active, 1 deprecated-historical" in result
+        assert "Deprecated" not in result
+        assert result.endswith("### Summary\n1 stale, 1 rogue, 1 unregistered")
 
     def test_cmd_registry_audit_missing_tables_raises(self, empty_db_path):
         with pytest.raises(RuntimeError, match="required tables missing"):
             events_crud.cmd_registry_audit(empty_db_path)
 
     def test_cmd_registry_audit_tolerates_discover_failure(self, db_path):
-        with patch("yoke_core.domain.events_crud.cmd_registry_discover", side_effect=RuntimeError("boom")):
+        with patch(
+            "yoke_core.domain.events_crud.cmd_registry_discover",
+            side_effect=RuntimeError("boom"),
+        ):
             result = events_crud.cmd_registry_audit(db_path)
 
         assert "### Unregistered Call Sites" in result
@@ -68,14 +74,14 @@ class TestRegistryAudit:
         """Registry entries with no recent events are stale."""
         test_db.execute("DELETE FROM event_registry")
         test_db.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) "
-            "VALUES ('StaleEvent', 'lifecycle', 'test', 'cli', 'Never emitted', 'active')"
+            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description) "
+            "VALUES ('StaleEvent', 'lifecycle', 'test', 'cli', 'Never emitted')"
         )
         test_db.commit()
 
         stale = test_db.execute(
             "SELECT r.event_name FROM event_registry r "
-            "WHERE r.status='active' AND r.event_name NOT IN ("
+            "WHERE r.event_name NOT IN ("
             "  SELECT DISTINCT event_name FROM events "
             "  WHERE created_at >= %s)",
             (_THIRTY_DAYS_AGO,),
@@ -98,8 +104,8 @@ class TestRegistryAudit:
         """When registry and events match, no issues."""
         test_db.execute("DELETE FROM event_registry")
         test_db.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description, status) "
-            "VALUES ('MatchedEvent', 'lifecycle', 'test', 'cli', 'Matched', 'active')"
+            "INSERT INTO event_registry (event_name, event_kind, event_type, owner_service, description) "
+            "VALUES ('MatchedEvent', 'lifecycle', 'test', 'cli', 'Matched')"
         )
         test_db.commit()
         _insert_event_direct(test_db, event_name="MatchedEvent")
@@ -107,7 +113,7 @@ class TestRegistryAudit:
         # Stale: registered but no recent emit
         stale = test_db.execute(
             "SELECT r.event_name FROM event_registry r "
-            "WHERE r.status='active' AND r.event_name NOT IN ("
+            "WHERE r.event_name NOT IN ("
             "  SELECT DISTINCT event_name FROM events "
             "  WHERE created_at >= %s)",
             (_THIRTY_DAYS_AGO,),
@@ -118,48 +124,21 @@ class TestRegistryAudit:
 
 class TestRegistryDiff:
     def test_cmd_registry_diff_reports_additions_and_removals(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path,
-            name="SharedEvent",
-            kind="lifecycle",
-            event_type="test",
-            service="cli",
-            description="shared",
-        )
-        events_crud.cmd_registry_add(
-            db_path,
-            name="OnlyInRegistry",
-            kind="lifecycle",
-            event_type="test",
-            service="cli",
-            description="registry only",
-        )
+        _seed_registry(db_path, "SharedEvent", "shared")
+        _seed_registry(db_path, "OnlyInRegistry", "registry only")
 
         discovered = "SharedEvent|scripts/shared.sh\nOnlyInCode|scripts/new.sh"
-        with patch("yoke_core.domain.events_crud.cmd_registry_discover", return_value=discovered):
+        with patch(
+            "yoke_core.domain.events_crud.cmd_registry_discover",
+            return_value=discovered,
+        ):
             result = events_crud.cmd_registry_diff(db_path)
 
         assert "+ OnlyInCode (discovered in scripts/new.sh)" in result
         assert "- OnlyInRegistry (in registry, no call site found)" in result
 
-    def test_cmd_registry_diff_verbose_reports_equals_and_deprecated(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path,
-            name="SharedEvent",
-            kind="lifecycle",
-            event_type="test",
-            service="cli",
-            description="shared",
-        )
-        events_crud.cmd_registry_add(
-            db_path,
-            name="DeprecatedEvent",
-            kind="lifecycle",
-            event_type="test",
-            service="cli",
-            description="deprecated",
-        )
-        events_crud.cmd_registry_deprecate(db_path, "DeprecatedEvent")
+    def test_cmd_registry_diff_verbose_reports_equals(self, db_path):
+        _seed_registry(db_path, "SharedEvent", "shared")
 
         with patch(
             "yoke_core.domain.events_crud.cmd_registry_discover",
@@ -169,7 +148,6 @@ class TestRegistryDiff:
 
         assert result.startswith("Registry is in sync with codebase. 0 differences.")
         assert "= SharedEvent" in result
-        assert "~ DeprecatedEvent (deprecated, no call site -- expected)" in result
 
     def test_cmd_registry_diff_missing_table_raises(self, empty_db_path):
         with pytest.raises(RuntimeError, match="event_registry table not found"):

@@ -34,18 +34,18 @@ def test_interrupted_birth_completes_on_next_boot(monkeypatch, capsys) -> None:
     fake_uvicorn.run = lambda *a, **k: served.append(True)  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "uvicorn", fake_uvicorn)
 
-    real_populate = environment_bootstrap.populate_event_registry
+    real_verify = environment_bootstrap.verify_bootstrap
     fail = {"on": True}
 
-    def _flaky_populate(*args, **kwargs):  # noqa: ANN001
+    def _flaky_verify(*args, **kwargs):  # noqa: ANN001
         if fail["on"]:
             raise RuntimeError("birth interrupted")
-        return real_populate(*args, **kwargs)
+        return real_verify(*args, **kwargs)
 
     monkeypatch.setattr(
         environment_bootstrap,
-        "populate_event_registry",
-        _flaky_populate,
+        "verify_bootstrap",
+        _flaky_verify,
     )
     try:
         with pytest.raises(RuntimeError, match="birth interrupted"):

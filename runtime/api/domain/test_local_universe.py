@@ -291,13 +291,11 @@ def test_run_bootstrap_seeds_human_actor_with_injected_label(tmp_path, monkeypat
     """The REAL init chain (no mocking of the actor step) honors the label
     injection the birth path pins for a fresh universe."""
     from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
-    from yoke_core.api.repo_root import find_repo_root
 
     monkeypatch.setenv(actors.LOCAL_HUMAN_NAME_ENV, "composition-owner")
-    repo_root = find_repo_root(Path(__file__))
 
     def bootstrap():
-        environment_bootstrap.run_bootstrap(repo_root=repo_root, emit=lambda _l: None)
+        environment_bootstrap.run_bootstrap(emit=lambda _l: None)
 
     with init_test_db(tmp_path, apply_schema=bootstrap) as db_path:
         conn = connect_test_db(db_path)

@@ -267,28 +267,8 @@ class TestRequirementUpdate:
         assert detail["new_value"] == "prod"
         assert detail["requirement_id"] == req_id
 
-    def test_update_registered_in_event_registry(self, db_path: str) -> None:
-        """Event registration: QARequirementUpdated must appear in the
-        curated events table that populate_registry ensures during its run."""
-        from yoke_core.domain import events_crud, populate_registry
+    def test_update_has_an_event_catalog_row(self) -> None:
+        """QARequirementUpdated is a catalog row, so every boot registers it."""
+        from yoke_core.domain.event_catalog import EVENT_CATALOG
 
-        events_crud.cmd_init(db_path=db_path)
-        populate_registry._register_curated_events(db_path=db_path)
-
-        conn = connect_test_db(db_path)
-        row = conn.execute(
-            "SELECT event_name FROM event_registry WHERE event_name = 'QARequirementUpdated'"
-        ).fetchone()
-        conn.close()
-        assert row is not None, (
-            "QARequirementUpdated must be registered in event_registry. "
-            "Without registration the emit call silently drops events."
-        )
-
-    def test_update_in_curated_events_table(self) -> None:
-        """Event registration: QARequirementUpdated is declared in the
-        curated events table in populate_registry (the authoritative list)."""
-        from yoke_core.domain.populate_registry import CURATED_EVENTS
-
-        names = {entry[0] for entry in CURATED_EVENTS}
-        assert "QARequirementUpdated" in names
+        assert "QARequirementUpdated" in EVENT_CATALOG

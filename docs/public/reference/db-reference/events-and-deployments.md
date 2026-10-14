@@ -47,7 +47,7 @@ Engine identity is actor-only. Historical JSON envelopes may retain a null human
 
 **Write-side severity filtering:** Before inserting, events are checked against the `severity_config` table. Events below the configured minimum severity for their `(event_name, source_type)` pair are silently dropped without error. The acknowledged anonymous frontend collector bypasses this optional filter; retention still applies.
 
-**Retention (prune):** DEBUG=1d, INFO=30d, WARN=90d, STATUS/ERROR/FATAL=forever. Event preview and delete are LIMIT-batched (`--batch-size`, default 1000). LIMIT caps matching rows, not scanned rows or query duration; the monotonic `--max-seconds` deadline (default 30) is checked between statements, and each event count/delete/leftover probe sets `statement_timeout` to the remaining budget so a sparse scan, `ORDER BY`, or leftover peek cannot outlive the pass. That timeout is event-only: after each event probe it is restored to the incoming `SHOW statement_timeout` (not forced to zero) before ledger, dispatch-intent, and `session_tool_calls` helpers, which keep their existing retention contracts. Optionally batch-capped (`--max-batches`); counts are exact or labeled `>=N (partial)`. A statement timeout is a graceful stop: already-committed batches stay. Referenced `event_id` rows (path-audit tables) are kept on every event delete path. Obsolete-name cleanup is opt-in (`--purge-obsolete`). Live invocation: `python3 -m yoke_core.cli.db_router events prune [--dry-run]`. Rerun after `stopped: batch/time budget`. No automatic prune timer lives in this repo; do not invent a parallel scheduler. DEBUG is the on-demand-capture tier (dropped at the default INFO write floor; enable by lowering `severity_config` to DEBUG), so it carries the shortest retention.
+**Retention (prune):** DEBUG=1d, INFO=30d, WARN=90d, STATUS/ERROR/FATAL=forever. Event preview and delete are LIMIT-batched (`--batch-size`, default 1000). LIMIT caps matching rows, not scanned rows or query duration; the monotonic `--max-seconds` deadline (default 30) is checked between statements, and each event count/delete/leftover probe sets `statement_timeout` to the remaining budget so a sparse scan, `ORDER BY`, or leftover peek cannot outlive the pass. That timeout is event-only: after each event probe it is restored to the incoming `SHOW statement_timeout` (not forced to zero) before ledger, dispatch-intent, and `session_tool_calls` helpers, which keep their existing retention contracts. Optionally batch-capped (`--max-batches`); counts are exact or labeled `>=N (partial)`. A statement timeout is a graceful stop: already-committed batches stay. Referenced `event_id` rows (path-audit tables) are kept on every event delete path. Live invocation: `python3 -m yoke_core.cli.db_router events prune [--dry-run]`. Rerun after `stopped: batch/time budget`. No automatic prune timer lives in this repo; do not invent a parallel scheduler. DEBUG is the on-demand-capture tier (dropped at the default INFO write floor; enable by lowering `severity_config` to DEBUG), so it carries the shortest retention.
 
 ## Table: severity_config
 
@@ -74,15 +74,12 @@ event_kind TEXT NOT NULL -- taxonomy tier 1 (e.g., 'system', 'domain')
 event_type TEXT NOT NULL -- taxonomy tier 2 (e.g., 'tool_call', 'session')
 owner_service TEXT NOT NULL -- emitting service (e.g., 'yoke_core.domain.observe')
 description TEXT NOT NULL -- human-readable description
-context_schema TEXT -- optional JSON schema for context payload
 severity_default TEXT NOT NULL DEFAULT 'INFO' -- default severity level
-added_in TEXT -- PREFIX-N or version when added
-status TEXT NOT NULL DEFAULT 'active' -- 'active' | 'deprecated'
 ```
 
-**Idempotent writes:** `registry add` uses `ON CONFLICT DO NOTHING` semantics — duplicate `event_name` inserts silently succeed (exit 0, no row change). This makes `python3 -m yoke_core.domain.populate_registry` safe to re-run.
+**Source of truth:** the rows come from the code event catalog, `yoke_core.domain.event_catalog`. Every server boot makes `event_registry` equal that table: it inserts missing names, rewrites drifted metadata, and deletes names the catalog no longer lists. A second boot writes nothing. The table has no status column; a name with no producer is deleted from the catalog, not marked. Registry rows are not edited by hand or through a CLI.
 
-**Lifecycle:** Events start as `active`. Use `registry deprecate <name>` to mark events no longer emitted. The `registry audit` subcommand reports stale active entries (registered but not emitted in 30 days) and rogue events (emitted but not registered).
+**Drift:** emitting a name the catalog does not list still records the event. The `registry audit` subcommand and the `HC-event-registry-coverage` doctor check report it as rogue (emitted but not registered), and report stale entries (registered but not emitted in 30 days, apart from expected low-cadence events).
 
 ## Deployment run authority
 

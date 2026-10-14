@@ -1,139 +1,76 @@
-"""CLI/cmd tests: event_registry add/get/list/update/deprecate/delete/count."""
+"""CLI/cmd tests: event_registry get/list/count read helpers."""
 
 from __future__ import annotations
 
 import pytest
 
 from yoke_core.domain import events_crud
-from runtime.api.events_crud_full_test_helpers import db_path  # noqa: F401
+from runtime.api.events_crud_full_test_helpers import db_path as db_path
 from runtime.api.fixtures.file_test_db import connect_test_db
 
 
+def _seed_registry(
+    db_path: str,
+    name: str,
+    *,
+    kind: str = "lifecycle",
+    event_type: str = "t",
+    service: str = "cli",
+    description: str = "d",
+) -> None:
+    conn = connect_test_db(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO event_registry "
+            "(event_name, event_kind, event_type, owner_service, description) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            (name, kind, event_type, service, description),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 class TestRegistryCmds:
-    def test_add_and_get(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="TestEvt", kind="lifecycle", event_type="test",
-            service="cli", description="Test event"
+    def test_get_returns_pipe_delimited_row(self, db_path):
+        _seed_registry(
+            db_path,
+            "TestEvt",
+            kind="lifecycle",
+            event_type="test",
+            service="cli",
+            description="Test event",
         )
         result = events_crud.cmd_registry_get(db_path, "TestEvt")
-        assert "TestEvt" in result
-        assert "lifecycle" in result
-
-    def test_add_with_context_schema(self, db_path):
-        # ported from test-event-registry.sh A.11 — verify the
-        # context_schema JSON payload round-trips through cmd_registry_add.
-        schema_json = '{"tool_name": "string"}'
-        events_crud.cmd_registry_add(
-            db_path, name="WithSchema", kind="system", event_type="test",
-            service="cli", description="Event with schema",
-            context_schema=schema_json,
-        )
-        conn = connect_test_db(db_path)
-        try:
-            row = conn.execute(
-                "SELECT context_schema FROM event_registry WHERE event_name='WithSchema'"
-            ).fetchone()
-        finally:
-            conn.close()
-        assert row is not None
-        assert row[0] == schema_json
+        assert result == "TestEvt|lifecycle|test|cli|Test event|INFO"
 
     def test_get_not_found(self, db_path):
         with pytest.raises(LookupError, match="not found"):
             events_crud.cmd_registry_get(db_path, "Missing")
 
     def test_list(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="A", kind="lifecycle", event_type="t",
-            service="cli", description="a"
-        )
-        events_crud.cmd_registry_add(
-            db_path, name="B", kind="lifecycle", event_type="t",
-            service="cli", description="b"
-        )
+        _seed_registry(db_path, "A", description="a")
+        _seed_registry(db_path, "B", description="b")
         result = events_crud.cmd_registry_list(db_path)
-        assert "A" in result
-        assert "B" in result
+        assert result.splitlines() == [
+            "A|lifecycle|t|cli|a|INFO",
+            "B|lifecycle|t|cli|b|INFO",
+        ]
 
-    def test_list_with_status_filter(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="Active1", kind="lifecycle", event_type="t",
-            service="cli", description="a"
-        )
-        events_crud.cmd_registry_deprecate(db_path, "Active1")
+    def test_list_with_kind_and_service_filters(self, db_path):
+        _seed_registry(db_path, "Life", kind="lifecycle", service="cli")
+        _seed_registry(db_path, "Sys", kind="system", service="cli")
+        _seed_registry(db_path, "SysApi", kind="system", service="api")
 
-        active_list = events_crud.cmd_registry_list(db_path, status="active")
-        assert "Active1" not in active_list
+        by_kind = events_crud.cmd_registry_list(db_path, kind="system")
+        assert "Life" not in by_kind
+        assert "Sys|" in by_kind and "SysApi|" in by_kind
 
-        dep_list = events_crud.cmd_registry_list(db_path, status="deprecated")
-        assert "Active1" in dep_list
-
-    def test_update(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="UpdEvt", kind="lifecycle", event_type="t",
-            service="cli", description="original"
-        )
-        events_crud.cmd_registry_update(db_path, "UpdEvt", description="updated")
-
-        result = events_crud.cmd_registry_get(db_path, "UpdEvt")
-        assert "updated" in result
-
-    def test_update_not_found(self, db_path):
-        with pytest.raises(LookupError):
-            events_crud.cmd_registry_update(db_path, "Missing", description="x")
-
-    def test_update_no_fields(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="Evt", kind="lifecycle", event_type="t",
-            service="cli", description="d"
-        )
-        with pytest.raises(ValueError, match="no fields to update"):
-            events_crud.cmd_registry_update(db_path, "Evt")
-
-    def test_deprecate(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="DepEvt", kind="lifecycle", event_type="t",
-            service="cli", description="d"
-        )
-        events_crud.cmd_registry_deprecate(db_path, "DepEvt")
-
-        result = events_crud.cmd_registry_get(db_path, "DepEvt")
-        assert "deprecated" in result
-
-    def test_deprecate_not_found(self, db_path):
-        with pytest.raises(LookupError):
-            events_crud.cmd_registry_deprecate(db_path, "Missing")
-
-    def test_delete(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="DelEvt", kind="lifecycle", event_type="t",
-            service="cli", description="d"
-        )
-        events_crud.cmd_registry_delete(db_path, "DelEvt")
-
-        with pytest.raises(LookupError):
-            events_crud.cmd_registry_get(db_path, "DelEvt")
-
-    def test_delete_not_found(self, db_path):
-        with pytest.raises(LookupError):
-            events_crud.cmd_registry_delete(db_path, "Missing")
+        by_both = events_crud.cmd_registry_list(db_path, kind="system", service="api")
+        assert by_both.splitlines() == ["SysApi|system|t|api|d|INFO"]
 
     def test_count(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="A", kind="l", event_type="t", service="s", description="d"
-        )
-        events_crud.cmd_registry_add(
-            db_path, name="B", kind="l", event_type="t", service="s", description="d"
-        )
+        assert events_crud.cmd_registry_count(db_path) == 0
+        _seed_registry(db_path, "A")
+        _seed_registry(db_path, "B")
         assert events_crud.cmd_registry_count(db_path) == 2
-        assert events_crud.cmd_registry_count(db_path, "active") == 2
-        assert events_crud.cmd_registry_count(db_path, "deprecated") == 0
-
-    def test_add_idempotent(self, db_path):
-        events_crud.cmd_registry_add(
-            db_path, name="Evt", kind="l", event_type="t", service="s", description="d"
-        )
-        events_crud.cmd_registry_add(
-            db_path, name="Evt", kind="l", event_type="t", service="s", description="d"
-        )
-        assert events_crud.cmd_registry_count(db_path) == 1

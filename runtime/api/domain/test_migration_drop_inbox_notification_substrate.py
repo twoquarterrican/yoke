@@ -31,8 +31,7 @@ def _entry():
     """Load the entry the way the applier does: by path, not by import name."""
     directory = history_dir(migration_history_package)
     match = next(
-        record for record in ordered_entries(directory)
-        if record.name == ENTRY_NAME
+        record for record in ordered_entries(directory) if record.name == ENTRY_NAME
     )
     return load_migration_module(directory / f"{match.name}.py", match.name)
 
@@ -70,8 +69,7 @@ def _substrate_shape() -> sqlite3.Connection:
         CREATE INDEX idx_addressed_events_actor_unread
             ON addressed_event_deliveries(actor_id, read_at, created_at);
         CREATE TABLE event_registry (
-            event_name TEXT PRIMARY KEY,
-            status TEXT NOT NULL DEFAULT 'active'
+            event_name TEXT PRIMARY KEY
         );
         """
     )
@@ -83,9 +81,7 @@ def _substrate_shape() -> sqlite3.Connection:
         "INSERT INTO decision_requests (id, kind, subject_key, blocking) "
         "VALUES (2, 'qa_needs_review', '44', 1)"
     )
-    conn.execute(
-        "INSERT INTO decision_request_role_authorities VALUES (1, 'owner')"
-    )
+    conn.execute("INSERT INTO decision_request_role_authorities VALUES (1, 'owner')")
     conn.execute("INSERT INTO decision_request_actor_authorities VALUES (1, 3)")
     conn.execute(
         "INSERT INTO addressed_event_deliveries "
@@ -112,9 +108,9 @@ def test_the_retired_kind_leaves_no_row_and_no_orphan_authority():
 
     entry.apply(conn)
 
-    assert [row[0] for row in conn.execute(
-        "SELECT kind FROM decision_requests ORDER BY id"
-    )] == ["qa_needs_review"]
+    assert [
+        row[0] for row in conn.execute("SELECT kind FROM decision_requests ORDER BY id")
+    ] == ["qa_needs_review"]
     for table in (
         "decision_request_role_authorities",
         "decision_request_actor_authorities",
@@ -127,9 +123,12 @@ def test_only_the_events_that_fed_the_deliveries_are_retired():
 
     entry.apply(conn)
 
-    assert [row[0] for row in conn.execute(
-        "SELECT event_name FROM event_registry ORDER BY event_name"
-    )] == ["DecisionRequestResolved"]
+    assert [
+        row[0]
+        for row in conn.execute(
+            "SELECT event_name FROM event_registry ORDER BY event_name"
+        )
+    ] == ["DecisionRequestResolved"]
 
 
 def test_applying_twice_converges_to_the_same_shape():

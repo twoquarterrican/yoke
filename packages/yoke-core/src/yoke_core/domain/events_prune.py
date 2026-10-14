@@ -14,7 +14,6 @@ from typing import Any, Optional
 
 from yoke_core.domain.db_helpers import connect, query_scalar
 from yoke_core.domain import (
-    db_backend,
     function_call_ledger,
     github_workflow_dispatch_intents,
 )
@@ -37,9 +36,6 @@ from yoke_core.domain.events_prune_report import (
 )
 from yoke_core.domain.schema_common import _table_exists
 from yoke_core.domain.time_sql import now_sql
-from yoke_core.domain.populate_registry_data_authoritative import (
-    PURGED_EVENT_NAMES,
-)
 
 
 def prune_cli_kwargs(argv: Optional[list[str]] = None) -> dict[str, Any]:
@@ -47,7 +43,6 @@ def prune_cli_kwargs(argv: Optional[list[str]] = None) -> dict[str, Any]:
     args = list(argv or [])
     kwargs: dict[str, Any] = {
         "dry_run": "--dry-run" in args,
-        "purge_obsolete": "--purge-obsolete" in args,
     }
 
     def _value(flag: str) -> Optional[str]:
@@ -70,19 +65,6 @@ def prune_cli_kwargs(argv: Optional[list[str]] = None) -> dict[str, Any]:
     return kwargs
 
 
-def _purged_event_where(conn: Any) -> tuple[str, tuple[str, ...]]:
-    """Predicate for opt-in obsolete-name cleanup, with reference guards."""
-    placeholder = "%s" if db_backend.connection_is_postgres(conn) else "?"
-    names = tuple(PURGED_EVENT_NAMES)
-    where = (
-        "event_name IN ("
-        + ", ".join(placeholder for _ in names)
-        + ")"
-        + reference_exclusion_sql(conn)
-    )
-    return where, names
-
-
 def _severity_where(conn: Any, severity: str, days: int) -> str:
     if severity not in EVENT_RETENTION_DAYS:
         raise ValueError(f"unknown event severity {severity!r}")
@@ -100,7 +82,6 @@ def cmd_prune(
     batch_size: int = EVENT_PRUNE_BATCH_SIZE,
     max_seconds: float = EVENT_PRUNE_MAX_SECONDS,
     max_batches: int | None = None,
-    purge_obsolete: bool = False,
 ) -> str:
     """Per-severity event retention (+ existing rolling-state TTLs).
 
@@ -112,7 +93,7 @@ def cmd_prune(
     role/session statement_timeout.
     STATUS/ERROR/FATAL
     are never age-pruned. Referenced event_id rows are kept on every
-    event delete path. Obsolete-name purge is opt-in.
+    event delete path.
     """
     batch = coerce_batch_size(batch_size)
     if max_seconds <= 0:
@@ -128,10 +109,8 @@ def cmd_prune(
                 conn,
                 batch,
                 has_tool_calls,
-                purge_obsolete,
                 deadline=deadline,
                 severity_where=_severity_where,
-                purged_event_where=_purged_event_where,
             )
         return _run_prune(
             conn,
@@ -139,7 +118,6 @@ def cmd_prune(
             deadline=deadline,
             max_batches=max_batches,
             has_tool_calls=has_tool_calls,
-            purge_obsolete=purge_obsolete,
         )
     finally:
         conn.close()
@@ -152,7 +130,6 @@ def _run_prune(
     deadline: float,
     max_batches: int | None,
     has_tool_calls: bool,
-    purge_obsolete: bool,
 ) -> str:
     batches_left: list[int | None] = [max_batches]
     prior_timeout = current_statement_timeout(conn)
@@ -179,19 +156,6 @@ def _run_prune(
         )
         pruned[severity] = deleted
         more_remaining = more_remaining or remaining
-    purged_events = 0
-    if purge_obsolete:
-        where, params = _purged_event_where(conn)
-        deleted, remaining = prune_matching_events(
-            conn,
-            where,
-            params,
-            batch_size=batch,
-            deadline=deadline,
-            batches_left=batches_left,
-        )
-        purged_events = deleted
-        more_remaining = more_remaining or remaining
     restore_event_prune_statement_timeout(conn, prior_timeout)
     ledger_pruned = function_call_ledger.prune_expired(conn)
     intents_pruned = github_workflow_dispatch_intents.prune_expired(conn)
@@ -202,13 +166,13 @@ def _run_prune(
             f"WHERE started_at < {now_sql(offset_days=-SESSION_TOOL_CALLS_RETENTION_DAYS)}"
         ).rowcount
     conn.commit()
-    event_deleted = sum(pruned.values()) + purged_events
+    event_deleted = sum(pruned.values())
     lines = [
         "Pruned: "
         + ", ".join(f"{name}={pruned[name]}" for name in pruned)
         + f", function_call_ledger={ledger_pruned}, "
         f"github_workflow_dispatch_intents={intents_pruned}, "
-        f"session_tool_calls={tool_calls_pruned}, obsolete={purged_events}"
+        f"session_tool_calls={tool_calls_pruned}"
     ]
     if more_remaining:
         lines.append(
@@ -217,7 +181,6 @@ def _run_prune(
         )
     emit_audit(
         pruned=pruned,
-        purged_events=purged_events,
         event_deleted=event_deleted,
         ledger_pruned=ledger_pruned,
         intents_pruned=intents_pruned,

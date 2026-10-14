@@ -105,7 +105,7 @@ def _registry_warning(event_name: str) -> tuple[Optional[str], bool]:
         conn = db_backend.connect()
         p = "%s" if db_backend.connection_is_postgres(conn) else "?"
         row = conn.execute(
-            f"SELECT status FROM event_registry WHERE event_name = {p}",
+            f"SELECT 1 FROM event_registry WHERE event_name = {p}",
             (event_name,),
         ).fetchone()
     except db_backend.operational_error_types():
@@ -116,15 +116,12 @@ def _registry_warning(event_name: str) -> tuple[Optional[str], bool]:
             conn.close()
     if not row:
         return (
-            f"WARN: event emitter: event '{event_name}' is not registered in event_registry. "
-            "Run python3 -m yoke_core.domain.populate_registry or add manually.",
+            f"WARN: event emitter: event '{event_name}' is not registered in "
+            "event_registry; it is recorded and the registry audit reports it as "
+            "rogue. Register it from a Yoke source checkout: add its row to "
+            "packages/yoke-core/src/yoke_core/domain/event_catalog.py and run "
+            "python3 -m yoke_core.domain.event_catalog_render.",
             True,
-        )
-    status = row[0]
-    if status == "deprecated":
-        return (
-            f"WARN: event emitter: event '{event_name}' is deprecated in the registry",
-            False,
         )
     return None, False
 

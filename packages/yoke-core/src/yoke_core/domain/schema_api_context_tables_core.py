@@ -300,14 +300,13 @@ CORE_TABLES: dict[str, dict] = {
             ("event_type", "TEXT"),
             ("owner_service", "TEXT"),
             ("description", "TEXT"),
-            ("context_schema", "TEXT"),
             ("severity_default", "TEXT"),
-            ("added_in", "TEXT"),
-            ("status", "TEXT"),
         ],
         "notes": (
-            "Event catalog keyed by `event_name`. There is NO `name` "
-            "column on this table; use event_name for joins and lookups."
+            "Registered event names keyed by `event_name`; every boot makes "
+            "the rows equal the code catalog in "
+            "`yoke_core.domain.event_catalog`. There is NO `name` column on "
+            "this table; use event_name for joins and lookups."
         ),
     },
     "item_sections": {

@@ -1,6 +1,6 @@
 """``HarnessSessionResumed`` event constant, payload, and emit helper.
 
-Sibling to :mod:`sessions_analytics_core` (registry constants live there)
+Sibling to :mod:`sessions_analytics_core` (session event constants live there)
 and :mod:`scheduler_events` (sibling emit helpers for adjacent
 reactivation events). The dedicated event surfaces the resumption
 marker — a single ``event_name`` predicate is enough to
@@ -20,53 +20,11 @@ import json
 import logging
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
-from yoke_core.domain import db_backend
-from yoke_core.domain.schema_common import _table_exists
 
 _logger = logging.getLogger(__name__)
 
 
 EVENT_HARNESS_SESSION_RESUMED = "HarnessSessionResumed"
-
-
-_REGISTRY_ROW = (
-    EVENT_HARNESS_SESSION_RESUMED,
-    "system",
-    "session_lifecycle",
-    "yoke_core.domain.sessions_lifecycle_resumption_emit",
-    (
-        "Emitted on every register_session reactivation — the moment a "
-        "session_id that legitimately spans episodes starts a new one. A "
-        "claim-free reactivation carries released_claim_count=0; the "
-        "claim-shaped fields describe the prior release_reason="
-        "'session_ended' claims when there were any. Carries session_id, "
-        "prior_release_reason, released_claim_count, reacquired_count, "
-        "conflict_count, claim_details with per-target episode_scope tags "
-        "(inherited|reacquired|conflict). Queryable with a single "
-        "event_name predicate so --current-episode boundary resolution "
-        "is O(1)."
-    ),
-    "INFO",
-)
-
-
-def ensure_registry_entry(conn: Any) -> None:
-    """Insert the ``HarnessSessionResumed`` registry row if absent."""
-    try:
-        if not _table_exists(conn, "event_registry"):
-            return
-        name, kind, etype, service, desc, severity = _REGISTRY_ROW
-        conn.execute(
-            "INSERT INTO event_registry ("
-            "event_name, event_kind, event_type, owner_service, "
-            "description, context_schema, severity_default, status"
-            ") VALUES (%s, %s, %s, %s, %s, NULL, %s, 'active') "
-            "ON CONFLICT(event_name) DO NOTHING",
-            (name, kind, etype, service, desc, severity),
-        )
-        conn.commit()
-    except db_backend.database_error_types(conn):
-        return
 
 
 def build_claim_details(
@@ -147,21 +105,7 @@ def emit_session_resumed(
     audit consumers can rely on them.
     """
     try:
-        from .db_helpers import connect
         from .events import emit_event
-
-        try:
-            seed_conn = connect()
-            try:
-                ensure_registry_entry(seed_conn)
-            finally:
-                seed_conn.close()
-        except Exception as seed_exc:
-            _logger.debug(
-                "%s registry seed skipped: %s",
-                EVENT_HARNESS_SESSION_RESUMED,
-                seed_exc,
-            )
 
         context: Dict[str, Any] = {
             "session_id": session_id,
@@ -197,5 +141,4 @@ __all__ = [
     "EVENT_HARNESS_SESSION_RESUMED",
     "build_claim_details",
     "emit_session_resumed",
-    "ensure_registry_entry",
 ]

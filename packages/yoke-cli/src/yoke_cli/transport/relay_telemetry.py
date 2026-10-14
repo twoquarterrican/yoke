@@ -68,7 +68,7 @@ _OUTCOME_PERMANENT = "permanent"
 # future attempt. Anything else (transport failure, an unclassified code)
 # is transient by default: keep evidence rather than silently drop it.
 _PERMANENT_REFUSAL_CODES = frozenset(
-    {"permission_denied", "payload_invalid", "retired_event_name", "ambiguous_project"}
+    {"permission_denied", "payload_invalid", "ambiguous_project"}
 )
 
 _flushing = False

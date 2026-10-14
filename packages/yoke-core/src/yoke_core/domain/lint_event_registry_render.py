@@ -6,8 +6,8 @@ own the operator-visible deny payload formatting and the fire-and-forget
 HarnessToolCallDenied telemetry emission; the entry-point imports them
 and uses them inside ``decide`` / ``run``.
 
-The deny-JSON / deny-reason / WARN-line wording is contract-stable —
-the shell-era test suite checks the exact strings, so do not paraphrase.
+The deny reason teaches the one registration path: a row in the code
+event catalog, which every boot projects into ``event_registry``.
 ``emit_denial`` MUST never raise: telemetry failures are converted to
 silent allows so the hook stays fail-open.
 """
@@ -27,18 +27,14 @@ TOOL_NAME = "Bash"
 
 
 def build_deny_reason(event_name: str) -> str:
-    """Render the operator-visible deny reason string.
-
-    Format matches the pre-Pythonization shell output verbatim so the
-    existing shell test suite continues to pass unchanged.
-    """
+    """Render the operator-visible deny reason string."""
     return (
         f"BLOCKED: emit-event.sh --name '{event_name}' is not registered in "
         "event_registry.\n"
-        "Register it first:\n"
-        "  python3 -m yoke_core.cli.db_router events registry add "
-        f"'{event_name}' --kind <kind> --type <type> --service <service> "
-        "--description '<desc>'"
+        "Register it from a Yoke source checkout: add its row to "
+        "packages/yoke-core/src/yoke_core/domain/event_catalog.py, run "
+        "`python3 -m yoke_core.domain.event_catalog_render`, and ship the "
+        "change; every boot registers the catalog."
     )
 
 
@@ -59,19 +55,13 @@ def build_deny_json(event_name: str) -> str:
     return json.dumps(payload, separators=(", ", ": "))
 
 
-def build_deprecated_warning(event_name: str) -> str:
-    """Render the stderr WARN line for deprecated events."""
-    return f"WARN: lint-event-registry.sh: emitting deprecated event '{event_name}'"
-
-
 def emit_denial(decision: "Decision") -> None:
     """Fire the ``HarnessToolCallDenied`` event for a deny decision, best-effort.
 
     Never raises. If the event-emission backend is unavailable for any
     reason, the hook must still allow the decision path to complete and
     exit 0. Any stdout/stderr chatter from the backend is swallowed so
-    the hook's own stdout (the deny JSON) and stderr (the deprecated
-    WARN line) stay clean.
+    the hook's own stdout (the deny JSON) stays clean.
     """
     if decision.action != "deny":
         return

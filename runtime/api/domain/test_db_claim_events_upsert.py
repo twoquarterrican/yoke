@@ -195,11 +195,10 @@ class TestEventEmission:
         assert "amendment write failed" in str(exc_info.value)
 
     def test_db_claim_amended_registered_in_event_metadata(self):
-        from yoke_core.domain.populate_registry import AUTHORITATIVE_METADATA
+        from yoke_core.domain.event_catalog import EVENT_CATALOG
 
-        registered = {entry[0]: entry for entry in AUTHORITATIVE_METADATA}
-        assert "DbClaimAmended" in registered
-        assert registered["DbClaimAmended"][1:4] == (
+        assert "DbClaimAmended" in EVENT_CATALOG
+        assert EVENT_CATALOG["DbClaimAmended"][1:4] == (
             "workflow",
             "db_claim_amendment",
             "yoke_core.domain.db_claim",

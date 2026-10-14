@@ -209,10 +209,7 @@ def ensure_event_schema(conn: Any) -> None:
                 event_type      TEXT NOT NULL,
                 owner_service   TEXT NOT NULL,
                 description     TEXT NOT NULL,
-                context_schema  TEXT,
-                severity_default TEXT NOT NULL DEFAULT 'INFO',
-                added_in        TEXT,
-                status          TEXT NOT NULL DEFAULT 'active'
+                severity_default TEXT NOT NULL DEFAULT 'INFO'
             )
             """,
     ]
@@ -268,10 +265,7 @@ def ensure_event_schema(conn: Any) -> None:
                 event_type      TEXT NOT NULL,
                 owner_service   TEXT NOT NULL,
                 description     TEXT NOT NULL,
-                context_schema  TEXT,
-                severity_default TEXT NOT NULL DEFAULT 'INFO',
-                added_in        TEXT,
-                status          TEXT NOT NULL DEFAULT 'active'
+                severity_default TEXT NOT NULL DEFAULT 'INFO'
             );
         """
     )

@@ -309,7 +309,7 @@ class TestYok1619Reproduction:
         candidate = _seed_item(conn, item_id=51104)
         upstream_claims = []
         for upstream, path in [
-            (u_a, "runtime/api/domain/populate_registry_data_authoritative.py"),
+            (u_a, "packages/yoke-core/src/yoke_core/domain/event_catalog.py"),
             (u_b, "packages/yoke-core/src/yoke_core/hooks/sessions_claims_acquire.py"),
             (u_c, "AGENTS.md"),
         ]:
@@ -326,7 +326,7 @@ class TestYok1619Reproduction:
             item_id=candidate,
             integration_target="main",
             paths=[
-                "runtime/api/domain/populate_registry_data_authoritative.py",
+                "packages/yoke-core/src/yoke_core/domain/event_catalog.py",
                 "packages/yoke-core/src/yoke_core/hooks/sessions_claims_acquire.py",
                 "AGENTS.md",
             ],

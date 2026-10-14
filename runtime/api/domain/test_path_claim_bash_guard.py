@@ -293,12 +293,9 @@ class TestFreePathRelativeRedirect:
         assert verdict.failure_mode == "out-of-claim"
 
 
-class TestEventRegistrySeed:
-    def test_event_names_registered_in_seed(self):
-        from yoke_core.domain.event_registry_seed_path_claim_session_cwd import (
-            seeded_event_names,
-        )
+class TestEventCatalogRows:
+    def test_guard_event_names_have_catalog_rows(self):
+        from yoke_core.domain.event_catalog import EVENT_CATALOG
 
-        names = seeded_event_names()
-        assert "PathClaimEditGuardDenied" in names
-        assert "PathClaimBashGuardDenied" in names
+        assert "PathClaimEditGuardDenied" in EVENT_CATALOG
+        assert "PathClaimBashGuardDenied" in EVENT_CATALOG

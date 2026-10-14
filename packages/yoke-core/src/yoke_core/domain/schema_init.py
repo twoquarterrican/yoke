@@ -4,6 +4,7 @@ from yoke_core.domain.actor_permissions import seed_roles_and_permissions
 from yoke_core.domain.actors import seed_canonical_human
 from yoke_core.domain.auth_schema import create_auth_tables
 from yoke_core.domain.decision_request_schema import create_decision_request_tables
+from yoke_core.domain.event_registry_converge import converge_event_registry
 from yoke_core.domain.events_schema import ensure_event_schema
 from yoke_core.domain.events_function_index import ensure_function_index
 from yoke_core.domain.external_identity_schema import create_external_identity_tables
@@ -110,6 +111,7 @@ def project_code_owned_rows(conn) -> None:
     seed_builtin_qa_methods(conn)
     sync_machine_qa_pack_methods(conn)
     converge_pack_catalog(conn)
+    converge_event_registry(conn)
     # Where a registered verification command runs is executable configuration
     # too: it follows from code plus the project's declared CI-workflow
     # capability, and registration happens only once, so without this a

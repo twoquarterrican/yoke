@@ -25,9 +25,7 @@ from .sessions_analytics_core import (
     EVENT_WORK_RELEASED,
     SessionError,
     _NEXT_STEP_TO_PATH,
-    _SESSION_EVENT_REGISTRY_ROWS,
     _emit_event as _core_emit_event,
-    ensure_session_event_registry_entries,
 )
 
 
@@ -102,8 +100,6 @@ __all__ = [
     "EVENT_HARNESS_SESSION_END_RELEASED_CLAIMS",
     "EVENT_ITEM_CLAIM_RELEASE_FAILED",
     "EVENT_SESSION_REACTIVATED_WITH_RELEASED_CLAIMS",
-    "_SESSION_EVENT_REGISTRY_ROWS",
-    "ensure_session_event_registry_entries",
     "_emit_event",
     "_emit_session_event",
     "_NEXT_STEP_TO_PATH",
