@@ -33,6 +33,7 @@ terminal statuses are excluded as intentional historical provenance, per
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from yoke_core.engines.doctor_parallel_reads import bounded_read_map
 from pathlib import Path
 
@@ -160,35 +161,16 @@ def scan_repo(repo_root: Path) -> list[str]:
                 _PER_PATTERN_PATH_ALLOWLIST.get(source, ()),
             )
         )
-    resolved_root = repo_root.resolve()
-    resolved_parents = {}
-    for f, text in _read_scan_files(repo_root):
-        if text is None:
-            continue
+
+    # Source and installed copies repeat content. Keep this cache bounded and
+    # local to one catalogue snapshot; path exemptions remain part of its key.
+    @lru_cache(maxsize=4096)
+    def match_text(text: str, eligible: tuple[int, ...]) -> tuple[str, ...]:
+        matches = []
         lines = text.splitlines()
-        try:
-            parent = resolved_parents.get(f.parent)
-            if parent is None:
-                parent = resolved_parents[f.parent] = f.parent.resolve()
-            canonical = f.resolve() if f.is_symlink() else parent / f.name
-            rel = canonical.relative_to(resolved_root)
-        except ValueError:
-            rel = f
-        rel_str = str(rel)
-        if _path_in_allowlist(rel_str, PATH_ALLOWLIST_ALL_PATTERNS):
-            continue
         normalized_text = None
-        for (
-            pattern_src,
-            compiled_pattern,
-            required,
-            gate,
-            normalize,
-            label,
-            allow,
-        ) in compiled:
-            if _path_in_allowlist(rel_str, allow):
-                continue
+        for index in eligible:
+            _, pattern, required, gate, normalize, label, _ = compiled[index]
             if required is not None and not required(text):
                 if not normalize:
                     continue
@@ -203,11 +185,35 @@ def scan_repo(repo_root: Path) -> list[str]:
                     normalized_text = text.replace("/", ".")
                 if not gate.search(normalized_text):
                     continue
-            for i, line in enumerate(lines, start=1):
-                if compiled_pattern.search(line):
-                    hits.append(f"{rel}:{i}: [{label}] {line.rstrip()[:160]}")
-                elif normalize and compiled_pattern.search(line.replace("/", ".")):
-                    hits.append(f"{rel}:{i}: [{label}] {line.rstrip()[:160]}")
+            for number, line in enumerate(lines, 1):
+                if pattern.search(line) or (
+                    normalize and pattern.search(line.replace("/", "."))
+                ):
+                    matches.append(f"{number}: [{label}] {line.rstrip()[:160]}")
+        return tuple(matches)
+
+    resolved_root = repo_root.resolve()
+    resolved_parents = {}
+    for f, text in _read_scan_files(repo_root):
+        if text is None:
+            continue
+        try:
+            parent = resolved_parents.get(f.parent)
+            if parent is None:
+                parent = resolved_parents[f.parent] = f.parent.resolve()
+            canonical = f.resolve() if f.is_symlink() else parent / f.name
+            rel = canonical.relative_to(resolved_root)
+        except ValueError:
+            rel = f
+        rel_str = str(rel)
+        if _path_in_allowlist(rel_str, PATH_ALLOWLIST_ALL_PATTERNS):
+            continue
+        eligible = tuple(
+            index
+            for index, entry in enumerate(compiled)
+            if not _path_in_allowlist(rel_str, entry[-1])
+        )
+        hits.extend(f"{rel}:{match}" for match in match_text(text, eligible))
     return hits
 
 
