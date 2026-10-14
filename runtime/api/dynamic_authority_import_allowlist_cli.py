@@ -10,6 +10,21 @@ from __future__ import annotations
 
 CLI_PACKAGE_DYNAMIC_AUTHORITY_IMPORTS = {
     (
+        "packages/yoke-cli/src/yoke_cli/commands/adapters/doctor_install.py",
+        "yoke_core.engines.doctor_install",
+    ): (
+        "client_local_diagnostics",
+        "focused install selection reads the packaged canonical check roster",
+    ),
+    (
+        "packages/yoke-cli/src/yoke_cli/commands/adapters/doctor_install.py",
+        "yoke_core.engines.doctor_https_compose",
+    ): (
+        "client_local_diagnostics",
+        "agent setup runs machine-local checks and recounts observed readiness; "
+        "project control-plane checks still use authenticated Doctor dispatch",
+    ),
+    (
         "packages/yoke-cli/src/yoke_cli/commands/adapters/claims_path_flow.py",
         "yoke_core.domain.path_claim_activation_client",
     ): (

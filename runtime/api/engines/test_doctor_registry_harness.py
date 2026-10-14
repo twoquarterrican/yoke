@@ -118,6 +118,14 @@ def test_bundle_holds_session_then_audit_checks_in_order():
         + list(_ENGINE_CONFIG_SLUGS)
         + list(_ENGINE_LEDGER_AUDIT_SLUGS)
         + list(_ENGINE_REFLECTION_SLUGS)
+        + [
+            "harness-cli-auth",
+            "dashboard-current-build",
+            "session-hook-registration",
+            "install-residue",
+            "installed-guidance",
+            "instruction-discovery",
+        ]
     )
 
 
