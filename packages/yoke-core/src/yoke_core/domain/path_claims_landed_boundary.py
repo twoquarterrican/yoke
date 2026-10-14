@@ -1,30 +1,32 @@
-"""Path-claim boundary proved from the merge an item landed.
+"""Path-claim boundary proved from what an item's landing put on its target.
 
 Before landing, the boundary is the lane's committed diff against the
-moving integration target. After landing that question has a fixed answer:
-the merge commit's diff against its first parent is exactly what the item
-put on the target, and it never goes stale when the target moves on. So a
-gate evaluated after the landing proves the boundary from that merge, with
-no lane and no current remote head required.
+moving integration target. After landing that question has a fixed answer,
+and a gate evaluated then proves the boundary from it, with no lane and no
+current remote head required.
+
+The answer is the item's merge receipt for the landing: the files the lane
+changed against the target as it stood immediately before the landing,
+which the merge boundary records before it merges (the lane's merge-base
+diff) or from the landed pull request's own file list. The landed commit's
+first parent is not that boundary. A fast-forward of a lane whose tip merged
+the target in has the lane's previous commit as first parent, so that diff
+would hold everything the target gained since the lane last synced and
+charge it to the item.
 
 The landing applies while it still describes the item's current work: the
 newest recorded landing, unless an active lane has since recorded a head
 that is neither the landed candidate nor the merge (rework that has not
-landed yet, which the lane-based check owns).
-
-The diff is read from git when a checkout on this machine holds the merge
-commit, and otherwise from the project's GitHub capability, which is how a
-hosted control plane without checkouts answers it
-(:mod:`path_claims_landed_boundary_github` reads the complete paged list).
+landed yet, which the lane-based check owns). The receipt applies when it
+names that landing's candidate or merge commit on the landing's target. A
+landing with no such receipt, or one whose receipt recorded no changed
+files, is refused by name rather than guessed at from git history.
 """
 
 from __future__ import annotations
 
 import json
-import subprocess
-from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple
-from yoke_core.domain import db_backend
+from typing import Any, Optional, Sequence, Tuple
 from yoke_core.domain.gate_satisfier_facts import OBSERVED_LANDED_MERGE
 from yoke_core.domain.gate_satisfier_ladder import LadderResolution
 from yoke_core.domain.gate_satisfier_ladder_catalog import (
@@ -32,22 +34,18 @@ from yoke_core.domain.gate_satisfier_ladder_catalog import (
 )
 from yoke_core.domain.gate_satisfier_stamp import record_rung
 from yoke_core.domain.item_landings import ItemLanding, landings_for_item
+from yoke_core.domain.item_merge_receipt_document import newest_first, read_entries
 from yoke_core.domain.item_worktrees import primary_item_worktree
 from yoke_core.domain.path_claims import get_claim
-from yoke_core.domain.path_claims_boundary_git import (
-    BoundaryCheckError,
-    collect_committed_changes,
-    run_git,
-)
 from yoke_core.domain.path_claims_boundary_targets import path_strings_for_target_ids
-from yoke_core.domain.path_claims_landed_boundary_github import (
-    LandedBoundaryUnprovable,
-    diff_from_github,
-)
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.schema_common import _table_exists
 
 LANDED_MERGE_RUNG = "landed_merge"
+
+
+class LandedBoundaryUnprovable(RuntimeError):
+    """The landing has no recorded changed-file set to prove the boundary."""
 
 
 def landing_for_boundary(conn: Any, item_id: int) -> Optional[ItemLanding]:
@@ -69,58 +67,38 @@ def landing_for_boundary(conn: Any, item_id: int) -> Optional[ItemLanding]:
     return newest
 
 
-def _commit_present(repo_path: str, sha: str) -> bool:
-    proc = subprocess.run(
-        ["git", "-C", repo_path, "cat-file", "-e", f"{sha}^{{commit}}"],
-        capture_output=True,
-        check=False,
+def _norm(sha: Any) -> str:
+    return str(sha or "").strip().lower()
+
+
+def landed_touched_files(
+    conn: Any, *, item_id: int, landing: ItemLanding
+) -> Tuple[dict, list]:
+    """Return ``(receipt_entry, touched_paths)`` for ``landing``.
+
+    Raises :class:`LandedBoundaryUnprovable` when no receipt names the
+    landing, or the one that does recorded no changed files.
+    """
+    landed = {_norm(landing.candidate_sha), _norm(landing.merge_sha)} - {""}
+    for entry in newest_first(read_entries(conn, item_id)):
+        target = str(entry.get("target") or "")
+        if landing.target_branch and target != landing.target_branch:
+            continue
+        if not landed & {_norm(entry.get("commit_sha")), _norm(entry.get("merge_sha"))}:
+            continue
+        touched = [str(path) for path in entry.get("touched_files") or [] if path]
+        if not touched:
+            raise LandedBoundaryUnprovable(
+                f"landed_boundary_receipt_files_missing: the merge receipt for "
+                f"branch {entry.get('branch')!r} on {target!r} recorded no "
+                "changed files"
+            )
+        return entry, list(dict.fromkeys(touched))
+    raise LandedBoundaryUnprovable(
+        "landed_boundary_receipt_missing: no merge receipt on the item names "
+        f"candidate {landing.candidate_sha or '(none)'} or merge "
+        f"{landing.merge_sha} on {landing.target_branch or '(any target)'!r}"
     )
-    return proc.returncode == 0
-
-
-def _diff_from_git(
-    repo_path: str, merge_sha: str
-) -> Tuple[str, List[str], List[Tuple[str, str]]]:
-    parent = run_git(repo_path, "rev-parse", f"{merge_sha}^1").strip()
-    touched, renames = collect_committed_changes(
-        repo_path, base_sha=parent, head_sha=merge_sha
-    )
-    return parent, touched, renames
-
-
-def _local_checkouts(conn: Any, item_id: int, project_id: int) -> List[str]:
-    from yoke_core.domain.project_checkout_locations import (
-        checkout_for_project_id,
-        item_worktree_path,
-    )
-
-    candidates = [
-        item_worktree_path(conn, item_id),
-        checkout_for_project_id(project_id),
-    ]
-    return [
-        str(path) for path in candidates if path is not None and Path(path).is_dir()
-    ]
-
-
-def landed_merge_diff(
-    conn: Any, *, item_id: int, project_id: int, project_slug: str, merge_sha: str
-) -> Tuple[str, str, List[str], List[Tuple[str, str]]]:
-    """Return ``(source, first_parent, touched_paths, rename_pairs)``."""
-    for repo_path in _local_checkouts(conn, item_id, project_id):
-        if _commit_present(repo_path, merge_sha):
-            try:
-                return ("git", *_diff_from_git(repo_path, merge_sha))
-            except BoundaryCheckError as exc:
-                raise LandedBoundaryUnprovable(str(exc)) from exc
-    remote = diff_from_github(conn, project_slug, merge_sha)
-    if remote is None:
-        raise LandedBoundaryUnprovable(
-            f"no checkout on this machine holds merge {merge_sha} and the "
-            "project declares no GitHub capability to read it from; fetch the "
-            "integration target in the project checkout and retry"
-        )
-    return ("github", *remote)
 
 
 def _declared_coverage(conn: Any, claim_ids: Sequence[int]) -> Tuple[set, set]:
@@ -152,11 +130,6 @@ def check_landed_boundary(
 ) -> Optional[dict]:
     """Prove the boundary from ``landing``; ``None`` clears the gate."""
     ref = render_item_ref(conn, item_id)
-    project_id, project_slug = conn.execute(
-        "SELECT p.id, p.slug FROM items i JOIN projects p ON p.id = i.project_id "
-        f"WHERE i.id = {'%s' if db_backend.connection_is_postgres(conn) else '?'}",
-        (int(item_id),),
-    ).fetchone()
     declared, targets = _declared_coverage(conn, claim_ids)
     if landing.target_branch and targets - {landing.target_branch}:
         return _blocked(
@@ -166,35 +139,35 @@ def check_landed_boundary(
             "or land the item on the claimed target, then retry the transition."
         )
     try:
-        source, parent, touched, renames = landed_merge_diff(
-            conn,
-            item_id=item_id,
-            project_id=int(project_id),
-            project_slug=str(project_slug),
-            merge_sha=landing.merge_sha,
-        )
+        entry, touched = landed_touched_files(conn, item_id=item_id, landing=landing)
     except LandedBoundaryUnprovable as exc:
         return _blocked(
-            f"{ref} landed as merge {landing.merge_sha}, but the boundary "
-            f"cannot be proved from it: {exc}. Fix that, then re-run the same "
-            "close-out or lifecycle transition; the item's lane is not needed."
+            f"{ref} landed as {landing.merge_sha}, but the boundary cannot be "
+            f"proved from it: {exc}. Re-run the same close-out "
+            f"(`yoke merge item {ref} ...`) from a checkout of the project; it "
+            "re-records the receipt's changed files from the landed pull "
+            "request or merge. If it still refuses, the landing left nothing to "
+            "derive them from: send this refusal to steering "
+            "(`yoke say --steering`) rather than widening claims to guess."
         )
     undeclared = sorted(set(touched) - declared)
     if undeclared:
         return _blocked(
             f"Path-claim boundary check blocked transition to {target_status!r}: "
-            f"landed merge {landing.merge_sha} (diff against first parent "
-            f"{parent}) changed {len(undeclared)} file(s) outside {ref}'s "
-            f"declared coverage: {', '.join(undeclared)}.\n\nThe work has "
+            f"landing {landing.merge_sha} (merge receipt for branch "
+            f"{entry.get('branch')!r}, changed against {landing.target_branch!r} "
+            f"before it landed) changed {len(undeclared)} file(s) outside "
+            f"{ref}'s declared coverage: {', '.join(undeclared)}.\n\nThe work has "
             "already landed, so widen the claim to cover what landed "
             "(`yoke claims path widen --claim-id N --add-paths ...`), then re-run the same close-out."
         )
     fact = {
         "merge_sha": landing.merge_sha,
-        "first_parent_sha": parent,
-        "source": source,
+        "candidate_sha": landing.candidate_sha,
+        "receipt_branch": str(entry.get("branch") or ""),
+        "receipt_commit_sha": str(entry.get("commit_sha") or ""),
+        "source": "merge_receipt",
         "touched_paths": sorted(touched),
-        "rename_pairs": [list(pair) for pair in renames],
     }
     record_rung(
         conn,
@@ -214,6 +187,6 @@ __all__ = [
     "LANDED_MERGE_RUNG",
     "LandedBoundaryUnprovable",
     "check_landed_boundary",
-    "landed_merge_diff",
+    "landed_touched_files",
     "landing_for_boundary",
 ]
