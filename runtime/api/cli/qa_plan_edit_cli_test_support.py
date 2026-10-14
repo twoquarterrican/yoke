@@ -36,6 +36,7 @@ PLAN = {
             "host_baselines": [],
             "starting_state": None,
             "starting_state_reason": None,
+            "target_envs": ["stage", "prod"],
             "entry_surface": None,
             "required_completion": None,
         }
@@ -72,6 +73,7 @@ def _dispatch(
     requests: list[FunctionCallRequest],
     *,
     edit_error: FunctionError | None = None,
+    plan: dict | None = None,
 ) -> Callable[[FunctionCallRequest], FunctionCallResponse]:
     def dispatch(request: FunctionCallRequest) -> FunctionCallResponse:
         requests.append(request)
@@ -89,7 +91,7 @@ def _dispatch(
                 },
             )
         if request.function == "qa.plan.get":
-            return _response(request, result={"plan": PLAN})
+            return _response(request, result={"plan": plan or PLAN})
         if request.function == "qa.plan.edit":
             if edit_error is not None:
                 return _response(request, error=edit_error)
@@ -115,6 +117,7 @@ def run_cli(
     editor,
     *argv: str,
     edit_error: FunctionError | None = None,
+    plan: dict | None = None,
 ) -> tuple[int, str, str]:
     stdout = io.StringIO()
     stderr = io.StringIO()
@@ -122,7 +125,7 @@ def run_cli(
         patch.dict("os.environ", {"YOKE_SESSION_ID": "qa-plan-edit-test"}),
         patch(
             "yoke_core.domain.yoke_function_dispatch.dispatch",
-            side_effect=_dispatch(requests, edit_error=edit_error),
+            side_effect=_dispatch(requests, edit_error=edit_error, plan=plan),
         ),
         patch("yoke_cli.commands._helpers.ensure_handlers_loaded"),
         patch(

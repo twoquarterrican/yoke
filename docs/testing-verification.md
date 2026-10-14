@@ -48,8 +48,11 @@ yoke qa plan get <id> --project <project>
 `qa plan edit` resolves project context from `--project`, then `YOKE_PROJECT`,
 then the machine-config checkout mapping. It opens a clean JSON authoring
 document in `$VISUAL`, `$EDITOR`, or `vi` and compare-and-swap saves plan
-metadata plus the complete ordered case set. Invalid JSON, an editor failure,
-or a concurrent edit preserves the temporary document and refuses the write.
+metadata plus the complete ordered case set. The document carries every case
+field, including `target_envs`. Invalid JSON, an editor failure, a concurrent
+edit, or a save that would reset a stored case field the document left out
+(`qa_plan_edit_unedited_field_changed`) preserves the temporary document and
+refuses the write.
 An unchanged document preserves the plan timestamp and its case row identities.
 The lower-level `qa plan-cases replace` adapter remains available for callers
 that already hold a numeric plan id and intentionally replace cases only.

@@ -18,6 +18,7 @@ from yoke_contracts.api.function_call import (
     FunctionError,
     TargetRef,
 )
+from yoke_contracts.qa_plan_case_document import QA_PLAN_CASE_FIELDS
 from yoke_cli.commands import _helpers
 from yoke_cli.commands._helpers import (
     FULL_DETAIL,
@@ -48,6 +49,9 @@ CAS and recovery:
   changes. Reopen the command on the latest plan and reapply the intended edit.
   Editor, document-validation, and save failures preserve the temporary JSON.
 
+Every case field is in the document, target_envs included. A field left out
+of an existing case is refused when saving would reset its stored value.
+
 Machine-run cases declare host_baselines, starting_state "inherit" (never the
 first case), or "as_is" with a starting_state_reason.
 
@@ -65,21 +69,18 @@ _DOCUMENT_KEYS = set(
     "slug name description success_policy_id success_policy_params "
     "target_environment cases".split()
 )
-_CASE_KEYS = (
-    "case_key",
-    "position",
-    "method_id",
-    "instructions",
-    "expected_outcome",
-    "method_config",
-    "success_policy_id",
-    "success_policy_params",
-    "host_baselines",
-    "starting_state",
-    "starting_state_reason",
-    "entry_surface",
-    "required_completion",
-)
+
+
+def _authoring_case(case: dict[str, Any]) -> dict[str, Any]:
+    missing = [field for field in QA_PLAN_CASE_FIELDS if field not in case]
+    if missing:
+        raise ValueError(
+            f"qa.plan.get returned case {case.get('case_key')!r} without "
+            f"{', '.join(missing)}; the serving Yoke is older than this CLI, "
+            "and saving would reset those fields. Upgrade the serving Yoke "
+            "before editing this plan"
+        )
+    return {field: case[field] for field in QA_PLAN_CASE_FIELDS}
 
 
 def _authoring_document(plan: dict[str, Any]) -> dict[str, Any]:
@@ -97,19 +98,7 @@ def _authoring_document(plan: dict[str, Any]) -> dict[str, Any]:
         "success_policy_id": plan.get("success_policy_id", "all-pass"),
         "success_policy_params": plan.get("success_policy_params") or {},
         "target_environment": plan.get("target_environment"),
-        "cases": [
-            {
-                key: (
-                    case.get(key, [])
-                    if key == "host_baselines"
-                    else case.get(key, {})
-                    if key == "method_config"
-                    else case.get(key)
-                )
-                for key in _CASE_KEYS
-            }
-            for case in cases
-        ],
+        "cases": [_authoring_case(case) for case in cases],
     }
 
 

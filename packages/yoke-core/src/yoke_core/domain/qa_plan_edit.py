@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from yoke_contracts.qa_plan_case_document import QA_PLAN_CASE_FIELDS
 from yoke_contracts.timestamps import format_instant, parse_instant
 from yoke_core.domain.db_helpers import instant_parameter, query_one, query_rows
 from yoke_core.domain.qa_converging_columns import (
@@ -76,6 +77,47 @@ def _current_cases(conn: Any, plan_id: int) -> list[dict[str, Any]]:
     ]
 
 
+def _refuse_unedited_field_changes(
+    *,
+    project: str,
+    slug: str,
+    submitted: list[dict[str, Any]],
+    normalized: list[dict[str, Any]],
+    current: list[dict[str, Any]],
+) -> None:
+    """Refuse a save that would reset a stored field the document left out.
+
+    The authoring document carries every case field, so a field missing from
+    an existing case is one the operator never saw, not one they edited. A
+    default standing in for it would silently rewrite the stored value.
+    """
+    stored = {case["case_key"]: case for case in current}
+    omitted = {
+        str(case.get("case_key")): [
+            field for field in QA_PLAN_CASE_FIELDS if field not in case
+        ]
+        for case in submitted
+    }
+    changes = [
+        f"case {case['case_key']!r} {field} (stored {stored_value!r}, "
+        f"would save {case[field]!r})"
+        for case in normalized
+        if case["case_key"] in stored
+        for field in omitted.get(case["case_key"], [])
+        if case[field] != (stored_value := stored[case["case_key"]][field])
+    ]
+    if changes:
+        raise QaPlanError(
+            "qa_plan_edit_unedited_field_changed: the edit leaves out case "
+            "fields whose stored values it would reset: "
+            + "; ".join(changes)
+            + f". Nothing was saved. Reopen `yoke qa plan edit {slug} "
+            f"--project {project}` with a Yoke CLI whose document carries "
+            "every case field, or state each listed field's intended value "
+            "in the case."
+        )
+
+
 def edit_plan(
     conn: Any,
     *,
@@ -145,6 +187,7 @@ def edit_plan(
             environment_id=target_environment_id,
         )
 
+    submitted_cases = [dict(case) for case in cases if isinstance(case, dict)]
     normalized_cases = _validated_plan_cases(
         conn,
         plan=plan,
@@ -178,6 +221,13 @@ def edit_plan(
             f"QA plan {slug!r} changed after it was read; reopen the editor "
             "from the latest plan before writing again"
         )
+    _refuse_unedited_field_changes(
+        project=str(plan["project"]),
+        slug=slug,
+        submitted=submitted_cases,
+        normalized=normalized_cases,
+        current=current_cases,
+    )
     if desired_plan == current_plan and normalized_cases == current_cases:
         try:
             live_token = conn.execute(
