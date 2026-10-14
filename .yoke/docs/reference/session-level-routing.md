@@ -205,8 +205,12 @@ Placement expands each model row through its manifest's selection source at its 
 effort. Machine access, lane capacity and quota rules remain authoritative.
 Empty/blocked candidates are skipped. Among available Cursor candidates,
 the earlier monthly pool is preferred before headroom; other vendors have
-no pool order. Then the existing spread rule prefers idle surfaces above
-100% headroom, followed by binding headroom and configuration position.
+no pool order. Headroom is per worker: a pool's headroom divided by the live
+workers and unregistered launches on the same machine whose model that pool
+covers, plus the new launch. The spread rule prefers an option whose binding
+pool has no worker and more than 100% headroom, followed by per-worker
+headroom and configuration position. Level launches place one at a time, so
+each launch in a burst counts the earlier ones.
 Unknown quota never means exhaustion.
 
 When no native selection can launch, `level_no_capacity` names each refusal
@@ -220,7 +224,9 @@ The launch result, `launch preview`, and `launch get` name the level, the
 chosen option, every pool each option read, and why the winner won
 (`level_placement`). Options name their machine by its registered name, as
 the steering report does; `Selected machine` keeps the id `--machine`
-takes. Each pool shows quota left, headroom, and its reset in UTC. The
+takes. Each pool shows quota left, headroom, the live workers drawing on it
+(`workers`) with the per-worker split (`share_percent`), and its reset in
+UTC; an option's `headroom_percent` is its binding pool's split. The
 stored launch keeps the level as its ask, and `launch retry` places the
 level again. `--machine` narrows placement to one machine.
 

@@ -12,10 +12,11 @@ An option is blocked only by an affirmative zero: a readable window covering
 its model with no quota left. An unreadable meter, or no meter at all, is
 unknown capacity, and unknown is never exhaustion.
 
-Live workers are counted per surface across every project, plus launches
-already placed there that have not registered yet, because the spread rule
-keeps a worker on every surface and a launch in flight is a worker it must
-not place twice.
+A pool's headroom assumes one worker spends it, so each pool also carries the
+live workers already drawing on it: sessions on the same machine and surface
+whose model the window covers, across every project, plus launches placed
+there that have not registered yet. A launch in flight is a worker placement
+must not count twice, and a burst of launches must see each earlier one.
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from dataclasses import asdict, dataclass
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from yoke_contracts.timestamps import parse_instant, temporal_wire
 from yoke_contracts.session_control.model_billing_pools import window_covers_model
@@ -42,6 +43,9 @@ from yoke_core.domain.steering_fleet_report_limits import MachinePlanLimit
 
 _IN_FLIGHT_LAUNCH_STATES = ("queued", "assigned", "launching", "awaiting_registration")
 
+#: Live workers keyed by ``(machine_id, surface, model)``.
+WorkerCounts = Mapping[tuple[str, str, str], int]
+
 
 @dataclass(frozen=True)
 class PoolCheck:
@@ -54,6 +58,7 @@ class PoolCheck:
     status: str
     exhausted: bool
     reason: str | None = None
+    workers: int = 0
 
     def __post_init__(self) -> None:
         if self.resets_at is not None:
@@ -65,11 +70,35 @@ class PoolCheck:
         text = format_reset_utc(self.resets_at)
         return None if text == EMPTY else text
 
+    @property
+    def share_percent(self) -> float | None:
+        """Headroom one more worker gets, split evenly with the live workers."""
+        if self.headroom_percent is None:
+            return None
+        return self.headroom_percent / (self.workers + 1)
+
     def to_dict(self) -> dict[str, Any]:
-        out = {**temporal_wire(asdict(self)), "resets_utc": self.resets_utc}
+        out = {
+            **temporal_wire(asdict(self)),
+            "resets_utc": self.resets_utc,
+            "share_percent": self.share_percent,
+        }
         if self.status != "ok":
             out["guidance"] = unreadable_guidance(self.reason)
         return out
+
+
+def pool_workers(
+    workers: WorkerCounts, *, machine_id: str, surface: str, scope: str
+) -> int:
+    """Live workers on this machine and surface whose model ``scope`` covers."""
+    return sum(
+        count
+        for (machine, worker_surface, model), count in workers.items()
+        if machine == machine_id
+        and worker_surface == surface
+        and window_covers_model(surface, model, scope)
+    )
 
 
 def option_pools(
@@ -79,6 +108,7 @@ def option_pools(
     surface: str,
     model: str,
     now: datetime | str,
+    workers: WorkerCounts,
 ) -> tuple[PoolCheck, ...]:
     """Every published window on this machine and surface covering ``model``."""
     checks: list[PoolCheck] = []
@@ -98,17 +128,20 @@ def option_pools(
                 status=row.status,
                 reason=row.reason,
                 exhausted=bool(readable and float(row.remaining_percent or 0) <= 0),
+                workers=pool_workers(
+                    workers, machine_id=machine_id, surface=surface, scope=row.scope
+                ),
             )
         )
     return tuple(checks)
 
 
 def binding_pool(pools: Sequence[PoolCheck]) -> PoolCheck | None:
-    """The covering window with the least readable headroom: the first wall."""
-    readable = [pool for pool in pools if pool.headroom_percent is not None]
+    """The covering window with the least per-worker headroom: the first wall."""
+    readable = [pool for pool in pools if pool.share_percent is not None]
     if not readable:
         return None
-    return min(readable, key=lambda pool: float(pool.headroom_percent or 0.0))
+    return min(readable, key=lambda pool: float(pool.share_percent or 0.0))
 
 
 def exhausted_pool(pools: Sequence[PoolCheck]) -> PoolCheck | None:
@@ -116,36 +149,51 @@ def exhausted_pool(pools: Sequence[PoolCheck]) -> PoolCheck | None:
     return next((pool for pool in pools if pool.exhausted), None)
 
 
-def live_workers(conn: Any) -> dict[str, int]:
-    """Live workers per surface, launches in flight included."""
+def live_workers(conn: Any) -> dict[tuple[str, str, str], int]:
+    """Live workers per machine, surface and model, launches in flight included."""
     p = marker(conn)
-    counts: dict[str, int] = {}
+    counts: dict[tuple[str, str, str], int] = {}
     sessions = conn.execute(
-        "SELECT executor_surface AS surface, COUNT(*) AS n FROM harness_sessions "
+        "SELECT COALESCE(machine_id, '') AS machine, executor_surface AS surface, "
+        "COALESCE(model, requested_model, '') AS model, COUNT(*) AS n "
+        "FROM harness_sessions "
         "WHERE ended_at IS NULL AND terminated_at IS NULL "
         f"AND {not_probe_session_sql('harness_sessions')} "
         "AND COALESCE(executor_surface, '') <> '' "
-        "GROUP BY executor_surface"
+        "GROUP BY 1, 2, 3"
     ).fetchall()
     holes = ",".join(p for _ in _IN_FLIGHT_LAUNCH_STATES)
     launches = conn.execute(
-        "SELECT selected_surface AS surface, COUNT(*) AS n "
+        "SELECT COALESCE(assigned_machine_id, '') AS machine, "
+        "selected_surface AS surface, "
+        "COALESCE(resolved_model, requested_model, '') AS model, COUNT(*) AS n "
         "FROM session_launches "
         f"WHERE state IN ({holes}) AND registered_session_id IS NULL "
         "AND COALESCE(selected_surface, '') <> '' "
-        "GROUP BY selected_surface",
+        "GROUP BY 1, 2, 3",
         _IN_FLIGHT_LAUNCH_STATES,
     ).fetchall()
     for row in [*sessions, *launches]:
-        key = str(row["surface"])
+        key = (str(row["machine"]), str(row["surface"]), str(row["model"]))
         counts[key] = counts.get(key, 0) + int(row["n"])
     return counts
 
 
+def surface_workers(workers: WorkerCounts) -> dict[str, int]:
+    """Live workers per surface, summed over machines and models."""
+    totals: dict[str, int] = {}
+    for (_machine, surface, _model), count in workers.items():
+        totals[surface] = totals.get(surface, 0) + count
+    return totals
+
+
 __all__ = [
     "PoolCheck",
+    "WorkerCounts",
     "binding_pool",
     "exhausted_pool",
     "live_workers",
     "option_pools",
+    "pool_workers",
+    "surface_workers",
 ]

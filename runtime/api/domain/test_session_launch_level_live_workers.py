@@ -1,4 +1,4 @@
-"""Level placement counts live workers per machine and surface, in flight too."""
+"""Level placement counts live workers per machine, surface and model, in flight too."""
 
 from __future__ import annotations
 
@@ -11,7 +11,9 @@ from runtime.api.steering_fleet_test_helpers import (
     seed_session,
     seed_steering_scope,
 )
-from yoke_core.domain.session_launch_level_pools import live_workers
+from yoke_core.domain.session_launch_level_pools import live_workers, surface_workers
+
+OPUS = "claude-opus-5-5"
 
 
 def _launch(conn, launch_id: str, *, state: str, machine: str, registered=None):
@@ -28,9 +30,9 @@ def _launch(conn, launch_id: str, *, state: str, machine: str, registered=None):
         "(launch_id, requester_actor_id, project_id, requested_surface, "
         "selected_surface, allow_surface_fallback, message_id, state, "
         "deadline_at, created_at, origin, assigned_machine_id, "
-        "registered_session_id) "
+        "registered_session_id, resolved_model) "
         "VALUES (%s, %s, %s, 'claude-cli', 'claude-cli', 0, %s, %s, %s, %s, "
-        "'steering', %s, %s)",
+        "'steering', %s, %s, %s)",
         (
             launch_id,
             ACTOR_ID,
@@ -41,6 +43,7 @@ def _launch(conn, launch_id: str, *, state: str, machine: str, registered=None):
             NOW,
             machine,
             registered,
+            OPUS,
         ),
     )
 
@@ -67,8 +70,11 @@ def test_live_sessions_and_unregistered_launches_both_count(test_db) -> None:
 
     counts = live_workers(conn)
 
-    # Counted per surface across machines: one live claude-cli session plus
-    # two claude-cli launches in flight; the registered and failed launches
-    # and the ended and terminated sessions do not count.
-    assert counts["codex-cli"] == 2
-    assert counts["claude-cli"] == 3
+    # Keyed by the machine, surface and model each worker draws on: two
+    # in-flight launches on machine-2; the registered and failed launches and
+    # the ended and terminated sessions do not count.
+    assert counts[("machine-1", "codex-cli", "gpt-6.1-sol")] == 2
+    assert counts[("machine-1", "claude-cli", "gpt-6.1-sol")] == 1
+    assert counts[("machine-2", "claude-cli", OPUS)] == 2
+    totals = surface_workers(counts)
+    assert (totals["codex-cli"], totals["claude-cli"]) == (2, 3)

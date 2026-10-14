@@ -155,7 +155,7 @@ def test_an_idle_surface_above_full_headroom_is_spread_to_first(monkeypatch) -> 
     conn = level_connection(CLAUDE_OPUS, CODEX_SOL)
     add_surface(conn, "m1", "claude-cli", [weekly(60.0)])
     add_surface(conn, "m2", "codex-cli", [weekly(95.0)])
-    pin_live_workers(monkeypatch, {"codex-cli": 1})
+    pin_live_workers(monkeypatch, {("m2", "codex-cli", "gpt-6.1-sol"): 1})
 
     placement = _place(conn)
 
@@ -165,21 +165,23 @@ def test_an_idle_surface_above_full_headroom_is_spread_to_first(monkeypatch) -> 
     assert "spread rule" in placement.reason
 
 
-def test_a_surface_with_a_live_worker_gets_no_spread_priority(monkeypatch) -> None:
+def test_a_busy_pool_splits_its_headroom_among_its_workers(monkeypatch) -> None:
     conn = level_connection(CLAUDE_OPUS, CODEX_SOL)
     add_surface(conn, "m1", "claude-cli", [weekly(75.0)])
     add_surface(conn, "m2", "codex-cli", [weekly(45.0)])
 
-    pin_live_workers(monkeypatch, {"claude-cli": 2})
+    pin_live_workers(monkeypatch, {("m1", "claude-cli", "claude-opus-5-5"): 2})
 
     placement = _place(conn)
 
-    # Claude is busy at 150% and Codex idle at only 90%: nothing spreads, so
-    # the most headroom wins.
+    # Claude's 150% split three ways is 50% per worker; idle Codex keeps 90%,
+    # under the spread bar, so the most headroom per worker wins.
+    claude = next(c for c in placement.candidates if c.surface == "claude-cli")
+    assert (claude.live_workers, claude.headroom_percent) == (2, pytest.approx(50.0))
+    assert claude.pools[0].headroom_percent == pytest.approx(150.0)
     assert placement.rule == RULE_HEADROOM
-    assert placement.chosen.surface == "claude-cli"
-    assert placement.chosen.live_workers == 2
-    assert placement.reason.startswith("most headroom")
+    assert placement.chosen.surface == "codex-cli"
+    assert placement.reason.startswith("most headroom per worker")
 
 
 def test_most_headroom_wins_when_no_surface_qualifies_to_spread() -> None:

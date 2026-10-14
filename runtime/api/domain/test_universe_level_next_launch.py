@@ -30,6 +30,8 @@ from runtime.api.domain.session_launch_level_test_support import (
 from runtime.api.domain.session_launch_test_support import NOW, authorization
 
 PROJECT = (10, "launch-project")
+CODEX_WORKER = ("m-codex", "codex-cli", "gpt-6.1-sol")
+CLAUDE_WORKER = ("m-claude", "claude-cli", "claude-opus-5-5")
 
 
 @pytest.fixture(autouse=True)
@@ -77,8 +79,8 @@ def _launcher_choice(conn):
     ("workers", "rule", "surface"),
     [
         ({}, RULE_SPREAD, "codex-cli"),
-        ({"codex-cli": 1}, RULE_SPREAD, "claude-cli"),
-        ({"codex-cli": 1, "claude-cli": 1}, RULE_HEADROOM, "codex-cli"),
+        ({CODEX_WORKER: 1}, RULE_SPREAD, "claude-cli"),
+        ({CODEX_WORKER: 1, CLAUDE_WORKER: 1}, RULE_HEADROOM, "codex-cli"),
     ],
 )
 def test_next_launch_is_the_launchers_placement(monkeypatch, workers, rule, surface):
