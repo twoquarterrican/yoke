@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from contextlib import nullcontext
 import sys
 import time
 import types
@@ -26,17 +25,6 @@ def _quiet_telemetry(monkeypatch: pytest.MonkeyPatch):
         runner_module._telemetry,
         "flush_hook_telemetry",
         lambda *a, **k: None,
-    )
-
-
-@pytest.fixture
-def authorized_project_context(monkeypatch):
-    monkeypatch.setattr(
-        "yoke_core.domain.db_helpers.connect", lambda: nullcontext(None)
-    )
-    monkeypatch.setattr(
-        "yoke_core.domain.project_identity.resolve_project_slug",
-        lambda _conn, _pid: "example",
     )
 
 
@@ -120,7 +108,6 @@ def test_agent_type_from_request_reaches_payload_detection(
 
 def test_real_subagent_lint_denies_remotely_via_request_agent_type(
     monkeypatch: pytest.MonkeyPatch,
-    authorized_project_context,
 ) -> None:
     """End-to-end: request agent_type drives the REAL subagent-context deny."""
     lint_id = "yoke_core.domain.lint_subagent_background"
@@ -138,9 +125,17 @@ def test_real_subagent_lint_denies_remotely_via_request_agent_type(
     )
 
     as_subagent = evaluate_remote(
-        "PreToolUse", stdin, "claude", "engineer", 2000, project_id=7
+        "PreToolUse",
+        stdin,
+        "claude",
+        "engineer",
+        2000,
+        project_id=7,
+        project_slug="example",
     )
-    as_main = evaluate_remote("PreToolUse", stdin, "claude", None, 2000, project_id=7)
+    as_main = evaluate_remote(
+        "PreToolUse", stdin, "claude", None, 2000, project_id=7, project_slug="example"
+    )
 
     assert as_subagent.exit_code == 2
     assert as_subagent.outcome == "denied"
@@ -150,7 +145,6 @@ def test_real_subagent_lint_denies_remotely_via_request_agent_type(
 
 def test_local_state_policies_self_skip_with_degraded_markers(
     monkeypatch: pytest.MonkeyPatch,
-    authorized_project_context,
 ) -> None:
     invoked = {"local": 0, "safe": 0}
     local_id = "yoke_core.domain.lint_destructive_git"
@@ -172,7 +166,9 @@ def test_local_state_policies_self_skip_with_degraded_markers(
         },
     )
 
-    result = evaluate_remote("PreToolUse", "{}", "claude", None, 2000, project_id=7)
+    result = evaluate_remote(
+        "PreToolUse", "{}", "claude", None, 2000, project_id=7, project_slug="example"
+    )
 
     assert invoked == {"local": 0, "safe": 1}
     assert result.degraded == (local_id,)

@@ -18,7 +18,7 @@ server's run owns it for relayed events.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from yoke_contracts.hook_driver_process import (
     DRIVER_PAYLOAD_KEY,
@@ -166,7 +166,14 @@ def flush_run_tail(
     telem_records: list,
     registration_preflight: bool = False,
 ) -> None:
-    """Append the dispatch record, flush telemetry, run remote lifecycle."""
+    """Persist session facts, run remote lifecycle, then flush telemetry.
+
+    Registration, observed-session facts and turn posture are written here,
+    before the caller responds: wakes and liveness read them. A remote run
+    (``controls.remote``) leaves its telemetry rows to
+    ``controls.deferred_telemetry`` so the route writes them after the
+    response; every other caller flushes them here.
+    """
     from yoke_core.hooks import telemetry as _telemetry
     from yoke_core.hooks.session_turn_posture_tail import (
         persist_accepted_hook_turn_posture,
@@ -196,6 +203,16 @@ def flush_run_tail(
     driver = resolve_driver_process(
         payload if isinstance(payload, dict) else None, hook_event=event_name
     )
+    dispatch_extra: dict[str, Any] = {
+        "hook_wait_ms": hook_wait_ms,
+        "timed_out": timed_out,
+        "total_timeout_ms": deadline.budget_ms,
+        "driver_pid": driver.get("pid"),
+        "driver_ppid": driver.get("ppid"),
+        "driver_origin": driver.get("origin"),
+        **evaluator_telemetry_fields(payload),
+        **hook_call_identity_fields(payload),
+    }
     telem_records.append(
         (
             "dispatch",
@@ -208,16 +225,7 @@ def flush_run_tail(
                 "item_id": context.item_id,
                 "tool_name": context.tool_name or "",
                 "duration_ms": hook_wait_ms,
-                "extra": {
-                    "hook_wait_ms": hook_wait_ms,
-                    "timed_out": timed_out,
-                    "total_timeout_ms": deadline.budget_ms,
-                    "driver_pid": driver.get("pid"),
-                    "driver_ppid": driver.get("ppid"),
-                    "driver_origin": driver.get("origin"),
-                    **evaluator_telemetry_fields(payload),
-                    **hook_call_identity_fields(payload),
-                },
+                "extra": dispatch_extra,
             },
         )
     )
@@ -230,12 +238,15 @@ def flush_run_tail(
         preflight_complete=registration_preflight,
         driver=driver,
     )
+    defer = controls is not None and controls.remote
     _telemetry.flush_hook_telemetry(
-        telem_records,
+        [] if defer else telem_records,
         deadline=deadline,
         ensure_session=ensure_session,
         observed_session=observed_session,
     )
+    if defer:
+        controls.deferred_telemetry = _deferred_flush(telem_records, dispatch_extra)
     persist_accepted_hook_turn_posture(
         event_name=event_name,
         session_id=context.session_id or "",
@@ -255,6 +266,25 @@ def flush_run_tail(
         )
 
         run_remote_session_lifecycle(event_name, context)
+
+
+def _deferred_flush(
+    telem_records: list, dispatch_extra: dict[str, Any]
+) -> Callable[[int], None]:
+    """Return the post-response telemetry flush for one remote run.
+
+    The route calls it with the server's whole request wall time, which the
+    dispatch row records beside the chain's own ``hook_wait_ms``. The
+    response is already sent, so no hook budget gates these rows.
+    """
+
+    def flush(server_wall_ms: int) -> None:
+        from yoke_core.hooks import telemetry as _telemetry
+
+        dispatch_extra["server_wall_ms"] = server_wall_ms
+        _telemetry.flush_hook_telemetry(telem_records)
+
+    return flush
 
 
 __all__ = ["flush_run_tail", "preflight_remote_registration"]

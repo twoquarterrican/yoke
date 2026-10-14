@@ -12,7 +12,9 @@ The verified bearer-token ``actor_id`` rides the controls so the
 ensure-register tail binds it to the ``harness_sessions`` row.
 
 The request's ``deadline_ms`` is clamped to the server ceiling; a deny
-computed before expiry is preserved in the rendered output.
+computed before expiry is preserved in the rendered output. The route
+resolves the authorized project's slug on its one pre-chain connection and
+passes it in, and runs the returned ``flush_telemetry`` after responding.
 """
 
 from __future__ import annotations
@@ -20,7 +22,7 @@ from __future__ import annotations
 import time
 from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, Optional
 
 from yoke_contracts.session_model_facts import MODEL_FACT_FIELDS, SessionModelFacts
 from yoke_core.domain.session_usage_observation import USAGE_COLUMN
@@ -42,6 +44,10 @@ __all__ = [
 ]
 
 
+def _no_deferred_telemetry(_server_wall_ms: int) -> None:
+    """A run that skipped its telemetry tail leaves nothing to write."""
+
+
 @dataclass(frozen=True)
 class RemoteEvaluation:
     """Outcome of one remote hook evaluation."""
@@ -52,6 +58,9 @@ class RemoteEvaluation:
     wait_ms: int
     outcome: str  # completed | timeout | denied
     denial_audit: dict[str, str]
+    # Writes the run's disposable telemetry rows; called after the response
+    # with the server's request wall time in milliseconds.
+    flush_telemetry: Callable[[int], None] = _no_deferred_telemetry
 
 
 def evaluate_remote(
@@ -65,6 +74,7 @@ def evaluate_remote(
     usage_totals: Optional[str] = None,
     execution_level: Optional[str] = None,
     project_id: Optional[int] = None,
+    project_slug: Optional[str] = None,
     executor_version: Optional[str] = None,
     machine_id: Optional[str] = None,
     native_thread_id: Optional[str] = None,
@@ -114,14 +124,7 @@ def evaluate_remote(
     # The authorized wire project owns every project-scoped path during this
     # run, including dedup before dispatch and lifecycle work in the tail.
     # Never mutate process-wide YOKE_PROJECT in a concurrent server.
-    scope = nullcontext()
-    if project_id is not None:
-        from yoke_core.domain.db_helpers import connect
-        from yoke_core.domain.project_identity import resolve_project_slug
-
-        with connect() as conn:
-            project = resolve_project_slug(conn, project_id)
-        scope = scratch_project(project)
+    scope = scratch_project(project_slug) if project_slug else nullcontext()
     with scope:
         stdout, exit_code = run_event(
             event_name,
@@ -147,4 +150,5 @@ def evaluate_remote(
         wait_ms=wait_ms,
         outcome=outcome,
         denial_audit=dict(controls.denial_audit),
+        flush_telemetry=controls.deferred_telemetry or _no_deferred_telemetry,
     )

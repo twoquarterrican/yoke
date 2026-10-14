@@ -95,7 +95,9 @@ class RunControls:
     already-resolved project membership (a remote run uses
     ``authorized_project_id`` instead). ``flush_tail=False`` skips the
     telemetry/ensure-register tail. ``degraded`` / ``timed_out`` /
-    ``final_outcome`` are write-backs populated during the run.
+    ``final_outcome`` are write-backs populated during the run, as is a
+    remote run's ``deferred_telemetry``: the flush its caller runs after
+    responding, given the server's request wall time in milliseconds.
     """
 
     budget_ms: Optional[int] = None
@@ -110,3 +112,4 @@ class RunControls:
     denial_audit: dict[str, str] = field(default_factory=dict)
     timed_out: bool = False
     final_outcome: str = ""
+    deferred_telemetry: Optional[Callable[[int], None]] = None
