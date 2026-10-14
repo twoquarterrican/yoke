@@ -129,10 +129,11 @@ SESSION-ID`, plus --evidence-id when diagnostic reference exists; see
 Vendor-stopped rows use stored native turn record on readable-manifest surfaces,
 persisting provider words/classification/time and HarnessSessionTurnEndObserved
 telemetry. Stored recovery survives telemetry retention. Turn-end-hook surfaces
-already settled and declare that reason. Recoverable capacity/client-build
-refusals retry with widening bounded backoff; show next attempt/time. Exhausted
-quota/rejected credentials or exhausted retry budget need seat action; only
-those rows are actionable.
+already settled and declare that reason. Recoverable capacity, client-build
+and HTTP 429 throttle (`rate_limited`) refusals retry with widening bounded
+backoff; show next attempt/time. A named usage limit (`quota_exhausted`),
+rejected credentials or exhausted retry budget need seat action; only those
+rows are actionable.
 
 Stranded sessions cannot resume: exhausted published model pool, rejected
 credentials or removed model. Show count/items/relaunch on available headroom,

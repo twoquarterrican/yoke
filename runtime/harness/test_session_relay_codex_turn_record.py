@@ -82,6 +82,23 @@ def test_a_turn_that_ended_on_a_vendor_error_is_reported(tmp_path):
     assert observed.evidence["turn_id"] == TURN_ID
 
 
+def test_a_structured_vendor_error_records_its_variant_name(tmp_path):
+    """Codex writes a variant with data as a one-key mapping; the key is the code."""
+    _rollout(
+        tmp_path,
+        _task_complete(
+            {
+                "message": "exceeded retry limit, last status: 429 Too Many Requests",
+                "codex_error_info": {
+                    "response_too_many_failed_attempts": {"http_status_code": 429}
+                },
+            }
+        ),
+    )
+    observed = _read(tmp_path)
+    assert observed.evidence["codex_error_info"] == "response_too_many_failed_attempts"
+
+
 def test_a_turn_that_ended_cleanly_is_reported(tmp_path):
     _rollout(tmp_path, _tool_call(), _task_complete(None))
     observed = _read(tmp_path)
