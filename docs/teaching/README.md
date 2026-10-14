@@ -143,13 +143,15 @@ inbound and outbound link counts).
 
 ## Check failures
 
-`--check` exits 1 and prints one line per problem, naming the file and record:
+Every build validates the model before rendering. Invalid models exit 1 and
+report every problem by file, record and field, without replacing local views.
+Fix the named records, rebuild, then run `--check`:
 
 | Code | Repair |
 |---|---|
 | `UNKNOWN_STATUS` | Use one of the seven statuses above |
 | `DUPLICATE_ID`, `DANGLING_PARENT` | Make ids unique; add the missing parent record |
-| `DANGLING_REFERENCE` | Fix the id, or remove a command that no longer exists |
+| `DANGLING_REFERENCE` | Fix each named field's id or add its missing record; remove retired registry names |
 | `DANGLING_SOURCE` | Cite a tracked repository-relative path |
 | `PLAN_ROW_UNMAPPED` | Map the row, or name an explicit gap |
 | `PLAN_ENTRY_MISSING`, `PLAN_RECONCILIATION_STALE` | Reconcile as above |

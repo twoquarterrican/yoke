@@ -1,9 +1,10 @@
 {
  "id": "shared-access",
- "title": "Deliver the checked-in master and verify worker access",
+ "title": "Verify worker access to the checked-in teaching source",
  "status": "observed",
- "text": "Deliver one maintained source in checked-in Yoke internal docs. Verify both projects’ worker access; Yoke items update the source and Platform items file linked Yoke updates. Install upkeep only in blocking post-deploy QA.",
- "detail": "The draft is local; relay iCloud access failed in operator evidence. YOK-3914 and PLAT-220 must deliver one checked-in Yoke source, verify both projects’ actual access, and install upkeep only in post-deploy QA.",
+ "text": "The maintained source is checked into the public Yoke repository. Workers read docs/teaching from a checkout or the public repository at an exact commit. Yoke items update affected records while planning and finishing; Platform items request linked Yoke updates.",
+ "detail": "Source publication and the access recipe are present in docs/teaching/README.md, and build.py loads the repository model. This source review proves the Yoke checkout access path, but does not prove actual Platform worker access across machines. Keep that worker-access proof open; local HTML and repository publication alone do not establish it.",
+ "sources": ["docs/teaching/README.md", "docs/teaching/tools/build.py", "docs/teaching/tools/model.py", "docs/teaching/model/evidence/superseded-research/09.json"],
  "plan_refs": ["FIRST-USER.0"],
  "work_items": ["YOK-3914", "PLAT-220"],
  "position": 11
