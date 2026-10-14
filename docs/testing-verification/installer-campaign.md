@@ -27,9 +27,10 @@ nested method configuration, while excluding storage ids and historical proof.
 after every installer-template change; install once from the final source when
 several changes are being coordinated. The source exporter performs no DB writes;
 the registered replacement records the installation in the function-call ledger.
-The exporter fetches the repository's default branch and requires the exact
-source commit to be its ancestor before writing `--cases-file`; its receipt
-names `source_revision`. Uncommitted source, an unmerged lane commit, or an
+The exporter fetches the repository's default branch from the remote recorded
+as tracking it, including when several remotes are configured, and requires
+the exact source commit to be its ancestor before writing `--cases-file`; its
+receipt names `source_revision`. Uncommitted source, an unmerged lane commit, or an
 unreadable upstream refuses as `qa_plan_source_unmerged_or_unverified` and teaches
 “sync after merge.” A lane may run `--check` to compare without publishing cases.
 Use item-scoped or run-bound correction cases for lane proof; never copy lane
