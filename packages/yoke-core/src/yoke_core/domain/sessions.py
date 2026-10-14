@@ -21,10 +21,8 @@ from .sessions_analytics import (  # noqa: F401
     EVENT_WORK_RELEASED,
     SessionError,
     _NEXT_STEP_TO_PATH,
-    _SESSION_EVENT_REGISTRY_ROWS,
     _emit_event,
     _emit_session_event,
-    ensure_session_event_registry_entries,
 )
 from .sessions_cleanup import (
     clean_stale_harness_sessions,
@@ -103,8 +101,6 @@ __all__ = [
     "EVENT_HARNESS_SESSION_STALE_SWEEP_COMPLETED",
     "EVENT_HARNESS_SESSION_END_RELEASED_CLAIMS",
     "EVENT_SESSION_REACTIVATED_WITH_RELEASED_CLAIMS",
-    "_SESSION_EVENT_REGISTRY_ROWS",
-    "ensure_session_event_registry_entries",
     "_emit_event",
     "_emit_session_event",
     "_NEXT_STEP_TO_PATH",

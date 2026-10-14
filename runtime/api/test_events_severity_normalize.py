@@ -171,9 +171,7 @@ class CmdInsertNormalizationTest(unittest.TestCase):
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
-        self._db_ctx = init_test_db(
-            Path(self._tmp.name), apply_schema=_events_cmd_init
-        )
+        self._db_ctx = init_test_db(Path(self._tmp.name), apply_schema=_events_cmd_init)
         self.db_path = self._db_ctx.__enter__()
 
     def tearDown(self):
@@ -259,30 +257,30 @@ class ProducerLiteralCleanupTest(unittest.TestCase):
         self.assertIn('severity="WARN"', source)
         self.assertNotIn('severity="WARNING"', source)
 
-    def test_session_cwd_seed_rows_use_canonical_severities(self):
-        from yoke_core.domain.event_registry_seed_path_claim_session_cwd import (
-            SEED_ROWS,
-        )
+    def test_session_cwd_catalog_rows_use_canonical_severities(self):
+        from yoke_core.domain.event_catalog import EVENT_CATALOG
 
         # Allow-path rows surface as INFO (no warning when the call
         # passed); deny / fail-open / health-check rows surface as WARN.
-        info_names = {
-            "SessionCwdMismatchAllowedReadOnly",
-            "LaneMainWriteEscapeUsed",
-            "LaneMainWriteStrandedLane",
+        expected = {
+            "SessionCwdMismatchAllowedReadOnly": "INFO",
+            "LaneMainWriteEscapeUsed": "INFO",
+            "LaneMainWriteStrandedLane": "INFO",
+            "LaneMainWriteDenied": "WARN",
+            "SessionCwdMismatchDenied": "WARN",
+            "SessionCwdForeignLaneDenied": "WARN",
+            "PathClaimBashGuardDenied": "WARN",
+            "PathClaimEditGuardDenied": "WARN",
+            "SessionCwdBindingFailOpen": "WARN",
+            "SessionCwdBindingHealthCheckFailed": "WARN",
         }
-        for row in SEED_ROWS:
-            name, severity = row[0], row[5]
-            expected = "INFO" if name in info_names else "WARN"
-            self.assertEqual(severity, expected, msg=f"row {name}: {row}")
+        for name, severity in expected.items():
+            self.assertEqual(EVENT_CATALOG[name].severity, severity, msg=name)
 
-    def test_function_call_seed_dispatcher_is_warn(self):
-        from yoke_core.domain.event_registry_seed_yoke_function_call import (
-            SEED_ROWS,
-        )
+    def test_dispatcher_downstream_degraded_is_warn(self):
+        from yoke_core.domain.event_catalog import EVENT_CATALOG
 
-        by_name = {row[0]: row for row in SEED_ROWS}
-        self.assertEqual(by_name["DispatcherDownstreamDegraded"][5], "WARN")
+        self.assertEqual(EVENT_CATALOG["DispatcherDownstreamDegraded"].severity, "WARN")
 
 
 if __name__ == "__main__":  # pragma: no cover

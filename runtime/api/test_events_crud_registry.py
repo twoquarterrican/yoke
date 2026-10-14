@@ -1,4 +1,5 @@
 """Tests for yoke_core.domain.events_crud — event registry and discover."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,88 +7,51 @@ from pathlib import Path
 import pytest
 
 from yoke_core.domain import events_crud as ec
-from runtime.api.events_crud_test_fixtures import (  # noqa: F401
-    db_path,
-)
+from runtime.api.events_crud_test_fixtures import db_path as db_path
+from runtime.api.fixtures.file_test_db import connect_test_db
 
 
 class TestRegistry:
-    def _add_test_event(self, db_path: str, name: str = "TestEvent") -> None:
-        ec.cmd_registry_add(
-            db_path,
-            name=name,
-            kind="system",
-            event_type="tool_call",
-            service="cli",
-            description="A test event",
-        )
+    def _seed_test_event(self, db_path: str, name: str = "TestEvent") -> None:
+        conn = connect_test_db(db_path)
+        try:
+            conn.execute(
+                "INSERT INTO event_registry "
+                "(event_name, event_kind, event_type, owner_service, description) "
+                "VALUES (%s, 'system', 'tool_call', 'cli', 'A test event')",
+                (name,),
+            )
+            conn.commit()
+        finally:
+            conn.close()
 
-    def test_add_and_get(self, db_path: str) -> None:
-        self._add_test_event(db_path)
+    def test_get(self, db_path: str) -> None:
+        self._seed_test_event(db_path)
         result = ec.cmd_registry_get(db_path, "TestEvent")
         assert "TestEvent" in result
         assert "system" in result
 
     def test_list(self, db_path: str) -> None:
         """Registry list matches shell output format."""
-        self._add_test_event(db_path, "EventA")
-        self._add_test_event(db_path, "EventB")
+        self._seed_test_event(db_path, "EventA")
+        self._seed_test_event(db_path, "EventB")
         result = ec.cmd_registry_list(db_path)
         assert "EventA" in result
         assert "EventB" in result
 
-    def test_list_with_status_filter(self, db_path: str) -> None:
-        self._add_test_event(db_path, "ActiveEvt")
-        ec.cmd_registry_deprecate(db_path, "ActiveEvt")
-        result = ec.cmd_registry_list(db_path, status="deprecated")
-        assert "ActiveEvt" in result
-        active_result = ec.cmd_registry_list(db_path, status="active")
-        assert "ActiveEvt" not in active_result
-
-    def test_update(self, db_path: str) -> None:
-        self._add_test_event(db_path)
-        ec.cmd_registry_update(db_path, "TestEvent", description="Updated desc")
-        result = ec.cmd_registry_get(db_path, "TestEvent")
-        assert "Updated desc" in result
-
-    def test_update_not_found(self, db_path: str) -> None:
-        with pytest.raises(LookupError):
-            ec.cmd_registry_update(db_path, "NonExistent", description="x")
-
-    def test_deprecate(self, db_path: str) -> None:
-        self._add_test_event(db_path)
-        ec.cmd_registry_deprecate(db_path, "TestEvent")
-        result = ec.cmd_registry_get(db_path, "TestEvent")
-        assert "deprecated" in result
-
-    def test_deprecate_not_found(self, db_path: str) -> None:
-        with pytest.raises(LookupError):
-            ec.cmd_registry_deprecate(db_path, "NonExistent")
-
-    def test_delete(self, db_path: str) -> None:
-        self._add_test_event(db_path)
-        ec.cmd_registry_delete(db_path, "TestEvent")
-        with pytest.raises(LookupError):
-            ec.cmd_registry_get(db_path, "TestEvent")
-
-    def test_delete_not_found(self, db_path: str) -> None:
-        with pytest.raises(LookupError):
-            ec.cmd_registry_delete(db_path, "NonExistent")
+    def test_list_with_kind_filter(self, db_path: str) -> None:
+        self._seed_test_event(db_path, "SystemEvt")
+        assert "SystemEvt" in ec.cmd_registry_list(db_path, kind="system")
+        assert "SystemEvt" not in ec.cmd_registry_list(db_path, kind="lifecycle")
 
     def test_count(self, db_path: str) -> None:
-        self._add_test_event(db_path, "Evt1")
-        self._add_test_event(db_path, "Evt2")
+        self._seed_test_event(db_path, "Evt1")
+        self._seed_test_event(db_path, "Evt2")
         assert ec.cmd_registry_count(db_path) == 2
-        assert ec.cmd_registry_count(db_path, "active") == 2
 
     def test_get_not_found(self, db_path: str) -> None:
         with pytest.raises(LookupError):
             ec.cmd_registry_get(db_path, "NonExistent")
-
-    def test_add_ignore_duplicate(self, db_path: str) -> None:
-        self._add_test_event(db_path, "DupEvt")
-        self._add_test_event(db_path, "DupEvt")  # should not error
-        assert ec.cmd_registry_count(db_path) == 1
 
 
 class TestDiscover:
@@ -96,7 +60,7 @@ class TestDiscover:
         skills_dir.mkdir(parents=True)
 
         (skills_dir / "SKILL.md").write_text(
-            '# Conduct\n'
+            "# Conduct\n"
             'sh "$SCRIPT_DIR/emit-event.sh" --name "SkillEvent" --kind lifecycle\n'
         )
 
@@ -108,8 +72,7 @@ class TestDiscover:
         pkg_dir.mkdir(parents=True)
 
         (pkg_dir / "test_emitters.py").write_text(
-            "def test_emit():\n"
-            '    emit_event("TestOnlyEvent", context={})\n'
+            'def test_emit():\n    emit_event("TestOnlyEvent", context={})\n'
         )
 
         result = ec.cmd_registry_discover(str(tmp_path))
@@ -120,7 +83,7 @@ class TestDiscover:
         pkg_dir.mkdir(parents=True)
 
         (pkg_dir / "caller.py").write_text(
-            'import subprocess\n'
+            "import subprocess\n"
             'emit_script = "emit-event.sh"\n'
             'subprocess.run(["sh", emit_script, "--name", "PythonEmittedEvent"])\n'
         )

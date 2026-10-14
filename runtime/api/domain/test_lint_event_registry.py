@@ -20,11 +20,10 @@ from yoke_core.domain.lint_event_registry import (
     HookMeta,
     build_deny_json,
     build_deny_reason,
-    build_deprecated_warning,
     extract_command,
     extract_event_name,
     extract_hook_meta,
-    lookup_event_status,
+    lookup_event_registered,
     parse_payload,
 )
 from runtime.api.domain.lint_event_registry_test_helpers import (  # noqa: F401 — fixtures
@@ -123,7 +122,7 @@ class TestExtractHookMeta:
         assert extract_hook_meta(None) == HookMeta()  # type: ignore[arg-type]
 
 
-class TestLookupEventStatus:
+class TestLookupEventRegistered:
     def test_missing_db_path(self, monkeypatch):
         if db_backend.is_postgres():
             monkeypatch.setattr(
@@ -133,34 +132,16 @@ class TestLookupEventStatus:
                     RuntimeError("no database")
                 ),
             )
-        assert lookup_event_status("", "Foo") == (False, None)
-
-    def test_nonexistent_db_file(self, tmp_path, monkeypatch):
-        missing = str(tmp_path / "missing.db")
-        if db_backend.is_postgres():
-            monkeypatch.setattr(
-                lint_mod,
-                "connect",
-                lambda *_args, **_kwargs: (_ for _ in ()).throw(
-                    RuntimeError("no database")
-                ),
-            )
-        assert lookup_event_status(missing, "Foo") == (False, None)
+        assert lookup_event_registered("", "Foo") == (False, False)
 
     def test_missing_table(self, no_table_db):
-        assert lookup_event_status(no_table_db, "Foo") == (False, None)
+        assert lookup_event_registered(no_table_db, "Foo") == (False, False)
 
-    def test_active_event(self, registry_db):
-        assert lookup_event_status(registry_db, "ActiveEvent") == (True, "active")
-
-    def test_deprecated_event(self, registry_db):
-        assert lookup_event_status(registry_db, "DeprecatedEvent") == (
-            True,
-            "deprecated",
-        )
+    def test_registered_event(self, registry_db):
+        assert lookup_event_registered(registry_db, "RegisteredEvent") == (True, True)
 
     def test_unknown_event(self, registry_db):
-        assert lookup_event_status(registry_db, "Unknown") == (True, None)
+        assert lookup_event_registered(registry_db, "Unknown") == (True, False)
 
 
 class TestBuildDenyReason:
@@ -168,9 +149,10 @@ class TestBuildDenyReason:
         reason = build_deny_reason("Foo")
         assert "Foo" in reason
 
-    def test_contains_registration_command(self):
+    def test_teaches_the_catalog_registration_path(self):
         reason = build_deny_reason("Foo")
-        assert "python3 -m yoke_core.cli.db_router events registry add" in reason
+        assert "event_catalog.py" in reason
+        assert "python3 -m yoke_core.domain.event_catalog_render" in reason
 
 
 class TestBuildDenyJson:
@@ -182,11 +164,3 @@ class TestBuildDenyJson:
         assert payload["hookSpecificOutput"]["hookEventName"] == "PreToolUse"
         assert payload["hookSpecificOutput"]["permissionDecision"] == "deny"
         assert "Foo" in payload["hookSpecificOutput"]["permissionDecisionReason"]
-
-
-class TestBuildDeprecatedWarning:
-    def test_contains_event_name(self):
-        warn = build_deprecated_warning("Foo")
-        assert "Foo" in warn
-        assert "deprecated" in warn
-        assert warn.startswith("WARN")

@@ -39,13 +39,6 @@ pytest_plugins = ("runtime.api.sessions_api_stale_test_helpers",)
 # Events table fixture used by cmd_claim's conflict snapshot AND by the
 # shared activity classifier's _max_tool_event_at helper. Carries both a
 # top-level ``session_id`` column and a JSON ``envelope`` column.
-#
-# The empty ``event_registry`` table lets the native event emitter's
-# retired-name guard (``assert_event_name_not_retired``) run its
-# ``SELECT status FROM event_registry`` cleanly: on SQLite a missing table
-# raises ``OperationalError`` and the guard fails open, but on Postgres the
-# missing relation poisons the surrounding transaction (the guard catches only
-# ``sqlite3.OperationalError``), which then breaks ``cmd_claim``'s next query.
 _EVENTS_TABLE_FOR_CLAIM_RACE = """
     CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY,
@@ -76,11 +69,6 @@ _EVENTS_TABLE_FOR_CLAIM_RACE = """
         client_timing_id TEXT,
         envelope TEXT,
         created_at TIMESTAMPTZ NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS event_registry (
-        event_name TEXT PRIMARY KEY,
-        owner_service TEXT,
-        status TEXT
     );
 """
 

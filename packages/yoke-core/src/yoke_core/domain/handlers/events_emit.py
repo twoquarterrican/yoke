@@ -66,7 +66,6 @@ def handle_events_emit(request: FunctionCallRequest) -> HandlerOutcome:
 
     from yoke_core.domain import events_crud
     from yoke_core.domain.events import emit_event
-    from yoke_core.domain.events_retired_name_guard import RetiredEventNameError
     from yoke_core.domain.emit_event_parser import VALID_EVENT_KINDS
 
     if payload.kind not in VALID_EVENT_KINDS:
@@ -76,52 +75,40 @@ def handle_events_emit(request: FunctionCallRequest) -> HandlerOutcome:
         )
     if payload.source_type not in events_crud.VALID_SOURCE_TYPES:
         return _bad_request(
-            "source_type must be one of: "
-            + ", ".join(events_crud.VALID_SOURCE_TYPES),
+            "source_type must be one of: " + ", ".join(events_crud.VALID_SOURCE_TYPES),
             jsonpath="$.payload.source_type",
         )
     if payload.severity not in events_crud.VALID_SEVERITIES:
         return _bad_request(
-            "severity must be one of: "
-            + ", ".join(events_crud.VALID_SEVERITIES),
+            "severity must be one of: " + ", ".join(events_crud.VALID_SEVERITIES),
             jsonpath="$.payload.severity",
         )
 
-    try:
-        result = emit_event(
-            payload.name,
-            event_kind=payload.kind,
-            event_type=payload.type,
-            source_type=payload.source_type,
-            session_id=request.actor.session_id or "",
-            severity=payload.severity,
-            outcome=payload.outcome,
-            org_id=payload.org_id,
-            environment=payload.environment,
-            request_id=payload.request_id,
-            project=payload.project,
-            item_id=payload.item_id,
-            task_num=payload.task_num,
-            agent=payload.agent,
-            tool_name=payload.tool_name,
-            duration_ms=payload.duration_ms,
-            exit_code=payload.exit_code,
-            trace_id=payload.trace_id,
-            anomaly_flags=payload.anomaly_flags,
-            tool_use_id=payload.tool_use_id,
-            turn_id=payload.turn_id,
-            hook_event_name=payload.hook_event_name,
-            context=payload.context,
-        )
-    except RetiredEventNameError as exc:
-        return HandlerOutcome(
-            primary_success=False,
-            error=FunctionError(
-                code="retired_event_name",
-                message=str(exc),
-                jsonpath="$.payload.name",
-            ),
-        )
+    result = emit_event(
+        payload.name,
+        event_kind=payload.kind,
+        event_type=payload.type,
+        source_type=payload.source_type,
+        session_id=request.actor.session_id or "",
+        severity=payload.severity,
+        outcome=payload.outcome,
+        org_id=payload.org_id,
+        environment=payload.environment,
+        request_id=payload.request_id,
+        project=payload.project,
+        item_id=payload.item_id,
+        task_num=payload.task_num,
+        agent=payload.agent,
+        tool_name=payload.tool_name,
+        duration_ms=payload.duration_ms,
+        exit_code=payload.exit_code,
+        trace_id=payload.trace_id,
+        anomaly_flags=payload.anomaly_flags,
+        tool_use_id=payload.tool_use_id,
+        turn_id=payload.turn_id,
+        hook_event_name=payload.hook_event_name,
+        context=payload.context,
+    )
 
     return HandlerOutcome(
         result_payload=EventsEmitResponse(

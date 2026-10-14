@@ -103,7 +103,4 @@ def test_retired_skip_phase_handlers_have_no_live_entrypoints() -> None:
     assert not (engines / ("doctor_hc_" + "skip_bypass.py")).exists()
     registry = (engines / "doctor_registry.py").read_text()
     assert "skip-polish-manual-hop" not in registry
-    assert (
-        "advance-" + "skip"
-        not in (domain / "populate_registry_data_authoritative.py").read_text()
-    )
+    assert "advance-" + "skip" not in (domain / "event_catalog.py").read_text()

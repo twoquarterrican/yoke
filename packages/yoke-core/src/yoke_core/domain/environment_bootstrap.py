@@ -4,7 +4,8 @@ Owns the policy for initializing an EMPTY Postgres database into a complete
 Yoke control-plane DB: schema tables and catalog seeds (roles/permissions,
 default org, canonical actors, capability templates), the projects family
 tables (no project rows — projects enter through onboarding), QA and
-deployment-run tables, and event-registry population. Stage, ephemeral, and self-host
+deployment-run tables, and the event registry projected from the code catalog.
+Stage, ephemeral, and self-host
 environment databases bootstrap through this module. The governed migration
 path applies only to a project's declared authoritative DB (prod); stage and
 ephemeral data is throwaway by definition, so refreshing a non-authoritative
@@ -31,7 +32,6 @@ from __future__ import annotations
 
 import importlib
 import sys
-from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 #: Canonical schema/domain init order — schema first, then domains that
@@ -113,37 +113,6 @@ def run_init_chain(emit: Callable[[str], None] = _emit) -> None:
             raise BootstrapError(f"[env-bootstrap] init module {modname} exited {rc}")
 
 
-def populate_event_registry(
-    repo_root: Optional[Path] = None,
-    emit: Callable[[str], None] = _emit,
-) -> str:
-    """Populate the event registry (DB rows only, no catalog doc render)."""
-    from yoke_core.domain.populate_registry import populate
-
-    root = repo_root or _event_scan_root()
-    emit("  [env-bootstrap] populate event registry")
-    summary = populate(repo_root=str(root))
-    emit(f"  [env-bootstrap] event registry: {summary}")
-    return summary
-
-
-def _event_scan_root() -> Path:
-    """The event-discovery scan root: the repo, else the server source tree.
-
-    Source checkouts resolve to the repo root. Containers and product wheels
-    use the install-bundle source-tree resolver, which handles declared
-    server roots, source-runtime layouts, and the packaged bundle tree.
-    """
-    from yoke_core.api.repo_root import find_repo_root
-
-    try:
-        return find_repo_root(Path(__file__))
-    except RuntimeError:
-        from yoke_core.domain.install_bundle import server_tree_root
-
-        return server_tree_root()
-
-
 def universe_is_born_on(conn: Any) -> bool:
     """True when *conn*'s database already carries a bootstrapped org card.
 
@@ -219,13 +188,9 @@ def verify_bootstrap(emit: Callable[[str], None] = _emit) -> Dict[str, int]:
     return counts
 
 
-def run_bootstrap(
-    repo_root: Optional[Path] = None,
-    emit: Callable[[str], None] = _emit,
-) -> Dict[str, int]:
-    """Full bootstrap: init chain, event registry, verification."""
+def run_bootstrap(emit: Callable[[str], None] = _emit) -> Dict[str, int]:
+    """Full bootstrap: init chain (schema, code-owned rows, seeds), verification."""
     run_init_chain(emit)
-    populate_event_registry(repo_root, emit)
     return verify_bootstrap(emit)
 
 
@@ -237,9 +202,9 @@ def run_init_chain_at_dsn(
 
     The binding is context-local rather than process-global, so hosted import
     requests can materialize trusted staging schemas concurrently without
-    rebinding the platform database or another import. This schema-only entry
-    point deliberately skips event-registry source scanning; callers that need
-    the full seeded environment continue to use :func:`run_bootstrap`.
+    rebinding the platform database or another import. It skips the
+    sentinel verification; callers that need the verified environment use
+    :func:`run_bootstrap`.
     """
     from yoke_core.domain.db_backend import bound_pg_dsn
 

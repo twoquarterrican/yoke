@@ -38,17 +38,8 @@ def _record(payload_json: str):
 
 class TestEmitDenial:
     def test_allow_is_noop(self):
-        with mock.patch(
-            "yoke_core.hooks.telemetry.emit_denial_event"
-        ) as mocked:
+        with mock.patch("yoke_core.hooks.telemetry.emit_denial_event") as mocked:
             emit_denial(Decision(action="allow"))
-        mocked.assert_not_called()
-
-    def test_warn_is_noop(self):
-        with mock.patch(
-            "yoke_core.hooks.telemetry.emit_denial_event"
-        ) as mocked:
-            emit_denial(Decision(action="warn", stderr_message="w"))
         mocked.assert_not_called()
 
     def test_deny_fires_event(self):
@@ -59,9 +50,7 @@ class TestEmitDenial:
             reason=build_deny_reason("Foo"),
             hook_meta=HookMeta(session_id="s", tool_use_id="t", turn_id="r"),
         )
-        with mock.patch(
-            "yoke_core.hooks.telemetry.emit_denial_event"
-        ) as mocked:
+        with mock.patch("yoke_core.hooks.telemetry.emit_denial_event") as mocked:
             emit_denial(decision)
         mocked.assert_called_once()
         kwargs = mocked.call_args.kwargs
@@ -90,7 +79,9 @@ class TestEmitDenial:
 class TestEvaluate:
     def test_allow_returns_noop_no_streams(self, registry_db, monkeypatch, capsys):
         monkeypatch.setenv("YOKE_DB", registry_db)
-        decision = evaluate(_record(_payload('sh emit-event.sh --name "ActiveEvent"')))
+        decision = evaluate(
+            _record(_payload('sh emit-event.sh --name "RegisteredEvent"'))
+        )
         assert decision.outcome is Outcome.NOOP
         assert decision.next is Next.CONTINUE
         assert decision.message == ""
@@ -98,24 +89,9 @@ class TestEvaluate:
         assert captured.err == ""
         assert captured.out == ""
 
-    def test_warn_writes_stderr_returns_warn(self, registry_db, monkeypatch, capsys):
-        monkeypatch.setenv("YOKE_DB", registry_db)
-        decision = evaluate(
-            _record(_payload('sh emit-event.sh --name "DeprecatedEvent"'))
-        )
-        assert decision.outcome is Outcome.WARN
-        assert decision.next is Next.CONTINUE
-        assert decision.message == ""
-        captured = capsys.readouterr()
-        assert captured.out == ""
-        assert "DeprecatedEvent" in captured.err
-        assert captured.err.startswith("WARN")
-
     def test_deny_carries_envelope_and_emits(self, registry_db, monkeypatch):
         monkeypatch.setenv("YOKE_DB", registry_db)
-        with mock.patch(
-            "yoke_core.hooks.telemetry.emit_denial_event"
-        ) as mocked:
+        with mock.patch("yoke_core.hooks.telemetry.emit_denial_event") as mocked:
             decision = evaluate(
                 _record(
                     _payload(
@@ -152,9 +128,7 @@ class TestYok1384CanonicalFallback:
     main-repo DB.
     """
 
-    def test_evaluate_without_yoke_db_env_falls_back(
-        self, registry_db, monkeypatch
-    ):
+    def test_evaluate_without_yoke_db_env_falls_back(self, registry_db, monkeypatch):
         monkeypatch.delenv("YOKE_DB", raising=False)
         fallback_called = {"hit": False}
 
@@ -163,7 +137,9 @@ class TestYok1384CanonicalFallback:
             return registry_db
 
         monkeypatch.setattr(lint_mod, "_resolve_db_fallback", fake_fallback)
-        decision = evaluate(_record(_payload('sh emit-event.sh --name "ActiveEvent"')))
+        decision = evaluate(
+            _record(_payload('sh emit-event.sh --name "RegisteredEvent"'))
+        )
         assert decision.outcome is Outcome.NOOP
         assert fallback_called["hit"] is True, (
             "evaluate() must consult the Python resolver when YOKE_DB is "
@@ -188,19 +164,15 @@ class TestYok1384CanonicalFallback:
             "YOKE_DB is already set"
         )
 
-    def test_main_runs_evaluate_via_fallback_db(
-        self, registry_db, monkeypatch, capsys
-    ):
+    def test_main_runs_evaluate_via_fallback_db(self, registry_db, monkeypatch, capsys):
         monkeypatch.delenv("YOKE_DB", raising=False)
-        monkeypatch.setattr(
-            lint_mod, "_resolve_db_fallback", lambda: registry_db
-        )
-        payload = _payload('sh emit-event.sh --name "ActiveEvent"')
+        monkeypatch.setattr(lint_mod, "_resolve_db_fallback", lambda: registry_db)
+        payload = _payload('sh emit-event.sh --name "RegisteredEvent"')
         monkeypatch.setattr("sys.stdin", io.StringIO(payload))
         rc = lint_mod.main()
         assert rc == 0
         captured = capsys.readouterr()
-        # ActiveEvent in the registry → no deny, no stdout.
+        # RegisteredEvent in the registry → no deny, no stdout.
         assert captured.out == ""
 
     def test_resolve_db_fallback_degrades_silently(self, monkeypatch):
@@ -214,9 +186,7 @@ class TestMain:
         monkeypatch.setenv("YOKE_DB", registry_db)
         payload = _payload('sh emit-event.sh --name "Unknown"')
         monkeypatch.setattr("sys.stdin", io.StringIO(payload))
-        with mock.patch(
-            "yoke_core.hooks.telemetry.emit_denial_event"
-        ):
+        with mock.patch("yoke_core.hooks.telemetry.emit_denial_event"):
             rc = lint_mod.main()
         assert rc == 0
         captured = capsys.readouterr()

@@ -37,10 +37,6 @@ from .events_isolation import (
     isolation_gate_blocks,
 )
 from .events_project_identity import resolve_item_id_for_event
-from .events_retired_name_guard import (
-    RetiredEventNameError,
-    assert_event_name_not_retired,
-)
 from .events_trace import current_trace_context
 from .events_transport_guard import (
     TRANSPORT_NO_LOCAL_DB_REASON,
@@ -308,7 +304,6 @@ def emit_event(
                 envelope,
             )
 
-        assert_event_name_not_retired(conn or resolved_target, event_name)
         passes_severity = (
             check_severity_conn(conn, event_name, source_type, envelope["severity"])
             if conn is not None
@@ -327,8 +322,6 @@ def emit_event(
             wrote, envelope["event_id"], "" if wrote else "exception", envelope
         )
 
-    except RetiredEventNameError:
-        raise
     except ActingEventIdentityUnavailable as exc:
         logger.warning("Required event attribution refused: %s", exc)
         return EmitResult(False, None, "acting_identity_unavailable", None)

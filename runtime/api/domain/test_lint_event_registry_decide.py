@@ -18,7 +18,6 @@ from runtime.api.domain.lint_event_registry_test_helpers import (  # noqa: F401 
     no_table_db,
     registry_db,
 )
-from runtime.api.fixtures.file_test_db import connect_test_db
 
 
 class TestDecide:
@@ -37,25 +36,18 @@ class TestDecide:
         assert decide(payload, registry_db).action == "allow"
 
     def test_active_event_allows(self, registry_db):
-        payload = _payload('sh emit-event.sh --name "ActiveEvent" --kind x')
+        payload = _payload('sh emit-event.sh --name "RegisteredEvent" --kind x')
         d = decide(payload, registry_db)
         assert d.action == "allow"
-        assert d.event_name == "ActiveEvent"
+        assert d.event_name == "RegisteredEvent"
 
     def test_active_event_unquoted_allows(self, registry_db):
-        payload = _payload("sh emit-event.sh --name ActiveEvent --kind x")
+        payload = _payload("sh emit-event.sh --name RegisteredEvent --kind x")
         assert decide(payload, registry_db).action == "allow"
 
     def test_active_event_single_quoted_allows(self, registry_db):
-        payload = _payload("sh emit-event.sh --name 'ActiveEvent' --kind x")
+        payload = _payload("sh emit-event.sh --name 'RegisteredEvent' --kind x")
         assert decide(payload, registry_db).action == "allow"
-
-    def test_deprecated_event_warns(self, registry_db):
-        payload = _payload('sh emit-event.sh --name "DeprecatedEvent" --kind x')
-        d = decide(payload, registry_db)
-        assert d.action == "warn"
-        assert "DeprecatedEvent" in d.stderr_message
-        assert d.deny_json == ""
 
     def test_unregistered_event_denies(self, registry_db):
         payload = _payload('sh emit-event.sh --name "Unknown" --kind x')
@@ -64,7 +56,7 @@ class TestDecide:
         assert d.event_name == "Unknown"
         assert '"permissionDecision": "deny"' in d.deny_json
         assert "Unknown" in d.reason
-        assert "python3 -m yoke_core.cli.db_router events registry add" in d.reason
+        assert "event_catalog.py" in d.reason
 
     def test_unregistered_event_full_path_denies(self, registry_db):
         payload = _payload('sh /abs/path/emit-event.sh --name "Unknown"')
@@ -86,19 +78,6 @@ class TestDecide:
                 ),
             )
         assert decide(payload, missing).action == "allow"
-
-    def test_custom_status_denies(self, registry_db):
-        conn = connect_test_db(registry_db)
-        p = "%s" if db_backend.connection_is_postgres(conn) else "?"
-        conn.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, "
-            f"owner_service, description, status) VALUES ({p}, {p}, {p}, {p}, {p}, {p})",
-            ("WeirdEvent", "lifecycle", "system", "core", "weird", "draft"),
-        )
-        conn.commit()
-        conn.close()
-        payload = _payload('sh emit-event.sh --name "WeirdEvent" --kind x')
-        assert decide(payload, registry_db).action == "deny"
 
     @pytest.mark.parametrize("shape", ["tool_input", "toolInput", "input", "top_level"])
     def test_all_payload_shapes_deny_unregistered(self, registry_db, shape):

@@ -16,7 +16,6 @@ from yoke_contracts.timestamps import parse_instant, utc_now
 from yoke_core.domain.db_helpers import connect, query_rows, query_scalar
 from yoke_core.domain.events_schema import _create_events_table, cmd_init
 from yoke_core.domain.events_prune import cmd_prune
-from yoke_core.domain.events_retired_name_guard import assert_event_name_not_retired
 from yoke_core.domain.yok_n_parser import parse_item_id
 
 __all__ = [
@@ -209,7 +208,6 @@ def cmd_insert(
 
     conn = connect(db_path)
     try:
-        assert_event_name_not_retired(conn, event_name)
         # Unresolvable project tokens index the event as global (NULL
         # project): a universe without the named project row must still
         # accept every event write. Local import avoids a module cycle.

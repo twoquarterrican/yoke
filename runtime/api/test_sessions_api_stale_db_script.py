@@ -112,8 +112,11 @@ _STALE_DB_SCHEMA = f"""
             );
             CREATE TABLE IF NOT EXISTS event_registry (
                 event_name TEXT PRIMARY KEY,
-                owner_service TEXT,
-                status TEXT
+                event_kind TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                owner_service TEXT NOT NULL,
+                description TEXT NOT NULL,
+                severity_default TEXT NOT NULL DEFAULT 'INFO'
             );
 """
 
@@ -123,8 +126,8 @@ def _apply_stale_db_schema() -> None:
 
     Resolves its connection through the backend factory so the same DDL builds
     on the per-test SQLite file or the repointed per-test Postgres DB. The
-    empty ``event_registry`` table lets the native event emitter's retired-name
-    guard run without poisoning the transaction.
+    empty ``event_registry`` table lets the native event emitter's registry
+    lookup run without poisoning the transaction.
     """
     from yoke_core.domain import db_backend
 

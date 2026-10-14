@@ -46,8 +46,8 @@ REFUSAL_NON_TERMINAL_RELEASE = "non_terminal_release_refused"
 
 # Event names emitted by the precondition / operator-override flow.
 # Defined here (rather than in ``sessions_analytics_core``) because this
-# module owns both emission sites; ``populate_registry_data_authoritative``
-# registers the matching event_registry rows by string literal.
+# module owns both emission sites; ``event_catalog`` lists the matching
+# registry rows by string literal.
 EVENT_ITEM_CLAIM_RELEASE_REFUSED = "ItemClaimReleaseRefused"
 EVENT_ITEM_CLAIM_RELEASE_OVERRIDE = "ItemClaimReleaseOverride"
 

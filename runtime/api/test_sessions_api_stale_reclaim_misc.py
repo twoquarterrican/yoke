@@ -1,14 +1,12 @@
 # ruff: noqa: F811
-"""Stale-reclaim, registry seeder, and sweep-event tests.
+"""Stale-reclaim and sweep-event tests.
 
-Includes holdings-aware stale-session cleanup, idempotent event-registry
-seeding, and HarnessSessionStaleSweepCompleted event coverage.
+Includes holdings-aware stale-session cleanup and
+HarnessSessionStaleSweepCompleted event coverage.
 """
 
 from __future__ import annotations
 
-from contextlib import contextmanager
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -29,43 +27,8 @@ from runtime.api.sessions_api_stale_test_helpers import (
     _ago_minutes,
     apply_ddl_statements,
 )
-from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 
 _PAST_HOLDINGS_TTL = DEFAULT_STALE_WITH_HOLDINGS_THRESHOLD_MINUTES + 60
-
-_REGISTRY_SCHEMA = """
-    CREATE TABLE event_registry (
-        event_name TEXT PRIMARY KEY,
-        event_kind TEXT NOT NULL,
-        event_type TEXT NOT NULL,
-        owner_service TEXT NOT NULL,
-        description TEXT NOT NULL,
-        context_schema TEXT,
-        severity_default TEXT NOT NULL DEFAULT 'INFO',
-        added_in TEXT,
-        status TEXT NOT NULL DEFAULT 'active'
-    );
-"""
-
-
-def _apply_registry_schema() -> None:
-    conn = connect_test_db("")
-    try:
-        apply_ddl_statements(conn, _REGISTRY_SCHEMA)
-        conn.commit()
-    finally:
-        conn.close()
-
-
-@contextmanager
-def _registry_conn(tmp_path: Path, *, with_table: bool = True):
-    apply_schema = _apply_registry_schema if with_table else (lambda: None)
-    with init_test_db(tmp_path, apply_schema=apply_schema) as db_path:
-        c = connect_test_db(db_path)
-        try:
-            yield c
-        finally:
-            c.close()
 
 
 class TestEmptySessionStaleCleanup:
@@ -180,34 +143,6 @@ class TestEmptySessionStaleCleanup:
         assert ctx["has_active_holdings"] is False
 
 
-class TestRegistrySeeder:
-    """HarnessSessionHookFailed + HarnessSessionStaleReclaimed idempotent seeding."""
-
-    def test_idempotent_seed(self, tmp_path):
-        from yoke_core.domain.sessions import ensure_session_event_registry_entries
-
-        with _registry_conn(tmp_path) as c:
-            ensure_session_event_registry_entries(c)
-            ensure_session_event_registry_entries(c)  # idempotent
-
-            rows = c.execute(
-                "SELECT event_name, severity_default, added_in FROM event_registry "
-                "WHERE event_name IN "
-                "('HarnessSessionHookFailed', 'HarnessSessionStaleReclaimed')",
-            ).fetchall()
-            names = {r["event_name"] for r in rows}
-            assert names == {"HarnessSessionHookFailed", "HarnessSessionStaleReclaimed"}
-            sev = {r["event_name"]: r["severity_default"] for r in rows}
-            assert sev["HarnessSessionHookFailed"] == "WARN"
-            assert sev["HarnessSessionStaleReclaimed"] == "INFO"
-
-    def test_missing_registry_table_is_noop(self, tmp_path):
-        from yoke_core.domain.sessions import ensure_session_event_registry_entries
-
-        with _registry_conn(tmp_path, with_table=False) as c:
-            ensure_session_event_registry_entries(c)  # must not raise
-
-
 class TestStaleSessionSweepEvent:
     """HarnessSessionStaleSweepCompleted event."""
 
@@ -230,14 +165,11 @@ class TestStaleSessionSweepEvent:
         );
         CREATE TABLE IF NOT EXISTS event_registry (
             event_name TEXT PRIMARY KEY,
-            event_kind TEXT,
-            event_type TEXT,
-            owner_service TEXT,
-            description TEXT,
-            context_schema TEXT,
-            severity_default TEXT,
-            added_in TEXT,
-            status TEXT DEFAULT 'active'
+            event_kind TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            owner_service TEXT NOT NULL,
+            description TEXT NOT NULL,
+            severity_default TEXT NOT NULL DEFAULT 'INFO'
         );
     """
 

@@ -4,11 +4,14 @@ Owns the read-only reporting queries that combine the ``event_registry``
 and ``events`` tables with the codebase discovery surface to produce:
 
 - ``cmd_registry_audit``: a multi-section audit report (stale, rogue,
-  unregistered call sites, deprecated-with-active-call-sites,
-  deprecated-historical-only).
+  unregistered call sites).
 - ``cmd_registry_diff``: a registry-vs-codebase diff (``+`` discovered
-  but not registered, ``-`` registered but no call site, optional ``=``
-  match and ``~`` deprecated-no-call-site lines under ``verbose``).
+  but not registered, ``-`` registered but no discoverable call site,
+  optional ``=`` match lines under ``verbose``).
+
+Rogue names — emitted but absent from the registry, which every boot
+makes equal to the code event catalog — are the drift signal for an
+emitter that lacks its catalog row.
 
 Both functions perform a runtime
 ``import yoke_core.domain.events_crud as _crud`` so that test-time
@@ -33,7 +36,9 @@ __all__ = [
 ]
 
 
-def cmd_registry_audit(db_path: Optional[str] = None, repo_root: Optional[str] = None) -> str:
+def cmd_registry_audit(
+    db_path: Optional[str] = None, repo_root: Optional[str] = None
+) -> str:
     """Combined registry health report."""
     # Late import: ``events_crud`` re-exports from this module, so a top-level
     # ``from .events_crud import _now_iso`` would re-enter a partially-initialised
@@ -41,6 +46,7 @@ def cmd_registry_audit(db_path: Optional[str] = None, repo_root: Optional[str] =
     # Importing the module via ``events_crud`` here also lets tests patch
     # ``events_crud.cmd_registry_discover`` and have audit see the patched name.
     import yoke_core.domain.events_crud as _crud
+
     _now_iso = _crud._now_iso
 
     conn = connect(db_path)
@@ -63,7 +69,7 @@ def cmd_registry_audit(db_path: Optional[str] = None, repo_root: Optional[str] =
         stale = query_rows(
             conn,
             "SELECT r.event_name, r.owner_service FROM event_registry r "
-            "WHERE r.status='active' AND r.event_name NOT IN ("
+            "WHERE r.event_name NOT IN ("
             "  SELECT DISTINCT event_name FROM events "
             f"  WHERE created_at >= {now_sql(offset_days=-30)}"
             ") ORDER BY r.event_name ASC",
@@ -121,53 +127,10 @@ def cmd_registry_audit(db_path: Optional[str] = None, repo_root: Optional[str] =
             lines.extend(unreg_lines)
         lines.append("")
 
-        # 4. Deprecated with active call sites
-        lines.append("### Deprecated With Active Call Sites")
-        dep_rows = query_rows(
-            conn,
-            "SELECT r.event_name, MAX(e.created_at) AS last_emit "
-            "FROM event_registry r INNER JOIN events e ON e.event_name = r.event_name "
-            f"WHERE r.status='deprecated' AND e.created_at >= {now_sql(offset_days=-30)} "
-            "GROUP BY r.event_name ORDER BY r.event_name ASC",
-        )
-
-        discovered_names = {p[0] for p in discovered_pairs}
-        dep_active: list[tuple[str, str]] = []
-        dep_historical: list[tuple[str, str]] = []
-        for row in dep_rows:
-            ename = row["event_name"]
-            last = row["last_emit"]
-            if ename in discovered_names:
-                dep_active.append((ename, last))
-            else:
-                dep_historical.append((ename, last))
-
-        if not dep_active:
-            lines.append("(none)")
-        else:
-            for ename, last in dep_active:
-                lines.append(f"- {ename} (last emitted: {last})")
-        lines.append("")
-
-        lines.append("### Deprecated Historical Only (no active call sites)")
-        if not dep_historical:
-            lines.append("(none)")
-        else:
-            for ename, last in dep_historical:
-                lines.append(f"- {ename} (last emitted: {last}, historical rows only)")
-        lines.append("")
-
         # Summary
-        stale_count = len(stale)
-        rogue_count = len(rogue)
-        unreg_count = len(unreg_lines)
-        dep_count = len(dep_active)
-        dep_hist_count = len(dep_historical)
-
         lines.append("### Summary")
         lines.append(
-            f"{stale_count} stale, {rogue_count} rogue, {unreg_count} unregistered, "
-            f"{dep_count} deprecated-active, {dep_hist_count} deprecated-historical"
+            f"{len(stale)} stale, {len(rogue)} rogue, {len(unreg_lines)} unregistered"
         )
 
         return "\n".join(lines)
@@ -205,19 +168,11 @@ def cmd_registry_diff(
 
         disc_names = set(disc_map.keys())
 
-        # Active registry names
         reg_rows = query_rows(
             conn,
-            "SELECT event_name FROM event_registry WHERE status='active' ORDER BY event_name ASC",
+            "SELECT event_name FROM event_registry ORDER BY event_name ASC",
         )
         reg_names = {row["event_name"] for row in reg_rows}
-
-        # Deprecated names
-        dep_rows = query_rows(
-            conn,
-            "SELECT event_name FROM event_registry WHERE status='deprecated' ORDER BY event_name ASC",
-        )
-        dep_names = {row["event_name"] for row in dep_rows}
 
         diff_lines: list[str] = []
         diff_count = 0
@@ -240,12 +195,6 @@ def cmd_registry_diff(
             if rname not in disc_names:
                 diff_lines.append(f"- {rname} (in registry, no call site found)")
                 diff_count += 1
-
-        # Verbose: deprecated without call sites
-        if verbose:
-            for dname in sorted(dep_names):
-                if dname not in disc_names:
-                    diff_lines.append(f"~ {dname} (deprecated, no call site -- expected)")
 
         if diff_count == 0 and not verbose:
             return "Registry is in sync with codebase. 0 differences."

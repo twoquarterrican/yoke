@@ -31,9 +31,9 @@ def _emit(
 
     Each event lands as ``event_kind=lifecycle, event_type=session_cwd``
     with ``severity`` defaulting to ``WARN``. Allow-path emits override
-    to ``INFO`` (the call passed; it's not a warning). The seed module
-    (``yoke_core.domain.event_registry_seed_path_claim_session_cwd``)
-    pre-registers each name so ``lint_event_registry`` allows the write.
+    to ``INFO`` (the call passed; it's not a warning). Each name has a row
+    in :mod:`yoke_core.domain.event_catalog`, so ``lint_event_registry``
+    allows the write.
     """
     try:
         from yoke_core.domain import emit_event as emit_event_cli
@@ -55,16 +55,8 @@ def _emit(
                 outcome,
                 "--context",
                 json.dumps(context, separators=(",", ":")),
-                *(
-                    ["--session-id", session_id]
-                    if session_id
-                    else []
-                ),
-                *(
-                    ["--item-id", str(int(item_id))]
-                    if item_id is not None
-                    else []
-                ),
+                *(["--session-id", session_id] if session_id else []),
+                *(["--item-id", str(int(item_id))] if item_id is not None else []),
             ]
         )
         emit_event_cli.emit(args)
@@ -276,6 +268,7 @@ def emit_deny_and_build_audit(verdict: object) -> dict:
         from yoke_core.domain.session_ambient_identity import (
             consult_identity_channels as _channels,
         )
+
         audit["identity_channels"] = _channels()
         audit["resolved_session_id"] = getattr(verdict, "session_id", "") or ""
     if failure_class == _PRE_IMPL:
@@ -283,7 +276,9 @@ def emit_deny_and_build_audit(verdict: object) -> dict:
         audit["item_status"] = getattr(verdict, "item_status", None)
         audit["mode"] = getattr(verdict, "mode", "")
         audit["suppression_attempted"] = getattr(
-            verdict, "suppression_attempted", False,
+            verdict,
+            "suppression_attempted",
+            False,
         )
     return audit
 

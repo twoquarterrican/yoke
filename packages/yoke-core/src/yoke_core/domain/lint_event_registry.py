@@ -9,8 +9,7 @@ Contract (preserved from the pre-Pythonization shell):
 
 - Input: PreToolUse JSON payload on stdin.
 - Output: PreToolUse deny JSON on stdout when the event is not registered,
-  otherwise nothing on stdout. Deprecated events print a ``WARN`` line on
-  stderr but still allow. Everything else is silent.
+  otherwise nothing on stdout. Everything else is silent.
 - Exit: always ``0`` (fail-open).
 - Graceful degradation: any missing/unexpected DB, table, payload, or
   ``--name`` argument results in a silent pass-through.
@@ -57,7 +56,6 @@ from yoke_core.domain.lint_event_registry_render import (
     TOOL_NAME,
     build_deny_json,
     build_deny_reason,
-    build_deprecated_warning,
     emit_denial,
 )
 from yoke_core.hooks.types import HookContext, HookDecision, Next, Outcome
@@ -70,7 +68,6 @@ __all__ = [
     "TOOL_NAME",
     "build_deny_json",
     "build_deny_reason",
-    "build_deprecated_warning",
     "decide",
     "decide_dict",
     "emit_denial",
@@ -78,7 +75,7 @@ __all__ = [
     "extract_command",
     "extract_event_name",
     "extract_hook_meta",
-    "lookup_event_status",
+    "lookup_event_registered",
     "main",
     "parse_payload",
 ]
@@ -89,13 +86,11 @@ class Decision:
     """Pure decision record for a single PreToolUse invocation.
 
     Fields:
-        action: ``"allow"``, ``"warn"``, or ``"deny"``. ``"allow"`` covers
-            both "not interesting" (no emit-event.sh, no --name, missing DB,
-            missing table) and "registered active". ``"warn"`` means
-            "registered deprecated — allow with stderr warn". ``"deny"``
-            means "unregistered — block with deny JSON and emit event".
+        action: ``"allow"`` or ``"deny"``. ``"allow"`` covers both "not
+            interesting" (no emit-event.sh, no --name, missing DB, missing
+            table) and "registered". ``"deny"`` means "unregistered — block
+            with deny JSON and emit event".
         event_name: The extracted ``--name`` value if any, otherwise ``""``.
-        stderr_message: The stderr WARN line for the deprecated path.
         deny_json: The serialized PreToolUse deny JSON for the block path.
         reason: The human-readable deny reason (also used for telemetry).
         hook_meta: Attribution metadata (always populated when available).
@@ -103,7 +98,6 @@ class Decision:
 
     action: str = "allow"
     event_name: str = ""
-    stderr_message: str = ""
     deny_json: str = ""
     reason: str = ""
     hook_meta: HookMeta = field(default_factory=HookMeta)
@@ -111,54 +105,43 @@ class Decision:
 
 def _deny_json_with_reason(reason: str) -> str:
     """Serialize a PreToolUse deny envelope around ``reason``."""
-    payload = {"hookSpecificOutput": {"hookEventName": "PreToolUse",
-        "permissionDecision": "deny", "permissionDecisionReason": reason}}
+    payload = {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }
     return json.dumps(payload, separators=(", ", ": "))
 
 
-def lookup_event_status(db_path: str, event_name: str) -> tuple[bool, Optional[str]]:
-    """Look up ``event_name`` in the ``event_registry`` table.
+def lookup_event_registered(db_path: str, event_name: str) -> tuple[bool, bool]:
+    """Return ``(registry_available, registered)`` for ``event_name``.
 
-    Returns a tuple ``(registry_available, status)``:
-
-    - ``(False, None)`` when the DB is unavailable, the ``event_registry``
-      table does not exist, or any DB error occurs. The caller must
-      treat this as "graceful pass-through" (fail-open).
-    - ``(True, None)`` when the registry is available but *event_name* is
-      not listed. The caller must treat this as "deny".
-    - ``(True, "active")`` / ``(True, "deprecated")`` / ``(True, <other>)``
-      for registered events.
-
-    This function never raises. It is the only place that reaches the
-    database so that the rest of the decision surface stays pure.
+    ``registry_available`` is ``False`` when the DB is unavailable, the
+    ``event_registry`` table does not exist, or any DB error occurs; the
+    caller treats that as a graceful pass-through (fail-open). This
+    function never raises. It is the only place that reaches the database
+    so that the rest of the decision surface stays pure.
     """
     try:
         conn = connect(db_path or None)
     except Exception:
-        return (False, None)
+        return (False, False)
     try:
         try:
             from yoke_core.domain.schema_common import _table_exists
 
-            registry_exists = _table_exists(conn, "event_registry")
-        except Exception:
-            return (False, None)
-        if not registry_exists:
-            return (False, None)
-        try:
+            if not _table_exists(conn, "event_registry"):
+                return (False, False)
             p = "%s" if db_backend.connection_is_postgres(conn) else "?"
             row = conn.execute(
-                f"SELECT status FROM event_registry WHERE event_name={p}",
+                f"SELECT 1 FROM event_registry WHERE event_name={p}",
                 (event_name,),
             ).fetchone()
         except Exception:
-            return (False, None)
-        if not row:
-            return (True, None)
-        status = row[0]
-        if status is None:
-            return (True, None)
-        return (True, str(status))
+            return (False, False)
+        return (True, row is not None)
     finally:
         try:
             conn.close()
@@ -170,7 +153,7 @@ def decide_dict(data: Optional[dict], db_path: str) -> Decision:
     """Apply the registry rules to a parsed payload dict.
 
     Pure with respect to I/O besides the registry lookup delegated to
-    :func:`lookup_event_status`. ``data`` of ``None`` is treated as an
+    :func:`lookup_event_registered`. ``data`` of ``None`` is treated as an
     unparseable payload and yields ``allow``.
     """
     if data is None:
@@ -190,39 +173,13 @@ def decide_dict(data: Optional[dict], db_path: str) -> Decision:
         # help / usage invocation — allow silently.
         return Decision(action="allow", hook_meta=hook_meta)
 
-    registry_available, status = lookup_event_status(db_path, event_name)
-    if not registry_available:
+    registry_available, registered = lookup_event_registered(db_path, event_name)
+    if not registry_available or registered:
         # Missing DB or missing ``event_registry`` table → graceful
-        # pass-through. The shell contract requires allow-with-no-output
-        # so the hook never hard-blocks a command just because the
-        # registry tooling happens to be missing locally.
+        # pass-through, so the hook never hard-blocks a command just because
+        # the registry tooling happens to be missing locally.
         return Decision(action="allow", event_name=event_name, hook_meta=hook_meta)
 
-    if status is None:
-        # Registry available but the event is not listed → deny.
-        reason = attach_check_id(
-            build_deny_reason(event_name), check_id="lint-event-registry"
-        )
-        return Decision(
-            action="deny",
-            event_name=event_name,
-            deny_json=_deny_json_with_reason(reason),
-            reason=reason,
-            hook_meta=hook_meta,
-        )
-
-    if status == "active":
-        return Decision(action="allow", event_name=event_name, hook_meta=hook_meta)
-
-    if status == "deprecated":
-        return Decision(
-            action="warn",
-            event_name=event_name,
-            stderr_message=build_deprecated_warning(event_name),
-            hook_meta=hook_meta,
-        )
-
-    # Unknown future statuses behave like "not active" → deny.
     reason = attach_check_id(
         build_deny_reason(event_name), check_id="lint-event-registry"
     )
@@ -248,9 +205,6 @@ def evaluate(record: HookContext) -> HookDecision:
     """Typed entry: route a parsed PreToolUse payload through the registry rules.
 
     - ``allow`` → ``HookDecision(NOOP, CONTINUE)``
-    - ``warn`` → emits the stderr WARN line as a side effect (preserving
-      byte-equivalent stderr output from the legacy ``run``) and returns
-      ``HookDecision(WARN, message="")``.
     - ``deny`` → fires the ``HarnessToolCallDenied`` event and returns
       ``HookDecision(DENY, message=<deny_json>, block=True, next=STOP)``.
 
@@ -262,15 +216,6 @@ def evaluate(record: HookContext) -> HookDecision:
     db_path = os.environ.get("YOKE_DB", "") or _resolve_db_fallback()
     decision = decide_dict(payload, db_path)
 
-    if decision.action == "warn" and decision.stderr_message:
-        # Legacy byte-equivalent: WARN line on stderr, no stdout.
-        print(decision.stderr_message, file=sys.stderr)
-        return HookDecision(
-            outcome=Outcome.WARN,
-            message="",
-            audit_fields={"event_name": decision.event_name},
-            next=Next.CONTINUE,
-        )
     if decision.action == "deny" and decision.deny_json:
         emit_denial(decision)
         return HookDecision(

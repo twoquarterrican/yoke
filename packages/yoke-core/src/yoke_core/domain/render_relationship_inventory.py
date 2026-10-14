@@ -20,7 +20,7 @@ from yoke_core.domain.agents_render_conditional import (
     RENDERED_AGENT_DIRS,
     rendered_agent_path,
 )
-from yoke_core.domain.populate_registry_render import EVENT_CATALOG_RELPATH
+from yoke_core.domain.event_catalog_render import EVENT_CATALOG_RELPATH
 from yoke_core.tools.atlas_render_docs import ATLAS_RELPATH
 
 
@@ -79,9 +79,12 @@ _ATLAS_RENDERER_SOURCES: Sequence[str] = (
     f"{_CORE_TOOLS_SOURCE_ROOT}/atlas_render_docs_tables.py",
 )
 
-_EVENT_CATALOG_STATIC_SOURCES: Sequence[str] = (
-    f"{_CORE_DOMAIN_SOURCE_ROOT}/populate_registry.py",
-    f"{_CORE_DOMAIN_SOURCE_ROOT}/populate_registry_render.py",
+_EVENT_CATALOG_SOURCES: Sequence[str] = (
+    f"{_CORE_DOMAIN_SOURCE_ROOT}/event_catalog.py",
+    f"{_CORE_DOMAIN_SOURCE_ROOT}/event_catalog_render.py",
+    # The renderer preserves the appendix below its sentinel. Naming the
+    # target as a seed keeps authored appendix collisions incompatible.
+    EVENT_CATALOG_RELPATH,
 )
 
 _INSTALL_BUNDLE_PREFIX = f"{PACKAGED_INSTALL_BUNDLE_TREE_REL}/"
@@ -135,20 +138,6 @@ def _atlas_sources(tracked_paths: set[str]) -> List[str]:
     return sorted(sources)
 
 
-def _event_catalog_sources(tracked_paths: set[str]) -> List[str]:
-    sources = set(_EVENT_CATALOG_STATIC_SOURCES)
-    for path in tracked_paths:
-        if not path.startswith(f"{_CORE_DOMAIN_SOURCE_ROOT}/"):
-            continue
-        name = PurePosixPath(path).name
-        if name.startswith(("event_registry_seed", "populate_registry")):
-            sources.add(path)
-    # The catalog renderer preserves the appendix below its sentinel. Naming
-    # the target as a seed keeps authored appendix collisions incompatible.
-    sources.add(EVENT_CATALOG_RELPATH)
-    return sorted(sources)
-
-
 def _install_bundle_relationships(
     tracked_paths: set[str],
 ) -> Dict[str, List[str]]:
@@ -177,7 +166,7 @@ def render_relationship_map(
     tracked = {_normalise_path(path) for path in tracked_paths if str(path).strip()}
     relationships = _agent_relationships()
     relationships[ATLAS_RELPATH] = _atlas_sources(tracked)
-    relationships[EVENT_CATALOG_RELPATH] = _event_catalog_sources(tracked)
+    relationships[EVENT_CATALOG_RELPATH] = sorted(_EVENT_CATALOG_SOURCES)
     relationships.update(_install_bundle_relationships(tracked))
     return dict(sorted(relationships.items()))
 

@@ -79,53 +79,19 @@ class TestRunInitChain:
         run_init_chain(emit=lambda _l: None)
 
 
-class TestEventScanRoot:
-    def test_prefers_repo_root(self):
-        from yoke_core.domain.environment_bootstrap import _event_scan_root
-
-        root = _event_scan_root()
-        assert (root / "runtime" / "api").is_dir()
-
-    def test_falls_back_to_server_source_tree(self, monkeypatch, tmp_path):
-        """Package installs have no repo root; use the bundle source resolver."""
-        from yoke_core.domain import environment_bootstrap as eb
-
-        def _raise(_start=None):
-            raise RuntimeError("no repo root")
-
-        bundle_root = tmp_path / "bundle-source"
-        bundle_root.mkdir()
-
-        monkeypatch.setattr("yoke_core.api.repo_root.find_repo_root", _raise)
-        monkeypatch.setattr(
-            "yoke_core.domain.install_bundle.server_tree_root",
-            lambda: bundle_root,
-        )
-        root = eb._event_scan_root()
-        assert root == bundle_root
-
-
 class TestRunBootstrapRealDb:
     def test_bootstraps_empty_db_to_complete_shape(self, tmp_path, capsys):
         """THE empty-env proof: a fresh disposable Postgres database reaches
         the complete control-plane shape through run_bootstrap alone."""
-        from pathlib import Path
-
         from runtime.api.fixtures.file_test_db import (
             connect_test_db,
             init_test_db,
         )
-        from yoke_core.api.repo_root import find_repo_root
 
-        repo_root = find_repo_root(Path(__file__))
         counts = {}
 
         def bootstrap():
-            counts.update(
-                environment_bootstrap.run_bootstrap(
-                    repo_root=repo_root, emit=lambda _l: None
-                )
-            )
+            counts.update(environment_bootstrap.run_bootstrap(emit=lambda _l: None))
 
         with init_test_db(tmp_path, apply_schema=bootstrap) as db_path:
             assert capsys.readouterr().out == ""

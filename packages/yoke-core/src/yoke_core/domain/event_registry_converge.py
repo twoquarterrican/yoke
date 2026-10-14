@@ -47,7 +47,9 @@ def converge_event_registry(conn: Any) -> RegistryConvergence:
         row[0]: EventSpec(*row) for row in conn.execute(_METADATA_SQL).fetchall()
     }
     written = tuple(
-        name for name, spec in sorted(EVENT_CATALOG.items()) if current.get(name) != spec
+        name
+        for name, spec in sorted(EVENT_CATALOG.items())
+        if current.get(name) != spec
     )
     for name in written:
         conn.execute(_UPSERT_SQL, tuple(EVENT_CATALOG[name]))

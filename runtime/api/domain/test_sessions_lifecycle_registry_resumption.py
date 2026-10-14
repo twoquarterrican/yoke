@@ -83,14 +83,11 @@ CREATE TABLE IF NOT EXISTS events (
 _CREATE_EVENT_REGISTRY = """
 CREATE TABLE IF NOT EXISTS event_registry (
     event_name TEXT PRIMARY KEY,
-    event_kind TEXT,
-    event_type TEXT,
-    owner_service TEXT,
-    description TEXT,
-    context_schema TEXT,
-    severity_default TEXT,
-    added_in TEXT,
-    status TEXT DEFAULT 'active'
+    event_kind TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    owner_service TEXT NOT NULL,
+    description TEXT NOT NULL,
+    severity_default TEXT NOT NULL DEFAULT 'INFO'
 );
 """
 

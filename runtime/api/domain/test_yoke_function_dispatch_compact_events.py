@@ -26,7 +26,6 @@ from unittest.mock import patch
 
 from yoke_core.domain import yoke_function_dispatch as dispatch_module
 from yoke_core.domain import yoke_function_dispatch_events as events_module
-from yoke_core.domain.events_retired_name_guard import RetiredEventNameError
 from yoke_core.domain.yoke_function_dispatch import dispatch
 from yoke_core.domain.yoke_function_dispatch_events import emit_permission_denied
 from yoke_core.domain.yoke_function_dispatch_failure_context import (
@@ -51,8 +50,9 @@ from runtime.api.domain.test_yoke_function_dispatch import (
 
 # One comparable call's result, sized like the production heavy hitters
 # (session_control.relay.list averaged ~19,600 characters per call).
-_BIG_RESULT = {"sessions": [{"session_id": f"s-{n}", "note": "x" * 180}
-                            for n in range(100)]}
+_BIG_RESULT = {
+    "sessions": [{"session_id": f"s-{n}", "note": "x" * 180} for n in range(100)]
+}
 
 
 def _big_result_handler(_request):
@@ -96,8 +96,9 @@ class CompactEventBase(_DispatcherTestBase):
 
     def _called_context(self) -> Dict[str, Any]:
         calls = events_module.emit_event.calls  # type: ignore[attr-defined]
-        called = [c for c in calls
-                  if c["args"] and c["args"][0] == "YokeFunctionCalled"]
+        called = [
+            c for c in calls if c["args"] and c["args"][0] == "YokeFunctionCalled"
+        ]
         self.assertEqual(len(called), 1)
         return called[0]["kwargs"]["context"]
 
@@ -147,13 +148,19 @@ class TestFailureDetailsAreBoundedAndActionable(CompactEventBase):
 
     def test_degraded_warning_detail_is_clipped(self):
         register(
-            "compact.warn.op", _long_warning_handler, _Req, _Resp,
+            "compact.warn.op",
+            _long_warning_handler,
+            _Req,
+            _Resp,
             **_stable_kwargs(),
         )
         dispatch(_make_request("compact.warn.op"))
         calls = events_module.emit_event.calls  # type: ignore[attr-defined]
-        degraded = [c for c in calls
-                    if c["args"] and c["args"][0] == "DispatcherDownstreamDegraded"]
+        degraded = [
+            c
+            for c in calls
+            if c["args"] and c["args"][0] == "DispatcherDownstreamDegraded"
+        ]
         self.assertEqual(len(degraded), 1)
         warning = degraded[0]["kwargs"]["context"]["warnings"][0]
         self.assertEqual(len(warning["detail"]), FAILURE_TEXT_MAX_CHARS)
@@ -161,7 +168,11 @@ class TestFailureDetailsAreBoundedAndActionable(CompactEventBase):
 
     def test_permission_denial_message_is_clipped(self):
         register(
-            "compact.denied.op", _ok_handler, _Req, _Resp, **_stable_kwargs(),
+            "compact.denied.op",
+            _ok_handler,
+            _Req,
+            _Resp,
+            **_stable_kwargs(),
         )
         from yoke_core.domain.yoke_function_registry import lookup
 
@@ -173,8 +184,11 @@ class TestFailureDetailsAreBoundedAndActionable(CompactEventBase):
             message="M" * (FAILURE_TEXT_MAX_CHARS + 1_500),
         )
         calls = events_module.emit_event.calls  # type: ignore[attr-defined]
-        denied = [c for c in calls
-                  if c["args"] and c["args"][0] == "YokeFunctionPermissionDenied"]
+        denied = [
+            c
+            for c in calls
+            if c["args"] and c["args"][0] == "YokeFunctionPermissionDenied"
+        ]
         self.assertEqual(len(denied), 1)
         message = denied[0]["kwargs"]["context"]["message"]
         self.assertEqual(len(message), FAILURE_TEXT_MAX_CHARS)
@@ -186,18 +200,25 @@ class TestReplayLedgerSurvivesTelemetryFailure(_DispatcherTestBase):
     def test_ledger_is_written_when_emission_raises(self):
         recorded: list[tuple] = []
         register(
-            "compact.ledger.op", _ok_handler, _Req, _Resp,
+            "compact.ledger.op",
+            _ok_handler,
+            _Req,
+            _Resp,
             **_stable_kwargs(side_effects=["db_write"]),
         )
 
         def _raising_emit(*_args: Any, **_kwargs: Any) -> Any:
-            raise RetiredEventNameError("YokeFunctionCalled is retired")
+            raise RuntimeError("events table unavailable")
 
-        with patch.object(events_module, "emit_event", _raising_emit), \
-                patch.object(
-                    events_module, "record_call",
-                    lambda *a, **k: recorded.append((a, k)) or True):
-            with self.assertRaises(RetiredEventNameError):
+        with (
+            patch.object(events_module, "emit_event", _raising_emit),
+            patch.object(
+                events_module,
+                "record_call",
+                lambda *a, **k: recorded.append((a, k)) or True,
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
                 dispatch(_make_request("compact.ledger.op", request_id="req-1"))
 
         self.assertEqual(len(recorded), 1)
@@ -207,15 +228,18 @@ class TestReplayLedgerSurvivesTelemetryFailure(_DispatcherTestBase):
     def test_ledger_still_carries_the_full_result(self):
         recorded: list[tuple] = []
         register(
-            "compact.ledgerbig.op", _big_result_handler, _Req, _Resp,
+            "compact.ledgerbig.op",
+            _big_result_handler,
+            _Req,
+            _Resp,
             **_stable_kwargs(side_effects=["db_write"]),
         )
         with patch.object(
-                events_module, "record_call",
-                lambda *a, **k: recorded.append((a, k)) or True):
-            resp = dispatch(
-                _make_request("compact.ledgerbig.op", request_id="req-2")
-            )
+            events_module,
+            "record_call",
+            lambda *a, **k: recorded.append((a, k)) or True,
+        ):
+            resp = dispatch(_make_request("compact.ledgerbig.op", request_id="req-2"))
 
         self.assertTrue(resp.success)
         self.assertEqual(resp.result, _BIG_RESULT)
@@ -225,8 +249,9 @@ class TestReplayLedgerSurvivesTelemetryFailure(_DispatcherTestBase):
     @staticmethod
     def _called_context_from(module: Any) -> Dict[str, Any]:
         calls = module.emit_event.calls  # type: ignore[attr-defined]
-        called = [c for c in calls
-                  if c["args"] and c["args"][0] == "YokeFunctionCalled"]
+        called = [
+            c for c in calls if c["args"] and c["args"][0] == "YokeFunctionCalled"
+        ]
         return called[-1]["kwargs"]["context"]
 
 
@@ -242,27 +267,30 @@ class TestIdempotentReplayIsUnchanged(_DispatcherTestBase):
     def test_replay_returns_the_full_cached_result(self):
         ledgered: list[tuple] = []
         register(
-            "compact.replay.op", _big_result_handler, _Req, _Resp,
+            "compact.replay.op",
+            _big_result_handler,
+            _Req,
+            _Resp,
             **_stable_kwargs(side_effects=["db_write"]),
         )
         with patch.object(
-                events_module, "record_call",
-                lambda *a, **k: ledgered.append((a, k)) or True):
-            first = dispatch(
-                _make_request("compact.replay.op", request_id="req-3")
-            )
+            events_module,
+            "record_call",
+            lambda *a, **k: ledgered.append((a, k)) or True,
+        ):
+            first = dispatch(_make_request("compact.replay.op", request_id="req-3"))
         self.assertTrue(first.success)
 
         args, kwargs = ledgered[0]
         row = (
-            args[2], args[1], kwargs["actor_id"],
-            kwargs["authorization_scope"], kwargs["payload_checksum"],
+            args[2],
+            args[1],
+            kwargs["actor_id"],
+            kwargs["authorization_scope"],
+            kwargs["payload_checksum"],
         )
-        with patch.object(
-                dispatch_module, "_idempotency_lookup", lambda _rid: row):
-            replayed = dispatch(
-                _make_request("compact.replay.op", request_id="req-3")
-            )
+        with patch.object(dispatch_module, "_idempotency_lookup", lambda _rid: row):
+            replayed = dispatch(_make_request("compact.replay.op", request_id="req-3"))
 
         self.assertTrue(replayed.success)
         self.assertEqual(replayed.result, _BIG_RESULT)

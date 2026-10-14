@@ -7,11 +7,14 @@ import subprocess
 import sys
 from unittest.mock import patch
 
+import pytest
+
 from yoke_core.domain import events_crud as ec
 from runtime.api.events_crud_test_fixtures import (  # noqa: F401
     _insert_event,
     db_path as db_path,
 )
+from runtime.api.fixtures.file_test_db import connect_test_db
 from runtime.api.fixtures.pg_testdb import test_database as pg_test_database
 
 
@@ -93,91 +96,54 @@ class TestCLI:
         monkeypatch.setenv("YOKE_DB", db_path)
         assert ec.main(["severity-check", "Any", "agent", "INFO"]) == 0
 
-    def test_registry_add_cli(self, db_path: str, monkeypatch) -> None:
+    def test_registry_get_cli_prints_row(
+        self, db_path: str, monkeypatch, capsys
+    ) -> None:
         monkeypatch.setenv("YOKE_DB", db_path)
-        rc = ec.main(
-            [
-                "registry",
-                "add",
-                "CliAddedEvent",
-                "--kind",
-                "system",
-                "--type",
-                "test",
-                "--service",
-                "cli",
-                "--description",
-                "Added via CLI",
-            ]
+        conn = connect_test_db(db_path)
+        try:
+            conn.execute(
+                "INSERT INTO event_registry "
+                "(event_name, event_kind, event_type, owner_service, description) "
+                "VALUES ('CliSeenEvent', 'system', 'test', 'cli', 'Seeded row')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        assert ec.main(["registry", "get", "CliSeenEvent"]) == 0
+        assert capsys.readouterr().out.strip() == (
+            "CliSeenEvent|system|test|cli|Seeded row|INFO"
         )
-        assert rc == 0
-        assert ec.main(["registry", "get", "CliAddedEvent"]) == 0
+
+    def test_registry_get_without_name_exit_2(self, db_path: str, monkeypatch) -> None:
+        monkeypatch.setenv("YOKE_DB", db_path)
+        assert ec.main(["registry", "get"]) == 2
 
     def test_registry_list_cli(self, db_path: str, monkeypatch) -> None:
         monkeypatch.setenv("YOKE_DB", db_path)
         assert ec.main(["registry", "list"]) == 0
 
-    def test_registry_count_cli(self, db_path: str, monkeypatch) -> None:
+    def test_registry_list_cli_passes_filters(self, db_path: str, monkeypatch) -> None:
+        monkeypatch.setenv("YOKE_DB", db_path)
+        with patch(
+            "yoke_core.domain.events_crud.cmd_registry_list", return_value=""
+        ) as listing:
+            assert (
+                ec.main(["registry", "list", "--kind", "system", "--service", "cli"])
+                == 0
+            )
+        listing.assert_called_once_with(db_path, kind="system", service="cli")
+
+    def test_registry_list_unknown_argument_exit_2(
+        self, db_path: str, monkeypatch
+    ) -> None:
+        monkeypatch.setenv("YOKE_DB", db_path)
+        assert ec.main(["registry", "list", "--status", "active"]) == 2
+
+    def test_registry_count_cli(self, db_path: str, monkeypatch, capsys) -> None:
         monkeypatch.setenv("YOKE_DB", db_path)
         assert ec.main(["registry", "count"]) == 0
-
-    def test_registry_update_cli(self, db_path: str, monkeypatch) -> None:
-        monkeypatch.setenv("YOKE_DB", db_path)
-        ec.main(
-            [
-                "registry",
-                "add",
-                "UpdEvent",
-                "--kind",
-                "system",
-                "--type",
-                "test",
-                "--service",
-                "cli",
-                "--description",
-                "orig",
-            ]
-        )
-        rc = ec.main(["registry", "update", "UpdEvent", "--description", "updated"])
-        assert rc == 0
-
-    def test_registry_deprecate_cli(self, db_path: str, monkeypatch) -> None:
-        monkeypatch.setenv("YOKE_DB", db_path)
-        ec.main(
-            [
-                "registry",
-                "add",
-                "DepEvent",
-                "--kind",
-                "system",
-                "--type",
-                "test",
-                "--service",
-                "cli",
-                "--description",
-                "d",
-            ]
-        )
-        assert ec.main(["registry", "deprecate", "DepEvent"]) == 0
-
-    def test_registry_delete_cli(self, db_path: str, monkeypatch) -> None:
-        monkeypatch.setenv("YOKE_DB", db_path)
-        ec.main(
-            [
-                "registry",
-                "add",
-                "DelEvent",
-                "--kind",
-                "system",
-                "--type",
-                "test",
-                "--service",
-                "cli",
-                "--description",
-                "d",
-            ]
-        )
-        assert ec.main(["registry", "delete", "DelEvent"]) == 0
+        assert capsys.readouterr().out.strip() == "0"
 
     def test_insert_cli_parses_numeric_fields(self, db_path: str, monkeypatch) -> None:
         monkeypatch.setenv("YOKE_DB", db_path)
@@ -215,73 +181,13 @@ class TestCLI:
         monkeypatch.setenv("YOKE_DB", db_path)
         assert ec.main(["registry"]) == 2
 
-    def test_registry_add_unknown_flag_exit_2(self, db_path: str, monkeypatch) -> None:
-        monkeypatch.setenv("YOKE_DB", db_path)
-        assert (
-            ec.main(
-                [
-                    "registry",
-                    "add",
-                    "BadFlagEvent",
-                    "--kind",
-                    "system",
-                    "--type",
-                    "test",
-                    "--service",
-                    "cli",
-                    "--description",
-                    "desc",
-                    "--bogus",
-                    "x",
-                ]
-            )
-            == 2
-        )
-
-    def test_registry_add_unexpected_argument_exit_2(
-        self, db_path: str, monkeypatch
+    @pytest.mark.parametrize("writer", ["add", "update", "deprecate", "delete"])
+    def test_registry_has_no_writer_subcommands(
+        self, writer: str, db_path: str, monkeypatch
     ) -> None:
+        """Registry rows come from the code catalog, so the CLI only reads."""
         monkeypatch.setenv("YOKE_DB", db_path)
-        assert (
-            ec.main(
-                [
-                    "registry",
-                    "add",
-                    "EventOne",
-                    "EventTwo",
-                    "--kind",
-                    "system",
-                    "--type",
-                    "test",
-                    "--service",
-                    "cli",
-                    "--description",
-                    "desc",
-                ]
-            )
-            == 2
-        )
-
-    def test_registry_update_without_fields_exit_2(
-        self, db_path: str, monkeypatch
-    ) -> None:
-        monkeypatch.setenv("YOKE_DB", db_path)
-        ec.main(
-            [
-                "registry",
-                "add",
-                "NoUpdateEvent",
-                "--kind",
-                "system",
-                "--type",
-                "test",
-                "--service",
-                "cli",
-                "--description",
-                "desc",
-            ]
-        )
-        assert ec.main(["registry", "update", "NoUpdateEvent"]) == 2
+        assert ec.main(["registry", writer, "AnyEvent"]) == 2
 
     def test_registry_discover_cli(self, db_path: str, monkeypatch) -> None:
         monkeypatch.setenv("YOKE_DB", db_path)

@@ -176,16 +176,12 @@ from yoke_core.domain.events_reporting import (  # noqa: E402,F401
     _py_call_name,
     _py_string_value,
     _validate_event_name,
-    cmd_registry_add,
     cmd_registry_audit,
     cmd_registry_count,
-    cmd_registry_delete,
-    cmd_registry_deprecate,
     cmd_registry_diff,
     cmd_registry_discover,
     cmd_registry_get,
     cmd_registry_list,
-    cmd_registry_update,
 )
 
 

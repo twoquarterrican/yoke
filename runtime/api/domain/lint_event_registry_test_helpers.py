@@ -19,7 +19,7 @@ def _placeholder(conn) -> str:
 
 
 def _apply_registry_schema() -> None:
-    """``init_test_db`` strategy: an ``event_registry`` table with two rows.
+    """``init_test_db`` strategy: an ``event_registry`` table with one row.
 
     Resolves its connection through the backend factory (``YOKE_DB`` on
     SQLite, the repointed ``YOKE_PG_DSN`` on Postgres) so the same fixture
@@ -35,30 +35,15 @@ def _apply_registry_schema() -> None:
                 event_type TEXT NOT NULL,
                 owner_service TEXT NOT NULL,
                 description TEXT NOT NULL,
-                context_schema TEXT,
-                severity_default TEXT NOT NULL DEFAULT 'INFO',
-                added_in TEXT,
-                status TEXT NOT NULL DEFAULT 'active'
+                severity_default TEXT NOT NULL DEFAULT 'INFO'
             )
             """
         )
         p = _placeholder(conn)
         conn.execute(
             "INSERT INTO event_registry (event_name, event_kind, event_type, "
-            f"owner_service, description, status) VALUES ({p}, {p}, {p}, {p}, {p}, {p})",
-            ("ActiveEvent", "lifecycle", "system", "core", "active test event", "active"),
-        )
-        conn.execute(
-            "INSERT INTO event_registry (event_name, event_kind, event_type, "
-            f"owner_service, description, status) VALUES ({p}, {p}, {p}, {p}, {p}, {p})",
-            (
-                "DeprecatedEvent",
-                "lifecycle",
-                "system",
-                "core",
-                "deprecated test event",
-                "deprecated",
-            ),
+            f"owner_service, description) VALUES ({p}, {p}, {p}, {p}, {p})",
+            ("RegisteredEvent", "lifecycle", "system", "core", "registered test event"),
         )
         conn.commit()
     finally:
@@ -77,7 +62,7 @@ def _apply_no_table_schema() -> None:
 
 @pytest.fixture()
 def registry_db(tmp_path):
-    """A DB with an ``event_registry`` table and two rows (both backends)."""
+    """A DB with an ``event_registry`` table and one registered row."""
     with init_test_db(tmp_path, apply_schema=_apply_registry_schema) as path:
         yield path
 

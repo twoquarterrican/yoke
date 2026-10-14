@@ -69,7 +69,9 @@ def test_converge_reports_what_it_wrote_and_deleted(test_db, monkeypatch) -> Non
     assert result.deleted == ("PathClaimSnapshotRefreshed",)
 
 
-def test_unregistered_emission_lands_and_is_reported_rogue(test_db, monkeypatch) -> None:
+def test_unregistered_emission_lands_and_is_reported_rogue(
+    test_db, monkeypatch
+) -> None:
     monkeypatch.setenv(RESTORE_POINT_ENV, "event-registry-converge-test-snapshot")
     converge_core_schema(test_db)
     assert "UncataloguedProbeEmitted" not in EVENT_CATALOG

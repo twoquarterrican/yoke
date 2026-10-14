@@ -5,10 +5,9 @@ emitter call sites and the ``cmd_registry_discover`` driver that walks
 SKILL markdown and the Python source trees (``packages/*/src`` and
 ``runtime/harness``) to produce ``"EventName|file/path"`` lines.
 
-The output format is byte-stable: callers in ``populate_registry``
-(``_parse_discovery_output``) and in
-``yoke_core.domain.events_registry_audit`` (line-splitting in the
-audit/diff commands) consume this exact format.
+The output format is byte-stable: the registry audit/diff commands in
+``yoke_core.domain.events_registry_audit``, the catalog coverage test and the
+call-site doctor check consume this exact format.
 
 ``events_reporting`` re-exports every name in this module so historical
 callers continue to import the AST utilities and ``cmd_registry_discover``
@@ -80,7 +79,8 @@ def _event_name_value(node: ast.AST, constants: dict[str, str]) -> Optional[str]
 
 
 def _dispatcher_event_name(
-    node: ast.Call, constants: dict[str, str],
+    node: ast.Call,
+    constants: dict[str, str],
 ) -> Optional[str]:
     """Resolve an ``events.emit`` name from a dispatcher call."""
     if _py_call_name(node.func) != "call_dispatcher":
@@ -209,6 +209,11 @@ def _join_continuation_lines(text: str) -> List[str]:
     return result
 
 
+#: Skill markdown emits through ``yoke events emit`` or the shell emitter; a
+#: skill file naming either is scanned for ``--name`` values.
+_SKILL_EMIT_MARKERS = ("events emit", "emit-event")
+
+
 def cmd_registry_discover(repo_root: Optional[str] = None) -> str:
     """Discover SKILL and Python event call sites as event_name|path."""
     if repo_root is None:
@@ -216,7 +221,9 @@ def cmd_registry_discover(repo_root: Optional[str] = None) -> str:
         try:
             result = subprocess.run(
                 ["git", "rev-parse", "--show-toplevel"],
-                capture_output=True, text=True, check=True,
+                capture_output=True,
+                text=True,
+                check=True,
             )
             repo_root = result.stdout.strip()
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -238,7 +245,7 @@ def cmd_registry_discover(repo_root: Optional[str] = None) -> str:
                 content = md_file.read_text(errors="replace")
             except OSError:
                 continue
-            if "emit-event" not in content:
+            if not any(marker in content for marker in _SKILL_EMIT_MARKERS):
                 continue
             rel = str(md_file.relative_to(root))
             for joined in _join_continuation_lines(content):
@@ -263,8 +270,12 @@ def cmd_registry_discover(repo_root: Optional[str] = None) -> str:
             if not any(
                 marker in content
                 for marker in (
-                    "emit-event", "emit_event", "_emit_", "parse_args",
-                    "EVENT_", "call_dispatcher",
+                    "emit-event",
+                    "emit_event",
+                    "_emit_",
+                    "parse_args",
+                    "EVENT_",
+                    "call_dispatcher",
                 )
             ):
                 continue

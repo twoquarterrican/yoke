@@ -16,12 +16,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from yoke_core.domain import db_backend
 from yoke_core.domain.schema_common import _add_column_if_not_exists, _table_exists
 from yoke_core.domain.schema_init_apply import execute_schema_script
-from yoke_core.domain.strategy_execution_events import (
-    STRATEGY_EXECUTION_EVENT_ROWS,
-)
 
 
 STRATEGY_EXECUTION_TABLE_SQL = """
@@ -123,20 +119,6 @@ def ensure_strategy_execution_schema(
     if _table_exists(conn, "strategy_doc_claims"):
         _add_column_if_not_exists(conn, "strategy_doc_claims", *STEERING_PAIR_COLUMN)
     execute_schema_script(conn, STRATEGY_EXECUTION_TABLE_SQL)
-    marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
-    for event_name, description in STRATEGY_EXECUTION_EVENT_ROWS:
-        conn.execute(
-            "INSERT INTO event_registry "
-            "(event_name, event_kind, event_type, owner_service, description, "
-            "severity_default, status) "
-            f"VALUES ({marker}, 'workflow', 'strategy_doc', 'engine', "
-            f"{marker}, 'INFO', 'active') "
-            "ON CONFLICT(event_name) DO UPDATE SET "
-            "event_kind=EXCLUDED.event_kind, event_type=EXCLUDED.event_type, "
-            "owner_service=EXCLUDED.owner_service, "
-            "description=EXCLUDED.description, status='active'",
-            (event_name, description),
-        )
     if commit:
         conn.commit()
 

@@ -27,9 +27,6 @@ import uuid
 from pathlib import Path
 from typing import Any, List, Mapping, Optional, Sequence
 
-from yoke_core.domain.event_registry_seed_render_relationship import (
-    EVENT_NAME_RENDER_RELATIONSHIP_RECORDED,
-)
 from yoke_core.domain.events_bounded_emit import emit_bounded
 from yoke_core.domain.path_context import (
     FAMILY_RENDER_SOURCE,
@@ -41,6 +38,10 @@ from yoke_core.domain.render_relationship_inventory import (
     render_relationship_map,
 )
 from yoke_core.domain.project_attribution import resolved_project
+
+#: Batch-level provenance event shared by the render-target/source rows one
+#: render call writes.
+EVENT_NAME_RENDER_RELATIONSHIP_RECORDED = "RenderRelationshipRecorded"
 
 
 def _latest_target_ids(

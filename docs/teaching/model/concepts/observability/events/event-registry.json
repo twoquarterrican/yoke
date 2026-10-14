@@ -1,7 +1,8 @@
 {
  "id": "event-registry",
  "title": "Event registry",
- "status": "draft-copy",
+ "status": "observed",
+ "sources": ["docs/event-contract.md", "docs/event-catalog.md", "docs/public/reference/db-reference/events-and-deployments.md"],
  "page": "observability",
  "position": 0
 }

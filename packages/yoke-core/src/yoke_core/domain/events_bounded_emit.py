@@ -11,9 +11,7 @@ any database-level failure to the event alone.
 A dropped event is logged rather than swallowed: the message names the
 event, the reason the emitter gave, and where the durable fact actually
 lives, so an operator reading the log is not left guessing whether the
-work landed. A retired event name still raises, because that is the
-caller naming an event that no longer exists rather than telemetry
-failing.
+work landed.
 """
 
 from __future__ import annotations
@@ -22,7 +20,6 @@ import logging
 from typing import Any
 
 from yoke_core.domain import db_backend
-from yoke_core.domain.events_retired_name_guard import RetiredEventNameError
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +51,9 @@ def emit_bounded(
 
     reason = ""
     try:
-        event = emit_event(
-            event_name, conn=conn, transactional=True, **emit_kwargs
-        )
+        event = emit_event(event_name, conn=conn, transactional=True, **emit_kwargs)
         if not event.ok or not event.event_id:
             reason = event.reason or "unknown error"
-    except RetiredEventNameError:
-        _release(conn)
-        raise
     except Exception as exc:
         reason = str(exc)
 

@@ -10,9 +10,6 @@ from yoke_contracts.timestamps import parse_instant
 from yoke_core.domain import db_backend
 from yoke_core.domain.events import build_envelope
 from yoke_core.domain.events_insert_sql import _INSERT_SQL
-from yoke_core.domain.events_retired_name_guard import (
-    assert_event_name_not_retired,
-)
 from yoke_core.domain.events_write_conn import (
     event_insert_params,
     write_event_row_on_conn,
@@ -56,8 +53,6 @@ def append_decision_event(
         created_at=stamp,
     )
     envelope["actor_id"] = actor_id
-    if db_backend.connection_is_postgres(conn):
-        assert_event_name_not_retired(conn, event_name)
     write_event_row_on_conn(
         conn, _INSERT_SQL, event_insert_params(envelope, project_id)
     )

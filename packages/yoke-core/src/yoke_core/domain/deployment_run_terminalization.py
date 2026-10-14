@@ -22,9 +22,6 @@ from typing import Any, Optional
 from yoke_core.domain.db_helpers import connect, instant_parameter, query_one
 from yoke_core.domain.events import build_envelope
 from yoke_core.domain.events_insert_sql import _INSERT_SQL
-from yoke_core.domain.events_retired_name_guard import (
-    assert_event_name_not_retired,
-)
 from yoke_core.domain.events_write_conn import (
     event_insert_params,
     write_event_row_on_conn,
@@ -93,7 +90,6 @@ def _append_event(
         created_at=terminalized_at,
     )
     envelope["actor_id"] = actor_id
-    assert_event_name_not_retired(conn, TERMINALIZATION_EVENT)
     write_event_row_on_conn(
         conn, _INSERT_SQL, event_insert_params(envelope, project_id)
     )

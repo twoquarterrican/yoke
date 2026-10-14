@@ -24,7 +24,7 @@ from yoke_core.domain.agents_render_path_context import (
     render_relationship_map,
     set_render_relationship,
 )
-from yoke_core.domain.populate_registry_render import EVENT_CATALOG_RELPATH
+from yoke_core.domain.event_catalog_render import EVENT_CATALOG_RELPATH
 from yoke_core.domain.events_schema import ensure_event_schema
 from yoke_core.domain.schema_init_tables import (
     create_core_tables,

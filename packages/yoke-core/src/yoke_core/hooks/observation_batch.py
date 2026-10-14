@@ -24,7 +24,6 @@ from yoke_contracts.timestamps import (
 from yoke_core.domain.events_project_identity import working_project_for_event
 from yoke_core.domain.events import build_envelope as build_event_envelope
 from yoke_core.domain.events_emit_write import _write_event
-from yoke_core.domain.events_retired_name_guard import assert_event_name_not_retired
 from yoke_core.domain.events_writes import check_severity_conn
 from yoke_core.domain.hook_observation_db_session import (
     apply_hook_observation_statement_timeout,
@@ -224,7 +223,6 @@ def _dispatch_event(
         created_at=observed_at,
     )
     envelope["event_id"] = event_id
-    assert_event_name_not_retired(conn, _DISPATCH_EVENT)
     if not check_severity_conn(conn, _DISPATCH_EVENT, "hook", "INFO"):
         return
     # Best-effort: this envelope is pure hook-dispatch telemetry with no
