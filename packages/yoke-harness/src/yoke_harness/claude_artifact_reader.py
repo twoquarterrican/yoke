@@ -26,8 +26,9 @@ from yoke_harness.artifact_reader_version import replayed_for_reader, stamp_read
 from yoke_harness.artifact_watermark import ArtifactWatermark
 
 
-#: All older totals replay once, including complete but overcounted readings.
-_READER_VERSION = "message-dedup-v2"
+#: All older totals replay once: complete readings written before child
+#: transcripts were folded are missing every child agent's usage.
+_READER_VERSION = "child-agents-v3"
 _READER_KEY = "claude_reader"
 
 ASSISTANT_ROW_TYPE = "assistant"

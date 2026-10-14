@@ -10,7 +10,8 @@ Every rendering here is honest about what it does not know. An unread
 session shows nothing rather than a zero; a partial reading is marked;
 and a cost that could not be priced shows why rather than a dash that
 could equally mean "free". The dollar figure always reads as an estimate
-of API-equivalent spend, never as plan consumption.
+of API-equivalent spend, never as plan consumption, and a measured
+reading always names the calls no harness records a usage row for.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from yoke_contracts.session_usage_facts import (
     USAGE_UNAVAILABLE,
     SessionUsage,
 )
+from yoke_contracts.session_usage_sources import UNRECORDED_USAGE_UNDERCOUNT
 
 
 #: Marks a figure computed from an incomplete reading. Placed after the
@@ -111,6 +113,7 @@ def usage_title(usage: Optional[SessionUsage], cost: Optional[SessionCost]) -> s
         parts.append(f"{usage.billable_tokens():,} tokens recorded")
         if usage.source:
             parts.append(f"read from {usage.source}")
+        parts.append(UNRECORDED_USAGE_UNDERCOUNT)
         if usage.status != USAGE_COMPLETE and usage.reason:
             parts.append(f"partial: {usage.reason}")
         if usage.cost_caveat:

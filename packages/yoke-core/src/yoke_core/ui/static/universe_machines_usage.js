@@ -54,7 +54,9 @@ export function appendMachineUsage(documentNode, card, relay, sessions) {
     "estimated API-equivalent cost for this machine's sessions in the last "
     + "24 hours — those that ended in the window and those still running "
     + "that started in it — not consumption of any subscription plan; the "
-    + "dollar total covers only the sessions that could be priced",
+    + "dollar total covers only the sessions that could be priced; it "
+    + "includes child-agent usage, and context compaction and summarization "
+    + "calls that write no usage row are not counted, so it can undercount",
   ].filter(Boolean).join(". ");
   const block = el(documentNode, "div", "machine-usage-block");
   card.appendChild(block);
