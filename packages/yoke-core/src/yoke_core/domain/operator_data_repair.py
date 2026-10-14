@@ -12,6 +12,11 @@ from yoke_contracts.operator_data_repair import repair_review_digest
 
 from yoke_core.domain import operator_data_repair_audit as audit
 from yoke_core.domain.handlers.db_read import _json_safe, _is_sensitive_key
+from yoke_core.domain.operator_data_repair_items import (
+    public_snapshots,
+    resolve_item_plan,
+    snapshot_keys,
+)
 from yoke_core.domain.operator_data_repair_sql import (
     RepairRefusal,
     SAFE_TYPES,
@@ -65,13 +70,19 @@ def validate_plan(plan: RepairPlan, reviewed_sha256: str):
             "The review digest does not match this repair document; review the current document and compute its digest.",
         )
     stmt = validate_sql(plan.sql, plan.table, plan.key_columns)
+    if "item_id" in plan.key_columns and "public_ref" in stmt.changed_columns:
+        raise RepairRefusal(
+            "repair_key_mutation",
+            "public_ref identifies an immutable item key; change only non-key columns.",
+        )
+    keys = snapshot_keys(plan)
     columns = sorted(plan.before[0])
-    if not set(plan.key_columns).issubset(columns) or not set(
-        stmt.changed_columns
-    ).issubset(columns):
+    if not set(keys).issubset(columns) or not set(stmt.changed_columns).issubset(
+        columns
+    ):
         raise RepairRefusal(
             "repair_snapshot_incomplete",
-            "Snapshots must include every primary key and every assigned column.",
+            "Snapshots must include every primary key and assigned column; use public_ref (PREFIX-N) for the item_id key.",
         )
     for column in columns:
         identifier(column)
@@ -86,8 +97,8 @@ def validate_plan(plan: RepairPlan, reviewed_sha256: str):
                 "repair_snapshot_invalid",
                 "Use identical JSON-safe column sets without secret-bearing values in every snapshot.",
             )
-    before = _rows_by_key(plan.before, plan.key_columns)
-    after = _rows_by_key(plan.after, plan.key_columns)
+    before = _rows_by_key(plan.before, keys)
+    after = _rows_by_key(plan.after, keys)
     if (stmt.delete and after) or (not stmt.delete and before.keys() != after.keys()):
         raise RepairRefusal(
             "repair_after_identity_mismatch",
@@ -219,11 +230,15 @@ def run_repair(
         sql_hash=sql_hash,
         review_hash=reviewed_sha256,
     )
-    before, after = [], []
+    before, after, refs = [], [], {}
     try:
         conn.execute("SET LOCAL search_path = pg_catalog")
         conn.execute("SET LOCAL statement_timeout = '5s'")
         conn.execute("SET LOCAL lock_timeout = '5s'")
+        plan, refs = resolve_item_plan(conn, plan, project_id)
+        if refs:
+            stmt = validate_sql(plan.sql, plan.table, plan.key_columns)
+            columns = sorted(plan.before[0])
         _table_contract(
             conn, plan, sorted(set(columns) | set(stmt.read_columns)), project_id
         )
@@ -266,8 +281,8 @@ def run_repair(
             conn,
             audit_id,
             state="test_verified" if dry_run else "completed",
-            before=before,
-            after=after,
+            before=public_snapshots(conn, before, refs),
+            after=public_snapshots(conn, after, refs),
         )
     except Exception as exc:
         conn.rollback()
@@ -284,8 +299,8 @@ def run_repair(
                 conn,
                 audit_id,
                 state="live_apply_failed",
-                before=before,
-                after=after,
+                before=public_snapshots(conn, before, refs),
+                after=public_snapshots(conn, after, refs),
                 reason=code + ": " + reason,
             )
             conn.commit()
