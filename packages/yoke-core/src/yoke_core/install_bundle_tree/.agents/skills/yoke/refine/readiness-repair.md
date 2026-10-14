@@ -50,8 +50,8 @@ and best-effort IdeaReadinessAutofixApplied record the outcome.
 Repair success means the counts were written; it does not mean readiness
 passed. Inspect rerun_verdict and rerun_issues, resolve remaining findings
 through refine, and rerun readiness before closure. Hosted callers retain the
-write receipt while collecting a fresh reading for that rerun. The **work
-claim stays** held on successful repair.
+write receipt while collecting a fresh reading for that rerun.
+The **work claim stays** held on successful repair.
 
 Mixed recoverable refusal means **continuing into refine** critique;
 final readiness still owns closure. Coverage repair preserves amendment history,
