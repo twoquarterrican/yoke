@@ -42,7 +42,9 @@ _EPILOG = (
     "environment row is the snapshot's environment id, else the "
     "requirement's own target_env on the snapshot's (or plan target's) "
     "site, else the plan's default target, else the snapshot's site and "
-    "environment names."
+    "environment names. The caller holds the item work claim, a live "
+    "steering seat covering the item, or is the live driver of the "
+    "requirement's run."
 )
 
 

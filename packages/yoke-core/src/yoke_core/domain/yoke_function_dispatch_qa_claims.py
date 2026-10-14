@@ -110,6 +110,9 @@ def qa_subject_claim_verdict(
     needs the session's live item claim — or the claim the run bound when
     it started, which is what lets an hour-long gate record the verdict it
     earned after the live claim was explicitly released or handed off.
+    Operator waiver and execution-target rebind also accept a live steering
+    seat covering the item, or the live driver of the requirement's run,
+    through the same helper.
     """
     target = request.target
     payload = request.payload
@@ -215,12 +218,21 @@ def qa_subject_claim_verdict(
         item_id=int(target_id),
     ):
         return True, None, None
-    if (
+    if request.function == "qa.requirement.rebind_target" or (
         request.function == "qa.requirement.waive"
         and payload.get("source") == "operator"
     ):
         if _operator_waiver_allowed(request, int(target_id)):
             return True, None, None
+        if request.function == "qa.requirement.rebind_target":
+            return (
+                False,
+                "claim_required",
+                "Rebind requires this item's work claim, a live steering seat "
+                "covering the item, or the live driver of the requirement's "
+                "run; ask that holder to run yoke qa requirement rebind-target "
+                "--requirement-id N --rationale TEXT",
+            )
         return (
             False,
             "claim_required",
