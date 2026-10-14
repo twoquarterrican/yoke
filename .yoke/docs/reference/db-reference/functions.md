@@ -44,10 +44,10 @@ Post-write verification marked degraded is partial-state evidence, never green.
 ## Read deadlines
 
 A registered function declaring no side effects shares a 25-second handler
-budget in local, self-hosted and hosted dispatch. The HTTPS relay allows
-30 seconds per attempt and one immediate timeout retry, so two abandoned
-attempts previously looked like a 60-second limit. The server reserves five
-seconds for its response and failure evidence. Browser dispatch and the local
+budget in local, self-hosted and hosted dispatch. The HTTPS relay waits
+30 seconds for a response and never resends a call that timed out: the server
+keeps running the original, so a copy would only queue behind it. The server
+reserves five seconds for its response and failure evidence. Browser dispatch and the local
 UI proxy use the same handler budget; neither declares an extra browser timer.
 
 The budget is checked at native-call boundaries, never by interrupting running

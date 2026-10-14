@@ -29,7 +29,6 @@ from yoke_cli.transport.https_retry_policy import (
     connection_backoff_seconds,
     http_status_is_transient,
     should_retry_connection,
-    should_retry_response_deadline,
     typed_failure_status_is_transient,
     write_retry_notice,
 )
@@ -38,6 +37,7 @@ from yoke_cli.transport.https_engine_handshake import (
     observe_server_version,
 )
 from yoke_cli.transport.https_response_policy import (
+    RESPONSE_TIMEOUT_DETAIL,
     HttpsResponsePolicyError,
     collect_request_secrets,
     parse_typed_response,
@@ -45,8 +45,8 @@ from yoke_cli.transport.https_response_policy import (
 )
 from yoke_cli.transport.https_urlopen import open_no_redirect
 from yoke_cli.transport.https_credentials import TransportError, resolve_token
-from yoke_cli.transport.response_deadline_open import (
-    ResponseOpenDeadlineError,
+from yoke_cli.transport.response_deadline_errors import (
+    ResponseHeadersDeadlineError,
 )
 from yoke_cli.transport.response_deadline_read import deadline_after
 from yoke_contracts.api.function_call import (
@@ -61,7 +61,6 @@ from yoke_contracts.machine_config.schema import (
 from yoke_contracts.read_deadline import FUNCTION_RESPONSE_TIMEOUT_SECONDS
 
 _DEFAULT_TIMEOUT_S = FUNCTION_RESPONSE_TIMEOUT_SECONDS
-_RETRYABLE_RESPONSE_ERROR = "HTTPS function relay response exceeded the time limit"
 _NETWORK_ERRORS = (
     urllib.error.URLError,
     TimeoutError,
@@ -204,10 +203,6 @@ def _relay_attempts(
                 sensitive_values=sensitive_values,
                 handshake=handshake,
             )
-            if response_error == _RETRYABLE_RESPONSE_ERROR and (
-                should_retry_response_deadline(attempt, budget)
-            ):
-                continue
             if response_error is not None:
                 return response, attempt + 1
             application_retryable = not typed or (
@@ -228,23 +223,17 @@ def _relay_attempts(
                 continue
             return response, attempt + 1
         except HttpsResponsePolicyError as exc:
-            if str(exc) == _RETRYABLE_RESPONSE_ERROR and (
-                should_retry_response_deadline(attempt, budget)
-            ):
-                continue
             return _refuse(
                 request,
                 connection,
                 str(exc),
                 sensitive_values=sensitive_values,
             ), attempt + 1
-        except ResponseOpenDeadlineError:
-            if should_retry_response_deadline(attempt, budget):
-                continue
+        except ResponseHeadersDeadlineError:
             return _refuse(
                 request,
                 connection,
-                _RETRYABLE_RESPONSE_ERROR,
+                RESPONSE_TIMEOUT_DETAIL,
                 sensitive_values=sensitive_values,
             ), attempt + 1
         except _NETWORK_ERRORS as exc:

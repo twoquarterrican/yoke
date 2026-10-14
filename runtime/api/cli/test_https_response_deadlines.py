@@ -78,7 +78,7 @@ def _assert_relay_deadline(response) -> None:
 
 def test_https_relay_success_body_rejects_slow_trickle(monkeypatch) -> None:
     clock = _MutableClock()
-    response_streams = (_SlowTrickleResponse(clock), _SlowTrickleResponse(clock))
+    response_streams = (_SlowTrickleResponse(clock),)
     pending_streams = list(response_streams)
     _bind_clock(monkeypatch, clock)
     monkeypatch.setattr(
@@ -95,7 +95,7 @@ def test_https_relay_success_body_rejects_slow_trickle(monkeypatch) -> None:
 
     _assert_relay_deadline(response)
     assert pending_streams == []
-    assert [stream.read_calls for stream in response_streams] == [2, 2]
+    assert [stream.read_calls for stream in response_streams] == [2]
     for stream in response_streams:
         assert stream.socket_timeouts == pytest.approx([1.0, 0.4])
 
@@ -132,7 +132,7 @@ def test_https_relay_default_opener_uses_bounded_caller_owned_post(
 
 def test_https_relay_error_body_rejects_slow_trickle(monkeypatch) -> None:
     clock = _MutableClock()
-    error_streams = [_SlowTrickleResponse(clock), _SlowTrickleResponse(clock)]
+    error_streams = [_SlowTrickleResponse(clock)]
     pending_streams = list(error_streams)
     _bind_clock(monkeypatch, clock)
 
@@ -155,4 +155,4 @@ def test_https_relay_error_body_rejects_slow_trickle(monkeypatch) -> None:
 
     _assert_relay_deadline(response)
     assert pending_streams == []
-    assert [stream.read_calls for stream in error_streams] == [2, 2]
+    assert [stream.read_calls for stream in error_streams] == [2]

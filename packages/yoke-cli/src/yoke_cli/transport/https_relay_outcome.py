@@ -14,6 +14,7 @@ from yoke_cli.transport.https_engine_handshake import (
     observe_server_version,
 )
 from yoke_cli.transport.https_response_policy import (
+    RESPONSE_TIMEOUT_DETAIL,
     HttpsResponsePolicyError,
     adopt_boundary_error,
     parse_typed_response,
@@ -45,6 +46,15 @@ _UNREACHABLE_HINT = (
     "Retrying is the repair — a call that changes state may or may not have "
     "been applied already, and re-running it is safe because the same "
     "request_id replays a completed call instead of repeating it."
+)
+# The server accepted the envelope and its handler keeps running after the
+# client stops waiting, so the relay never resends it: a second copy would
+# only queue behind the first on an already saturated server.
+_RESPONSE_TIMEOUT_HINT = (
+    "The server accepted the call but did not answer in time; it may still "
+    "finish, and the relay did not resend it. Before re-running a command "
+    "that changes state, read the affected state to see whether it applied; "
+    "re-run a read as a narrower read."
 )
 _MALFORMED_HINT = (
     "The relay answered with something that is not a Yoke envelope, so the "
@@ -194,6 +204,8 @@ def transport_error_response(
         )
     elif connection_refusal_is_conclusive(api_url, error):
         hint = _CONCLUSIVE_HINT
+    elif detail == RESPONSE_TIMEOUT_DETAIL:
+        hint = _RESPONSE_TIMEOUT_HINT
     else:
         hint = _UNREACHABLE_HINT if attempts is not None else _MALFORMED_HINT
     return FunctionCallResponse(
