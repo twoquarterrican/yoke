@@ -33,6 +33,11 @@ duplicate report sets before replacing the existing profile.
 JUnit testcase times include parallel contention. Each report's weights are
 scaled to its actual suite wall time before pytest-split's greedy assignment.
 Tests removed from the current checkout disappear from the refreshed profile.
+CI aggregates those weights by file and assigns whole files through the same
+least-duration algorithm. Xdist uses `loadfile` so a file also stays on one
+worker. This stabilizes setup attribution and avoids repeating a file's
+fixtures across shards or workers. Local partial splitting keeps pytest-split's
+ordinary individual-test behavior.
 
 Wheel smokes share one session virtual environment, synchronized across xdist
 workers with a file lock. The fixture proves the core-only dependency closure

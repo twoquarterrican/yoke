@@ -35,3 +35,21 @@ def test_latest_and_local_runs_keep_every_test(monkeypatch):
     items = [_item("tests/teaching_prototype/test_map.py::test_links")]
     selection.pytest_collection_modifyitems(None, items)
     assert len(items) == 1
+
+
+def test_file_groups_keep_setup_cases_together_and_cover_every_item():
+    items = [_item(f"tests/test_{name}.py::test_{case}")
+             for name in "abc" for case in range(2)]
+    durations = {item.nodeid: weight for item, weight in zip(items, [9, 1, 8, 2, 1, 1])}
+    groups = [selection.file_group(items, durations, 2, group) for group in (1, 2)]
+    assert groups[0][0].isdisjoint(groups[1][0])
+    assert groups[0][0] | groups[1][0] == {
+        "tests/test_a.py", "tests/test_b.py", "tests/test_c.py"
+    }
+    assert sorted(estimate for _, estimate in groups) == [10, 12]
+
+
+def test_new_files_receive_known_mean_weight():
+    items = [_item("tests/test_known.py::test_case"), _item("tests/test_new.py::test_case")]
+    groups = [selection.file_group(items, {items[0].nodeid: 4}, 2, n) for n in (1, 2)]
+    assert sorted(weight for _, weight in groups) == [4, 4]

@@ -9,11 +9,12 @@ CI refreshes weights from a complete retained report set before fan-out,
 then shares the same profile with every shard. The committed baseline is
 refreshed through ci_durations_refresh; see docs/testing-verification/ci-shards.md.
 Times measured under xdist are scaled to each report's actual suite wall time.
-The greedy least_duration algorithm retains their relative weights.
+The greedy least_duration algorithm balances aggregate file weights; a file
+stays on one shard and one worker so its fixtures are not repeated elsewhere.
 
 A change-scoped selection earns shards from its profiled wall seconds,
 up to SHARD_COUNT. Missing timings underestimate work, never coverage.
-CI uses every core inside each shard with -n auto and worksteal scheduling.
+CI uses every core inside each shard with -n auto and loadfile scheduling.
 """
 
 from __future__ import annotations
@@ -215,7 +216,7 @@ def pytest_command(group: int) -> list[str]:
         "-n",
         "auto",
         "--dist",
-        "worksteal",
+        "loadfile",
         "--splits",
         str(SHARD_COUNT),
         "--group",
