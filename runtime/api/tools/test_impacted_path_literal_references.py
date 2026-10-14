@@ -194,7 +194,7 @@ def test_editing_the_installer_reaches_the_test_that_loads_it(
 ) -> None:
     monkeypatch.setattr(
         "yoke_core.tools._impacted_import_index.current_test_roots",
-        lambda: ("runtime/",),
+        lambda: ("tests/",),
     )
     _installer_tree(tmp_path)
 

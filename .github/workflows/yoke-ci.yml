@@ -265,7 +265,7 @@ jobs:
           yoke_core.tools.ci_shards run --group "${{ matrix.shard }}"
 
       - name: Upload pytest output
-        if: env.RUN_PYTHON_LEG == 'true' && always() && env.SUITE_ALREADY_PROVEN != 'true'
+        if: always() && env.RUN_PYTHON_LEG == 'true' && env.SUITE_ALREADY_PROVEN != 'true'
         continue-on-error: true # reporting only: an artifact 403 must not conclude a green shard red
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

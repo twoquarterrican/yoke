@@ -39,6 +39,8 @@ workers with a file lock. The fixture proves the core-only dependency closure
 before installing the client, and creates its completion sentinel last.
 Each scenario retains its own checkout, machine configuration, environment,
 and subprocess substitutes; scenarios never modify shared site-packages.
+The core-free scenario disables site loading and uses a filtered view of those
+installed packages on the same interpreter, retaining its engine-absence proof.
 The eight import-graph scenarios remain eight parametrized cases in
 `tests/import_graph/test_yoke_cli_wheel_smoke.py`.
 

@@ -144,7 +144,8 @@ def _run(
     timeout: int = 60,
 ) -> subprocess.CompletedProcess[str]:
     run_env = dict(env) if env is not None else os.environ.copy()
-    run_env.pop("PYTHONPATH", None)
+    if env is None:
+        run_env.pop("PYTHONPATH", None)
     result = subprocess.run(
         command,
         cwd=cwd,
