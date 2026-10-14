@@ -112,3 +112,18 @@ mode, readiness check, context receipt or terminal outcome remains unproven;
 it never passes because configuration files exist. Preserve failed evidence
 and add each new failure to the scripted campaign before rerunning after
 related installer, setup, connection or onboarding changes.
+
+## Focused install readiness
+
+```text
+yoke doctor run --install --project P
+```
+
+The saved campaign adds eight isolated refusal cases using the installed
+candidate: absent CLI auth, stale dashboard, unobserved session hook, foreign
+project binding, unknown guidance, missing instruction pointer, unregistered
+machine and stale hook resident. Each requires a named failure and recovery.
+These injected cases preserve personal sign-in and host configuration; the
+exploration mission separately proves real readiness and received context.
+Refresh the saved plan from this source as above, then rerun the campaign after
+the candidate is released. Keep unperformed live cases marked unproven.

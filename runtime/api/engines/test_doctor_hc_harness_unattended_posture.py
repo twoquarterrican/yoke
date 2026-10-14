@@ -1,7 +1,7 @@
 """The health check that reports whether any harness still prompts on yoke.
 
 Three outcomes matter and are distinct: a machine with no harness at all is
-SKIP (nothing to judge), a harness whose config still prompts is FAIL and
+N/A (nothing to judge), a harness whose config still prompts is FAIL and
 names both the key and the repair, and a fully configured machine is PASS.
 """
 
@@ -30,6 +30,7 @@ UNATTENDED_CODEX = 'approval_policy = "never"\nsandbox_mode = "danger-full-acces
 
 def _paths(tmp_path: Path, monkeypatch, *, codex=None, cursor=None, claude=None):
     """Point the check at temp config files, creating only what is given."""
+    monkeypatch.setattr(mod, "resolve_harness_clis", lambda path: [])
     resolved = {}
     for harness, name, payload in (
         ("codex", "codex/config.toml", codex),
@@ -60,10 +61,12 @@ def _detail(result) -> str:
     return f"{result.check_id} {result.check_name} {result.detail}"
 
 
-def test_no_harness_on_the_machine_skips(tmp_path: Path, monkeypatch) -> None:
+def test_no_harness_on_the_machine_is_not_applicable(
+    tmp_path: Path, monkeypatch
+) -> None:
     _paths(tmp_path, monkeypatch)
     result = _run()
-    assert _status(result) == "SKIP"
+    assert _status(result) == "N/A"
     assert SLUG in _detail(result)
 
 
@@ -116,5 +119,19 @@ def test_an_unparseable_config_is_not_counted_as_configured(
     """A file that does not parse teaches nothing, so it cannot read as PASS."""
     _paths(tmp_path, monkeypatch, codex="this is not = = toml")
     result = _run()
-    assert _status(result) == "SKIP"
+    assert _status(result) == "FAIL"
     assert "does not parse" in _detail(result)
+
+
+def test_installed_harness_without_posture_fails(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    _paths(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        mod,
+        "resolve_harness_clis",
+        lambda path: [SimpleNamespace(harness_id="codex", path="codex")],
+    )
+    result = _run()
+    assert result.result == "FAIL"
+    assert "HARNESS_POSTURE_UNVERIFIED" in result.detail

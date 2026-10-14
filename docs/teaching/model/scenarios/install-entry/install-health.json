@@ -1,0 +1,13 @@
+{
+ "id": "install-health",
+ "title": "Verify installed configuration and observed session delivery separately",
+ "status": "observed",
+ "audience": "both",
+ "when": "After installation and before first project work",
+ "need": "Run focused install readiness and follow the next step for every missing or stale fact. Intentional GitHub disablement is N/A; unknown evidence does not pass.",
+ "disclosure": "action now",
+ "surface": "Doctor install selection and final agent setup report",
+ "topics": ["installation/entry"],
+ "plan_notes": ["FIRST-USER E"],
+ "sources": ["docs/public/events-doctor-ouroboros.md", "packages/yoke-core/src/yoke_core/engines/doctor_install.py"]
+}

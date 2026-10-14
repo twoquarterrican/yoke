@@ -47,6 +47,7 @@ again.
 | `executable` | string | Command name the vendor installs (for example, `cursor-agent`). |
 | `version_args` | list[string] | Arguments used by the bounded version probe. |
 | `bundled_candidates` | list[string] | Optional absolute executable paths inside a vendor application bundle. Empty when no supported bundled command exists. |
+| `authentication` | object | Bounded status arguments, the optional JSON boolean sign-in key, and the native login arguments. Doctor records only the verdict, never the private native auth document. |
 | `project_discovery` | object | Canonical instruction file, skill source, required native skill entry, minimum embedded engine version (nullable), and installed recovery document. Instruction-file discovery is independent of skill discovery. |
 
 `project_discovery` applies to every surface in the family: Codex and Cursor

@@ -1,4 +1,4 @@
-"""Warm, machine-local evaluator behind ``yoke hook evaluate``."""
+"""Machine-local resident for canonical hook evaluation."""
 
 from __future__ import annotations
 
@@ -30,6 +30,7 @@ from yoke_contracts.hook_process_context import (
     activate_process_context,
     install_process_context,
 )
+from yoke_harness.hook_resident_probe import receive_request
 from yoke_contracts.hook_resident_routing import (
     is_read_only_tool_event,
     message_probe_key,
@@ -75,7 +76,7 @@ class _ResidentServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer
         self.restart_event = threading.Event()
         self.http_opener = ResidentHttpOpener()
         self.observations = ObservationQueue(self.http_opener)
-        # Preload the canonical evaluator only after process facades exist.
+        # Process facades must exist before importing the canonical evaluator.
         from yoke_cli.commands.adapters.hook_inprocess import evaluate_inprocess
 
         self.evaluate_inprocess = evaluate_inprocess
@@ -198,7 +199,9 @@ class _ResidentHandler(socketserver.BaseRequestHandler):
         try:
             self.request.settimeout(15.0)
             try:
-                request = HookEvaluatorRequest.from_mapping(receive_frame(self.request))
+                request = receive_request(self.request, self.server.loaded_revision)
+                if request is None:
+                    return
                 if not _same_revision(request.revision, self.server.loaded_revision):
                     send_frame(
                         self.request,

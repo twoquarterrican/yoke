@@ -3,6 +3,9 @@
 from copy import deepcopy
 import shlex
 
+from yoke_core.domain.installer_campaign_install_health_cases import (
+    install_health_cases,
+)
 from yoke_core.domain.installer_campaign_current_text_cases import (
     CURRENT_TEXT_INSTALLER_CAMPAIGN_CASES,
 )
@@ -266,6 +269,7 @@ LATE_HARNESS = _command_case(
     ),
 )
 
+
 INSTALLER_RECOVERY_CASES = (
     STALE_REINSTALL,
     LOCAL_HOSTED_BACKUP,
@@ -273,7 +277,7 @@ INSTALLER_RECOVERY_CASES = (
     SECOND_MACHINE_JOIN,
     UNINSTALL,
     LATE_HARNESS,
-)
+) + install_health_cases(_command_case)
 
 
 def recovery_cases(*, primary_machine: str, joining_machine: str):

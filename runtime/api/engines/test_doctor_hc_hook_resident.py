@@ -43,11 +43,10 @@ def test_doctor_reports_down_even_with_suppressed_warning(paths):
     (paths.state_dir / "fallback-warning").write_text("9999999999", encoding="utf-8")
     result = _run()
     assert result.check_id == resident_hc.SLUG
-    assert result.result == "WARN"
+    assert result.result == "FAIL"
     assert "YOKE_HOOK_RESIDENT_UNREACHABLE" in result.detail
-    assert "canonical in-process fallback" in result.detail
     assert str(paths.log) in result.detail
-    assert "next hook invocation retries" in result.detail
+    assert "new harness session" in result.detail
     assert not paths.socket.exists()  # Doctor must not start a resident.
 
 
@@ -55,16 +54,27 @@ def test_doctor_reports_stale_socket_as_down(paths):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
         listener.bind(str(paths.socket))
     assert paths.socket.exists()
-    assert _run().result == "WARN"
+    assert _run().result == "FAIL"
 
 
-def test_doctor_reports_listener_accepting_connections(paths):
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
-        listener.bind(str(paths.socket))
-        listener.listen()
-        result = _run()
+def test_doctor_requires_matching_loaded_build(monkeypatch, paths):
+    monkeypatch.setattr(
+        resident_hc, "resident_revision_problem", lambda socket, revision: ""
+    )
+    result = _run()
     assert result.result == "PASS"
-    assert "accepts connections" in result.detail
+    assert "installed build" in result.detail
+
+
+def test_doctor_fails_wrong_loaded_build(monkeypatch, paths):
+    monkeypatch.setattr(
+        resident_hc,
+        "resident_revision_problem",
+        lambda *args: "YOKE_HOOK_VERSION_MISMATCH",
+    )
+    result = _run()
+    assert result.result == "FAIL"
+    assert "YOKE_HOOK_VERSION_MISMATCH" in result.detail
 
 
 def test_doctor_reports_unreadable_state(monkeypatch):
@@ -73,7 +83,7 @@ def test_doctor_reports_unreadable_state(monkeypatch):
 
     monkeypatch.setattr(resident_hc, "resident_paths", refuse)
     result = _run()
-    assert result.result == "WARN"
+    assert result.result == "FAIL"
     assert "YOKE_HOOK_RESIDENT_STATE_UNREADABLE" in result.detail
     assert "permissions" in result.detail
 

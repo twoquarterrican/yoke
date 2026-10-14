@@ -118,7 +118,7 @@ def hc_project_gh_auth(conn, args: DoctorArgs, rec: RecordCollector) -> None:
             rec.record(
                 "HC-project-gh-auth",
                 f"GitHub App auth ({proj_id})",
-                "SKIP",
+                "N/A",
                 github_sync_disabled_notice(proj_id, "project auth check"),
             )
             return

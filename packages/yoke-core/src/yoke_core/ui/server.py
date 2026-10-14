@@ -277,7 +277,14 @@ def create_ui_app(token: str, *, port: int = DEFAULT_UI_PORT):
 
     @app.get(SERVED_BUILD_PATH)
     def served_build_path() -> Response:
-        return served_build_response(served_build_identity())
+        from yoke_contracts.engine_version import (
+            ENGINE_VERSION_HEADER,
+            installed_engine_version,
+        )
+
+        response = served_build_response(served_build_identity())
+        response.headers[ENGINE_VERSION_HEADER] = installed_engine_version()
+        return response
 
     @app.post("/api/functions/call")
     def call_function(envelope: Dict[str, Any]) -> JSONResponse:

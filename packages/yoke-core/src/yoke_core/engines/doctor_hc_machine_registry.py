@@ -6,7 +6,6 @@ from typing import Any, Mapping
 
 from yoke_cli.config import machine_config
 from yoke_core.domain.control_plane_transport import relay
-from yoke_core.engines.doctor_applicability import NOT_APPLICABLE
 from yoke_core.engines.doctor_report import DoctorArgs, RecordCollector
 
 
@@ -50,9 +49,8 @@ def hc_machine_registry(
         rec.record(
             SLUG,
             TITLE,
-            NOT_APPLICABLE,
-            "this machine has no canonical machine id yet; `yoke setup` "
-            "assigns one before registration applies",
+            "FAIL",
+            "MACHINE_NOT_REGISTERED: this machine has no canonical id. Run `yoke setup`.",
         )
         return
     try:

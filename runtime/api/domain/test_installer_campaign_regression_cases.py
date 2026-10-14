@@ -20,7 +20,9 @@ from yoke_core.domain.installer_campaign_regression_cases import (
     _UNINSTALL_WAIT_SCRIPT,
 )
 from yoke_core.domain.machine_qa_method_contracts import validate_machine_method_config
-from yoke_core.domain.installer_campaign_execution_target import installer_campaign_cases_for_target
+from yoke_core.domain.installer_campaign_execution_target import (
+    installer_campaign_cases_for_target,
+)
 from yoke_core.domain.ssh_mac_host_control import SshMacHostControl
 from yoke_core.domain.ssh_linux_host_control import SshLinuxHostControl
 from runtime.api.domain.test_qa_release_channel_target import _target
@@ -37,13 +39,19 @@ def test_every_recovery_recipe_satisfies_its_method_contract():
 
 
 def test_projected_recovery_entries_expand_through_both_real_host_adapters():
-    control = SimpleNamespace(path_state=SimpleNamespace(yoke_bin="/tmp/fixture/bin/yoke"))
+    control = SimpleNamespace(
+        path_state=SimpleNamespace(yoke_bin="/tmp/fixture/bin/yoke")
+    )
     cases = installer_campaign_cases_for_target(
-        _target("prod"), primary_machine="primary-test", joining_machine="joining-test",
+        _target("prod"),
+        primary_machine="primary-test",
+        joining_machine="joining-test",
     )
     for case in cases:
         if case["entry_surface"]:
-            mac = SshMacHostControl._resolve_entry_surface(control, case["entry_surface"])
+            mac = SshMacHostControl._resolve_entry_surface(
+                control, case["entry_surface"]
+            )
             linux = SshLinuxHostControl._entry_surface(control, case["entry_surface"])
             assert mac == linux
             assert "{yoke_bin}" not in mac
@@ -52,12 +60,15 @@ def test_projected_recovery_entries_expand_through_both_real_host_adapters():
 def test_stale_lookup_selects_the_highest_published_predecessor(monkeypatch, capsys):
     def open_response(url, **kwargs):
         if url.endswith(".json"):
-            return BytesIO(b'{"version":"2.0.0","index_url":"https://example.invalid/simple"}')
+            return BytesIO(
+                b'{"version":"2.0.0","index_url":"https://example.invalid/simple"}'
+            )
         return BytesIO(
             b'<a href="yoke_cli-1.0-py3-none-any.whl">older</a>'
             b'<a href="yoke_cli-1.5-py3-none-any.whl">previous</a>'
             b'<a href="yoke_cli-2.1-py3-none-any.whl">newer</a>'
         )
+
     monkeypatch.setattr(request, "urlopen", open_response)
     monkeypatch.setattr(sys, "argv", ["fixture", "https://example.invalid", "stable"])
     exec(compile(_STALE_RELEASE_SCRIPT, "stale_fixture", "exec"), {})
@@ -67,6 +78,7 @@ def test_stale_lookup_selects_the_highest_published_predecessor(monkeypatch, cap
 def test_stale_lookup_network_failure_teaches_recovery(monkeypatch):
     def refuse(*args, **kwargs):
         raise OSError("unavailable")
+
     monkeypatch.setattr(request, "urlopen", refuse)
     monkeypatch.setattr(sys, "argv", ["fixture", "https://example.invalid", "stable"])
     with pytest.raises(SystemExit, match="stale_release_lookup_failed"):
@@ -74,13 +86,19 @@ def test_stale_lookup_network_failure_teaches_recovery(monkeypatch):
 
 
 @pytest.mark.parametrize("removed_after", [2, None])
-def test_uninstall_waits_for_deferred_removal_or_names_timeout(monkeypatch, removed_after):
+def test_uninstall_waits_for_deferred_removal_or_names_timeout(
+    monkeypatch, removed_after
+):
     clock = [0]
     with monkeypatch.context() as patch:
         patch.setattr(sys, "argv", ["fixture", "/tmp/fixture-launcher"])
         patch.setattr(time, "monotonic", lambda: clock[0])
         patch.setattr(time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + 1))
-        patch.setattr(Path, "exists", lambda path: removed_after is None or clock[0] < removed_after)
+        patch.setattr(
+            Path,
+            "exists",
+            lambda path: removed_after is None or clock[0] < removed_after,
+        )
         if removed_after is None:
             with pytest.raises(SystemExit, match="uninstall_handoff_incomplete"):
                 exec(compile(_UNINSTALL_WAIT_SCRIPT, "uninstall_fixture", "exec"), {})
@@ -95,7 +113,9 @@ def _late_fixture(monkeypatch, tmp_path, setup_returncode):
     executable = tmp_path / "codex"
     executable.write_text("fixture binary")
     monkeypatch.setattr(shutil, "which", lambda name: str(executable))
-    monkeypatch.setattr(sys, "argv", ["fixture", "setup-fixture", str(tmp_path / "late-codex")])
+    monkeypatch.setattr(
+        sys, "argv", ["fixture", "setup-fixture", str(tmp_path / "late-codex")]
+    )
 
     def run(argv, **kwargs):
         if kwargs.get("shell") and executable.exists() and setup_returncode == 0:
@@ -121,7 +141,9 @@ def test_failed_setup_restores_the_preserved_harness(monkeypatch, tmp_path):
     assert not home.with_name(".codex.installer-qa-saved").exists()
 
 
-def test_late_discovery_uses_absent_then_available_disposable_home(monkeypatch, tmp_path):
+def test_late_discovery_uses_absent_then_available_disposable_home(
+    monkeypatch, tmp_path
+):
     executable = _late_fixture(monkeypatch, tmp_path, 0)
     home = tmp_path / ".codex"
     home.mkdir()
@@ -174,8 +196,38 @@ def test_native_probe_timeout_names_recovery_after_restoration(monkeypatch, tmp_
     assert executable.exists()
 
 
-def test_configured_permissions_without_trusted_hooks_do_not_pass(monkeypatch, tmp_path):
+def test_configured_permissions_without_trusted_hooks_do_not_pass(
+    monkeypatch, tmp_path
+):
     executable = _late_fixture(monkeypatch, tmp_path, 0)
     with pytest.raises(SystemExit, match="late_harness_hooks_unready"):
         exec(compile(_LATE_HARNESS_SCRIPT, "late_fixture", "exec"), {})
     assert executable.exists()
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    [
+        "harness-auth-missing",
+        "dashboard-stale",
+        "session-hook-unobserved",
+        "foreign-install-binding",
+        "guidance-unknown",
+        "instruction-pointer-missing",
+        "machine-unregistered",
+        "resident-stale",
+    ],
+)
+def test_install_health_scripted_failures_remain_diagnosed(
+    monkeypatch, capsys, scenario
+):
+    from yoke_core.domain.installer_campaign_install_health_cases import (
+        INSTALL_HEALTH_FAILURE_SCRIPT,
+    )
+
+    monkeypatch.setattr(sys, "argv", ["install-health-fixture", scenario])
+    exec(
+        compile(INSTALL_HEALTH_FAILURE_SCRIPT, "install-health-fixture", "exec"),
+        {"scenario": scenario},
+    )
+    assert "diagnosed recovery verified" in capsys.readouterr().out
