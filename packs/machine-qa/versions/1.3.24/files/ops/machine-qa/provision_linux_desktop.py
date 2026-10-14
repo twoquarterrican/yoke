@@ -117,7 +117,10 @@ def browser_defaults(content: str) -> str:
                 lines.extend(selections)
                 selections = []
             section = line.strip()
-        elif section == DEFAULTS_SECTION and line.split("=", 1)[0].strip() in BROWSER_TYPES:
+        elif (
+            section == DEFAULTS_SECTION
+            and line.split("=", 1)[0].strip() in BROWSER_TYPES
+        ):
             continue
         lines.append(line)
     if selections:

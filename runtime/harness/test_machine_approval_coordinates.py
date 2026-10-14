@@ -8,10 +8,7 @@ from subprocess import CompletedProcess
 from yoke_contracts.machine_approval_coordinates import machine_approval_coordinates
 from yoke_harness import ssh_linux_browser_approval as chromium
 from yoke_harness import ssh_mac_browser_approval as safari
-from yoke_harness.machine_browser_approval import (
-    approval_tab_urls as _approval_tab_urls,
-    approval_url as _approval_url,
-)
+from yoke_harness.machine_browser_approval import approval_tab_urls, approval_url
 
 
 @pytest.mark.parametrize("path", ["/connect", "/machine"])
@@ -21,12 +18,12 @@ def test_base_and_complete_uris_resolve_to_the_same_exact_request(path):
     assert machine_approval_coordinates(
         base, "AB12-CD34"
     ) == machine_approval_coordinates(complete, "AB12-CD34")
-    assert _approval_url(complete, "AB12-CD34") == (complete, "https://example.invalid")
+    assert approval_url(complete, "AB12-CD34") == (complete, "https://example.invalid")
 
 
 def test_self_hosted_code_path_is_preserved_for_the_wizard_opened_tab():
     complete = "https://example.invalid/machine/AB12-CD34"
-    assert _approval_url(complete, "AB12-CD34")[0] == complete
+    assert approval_url(complete, "AB12-CD34")[0] == complete
 
 
 @pytest.mark.parametrize(
@@ -55,7 +52,7 @@ DESTINATION = "https://example.invalid/orgs/example/strategy?status=approved"
 
 
 def test_redirect_keeps_the_exact_origin_code_and_single_organization_segment():
-    assert _approval_tab_urls(ENTRY, "AB12-CD34", [REDIRECT, REDIRECT]) == [
+    assert approval_tab_urls(ENTRY, "AB12-CD34", [REDIRECT, REDIRECT]) == [
         ENTRY,
         REDIRECT,
     ]
@@ -79,12 +76,12 @@ def test_redirect_keeps_the_exact_origin_code_and_single_organization_segment():
     ],
 )
 def test_redirect_tab_rejects_ambiguous_or_unrelated_requests(url):
-    assert _approval_tab_urls(ENTRY, "AB12-CD34", [url]) == [ENTRY]
+    assert approval_tab_urls(ENTRY, "AB12-CD34", [url]) == [ENTRY]
 
 
 def test_machine_entry_does_not_authorize_the_hosted_redirect_route():
     entry = "https://example.invalid/machine/AB12-CD34"
-    assert _approval_tab_urls(entry, "AB12-CD34", [REDIRECT]) == [entry]
+    assert approval_tab_urls(entry, "AB12-CD34", [REDIRECT]) == [entry]
 
 
 def _safari(monkeypatch, *, response, observed):
