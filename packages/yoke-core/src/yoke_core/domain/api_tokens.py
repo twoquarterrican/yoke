@@ -6,7 +6,7 @@ import hashlib
 import secrets
 import string
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from yoke_contracts.self_host_bootstrap_output import (
@@ -25,6 +25,7 @@ from yoke_core.domain.hosted_service_authority import HOSTED_SERVICE_TOKEN_NAME
 
 TOKEN_STATUS_ACTIVE = "active"
 TOKEN_STATUS_REVOKED = "revoked"
+_LAST_USED_WINDOW = timedelta(minutes=1)
 
 #: Hosted tenant birth's admin name only; every setup path names the
 #: installer instead (``yoke_contracts.first_admin_name``).
@@ -145,7 +146,12 @@ def verify_token(
     permission_key: str | None = None,
     diagnostic_metadata: dict[str, Any] | None = None,
 ) -> VerifiedToken:
-    """Verify a raw token, update use audit, and return actor identity."""
+    """Verify a raw token and return its actor.
+
+    A success writes ``last_used_at`` only when that instant is missing or
+    older than one minute, and it writes no audit row. A refusal still
+    appends an audit row.
+    """
     token_hash = hash_token(raw_token)
     p = _p(conn)
     row = conn.execute(
@@ -219,21 +225,18 @@ def verify_token(
             diagnostic_metadata=diagnostic_metadata,
         )
         raise TokenExpired("API token is expired")
-    conn.execute(
-        f"UPDATE api_tokens SET last_used_at = {p} WHERE id = {p}",
-        (instant_parameter(conn, now), token_id),
-    )
-    conn.commit()
-    record_token_audit(
-        conn,
-        api_token_id=token_id,
-        actor_id=actor_id,
-        project_id=project_id,
-        event_type="verify",
-        outcome="success",
-        permission_key=permission_key,
-        diagnostic_metadata=diagnostic_metadata,
-    )
+    wrote_last_used = conn.execute(
+        f"UPDATE api_tokens SET last_used_at = {p} "
+        f"WHERE id = {p} AND (last_used_at IS NULL OR last_used_at < {p}) "
+        "RETURNING id",
+        (
+            instant_parameter(conn, now),
+            token_id,
+            instant_parameter(conn, now - _LAST_USED_WINDOW),
+        ),
+    ).fetchone()
+    if wrote_last_used is not None:
+        conn.commit()
     return VerifiedToken(
         token_id=token_id,
         actor_id=actor_id,

@@ -1,4 +1,4 @@
-"""Non-secret audit records for API-token issuance and authentication."""
+"""Non-secret audit records for API-token issuance, refusal, and lifecycle."""
 
 from __future__ import annotations
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator
 
 import pytest
@@ -79,7 +80,10 @@ def test_actor_roles_allow_multiple_projects_and_deny_missing_role(conn):
         conn, actor_id=actor_id, project_id=yoke_id, permission_key=PERM_ITEMS_WRITE
     ).allowed
     assert require_permission(
-        conn, actor_id=actor_id, project_id=externalwebapp_id, permission_key=PERM_ITEMS_READ
+        conn,
+        actor_id=actor_id,
+        project_id=externalwebapp_id,
+        permission_key=PERM_ITEMS_READ,
     ).allowed
     with pytest.raises(PermissionDenied):
         require_permission(
@@ -88,6 +92,24 @@ def test_actor_roles_allow_multiple_projects_and_deny_missing_role(conn):
             project_id=externalwebapp_id,
             permission_key=PERM_ITEMS_WRITE,
         )
+
+
+def _audit_rows(conn: Any, token_id: int) -> list[tuple[str, str]]:
+    return [
+        (row[0], row[1])
+        for row in conn.execute(
+            "SELECT event_type, outcome FROM api_token_audit "
+            "WHERE api_token_id = %s ORDER BY id",
+            (token_id,),
+        )
+    ]
+
+
+def _last_used(conn: Any, token_id: int) -> datetime:
+    return conn.execute(
+        "SELECT last_used_at FROM api_tokens WHERE id = %s",
+        (token_id,),
+    ).fetchone()[0]
 
 
 def test_token_hash_verify_audit_and_revoke(conn):
@@ -103,17 +125,44 @@ def test_token_hash_verify_audit_and_revoke(conn):
 
     verified = verify_token(conn, created.raw_token)
     assert verified.actor_id == actor_id
-    audit_count = conn.execute(
-        "SELECT COUNT(*) FROM api_token_audit WHERE api_token_id = %s",
-        (created.token_id,),
-    ).fetchone()[0]
-    assert audit_count >= 2
+    assert _audit_rows(conn, created.token_id) == [("issued", "success")]
 
     revoke_token(conn, token_id=created.token_id, actor_id=actor_id)
     with pytest.raises(TokenRevoked):
         verify_token(conn, created.raw_token)
+    assert ("verify", "revoked") in _audit_rows(conn, created.token_id)
     with pytest.raises(TokenNotFound):
         verify_token(conn, f"{TOKEN_PREFIX}missing")
+    unknown = conn.execute(
+        "SELECT outcome FROM api_token_audit "
+        "WHERE event_type = 'verify' AND api_token_id IS NULL"
+    ).fetchone()
+    assert unknown[0] == "not_found"
+
+
+def test_successful_verify_skips_audit_and_throttles_last_used(conn, monkeypatch):
+    actor_id = seed_human_actor(conn)
+    created = mint_token(conn, actor_id=actor_id, name="hot-path")
+    start = datetime(2026, 10, 14, 20, 0, tzinfo=timezone.utc)
+    clock = {"now": start}
+    monkeypatch.setattr("yoke_core.domain.api_tokens._now", lambda: clock["now"])
+
+    verify_token(conn, created.raw_token)
+    assert _last_used(conn, created.token_id) == start
+    assert _audit_rows(conn, created.token_id) == [("issued", "success")]
+
+    clock["now"] = start + timedelta(seconds=59)
+    verify_token(conn, created.raw_token)
+    assert _last_used(conn, created.token_id) == start
+
+    clock["now"] = start + timedelta(minutes=1)
+    verify_token(conn, created.raw_token)
+    assert _last_used(conn, created.token_id) == start
+
+    clock["now"] = start + timedelta(minutes=1, microseconds=1)
+    verify_token(conn, created.raw_token)
+    assert _last_used(conn, created.token_id) == clock["now"]
+    assert ("verify", "success") not in _audit_rows(conn, created.token_id)
 
 
 def test_token_prefix_is_yoke_branded_and_body_is_dash_free():
@@ -156,7 +205,9 @@ def test_bootstrap_admin_token_grants_org_admin_without_storing_raw_secret(conn)
 def test_bootstrap_admin_token_project_slug_grants_project_owner(conn):
     """Explicit project shape keeps the narrower project-owner grant."""
     created = bootstrap_admin_token(
-        conn, actor_name="ops-lead", project="yoke",
+        conn,
+        actor_name="ops-lead",
+        project="yoke",
     )
     yoke_id = resolve_project_id(conn, "yoke")
     decision = require_permission(
