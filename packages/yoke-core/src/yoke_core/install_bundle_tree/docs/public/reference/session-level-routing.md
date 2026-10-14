@@ -41,7 +41,12 @@ no native effort/speed suffix. Invalid rows name their field and correction.
 ## Where levels live
 
 - **Universe levels** — one definition per universe, in universe settings.
-  With nothing stored, the universe reads the shipped scheme.
+  With nothing stored, the universe reads the shipped scheme. A stored
+  `universe_settings` row freezes that key at write time, so a later shipped
+  default does not replace it. Delete the row with a reviewed
+  `yoke operator data-repair` to follow shipped defaults again. Writing
+  today's shipped document stores a new freeze. `levels` and
+  `cursor_quota_order` follow this rule.
 
   ```text
   yoke universe levels get [--json]
@@ -282,7 +287,10 @@ yoke universe cursor-quota-order set --pool 'Cursor Models' --pool 'Other Models
 
 Repeat `--pool` exactly twice; reverse them to prefer Other Models. Invalid,
 duplicate or missing scopes refuse `cursor_quota_order_invalid`. The order
-affects consumption preference, never execution-level membership.
+affects consumption preference, never execution-level membership. An absent
+row uses the shipped order (Cursor Models, then Other Models). A stored row
+freezes that order; delete it with a reviewed `yoke operator data-repair`
+to follow the shipped order again.
 
 ## Stored settings convergence
 

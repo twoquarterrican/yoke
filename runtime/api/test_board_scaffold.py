@@ -97,13 +97,17 @@ class TestBoardConfig:
     def test_defaults(self):
         cfg = BoardConfig()
         assert cfg.dashboard_velocity is True
-        assert cfg.dashboard_weather is True
-        assert cfg.dashboard_velocity_meter is False
-        assert cfg.timeline_widget == "idle"
+        assert cfg.dashboard_weather is False
+        assert cfg.dashboard_velocity_meter is True
+        assert cfg.timeline_widget == "always"
+        assert cfg.timeline_label_days == 30
+        assert cfg.timeline_label_df_cap_pct == 3
+        assert cfg.timeline_label_min == 8
+        assert cfg.done_section_limit == 20
         assert cfg.art_frontier_since == 0
         assert cfg.dashboard_meter_cap == 50
         assert cfg.art_weight_rainbow == 20
-        assert cfg.art_weight_frontier == 50
+        assert cfg.art_weight_frontier == 20
         assert cfg.art_override == ""
         assert cfg.rainbow_per_variant_mode is False
 
@@ -124,11 +128,7 @@ class TestBoardConfig:
     def test_parse_skips_comments_and_blanks(self, tmp_path):
         config_file = tmp_path / "config"
         config_file.write_text(
-            "# This is a comment\n"
-            "\n"
-            "  # Indented comment\n"
-            "art_frontier_since=15\n"
-            "\n"
+            "# This is a comment\n\n  # Indented comment\nart_frontier_since=15\n\n"
         )
         cfg = parse_config(str(config_file))
         assert cfg.art_frontier_since == 15
@@ -136,9 +136,7 @@ class TestBoardConfig:
     def test_parse_skips_section_headers(self, tmp_path):
         config_file = tmp_path / "config"
         config_file.write_text(
-            "## Master Map\n"
-            "art_frontier_since=20\n"
-            "Some Section Header Without Equals\n"
+            "## Master Map\nart_frontier_since=20\nSome Section Header Without Equals\n"
         )
         cfg = parse_config(str(config_file))
         assert cfg.art_frontier_since == 20
@@ -178,8 +176,7 @@ class TestBoardConfig:
     def test_rainbow_sub_weights(self, tmp_path):
         config_file = tmp_path / "config"
         config_file.write_text(
-            "art_weight_rainbow_random=8\n"
-            "art_weight_rainbow_letters=8\n"
+            "art_weight_rainbow_random=8\nart_weight_rainbow_letters=8\n"
         )
         cfg = parse_config(str(config_file))
         assert cfg.art_weight_rainbow_random == 8
@@ -218,19 +215,19 @@ class TestBoardConfig:
         """An explicit legacy fixture remains readable for preview/migration."""
         machine_cfg = tmp_path / "config.json"
         machine_cfg.write_text(
-            json.dumps(
-                {"schema_version": 1, "settings": {}}
-            ),
+            json.dumps({"schema_version": 1, "settings": {}}),
             encoding="utf-8",
         )
         repo_root = tmp_path / "repo"
         board_config = repo_root / ".yoke" / "board.json"
         board_config.parent.mkdir(parents=True)
         board_config.write_text(
-            json.dumps({
-                "art_frontier_since": 3,
-                "dashboard_meter_cap": 100,
-            }),
+            json.dumps(
+                {
+                    "art_frontier_since": 3,
+                    "dashboard_meter_cap": 100,
+                }
+            ),
             encoding="utf-8",
         )
         monkeypatch.setenv("YOKE_MACHINE_CONFIG_FILE", str(machine_cfg))

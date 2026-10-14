@@ -4,6 +4,10 @@ Project behavior that must be shared by every checkout lives in
 ``project_capabilities.settings``.  This module owns the default rows and
 idempotent repair used by DB init, project upsert, installer refresh, and the
 one-shot migration wrapper for already-running installs.
+
+A stored document freezes every key it already has. Repair adds missing
+shipped keys and leaves present values in place. Replace a present key
+with ``yoke projects capability-settings set`` to follow a new shipped value.
 """
 
 from __future__ import annotations

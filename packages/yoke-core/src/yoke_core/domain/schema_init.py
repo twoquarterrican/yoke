@@ -2,6 +2,9 @@
 
 from yoke_core.domain.actor_permissions import seed_roles_and_permissions
 from yoke_core.domain.actors import seed_canonical_human
+from yoke_core.domain.shipped_execution_instruction import (
+    seed_shipped_execution_instruction,
+)
 from yoke_core.domain.auth_schema import create_auth_tables
 from yoke_core.domain.decision_request_schema import create_decision_request_tables
 from yoke_core.domain.event_registry_converge import converge_event_registry
@@ -339,12 +342,7 @@ def cmd_init() -> None:
         seed_roles_and_permissions(conn)
         seed_default_org(conn)
         apply_legacy_data_migrations(conn)
-        # Seed the canonical human after every other table and column
-        # exists. Idempotent on re-run: a universe that already carries a
-        # human keeps that actor whatever it is called, so re-init never
-        # creates a duplicate human row. The name for one this call has to
-        # create resolves from the YOKE_LOCAL_HUMAN_NAME injection, pinned
-        # by the local-universe birth path to the OS login.
         seed_canonical_human(conn)
+        seed_shipped_execution_instruction(conn)
     finally:
         conn.close()

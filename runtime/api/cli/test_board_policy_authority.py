@@ -72,7 +72,7 @@ def test_rebuild_ignores_retired_board_json_when_payload_settings_are_empty(
     monkeypatch.setattr(board_rebuild, "render_board_from_payload", fake_render)
 
     assert board_rebuild.fetch_and_render(checkout, "", None) == "rendered"
-    assert captured["config"].dashboard_weather is True
+    assert captured["config"].dashboard_weather is False
 
 
 def test_board_adapter_defers_omitted_scope_to_project_policy(
