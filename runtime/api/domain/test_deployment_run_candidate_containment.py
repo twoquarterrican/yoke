@@ -1,6 +1,5 @@
 """Immutable comparisons are shared across report passes; unknowns retry."""
 
-from collections import OrderedDict
 from types import SimpleNamespace
 
 import pytest
@@ -12,11 +11,6 @@ from yoke_core.domain import deployment_run_carried_work_repository as provider
 from yoke_core.domain import delivery_landing_custody as custody
 from yoke_core.domain.item_merge_receipt_document import record_entry
 from yoke_core.domain.steering_fleet_report_landed_open import landed_without_closeout
-
-
-@pytest.fixture(autouse=True)
-def isolated_cache(monkeypatch):
-    monkeypatch.setattr(containment, "_VERDICTS", OrderedDict())
 
 
 def _provider(monkeypatch, *, status="behind", repo="owner/cache-tests"):

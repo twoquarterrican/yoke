@@ -225,7 +225,9 @@ _FLIGHTS = tuple(Lock() for _ in range(64))
 CACHE_LIMIT = 8192
 
 
-def _cached_source_verdict(source, candidate, merge):
+def _cached_source_verdict(
+    source: CarriedWorkSource, candidate: str, merge: str
+) -> Optional[ContainmentVerdict]:
     location = getattr(source, "location", "")
     immutable = all(
         len(sha) == 40 and all(c in "0123456789abcdef" for c in sha)

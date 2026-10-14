@@ -285,3 +285,14 @@ def _yoke_cwd_guard():
     yield
     if os.getcwd() != cwd:
         os.chdir(cwd)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_immutable_containment_cache(monkeypatch):
+    """Synthetic repositories reuse object ids with different mocked facts."""
+    from collections import OrderedDict
+    from yoke_core.domain import deployment_run_candidate_containment
+
+    monkeypatch.setattr(
+        deployment_run_candidate_containment, "_VERDICTS", OrderedDict()
+    )

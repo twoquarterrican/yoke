@@ -14,8 +14,7 @@ is the request that holds them. Its lifetime is one request: the composer
 creates it, the reply is rendered from it, and it is discarded. No
 live report state is remembered between requests; immutable repository
 containment facts alone use a bounded process cache. Every report reads live
-state and no
-authorization decision outlives the read it was made for. ``session_id``
+state and no authorization decision outlives its read. ``session_id``
 and ``now`` are fixed for a request, which is why the memo keys carry only
 the project.
 """
