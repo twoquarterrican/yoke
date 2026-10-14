@@ -179,6 +179,7 @@ def _settle_stage_status(
             stage_name=stage_name,
             member_item_id=member_item_id,
             execution_target_digest=current_target_digest,
+            shared_plan_id=(subject.get("shared_plan") or {}).get("plan_id"),
         )
     )
     reasons = failure_reasons(failures)

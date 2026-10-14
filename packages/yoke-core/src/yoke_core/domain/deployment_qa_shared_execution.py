@@ -65,6 +65,7 @@ def route_shared_plan_execution(begin):
                 stage_name=stage,
                 member_item_id=None,
                 execution_target_digest=target_digest(group_target),
+                shared_plan_id=group["shared_plan"]["plan_id"],
             ):
                 completed = recorded
             elif not acceptance.accepted:
