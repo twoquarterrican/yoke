@@ -81,10 +81,13 @@ def _display_usage(
         raise ValueError("no model catalog revision covers this session; publish one")
     revision_id, effective_at = rows[0]
     # Key the large immutable document by revision, not each session's clock.
-    catalog_rows = db.query(
-        "SELECT catalog_json FROM model_reference_revisions WHERE revision_id = %s",
-        (revision_id,),
+    catalog_sql = (
+        "SELECT catalog_json FROM model_reference_revisions WHERE revision_id = %s"
     )
+    catalog_params = (revision_id,)
+    if callable(has_query) and not has_query(catalog_sql, catalog_params):
+        return usage_cell(usage, None)
+    catalog_rows = db.query(catalog_sql, catalog_params)
     if not catalog_rows:
         raise ValueError("session model catalog revision is missing; publish it again")
     document = catalog_rows[0][0]

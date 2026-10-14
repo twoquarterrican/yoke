@@ -55,6 +55,7 @@ def test_many_sessions_share_catalogs_and_preserve_start_time_costs():
     starts = [db.boundary + timedelta(seconds=index - 100) for index in range(200)]
     cells = [_display_usage(recorder, document, start) for start in starts]
     assert db.catalog_reads == ["older", "newer"]
+    assert cells[0] != cells[-1]
     entries = recorder.encoded_entries()
     catalog_entries = [
         entry for entry in entries if "SELECT catalog_json" in entry["sql"]
@@ -85,13 +86,16 @@ def test_recording_cache_is_per_board_read():
     assert db.catalog_reads == ["newer", "newer"]
 
 
-def test_live_session_table_carries_one_catalog(tmp_path):
+def test_live_session_table_carries_one_catalog(tmp_path, monkeypatch):
     from runtime.api.board.tests.sessions_render_test_support import make_render_db
     from runtime.api.fixtures.file_test_db import connect_test_db
     from yoke_contracts.timestamps import utc_now
 
     with make_render_db(tmp_path) as (db, render):
         now = utc_now()
+        monkeypatch.setattr(
+            "yoke_contracts.board.sections_sessions_rendering.utc_now", lambda: now
+        )
         usage = usage_document(
             SessionUsage(
                 status="complete",
@@ -125,6 +129,26 @@ def test_live_session_table_carries_one_catalog(tmp_path):
         assert len(wire.encode()) < 600_000
         assert render(ReplayBoardDB.from_payload(json.loads(wire))) == direct
         assert "live-session-99" in direct
+
+
+def test_archived_payload_without_catalog_keeps_tokens():
+    db = CatalogDB()
+    usage = SessionUsage(
+        status="complete",
+        models=(ModelUsage(model=MODEL_RECORDS[0].model_id, input=1_000),),
+    )
+    recorder = RecordingBoardDB(db)
+    document = usage_document(usage)
+    _display_usage(recorder, document, db.boundary)
+    entries = [
+        entry
+        for entry in recorder.encoded_entries()
+        if "SELECT catalog_json" not in entry["sql"]
+    ]
+    replay = ReplayBoardDB.from_payload(
+        {"version": BOARD_DATA_VERSION, "entries": entries}
+    )
+    assert _display_usage(replay, document, db.boundary) == usage_cell(usage, None)
 
 
 def test_missing_effective_revision_teaches_publication():
