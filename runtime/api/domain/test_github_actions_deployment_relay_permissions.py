@@ -215,6 +215,7 @@ def test_relay_can_dispatch_and_read_only_deploy_reporting_surfaces() -> None:
             "github_actions.workflow.dispatch_once": True,
             "github_actions.dispatch_tag.ensure": True,
             "github_actions.workflow.find_run": False,
+            "github_actions.dispatch_receipt.get": False,
             "github_actions.run.jobs_count": False,
             "github_actions.wait_run": False,
             "github_actions.check_ci": False,
@@ -247,12 +248,18 @@ def test_relay_can_dispatch_and_read_only_deploy_reporting_surfaces() -> None:
             assert decision.error is not None, function_id
             assert decision.permission_key == PERM_PROJECT_ADMIN
 
-        cross_project = check_dispatch_permission(
-            conn,
-            _entry("github_actions.workflow.dispatch", write=True),
-            _request(actor_id, "github_actions.workflow.dispatch", "yoke"),
-        )
-        assert cross_project.error is not None
+        for function_id, write in {
+            "github_actions.workflow.dispatch": True,
+            "github_actions.dispatch_receipt.get": False,
+        }.items():
+            # The actor holds no role on yoke, so the narrow grant stays local.
+            cross_project = check_dispatch_permission(
+                conn,
+                _entry(function_id, write=write),
+                _request(actor_id, function_id, "yoke"),
+            )
+            assert cross_project.error is not None, function_id
+        assert cross_project.permission_key == PERM_GITHUB_ACTIONS_RUN_READ
     finally:
         conn.close()
 
