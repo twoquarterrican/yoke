@@ -18,7 +18,8 @@ yoke project-structure deploy-defaults get --project {project}
 yoke qa plan list --project {project} --json
 ```
 
-Name in the outcome: the issues, PRs and session threads it continues; the
+Name in the outcome what it delivers and how to tell it is done (steering
+files it with that spec); the issues, PRs and session threads it continues; the
 project default flow, or none; a reusable QA plan to attach, from a 25-plan
 summary page (follow `next_offset` with `--offset`); and review-only test
 evidence when step 2 chose that suite. Installer, onboarding-wizard and
