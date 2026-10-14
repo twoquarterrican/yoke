@@ -16,7 +16,10 @@ from yoke_contracts.api.function_call import (
 
 
 PLAN = {
+    "id": 7,
+    "project": "yoke",
     "slug": "release-readiness",
+    "retired_at": None,
     "name": "Release readiness",
     "description": "Release proof.",
     "success_policy_id": "all-pass",
@@ -77,19 +80,6 @@ def _dispatch(
 ) -> Callable[[FunctionCallRequest], FunctionCallResponse]:
     def dispatch(request: FunctionCallRequest) -> FunctionCallResponse:
         requests.append(request)
-        if request.function == "qa.plan.list":
-            return _response(
-                request,
-                result={
-                    "rows": [
-                        {
-                            "id": 7,
-                            "project": "yoke",
-                            "slug": "release-readiness",
-                        }
-                    ],
-                },
-            )
         if request.function == "qa.plan.get":
             return _response(request, result={"plan": plan or PLAN})
         if request.function == "qa.plan.edit":

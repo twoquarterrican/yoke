@@ -201,47 +201,10 @@ def qa_plan_edit(args: List[str]) -> int:
     _helpers.ensure_handlers_loaded()
     actor = build_actor(session_id=parsed.session_id)
     target = TargetRef(kind="global")
-    listed = call_dispatcher(
-        function_id="qa.plan.list",
-        target=target,
-        payload={"project": project, "detail": "full"},
-        actor=actor,
-    )
-    if not listed.success:
-        return emit_response(listed, json_mode=parsed.json_mode)
-    rows = (listed.result or {}).get("rows")
-    if not isinstance(rows, list) or any(
-        not isinstance(candidate, dict) for candidate in rows
-    ):
-        return _client_failure(
-            code="invalid_response",
-            message="qa.plan.list returned an invalid plan roster",
-            json_mode=parsed.json_mode,
-        )
-    row = next(
-        (candidate for candidate in rows if candidate.get("slug") == parsed.slug),
-        None,
-    )
-    if row is None:
-        return _client_failure(
-            code="not_found",
-            message=(f"QA plan {parsed.slug!r} was not found in project {project!r}"),
-            json_mode=parsed.json_mode,
-        )
-    try:
-        plan_id = int(row["id"])
-        project = str(row.get("project") or project)
-    except (KeyError, TypeError, ValueError):
-        return _client_failure(
-            code="invalid_response",
-            message="qa.plan.list returned an invalid matching plan row",
-            json_mode=parsed.json_mode,
-        )
-
     fetched = call_dispatcher(
         function_id="qa.plan.get",
         target=target,
-        payload={"project": project, "plan_id": plan_id, "detail": FULL_DETAIL},
+        payload={"project": project, "plan_id": parsed.slug, "detail": FULL_DETAIL},
         actor=actor,
     )
     if not fetched.success:
@@ -253,6 +216,16 @@ def qa_plan_edit(args: List[str]) -> int:
             message="qa.plan.get returned no plan document",
             json_mode=parsed.json_mode,
         )
+    if plan.get("retired_at") is not None:
+        return _client_failure(
+            code="plan_retired",
+            message=(
+                f"QA plan {parsed.slug!r} in project {project!r} is retired; "
+                "create a new plan with `yoke qa plan create` instead"
+            ),
+            json_mode=parsed.json_mode,
+        )
+    project = str(plan.get("project") or project)
     try:
         base_updated_at = plan["updated_at"]
         if not isinstance(base_updated_at, str) or not base_updated_at:

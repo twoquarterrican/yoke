@@ -78,7 +78,6 @@ def test_edit_opens_only_authorable_fields_and_dispatches_full_cas() -> None:
     assert editor_path is not None
     assert not editor_path.exists()
     assert [request.function for request in requests] == [
-        "qa.plan.list",
         "qa.plan.get",
         "qa.plan.edit",
     ]
@@ -120,12 +119,11 @@ def test_a_read_missing_a_case_field_refuses_before_the_editor_opens() -> None:
     assert "without target_envs" in envelope["error"]["message"]
     assert "Upgrade the serving Yoke" in envelope["error"]["message"]
     assert [request.function for request in requests] == [
-        "qa.plan.list",
         "qa.plan.get",
     ]
 
 
-def test_checkout_project_id_is_canonicalized_from_the_list_row() -> None:
+def test_checkout_project_id_is_canonicalized_from_the_fetched_plan() -> None:
     requests: list[FunctionCallRequest] = []
 
     def editor(argv, *, check):
@@ -142,8 +140,28 @@ def test_checkout_project_id_is_canonicalized_from_the_list_row() -> None:
         )
     assert result == 0
     assert requests[0].payload["project"] == "1"
+    assert requests[0].payload["plan_id"] == "release-readiness"
     assert requests[1].payload["project"] == "yoke"
-    assert requests[2].payload["project"] == "yoke"
+
+
+def test_retired_plan_is_refused_before_the_editor_opens() -> None:
+    requests: list[FunctionCallRequest] = []
+
+    def editor(argv, *, check):
+        raise AssertionError(f"editor must not run (check={check})")
+
+    result, stdout, _stderr = run_cli(
+        requests,
+        editor,
+        *EDIT_ARGS,
+        "--json",
+        plan={**PLAN, "retired_at": "2026-10-01T00:00:00Z"},
+    )
+    envelope = json.loads(stdout)
+    assert result == 1
+    assert [request.function for request in requests] == ["qa.plan.get"]
+    assert envelope["error"]["code"] == "plan_retired"
+    assert "yoke qa plan create" in envelope["error"]["message"]
 
 
 def test_missing_checkout_project_context_refuses_before_dispatch() -> None:
@@ -199,7 +217,6 @@ def test_json_mode_wraps_local_editor_failures(
     envelope = json.loads(stdout)
     assert result == 1
     assert [request.function for request in requests] == [
-        "qa.plan.list",
         "qa.plan.get",
     ]
     assert envelope["success"] is False
@@ -259,7 +276,6 @@ def test_slug_change_is_refused_without_a_write() -> None:
 
     assert result == 1
     assert [request.function for request in requests] == [
-        "qa.plan.list",
         "qa.plan.get",
     ]
     assert "slug is immutable" in stderr

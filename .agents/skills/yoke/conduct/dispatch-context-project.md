@@ -19,14 +19,15 @@ project/path and repair, and never count as read. Carry successfully read
 filename/content once into the relevant Engineer/Tester dispatch context.
 
 ```text
-yoke qa plan list --project {PROJECT} --full --json
+yoke items detail get PREFIX-N --include '' --json
 yoke qa requirement list --item PREFIX-N --json
 yoke ephemeral-env get {PROJECT} {BRANCH} --json
 ```
 
-Carry plan names/transition attachments and materialized requirement id,
-case_key, method, instructions and expected outcome. Read exact snapshots;
-never reparse embedded commands or invent test invocations. Runnable rows use:
+Carry `qa_plan_attachments` plan names/transitions and materialized
+requirement id, case_key, method, instructions and expected outcome. Read exact
+snapshots; never reparse embedded commands or invent test invocations.
+Runnable rows use:
 
 ```text
 yoke qa case run --requirement-id {requirement_id}

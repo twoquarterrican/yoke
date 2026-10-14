@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+from typing import Mapping
 
 from yoke_cli.commands import _helpers
 from yoke_cli.transport.dispatcher import build_actor, call_dispatcher
@@ -32,50 +32,39 @@ def resolve_dash_verification_plan(
         )
 
     _helpers.ensure_handlers_loaded()
-    listed = call_dispatcher(
-        function_id="qa.plan.list",
+    fetched = call_dispatcher(
+        function_id="qa.plan.get",
         target=TargetRef(kind="global"),
-        payload={"project": project, "detail": "full"},
+        payload={"project": project, "plan_id": reference},
         actor=build_actor(session_id=session_id),
     )
-    if not listed.success:
+    if not fetched.success:
         detail = (
-            listed.error.message if listed.error is not None else "qa.plan.list failed"
+            fetched.error.message if fetched.error is not None else "qa.plan.get failed"
         )
         raise DashVerificationPlanError(
             f"could not resolve verification plan slug {reference!r} "
             f"in project {project!r}: {detail}"
         )
 
-    rows = (listed.result or {}).get("rows")
-    if not isinstance(rows, list) or any(not isinstance(row, Mapping) for row in rows):
+    plan = (fetched.result or {}).get("plan")
+    if not isinstance(plan, Mapping):
         raise DashVerificationPlanError(
-            f"qa.plan.list returned an invalid plan roster for project {project!r}"
+            f"qa.plan.get returned no plan document for slug {reference!r} "
+            f"in project {project!r}"
         )
-
-    matches = [row for row in rows if row.get("slug") == reference]
-    if not matches:
+    if plan.get("retired_at") is not None:
         raise DashVerificationPlanError(
-            f"verification plan slug {reference!r} was not found in project {project!r}"
+            f"verification plan slug {reference!r} in project {project!r} is "
+            "retired; name an active plan from `yoke qa plan list --project P`"
         )
-    if len(matches) > 1:
-        raise DashVerificationPlanError(
-            f"verification plan slug {reference!r} is ambiguous in project "
-            f"{project!r}; candidates: {_candidate_list(matches)}"
-        )
-
     try:
-        return int(matches[0]["id"])
+        return int(plan["id"])
     except (KeyError, TypeError, ValueError) as exc:
         raise DashVerificationPlanError(
             f"verification plan slug {reference!r} in project {project!r} "
             "has no valid integer id"
         ) from exc
-
-
-def _candidate_list(rows: Sequence[Mapping[str, Any]]) -> str:
-    """Render every ambiguous candidate without silently preferring one."""
-    return ", ".join(f"id={row.get('id')!r} name={row.get('name')!r}" for row in rows)
 
 
 __all__ = [

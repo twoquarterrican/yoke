@@ -44,11 +44,12 @@ or imagined children through lower-level surfaces. Echo ID and source outcome.
 
 ## Preserve the plan's QA contract
 
-Reusable test plan: resolve ID and attach its immutable snapshot to the matching
-item at the transition where proof is definition-of-done:
+Reusable test plan: resolve ID from a 25-plan summary page (follow
+`next_offset` with `--offset`), then attach its immutable snapshot to the
+matching item at the transition where proof is definition-of-done:
 
 ```bash
-yoke qa plan list --project {project} --full --json
+yoke qa plan list --project {project} --json
 yoke qa item-plan attach --item {ITEM} --project {project} --plan-id {plan_id} --transition reviewing-implementation --qa-phase verification
 ```
 
