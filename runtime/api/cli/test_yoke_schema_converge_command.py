@@ -341,4 +341,8 @@ def test_top_and_group_help_label_schema_converge_source_dev_admin() -> None:
         with redirect_stdout(out):
             rc = cli_main(args)
         assert rc == 0
-        assert "yoke schema converge [source-dev/admin]" in out.getvalue()
+        assert (
+            "yoke schema "
+            if args == ["--help"]
+            else "yoke schema converge [source-dev/admin]"
+        ) in out.getvalue()

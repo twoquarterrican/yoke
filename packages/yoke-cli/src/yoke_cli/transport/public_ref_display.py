@@ -56,6 +56,8 @@ def emit_response(
         display = prepare_human_response(response)
         if human_writer is not None and display.success:
             human_writer(display, stdout, stderr)
+            if not machine_mode and not stdout.getvalue().strip():
+                write_human(display.result, stdout)
         else:
             _default_human_writer(display, stdout, stderr)
     if not json_mode and not machine_mode:

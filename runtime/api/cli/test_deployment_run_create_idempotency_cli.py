@@ -31,7 +31,9 @@ def _create(result: dict, *argv: str, error: FunctionError | None = None):
         )
 
     with patch.dict("os.environ", {"YOKE_SESSION_ID": "test-session"}):
-        with patch("yoke_core.domain.yoke_function_dispatch.dispatch", side_effect=stub):
+        with patch(
+            "yoke_core.domain.yoke_function_dispatch.dispatch", side_effect=stub
+        ):
             with patch("yoke_cli.commands._helpers.ensure_handlers_loaded"):
                 out, err = io.StringIO(), io.StringIO()
                 with redirect_stdout(out), redirect_stderr(err):
@@ -52,7 +54,7 @@ def test_create_sends_the_key() -> None:
     rc, out, err, captured = _create(result, "--idempotency-key", "k1")
 
     assert rc == 0, err
-    assert out.strip() == RUN_ID
+    assert f"run id: {RUN_ID}" in out
     assert captured[0].payload["idempotency_key"] == "k1"
     assert "already created" not in err
 
@@ -62,7 +64,7 @@ def test_replay_prints_the_original_run_and_says_so() -> None:
     rc, out, err, _captured = _create(result, "--idempotency-key", "k1")
 
     assert rc == 0, err
-    assert out.strip() == RUN_ID
+    assert f"run id: {RUN_ID}" in out
     assert f"'k1' already created {RUN_ID}" in err
 
 
@@ -76,7 +78,7 @@ def test_unconverged_create_says_the_key_is_not_stored() -> None:
     rc, out, err, _captured = _create(result, "--idempotency-key", "k1")
 
     assert rc == 0, err
-    assert out.strip() == RUN_ID
+    assert f"run id: {RUN_ID}" in out
     assert f"created {RUN_ID}" in err
     assert "key 'k1' is not stored" in err
     assert f"Until {RUN_ID} starts" in err
@@ -102,7 +104,7 @@ def test_server_without_keyed_create_warns_that_a_repeat_is_unsafe() -> None:
     )
 
     assert rc == 0, err
-    assert out.strip() == RUN_ID
+    assert f"run id: {RUN_ID}" in out
     assert "predates idempotent create" in err
     assert "WILL mint another run" in err
 

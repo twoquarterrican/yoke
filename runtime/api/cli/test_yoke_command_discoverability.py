@@ -20,7 +20,7 @@ from yoke_contracts.session_control.launch_bootstrap import (
         (["environment"], "yoke projects environment create"),
         (["environments"], "yoke projects environment-settings get"),
         (["qa", "review"], "yoke qa plan review-submit"),
-        (["github", "actions", "get"], "yoke github-actions check-ci"),
+        (["github", "actions", "get"], "yoke github actions check"),
         (["simulate"], "/yoke simulate --system"),
     ],
 )
@@ -67,7 +67,7 @@ def test_unknown_top_level_help_still_suggests_hyphenated_family(capsys) -> None
 
 def test_space_separated_hyphenated_family_resolves(capsys) -> None:
     assert main(["github", "actions", "wait", "--help"]) == 0
-    assert "yoke github-actions wait-run" in capsys.readouterr().out
+    assert "yoke github actions wait run" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize(

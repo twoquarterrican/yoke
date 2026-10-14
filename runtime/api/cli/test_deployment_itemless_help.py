@@ -68,15 +68,16 @@ def test_create_help_keeps_one_description_and_targets_the_recipe_read() -> None
     assert "start-for-item" not in out
     assert "Itemless environment release" not in out
     assert len(out) <= 5600
-    recipe_rc, recipe, recipe_err = _help("deployment-runs", "--help")
+    recipe_rc, recipe, recipe_err = _help("deployment-runs", "resolve-target", "--help")
     assert recipe_rc == 0, recipe_err
     _assert_itemless_recipe(recipe)
 
 
-def test_deployment_runs_group_help_includes_itemless_recipe() -> None:
+def test_deployment_runs_group_help_routes_to_itemless_recipe() -> None:
     rc, out, err = _help("deployment-runs", "--help")
     assert rc == 0, err
-    _assert_itemless_recipe(out)
+    assert "yoke deployment-runs resolve-target --help" in out
+    assert "Itemless environment release" not in out
 
 
 def test_watch_deploy_help_teaches_itemless_release_path() -> None:
@@ -146,7 +147,7 @@ def test_create_post_note_points_at_watch_deploy() -> None:
                         ]
                     )
     assert rc == 0
-    assert out.getvalue().strip() == "run-20260805-001"
+    assert "run id: run-20260805-001" in out.getvalue()
     assert "watch deploy -- run-20260805-001" in err.getvalue()
     assert "deployment-runs execute" not in err.getvalue()
     assert "warning" not in err.getvalue()

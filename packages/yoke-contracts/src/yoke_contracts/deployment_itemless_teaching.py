@@ -49,7 +49,7 @@ an identical repeat still returns it.
 ITEMLESS_RELEASE_RECIPE = (
     """\
 Itemless environment release (project-generic):
-  # tier|environment-name of the flow's registered target:
+  # Read the labeled tier and environment of the flow's registered target:
   yoke deployment-runs resolve-target PROJECT FLOW
   # Check delivery-ready items' selected completion flows before choosing
   # FLOW. A final member needs its selected flow unless this run carries
@@ -65,21 +65,23 @@ Itemless environment release (project-generic):
   # (passed or running), or dispatches that CI on the branch and binds the
   # commit it tests; a commit off the previous release's lineage is refused
   # (release_source_off_lineage) naming both commits. Read
-  # the bound commit with `deployment-runs get "$RUN_ID" release_lineage`
+  # the bound commit with `deployment-runs get RUN-ID release_lineage`
   # and give the release's paired run that same commit.
-  RUN_ID=$(yoke --env CONTROL-PLANE deployment-runs create PROJECT FLOW \\
-    --idempotency-key PROJECT-FLOW-1)
+  yoke --env CONTROL-PLANE deployment-runs create PROJECT FLOW \\
+    --idempotency-key PROJECT-FLOW-1
+  # Use the printed run id as RUN-ID below; --json provides structured receipts.
   # Or pin an exact commit; on a CI-gated flow it must have its own CI run,
   # or creation refuses (release_source_untested) naming the newest one:
   #   ... --project-repo-path /path/to/checkout --source-ref PINNED_SHA
-  yoke --env CONTROL-PLANE deployment-runs validate-composition "$RUN_ID"
-  yoke --env CONTROL-PLANE watch deploy -- "$RUN_ID"
+  yoke --env CONTROL-PLANE deployment-runs validate-composition RUN-ID
+  yoke --env CONTROL-PLANE watch deploy -- RUN-ID
 
 Retry a failed or cancelled run without following a moving branch:
-  RETRY_ID=$(yoke --env CONTROL-PLANE deployment-runs create \\
+  yoke --env CONTROL-PLANE deployment-runs create \\
     PROJECT FLOW --retry-of FAILED_RUN_ID \\
-    --idempotency-key retry-of-FAILED_RUN_ID-1)
-  yoke --env CONTROL-PLANE watch deploy -- "$RETRY_ID"
+    --idempotency-key retry-of-FAILED_RUN_ID-1
+  # Use the printed run id as RETRY-ID.
+  yoke --env CONTROL-PLANE watch deploy -- RETRY-ID
 
 Resume the same failed run without minting a new run or replaying completed stages:
   yoke --env CONTROL-PLANE watch deploy -- RUN-ID --from-stage STAGE
@@ -93,7 +95,7 @@ That re-enters executing on this run. `--retry-of` is a new run of the same cand
 
 RESOLVE_TARGET_DESCRIPTION = (
     "Resolve the flow's target tier and registered environment (or honor "
-    "--environment). Prints tier|environment-name. Always "
+    "--environment). Prints labeled target tier and environment. Always "
     "verify the printed environment: it is the one being deployed TO, not "
     "the control-plane connection name used later for watch deploy / "
     "execute."

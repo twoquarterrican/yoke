@@ -114,6 +114,18 @@ def test_custom_writer_keeps_server_warnings(capsys):
     assert "Not yet published." in output.err
 
 
+def test_silent_human_writer_delivers_explicit_empty_state(capsys):
+    assert (
+        emit_response(
+            response("items.update", {}),
+            json_mode=False,
+            human_writer=lambda receipt, out, err: None,
+        )
+        == 0
+    )
+    assert "Result: empty." in capsys.readouterr().out
+
+
 def test_multiline_delivery_counts_wrapping(capsys):
     payload = {"body": "\n".join(["x" * 81] * 200)}
     assert emit_response(response("items.create", payload), json_mode=False) == 0

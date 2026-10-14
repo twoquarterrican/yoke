@@ -22,6 +22,7 @@ from yoke_contracts.deployment_itemless_teaching import (
     ITEMLESS_RELEASE_RECIPE,
     RESOLVE_TARGET_DESCRIPTION,
 )
+from yoke_contracts.deployment_release_roles_teaching import RELEASE_ROLE_RECIPE
 
 DEPLOYMENT_FLOWS_GET_USAGE = (
     "yoke deployment-flows get FLOW-ID [FIELD] [--session-id S] [--json]"
@@ -75,12 +76,7 @@ def deployment_flows_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        result = response.result or {}
-        if parsed.field:
-            print("" if result.get("value") is None else result["value"], file=stdout)
-            return None
-        print(_pipe(result.get("fields") or [], result.get("flow") or {}), file=stdout)
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_flows.get",
@@ -105,8 +101,7 @@ def deployment_flows_stages(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        print((response.result or {}).get("stages", ""), file=stdout)
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="deployment_flows.stages",
@@ -283,7 +278,7 @@ def deployment_runs_resolve_target(args: List[str]) -> int:
         prog="yoke deployment-runs resolve-target",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=RESOLVE_TARGET_DESCRIPTION,
-        epilog=ITEMLESS_RELEASE_RECIPE,
+        epilog=RELEASE_ROLE_RECIPE + "\n" + ITEMLESS_RELEASE_RECIPE,
     )
     parser.add_argument("project")
     parser.add_argument("flow")

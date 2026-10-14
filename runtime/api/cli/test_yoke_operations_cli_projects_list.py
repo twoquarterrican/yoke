@@ -65,9 +65,8 @@ class TestProjectsList:
 
         rc, out, _err = _run_capture(stub, "projects", "list")
         assert rc == 0
-        assert out == (
-            "id|slug|name|default_branch|created_at\n1|yoke|Yoke|main|2026-01-01T00:00:00.000000Z\n"
-        )
+        assert "id | slug | name | default branch | created at" in out
+        assert "1 | yoke | Yoke | main | 2026-01-01T00:00:00.000000Z" in out
 
     def test_prints_header_and_empty_state(self) -> None:
         def stub(request: FunctionCallRequest) -> FunctionCallResponse:
@@ -91,4 +90,4 @@ class TestProjectsList:
 
         rc, out, _err = _run_capture(stub, "projects", "list")
         assert rc == 0
-        assert out == "id|slug|name|default_branch|created_at\n(no projects)\n"
+        assert "rows: no entries." in out

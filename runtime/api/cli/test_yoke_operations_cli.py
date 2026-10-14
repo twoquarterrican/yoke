@@ -138,7 +138,7 @@ class TestEntrypointBehaviour:
             with redirect_stdout(buf):
                 rc = cli_main([flag])
             assert rc == 0
-            assert "Available subcommands" in buf.getvalue()
+            assert "Categories and actions" in buf.getvalue()
 
     def test_version_flag_prints_version(self) -> None:
         buf = io.StringIO()
@@ -175,18 +175,9 @@ class TestEntrypointBehaviour:
         with redirect_stdout(buf):
             cli_main(["--help"])
         out = buf.getvalue()
-        families = {
-            fn.split(".", 1)[0] for _tokens, (fn, _) in SUBCOMMAND_REGISTRY.items()
-        }
-        for family in families:
-            assert f"[{family}]" in out
-        assert "yoke board art variant create --ascii|--mixed|--image PATH" in out
-        board_section = re.search(r"\n  \[board\](.*?)(?=\n  \[|\Z)", out, re.S)
-        assert board_section
-        assert (
-            "yoke board art variant create --ascii|--mixed|--image PATH"
-            in board_section.group(1)
-        )
+        for tokens in SUBCOMMAND_REGISTRY:
+            assert "yoke " + tokens[0] + " " in out
+        assert "yoke board art variant create" not in out
 
 
 # ---------------------------------------------------------------------------

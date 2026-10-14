@@ -62,14 +62,16 @@ def test_an_echo_without_the_marker_keeps_the_clients_own_measurement() -> None:
 
 
 def test_a_request_composed_without_the_marker_is_still_accepted() -> None:
-    row = SurveyPathSize.model_validate({
-        "path": "pkg/file.py",
-        "current_line_count": 10,
-        "remaining_headroom": 340,
-        "at_or_over_limit": False,
-        "limit": 350,
-        "classification": "authored",
-    })
+    row = SurveyPathSize.model_validate(
+        {
+            "path": "pkg/file.py",
+            "current_line_count": 10,
+            "remaining_headroom": 340,
+            "at_or_over_limit": False,
+            "limit": 350,
+            "classification": "authored",
+        }
+    )
 
     assert row.exists is None
     assert path_existence_label(row.model_dump()) == "unknown"
@@ -95,7 +97,8 @@ def test_the_receipt_line_ends_with_the_existence_of_each_path(monkeypatch) -> N
 
     monkeypatch.setattr(dash, "dispatch_and_emit", _dispatch)
     monkeypatch.setattr(
-        dash, "item_lane_tree",
+        dash,
+        "item_lane_tree",
         lambda *_a, **_k: SimpleNamespace(live=False, checkout=None),
     )
     monkeypatch.setattr(dash, "survey_path_sizes", lambda _paths, **_k: [sized])
@@ -104,11 +107,10 @@ def test_the_receipt_line_ends_with_the_existence_of_each_path(monkeypatch) -> N
 
     out = io.StringIO()
     captured["human_writer"](
-        SimpleNamespace(
-            result={"touch_path_update": "replace", "path_sizes": [sized]}
-        ),
+        SimpleNamespace(result={"touch_path_update": "replace", "path_sizes": [sized]}),
         out,
         io.StringIO(),
     )
 
-    assert out.getvalue().rstrip().endswith("|authored|new")
+    assert "classification | exists" in out.getvalue()
+    assert "authored | no" in out.getvalue()

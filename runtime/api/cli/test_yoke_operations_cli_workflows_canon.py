@@ -77,10 +77,9 @@ def test_status_list_pending_narrows_and_prints_the_expected_version(capsys):
 
     assert rc == 0
     assert call["payload"] == {"pending_only": True}
-    assert capsys.readouterr().out.splitlines() == [
-        "workflow-canon|issue|current_version=4|update_available|"
-        "follow=manual|latest_canon_version=3|pending=true",
-    ]
+    text = capsys.readouterr().out
+    assert "workflow id | current version | state" in text
+    assert "issue | 4 | update_available | manual | 3 | yes" in text
 
 
 def test_an_empty_pending_list_says_so(capsys):
@@ -91,9 +90,7 @@ def test_an_empty_pending_list_says_so(capsys):
         {"rows": []},
     )
 
-    assert capsys.readouterr().out.strip() == (
-        "no workflow has a pending published update"
-    )
+    assert capsys.readouterr().out.strip() == ("rows: no entries.")
 
 
 def test_preview_prints_taken_kept_and_names_conflicts(capsys):
@@ -117,14 +114,12 @@ def test_preview_prints_taken_kept_and_names_conflicts(capsys):
     assert rc == 0
     assert call["payload"] == {"workflow_id": "issue"}
     captured = capsys.readouterr()
-    assert captured.out.splitlines() == [
-        "workflow-canon-preview|issue|customized_update_available|"
-        "derived_from_canon_version=2|latest_canon_version=3|clean=false",
-        "taken|issue|stages[0].label",
-        "kept|issue|policies.qa",
-        "conflict|issue|stages[1].gates",
-    ]
-    assert "will refuse to apply" in captured.err
+    assert "workflow id: issue" in captured.out
+    assert "state: customized_update_available" in captured.out
+    assert "stages[0].label" in captured.out
+    assert "policies.qa" in captured.out
+    assert "stages[1].gates" in captured.out
+    assert "resolve the named local edits" in captured.err
 
 
 def test_apply_receipt_shows_the_move_and_what_changed(capsys):
@@ -148,11 +143,12 @@ def test_apply_receipt_shows_the_move_and_what_changed(capsys):
         "workflow_id": "issue",
         "expected_current_version": 4,
     }
-    assert capsys.readouterr().out.splitlines() == [
-        "workflow-canon-update-applied|issue|from_version=4|to_version=5|"
-        "canon_version=3|abc",
-        "taken|issue|stages[0].label",
-    ]
+    text = capsys.readouterr().out
+    assert "from version: 4" in text
+    assert "version: 5" in text
+    assert "canon version: 3" in text
+    assert "definition digest: abc" in text
+    assert "stages[0].label" in text
 
 
 def test_apply_all_builds_entries_and_fails_loudly_on_a_refusal(capsys):
@@ -190,12 +186,13 @@ def test_apply_all_builds_entries_and_fails_loudly_on_a_refusal(capsys):
     }
     assert rc == 1
     captured = capsys.readouterr()
-    assert captured.out.splitlines() == [
-        "workflow-canon-update-applied|issue|from_version=4|to_version=5|"
-        "canon_version=3|abc",
-        "workflow-canon-update-refused|epic|incompatible|"
-        "this update conflicts with local edits at: x",
-    ]
+    assert "applied:" in captured.out
+    assert "expected current version: 4" in captured.out
+    assert "workflow id: issue" in captured.out
+    assert "workflow id | code | message" in captured.out
+    assert "epic | incompatible" in captured.out
+    assert "incompatible" in captured.out
+    assert "this update conflicts with local edits at: x" in captured.out
     assert "yoke workflows canon-update preview epic" in captured.err
     assert "1 of 2 workflow update(s) refused" in captured.err
 
@@ -236,6 +233,7 @@ def test_follow_receipt_shows_the_previous_setting(capsys):
 
     assert rc == 0
     assert call["payload"] == {"workflow_id": "issue", "follow": "auto"}
-    assert capsys.readouterr().out.strip() == (
-        "workflow-canon-follow|issue|manual->auto"
-    )
+    text = capsys.readouterr().out
+    assert "workflow id: issue" in text
+    assert "follow: auto" in text
+    assert "previous follow: manual" in text

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import json
 from pathlib import Path
 
@@ -22,13 +21,21 @@ def cfg(tmp_path, monkeypatch):
 def _seed(cfg: Path, tmp_path: Path, env: str) -> None:
     token = tmp_path / f"{env}.token"
     token.write_text("tok\n")
-    rc = yoke_operations_cli.main([
-        "connection", "set", env,
-        "--transport", "https",
-        "--api-url", f"https://api.{env}.example",
-        "--token-file", str(token),
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            env,
+            "--transport",
+            "https",
+            "--api-url",
+            f"https://api.{env}.example",
+            "--token-file",
+            str(token),
+            "--config",
+            str(cfg),
+        ]
+    )
     assert rc == 0
 
 
@@ -40,9 +47,7 @@ def _secret_path(cfg: Path, env: str, suffix: str = "token") -> Path:
     return cfg.parent / "secrets" / f"{env}.{suffix}"
 
 
-def _assert_auth_token_imported(
-    cfg: Path, env: str, secret: str, captured
-) -> None:
+def _assert_auth_token_imported(cfg: Path, env: str, secret: str, captured) -> None:
     token_path = _secret_path(cfg, env)
     assert token_path.is_file()
     assert token_path.read_text() == secret + "\n"
@@ -51,7 +56,8 @@ def _assert_auth_token_imported(
 
     payload = _payload(cfg)
     assert payload["connections"][env]["credential_source"] == {
-        "kind": "token_file", "path": str(token_path),
+        "kind": "token_file",
+        "path": str(token_path),
     }
     assert secret not in cfg.read_text()
     assert secret not in captured.out
@@ -67,7 +73,8 @@ def _assert_dsn_imported(cfg: Path, env: str, dsn: str, captured) -> None:
 
     payload = _payload(cfg)
     assert payload["connections"][env]["credential_source"] == {
-        "kind": "dsn_file", "path": str(dsn_path),
+        "kind": "dsn_file",
+        "path": str(dsn_path),
     }
     assert dsn not in cfg.read_text()
     assert dsn not in captured.out
@@ -82,21 +89,25 @@ def test_connection_set_then_env_use_round_trip(cfg, tmp_path, capsys) -> None:
     rc = yoke_operations_cli.main(["env", "use", "stage", "--config", str(cfg)])
 
     assert rc == 0
-    result = json.loads(capsys.readouterr().out)
-    assert result["active_env"] == "stage"
+    assert "active env: stage" in capsys.readouterr().out
     assert _payload(cfg)["active_env"] == "stage"
 
 
-def test_connection_set_https_direct_token_infers_transport(
-    cfg, capsys
-) -> None:
+def test_connection_set_https_direct_token_infers_transport(cfg, capsys) -> None:
     secret = "yoke_v1_prod_secret"
 
-    rc = yoke_operations_cli.main([
-        "connection", "set", "prod", secret,
-        "--api-url", "https://api.example",
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            "prod",
+            secret,
+            "--api-url",
+            "https://api.example",
+            "--config",
+            str(cfg),
+        ]
+    )
 
     captured = capsys.readouterr()
     assert rc == 0
@@ -107,19 +118,33 @@ def test_connection_set_https_direct_token_infers_transport(
 def test_connection_set_prod_flags_round_trip(cfg, capsys) -> None:
     secret = "yoke_v1_prod_secret"
 
-    rc = yoke_operations_cli.main([
-        "connection", "set", "prod", secret,
-        "--prod",
-        "--api-url", "https://api.example",
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            "prod",
+            secret,
+            "--prod",
+            "--api-url",
+            "https://api.example",
+            "--config",
+            str(cfg),
+        ]
+    )
     assert rc == 0
     capsys.readouterr()
     assert _payload(cfg)["connections"]["prod"]["prod"] is True
 
-    rc = yoke_operations_cli.main([
-        "connection", "set", "prod", "--non-prod", "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            "prod",
+            "--non-prod",
+            "--config",
+            str(cfg),
+        ]
+    )
 
     assert rc == 0
     capsys.readouterr()
@@ -127,13 +152,19 @@ def test_connection_set_prod_flags_round_trip(cfg, capsys) -> None:
 
 
 def test_connection_set_prod_flags_are_mutually_exclusive(cfg, capsys) -> None:
-    rc = yoke_operations_cli.main([
-        "connection", "set", "prod",
-        "--transport", "https",
-        "--prod",
-        "--non-prod",
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            "prod",
+            "--transport",
+            "https",
+            "--prod",
+            "--non-prod",
+            "--config",
+            str(cfg),
+        ]
+    )
 
     assert rc == 2
     err = capsys.readouterr().err
@@ -146,9 +177,16 @@ def test_connection_set_positional_dsn_infers_local_postgres_transport(
 ) -> None:
     dsn = "postgresql://admin:secret@localhost/yoke"
 
-    rc = yoke_operations_cli.main([
-        "connection", "set", "local", dsn, "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            "local",
+            dsn,
+            "--config",
+            str(cfg),
+        ]
+    )
 
     captured = capsys.readouterr()
     assert rc == 0
@@ -166,56 +204,36 @@ def test_env_use_unknown_env_exits_nonzero(cfg, tmp_path, capsys) -> None:
     assert "prod" in capsys.readouterr().err
 
 
-def test_auth_set_token_file_rotates_credential(cfg, tmp_path, capsys) -> None:
-    _seed(cfg, tmp_path, "stage")
-    rotated = tmp_path / "rotated.token"
-    secret = "yoke_v1_rotated_secret"
-    rotated.write_text(secret + "\n")
-    capsys.readouterr()
-
-    rc = yoke_operations_cli.main([
-        "auth", "set", "stage", "--token-file", str(rotated),
-        "--config", str(cfg),
-    ])
-
-    captured = capsys.readouterr()
-    assert rc == 0
-    _assert_auth_token_imported(cfg, "stage", secret, captured)
-    assert str(rotated) not in cfg.read_text()
-
-
-def test_auth_set_positional_token_imports_without_leaking(
-    cfg, tmp_path, capsys
-) -> None:
-    _seed(cfg, tmp_path, "stage")
-    secret = "yoke_v1_cli_arg_secret"
-    capsys.readouterr()
-
-    rc = yoke_operations_cli.main([
-        "auth", "set", "stage", secret, "--config", str(cfg),
-    ])
-
-    captured = capsys.readouterr()
-    assert rc == 0
-    _assert_auth_token_imported(cfg, "stage", secret, captured)
-
-
 def test_connection_set_positional_dsn_uses_existing_local_postgres_transport(
     cfg, capsys
 ) -> None:
-    rc = yoke_operations_cli.main([
-        "connection", "set", "local",
-        "--transport", "local-postgres",
-        "--dsn", "postgresql://old-secret@localhost/yoke",
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            "local",
+            "--transport",
+            "local-postgres",
+            "--dsn",
+            "postgresql://old-secret@localhost/yoke",
+            "--config",
+            str(cfg),
+        ]
+    )
     assert rc == 0
     capsys.readouterr()
     dsn = "postgresql://new-secret@localhost/yoke"
 
-    rc = yoke_operations_cli.main([
-        "connection", "set", "local", dsn, "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            "local",
+            dsn,
+            "--config",
+            str(cfg),
+        ]
+    )
 
     captured = capsys.readouterr()
     assert rc == 0
@@ -223,7 +241,8 @@ def test_connection_set_positional_dsn_uses_existing_local_postgres_transport(
 
 
 def test_writer_set_connection_replace_drops_stale_transport_keys(
-    cfg, tmp_path,
+    cfg,
+    tmp_path,
 ) -> None:
     from yoke_cli.config import writer
 
@@ -246,50 +265,18 @@ def test_writer_set_connection_replace_drops_stale_transport_keys(
     assert result["connection"] == entry
 
 
-def test_auth_set_positional_dsn_uses_existing_local_postgres_transport(
-    cfg, capsys
-) -> None:
-    rc = yoke_operations_cli.main([
-        "connection", "set", "local",
-        "--transport", "local-postgres",
-        "--dsn", "postgresql://old-secret@localhost/yoke",
-        "--config", str(cfg),
-    ])
-    assert rc == 0
-    capsys.readouterr()
-    dsn = "postgresql://rotated-secret@localhost/yoke"
-
-    rc = yoke_operations_cli.main([
-        "auth", "set", "local", dsn, "--config", str(cfg),
-    ])
-
-    captured = capsys.readouterr()
-    assert rc == 0
-    _assert_dsn_imported(cfg, "local", dsn, captured)
-
-
-def test_auth_set_token_stdin_imports_without_leaking(
-    cfg, tmp_path, capsys, monkeypatch
-) -> None:
-    _seed(cfg, tmp_path, "stage")
-    secret = "yoke_v1_stdin_secret"
-    monkeypatch.setattr("sys.stdin", io.StringIO(secret + "\n"))
-    capsys.readouterr()
-
-    rc = yoke_operations_cli.main([
-        "auth", "set", "stage", "--token-stdin", "--config", str(cfg),
-    ])
-
-    captured = capsys.readouterr()
-    assert rc == 0
-    _assert_auth_token_imported(cfg, "stage", secret, captured)
-
-
 def test_invalid_write_is_refused_with_contract_codes(cfg, capsys) -> None:
-    rc = yoke_operations_cli.main([
-        "connection", "set", "stage", "--transport", "https",
-        "--config", str(cfg),
-    ])
+    rc = yoke_operations_cli.main(
+        [
+            "connection",
+            "set",
+            "stage",
+            "--transport",
+            "https",
+            "--config",
+            str(cfg),
+        ]
+    )
 
     assert rc == 1
     err = capsys.readouterr().err

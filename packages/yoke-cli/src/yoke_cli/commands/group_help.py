@@ -14,12 +14,6 @@ from yoke_cli.commands.registry import (
 )
 from yoke_cli.commands.tool_shaped import TOOL_SHAPED_SUBCOMMANDS
 from yoke_contracts.connection_authority_teaching import DB_GROUP_TEACHING
-from yoke_contracts.deployment_itemless_teaching import (
-    ITEMLESS_RELEASE_RECIPE,
-)
-from yoke_contracts.deployment_release_roles_teaching import (
-    RELEASE_ROLE_RECIPE,
-)
 
 GROUP_ROUTES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("deployments",): (("deployment-flows",), ("deployment-runs",)),
@@ -51,7 +45,13 @@ GUIDANCE_ROUTES: dict[tuple[str, ...], str] = {
 # exist at all and the capability is reached another way.
 GROUP_TEACHING: dict[tuple[str, ...], str] = {
     ("db",): DB_GROUP_TEACHING,
-    ("deployment-runs",): RELEASE_ROLE_RECIPE + "\n" + ITEMLESS_RELEASE_RECIPE,
+    ("deployment-runs",): (
+        "Steering creates and drives release runs; member owners retain their "
+        "item claims and credit their own scoped QA. Runs occupy their target "
+        "servers, and only a live driver may continue its run.\n"
+        "Recipes and prerequisites: yoke deployment-runs resolve-target --help.\n"
+        "Execution and recovery: yoke watch deploy --help."
+    ),
     ("env",): (
         "Retirement is a `connection` command: `yoke connection remove ENV` "
         "deletes the entry and its Yoke-owned credential, taking "

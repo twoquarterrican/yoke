@@ -128,9 +128,7 @@ def sessions_steering_groups_list(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        for row in (response.result or {}).get("rows") or []:
-            print(row.get("steering_group_session_id") or "", file=stdout)
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="sessions.steering_groups.list",

@@ -61,7 +61,8 @@ def test_project_register_maps_checkout(cfg, tmp_path, capsys) -> None:
 
     assert rc == 0
     payload = json.loads(cfg.read_text())
-    checkout = json.loads(capsys.readouterr().out)["checkout"]
+    checkout = str(repo.resolve())
+    assert f"checkout: {checkout}" in capsys.readouterr().out
     assert payload["projects"] == [{"checkout": checkout, "project_id": 7}]
 
 
@@ -165,7 +166,8 @@ def test_project_register_reassign_allowed_with_steering_seat(
     rc = _register_reassign(cfg, repo, seated=True)
 
     assert rc == 0
-    checkout = json.loads(capsys.readouterr().out)["checkout"]
+    checkout = str(repo.resolve())
+    assert f"checkout: {checkout}" in capsys.readouterr().out
     assert json.loads(cfg.read_text())["projects"] == [
         {"checkout": checkout, "project_id": 7}
     ]

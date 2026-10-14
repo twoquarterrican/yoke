@@ -73,7 +73,7 @@ def test_ephemeral_env_get_dispatches_project_branch_and_prints_environment() ->
     )
 
     assert rc == 0
-    assert '"status": "healthy"' in out
+    assert "status: healthy" in out
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "ephemeral_env.get"
     assert req.target.kind == "global"
@@ -107,7 +107,8 @@ def test_ephemeral_env_update_dispatches_global_target_and_prints_message() -> N
     )
 
     assert rc == 0
-    assert out == "Updated env 12: status=healthy\n"
+    assert "message: Updated env 12: status=healthy" in out
+    assert "updated: yes" in out
     req = _CAPTURED_REQUESTS[-1]
     assert req.function == "ephemeral_env.update"
     assert req.target.kind == "global"

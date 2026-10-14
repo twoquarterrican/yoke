@@ -105,24 +105,21 @@ def test_product_wheels_exercise_installer_plan_surfaces(
     )
     assert "yoke --help" in f"{bare.stdout}\n{bare.stderr}"
     top_help = _assert_command(yoke, project, env, ["--help"], 0)
-    for surface in (
-        "yoke status",
-        "yoke setup",
-        "yoke github connect",
-        "yoke github status",
-        "yoke project create",
-        "yoke project import",
-        "yoke project install",
-        "yoke packs list",
-        "yoke packs get",
-        "yoke packs relink",
-        "yoke packs update",
-        "yoke db read",
-        "yoke core build",
-        "yoke core status",
-        "yoke dev setup",
+    assert "yoke status" in top_help.stdout
+    assert "yoke setup" in top_help.stdout
+    project_help = _assert_command(yoke, project, env, ["project", "--help"], 0)
+    assert "yoke project install" in project_help.stdout
+    for category in (
+        "status",
+        "setup",
+        "github",
+        "project",
+        "packs",
+        "db",
+        "core",
+        "dev",
     ):
-        assert surface in top_help.stdout
+        assert "yoke " + category + " " in top_help.stdout
     status = _assert_command(
         yoke,
         project,

@@ -44,13 +44,13 @@ class FakeRunner:
 
 
 def test_top_level_help_lists_core_commands(capsys) -> None:
-    rc = yoke_cli_main.main(["--help"])
+    rc = yoke_cli_main.main(["core", "--help"])
 
     assert rc == 0
     out = capsys.readouterr().out
     assert "yoke core build" in out
     assert "yoke core status" in out
-    assert "client-local helper (no function id)" in out
+    assert "[client-local]" in out
 
 
 def test_operation_inventory_marks_core_launcher_as_permanent_tool_shaped() -> None:

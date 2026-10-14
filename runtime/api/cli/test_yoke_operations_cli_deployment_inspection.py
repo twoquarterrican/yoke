@@ -89,10 +89,11 @@ def test_flow_list_preserves_multiline_stages(json_mode) -> None:
         row = json.loads(stdout.getvalue())["rows"][0]
         assert row["stages"] == stored_stages
     else:
-        assert (
-            stdout.getvalue()
-            == "flow-test|" + json.dumps(stages, separators=(",", ":")) + "|active\n"
-        )
+        text = stdout.getvalue()
+        assert "id: flow-test" in text
+        assert "stages:" in text
+        assert stored_stages in text
+        assert "status: active" in text
 
 
 def test_failure_trace_human_output_names_terminal_cause_and_chain() -> None:

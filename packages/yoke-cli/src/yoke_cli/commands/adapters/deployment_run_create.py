@@ -74,7 +74,7 @@ def deployment_runs_create(args: List[str]) -> int:
         prog="yoke deployment-runs create",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=CREATE_DESCRIPTION,
-        epilog="Environment release recipe: yoke deployment-runs --help",
+        epilog="Environment release recipe: yoke deployment-runs resolve-target --help",
     )
     parser.add_argument("project")
     parser.add_argument("flow")

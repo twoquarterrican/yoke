@@ -115,7 +115,7 @@ def test_dash_survey_reports_client_local_headroom(monkeypatch):
         out,
         io.StringIO(),
     )
-    assert "survey-touch-path-update|replace" in out.getvalue()
+    assert "touch path update: replace" in out.getvalue()
 
 
 def test_dash_survey_records_explicit_no_change_without_sizing(monkeypatch):

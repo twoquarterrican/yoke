@@ -116,7 +116,7 @@ def test_validate_reads_advanced_stage_json_from_stdin() -> None:
             "--stdin",
         )
     assert code == 0, error
-    assert "execution_supported=false" in out
+    assert "execution supported: no" in out
     assert CAPTURED[-1].payload["stages"] == stages
 
 

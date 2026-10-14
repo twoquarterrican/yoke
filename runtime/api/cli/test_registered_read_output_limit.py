@@ -1,6 +1,8 @@
 """Atomic output refusal and registry coverage for CLI reads."""
 
 import json
+import re
+from pathlib import Path
 
 import pytest
 
@@ -28,8 +30,13 @@ def test_read_catalog_matches_all_registrations():
 @pytest.mark.parametrize("function", ["qa.plan.list", "onboard.checklist.get"])
 def test_oversized_read_refuses_without_partial_answer(capsys, json_mode, function):
     raw = response(function, {"rows": [{"secret_marker": "x" * READ_OUTPUT_LIMIT_BYTES}]})
-    assert emit_response(raw, json_mode=json_mode) == 1
+    assert emit_response(raw, json_mode=json_mode) == (1 if json_mode else 0)
     output = capsys.readouterr()
+    if not json_mode:
+        artifact = Path(re.search(r"Complete reply saved: (.+)", output.out)[1])
+        assert json.loads(artifact.read_text())["response"]["result"] == raw.result
+        artifact.unlink()
+        return
     assert "secret_marker" not in output.out + output.err
     assert "read_output_limit_exceeded" in output.out + output.err
     assert "yoke " + function.replace(".", " ") in output.out + output.err
@@ -47,7 +54,7 @@ def test_human_writer_stderr_is_bounded_atomically(capsys):
     assert emit_response(response(), json_mode=False, human_writer=writer) == 1
     output = capsys.readouterr()
     assert "partial answer" not in output.out
-    assert "read_output_limit_exceeded" in output.err
+    assert "essential_output_limit_exceeded" in output.err
 
 
 @pytest.mark.parametrize("json_mode", [True, False])
@@ -56,7 +63,13 @@ def test_full_returns_every_byte(capsys, json_mode, function):
     value = "z" * (READ_OUTPUT_LIMIT_BYTES + 1)
     with read_output_scope(["--full"]):
         assert emit_response(response(function, {"body": value}), json_mode=json_mode) == 0
-    assert value in capsys.readouterr().out
+    output = capsys.readouterr().out
+    if json_mode:
+        assert value in output
+    else:
+        artifact = Path(re.search(r"Complete reply saved: (.+)", output)[1])
+        assert json.loads(artifact.read_text())["response"]["result"]["body"] == value
+        artifact.unlink()
 
 
 def test_full_does_not_escape_its_invocation():
