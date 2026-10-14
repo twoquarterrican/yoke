@@ -33,6 +33,8 @@ from yoke_core.domain.gh_rest_http_errors import (
 )
 from yoke_core.domain.gh_rest_operation_deadline import (
     GitHubRestOperationDeadlineError,
+    deadline_cut_error,
+    operation_deadline_after,
     require_remaining,
     wait_before_retry,
 )
@@ -65,7 +67,6 @@ from yoke_core.domain.github_response_safety import (
     GitHubResponseDecodeError,
     GitHubResponseDeadlineError,
     GitHubResponseTooLargeError,
-    deadline_after,
     decode_utf8_response,
     read_bounded_response,
     redact_exact_secrets,
@@ -110,7 +111,7 @@ def _request_with_retry(
         return _load_fake_response(req, fake_dir)
     block_live_test_call(urlopen, urllib.request.urlopen)
     try:
-        operation_deadline = deadline_after(timeout_seconds)
+        operation_deadline = operation_deadline_after(timeout_seconds)
     except ValueError:
         raise RestTransportError(
             "GitHub REST timeout must be positive and finite"
@@ -136,7 +137,7 @@ def _request_with_retry(
             )
             return response
         except GitHubRestOperationDeadlineError as exc:
-            raise RestNetworkError(str(exc)) from None
+            raise deadline_cut_error(exc, last_exc) from None
         except RestTransportError as exc:
             if (
                 not replay_safe
@@ -160,7 +161,7 @@ def _request_with_retry(
                 sleeper=sleep,
             )
         except GitHubRestOperationDeadlineError as exc:
-            raise RestNetworkError(str(exc)) from None
+            raise deadline_cut_error(exc, last_exc) from None
 
     # Defensive — loop exits via return or raise.
     if last_exc is not None:

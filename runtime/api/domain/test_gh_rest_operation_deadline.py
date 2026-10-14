@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import io
 import urllib.error
 
 import pytest
 
+from yoke_contracts.read_deadline import read_budget
 from yoke_core.domain import gh_rest_transport as transport
 from yoke_core.domain import github_response_safety
 
@@ -98,6 +100,36 @@ def test_retry_backoff_cannot_cross_operation_deadline(monkeypatch) -> None:
         )
 
     assert calls == 1
+    assert sleeps == []
+
+
+def test_read_budget_bounds_retries_and_reports_the_last_real_error(
+    monkeypatch,
+) -> None:
+    timeouts: list[float] = []
+    sleeps: list[float] = []
+
+    def opener(request, timeout):
+        timeouts.append(timeout)
+        raise urllib.error.HTTPError(
+            request.full_url, 502, "Bad Gateway", {}, io.BytesIO(b"upstream timeout")
+        )
+
+    monkeypatch.setattr(transport, "urlopen", opener)
+    monkeypatch.setattr(transport, "sleep", sleeps.append)
+
+    with read_budget(3.0):
+        with pytest.raises(transport.RestNetworkError) as raised:
+            transport.request_with_retry(
+                transport.RestRequest(method="GET", path="/user"),
+                token="ghs_secret",
+            )
+
+    message = str(raised.value)
+    assert "exceeded the time limit" in message
+    assert "last GitHub error: HTTP 502" in message
+    assert "upstream timeout" in message
+    assert len(timeouts) == 1 and timeouts[0] <= 3.0
     assert sleeps == []
 
 

@@ -182,6 +182,23 @@ class TestHandleFailedLog:
         assert outcome.result_payload["failed_job_count"] == 0
         assert "No failed jobs in run 123" in outcome.result_payload["output"]
 
+    def test_missing_run_returns_not_found(self, _resolver_ok, monkeypatch):
+        from yoke_core.domain.gh_rest_transport import RestNotFoundError
+
+        def missing(repo, run_id, *, token):
+            raise RestNotFoundError(f"no job listing for run {run_id}", status=404)
+
+        monkeypatch.setattr(
+            "yoke_core.domain.github_actions_failed_jobs.collect_failed_jobs",
+            missing,
+        )
+
+        outcome = handle_failed_log(_make_request())
+
+        assert outcome.primary_success is False
+        assert outcome.error.code == "not_found"
+        assert "no job listing for run 123" in outcome.error.message
+
     def test_missing_selector_fails_validation(self, _resolver_ok):
         outcome = handle_failed_log(
             _make_request({"repo": "upyoke/yoke", "project": "yoke"})
