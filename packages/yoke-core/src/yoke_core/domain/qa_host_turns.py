@@ -16,6 +16,8 @@ from yoke_contracts.coordination_claim_recovery import holder_release_command
 from yoke_contracts.timestamps import format_instant, utc_now
 from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import instant_parameter, query_one, query_rows
+from yoke_core.domain.qa_host_wait_schema import QA_HOST_WAIT_TABLE
+from yoke_core.domain.schema_common import _table_exists
 from yoke_core.domain.work_claim_targets import make_qa_admission_target
 
 HOST_TURN_REASON = "qa-host-turn:"
@@ -25,6 +27,11 @@ _LIVE = "('waiting','reserved')"
 
 def _p(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
+
+
+def _has_line(conn: Any) -> bool:
+    """Partial fixture schemas without the line have no waiter to serve."""
+    return _table_exists(conn, QA_HOST_WAIT_TABLE)
 
 
 def lock_host_turn(conn: Any, target: Any) -> None:
@@ -38,6 +45,8 @@ def lock_host_turn(conn: Any, target: Any) -> None:
 
 def host_line(conn: Any, machine: str) -> list[dict[str, Any]]:
     """Waiters still in line for *machine*, oldest first; ended sessions drop out."""
+    if not _has_line(conn):
+        return []
     rows = query_rows(
         conn,
         "SELECT w.* FROM qa_host_waits w JOIN harness_sessions s "
@@ -177,7 +186,7 @@ def _wake_waiter(conn: Any, wait: dict[str, Any], claim: Any) -> None:
 
 def reservation_for(conn: Any, claim: Any, session_id: str) -> bool:
     """Consume the caller's own unconsumed reservation of *claim*."""
-    if claim.session_id != session_id:
+    if claim.session_id != session_id or not _has_line(conn):
         return False
     p = _p(conn)
     cursor = conn.execute(
@@ -190,7 +199,7 @@ def reservation_for(conn: Any, claim: Any, session_id: str) -> bool:
 
 def host_claim_released(conn: Any, claim: Any) -> None:
     """A released host drops its unconsumed reservation, then serves the line."""
-    if not claim.target.machine_id:
+    if not claim.target.machine_id or not _has_line(conn):
         return
     p = _p(conn)
     conn.execute(
@@ -222,6 +231,8 @@ def cancel_host_waits(
         where = f"qa_plan_execution_id IN ({','.join([p] * len(executions))})"
         params = tuple(executions)
     else:
+        return
+    if not _has_line(conn):
         return
     rows = query_rows(
         conn,
