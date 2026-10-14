@@ -31,14 +31,13 @@ def item_scoped_stage_plan_run_command(case: Mapping[str, Any]) -> str | None:
     shared = ((case.get("execution_target") or {}).get("deployment") or {}).get(
         "shared_plan"
     )
-    refs = case.get("shared_plan_member_refs") or []
-    member_ref = str(
-        (refs[0] if shared and refs else case.get("deployment_member_ref")) or ""
-    ).strip()
+    member_ref = str(case.get("deployment_member_ref") or "").strip()
     project = str(case.get("project") or "").strip()
-    if not run_id or not stage or not member_ref or not project:
+    if not run_id or not stage or not project:
         return None
-    if case.get("deployment_member_item_id") is None and not shared:
+    if shared:
+        member_ref = "ATTACHING_MEMBER"
+    elif not member_ref or case.get("deployment_member_item_id") is None:
         return None
     return (
         f"yoke qa plan run --deployment-run-id {run_id} --stage {stage} "
@@ -52,11 +51,18 @@ def item_scoped_stage_credit_refusal(case: Mapping[str, Any]) -> str | None:
     if command is None:
         return None
     stage = str(case["deployment_stage"]).strip()
-    refs = case.get("shared_plan_member_refs") or []
-    member_ref = str(
-        case.get("deployment_member_ref") or (refs[0] if refs else "")
-    ).strip()
+    member_ref = str(case.get("deployment_member_ref") or "ATTACHING_MEMBER").strip()
     run_id = str(case["deployment_run_id"]).strip()
+    shared = ((case.get("execution_target") or {}).get("deployment") or {}).get(
+        "shared_plan"
+    )
+    if shared:
+        return (
+            f"STAGE CREDIT REFUSAL: this case belongs to shared plan {shared['plan_id']} "
+            f"on {run_id} stage {stage!r}. A direct case pass does not complete its ordered execution. "
+            f"Choose an attaching member shown by `yoke qa plan get {shared['plan_id']} --project {case['project']}` "
+            f"that is carried by `yoke deployment-runs get {run_id}`, then replace ATTACHING_MEMBER in:\n  {command}"
+        )
     return (
         f"STAGE CREDIT REFUSAL: this requirement is bound to item-scoped "
         f"stage {stage!r} for member {member_ref} on {run_id}. A passing "

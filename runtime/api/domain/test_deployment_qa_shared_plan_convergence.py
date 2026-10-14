@@ -150,3 +150,52 @@ def test_member_source_obligations_read_the_same_shared_verdict(test_db, monkeyp
         )
         for member, source in zip(MEMBERS, sources, strict=True)
     )
+
+
+def test_withdrawing_one_attachment_keeps_the_shared_cases_for_other_members(test_db):
+    from yoke_core.domain.qa_plan_attachment_retract import retract_plan_from_item
+
+    plan_id = _seed(test_db)
+    requirement = _materialize(test_db, MEMBERS[0])["created_requirement_ids"][0]
+    withdrawn = retract_plan_from_item(
+        test_db,
+        item_id=MEMBERS[0],
+        plan_id=plan_id,
+        transition_id="release",
+        reason="This member does not need this plan.",
+    )
+    assert requirement not in withdrawn["retired_requirement_ids"]
+    assert (
+        test_db.execute(
+            "SELECT retracted_at FROM qa_requirements WHERE id=%s", (requirement,)
+        ).fetchone()[0]
+        is None
+    )
+    assert deployment_qa_stage_status(
+        test_db, run_id=RUN, stage_name="item-qa", member_item_id=MEMBERS[0]
+    )["accepted"]
+    assert not deployment_qa_stage_status(
+        test_db, run_id=RUN, stage_name="item-qa", member_item_id=MEMBERS[1]
+    )["accepted"]
+    _complete_case(test_db, _begin(test_db, MEMBERS[1]))
+    assert deployment_qa_stage_status(
+        test_db, run_id=RUN, stage_name="item-qa", member_item_id=MEMBERS[1]
+    )["accepted"]
+
+
+def test_member_verdict_read_does_not_wait_for_plan_editor(test_db):
+    from runtime.api.fixtures.pg_testdb import connect_test_database
+    from yoke_core.domain.deployment_qa_run_acceptance import (
+        item_qa_acceptance_blockers,
+    )
+
+    plan_id = _seed(test_db)
+    _materialize(test_db, MEMBERS[0])
+    execution = _begin(test_db, MEMBERS[0])
+    _complete_case(test_db, execution)
+    test_db.commit()
+    test_db.execute("UPDATE qa_plans SET name=name WHERE id=%s", (plan_id,))
+    with connect_test_database(str(test_db.info.dbname)) as reader:
+        reader.execute("SET LOCAL lock_timeout='100ms'")
+        assert not item_qa_acceptance_blockers(reader, run_id=RUN, item_id=MEMBERS[1])
+    test_db.rollback()

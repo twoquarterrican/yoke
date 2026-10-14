@@ -107,9 +107,12 @@ def _plan_snapshot(
     *,
     project_id: int,
     case_keys: Iterable[str] | None = None,
+    lock_plan: bool = True,
 ) -> dict[str, Any]:
     marker = _p(conn)
-    lock = " FOR UPDATE" if db_backend.connection_is_postgres(conn) else ""
+    lock = (
+        " FOR UPDATE" if lock_plan and db_backend.connection_is_postgres(conn) else ""
+    )
     cursor = conn.execute(
         f"SELECT {converged_select(conn, 'qa_plans', (*PLAN_FIELDS, 'retired_at'))} "
         f"FROM qa_plans WHERE id={marker}{lock}",

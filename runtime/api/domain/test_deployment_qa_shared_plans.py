@@ -294,4 +294,5 @@ def test_shared_direct_case_teaches_an_attaching_member_command(test_db):
     assert refusal is not None
     assert "--stage item-qa" in refusal
     assert "--member" in refusal
-    assert str(MEMBERS[0]) in refusal
+    assert "ATTACHING_MEMBER" in refusal
+    assert "yoke qa plan get" in refusal

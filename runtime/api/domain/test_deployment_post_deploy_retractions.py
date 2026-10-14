@@ -160,8 +160,8 @@ def test_a_frozen_withdrawn_plan_does_not_rematerialize(test_db, include_plan):
 
     rows = test_db.execute(
         "SELECT plan_id FROM qa_requirements WHERE deployment_run_id=%s "
-        "AND deployment_member_item_id=%s AND method_id IS NOT NULL",
-        (run_id, item_id),
+        "AND deployment_member_item_id IS NULL AND method_id IS NOT NULL",
+        (run_id,),
     ).fetchall()
     assert result["created_requirement_ids"]
     assert {row["plan_id"] for row in rows} == {active_plan}

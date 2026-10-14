@@ -70,6 +70,7 @@ def member_plan_subjects(conn: Any, subject: Mapping, target: Mapping) -> list[d
         target=target,
         admitted=admitted,
         allow_empty=True,
+        lock_plans=False,
     )
     return [
         shared_subject(subject, target, snapshot)

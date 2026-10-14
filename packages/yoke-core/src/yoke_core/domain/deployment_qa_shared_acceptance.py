@@ -37,7 +37,16 @@ def shared_member_acceptance(conn, subject, target, acceptance_qa_kind):
 
     subjects = acceptance_subjects(conn, subject, target)
     if not subjects:
-        return None
+        from yoke_core.domain.deployment_qa_shared_copy_reads import (
+            withdrawn_member_discharge,
+        )
+        from yoke_core.domain.deployment_qa_stage_acceptance import STAGE_DISCHARGED
+
+        return (
+            StageAcceptance(STAGE_DISCHARGED, ())
+            if withdrawn_member_discharge(conn, subject, target)
+            else None
+        )
     answers = [
         stage_acceptance(
             conn,
@@ -61,7 +70,14 @@ def shared_member_status(conn, subject, target):
 
     subjects = acceptance_subjects(conn, subject, target)
     if not subjects:
-        return None
+        from yoke_core.domain.deployment_qa_shared_copy_reads import (
+            withdrawn_member_discharge,
+        )
+        from yoke_core.domain.deployment_qa_stage_outcome import discharged
+
+        return (
+            discharged() if withdrawn_member_discharge(conn, subject, target) else None
+        )
     answers = [
         _settle_stage_status(
             conn,

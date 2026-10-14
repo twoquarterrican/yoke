@@ -90,6 +90,20 @@ def retract_plan_from_item(
             int(item_id),
         ),
     )
+    from yoke_core.domain.deployment_qa_shared_copy_reads import shared_plan_copies
+
+    shared = shared_plan_copies(
+        conn, int(item_id), int(plan_id), include_withdrawn=True
+    )
+    for row in shared:
+        row["has_recorded_run"] = (
+            conn.execute(
+                "SELECT 1 FROM qa_runs WHERE qa_requirement_id=%s LIMIT 1",
+                (row["id"],),
+            ).fetchone()
+            is not None
+        )
+    requirements.extend(shared)
     for row in requirements:
         if row["has_recorded_run"]:
             raise QaPlanError(
@@ -116,7 +130,30 @@ def retract_plan_from_item(
                 int(plan_id),
             ),
         )
-    retired = [int(row["id"]) for row in requirements]
+    from yoke_core.domain.deployment_qa_shared_plans import member_group_digests
+
+    retired = []
+    for row in requirements:
+        if row.get("deployment_member_item_id") is None and row.get(
+            "deployment_run_id"
+        ):
+            members = query_rows(
+                conn,
+                "SELECT item_id FROM deployment_run_items WHERE run_id=%s AND item_id<>%s",
+                (row["deployment_run_id"], item_id),
+            )
+            if any(
+                row["execution_target_digest"]
+                in member_group_digests(
+                    conn,
+                    row["deployment_run_id"],
+                    row["deployment_stage"],
+                    int(member["item_id"]),
+                )
+                for member in members
+            ):
+                continue
+        retired.append(int(row["id"]))
     retract_requirements(conn, retired, reason=reason, source=source)
     if commit:
         conn.commit()

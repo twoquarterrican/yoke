@@ -79,9 +79,9 @@ def _run_admits_the_member(
         int(row["id"])
         for row in conn.execute(
             "SELECT id FROM qa_requirements WHERE deployment_run_id=%s "
-            "AND deployment_stage=%s AND deployment_member_item_id=%s "
+            "AND deployment_stage=%s AND deployment_member_item_id IS NULL "
             "AND method_id IS NOT NULL ORDER BY id",
-            (run_id, ITEM_QA_STAGE, item_id),
+            (run_id, ITEM_QA_STAGE),
         ).fetchall()
     ]
 
@@ -101,17 +101,11 @@ def test_a_delivered_attachment_is_not_materialized_again(test_db) -> None:
 
     # The attachment itself is untouched: what changed is that it is no
     # longer read as owing a second obligation here.
-    assert _attached_plans(
-        test_db, item_id=item_id, transition_id=RELEASE
-    ) != {}
+    assert _attached_plans(test_db, item_id=item_id, transition_id=RELEASE) != {}
 
     # The release transition is where the second copy used to be authored.
-    assert has_attached_plans(
-        test_db, item_id=item_id, transition_id=RELEASE
-    ) is False
-    result = materialize_for_item(
-        test_db, item_id=item_id, transition_id=RELEASE
-    )
+    assert has_attached_plans(test_db, item_id=item_id, transition_id=RELEASE) is False
+    result = materialize_for_item(test_db, item_id=item_id, transition_id=RELEASE)
     assert result["created_requirement_ids"] == []
     assert result["plan_ids"] == []
     item_bound = test_db.execute(
@@ -130,9 +124,7 @@ def test_an_undelivered_attachment_still_materializes(test_db) -> None:
     test_db.commit()
 
     assert has_attached_plans(test_db, item_id=item_id, transition_id=RELEASE)
-    result = materialize_for_item(
-        test_db, item_id=item_id, transition_id=RELEASE
-    )
+    result = materialize_for_item(test_db, item_id=item_id, transition_id=RELEASE)
     assert result["created_requirement_ids"]
     assert result["plan_ids"] == [plan_id]
 
@@ -151,7 +143,5 @@ def test_a_partly_answered_plan_still_owes_what_it_owes(test_db) -> None:
     test_db.commit()
 
     assert has_attached_plans(test_db, item_id=item_id, transition_id=RELEASE)
-    result = materialize_for_item(
-        test_db, item_id=item_id, transition_id=RELEASE
-    )
+    result = materialize_for_item(test_db, item_id=item_id, transition_id=RELEASE)
     assert result["created_requirement_ids"]

@@ -219,6 +219,7 @@ def attached_member_plans(
     subject: Mapping[str, Any],
     *,
     target: Mapping[str, Any],
+    lock_plans: bool = True,
 ) -> list[dict[str, Any]]:
     """Snapshot the member's attached plans in the shape the stage expects."""
     member_item_id = subject.get("member_item_id")
@@ -244,6 +245,7 @@ def attached_member_plans(
                 project_id=int(
                     subject.get("member_project_id") or subject["project_id"]
                 ),
+                lock_plan=lock_plans,
             ),
         }
         for plan_id in plan_ids

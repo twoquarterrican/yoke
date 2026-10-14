@@ -103,7 +103,13 @@ def materialize_subject(
             # Recorded emptiness or the own-flow exemption settles no cases;
             # other unanswered members still wait.
             answer = member_post_deploy_answer(conn, subject)
-            if not answer.discharges_without_cases:
+            from yoke_core.domain.deployment_qa_shared_copy_reads import (
+                withdrawn_member_discharge,
+            )
+
+            if not answer.discharges_without_cases and not withdrawn_member_discharge(
+                conn, subject, target
+            ):
                 raise QaCasesNotSelectedError(cases_not_selected_refusal())
             if answer.verdict == NOT_REQUIRED:
                 not_required = answer.reasons
