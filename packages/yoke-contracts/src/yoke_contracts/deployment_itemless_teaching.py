@@ -130,7 +130,21 @@ CREATE_DESCRIPTION = (
     "A run on a flow with an item-scoped QA stage that carries or owes "
     "members must take delivery custody, or it is refused "
     "(item_qa_flow_without_delivery_custody), because its members could "
-    "never be proven at item QA. Whether a memberless item-QA run owes a "
+    "never be proven at item QA. "
+    "An executing run on the same flow and target that waits only on item "
+    "QA is taken over when this candidate contains its candidate: with no "
+    "run-level QA or approval in the flow, members whose item QA passed "
+    "close there and each waiting member moves to this run; with run-level "
+    "QA or approval, every unclosed member moves and the older run is "
+    "cancelled as superseded, with nothing recorded as passed. Its open "
+    "shared-plan and run-level requirements are retracted, both runs record "
+    "the supersession, and the receipt names supersedes_run_id. A candidate "
+    "not known to contain the older one is refused "
+    "(takeover_candidate_not_contained) naming the members to release by "
+    "hand; another session's live driver on it refuses "
+    "(takeover_run_driven_elsewhere); a run created without a pinned commit "
+    "takes nothing over. "
+    "Whether a memberless item-QA run owes a "
     "delivery is asked by validate-composition and before execution, not "
     "here, so add-item can attach to an itemless run. "
     "Choose the items' selected completion flow or deliberately reconcile "
@@ -205,6 +219,15 @@ def unkeyed_server_warning(run_id: str) -> str:
     )
 
 
+def takeover_note(run_id: str, superseded: str) -> str:
+    """Post-create stderr line when the create took over an older run."""
+    return (
+        f"note: {run_id} took over {superseded}, which was waiting only on "
+        f"item QA on this target; its waiting members now ride {run_id}. "
+        f"`yoke deployment-runs get {superseded}` shows what stayed there."
+    )
+
+
 def execute_created_run_note(authority: str, run_id: str) -> str:
     """Post-create stderr line pointing at the watch-deploy execute path."""
     return (
@@ -225,6 +248,7 @@ __all__ = [
     "WATCH_DEPLOY_DESCRIPTION",
     "execute_created_run_note",
     "replayed_run_note",
+    "takeover_note",
     "unconverged_key_note",
     "unkeyed_server_warning",
 ]

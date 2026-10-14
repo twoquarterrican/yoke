@@ -87,6 +87,8 @@ DELIVERY_TABLES: dict[str, dict] = {
             ("create_idempotency_key", "TEXT"),
             ("create_request", "TEXT"),
             ("membership_removals", "TEXT"),
+            ("superseded_by_run_id", "TEXT"),
+            ("supersedes_run_id", "TEXT"),
         ],
         "notes": (
             "One row per deployment-flow execution. Primary key is the "
@@ -169,6 +171,12 @@ DELIVERY_TABLES: dict[str, dict] = {
             "automatically releases members whose recorded merge is definitely outside "
             "their project's frozen lineage, as settlement also does for replaced candidates. "
             "Unknown containment holds and reports recovery. "
+            "`supersedes_run_id` on a new run and `superseded_by_run_id` on "
+            "the run it replaced record a takeover: creating a run for the "
+            "flow and target of an executing run that waits only on item QA, "
+            "from a candidate containing that run's, moves its waiting "
+            "members (every unclosed member when the flow has run-level QA "
+            "or approval, which also cancels it) onto the new run. "
             "`settling_at` marks an `executing` run whose shared gates "
             "passed and which is closing its cleared members before it may "
             "read `succeeded`; completion authority treats it as delivered, "

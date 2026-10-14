@@ -34,6 +34,7 @@ from yoke_contracts.deployment_itemless_teaching import (
     CREATE_DESCRIPTION,
     execute_created_run_note,
     replayed_run_note,
+    takeover_note,
     unconverged_key_note,
     unkeyed_server_warning,
 )
@@ -173,6 +174,8 @@ def deployment_runs_create(args: List[str]) -> int:
             )
         elif run_id and result.get("replayed"):
             print(replayed_run_note(run_id, parsed.idempotency_key), file=stderr)
+        if run_id and result.get("supersedes_run_id"):
+            print(takeover_note(run_id, result["supersedes_run_id"]), file=stderr)
         if run_id:
             authority = _execute_connection() or "<control-plane-env>"
             print(execute_created_run_note(authority, run_id), file=stderr)

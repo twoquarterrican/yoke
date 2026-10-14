@@ -74,7 +74,8 @@ def claims_coordination_claim_acquire(args: List[str]) -> int:
         epilog=(
             "Takes one shared-operation claim for this session. Deployment "
             "runs take none: a run occupies its target servers until its QA "
-            "settles. Reserved qualification grants open only through "
+            "settles, or until a newer run on its flow and target takes it "
+            "over while it waits only on item QA. Reserved qualification grants open only through "
             "session-control. A refused QA_HOST:<machine> acquire joins that "
             "host's waiting line and names its place; the next release "
             "reserves the host for the oldest live waiter and wakes it to "

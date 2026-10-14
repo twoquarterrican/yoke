@@ -50,10 +50,13 @@ class TestDeploymentRunCreation(unittest.TestCase):
             "yoke-hosted-prod",
             idempotency_key=None,
             create_request=None,
+            session_id="s-1",
+            actor_id=None,
             environment=None,
             release_lineage="a" * 40,
             created_by="operator",
         )
+        self.assertIsNone(outcome.result_payload["supersedes_run_id"])
         self.assertEqual(
             outcome.result_payload["run_id"],
             "run-20260616-002",

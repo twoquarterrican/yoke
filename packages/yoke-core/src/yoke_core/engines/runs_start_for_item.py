@@ -108,6 +108,7 @@ def start_for_item(
     project_repo_path: str = "",
     created_by: str = "operator",
     prepare: bool = False,
+    session_id: Optional[str] = None,
 ) -> StartForItemResult:
     """Compose deploy-run setup for ``item_id`` into one structured call.
 
@@ -240,6 +241,7 @@ def start_for_item(
             release_lineage=release_lineage,
             created_by=created_by,
             allow_pending_pair_merges=prepare,
+            session_id=session_id,
         )
     except Exception as exc:
         return StartForItemResult(

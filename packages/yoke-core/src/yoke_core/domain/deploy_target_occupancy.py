@@ -14,6 +14,10 @@ saying so. Production origins are occupied exactly like stage ones, which
 is what keeps a later release from overtaking an earlier one on the same
 production server.
 
+A run on the same flow and target that waits only on item QA does not stay in
+the way of a newer candidate containing it: creating that newer run takes it
+over (:mod:`yoke_core.domain.deployment_run_target_takeover`).
+
 Frozen previews occupy their own slugs instead
 (:mod:`yoke_core.domain.deploy_ephemeral_occupancy`); a run with no
 persistent environment has no origin to occupy here.
@@ -145,6 +149,18 @@ def _open_qa_lines(conn: Any, target: RunTarget) -> Optional[tuple[str, ...]]:
     return tuple(lines)
 
 
+_NO_QA_STAGE_LINE = "no QA stage: held until the run is terminal"
+
+
+def open_qa_lines(conn: Any, run_id: str) -> tuple[str, ...]:
+    """What still holds *run_id*'s origins; empty once its QA settled."""
+    target = run_target(conn, run_id)
+    if target is None:
+        return ()
+    lines = _open_qa_lines(conn, target)
+    return (_NO_QA_STAGE_LINE,) if lines is None else lines
+
+
 def occupancies(
     conn: Any, origins: Iterable[str], *, excluding_run: str = ""
 ) -> list[Occupancy]:
@@ -166,7 +182,7 @@ def occupancies(
         open_lines = _open_qa_lines(conn, target)
         if open_lines == ():
             continue
-        lines = open_lines or ("no QA stage: held until the run is terminal",)
+        lines = open_lines or (_NO_QA_STAGE_LINE,)
         held.extend(
             Occupancy(
                 origin=origin,
@@ -214,10 +230,13 @@ def occupied_refusal(run_id: str, held: list[Occupancy]) -> str:
     holders = sorted({occupancy.run_id for occupancy in held})
     lines.append(
         "Recovery: re-run this start once the holder's QA settles "
-        f"(`yoke deployment-runs stages {holders[0]}` shows it). A holder "
-        "nobody will finish is released by terminalizing it: "
-        f"`yoke deployment-runs terminalize {holders[0]} --disposition "
-        'cancelled --reason "<why it is abandoned>"`.'
+        f"(`yoke deployment-runs stages {holders[0]}` shows it). A holder on "
+        "this run's flow and target that now waits only on item QA is taken "
+        "over by a new `yoke deployment-runs create` whose candidate contains "
+        "the holder's; this run was created before that applied, so terminalize "
+        "it and create again. A holder nobody will finish is released by "
+        f"terminalizing it: `yoke deployment-runs terminalize {holders[0]} "
+        '--disposition cancelled --reason "<why it is abandoned>"`.'
     )
     return "\n".join(lines)
 
@@ -246,6 +265,7 @@ __all__ = [
     "RunTarget",
     "occupancies",
     "occupied_refusal",
+    "open_qa_lines",
     "require_target_unoccupied",
     "run_target",
 ]

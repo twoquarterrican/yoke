@@ -150,7 +150,8 @@ CI continuation and failure responsibility.
 
 Merge and delivery remain separate. Queue-declared projects use their protected
 merge-group gate. A push is not release authority. Runs take no claim: a run
-occupies its target servers until its QA settles; flows are immutable referenced definitions,
+occupies its target servers until its QA settles, and creating a newer run on its flow and
+target takes it over once it waits only on item QA; flows are immutable referenced definitions,
 run ids are executions, and the hosted flow owns exact commits/artifacts,
 environment proof and promotion. Retain history when disabling definitions.
 Project migration models govern data transforms: permanent ordered entries,
