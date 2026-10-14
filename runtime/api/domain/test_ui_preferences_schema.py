@@ -61,21 +61,21 @@ def test_preference_rows_are_unique_per_actor_and_key(conn):
     actor_id = seed_human_actor(conn)
     conn.execute(
         "INSERT INTO actor_ui_preferences (actor_id, pref_key, value, updated_at) "
-        "VALUES (%s, 'overview.module.dismissed.first_deploy', '1', %s)",
+        "VALUES (%s, 'overview.module.dismissed.connect_harness', '1', %s)",
         (actor_id, FIRST_ACTIVATION_AT),
     )
     conn.commit()
     with pytest.raises(Exception):
         conn.execute(
             "INSERT INTO actor_ui_preferences (actor_id, pref_key, value, updated_at) "
-            "VALUES (%s, 'overview.module.dismissed.first_deploy', '1', %s)",
+            "VALUES (%s, 'overview.module.dismissed.connect_harness', '1', %s)",
             (actor_id, parse_instant("2026-01-02T00:00:00Z")),
         )
     conn.rollback()
     # The upsert shape the dismissal write uses relies on that constraint.
     conn.execute(
         "INSERT INTO actor_ui_preferences (actor_id, pref_key, value, updated_at) "
-        "VALUES (%s, 'overview.module.dismissed.first_deploy', '1', %s) "
+        "VALUES (%s, 'overview.module.dismissed.connect_harness', '1', %s) "
         "ON CONFLICT (actor_id, pref_key) DO UPDATE SET "
         "value = EXCLUDED.value, updated_at = EXCLUDED.updated_at",
         (actor_id, parse_instant("2026-01-03T00:00:00Z")),

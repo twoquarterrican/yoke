@@ -62,7 +62,7 @@ test("a blocked run names its blocker and how far it got", async (t) => {
     "12 of 30 steps done.",
   );
   // The happy-path sentence never appears over an unfinished run.
-  assert.ok(!visibleText(card).includes("Execution-ready"));
+  assert.ok(!visibleText(card).includes("Activated"));
   mounted.unmount();
 });
 
@@ -119,8 +119,8 @@ test("a finished run claims only the outcomes it produced", async (t) => {
 
   assert.equal(
     byClass(card, "activation-copy")[0].textContent,
-    "Execution-ready — strategy filled, webapp-scaffold installed, " +
-    "stage + prod provisioned.",
+    "Activated — first item done; strategy filled, " +
+    "webapp-scaffold installed, stage + prod provisioned.",
   );
   assert.equal(byClass(card, "activation-progress").length, 0);
   mounted.unmount();
@@ -139,7 +139,9 @@ test("a mapped existing app never claims a scaffold install", async (t) => {
   });
 
   const copy = byClass(card, "activation-copy")[0].textContent;
-  assert.equal(copy, "Execution-ready — strategy filled, stage provisioned.");
+  assert.equal(
+    copy, "Activated — first item done; strategy filled, stage provisioned.",
+  );
   assert.ok(!copy.includes("scaffold"));
   mounted.unmount();
 });
@@ -154,7 +156,7 @@ test("a finished run with nothing to show says only that", async (t) => {
 
   assert.equal(
     byClass(card, "activation-copy")[0].textContent,
-    "Onboarding checklist complete.",
+    "Activated — first item done.",
   );
   mounted.unmount();
 });
@@ -164,8 +166,8 @@ test("a universe with no run reads the route into the harness", async (t) => {
 
   assert.equal(
     byClass(card, "activation-copy")[0].textContent,
-    "In your harness: strategy → execution profile → Packs → envs → " +
-    "domain → infra.",
+    "In your harness: existing work → strategy + CURRENT-PLAN → " +
+    "/yoke steer files the first item → that item done.",
   );
   assert.equal(byClass(card, "activation-progress").length, 0);
   mounted.unmount();

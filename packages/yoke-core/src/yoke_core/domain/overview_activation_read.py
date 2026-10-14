@@ -25,8 +25,8 @@ viewer's own hosted machine connection, forwarded verbatim in ``host_facts``):
   own account instead of inheriting another machine's history.
 * ``run_onboard`` — an onboarding checklist run with no open rows, or one
   its project's deployments superseded
-  (:mod:`yoke_core.domain.overview_onboard_progress`).
-* ``first_deploy`` — any ``deployment_runs`` row with status succeeded.
+  (:mod:`yoke_core.domain.overview_onboard_progress`). Its last row is the
+  project's first item reaching done, so this module is activation itself.
 
 Latched activation is monotone: once a module's signal has been observed
 satisfied, the fact row keeps it activated even if the signal later
@@ -63,7 +63,6 @@ from yoke_core.domain.schema_common import _table_exists
 MODULE_FINISH_INSTALLATION_WIZARD = "finish_installation_wizard"
 MODULE_CONNECT_HARNESS = "connect_harness"
 MODULE_RUN_ONBOARD = "run_onboard"
-MODULE_FIRST_DEPLOY = "first_deploy"
 
 #: Stable module keys in activation order: a module renders its
 #: next-action copy only when every earlier module is activated.
@@ -71,7 +70,6 @@ MODULE_KEYS: Tuple[str, ...] = (
     MODULE_FINISH_INSTALLATION_WIZARD,
     MODULE_CONNECT_HARNESS,
     MODULE_RUN_ONBOARD,
-    MODULE_FIRST_DEPLOY,
 )
 
 #: Modules latched once for the universe. The harness module is latched
@@ -79,7 +77,6 @@ MODULE_KEYS: Tuple[str, ...] = (
 UNIVERSE_LATCH_KEYS: Tuple[str, ...] = (
     MODULE_FINISH_INSTALLATION_WIZARD,
     MODULE_RUN_ONBOARD,
-    MODULE_FIRST_DEPLOY,
 )
 
 STATE_NOT_STARTED = "not_started"
@@ -143,11 +140,6 @@ def read_signals(conn: Any, actor_id: Optional[int] = None) -> Dict[str, Any]:
         "machines": machines,
         "project_directories": directories,
         "onboard_progress": read_onboard_progress(conn),
-        "deploy_succeeded": _guarded_exists(
-            conn,
-            "deployment_runs",
-            "SELECT 1 FROM deployment_runs WHERE status = 'succeeded'",
-        ),
     }
 
 
@@ -278,7 +270,6 @@ def compute_activation(
             submodules[0]["done"] and signals["projects_exist"]
         ),
         MODULE_RUN_ONBOARD: run_is_complete(signals["onboard_progress"]),
-        MODULE_FIRST_DEPLOY: signals["deploy_succeeded"],
     }
     latched = latch_activations(conn, satisfied)
     if every_machine_has_harness(signals["machines"]):
@@ -325,7 +316,6 @@ __all__ = [
     "DISMISS_PREF_PREFIX",
     "MODULE_CONNECT_HARNESS",
     "MODULE_FINISH_INSTALLATION_WIZARD",
-    "MODULE_FIRST_DEPLOY",
     "MODULE_KEYS",
     "MODULE_RUN_ONBOARD",
     "STATE_ACTIVATED",

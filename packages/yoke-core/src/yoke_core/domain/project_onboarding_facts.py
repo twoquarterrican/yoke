@@ -8,6 +8,7 @@ from uuid import UUID
 
 from yoke_contracts.onboard_checklist import (
     CHECKLIST_STATUSES,
+    FIRST_ITEM_DONE_ROW_ID,
     MACHINE_ROW_IDS,
     REQUIRED_SETUP_ROW_IDS,
     ROW_IDS,
@@ -35,6 +36,12 @@ def validate_updates(
                 raise ProjectOnboardingRunError(
                     f"onboarding_row_invalid: unknown row {row_id}; use checklist row ids."
                 )
+    if FIRST_ITEM_DONE_ROW_ID in row_status:
+        raise ProjectOnboardingRunError(
+            f"onboarding_row_observed: {FIRST_ITEM_DONE_ROW_ID} is read from the "
+            "project's items; route the first work through /yoke steer and it "
+            "verifies when that item reaches done."
+        )
     for state in row_status.values():
         if state not in CHECKLIST_STATUSES:
             raise ProjectOnboardingRunError(
@@ -81,16 +88,23 @@ def validate_updates(
 def read_saved_metadata(raw: str) -> dict[str, Any]:
     try:
         saved = json.loads(raw or "{}")
-        if not isinstance(saved, dict) or not isinstance(saved.get("machines", {}), dict):
+        if not isinstance(saved, dict) or not isinstance(
+            saved.get("machines", {}), dict
+        ):
             raise ValueError("invalid saved object")
         if "execution_profile" in saved and (
-            not isinstance(saved["execution_profile"], dict) or not saved["execution_profile"]
+            not isinstance(saved["execution_profile"], dict)
+            or not saved["execution_profile"]
         ):
             raise ValueError("invalid saved profile")
         for machine in saved.get("machines", {}).values():
-            if not isinstance(machine, dict) or not isinstance(machine.get("rows", {}), dict):
+            if not isinstance(machine, dict) or not isinstance(
+                machine.get("rows", {}), dict
+            ):
                 raise ValueError("invalid machine choices")
-            if any(not isinstance(row, dict) for row in machine.get("rows", {}).values()):
+            if any(
+                not isinstance(row, dict) for row in machine.get("rows", {}).values()
+            ):
                 raise ValueError("invalid saved row")
         return saved
     except (ValueError, TypeError) as exc:
@@ -108,7 +122,9 @@ def validate_observations(
         not isinstance(value, Mapping)
         or "status" not in value
         or not isinstance(value.get("evidence", {}), Mapping)
-        or any(not isinstance(value.get(key, ""), str) for key in ("reason", "recovery"))
+        or any(
+            not isinstance(value.get(key, ""), str) for key in ("reason", "recovery")
+        )
         or set(value) - {"status", "evidence", "reason", "recovery"}
         for value in observations.values()
     ):
@@ -164,6 +180,7 @@ def project_rows(
     machine_id: str | None,
     observations: Mapping[str, Any],
     facts: Mapping[str, Any],
+    activation: Mapping[str, Any],
     project_id: int | None,
     project_access: bool,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -177,7 +194,9 @@ def project_rows(
         choice = local_choices.get(row_id, {}) if local else stored
         row["saved_status"] = choice.get("status", STATUS_UNKNOWN)
         row["saved_evidence"] = choice.get("evidence", {})
-        observed = observations.get(row_id) if local else facts.get(row_id)
+        observed = (
+            observations.get(row_id) if local else {**facts, **activation}.get(row_id)
+        )
         if row_id == "project-permission":
             observed = {
                 "status": STATUS_VERIFIED if project_access else STATUS_UNKNOWN,
@@ -217,6 +236,7 @@ def project_rows(
             if (
                 observed["status"] == STATUS_UNKNOWN
                 and row_id not in REQUIRED_SETUP_ROW_IDS
+                and row_id != FIRST_ITEM_DONE_ROW_ID
                 and observed.get("reason") != "setup_owner_unavailable"
                 and row["saved_status"]
                 in (
@@ -243,10 +263,13 @@ def project_rows(
         if project_id is not None
         else REQUIRED_SETUP_ROW_IDS & MACHINE_ROW_IDS
     )
-    required = {row["row_id"]: row for row in projected if row["row_id"] in required_ids}
+    required = {
+        row["row_id"]: row for row in projected if row["row_id"] in required_ids
+    }
     unmet = [
         row_id
-        for row_id in ROW_IDS if row_id in required_ids
+        for row_id in ROW_IDS
+        if row_id in required_ids
         if required.get(row_id, {}).get("status", STATUS_UNKNOWN)
         not in (
             STATUS_CONFIGURED,

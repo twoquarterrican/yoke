@@ -277,7 +277,7 @@ def test_overview_native_latches_and_machine_order_keep_exact_facts(
     assert first[key] == STAMP
     assert overview_machine_activation.latch_machine_activations(test_db, {}) == first
     monkeypatch.setattr(overview_activation_read, "utc_now", lambda: STAMP)
-    universe_key = overview_activation_read.MODULE_FIRST_DEPLOY
+    universe_key = overview_activation_read.MODULE_RUN_ONBOARD
     first = overview_activation_read.latch_activations(test_db, {universe_key: True})
     assert first[universe_key] == STAMP
     assert overview_activation_read.latch_activations(test_db, {}) == first

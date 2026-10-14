@@ -14,17 +14,32 @@ def _rows(payload):
 
 def test_second_machine_reuses_profile_without_copying_first_machine_checks():
     first_machine, second_machine = str(uuid4()), str(uuid4())
-    profile = {"hosting": "deferred", "delivery": "no-default", "testing": "attested-no-tests"}
+    profile = {
+        "hosting": "deferred",
+        "delivery": "no-default",
+        "testing": "attested-no-tests",
+    }
     with _conn() as conn:
         first = runs.init_run(
-            conn=conn, project_id=7, machine_id=first_machine,
-            checkout_path="/first", metadata={"execution_profile": profile},
+            conn=conn,
+            project_id=7,
+            machine_id=first_machine,
+            checkout_path="/first",
+            metadata={"execution_profile": profile},
             row_status={"machine-profile": "verified", "hosting-setup": "deferred"},
             evidence={"machine-profile": {"source": "first-machine-check"}},
-            observations={"machine-profile": {"status": "verified", "evidence": {"source": "fresh-check"}}},
+            observations={
+                "machine-profile": {
+                    "status": "verified",
+                    "evidence": {"source": "fresh-check"},
+                }
+            },
         )
         second = runs.init_run(
-            conn=conn, project_id=7, machine_id=second_machine, checkout_path="/second",
+            conn=conn,
+            project_id=7,
+            machine_id=second_machine,
+            checkout_path="/second",
         )
         assert second["run_id"] == first["run_id"]
         assert second["execution_profile"] == profile
@@ -43,7 +58,9 @@ def test_read_without_fresh_observations_never_promotes_saved_machine_verificati
     machine = str(uuid4())
     with _conn() as conn:
         first = runs.init_run(
-            conn=conn, project_id=7, machine_id=machine,
+            conn=conn,
+            project_id=7,
+            machine_id=machine,
             row_status={"machine-profile": "verified"},
         )
         read = runs.get_run(first["run_id"], conn=conn, machine_id=machine)
@@ -57,18 +74,35 @@ def test_invalid_machine_or_row_update_leaves_saved_choices_unchanged():
     machine = str(uuid4())
     with _conn() as conn:
         first = runs.init_run(
-            conn=conn, project_id=7, machine_id=machine,
+            conn=conn,
+            project_id=7,
+            machine_id=machine,
             metadata={"execution_profile": {"hosting": "deferred"}},
         )
         for payload in (
-            {"machine_id": "not-a-machine", "row_status": {"machine-profile": "verified"}},
+            {
+                "machine_id": "not-a-machine",
+                "row_status": {"machine-profile": "verified"},
+            },
             {"row_status": {"strategy-setup": "verified", "unknown-row": "configured"}},
             {"metadata": {"execution_profile": []}},
-            {"machine_id": machine, "observations": {"machine-profile": {"status": "verified", "evidence": []}}},
-            {"machine_id": machine, "observations": {"machine-profile": {"status": "verified", "recovery": 1}}},
+            {
+                "machine_id": machine,
+                "observations": {
+                    "machine-profile": {"status": "verified", "evidence": []}
+                },
+            },
+            {
+                "machine_id": machine,
+                "observations": {
+                    "machine-profile": {"status": "verified", "recovery": 1}
+                },
+            },
         ):
             with pytest.raises(runs.ProjectOnboardingRunError):
-                runs.update_run(conn=conn, run_id=first["run_id"], project_id=7, **payload)
+                runs.update_run(
+                    conn=conn, run_id=first["run_id"], project_id=7, **payload
+                )
         saved = runs.get_run(first["run_id"], conn=conn, machine_id=machine)
         assert saved["execution_profile"] == first["execution_profile"]
         assert saved["updated_at"] == first["updated_at"]
@@ -88,7 +122,9 @@ def test_saved_choice_cannot_hide_a_missing_required_connection(choice):
     machine = str(uuid4())
     with _conn() as conn:
         result = runs.init_run(
-            conn=conn, machine_id=machine, project_id=7,
+            conn=conn,
+            machine_id=machine,
+            project_id=7,
             row_status={"yoke-connection": choice},
             observations={"yoke-connection": {"status": "unknown"}},
         )
@@ -97,13 +133,21 @@ def test_saved_choice_cannot_hide_a_missing_required_connection(choice):
         assert "yoke-connection" in result["setup_readiness"]["unmet_rows"]
 
 
-@pytest.mark.parametrize("rows", [[], [{"row_id": "package-install", "status": "configured"}]])
+@pytest.mark.parametrize(
+    "rows", [[], [{"row_id": "package-install", "status": "configured"}]]
+)
 def test_missing_required_rows_cannot_fabricate_readiness(rows):
     from yoke_core.domain.project_onboarding_facts import project_rows
 
     _, readiness = project_rows(
-        rows, {}, machine_id=None, observations={}, facts={},
-        project_id=7, project_access=False,
+        rows,
+        {},
+        machine_id=None,
+        observations={},
+        facts={},
+        activation={},
+        project_id=7,
+        project_access=False,
     )
     assert readiness["ready"] is False
     assert "project-identity" in readiness["unmet_rows"]
@@ -112,10 +156,17 @@ def test_missing_required_rows_cannot_fabricate_readiness(rows):
 
 def test_incomplete_saved_checklist_refuses_and_init_restores_only_missing_rows():
     with _conn() as conn:
-        first = runs.init_run(conn=conn, project_id=7, row_status={"hosting-setup": "deferred"})
-        conn.execute("DELETE FROM project_onboarding_checklist_rows WHERE run_id = %s AND row_id = %s", (first["run_id"], "project-identity"))
+        first = runs.init_run(
+            conn=conn, project_id=7, row_status={"hosting-setup": "deferred"}
+        )
+        conn.execute(
+            "DELETE FROM project_onboarding_checklist_rows WHERE run_id = %s AND row_id = %s",
+            (first["run_id"], "project-identity"),
+        )
         conn.commit()
-        with pytest.raises(runs.ProjectOnboardingRunError, match="setup_checklist_incomplete"):
+        with pytest.raises(
+            runs.ProjectOnboardingRunError, match="setup_checklist_incomplete"
+        ):
             runs.get_run(first["run_id"], conn=conn)
         resumed = runs.init_run(conn=conn, project_id=7, run_id=first["run_id"])
         assert _rows(resumed)["hosting-setup"]["saved_status"] == "deferred"
