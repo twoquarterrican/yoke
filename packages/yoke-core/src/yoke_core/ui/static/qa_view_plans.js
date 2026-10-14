@@ -4,12 +4,14 @@ import { attachTooltip } from "./universe_tooltip.js";
 import {
   el,
   labelCellsByColumn,
+  renderError,
+  settledScopedCalls,
 } from "./universe_view_support.js";
 import { executionTargetLabel } from "./qa_execution_target_view.js";
 import {
-  loadProjectCalls,
   methodIcon,
   outcomeNode,
+  projectCalls,
   qaPanel,
   qaRoute,
   relativeTimeNode,
@@ -168,28 +170,76 @@ function renderPlanTable(context, body, rows) {
   body.appendChild(tableWrap(documentNode, table));
 }
 
+export const PLAN_PAGE_SIZE = 25;
+
+// Each project in scope serves one page at a time; Load more asks only the
+// projects whose last page reported a next_offset, so the view never pulls
+// a whole plan catalog in one read.
 export async function renderQaPlans(context, main, scope) {
   const documentNode = context.document;
   main.replaceChildren(el(
     documentNode, "p", "empty", "loading test plans…",
   ));
-  const { callResults, failed } = await loadProjectCalls(
-    context, scope, "qa.plan.list", { detail: "full" },
-  );
-  if (!context.isMounted()) return;
-  if (failed) {
-    showFailure(documentNode, main, failed);
-    return;
+  const rows = [];
+  let pending = projectCalls(context, scope, "qa.plan.list", {
+    detail: "full", limit: PLAN_PAGE_SIZE, offset: 0,
+  });
+  async function loadPage() {
+    const { callResults, failed } = await settledScopedCalls(context, pending);
+    if (!context.isMounted()) return;
+    if (failed) {
+      if (!rows.length) showFailure(documentNode, main, failed);
+      else renderPlansPanel(context, main, rows, { failed, loadPage });
+      return;
+    }
+    const next = [];
+    callResults.forEach((result, index) => {
+      const page = result.envelope.result || {};
+      rows.push(...(page.rows || []));
+      if (page.next_offset != null) {
+        const call = pending[index];
+        next.push({
+          ...call, payload: { ...call.payload, offset: page.next_offset },
+        });
+      }
+    });
+    pending = next;
+    renderPlansPanel(context, main, rows, { hasMore: next.length > 0, loadPage });
   }
-  const rows = callResults.flatMap(
-    (result) => result.envelope.result?.rows || [],
-  );
+  await loadPage();
+}
+
+function renderPlansPanel(context, main, rows, { hasMore, failed, loadPage }) {
+  const documentNode = context.document;
   const result = qaPanel(
     documentNode,
     "Test plans",
     rows.length,
   );
   renderPlanTable(context, result.body, rows);
+  if (hasMore || failed) {
+    const more = el(documentNode, "div", "event-more");
+    if (failed) {
+      renderError(more, failed);
+      more.appendChild(el(
+        documentNode,
+        "p",
+        "event-recovery",
+        "The loaded plans are unchanged. Retry to continue loading.",
+      ));
+    }
+    const button = el(
+      documentNode, "button", "item-button", failed ? "Retry" : "Load more plans",
+    );
+    button.type = "button";
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      button.textContent = "Loading…";
+      loadPage();
+    });
+    more.appendChild(button);
+    result.body.appendChild(more);
+  }
   const note = el(documentNode, "div", "qa-panel-note");
   const example = orderedPlans(rows)[0];
   note.appendChild(el(

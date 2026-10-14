@@ -34,7 +34,7 @@ def list_plans(
     offset: int = 0,
     full: bool = False,
 ) -> list[dict]:
-    """Read a stable page; detail and uncapped results require full=True."""
+    """Read one stable page; full=True adds detail but never lifts the page."""
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
     params: tuple = ()
     where = "p.retired_at IS NULL"
@@ -44,17 +44,12 @@ def list_plans(
             raise LookupError(f"project {project!r} not found")
         where += f" AND p.project_id={marker}"
         params = (int(identity.id),)
-    page_limit = limit if limit is not None else (None if full else DEFAULT_PLAN_LIMIT)
-    if offset < 0 or (page_limit is not None and page_limit < 1):
+    page_limit = limit if limit is not None else DEFAULT_PLAN_LIMIT
+    if offset < 0 or page_limit < 1:
         raise ValueError(
             "plan page requires a positive --limit and nonnegative --offset"
         )
-    pagination = (
-        f" LIMIT {marker} OFFSET {marker}"
-        if page_limit is not None
-        else f" OFFSET {marker}"
-    )
-    params += (page_limit, offset) if page_limit is not None else (offset,)
+    params += (page_limit, offset)
     rows = query_rows(
         conn,
         "SELECT p.*, pr.slug AS project, pr.id AS project_id, pr.slug AS project_slug, "
@@ -66,7 +61,7 @@ def list_plans(
         "FROM qa_plans p JOIN projects pr ON pr.id=p.project_id "
         "JOIN organizations o ON o.id=pr.org_id LEFT JOIN environments e ON e.id=p.target_environment_id "
         "LEFT JOIN sites s ON s.id=e.site LEFT JOIN projects owner ON owner.id=s.project_id "
-        f"WHERE {where} ORDER BY pr.slug, p.slug, p.id{pagination}",
+        f"WHERE {where} ORDER BY pr.slug, p.slug, p.id LIMIT {marker} OFFSET {marker}",
         params,
     )
     if not rows:

@@ -51,8 +51,9 @@ yoke qa plan get <id> --project <project>
 ```
 
 `qa plan edit` resolves project context from `--project`, then `YOKE_PROJECT`,
-then the machine-config checkout mapping. It opens a clean JSON authoring
-document in `$VISUAL`, `$EDITOR`, or `vi` and compare-and-swap saves plan
+then the machine-config checkout mapping. It reads only the named plan; a
+retired plan refuses as `plan_retired` before any editor opens. It opens a
+clean JSON authoring document in `$VISUAL`, `$EDITOR`, or `vi` and compare-and-swap saves plan
 metadata plus the complete ordered case set. The document carries every case
 field, including `target_envs`. Invalid JSON, an editor failure, a concurrent
 edit, or a save that would reset a stored case field the document left out

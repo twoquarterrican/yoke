@@ -33,7 +33,7 @@ def qa_plan_list(args: list[str]) -> int:
     )
     add_full_arg(
         parser,
-        "all plans with descriptions, attachments and execution targets unless --limit is named",
+        "descriptions, attachments and execution targets for the same page; --limit and --offset still page",
     )
     add_session_arg(parser)
     add_json_arg(parser)

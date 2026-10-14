@@ -13,12 +13,20 @@ from yoke_core.api import service_client_structured_api_adapter
 from yoke_core.domain import direct_workflow_worktree_preflight
 
 
-def _plan_roster(monkeypatch: pytest.MonkeyPatch, rows: list[dict]) -> dict:
+def _plan_lookup(monkeypatch: pytest.MonkeyPatch, plan: dict | None) -> dict:
     lookup: dict = {}
 
     def _call_dispatcher(**kwargs):
         lookup.update(kwargs)
-        return SimpleNamespace(success=True, result={"rows": rows}, error=None)
+        if plan is None:
+            return SimpleNamespace(
+                success=False,
+                result=None,
+                error=SimpleNamespace(
+                    message="QA plan 'missing-plan' not found in project external"
+                ),
+            )
+        return SimpleNamespace(success=True, result={"plan": plan}, error=None)
 
     monkeypatch.setattr(
         dash_verification_plan._helpers,
@@ -47,9 +55,9 @@ def _capture_filing(monkeypatch: pytest.MonkeyPatch) -> dict:
 def test_dash_filing_resolves_plan_slug_within_item_project(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    lookup = _plan_roster(
+    lookup = _plan_lookup(
         monkeypatch,
-        [{"id": 38, "slug": "registered-command-quick", "name": "Quick"}],
+        {"id": 38, "slug": "registered-command-quick", "retired_at": None},
     )
     captured = _capture_filing(monkeypatch)
 
@@ -68,8 +76,11 @@ def test_dash_filing_resolves_plan_slug_within_item_project(
         == 0
     )
 
-    assert lookup["function_id"] == "qa.plan.list"
-    assert lookup["payload"] == {"project": "yoke", "detail": "full"}
+    assert lookup["function_id"] == "qa.plan.get"
+    assert lookup["payload"] == {
+        "project": "yoke",
+        "plan_id": "registered-command-quick",
+    }
     assert captured["payload"]["workflow_posture"]["verification"] == {
         "kind": "plan",
         "plan_id": 38,
@@ -96,7 +107,7 @@ def test_unknown_plan_slug_names_slug_and_project(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    _plan_roster(monkeypatch, [])
+    _plan_lookup(monkeypatch, None)
 
     assert (
         dash_file.dash_file(
@@ -117,16 +128,13 @@ def test_unknown_plan_slug_names_slug_and_project(
     assert "external" in error
 
 
-def test_ambiguous_plan_slug_lists_every_candidate(
+def test_retired_plan_slug_is_refused_with_recovery(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    _plan_roster(
+    _plan_lookup(
         monkeypatch,
-        [
-            {"id": 38, "slug": "quick", "name": "Quick A"},
-            {"id": 41, "slug": "quick", "name": "Quick B"},
-        ],
+        {"id": 38, "slug": "quick", "retired_at": "2026-10-01T00:00:00Z"},
     )
 
     assert (
@@ -144,9 +152,8 @@ def test_ambiguous_plan_slug_lists_every_candidate(
     )
 
     error = capsys.readouterr().err
-    assert "ambiguous" in error
-    assert "id=38" in error
-    assert "id=41" in error
+    assert "retired" in error
+    assert "yoke qa plan list --project P" in error
 
 
 def test_worktree_prepare_accepts_json_and_emits_envelope(

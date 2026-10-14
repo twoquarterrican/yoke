@@ -176,17 +176,13 @@ def handle_plan_list(request: FunctionCallRequest) -> HandlerOutcome:
         return _error("not_found", str(exc), "$.payload.project")
     from yoke_core.domain.qa_plan_list_reads import DEFAULT_PLAN_LIMIT
 
-    limit = payload.limit or (
-        None if payload.detail == DETAIL_FULL else DEFAULT_PLAN_LIMIT
-    )
+    limit = payload.limit or DEFAULT_PLAN_LIMIT
     return HandlerOutcome(
         result_payload={
             "rows": rows,
             "limit": limit,
             "offset": payload.offset,
-            "next_offset": payload.offset + len(rows)
-            if limit and len(rows) == limit
-            else None,
+            "next_offset": payload.offset + len(rows) if len(rows) == limit else None,
             "detail": payload.detail,
             "detail_read": "yoke qa plan list --project P --full",
         },
