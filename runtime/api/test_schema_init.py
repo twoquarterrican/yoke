@@ -89,6 +89,7 @@ class TestCmdInit:
             "idx_qa_requirements_item",
             "idx_qa_requirements_epic",
             "idx_qa_requirements_deployment",
+            "idx_qa_requirements_plan",
             "idx_qa_runs_requirement",
             "idx_qa_artifacts_run",
             "idx_harness_sessions_level",

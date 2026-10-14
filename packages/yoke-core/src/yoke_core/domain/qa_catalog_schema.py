@@ -330,7 +330,7 @@ def create_qa_catalog_tables(
         )
     for column, definition in _ATTACHMENT_RETRACT_COLUMNS:
         _add_column_if_not_exists(conn, "qa_plan_item_attachments", column, definition)
-    qa_plan_requirement_identity.ensure_materialization_index(conn)
+    qa_plan_requirement_identity.ensure_plan_requirement_indexes(conn)
     execute_schema_script(conn, REQUIREMENT_SCOPE_INDEX_SQL)
     if commit:
         conn.commit()

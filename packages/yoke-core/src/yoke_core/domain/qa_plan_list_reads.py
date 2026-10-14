@@ -86,15 +86,17 @@ def list_plans(
         case = dict(raw)
         case["host_baselines"] = _json(case["host_baselines"])
         cases_by_plan[int(case["plan_id"])].append(case)
+    # The plan_id index bounds this to the page's own requirements, so the
+    # cost follows page size rather than the whole requirement history.
     outcomes = query_rows(
         conn,
-        "SELECT * FROM (SELECT q.plan_id, q.id, q.waived_at, r.verdict, "
-        "r.verdict_reason, r.case_outcome, COALESCE(r.completed_at, r.created_at, q.created_at) AS happened_at, "
-        "ROW_NUMBER() OVER (PARTITION BY q.plan_id ORDER BY "
-        "COALESCE(r.completed_at, r.created_at, q.created_at) DESC, q.id DESC) AS position "
+        "SELECT DISTINCT ON (q.plan_id) q.plan_id, q.id, q.waived_at, r.verdict, "
+        "r.verdict_reason, r.case_outcome, "
+        "COALESCE(r.completed_at, r.created_at, q.created_at) AS happened_at "
         f"FROM qa_requirements q LEFT JOIN qa_runs r ON r.id=({latest_execution_id_sql('q.id')}) "
         f"WHERE q.plan_id IN ({markers}) AND {unretracted_requirement_sql(conn, 'q')} "
-        f"AND {unanswered_attempt_sql(conn, 'q')}) latest WHERE position=1",
+        f"AND {unanswered_attempt_sql(conn, 'q')} "
+        "ORDER BY q.plan_id, happened_at DESC, q.id DESC",
         ids,
     )
     last_by_plan = {int(row["plan_id"]): row for row in outcomes}
