@@ -53,7 +53,8 @@ def test_old_schema_refuses_without_sending_a_mutation(monkeypatch):
     assert "row_status" not in calls[0]["payload"]
 
 
-def test_selected_config_routes_get_and_restores_default_after_refusal(tmp_path, monkeypatch):
+@pytest.mark.parametrize("home_override", [False, True])
+def test_selected_config_routes_get_and_restores_default_after_refusal(tmp_path, monkeypatch, home_override):
     default, selected = tmp_path / "default.json", tmp_path / "selected.json"
     selected.write_text(json.dumps({
         "machine_id": str(uuid4()), "active_env": "prod",
@@ -61,6 +62,11 @@ def test_selected_config_routes_get_and_restores_default_after_refusal(tmp_path,
                                   "credential_source": {"kind": "token_file", "path": str(tmp_path / "token")}}},
     }))
     monkeypatch.setenv(machine_config.CONFIG_FILE_ENV, str(default))
+    if home_override:
+        monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path / "machine-home"))
+        default = tmp_path / "machine-home" / "config.json"
+    else:
+        monkeypatch.delenv("YOKE_MACHINE_HOME", raising=False)
     monkeypatch.setattr(read_adapter, "ensure_handlers_loaded", lambda: None)
     calls = []
     def dispatch(**kwargs):
