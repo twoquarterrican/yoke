@@ -1,8 +1,10 @@
 """Post-chain tail for ``run_event``: batched telemetry flush + lifecycle.
 
-One budget-gated tail step over a single reused connection — the decision
-is already rendered before this runs, so a slow or skipped tail can never
-suppress a deny. Carries the dispatch telemetry record, the
+One budget-gated tail step — the decision is already rendered before this
+runs, so a slow or skipped tail can never suppress a deny. A remote
+(relayed) run writes its telemetry rows after the server responds; the
+session facts below are always written before. Carries the dispatch
+telemetry record, the
 ensure-register-on-first-sight tuple (tool-call hooks are the only
 guaranteed event class; installed engine evaluation registers the DB half —
 with the request executor honored and any verified token actor bound — while

@@ -193,6 +193,10 @@ def test_unmapped_https_hook_finishes_locally_without_posting(
     monkeypatch.setattr(
         relay, "evaluate_local_subset", local_subset.evaluate_local_subset
     )
+    # The shared relay-protocol fixture pins every relay to project 7.
+    monkeypatch.setattr(
+        relay, "resolve_hook_project_scope", project_scope.resolve_hook_project_scope
+    )
     payload = {
         "cwd": str(root),
         "tool_name": "Bash",

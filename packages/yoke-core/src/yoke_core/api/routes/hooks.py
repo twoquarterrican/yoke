@@ -159,7 +159,9 @@ def _server_wall_ms(http_request: Request) -> int:
     """Return the server's time on this request so far: auth plus handling."""
     from yoke_core.api.app_factory import ADMISSION_STATE_ATTR
 
-    admitted_at = getattr(http_request.state, ADMISSION_STATE_ATTR, None)
+    admitted_at = getattr(
+        getattr(http_request, "state", None), ADMISSION_STATE_ATTR, None
+    )
     handled_ms = now_ms(admitted_at) if isinstance(admitted_at, float) else 0
     return request_phases(http_request).get("auth", 0) + handled_ms
 

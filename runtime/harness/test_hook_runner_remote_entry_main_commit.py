@@ -7,9 +7,6 @@ import types
 from typing import Any
 
 import pytest
-from runtime.harness.test_hook_runner_remote_entry import (
-    authorized_project_context as authorized_project_context,
-)
 
 from yoke_contracts.hook_runner.main_commit import (
     CLIENT_GIT_COMMIT_FACTS_KEY,
@@ -38,7 +35,6 @@ def _module(name: str, evaluate) -> types.ModuleType:
 
 def test_main_commit_policy_runs_remotely_with_client_facts(
     monkeypatch: pytest.MonkeyPatch,
-    authorized_project_context,
 ) -> None:
     seen: list[tuple[bool, Any]] = []
     module_id = "yoke_core.domain.lint_main_commit"
@@ -70,6 +66,7 @@ def test_main_commit_policy_runs_remotely_with_client_facts(
         None,
         2000,
         project_id=7,
+        project_slug="example",
         payload_extra={CLIENT_GIT_COMMIT_FACTS_KEY: facts},
     )
 
