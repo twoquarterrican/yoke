@@ -117,6 +117,13 @@ def qa_plan_review_submit(args: List[str]) -> int:
 
 
 def qa_plan_review_begin(args: List[str]) -> int:
+    if show_delegate_help(
+        args,
+        QA_PLAN_REVIEW_BEGIN_USAGE,
+        "Retrieve completed captures, then use the returned review-submit command. "
+        "An aborted or errored execution remains terminal after review.",
+    ):
+        return 0
     return _run_execution_module("yoke_core.domain.qa_plan_review_begin_cli", args)
 
 
