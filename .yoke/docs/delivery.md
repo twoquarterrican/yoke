@@ -97,8 +97,15 @@ refusal rolls the whole set back: no member closes, and every claim and lane
 is kept. The refusal names each member — the
 blocked ones with their own reason, the rest as held with the run so nobody
 repairs a member that has nothing wrong. A final member the run could not
-even try to close, such as one whose post-deploy obligations are unanswered,
-holds the run the same way. A run settles on its own target: a member whose
+even try to close, such as one whose post-deploy obligations are unanswered
+or whose done gate still has a blocking QA requirement open, holds the run
+the same way; settlement then refuses before writing any member, and the
+refusal names each open requirement. Every such refusal carries the error
+code `run_settlement_blocked`. Repeating the write changes nothing, so the
+deploy driver stops at once with exit 4 (finalization pending) and that
+refusal instead of retrying; it retries only a write that got no answer.
+A re-drive does not stamp `deployed_to` again on members already `done`
+with that delivery. A run settles on its own target: a member whose
 only open obligations target another environment — stage QA beside a
 production release — is delivered by this run, stamped `deployed_to`, and
 stays at its release wait without holding the run. It closes against that

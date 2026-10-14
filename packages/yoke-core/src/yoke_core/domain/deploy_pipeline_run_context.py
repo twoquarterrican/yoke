@@ -13,7 +13,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Mapping, Optional
 
 from yoke_contracts.deployment_itemless_teaching import (
     FINALIZATION_PENDING_PREFIX,
@@ -22,20 +22,32 @@ from yoke_core.domain.deploy_pipeline_events import (
     emit_run_event as _emit_run_event,
 )
 from yoke_core.domain import deploy_pipeline_run_updates as run_updates
+from yoke_core.domain.deployment_run_settlement_refusal import (
+    SETTLEMENT_BLOCKED_CODE,
+)
 
 EXIT_FINALIZATION_PENDING = 4
 _STATUS_WRITE_BACKOFF_SECONDS = (1.0, 2.0)
-_STATUS_WRITE_RETRY_ERRORS = (run_updates.DeployPipelineRunUpdateError,)
 
 
 class RunFinalizationPending(RuntimeError):
-    """Stages finished; the succeeded status write did not land."""
+    """Stages finished; the succeeded status write did not land.
 
-    def __init__(self, run_id: str, detail: str = "") -> None:
+    A settlement refusal already names each member to repair and when to
+    re-drive, so only the other failures add the bare re-drive recovery.
+    """
+
+    def __init__(self, run_id: str, detail: str = "", *, code: str = "") -> None:
         self.run_id = run_id
+        self.code = code
+        recovery = (
+            ""
+            if code == SETTLEMENT_BLOCKED_CODE
+            else f"; re-drive {run_id} to finalize"
+        )
         super().__init__(
-            f"{FINALIZATION_PENDING_PREFIX} — {detail or 'status write did not land'}; "
-            f"re-drive {run_id} to finalize"
+            f"{FINALIZATION_PENDING_PREFIX} — "
+            f"{detail or 'status write did not land'}{recovery}"
         )
 
 
@@ -74,24 +86,41 @@ def resolve_project_checkout_path(project: str) -> str:
 
 
 def _update_run_succeeded(run_id: str, sd: Optional[str]) -> None:
-    """Write ``status=succeeded``, retrying the idempotent update."""
-    delays = (0.0, *_STATUS_WRITE_BACKOFF_SECONDS)
-    last_exc: BaseException | None = None
-    for delay in delays:
+    """Write ``status=succeeded``, repeating only a write that got no answer.
+
+    A refusal — a member still unsettled, say — answers the same on every
+    attempt, so it ends finalization at once with its own code and reason.
+    """
+    for delay in (0.0, *_STATUS_WRITE_BACKOFF_SECONDS):
         if delay:
             time.sleep(delay)
+        print(
+            f"Run {run_id}: settling member close-outs before status=succeeded",
+            flush=True,
+        )
         try:
-            print(
-                f"Run {run_id}: settling member close-outs before status=succeeded",
-                flush=True,
-            )
             run_updates.update_run_field(run_id, "status", "succeeded")
-            print(f"Run {run_id}: status=succeeded written", flush=True)
-            return
-        except _STATUS_WRITE_RETRY_ERRORS as exc:
+        except run_updates.DeployPipelineRunUpdateError as exc:
             last_exc = exc
-    assert last_exc is not None
-    raise RunFinalizationPending(run_id, str(last_exc)) from last_exc
+            if exc.retryable:
+                continue
+            break
+        print(f"Run {run_id}: status=succeeded written", flush=True)
+        return
+    raise RunFinalizationPending(
+        run_id, str(last_exc), code=last_exc.code
+    ) from last_exc
+
+
+def _already_delivered(member: Optional[Mapping[str, Any]], delivered_to: str) -> bool:
+    """Whether *member* is closed with this delivery already stamped."""
+    from yoke_core.domain.standalone_item_merge_evidence import CLOSED_OUT_STATUS
+
+    return bool(
+        member
+        and member.get("status") == CLOSED_OUT_STATUS
+        and member.get("deployed_to") == delivered_to
+    )
 
 
 def finalize_run_success(
@@ -102,25 +131,41 @@ def finalize_run_success(
     target_tier: str,
     environment_name: str,
     sd: Optional[str] = None,
+    members: Optional[Mapping[str, Mapping[str, Any]]] = None,
 ) -> None:
     """Stamp member items' delivery environment, then mark the run succeeded.
 
     Item stamps run first so a missed write cannot leave the run marked
-    succeeded while the members stay unstamped.
+    succeeded while the members stay unstamped. *members* is the run's
+    member rows by public ref as the driver read them; a member already
+    closed with this delivery stamped is not stamped again, so a re-drive
+    of a large run does not repeat a write per member.
     """
     # Auto-set deployed_to (item-bound; no-op for item-less runs). A
     # persistent run stamps the environment name; an ephemeral run has no
     # registered environment, so the tier is the delivery label.
     delivered_to = environment_name or target_tier
+    rows = members or {}
+    pending = [
+        ref
+        for ref in member_items
+        if not _already_delivered(rows.get(ref), delivered_to)
+    ]
     if delivered_to and member_items:
         from yoke_core.domain.deployment_item_stamp import stamp_item_field
 
-        for item_ref in member_items:
+        for item_ref in pending:
             print(
                 f"Run {run_id}: stamping member {item_ref} deployed_to={delivered_to}",
                 flush=True,
             )
             stamp_item_field(item_ref, "deployed_to", delivered_to)
+        skipped = len(member_items) - len(pending)
+        if skipped:
+            print(
+                f"Run {run_id}: {skipped} member(s) already done with "
+                f"deployed_to={delivered_to}; not stamped again"
+            )
         print(f"Auto-set deployed_to={delivered_to} from flow {flow_id}")
     _update_run_succeeded(run_id, sd)
     _emit_run_event(
@@ -146,6 +191,7 @@ def complete_run_finalization(
     target_tier: str,
     environment_name: str,
     sd: Optional[str] = None,
+    members: Optional[Mapping[str, Mapping[str, Any]]] = None,
 ) -> int:
     """Land the succeeded stamp after stages; 4 when only that write is pending."""
     try:
@@ -157,6 +203,7 @@ def complete_run_finalization(
             target_tier,
             environment_name,
             sd=sd,
+            members=members,
         )
     except RunFinalizationPending as pending:
         print(str(pending), file=sys.stderr)
@@ -176,6 +223,7 @@ def finalize_after_stages(
     usage_exit: int,
     awaiting_qa_exit: int,
     sd: Optional[str] = None,
+    members: Optional[Mapping[str, Mapping[str, Any]]] = None,
 ) -> int:
     """Report any unresolved blocking QA, else land the succeeded stamp.
 
@@ -201,6 +249,7 @@ def finalize_after_stages(
         target_tier,
         environment_name,
         sd=sd,
+        members=members,
     )
 
 

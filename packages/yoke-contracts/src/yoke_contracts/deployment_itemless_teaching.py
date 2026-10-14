@@ -25,7 +25,9 @@ Re-drive the same run id only after that process is gone.
 A self-deploy halt named `deploy driver source drift` also leaves the
 run executing — re-drive the same run id; do not mint a second release.
 If the driver exits 4 (deploy succeeded, finalization pending), stages
-already finished — re-drive the same run id to land the succeeded stamp.
+already finished. `run_settlement_blocked` names each member to repair
+first; settlement replays on its own once the last blocker clears. Any
+other reason: re-drive the same run id to land the succeeded stamp.
 `deployment-runs terminalize` only records failed or cancelled. Do not
 use it to close a run whose workflow succeeded — re-driving is the
 recovery.

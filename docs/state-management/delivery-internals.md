@@ -229,7 +229,7 @@ settlement detail; [release delivery](../public/reference/db-reference/release-d
 owns the distinct QA authorities and notices.
 
 ## Answering "did this release contain that merge"
-The deployment driver reads and attests the containment basis immediately before starting execution, after pre-start preparation. A `candidate_containment_attestation_stale` refusal refreshes the basis and retries start up to three times, with one diagnostic line per retry; any other refusal or exhausted retry preserves the named failure and re-drive recovery.
+The deployment driver reads and attests the containment basis immediately before starting execution, after pre-start preparation. A `candidate_containment_attestation_stale` refusal refreshes the basis and retries start up to three times, with one diagnostic line per retry; any other refusal or exhausted retry preserves the named failure and re-drive recovery. The final `status=succeeded` write keeps the server's error code: only `https_transport_failed` (no answer, including a response deadline) is repeated, twice with backoff; any refusal, `run_settlement_blocked` included, ends finalization at once with exit 4 and that refusal's own recovery. Finalization skips the `deployed_to` stamp for members the execution context reports `done` with the same delivery, and member settlement is timed as `member_settlement`.
 
 Completion asks containment of a specific pair: the candidate a succeeded
 run shipped, and the item's merge (then its live lane head). It is two

@@ -13,6 +13,7 @@ from yoke_core.domain import (
     deploy_pipeline_run_context as run_context,
     deploy_pipeline_run_updates as run_updates,
 )
+from yoke_cli.transport.relay_telemetry import TRANSPORT_FAILED_CODE as NO_ANSWER
 
 
 def test_run_update_uses_in_process_registered_mutation(monkeypatch):
@@ -39,7 +40,9 @@ def test_status_write_retries_then_lands(monkeypatch):
         assert (run_id, field, value) == ("run-1", "status", "succeeded")
         attempts["n"] += 1
         if attempts["n"] < 3:
-            raise run_updates.DeployPipelineRunUpdateError("write unavailable")
+            raise run_updates.DeployPipelineRunUpdateError(
+                "write unavailable", code=NO_ANSWER
+            )
 
     monkeypatch.setattr(run_updates, "update_run_field", fake_update)
     monkeypatch.setattr(run_context.time, "sleep", sleeps.append)
@@ -60,7 +63,9 @@ def test_status_write_retries_then_lands(monkeypatch):
 
 def test_exhausted_status_retries_are_finalization_pending(monkeypatch):
     def fail(*_args):
-        raise run_updates.DeployPipelineRunUpdateError("write unavailable")
+        raise run_updates.DeployPipelineRunUpdateError(
+            "write unavailable", code=NO_ANSWER
+        )
 
     monkeypatch.setattr(run_updates, "update_run_field", fail)
     monkeypatch.setattr(run_context.time, "sleep", lambda *_: None)
@@ -84,7 +89,9 @@ def test_exhausted_status_retries_are_finalization_pending(monkeypatch):
 
 def test_complete_run_finalization_returns_pending_exit(monkeypatch, capsys):
     update = mock.Mock(
-        side_effect=run_updates.DeployPipelineRunUpdateError("write unavailable")
+        side_effect=run_updates.DeployPipelineRunUpdateError(
+            "write unavailable", code=NO_ANSWER
+        )
     )
     monkeypatch.setattr(run_updates, "update_run_field", update)
     monkeypatch.setattr(run_context.time, "sleep", lambda *_: None)

@@ -15,7 +15,12 @@ from yoke_core.domain.schema_read_scope import composition_operation
 from pydantic import BaseModel
 
 from yoke_contracts.api.function_call import FunctionCallRequest, HandlerOutcome
-from yoke_core.domain.handlers.deployment_common import error, pipe_to_dict, run_id
+from yoke_core.domain.handlers.deployment_common import (
+    error,
+    pipe_to_dict,
+    run_id,
+    update_refusal_code,
+)
 
 
 #: Error code an execution call carries when another session drives the run.
@@ -165,7 +170,7 @@ def _member_rows(run_id_value: str, *, connection: Any = None) -> List[Dict[str,
         # already treat an absent column as unset.
         rows = query_rows(
             conn,
-            "SELECT dri.*,i.status FROM deployment_run_items dri "
+            "SELECT dri.*,i.status,i.deployed_to FROM deployment_run_items dri "
             "JOIN items i ON i.id=dri.item_id WHERE dri.run_id=%s "
             "ORDER BY dri.item_id",
             (run_id_value,),
@@ -179,6 +184,7 @@ def _member_rows(run_id_value: str, *, connection: Any = None) -> List[Dict[str,
                     "item_id": item_id,
                     "public_ref": render_item_ref(conn, item_id),
                     "status": str(row["status"]),
+                    "deployed_to": str(row.get("deployed_to") or ""),
                     "branch": str(lane.get("branch") or ""),
                     "delivery_intent": row.get("delivery_intent"),
                     "requirement_snapshot": row.get("requirement_snapshot"),
@@ -298,10 +304,7 @@ def handle_deployment_execution_update(
             dict(attestation) if isinstance(attestation, dict) else None
         ),
     ):
-        code = "update_failed"
-        if update_error.startswith("Error: candidate_containment_"):
-            code = update_error.removeprefix("Error: ").split(":", 1)[0]
-        return error(code, update_error)
+        return error(update_refusal_code(update_error), update_error)
     return HandlerOutcome(
         result_payload={
             "run_id": resolved_run_id,

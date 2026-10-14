@@ -12,6 +12,7 @@ from yoke_core.domain.handlers.deployment_common import (
     pipe_to_dict,
     require_global,
     run_id,
+    update_refusal_code,
 )
 from yoke_core.domain.handlers.deployment_run_creation import (
     handle_deployment_run_create,
@@ -179,7 +180,10 @@ def handle_deployment_run_update(request: FunctionCallRequest) -> HandlerOutcome
 
     err = cmd_update(resolved_run_id, field.strip(), str(value), force=force)
     if err:
-        lower = err.lower()
+        # A coded refusal names its own members, whose reasons may say
+        # anything; the phrase matches below classify uncoded ones only.
+        code = update_refusal_code(err)
+        lower = "" if code != "update_failed" else err.lower()
         if "not found" in lower:
             return error(
                 "not_found",
@@ -190,7 +194,7 @@ def handle_deployment_run_update(request: FunctionCallRequest) -> HandlerOutcome
             return error("invalid_field", err, jsonpath="$.payload.field")
         if "invalid status" in lower:
             return error("payload_invalid", err, jsonpath="$.payload.value")
-        return error("update_failed", err)
+        return error(code, err)
     return HandlerOutcome(
         result_payload={
             "run_id": resolved_run_id,

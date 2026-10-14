@@ -241,7 +241,9 @@ def cmd_update(
 
                     mark_settling(conn, run_id)
                     with settlement_in_progress():
-                        refusal = settle_members(conn, run_id)
+                        refusal = timed_call(
+                            "member_settlement", settle_members, conn, run_id
+                        )
                     if refusal:
                         return refusal
                 completed_at = utc_now()
