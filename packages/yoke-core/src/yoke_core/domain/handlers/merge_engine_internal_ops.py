@@ -52,6 +52,8 @@ class PruneAuthorityRequest(BaseModel):
 class PruneAuthorityResponse(BaseModel):
     prunable: bool
     reason: str
+    # Set when the owner is a cancelled item: its lane is deleted outright.
+    cancelled_item_ref: Optional[str] = None
 
 
 class PruneAuthorityBatchRequest(BaseModel):
@@ -160,9 +162,11 @@ def handle_prune_authority_verdict(request: FunctionCallRequest) -> HandlerOutco
     active authority holds it — exactly the two-gate decision the engine
     computed inline. ``reason`` is ``no_terminal_owner`` (keep silently),
     ``active_authority`` (keep with a "Preserving actively claimed"
-    narrative in loop-one), or ``prunable``. The terminal-success set and
-    every git check (clean / merged / removal) stay engine-owned; this read
-    reports only the DB authority verdict.
+    narrative in loop-one), or ``prunable``. A prunable lane whose owner is
+    a cancelled item also names it as ``cancelled_item_ref``: the caller
+    deletes that lane without the landing and cleanliness proofs. The
+    terminal-success set and every git check (clean / merged / removal) stay
+    engine-owned; this read reports only the DB authority verdict.
     """
     try:
         body = PruneAuthorityRequest.model_validate(request.payload)
@@ -200,17 +204,26 @@ def handle_prune_authority_verdicts(request: FunctionCallRequest) -> HandlerOutc
 
 
 def _prune_verdict(conn: Any, lane: PruneAuthorityRequest) -> dict[str, Any]:
+    from yoke_core.domain.project_identity import render_item_ref
     from yoke_core.engines.merge_prune_authority import (
+        cancelled_item_owner,
         has_active_authority,
         terminal_owner,
     )
 
     path = Path(lane.path) if lane.path else None
-    owner = terminal_owner(conn, branch=lane.branch, path=path)
+    cancelled = cancelled_item_owner(conn, branch=lane.branch, path=path)
+    owner = cancelled or terminal_owner(conn, branch=lane.branch, path=path)
     if owner is None:
         return {"prunable": False, "reason": "no_terminal_owner"}
     if has_active_authority(conn, owner, path):
         return {"prunable": False, "reason": "active_authority"}
+    if cancelled is not None:
+        return {
+            "prunable": True,
+            "reason": "prunable",
+            "cancelled_item_ref": render_item_ref(conn, cancelled.item_id),
+        }
     return {"prunable": True, "reason": "prunable"}
 
 

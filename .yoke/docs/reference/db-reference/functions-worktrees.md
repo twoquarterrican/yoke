@@ -25,6 +25,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `done_transition.run_stage_qa_acceptance` | `none` |
 | `item_landings.list` | `none` |
 | `item_landings.record` | `none` |
+| `item_worktrees.cancelled_lanes.record` | `none` |
 | `item_worktrees.create` | `item` |
 | `item_worktrees.get` | `none` |
 | `item_worktrees.inventory` | `none` |

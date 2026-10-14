@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from yoke_core.domain.handlers import (
+    cancelled_lane_deletion as _cancelled_lane_deletion,
+)
 from yoke_core.domain.handlers import item_worktree_create as _item_worktree_create
 from yoke_core.domain.handlers import (
     item_worktree_inventory as _item_worktree_inventory,
@@ -131,6 +134,24 @@ def register(registry) -> None:
         # often has no live claim. Idempotent and internal.
         adapter_status="internal",
         claim_required_kind=None,
+    )
+    registry.register(
+        "item_worktrees.cancelled_lanes.record",
+        _cancelled_lane_deletion.handle_record,
+        _cancelled_lane_deletion.CancelledLanesRecordRequest,
+        _cancelled_lane_deletion.CancelledLanesRecordResponse,
+        stability="stable",
+        owner_module="yoke_core.domain.handlers.cancelled_lane_deletion",
+        target_kinds=["item"],
+        side_effects=["render_body", "github_sync"],
+        emitted_event_names=["YokeFunctionCalled"],
+        guardrails=["cancelled_item", "item_owned_lane_branches"],
+        # The cancel's status transaction released the claim before this
+        # machine deleted the lanes; the handler admits only a cancelled item
+        # and only branches its lane rows name.
+        adapter_status="internal",
+        claim_required_kind=None,
+        minimum_serving_version="next-release",
     )
 
 

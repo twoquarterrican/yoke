@@ -9,6 +9,11 @@ terminal transition: each preserved lane of the item's own is named on the
 returned warnings and recorded as a ``LandedLanePreserved`` event, so the
 refusal outlives the terminal output that first showed it.
 
+A cancelled item skips those proofs. Cancelling discards the work, so each
+lane's worktree, local branch and remote branch are deleted outright by
+``cancelled_lane_discard``, and what they held is written to the item's
+Progress Log in one record.
+
 The two phases report separately. A warning naming the closing item is about
 that item's own lane; one naming the machine-wide sweep is about lanes other
 items own, which the closing item never resolved a path for.
@@ -27,6 +32,12 @@ from yoke_core.api.service_client_structured_api_adapter import call_dispatcher
 from yoke_core.domain import standalone_item_merge_git as git
 from yoke_core.domain.project_checkout_locations import checkout_for_project_id
 from yoke_core.domain.session_ambient_identity import resolve_ambient_session_id
+from yoke_core.engines.cancelled_lane_discard import (
+    CANCELLED_STATUS,
+    DiscardedLane,
+    discard_cancelled_lane,
+    record_discarded_lanes,
+)
 from yoke_core.engines.merge_landed_lane_cleanup import prune_landed_lane
 from yoke_core.engines.merge_worktree_safe_prune import (
     WorktreeSweep,
@@ -126,6 +137,7 @@ def _cleanup_terminal_item_lanes(
     emit: Optional[Callable[..., Any]] = None,
     landing_recorded: bool = False,
     prune: Callable[..., tuple[str, ...]] = prune_landed_lane,
+    discard: Callable[..., DiscardedLane] = discard_cancelled_lane,
     sweep: Callable[..., WorktreeSweep] = prune_managed_worktrees,
 ) -> TerminalLaneCloseOut:
     """Retire every surviving lane, then sweep lanes earlier landings kept.
@@ -159,7 +171,9 @@ def _cleanup_terminal_item_lanes(
     root = root.resolve()
     target = target_branch or str(project.get("default_branch") or "main")
     authority_block = _foreign_claim_reason(item, session_id)
+    cancelled = target_status == CANCELLED_STATUS
     warnings: list[str] = []
+    discarded: list[DiscardedLane] = []
     seen: set[tuple[str, str]] = set()
 
     for lane in item.get("worktrees") or ():
@@ -170,12 +184,28 @@ def _cleanup_terminal_item_lanes(
             continue
         seen.add(identity)
         lane_path = Path(path_text).resolve() if path_text else None
-        if not git.branch_exists(str(root), branch) and not (
-            lane_path is not None and lane_path.exists()
+        location = f" at {path_text}" if path_text else " (branch only)"
+        if cancelled and authority_block:
+            warnings.append(f"{public_ref}{location}: lane kept: {authority_block}")
+            continue
+        if (
+            not cancelled
+            and not git.branch_exists(str(root), branch)
+            and not (lane_path is not None and lane_path.exists())
         ):
             continue
         if not authority_block and lane_path is not None:
             _leave_doomed_worktree(lane_path, root)
+        if cancelled:
+            lane_result = discard(
+                repo_root=str(root), branch=branch, target=target, emit=emit
+            )
+            if lane_result != DiscardedLane(branch):
+                discarded.append(lane_result)
+            warnings.extend(
+                f"{public_ref}{location}: {why}" for why in lane_result.kept
+            )
+            continue
         preserved = prune(
             repo_root=str(root),
             branch=branch,
@@ -184,7 +214,6 @@ def _cleanup_terminal_item_lanes(
             emit=emit,
             authority_block=authority_block,
         )
-        location = f" at {path_text}" if path_text else " (branch only)"
         for reason in preserved:
             warnings.append(f"{public_ref}{location}: {reason}")
             refused = _record_preserved_lane(
@@ -192,6 +221,9 @@ def _cleanup_terminal_item_lanes(
             )
             if refused:
                 warnings.append(refused)
+
+    if refused := record_discarded_lanes(public_ref, tuple(discarded)):
+        warnings.append(refused)
 
     # The machine-wide sweep examines lanes belonging to OTHER items, so its
     # failures are reported as its own. Folding them into the item's warning
@@ -218,6 +250,7 @@ def cleanup_terminal_item_lanes(
     emit: Optional[Callable[..., Any]] = None,
     landing_recorded: bool = False,
     prune: Callable[..., tuple[str, ...]] = prune_landed_lane,
+    discard: Callable[..., DiscardedLane] = discard_cancelled_lane,
     sweep: Callable[..., WorktreeSweep] = prune_managed_worktrees,
 ) -> TerminalLaneCloseOut:
     """Retire terminal lanes without unwinding the committed transition."""
@@ -231,6 +264,7 @@ def cleanup_terminal_item_lanes(
             emit=emit,
             landing_recorded=landing_recorded,
             prune=prune,
+            discard=discard,
             sweep=sweep,
         )
     except Exception as exc:  # noqa: BLE001 - terminal state is already committed

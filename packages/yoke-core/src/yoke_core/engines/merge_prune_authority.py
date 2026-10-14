@@ -3,11 +3,14 @@
 Pruning a worktree or branch is only safe when the database names exactly one
 owner for it, that owner is terminal, and nothing live still holds it — a
 work claim, a planned or active path claim, or a session whose workspace is
-the lane. Every lookup failure reads as "cannot prove", which preserves the
-lane; the git-side sweep in ``merge_worktree_safe_prune`` consumes these
-verdicts through ``merge.prune.authority_verdict``, and the worktree-health
-check through the batched ``merge.prune.authority_verdicts``, so they run
-wherever the control plane lives.
+the lane. A cancelled item's lane is the one exception to "terminal": the
+operator discarded its work, so ``cancelled_item_owner`` names it whatever
+its tasks reached and the sweep deletes it outright. Every lookup failure
+reads as "cannot prove", which preserves the lane; the git-side sweep in
+``merge_worktree_safe_prune`` consumes these verdicts through
+``merge.prune.authority_verdict``, and the worktree-health check through the
+batched ``merge.prune.authority_verdicts``, so they run wherever the control
+plane lives.
 """
 
 from __future__ import annotations
@@ -96,6 +99,38 @@ def terminal_owner(
     return next(iter(owners)) if len(owners) == 1 else None
 
 
+def cancelled_item_owner(
+    conn: Any,
+    *,
+    branch: str,
+    path: Path | None,
+) -> LaneOwner | None:
+    """Return the cancelled item that owns every lane row matched, or ``None``.
+
+    A cancelled item's lanes are deleted whatever their tasks reached, so
+    only item ownership is read here. Rows split across items, or any lookup
+    failure, answer ``None`` and leave the lane to :func:`terminal_owner`.
+    """
+    marker = _p(conn)
+    where = f"iw.branch = {marker}"
+    params: tuple[Any, ...] = (branch,)
+    if path is not None:
+        where += f" OR iw.path = {marker}"
+        params = (branch, str(path))
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT iw.item_id, i.status "
+            "FROM item_worktrees iw JOIN items i ON i.id = iw.item_id "
+            f"WHERE {where}",
+            params,
+        ).fetchall()
+    except Exception:  # noqa: BLE001 - missing/stale DB shape means preserve
+        return None
+    if len(rows) != 1 or str(_row_value(rows[0], "status", 1)) != "cancelled":
+        return None
+    return LaneOwner("item", int(_row_value(rows[0], "item_id", 0)))
+
+
 def has_active_authority(
     conn: Any,
     owner: LaneOwner,
@@ -154,6 +189,7 @@ def item_cleanup_authority_blocks_prune(conn: Any, item_id: int) -> bool:
 
 __all__ = [
     "LaneOwner",
+    "cancelled_item_owner",
     "has_active_authority",
     "item_cleanup_authority_blocks_prune",
     "terminal_owner",
