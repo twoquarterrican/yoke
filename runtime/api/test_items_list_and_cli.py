@@ -13,10 +13,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from runtime.api.fixtures.file_test_db import apply_test_schema
 from runtime.api.fixtures.file_test_db import init_test_db
+from runtime.api.items_seed_test_support import seed_item as insert_item
 from yoke_core.domain.items import (
     CANONICAL_COLUMNS,
     LIST_COLUMNS,
-    insert_item,
     main,
     query_item,
     query_items_list,
@@ -210,26 +210,6 @@ class TestCLIMain:
         rc = main([])
         assert rc == 2
 
-    def test_insert_subcommand(self, db_path, monkeypatch, capsys):
-        monkeypatch.setenv("YOKE_DB", db_path)
-        rc = main(
-            [
-                "insert",
-                "--project",
-                "yoke",
-                "--id",
-                "50",
-                "--title",
-                "CLI insert",
-                "--status",
-                "idea",
-                "--workflow",
-                "issue",
-            ]
-        )
-        assert rc == 0
-        assert query_item(50, "title", db_path=db_path) == "CLI insert"
-
     def test_update_subcommand(self, db_with_item, monkeypatch, capsys):
         monkeypatch.setenv("YOKE_DB", db_with_item)
         rc = main(["update", "1", "priority", "high"])
@@ -311,39 +291,3 @@ class TestCLIMain:
         data = json.loads(captured.err.strip())
         assert data["success"] is False
         assert "requires --body-file or --stdin" in data["error"]
-
-    def test_insert_with_body_file_ignored(
-        self, db_path, monkeypatch, tmp_path, capsys
-    ):
-        """body param is accepted for compat but ignored."""
-        monkeypatch.setenv("YOKE_DB", db_path)
-        body_file = tmp_path / "body.md"
-        body_file.write_text("Body from file")
-        rc = main(
-            [
-                "insert",
-                "--project",
-                "yoke",
-                "--id",
-                "60",
-                "--title",
-                "File body",
-                "--workflow",
-                "issue",
-                "--body-file",
-                str(body_file),
-            ]
-        )
-        assert rc == 0
-        # body is no longer stored — rendered from structured fields
-        assert query_item(60, "title", db_path=db_path) == "File body"
-
-    def test_insert_subcommand_requires_workflow(self, db_path, monkeypatch, capsys):
-        monkeypatch.setenv("YOKE_DB", db_path)
-        assert (
-            main(
-                ["insert", "--project", "yoke", "--id", "61", "--title", "Unclassified"]
-            )
-            == 1
-        )
-        assert "workflow is required" in capsys.readouterr().err
