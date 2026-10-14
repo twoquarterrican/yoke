@@ -84,8 +84,12 @@ for a registered Test Machine, authorize from the connected workstation with
 the project is reachable. `--machine` and `--declarations-json` are exclusive. A
 Browser case names its identity with `method_config.browser_identity`; a run
 whose cases name several identities starts one daemon per identity. An
-hosted signed-in exploratory mission must name its persona, for example
-`method_config.browser_identities: ["operator"]`. Any mission naming identities
+exploratory mission can select personas with `method_config.browser_identities`,
+for example `["operator"]`; this list wins. With no list, dispatch supplies all
+project-declared identities whose sites cover the target base URL origin,
+including their site checks and accounts through the declarations. The walker
+chooses the account the case needs. An uncovered target supplies no identities.
+Any mission with selected identities
 uses the managed browser even when it installs nothing; host-browser access
 is reserved for missions naming none that have not installed Yoke.
 The dispatch gives the walker an exact

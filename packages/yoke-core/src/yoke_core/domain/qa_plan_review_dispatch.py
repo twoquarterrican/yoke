@@ -11,7 +11,7 @@ from yoke_core.domain.qa_review_verdict_modes import (
 
 
 def dispatch_contract(
-    bundle: Mapping[str, Any], *, allowed_verdicts: tuple[str, ...]
+    bundle: Mapping[str, Any], *, allowed_verdicts: tuple[str, ...], conn: Any = None
 ) -> dict[str, Any]:
     if any(case.get("capture_runner") == "agent_mission" for case in bundle["cases"]):
         from yoke_core.domain.agent_mission_review import (
@@ -19,7 +19,7 @@ def dispatch_contract(
         )
 
         return agent_mission_dispatch_contract(
-            bundle, allowed_verdicts=allowed_verdicts
+            bundle, allowed_verdicts=allowed_verdicts, conn=conn
         )
     descriptor = DispatchDescriptor("tester")
     bundle_id = str(bundle["bundle_id"])

@@ -152,7 +152,9 @@ def _public_bundle(conn: Any, stored: Mapping[str, Any]) -> dict[str, Any]:
         result["subject"] = public_review_subject(conn, subject)
     except ValueError as exc:
         raise QaPlanReviewError(str(exc)) from exc
-    result["dispatch"] = dispatch_contract(result, allowed_verdicts=allowed_verdicts)
+    result["dispatch"] = dispatch_contract(
+        result, allowed_verdicts=allowed_verdicts, conn=conn
+    )
     return result
 
 

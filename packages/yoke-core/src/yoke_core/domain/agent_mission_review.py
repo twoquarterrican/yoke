@@ -12,6 +12,7 @@ from yoke_contracts.machine_qa_terminal_bridge import (
 )
 from yoke_contracts.qa_mission_scratch import mission_scratch_path
 from yoke_core.domain.agent_mission_browser_identities import (
+    mission_browser_settings,
     walker_identity_dispatch,
 )
 from yoke_core.domain.dispatch_descriptors import DispatchDescriptor
@@ -53,6 +54,8 @@ def _walker_dispatch(
     *,
     execution_id: str,
     subject_flag: str,
+    browser_settings: Mapping[str, Any],
+    execution_target: Mapping[str, Any],
 ) -> dict[str, Any]:
     descriptor = DispatchDescriptor("qa-walker")
     from yoke_core.domain.qa_method_config_validation import validate_method_config
@@ -75,7 +78,10 @@ def _walker_dispatch(
         "--step-json STEP_JSON [--identity NAME] [--output-dir PATH]"
     )
     identities, browser_verify_commands, identity_clause = walker_identity_dispatch(
-        case, host_command_base
+        case,
+        host_command_base,
+        browser_settings=browser_settings,
+        execution_target=execution_target,
     )
     artifact_add_command = (
         "yoke qa artifact add "
@@ -201,6 +207,7 @@ def agent_mission_dispatch_contract(
     bundle: Mapping[str, Any],
     *,
     allowed_verdicts: tuple[str, ...] = ALL_REVIEW_VERDICTS,
+    conn: Any = None,
 ) -> dict[str, Any]:
     """Return instructions that keep mission ownership in the main agent."""
     bundle_id = str(bundle["bundle_id"])
@@ -228,6 +235,7 @@ def agent_mission_dispatch_contract(
         "execution_target_digest": target_digest if authority_bound else None,
     }
     cases = list(bundle["cases"])
+    browser_settings = mission_browser_settings(conn, bundle)
     walker_dispatches = [
         {
             "requirement_id": int(case["requirement_id"]),
@@ -235,6 +243,8 @@ def agent_mission_dispatch_contract(
                 case,
                 execution_id=execution_id,
                 subject_flag=subject_flag,
+                browser_settings=browser_settings,
+                execution_target=execution_target or {},
             ),
         }
         for case in cases
