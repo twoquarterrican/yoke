@@ -77,6 +77,8 @@ def main(argv: list[str] | None = None) -> int:
     files = inventory.tracked_files()
     docs = inventory.documents(files)
     validate(model, live, set(files))
+    if model.problems:
+        return report(model.problems, check=args.check)
     graph = model.docs_graph
     pages = Pages(
         model, live, coverage(model), docs, lambda path: inventory.area_of(path, graph)
