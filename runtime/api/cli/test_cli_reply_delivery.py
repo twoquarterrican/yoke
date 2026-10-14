@@ -149,6 +149,44 @@ def test_empty_local_receipt_is_labeled(capsys):
     assert "connections: no entries." in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("owner", ["project_onboard", "packs"])
+def test_local_report_owners_preserve_large_and_machine_replies(owner, capsys):
+    from importlib import import_module
+
+    module = import_module("yoke_cli.commands.adapters." + owner)
+    emit = module._emit if owner == "project_onboard" else module._emit_report
+    payload = {"rows": [{"name": str(i)} for i in range(500)]}
+    emit(payload, False)
+    output = capsys.readouterr()
+    assert wrapped_lines(output.out + output.err) <= 350
+    artifact = Path(re.search(r"Complete local result saved: (.+)", output.out)[1])
+    assert json.loads(artifact.read_text())["response"] == payload
+    artifact.unlink()
+    emit(payload, True)
+    assert json.loads(capsys.readouterr().out) == payload
+
+
+def test_prd_report_owner_keeps_warning_and_refusal(capsys):
+    from yoke_cli.commands.adapters.readiness import _emit_prd_validate
+
+    receipt = response(
+        "readiness.prd_validate.run", {"report_text": "Checks: complete"}
+    )
+    receipt = receipt.model_copy(
+        update={
+            "warnings": [
+                FunctionWarning(
+                    code="pending", step="publish", detail="Publication pending."
+                )
+            ]
+        }
+    )
+    assert _emit_prd_validate(receipt, json_mode=False) == 0
+    output = capsys.readouterr()
+    assert "Checks: complete" in output.out
+    assert "Publication pending." in output.err
+
+
 def test_display_measurement_uses_terminal_cells():
     assert wrapped_lines("界" * 80) == 2
     assert wrapped_lines("\x1b[31m" + "x" * 80 + "\x1b[0m") == 1

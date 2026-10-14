@@ -11,6 +11,7 @@ from yoke_cli.commands._helpers import (
     add_json_arg,
     parse_or_usage_error,
 )
+from yoke_cli.transport.human_values import write_local
 from yoke_cli.config import machine_config, onboard_github_copy
 from yoke_cli.config import project_onboard
 from yoke_cli.config.onboard_error_friendly import friendly_permission_error
@@ -208,8 +209,10 @@ def _add_github_adoption_args(parser: argparse.ArgumentParser) -> None:
 
 
 def _emit(report: dict, json_mode: bool) -> None:
-    text = json.dumps(report, indent=2, sort_keys=True)
-    print(text if json_mode else text)
+    if json_mode:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        write_local(report, sys.stdout)
 
 
 def _errors():

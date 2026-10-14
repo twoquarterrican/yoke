@@ -12,6 +12,7 @@ from yoke_cli.commands._helpers import (
     parse_or_usage_error,
 )
 from yoke_contracts.api.function_call import TargetRef
+from yoke_cli.transport.human_values import write_human
 
 
 PROJECT_STRUCTURE_DEPLOY_DEFAULTS_GET_USAGE = (
@@ -20,7 +21,7 @@ PROJECT_STRUCTURE_DEPLOY_DEFAULTS_GET_USAGE = (
 )
 
 _DEPLOY_DEFAULTS_GET_HELP_DEEP = """\
-Read the configured project default deployment flow. Empty stdout with exit 0
+Read the configured project default deployment flow. A labeled empty value
 means the project has no default flow configured.
 
 Worked example:
@@ -51,23 +52,15 @@ def project_structure_deploy_defaults_get(args: List[str]) -> int:
     add_session_arg(parser)
     add_json_arg(parser)
     parsed = parse_or_usage_error(
-        parser, args, PROJECT_STRUCTURE_DEPLOY_DEFAULTS_GET_USAGE,
+        parser,
+        args,
+        PROJECT_STRUCTURE_DEPLOY_DEFAULTS_GET_USAGE,
     )
     if parsed is None:
         return 2
 
     def _human_writer(response, stdout, _stderr) -> None:
-        result: Dict[str, Any] = response.result or {}
-        flow = result.get("deployment_flow")
-        if flow is None:
-            return None
-        text = str(flow)
-        if not text:
-            return None
-        stdout.write(text)
-        if not text.endswith("\n"):
-            stdout.write("\n")
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="project_structure.deploy_defaults.get",
@@ -83,8 +76,7 @@ def project_structure_deploy_defaults_get(args: List[str]) -> int:
 
 
 PROJECT_STRUCTURE_GET_USAGE = (
-    "yoke project-structure get --project NAME [--family F] "
-    "[--session-id S] [--json]"
+    "yoke project-structure get --project NAME [--family F] [--session-id S] [--json]"
 )
 
 _GET_HELP_DEEP = """\
@@ -121,16 +113,7 @@ def project_structure_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, _stderr) -> None:
-        result: Dict[str, Any] = response.result or {}
-        family = result.get("family")
-        if family is not None:
-            for entry in result.get("entries") or []:
-                stdout.write(f"{entry.get('attachment', '')}\n")
-            return None
-        for name, entries in (result.get("families") or {}).items():
-            for entry in entries or []:
-                stdout.write(f"{name}\t{entry.get('attachment', '')}\n")
-        return None
+        write_human(response.result, stdout)
 
     payload: Dict[str, Any] = {"project_id": parsed.project}
     if parsed.family:
@@ -169,8 +152,7 @@ def architecture_health_get(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="yoke project-structure architecture-health get",
         description=(
-            f"{ARCHITECTURE_HEALTH_GET_USAGE}\n\n"
-            f"{_ARCHITECTURE_HEALTH_HELP_DEEP}"
+            f"{ARCHITECTURE_HEALTH_GET_USAGE}\n\n{_ARCHITECTURE_HEALTH_HELP_DEEP}"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -237,7 +219,7 @@ An empty tree proposes the minimal map (layer vocabulary only).
 
 Worked example (draft to a file for review):
 
-  yoke project-structure architecture-draft get --project myapp \\
+  yoke project-structure architecture-draft get --project myapp --json \\
     > /tmp/architecture-draft.json
 
 Exit codes: 0 success, 1 dispatch failure, 2 usage error.
@@ -248,8 +230,7 @@ def architecture_draft_get(args: List[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="yoke project-structure architecture-draft get",
         description=(
-            f"{ARCHITECTURE_DRAFT_GET_USAGE}\n\n"
-            f"{_ARCHITECTURE_DRAFT_HELP_DEEP}"
+            f"{ARCHITECTURE_DRAFT_GET_USAGE}\n\n{_ARCHITECTURE_DRAFT_HELP_DEEP}"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -261,16 +242,7 @@ def architecture_draft_get(args: List[str]) -> int:
         return 2
 
     def _human_writer(response, stdout, stderr) -> None:
-        import json as _json
-
-        result: Dict[str, Any] = response.result or {}
-        stdout.write(
-            _json.dumps(result.get("payload") or {}, indent=2, sort_keys=True)
-        )
-        stdout.write("\n")
-        for note in result.get("notes") or []:
-            stderr.write(f"note: {note}\n")
-        return None
+        write_human(response.result, stdout)
 
     return dispatch_and_emit(
         function_id="project_structure.architecture_draft.get",
@@ -285,13 +257,10 @@ def architecture_draft_get(args: List[str]) -> int:
 # Usage strings for the read family, spliced into the aggregate
 # adapter-usage map keyed by function id.
 PROJECT_STRUCTURE_READ_USAGE = {
-    "project_structure.deploy_defaults.get":
-        PROJECT_STRUCTURE_DEPLOY_DEFAULTS_GET_USAGE,
+    "project_structure.deploy_defaults.get": PROJECT_STRUCTURE_DEPLOY_DEFAULTS_GET_USAGE,
     "project_structure.get": PROJECT_STRUCTURE_GET_USAGE,
-    "project_structure.architecture_health.get":
-        ARCHITECTURE_HEALTH_GET_USAGE,
-    "project_structure.architecture_draft.get":
-        ARCHITECTURE_DRAFT_GET_USAGE,
+    "project_structure.architecture_health.get": ARCHITECTURE_HEALTH_GET_USAGE,
+    "project_structure.architecture_draft.get": ARCHITECTURE_DRAFT_GET_USAGE,
 }
 
 
