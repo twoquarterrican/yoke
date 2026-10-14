@@ -20,7 +20,12 @@ from yoke_core.domain.project_identity import render_item_ref
 _NON_TERMINAL_CLAIM_STATES = ("planned", "blocked", "active")
 
 
-def _claim_rows(conn: Any, item_id: int) -> list[dict[str, Any]]:
+def _claim_rows(
+    conn: Any,
+    item_id: int,
+    claim_ids: Optional[Iterable[int]] = None,
+) -> list[dict[str, Any]]:
+    """Target rows of the item's open claims, or of exactly ``claim_ids``."""
     if not all(
         _table_exists(conn, table)
         for table in (
@@ -31,16 +36,22 @@ def _claim_rows(conn: Any, item_id: int) -> list[dict[str, Any]]:
     ):
         return []
     placeholder = marker(conn)
-    state_markers = ", ".join(placeholder for _ in _NON_TERMINAL_CLAIM_STATES)
+    if claim_ids is None:
+        column, values = "pc.state", list(_NON_TERMINAL_CLAIM_STATES)
+    else:
+        column, values = "pc.id", [int(claim_id) for claim_id in claim_ids]
+        if not values:
+            return []
+    value_markers = ", ".join(placeholder for _ in values)
     cursor = conn.execute(
         "SELECT pc.id, pc.state, pt.path_string "
         "FROM path_claims pc "
         "LEFT JOIN path_claim_targets pct ON pct.claim_id = pc.id "
         "LEFT JOIN path_targets pt ON pt.id = pct.target_id "
         f"WHERE pc.owner_kind = 'item' AND pc.owner_item_id = {placeholder} "
-        f"AND pc.state IN ({state_markers}) "
+        f"AND {column} IN ({value_markers}) "
         "ORDER BY pc.id, pt.path_string",
-        (int(item_id), *_NON_TERMINAL_CLAIM_STATES),
+        (int(item_id), *values),
     )
     columns = [str(column[0]) for column in cursor.description]
     return [
@@ -133,13 +144,45 @@ def activation_gate(
     return None
 
 
+def _landed_claim_rows(conn: Any, item_id: int) -> list[dict[str, Any]]:
+    """Target rows of the claims released at the item's current landing."""
+    from yoke_core.domain.path_claims_landing_boundary import (
+        released_claims_for_boundary,
+    )
+
+    landed = [claim_id for claim_id, _ in released_claims_for_boundary(conn, item_id)]
+    return _claim_rows(conn, item_id, claim_ids=landed)
+
+
 def completion_gate(
     conn: Any,
     item_id: int,
 ) -> Optional[dict[str, Any]]:
-    active = activation_gate(conn, item_id)
-    if active is not None:
-        return active
+    """Check merged paths against open claims, else the landing's released ones.
+
+    Landing releases the item's claims with reason ``landed``; that released
+    coverage still describes what landed. Open claims mean rework, which the
+    open coverage alone answers.
+    """
+    rows = _claim_rows(conn, item_id)
+    if rows:
+        active = activation_gate(conn, item_id)
+        if active is not None:
+            return active
+        coverage_name = "the open claim"
+    else:
+        rows = _landed_claim_rows(conn, item_id)
+        claim_ids, _, paths = _claim_coverage(rows)
+        if not claim_ids or not paths:
+            return failure(
+                "GATE_DASH_PATH_CLAIM_REQUIRED",
+                "Selected Dash path-claims posture has no concrete claim "
+                "coverage: no open claim, and no claim released at the "
+                "current landing.",
+                "Register coverage for the touched files with `yoke claims "
+                "path register`, prepare the Dash worktree, then retry.",
+            )
+        coverage_name = "the claims released at landing"
     from yoke_core.domain.dash_execution import DASH_EVIDENCE_SECTION
     from yoke_core.domain.item_json_sections import read_json_section
 
@@ -156,7 +199,7 @@ def completion_gate(
         )
     if evidence.get("no_changes"):
         return None
-    _, _, declared = _claim_coverage(_claim_rows(conn, item_id))
+    _, _, declared = _claim_coverage(rows)
     missing = files_outside_coverage(
         evidence.get("touched_files") or (),
         declared,
@@ -164,8 +207,10 @@ def completion_gate(
     if missing:
         return failure(
             "GATE_DASH_PATH_CLAIM_COVERAGE",
-            "Merged Dash paths fall outside the active claim: " + ", ".join(missing),
-            "Widen the claim through the sanctioned coordination surface.",
+            f"Merged Dash paths fall outside {coverage_name}: " + ", ".join(missing),
+            "Widen an open claim through the sanctioned coordination surface; "
+            "released coverage cannot widen, so register a claim covering "
+            "every touched file instead.",
         )
     return None
 
