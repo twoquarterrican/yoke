@@ -17,6 +17,10 @@ from yoke_contracts.hook_runner.hook_ordering import (
     ordered_pipeline_for,
 )
 from yoke_contracts.hook_runner import lint_policy
+from yoke_contracts.hook_runner.project_scope import (
+    HookProjectScope,
+    resolve_hook_project_scope,
+)
 from yoke_contracts.hook_runner.shell_guard_repairs import RIPGREP_REPLACE_CHECK_ID
 from yoke_contracts.hook_runner.session_cwd import (
     client_claude_job_tmp_fact,
@@ -168,14 +172,13 @@ def _local_modules(
     matcher: Optional[str],
     *,
     defer_main_commit: bool = False,
-    payload: dict | None = None,
+    project_scope: HookProjectScope | None = None,
 ) -> list[str]:
     from yoke_contracts.hook_runner.guard_scope import applicable_chain
-    from yoke_contracts.hook_runner.project_scope import project_id_for_payload
 
     chain = _chain_for(event_name, matcher)
-    if payload is not None:
-        chain = applicable_chain(chain, project_id_for_payload(payload))
+    if project_scope is not None:
+        chain = applicable_chain(chain, project_scope.require_project_id())
     return [
         module_id
         for module_id in chain
@@ -226,10 +229,17 @@ def evaluate_local_subset(
     *,
     defer_main_commit: bool = False,
     lint_config_snapshot: dict[str, dict[str, object]] | None = None,
+    project_scope: HookProjectScope | None = None,
 ) -> LocalSubsetEvaluation:
-    """Evaluate the product-owned local policy subset in chain order."""
+    """Evaluate the product-owned local policy subset in chain order.
+
+    A relay passes the ``project_scope`` it already resolved for the request;
+    a standalone evaluation resolves it here from its own payload.
+    """
     _ = agent_type
     payload = _parse_payload(stdin_data)
+    if project_scope is None:
+        project_scope = resolve_hook_project_scope(payload)
     if lint_config_snapshot:
         payload[lint_policy.SNAPSHOT_PAYLOAD_KEY] = lint_config_snapshot
     matcher = _matcher(event_name, payload)
@@ -259,7 +269,10 @@ def evaluate_local_subset(
     contexts: list[str] = []
     try:
         modules = _local_modules(
-            event_name, matcher, defer_main_commit=defer_main_commit, payload=payload
+            event_name,
+            matcher,
+            defer_main_commit=defer_main_commit,
+            project_scope=project_scope,
         )
     except (ValueError, OSError, RuntimeError) as exc:
         reason = f"hook_scope_unavailable: {exc}; repair the machine project mapping and retry"

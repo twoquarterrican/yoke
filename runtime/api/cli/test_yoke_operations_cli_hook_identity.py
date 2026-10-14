@@ -10,6 +10,7 @@ import pytest
 
 from yoke_cli.main import main as cli_main
 from yoke_cli.transport.https import HttpsConnection
+from yoke_contracts.hook_runner.project_scope import HookProjectScope
 
 
 _RESOLVE = "yoke_cli.transport.https.resolve_https_connection"
@@ -37,7 +38,8 @@ def local_subset(monkeypatch) -> None:
     from yoke_harness.hooks.local_subset import LocalSubsetEvaluation
 
     monkeypatch.setattr(
-        "yoke_harness.hooks.relay.project_id_for_payload", lambda _payload: 7
+        "yoke_harness.hooks.relay.resolve_hook_project_scope",
+        lambda _payload: HookProjectScope(7),
     )
 
     monkeypatch.setattr(

@@ -12,6 +12,7 @@ import sys
 from typing import Optional
 
 from yoke_contracts.hook_runner.failures import render_failure_warning
+from yoke_contracts.hook_runner.project_scope import resolve_hook_project_scope
 from yoke_core.hooks.capability_resolve import resolve_capability
 from yoke_core.hooks.remote_policy import RunControls
 from yoke_core.hooks.runner import run_event
@@ -53,7 +54,10 @@ def evaluate_local_hook(
     ensure_user_lifecycle_hooks_for_executor(executor)
     capture_codex_session(event_name, original_stdin, executor)
 
-    identity = relay_identity_payload(event_name, payload, executor)
+    project_scope = resolve_hook_project_scope(payload)
+    identity = relay_identity_payload(
+        event_name, payload, executor, project_id=project_scope.project_id
+    )
     payload_extra = {key: value for key, value in identity.items() if value is not None}
     agent_type = os.environ.get(AGENT_TYPE_ENV_VAR, "").strip()
     if agent_type:
@@ -64,7 +68,7 @@ def evaluate_local_hook(
         )
 
         payload_extra[CLIENT_ORIENTATION_PRESENT_KEY] = True
-    controls = RunControls(payload_extra=payload_extra)
+    controls = RunControls(payload_extra=payload_extra, project_scope=project_scope)
     stdout, exit_code = run_event(
         event_name,
         capability=resolve_capability(executor),

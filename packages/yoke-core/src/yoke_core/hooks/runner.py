@@ -157,14 +157,15 @@ def run_event(
         remote=controls.remote if controls is not None else False,
     )
     from yoke_contracts.hook_runner.guard_scope import applicable_chain
-    from yoke_contracts.hook_runner.project_scope import project_id_for_payload
+    from yoke_contracts.hook_runner.project_scope import resolve_hook_project_scope
 
     try:
-        project_id = (
-            controls.authorized_project_id
-            if controls is not None and controls.remote
-            else project_id_for_payload(payload)
-        )
+        if controls is not None and controls.remote:
+            project_id = controls.authorized_project_id
+        elif controls is not None and controls.project_scope is not None:
+            project_id = controls.project_scope.require_project_id()
+        else:
+            project_id = resolve_hook_project_scope(payload).require_project_id()
         chain = applicable_chain(chain, project_id)
     except (ValueError, OSError, RuntimeError) as exc:
         reason = (

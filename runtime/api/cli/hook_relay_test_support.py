@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 from yoke_cli.transport.https import HttpsConnection
+from yoke_contracts.hook_runner.project_scope import HookProjectScope
 
 _RESOLVE = "yoke_cli.transport.https.resolve_https_connection"
 
@@ -29,6 +30,7 @@ def local_subset(monkeypatch):
         *,
         defer_main_commit=False,
         lint_config_snapshot=None,
+        project_scope=None,
     ):
         holder.calls.append(
             (
@@ -50,7 +52,8 @@ def local_subset(monkeypatch):
         lambda _payload: {},
     )
     monkeypatch.setattr(
-        "yoke_harness.hooks.relay.project_id_for_payload", lambda _payload: 7
+        "yoke_harness.hooks.relay.resolve_hook_project_scope",
+        lambda _payload: HookProjectScope(7),
     )
     return holder
 

@@ -28,6 +28,7 @@ from yoke_core.domain.lint_session_cwd_identity import (
 from yoke_core.domain.session_ambient_identity import AMBIENT_ENV_VARS
 from yoke_harness.hooks import cursor_lifecycle_hooks, relay
 from yoke_harness.hooks.local_subset import LocalSubsetEvaluation
+from yoke_contracts.hook_runner.project_scope import HookProjectScope
 
 
 HOLDER = "sid-cursor-holder"
@@ -44,13 +45,15 @@ def relay_capture(monkeypatch):
     for name in AMBIENT_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(relay, "detect_executor", lambda: "cursor")
-    monkeypatch.setattr(relay, "project_id_for_payload", lambda _payload: 1)
+    monkeypatch.setattr(
+        relay, "resolve_hook_project_scope", lambda _payload: HookProjectScope(1)
+    )
     monkeypatch.setattr(relay, "_client_lint_config_snapshot", lambda _payload: {})
     monkeypatch.setattr(relay, "_record_client_anchor", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         relay,
         "relay_identity_payload",
-        lambda *_args: {
+        lambda *_args, **_kwargs: {
             "entrypoint": "cursor",
             "model": None,
             "execution_level": None,

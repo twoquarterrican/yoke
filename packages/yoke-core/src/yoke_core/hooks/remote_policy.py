@@ -41,6 +41,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
+from yoke_contracts.hook_runner.project_scope import HookProjectScope
 
 __all__ = [
     "DEADLINE_EXHAUSTED_MARKER",
@@ -90,7 +91,9 @@ class RunControls:
     to a degraded marker (skip) or ``None`` (run). ``payload_extra`` merges
     into the parsed payload before context build (e.g. the request's
     ``agent_type``). ``actor_id`` is the server-verified bearer-token actor
-    bound at ensure-register. ``flush_tail=False`` skips the
+    bound at ensure-register. ``project_scope`` is the in-process caller's
+    already-resolved project membership (a remote run uses
+    ``authorized_project_id`` instead). ``flush_tail=False`` skips the
     telemetry/ensure-register tail. ``degraded`` / ``timed_out`` /
     ``final_outcome`` are write-backs populated during the run.
     """
@@ -101,6 +104,7 @@ class RunControls:
     remote: bool = False
     actor_id: Optional[int] = None
     authorized_project_id: Optional[int] = None
+    project_scope: Optional[HookProjectScope] = None
     flush_tail: bool = True
     degraded: list[str] = field(default_factory=list)
     denial_audit: dict[str, str] = field(default_factory=dict)
