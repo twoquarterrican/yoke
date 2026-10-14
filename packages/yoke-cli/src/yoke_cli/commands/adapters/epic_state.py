@@ -108,6 +108,7 @@ def epic_task_body_get(args: List[str]) -> int:
         session_id=parsed.session_id,
         json_mode=parsed.json_mode,
         human_writer=_writer,
+        machine_mode=bool(parsed.output_file),
     )
 
 

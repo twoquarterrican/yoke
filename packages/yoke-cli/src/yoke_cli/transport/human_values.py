@@ -84,7 +84,7 @@ def write_human(
             isinstance(row, Mapping)
             and all(
                 not isinstance(v, (Mapping, list, tuple))
-                and not (isinstance(v, str) and "\n" in v)
+                and not (isinstance(v, str) and any(char in v for char in "\n\r|"))
                 for v in row.values()
             )
             for row in value

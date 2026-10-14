@@ -284,8 +284,7 @@ class TestBodyGet:
             str(target),
         )
         assert rc == 0
-        assert "task num: 3" in out
-        assert "body: file body" in out
+        assert out == ""
         assert target.read_text(encoding="utf-8") == "file body"
 
     def test_output_file_with_json_returns_two(self, tmp_path) -> None:

@@ -218,6 +218,22 @@ def test_display_measurement_uses_terminal_cells():
     assert wrapped_lines("\x1b[31m" + "x" * 80 + "\x1b[0m") == 1
 
 
+def test_delimiter_in_a_value_keeps_unambiguous_field_labels(capsys):
+    assert (
+        emit_response(
+            response(
+                "db.read.run",
+                {"rows": [{"name": "A | B", "command": "build | deploy"}]},
+            ),
+            json_mode=False,
+        )
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert "name: A | B" in output
+    assert "command: build | deploy" in output
+
+
 def test_local_core_logs_keep_complete_evidence_and_immediate_recovery(capsys):
     from yoke_cli.commands.core import _emit
 
