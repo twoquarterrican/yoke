@@ -12,31 +12,24 @@ from typing import List, Optional, Tuple
 from yoke_contracts.board.board_db import BoardDBLike
 from yoke_contracts.board.project_scope import project_id_filter, scope_project_id
 from yoke_contracts.board.sql import LOCAL_NOW_SQL, elapsed_days_expr, timestamp_expr
+from yoke_contracts.timestamps import format_instant, parse_instant
 
 # -- constants -----------------------------------------------------------------
 
 _WIDTH = 125
 _MAX_LABELS = 10
 
-_STOP_WORDS = frozenset({
-    # Articles / prepositions / conjunctions
-    "the", "a", "an", "for", "and", "to", "from", "with", "all", "new",
-    "in", "of", "is", "by", "as", "on", "at", "or", "if", "but", "that",
-    "this", "these", "those", "not", "no",
-    # Project / scope tokens
-    "epic", "item", "task", "status",
-    # Generic action verbs with no signal ("Make X", "Move Y", …)
-    "add", "fix", "update", "make", "move", "give", "change", "reduce",
-    "ensure", "handle", "restore", "rename", "enable", "disable", "allow",
-    "prevent", "create", "delete", "convert", "avoid", "apply", "treat",
-    "include", "extract", "finish", "use", "run", "get", "put", "let",
-    "show", "see", "read", "write", "keep", "drop", "stop", "start",
-    "expose", "extend", "replace", "teach",
-    # Filler
-    "full", "set", "up", "off", "back", "down", "over", "out", "one", "two",
-    "first", "last", "next", "more", "most", "some", "any",
-    "remaining", "still", "only", "even", "also", "just", "very",
-})
+_STOP_WORDS = frozenset(
+    (
+        "a add all allow also an and any apply as at avoid back but by change convert "
+        "create delete disable down drop enable ensure epic even expose extend "
+        "extract finish first fix for from full get give handle if in include is item "
+        "just keep last let make more most move new next no not of off on one only or "
+        "out over prevent put read reduce remaining rename replace restore run see "
+        "set show some start status still stop task teach that the these this those "
+        "to treat two up update use very with write"
+    ).split()
+)
 
 # VISION.md section map (header -> key)
 _VISION_SECTIONS = [
@@ -48,6 +41,7 @@ _VISION_SECTIONS = [
 
 
 # -- visibility ----------------------------------------------------------------
+
 
 def _zen_check_visibility(
     config_value: str,
@@ -69,6 +63,7 @@ def _zen_check_visibility(
 
 
 # -- data queries --------------------------------------------------------------
+
 
 def _zen_project_id(db: BoardDBLike, project: str | int) -> int:
     return scope_project_id(db, project)
@@ -101,9 +96,7 @@ def _zen_query_projects(db: BoardDBLike, scope: str = "all") -> List[Tuple[str, 
     return [(r[0], r[1]) for r in rows]
 
 
-def _zen_query_items(
-    db: BoardDBLike, project: str, window_start: str
-) -> List[Tuple]:
+def _zen_query_items(db: BoardDBLike, project: str, window_start: str) -> List[Tuple]:
     """Done items in scope: ``(id, title, created_at, workflow_id)``."""
     project_id = _zen_project_id(db, project)
     return db.query(
@@ -133,12 +126,12 @@ def _zen_compute_window(db: BoardDBLike, project: str) -> Optional[str]:
     """Timeline window start date (``YYYY-MM-DD`` or ``None``)."""
     project_id = _zen_project_id(db, project)
     val = db.scalar(
-        "SELECT MIN(created_at) FROM items "
-        "WHERE project_id = %s AND status = 'done'",
+        "SELECT MIN(created_at) FROM items WHERE project_id = %s AND status = 'done'",
         (project_id,),
     )
-    if val:
-        return str(val)[:10]
+    if val is not None:
+        # Record/replay encodes instants in UTC; derive the same day on both sides.
+        return format_instant(parse_instant(val))[:10]
     return None
 
 
@@ -168,8 +161,11 @@ def _zen_item_positions(
         "ORDER BY pos",
         (
             past_width - 1,
-            window_start, past_width, window_start,
-            project_id, window_start,
+            window_start,
+            past_width,
+            window_start,
+            project_id,
+            window_start,
         ),
     )
 
@@ -189,6 +185,7 @@ def _zen_item_positions(
 
 
 # -- zone computation ----------------------------------------------------------
+
 
 def _zen_compute_zones(
     total_width: int,
