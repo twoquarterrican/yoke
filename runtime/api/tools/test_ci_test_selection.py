@@ -53,3 +53,19 @@ def test_new_files_receive_known_mean_weight():
     items = [_item("tests/test_known.py::test_case"), _item("tests/test_new.py::test_case")]
     groups = [selection.file_group(items, {items[0].nodeid: 4}, 2, n) for n in (1, 2)]
     assert sorted(weight for _, weight in groups) == [4, 4]
+
+
+def test_short_expensive_files_start_before_long_cheap_files():
+    cheap = [_item(f"tests/test_cheap.py::test_{n}") for n in range(3)]
+    expensive = _item("tests/test_expensive.py::test_case")
+    items = cheap + [expensive]
+    splitter = SimpleNamespace(
+        cached_durations={item.nodeid: 1 for item in cheap} | {expensive.nodeid: 10},
+        writer=Mock(),
+    )
+    config = SimpleNamespace(
+        option=SimpleNamespace(splits=1, group=1),
+        hook=SimpleNamespace(pytest_deselected=Mock()),
+    )
+    selection._FileSplitter(splitter).pytest_collection_modifyitems(config, items)
+    assert items == [expensive, *cheap]

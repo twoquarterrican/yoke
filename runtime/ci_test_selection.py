@@ -56,10 +56,8 @@ class _File:
         return self.nodeid
 
 
-def file_group(items, durations, splits, group):
-    """Reuse least-duration scheduling with indivisible file fixture groups."""
-    from pytest_split.algorithms import LeastDurationAlgorithm
-
+def file_weights(items, durations):
+    """Aggregate measured cases, estimating new cases from the known mean."""
     known = [durations[i.nodeid] for i in items if i.nodeid in durations]
     fallback = sum(known) / len(known) if known else 1.0
     weights = {}
@@ -68,6 +66,14 @@ def file_group(items, durations, splits, group):
         weights[filename] = weights.get(filename, 0) + durations.get(
             item.nodeid, fallback
         )
+    return weights
+
+
+def file_group(items, durations, splits, group):
+    """Reuse least-duration scheduling with indivisible file fixture groups."""
+    from pytest_split.algorithms import LeastDurationAlgorithm
+
+    weights = file_weights(items, durations)
     files = [_File(name) for name in weights]
     selected = LeastDurationAlgorithm()(splits, files, weights)[group - 1]
     names = {file.nodeid for file in selected.selected}
@@ -87,6 +93,10 @@ class _FileSplitter:
         kept, deselected = [], []
         for item in items:
             (kept if item.nodeid.split("::", 1)[0] in names else deselected).append(item)
+        weights = file_weights(kept, self.splitter.cached_durations)
+        kept.sort(key=lambda item: (
+            -weights[item.nodeid.split("::", 1)[0]], item.nodeid.split("::", 1)[0]
+        ))
         items[:] = kept
         config.hook.pytest_deselected(items=deselected)
         self.splitter.writer.line(

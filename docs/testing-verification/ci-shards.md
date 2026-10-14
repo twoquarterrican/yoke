@@ -35,11 +35,15 @@ scaled to its actual suite wall time before pytest-split's greedy assignment.
 Tests removed from the current checkout disappear from the refreshed profile.
 Existing cases blend their prior weight equally with the new measurement;
 this rolling average damps setup attribution and runner contention noise.
+Use `--reset` with a complete passing report set after changing fixture setup
+or scheduling costs substantially, so obsolete costs do not bias the baseline.
 CI aggregates those weights by file and assigns whole files through the same
 least-duration algorithm. Xdist uses `loadfile` so a file also stays on one
 worker. This stabilizes setup attribution and avoids repeating a file's
 fixtures across shards or workers. Local partial splitting keeps pytest-split's
 ordinary individual-test behavior.
+Files enter the worker queue in descending measured duration; xdist's default
+test-count reorder is disabled so short, expensive files start early.
 GitHub-sync test databases clone the existing per-worker production schema
 template rather than replaying schema DDL for every case; their project and
 actor seeds and connection-close isolation remain per case.

@@ -217,6 +217,7 @@ def pytest_command(group: int) -> list[str]:
         "auto",
         "--dist",
         "loadfile",
+        "--no-loadscope-reorder",
         "--splits",
         str(SHARD_COUNT),
         "--group",

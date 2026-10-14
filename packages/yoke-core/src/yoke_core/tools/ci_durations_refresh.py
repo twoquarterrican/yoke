@@ -22,7 +22,7 @@ def node_id(root: Path, case: ET.Element) -> str | None:
     return None  # A report from a prior tree can include tests since deleted.
 
 
-def refresh(root: Path, reports: list[Path], *, expected_shards=SHARD_COUNT) -> dict:
+def refresh(root: Path, reports: list[Path], *, expected_shards=SHARD_COUNT, reset=False) -> dict:
     if len(reports) != expected_shards:
         raise ValueError(
             f"ci_profile_incomplete: expected {expected_shards} reports, got "
@@ -68,6 +68,8 @@ def refresh(root: Path, reports: list[Path], *, expected_shards=SHARD_COUNT) -> 
     try:
         previous = json.loads(destination.read_text(encoding="utf-8"))
     except (OSError, ValueError):
+        previous = {}
+    if reset:
         previous = {}
     # Shared fixture setup moves between cases/files and runner contention
     # varies. Damp that noise instead of reversing the allocation each run.
@@ -148,6 +150,10 @@ def main(argv=None) -> int:
     source.add_argument("--latest", action="store_true")
     parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY"))
     parser.add_argument("--python", default="3.14")
+    parser.add_argument(
+        "--reset", action="store_true",
+        help="Replace prior weights when fixture setup or scheduling costs changed.",
+    )
     args = parser.parse_args(argv)
     from yoke_core.domain.workspace_authority import (
         assert_target_under_session_work_authority,
@@ -166,7 +172,8 @@ def main(argv=None) -> int:
                 directory = Path(temporary)
                 run_id = download_latest(args.repository, args.python, directory)
             result = refresh(
-                args.target_root, sorted(directory.rglob("pytest-report.xml"))
+                args.target_root, sorted(directory.rglob("pytest-report.xml")),
+                reset=args.reset,
             )
             print(json.dumps({"source_run_id": run_id, **result}))
         return 0
