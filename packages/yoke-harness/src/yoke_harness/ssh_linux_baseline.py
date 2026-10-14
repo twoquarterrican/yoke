@@ -21,6 +21,7 @@ from yoke_harness.ssh_mac_baseline_probes import (
     parse_baseline_probes,
     run_baseline_probes,
 )
+from yoke_harness.golden_snapshot_retention import LINUX_CAPTURE_SPACE_CHECK
 from yoke_harness.ssh_mac_full_reset_contract import GOLDEN_PROBES_SUFFIX
 from yoke_harness.test_machine_types import HostActionResult
 
@@ -111,6 +112,7 @@ if operation == "capture":
         if (home / value).exists() or (home / value).is_symlink():
             refuse("golden_baseline_contains_yoke")
     baseline.parent.mkdir(parents=True, exist_ok=True)
+# LINUX_CAPTURE_SPACE_CHECK
     temporary = pathlib.Path(tempfile.mkdtemp(prefix=".yoke-golden-", dir=baseline.parent))
     try:
         def persistent_entry(member):
@@ -196,6 +198,7 @@ print(json.dumps({"ok":True, "operation":operation, "golden_baseline_path":str(b
 """.replace("__YOKE_SERVICE_PATTERNS__", repr(YOKE_SERVICE_PATTERNS))
     .replace("__LIVE_IDENTITY_STORE__", repr(LIVE_IDENTITY_STORE_HOME_ENTRY))
     .replace("# RESET_PRECONDITION_FUNCTIONS", DESKTOP_PROGRAM + SIGN_IN_PROGRAM)
+    .replace("# LINUX_CAPTURE_SPACE_CHECK", LINUX_CAPTURE_SPACE_CHECK)
 )
 
 

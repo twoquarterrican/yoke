@@ -1,0 +1,146 @@
+"""Registered goldens stay; older snapshots go, and a full disk refuses."""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+
+import pytest
+
+from yoke_harness.golden_snapshot_retention import (
+    SnapshotRetentionError,
+    apply_retention,
+    removable_snapshot_names,
+)
+from yoke_harness.ssh_linux_baseline import ABSENT_HOME_PATHS, _ARCHIVE_PROGRAM
+from yoke_harness.ssh_mac_golden_capture_contract import (
+    CAPTURE_REFUSAL_KIND_INSUFFICIENT_SPACE,
+    capture_refusal_recovery,
+)
+
+
+def _run(command: str, *, timeout: int = 60, input_text: str | None = None):
+    return subprocess.run(
+        ["/bin/sh", "-c", command],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        input=input_text,
+    )
+
+
+def test_prune_leaves_only_the_registered_golden_on_a_user_root(tmp_path):
+    parent = tmp_path / "yoketest"
+    parent.mkdir()
+    for name in (
+        "yoketest-home-20261001",
+        "home-20261002",
+        "mixed-snapshot",
+        "browser-profile",
+        ".yoke-golden-unregistered",
+    ):
+        (parent / name).mkdir()
+    (parent / "yoketest-home-20261001.probes").write_text("old")
+    registered = parent / "yoketest-home-20261014"
+    registered.mkdir()
+    (registered / "home.tar.gz").write_bytes(b"golden")
+    (parent / "yoketest-home-20261014.probes").write_text("probes")
+    (parent / "yoketest-home-20261014.manifest").write_text("manifest")
+
+    removed = apply_retention(_run, destination=str(registered), user="yoketest")
+
+    assert set(removed) == {
+        "yoketest-home-20261001",
+        "yoketest-home-20261001.probes",
+        "home-20261002",
+        "mixed-snapshot",
+        "browser-profile",
+        ".yoke-golden-unregistered",
+    }
+    assert set(os.listdir(parent)) == {
+        "yoketest-home-20261014",
+        "yoketest-home-20261014.probes",
+        "yoketest-home-20261014.manifest",
+    }
+
+
+def test_a_shared_parent_keeps_another_users_golden():
+    names = removable_snapshot_names(
+        (
+            "yoketest-home-20261001",
+            "yoketest-home-20261014",
+            "yoketest-home-20261014.probes",
+            "yoketest-home-20261014.manifest",
+            "other-home-20261005",
+            "home-20261002",
+            ".yoke-golden-temp",
+            "notes",
+        ),
+        registered_name="yoketest-home-20261014",
+        user="yoketest",
+        parent_name="yoke-golden",
+    )
+    assert set(names) == {
+        "yoketest-home-20261001",
+        "home-20261002",
+        ".yoke-golden-temp",
+    }
+
+
+def test_a_symlink_blocks_removal_and_leaves_the_target(tmp_path):
+    parent = tmp_path / "yoketest"
+    parent.mkdir()
+    (parent / "old").mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "kept").write_text("safe")
+    (parent / "linked").symlink_to(outside)
+    registered = parent / "current"
+    registered.mkdir()
+
+    with pytest.raises(SnapshotRetentionError) as raised:
+        apply_retention(_run, destination=str(registered), user="yoketest")
+
+    assert raised.value.code == "golden_snapshot_retention_failed"
+    assert "symlink" in raised.value.detail
+    assert str(registered) in raised.value.recovery
+    assert not (parent / "old").exists()
+    assert (outside / "kept").read_text() == "safe"
+
+
+def test_low_disk_refuses_with_the_named_reason(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / "blob").write_text("x" * 64)
+    golden = tmp_path / "golden"
+    program = _ARCHIVE_PROGRAM.replace(
+        "shutil.disk_usage(baseline.parent).free",
+        "0",
+    )
+    monkeypatch.chdir(home)
+    result = subprocess.run(
+        [sys.executable, "-c", program, "capture", str(home), str(golden)],
+        input=json.dumps(ABSENT_HOME_PATHS),
+        text=True,
+        capture_output=True,
+        env={**os.environ, "HOME": str(home)},
+        check=False,
+    )
+    assert result.returncode != 0
+    receipt = json.loads(result.stdout)
+    assert receipt["reason"] == "golden_capture_insufficient_space"
+    assert receipt["expected_bytes"] >= 64
+    assert "yoke test-machine golden-capture" in receipt["recovery"]
+    assert not golden.exists()
+
+
+def test_mac_low_disk_recovery_names_the_cleanup():
+    recovery = capture_refusal_recovery(
+        CAPTURE_REFUSAL_KIND_INSUFFICIENT_SPACE,
+        "/var/lib/yoke-golden/yoketest",
+    )
+    assert "yoke test-machine golden-capture" in recovery
+    assert "/var/lib/yoke-golden/yoketest" in recovery
+    assert ".probes" in recovery

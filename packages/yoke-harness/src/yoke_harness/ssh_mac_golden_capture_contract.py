@@ -51,11 +51,15 @@ CAPTURE_REFUSAL_KIND_RESIDUE = "yoke_residue"
 CAPTURE_REFUSAL_KIND_FOREIGN_OWNER = "foreign_owner"
 CAPTURE_REFUSAL_KIND_DESTINATION_OCCUPIED = "destination_occupied"
 CAPTURE_REFUSAL_KIND_PRESERVED_STATE = "preserved_state_invalid"
+CAPTURE_REFUSAL_KIND_INSUFFICIENT_SPACE = "insufficient_space"
+CAPTURE_REFUSAL_KIND_SPACE_CHECK_FAILED = "space_check_failed"
 CAPTURE_REFUSAL_KINDS = (
     CAPTURE_REFUSAL_KIND_RESIDUE,
     CAPTURE_REFUSAL_KIND_FOREIGN_OWNER,
     CAPTURE_REFUSAL_KIND_DESTINATION_OCCUPIED,
     CAPTURE_REFUSAL_KIND_PRESERVED_STATE,
+    CAPTURE_REFUSAL_KIND_INSUFFICIENT_SPACE,
+    CAPTURE_REFUSAL_KIND_SPACE_CHECK_FAILED,
 )
 CAPTURE_REFUSAL_RECOVERY = {
     CAPTURE_REFUSAL_KIND_PRESERVED_STATE: (
@@ -77,6 +81,15 @@ CAPTURE_REFUSAL_RECOVERY = {
         "Something already exists at {path}. Choose a new destination; a "
         "capture never overwrites a baseline another host may still restore "
         "from."
+    ),
+    CAPTURE_REFUSAL_KIND_INSUFFICIENT_SPACE: (
+        "{path} does not have room for this golden. Remove every snapshot "
+        "there except the registered golden and its .probes and .manifest "
+        "files, then retry `yoke test-machine golden-capture`."
+    ),
+    CAPTURE_REFUSAL_KIND_SPACE_CHECK_FAILED: (
+        "The space check could not read {path} or the home. Repair that "
+        "access, then retry `yoke test-machine golden-capture`."
     ),
 }
 
@@ -120,6 +133,8 @@ __all__ = [
     "CAPTURE_REFUSAL_KIND_FOREIGN_OWNER",
     "CAPTURE_REFUSAL_KIND_RESIDUE",
     "CAPTURE_REFUSAL_KIND_PRESERVED_STATE",
+    "CAPTURE_REFUSAL_KIND_INSUFFICIENT_SPACE",
+    "CAPTURE_REFUSAL_KIND_SPACE_CHECK_FAILED",
     "CAPTURE_REFUSAL_PREFIX",
     "CAPTURE_REFUSAL_RECOVERY",
     "GOLDEN_CAPTURE_MARKER",

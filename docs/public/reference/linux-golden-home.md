@@ -11,6 +11,13 @@ operation budget; inventory queries retain their 30-second limit. A
 still be running: inspect the reported job before retrying the sealed baseline.
 Failed archive operations retain bounded, redacted native exit/stdout/stderr in
 the receipt and exploratory-mission preparation, even without a JSON receipt.
+Before writing, capture refuses `golden_capture_insufficient_space` when the
+destination filesystem cannot hold the home's file bytes, and tells you to
+remove every other snapshot beside the registered golden (keep its `.probes`
+and `.manifest` files) and retry `yoke test-machine golden-capture`. After the
+new golden is registered, older snapshots in that parent are deleted. A parent
+named for the test user holds only that user's snapshots. `golden_snapshot_retention_failed`
+means the new golden is already registered and leftovers remain.
 
 Linux and Windows/WSL2 reset probe `yoke`, `uv` and `uvx` separately on login
 and SSH shells. Only a framed absolute resolved path counts as present;
