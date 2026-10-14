@@ -102,8 +102,10 @@ QA target does not reserve another target or the final delivery. Composition
 continues to name obligations no composed member run can answer. Holding is
 per target environment: final-target holders keep final-delivery custody when
 later intake changes, and only a holder on the supplemental run's own
-environment holds its targeted obligations — a pre-admission holder there
-without a snapshot or selection retains its landing, while a production run
+environment and exact item-project commit holds its targeted obligations.
+A pre-admission holder without a snapshot or selection also needs that same
+commit; an older stage pass cannot exclude an item from a new stage release.
+A production run
 on the same commit never holds an item away from the stage run that owes it
 stage QA. A production run that pinned a different commit for the item's
 project does hold it, and the skip notice names that commit, because stage

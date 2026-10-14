@@ -169,7 +169,8 @@ def covering_holder_pairs(
 
     Holding is per target environment. A holder on the item's final target
     keeps final-target custody. For a supplemental run, only a holder on the
-    same environment can answer its targeted obligations, so a production run
+    same environment and item-project commit can answer its targeted obligations,
+    so a production run
     on the same lineage never holds an item away from the stage run that owes
     it stage QA. A final-target holder that pinned a different commit for the
     item's project does hold it: close-out credits supplemental proof only on
@@ -229,10 +230,15 @@ def covering_holder_pairs(
             keep = not holder_supplemental and recorded_source_sha(
                 dict(row), project_id
             ) != recorded_source_sha(current, project_id)
-        elif not row["requirement_snapshot"] and not row["requirement_selection"]:
-            keep = True
         else:
-            keep = wanted[item_id] <= selected[key]
+            project_id = int(row["item_project_id"])
+            same_commit = recorded_source_sha(
+                dict(row), project_id
+            ) == recorded_source_sha(current, project_id)
+            keep = same_commit and (
+                (not row["requirement_snapshot"] and not row["requirement_selection"])
+                or wanted[item_id] <= selected[key]
+            )
         if keep:
             covered.add(key)
     return frozenset(covered)
