@@ -4,16 +4,13 @@ Filename omits the ``test_`` prefix so pytest does not collect it. Each split
 file imports the patch-target constants and the ``make_db``/``completed_process``
 helpers, then composes its own monkeypatch / context-manager combinations
 locally. This keeps fixtures local to their consumer files (so future moves
-do not pull surprise dependencies) while sharing the verbose schema DDL and
+do not pull surprise dependencies) while sharing database setup and
 mock-process plumbing.
 """
 
 from __future__ import annotations
 
 import subprocess
-
-from runtime.api.fixtures.production_schema import initialize_test_schema
-
 
 # Patch targets used across every split file. ``backlog_github_sync`` is
 # the stable module that re-exports every public sync function from
@@ -37,8 +34,8 @@ def completed_process(
 
 
 def make_db():
-    """Postgres disposable DB seeded with the full Yoke schema +
-    a single ``externalwebapp`` project row + the canonical actor seeding.
+    """Clone this worker's cached production schema, then seed
+    a single ``externalwebapp`` project row and canonical actors.
 
     Most ``test_backlog_github_sync_*`` cases exercise sync against the
     ``externalwebapp`` project, so the row is pre-inserted to keep individual tests
@@ -50,15 +47,18 @@ def make_db():
     ``test_missing_projects_table_fails_open_to_default_repo``).
     """
     from runtime.api.fixtures.backlog import seed_test_canonical_human
+    from runtime.api.fixtures.file_test_db import (
+        _apply_production_schema,
+        _schema_template_db,
+    )
     from runtime.api.fixtures.pg_testdb import (
         connect_test_database,
         create_test_database,
         drop_database_on_close,
     )
 
-    db_name = create_test_database()
+    db_name = create_test_database(template=_schema_template_db(_apply_production_schema))
     conn = connect_test_database(db_name)
-    initialize_test_schema(conn)
     conn.execute(
         "INSERT INTO projects "
         "(id, slug, name, github_repo, public_item_prefix, github_sync_mode, created_at) "

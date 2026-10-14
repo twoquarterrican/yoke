@@ -40,6 +40,9 @@ least-duration algorithm. Xdist uses `loadfile` so a file also stays on one
 worker. This stabilizes setup attribution and avoids repeating a file's
 fixtures across shards or workers. Local partial splitting keeps pytest-split's
 ordinary individual-test behavior.
+GitHub-sync test databases clone the existing per-worker production schema
+template rather than replaying schema DDL for every case; their project and
+actor seeds and connection-close isolation remain per case.
 
 Wheel smokes share one session virtual environment, synchronized across xdist
 workers with a file lock. The fixture proves the core-only dependency closure
