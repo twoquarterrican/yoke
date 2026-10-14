@@ -6,5 +6,6 @@
  "commands": ["yoke board", "yoke board data get", "yoke board rebuild", "yoke frontier list", "yoke overview activation get"],
  "functions": ["board.data.get", "board.rebuild.run", "frontier.list", "overview.activation.get", "overview.module.dismiss", "overview.module.restore", "overview.vitals.get"],
  "page": "frontier",
- "position": 0
+ "position": 0,
+ "sources": ["packages/yoke-core/src/yoke_core/ui/static/frontier_band_rows.js", "runtime/api/universe_ui_item_status_pill.test.mjs"]
 }
