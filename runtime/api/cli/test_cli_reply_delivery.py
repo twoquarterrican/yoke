@@ -204,6 +204,33 @@ def test_display_measurement_uses_terminal_cells():
     assert wrapped_lines("\x1b[31m" + "x" * 80 + "\x1b[0m") == 1
 
 
+def test_local_core_logs_keep_complete_evidence_and_immediate_recovery(capsys):
+    from yoke_cli.commands.core import _emit
+
+    payload = {
+        "ok": False,
+        "action": "logs",
+        "logs": {"api": "entry\n" * 500},
+        "issues": [
+            {
+                "code": "runtime_missing",
+                "message": "Runtime absent.",
+                "guidance": "Install the runtime before starting core.",
+            }
+        ],
+    }
+    assert _emit(payload, False) == 1
+    output = capsys.readouterr()
+    assert wrapped_lines(output.out + output.err) <= 350
+    assert "runtime_missing" in output.out
+    assert "Install the runtime" in output.out
+    artifact = Path(re.search(r"Complete local result saved: (.+)", output.out)[1])
+    assert json.loads(artifact.read_text())["response"] == payload
+    artifact.unlink()
+    assert _emit(payload, True) == 1
+    assert json.loads(capsys.readouterr().out) == payload
+
+
 def test_refusal_retains_partial_state(capsys):
     denied = response(
         "items.create", {"written": True, "public_ref": "APP-7"}

@@ -6,7 +6,9 @@ from collections.abc import Mapping
 from typing import Any, TextIO
 
 
-def write_local(value: Any, stream: TextIO) -> None:
+def write_local(
+    value: Any, stream: TextIO, *, writer=None, essential_writer=None
+) -> None:
     """Bound a client-local receipt and save every oversized value."""
     import io
     from yoke_cli.transport.response_evidence import (
@@ -16,7 +18,10 @@ def write_local(value: Any, stream: TextIO) -> None:
     )
 
     output = io.StringIO()
-    write_human(value, output)
+    if writer:
+        writer(value, output)
+    else:
+        write_human(value, output)
     if wrapped_lines(output.getvalue()) <= HUMAN_LINE_LIMIT:
         stream.write(output.getvalue())
         return
@@ -28,11 +33,21 @@ def write_local(value: Any, stream: TextIO) -> None:
             file=stream,
         )
         raise SystemExit(1) from exc
-    print(f"Complete local result saved: {evidence}", file=stream)
+    delivered = io.StringIO()
+    print(f"Complete local result saved: {evidence}", file=delivered)
     print(
         "Open the file for every returned field. The operation already ran.",
-        file=stream,
+        file=delivered,
     )
+    if essential_writer:
+        essential_writer(value, delivered)
+    if wrapped_lines(delivered.getvalue()) > HUMAN_LINE_LIMIT:
+        print(
+            f"error (essential_output_limit_exceeded): immediate recovery exceeds the display limit. Read the complete local result at {evidence} before continuing.",
+            file=stream,
+        )
+        raise SystemExit(1)
+    stream.write(delivered.getvalue())
 
 
 def label(key: Any) -> str:

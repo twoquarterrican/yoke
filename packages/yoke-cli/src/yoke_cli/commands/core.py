@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+from yoke_cli.transport.human_values import write_local
 from typing import Any, Callable, Dict, List, Tuple
 
 from yoke_cli.commands._helpers import parse_or_usage_error
@@ -81,8 +83,7 @@ def core_start(args: List[str]) -> int:
     parsed = _parse(
         parser,
         args,
-        "yoke core start [--from-checkout PATH --build] "
-        "[--image IMAGE] [--dry-run]",
+        "yoke core start [--from-checkout PATH --build] [--image IMAGE] [--dry-run]",
     )
     if parsed is None:
         return 2
@@ -147,8 +148,7 @@ def core_upgrade(args: List[str]) -> int:
     parsed = _parse(
         parser,
         args,
-        "yoke core upgrade [--from-checkout PATH --build] "
-        "[--image IMAGE] [--dry-run]",
+        "yoke core upgrade [--from-checkout PATH --build] [--image IMAGE] [--dry-run]",
     )
     if parsed is None:
         return 2
@@ -215,28 +215,35 @@ def _emit(payload: dict[str, Any], json_mode: bool) -> int:
     if json_mode:
         print(json.dumps(payload, sort_keys=True))
     else:
-        _emit_human(payload)
+        write_local(
+            payload,
+            sys.stdout,
+            writer=_emit_human,
+            essential_writer=lambda value, stream: _emit_human(
+                {**value, "logs": {}}, stream
+            ),
+        )
     return 0 if payload.get("ok") else 1
 
 
-def _emit_human(payload: dict[str, Any]) -> None:
+def _emit_human(payload: dict[str, Any], stream) -> None:
     state = "ok" if payload.get("ok") else "needs attention"
-    print(f"yoke core {payload.get('action')}: {state}")
+    print(f"yoke core {payload.get('action')}: {state}", file=stream)
     api = payload.get("api") or {}
     if api.get("url"):
-        print(f"api: {api['url']}")
+        print(f"api: {api['url']}", file=stream)
     for issue in payload.get("issues") or []:
-        print(f"- {issue['code']}: {issue['message']}")
-        print(f"  {issue['guidance']}")
+        print(f"- {issue['code']}: {issue['message']}", file=stream)
+        print(f"  {issue['guidance']}", file=stream)
     plan = payload.get("plan") or []
     if plan:
-        print("plan:")
+        print("plan:", file=stream)
         for cmd in plan:
-            print("  " + " ".join(cmd))
+            print("  " + " ".join(cmd), file=stream)
     logs = payload.get("logs") or {}
     for name, text in logs.items():
-        print(f"== {name} ==")
-        print(text)
+        print(f"== {name} ==", file=stream)
+        print(text, file=stream)
 
 
 TOOL_SHAPED_SUBCOMMANDS: Dict[Tuple[str, ...], AdapterFn] = {
