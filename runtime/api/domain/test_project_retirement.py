@@ -144,7 +144,7 @@ def test_in_flight_deployment_refuses(conn, status):
         project_id=30,
         flow="fixture-flow",
         status=status,
-        created_at="2026-01-01",
+        created_at="2026-01-01T00:00:00Z",
     )
     with pytest.raises(
         ProjectRetirementError, match=f"deployment run run-1 \\({status}\\)"

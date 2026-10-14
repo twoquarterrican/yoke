@@ -115,6 +115,7 @@ class TestRehearseHappyPath:
             5002,
             control_db_path=apply_env["control_db"],
             worktree_path=apply_env["worktree"],
+            session_id="test-session",
         )
         # Validation DB has the table, authoritative DB does not.
         with _connect_validation_db(apply_env) as val:
@@ -137,6 +138,7 @@ class TestRehearseHappyPath:
             5003,
             control_db_path=apply_env["control_db"],
             worktree_path=apply_env["worktree"],
+            session_id="test-session",
         )
         assert result.source_fingerprint == expected
 
@@ -152,6 +154,7 @@ class TestRehearseFailures:
             5010,
             control_db_path=apply_env["control_db"],
             worktree_path=apply_env["worktree"],
+            session_id="test-session",
         )
         mod = result.modules[0]
         assert not mod.succeeded
@@ -184,6 +187,7 @@ class TestRehearseFailures:
             5016,
             control_db_path=apply_env["control_db"],
             worktree_path=worktree,
+            session_id="test-session",
         )
 
         error = result.modules[0].error
@@ -208,6 +212,7 @@ class TestRehearseFailures:
             5011,
             control_db_path=apply_env["control_db"],
             worktree_path=apply_env["worktree"],
+            session_id="test-session",
         )
         mod = result.modules[0]
         assert mod.state == FAIL_TEST_APPLY
@@ -227,6 +232,7 @@ class TestRehearseFailures:
             5012,
             control_db_path=apply_env["control_db"],
             worktree_path=apply_env["worktree"],
+            session_id="test-session",
         )
         mod = result.modules[0]
         assert mod.state == FAIL_TEST_APPLY
@@ -243,6 +249,7 @@ class TestRehearseFailures:
             5013,
             control_db_path=apply_env["control_db"],
             worktree_path=apply_env["worktree"],
+            session_id="test-session",
         )
         mod = result.modules[0]
         assert mod.state == FAIL_TEST_VERIFY
@@ -260,6 +267,7 @@ class TestRehearseFailures:
             5014,
             control_db_path=apply_env["control_db"],
             worktree_path=apply_env["worktree"],
+            session_id="test-session",
         )
         mod = result.modules[0]
         assert mod.state == FAIL_TEST_VERIFY
@@ -275,6 +283,7 @@ class TestRehearseFailures:
             5015,
             control_db_path=apply_env["control_db"],
             worktree_path=apply_env["worktree"],
+            session_id="test-session",
         )
         conn = db_backend.connect_psycopg(apply_env["authoritative_db"])
         try:

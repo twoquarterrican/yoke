@@ -139,10 +139,9 @@ def test_forced_invalid_replacement_cannot_settle_run_bound_failure(
         test_db, item_id=item_id, run_id=run_id
     )
     if invalid_replacement == "failed":
-        test_db.execute(
-            "UPDATE qa_runs SET verdict='fail' WHERE qa_requirement_id=%s",
-            (corrected_id,),
-        )
+        from runtime.api.fixtures.backlog import insert_qa_run
+
+        insert_qa_run(test_db, qa_requirement_id=corrected_id, verdict="fail")
     elif invalid_replacement == "wrong-stage":
         test_db.execute(
             "UPDATE qa_requirements SET deployment_stage='other-stage' WHERE id=%s",

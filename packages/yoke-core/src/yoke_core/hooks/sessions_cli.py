@@ -148,9 +148,25 @@ def main(argv: Optional[List[str]] = None) -> None:
                 )
             level = rest[5] if len(rest) > 5 else "primary"
             mode = rest[6] if len(rest) > 6 else "wait"
+            from yoke_contracts.project_defaults import default_project_for_directory
+            from yoke_core.domain.project_identity import resolve_project_id
+
+            project = default_project_for_directory(rest[4])
+            if project is None:
+                _cli_usage_error(
+                    "project_required: map the workspace checkout to a project first"
+                )
             print(
                 cmd_begin(
-                    conn, rest[0], rest[1], rest[2], rest[3], rest[4], level, mode
+                    conn,
+                    rest[0],
+                    rest[1],
+                    rest[2],
+                    rest[3],
+                    rest[4],
+                    level,
+                    mode,
+                    project_id=resolve_project_id(conn, project),
                 )
             )
 

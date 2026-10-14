@@ -10,17 +10,14 @@ from yoke_contracts.api.function_call import (
     ActorContext,
     TargetRef,
 )
-from unittest.mock import patch
 
 from runtime.api.domain.test_qa_simulation_triage import (
-    _BorrowedConnection,
     _record,
     _seed,
     REPORT,
 )
 from runtime.api.fixtures.pg_testdb import test_database
 from yoke_core.domain.events_acting_identity import acting_event_identity
-from yoke_core.domain.qa_execution import cmd_run_complete
 from yoke_core.domain.qa_simulation_triage import (
     current_simulation_triage,
     triage_discharge_sql,
@@ -31,26 +28,20 @@ from yoke_core.domain.qa_simulation_triage import (
     "changed_report",
     [REPORT.replace("PROCEED", "FIX_FIRST"), REPORT.replace("WARNING", "CRITICAL")],
 )
-def test_same_run_report_mutation_invalidates_sql_and_python_discharge(changed_report):
+def test_new_report_attempt_invalidates_sql_and_python_discharge(changed_report):
     with test_database() as conn:
         item, requirement, attempt, ref, actor = _seed(conn)
         with acting_event_identity(session_id="simulation-owner", actor_id=actor):
             _record(conn, item, [ref])
-            with patch(
-                "yoke_core.domain.qa_execution.connect",
-                return_value=_BorrowedConnection(conn),
-            ):
-                cmd_run_complete(
-                    run_id=attempt["id"],
-                    verdict="fail",
-                    verdict_reason="Revised failed report",
-                    raw_result=json.dumps(
-                        {
-                            "body": changed_report,
-                            "phase": "integration",
-                        }
-                    ),
-                )
+            from runtime.api.fixtures.backlog import insert_qa_run
+
+            insert_qa_run(
+                conn,
+                qa_requirement_id=requirement,
+                verdict="fail",
+                verdict_reason="Revised failed report",
+                raw_result=json.dumps({"body": changed_report, "phase": "integration"}),
+            )
         assert current_simulation_triage(conn, requirement) is None
         assert not conn.execute(
             f"SELECT {triage_discharge_sql(conn, 'q')} FROM qa_requirements q WHERE id=%s",

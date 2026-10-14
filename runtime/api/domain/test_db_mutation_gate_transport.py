@@ -146,7 +146,7 @@ def _seed_work_claim(conn) -> None:
 def _request() -> FunctionCallRequest:
     return FunctionCallRequest(
         function="lifecycle.transition.execute",
-        actor=ActorContext(actor_id="op", session_id=SESSION_ID),
+        actor=ActorContext(session_id=SESSION_ID),
         target=TargetRef(
             kind="item", item_id=ITEM_ID, public_ref=f"{_FIXTURE_ITEM_REF}42"
         ),
@@ -161,7 +161,7 @@ def _request() -> FunctionCallRequest:
 def _scalar_request() -> FunctionCallRequest:
     return FunctionCallRequest(
         function="items.scalar.update",
-        actor=ActorContext(actor_id="op", session_id=SESSION_ID),
+        actor=ActorContext(session_id=SESSION_ID),
         target=TargetRef(
             kind="item", item_id=ITEM_ID, public_ref=f"{_FIXTURE_ITEM_REF}42"
         ),
@@ -259,12 +259,28 @@ def test_http_status_adapters_surface_the_relayed_scan_warning(
     envelope = request_factory().model_dump(mode="json")
     envelope["target"].pop("item_id", None)
     claim = {"id": 1, "session_id": SESSION_ID}
+
+    def authenticate(auth_conn):
+        from runtime.api.auth_test_helpers import mint_api_auth_context
+
+        auth = mint_api_auth_context(auth_conn)
+        auth_conn.execute(
+            "UPDATE harness_sessions SET actor_id=%s WHERE session_id=%s",
+            (auth.actor_id, SESSION_ID),
+        )
+        auth_conn.commit()
+        return auth
+
     with (
         mock.patch.object(idea_gate, "_resolve_repo_path", return_value=None),
         mock.patch.object(
             claims_module,
             "who_claims_for_item",
             return_value=claim,
+        ),
+        mock.patch(
+            "runtime.api.api_items_test_helpers.mint_api_auth_context",
+            side_effect=authenticate,
         ),
         _client_for_db(str(repo_path / "yoke.db")) as client,
     ):

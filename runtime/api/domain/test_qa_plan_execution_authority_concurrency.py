@@ -135,6 +135,9 @@ def test_stale_owner_is_aborted_and_held_machine_lease_is_released() -> None:
             actor_id="7",
             session_id="stale-session",
         )
+        from runtime.api.fixtures.dispatch_actor import register_session_actor
+
+        register_session_actor(conn, "stale-session")
         lease = acquire(
             conn,
             make_qa_admission_target("ordered-plan-authority"),

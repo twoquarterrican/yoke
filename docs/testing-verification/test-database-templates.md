@@ -19,6 +19,8 @@ tests exercise the real binding under the immutable-verdict trigger.
 Seed every foreign-key parent and required clock through the shared helpers.
 When a real constraint exposes a runtime defect, fix the runtime operation;
 removing a task must retire its file scope and bindings in the same transaction.
+Session creation supplies explicit project authority; source CLI tests must map
+the workspace or pass the resolved project ID to the lifecycle helper.
 
 Other schema callables retain separate flavors by callable identity.
 Different functions with the same name remain separate. Callable objects and
