@@ -46,8 +46,10 @@ def resolve_create_text(parsed: argparse.Namespace, shortcut: str | None):
         ) from exc
     if not title or not title.strip():
         raise ValueError("TITLE_REQUIRED: add a nonblank TITLE or --title-file PATH")
-    if workflow in ("dash", "task") and not (spec or "").strip():
+    if not (spec or "").strip():
         raise ValueError(
-            "SPEC_REQUIRED: add --spec-file PATH or --stdin with a nonblank spec"
+            "SPEC_REQUIRED: an item is created together with its spec. Write "
+            "the agreed outcome to a file and add --spec-file PATH, or pipe it "
+            "with --stdin; refinement adds detail later."
         )
     return title.strip(), workflow, spec

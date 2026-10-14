@@ -25,22 +25,20 @@ Resolve flow first: empty output means no flow — omit the flag; never pass the
 Present titles/priorities/flow once and take
 one confirmation for the whole batch; edits refine that list, not per-item approval.
 
-Create one at a time **bare**, read each returned public ref before the next.
+Create one at a time, read each returned public ref before the next. Each
+item is created with its spec: write the confirmed outcome from CURRENT-PLAN
+(what it delivers and how to tell it is done) to a file first; creation
+refuses a missing or title-only spec (`spec_required`).
 When no flow applies, omit `--deployment-flow`:
 
 ```bash
-yoke items create "{title}" issue --entry-surface harness_skill --execution-instructions-considered --project {project} --deployment-flow {flow_id} --priority {priority}
-yoke items create "{title}" issue --entry-surface harness_skill --execution-instructions-considered --project {project} --priority {priority}
+yoke items create "{title}" issue --spec-file {spec_file} --entry-surface harness_skill --execution-instructions-considered --project {project} --deployment-flow {flow_id} --priority {priority}
+yoke items create "{title}" issue --spec-file {spec_file} --entry-surface harness_skill --execution-instructions-considered --project {project} --priority {priority}
 ```
 
-For an already agreed initial spec, check `yoke items create --help` first,
-then add `--spec-file PATH` or `--stdin` when that CLI advertises it.
-The planned draft remains valid without that optional input. The selected
-workflow supplies its full spec through authoring. `--title-file PATH` reads
-title only.
-
-All enter idea. Refine owns specs; do not manufacture bodies/claims/dependencies
-or imagined children through lower-level surfaces. Echo ID and source outcome.
+All enter idea. Refine adds detail later; do not manufacture claims,
+dependencies or imagined children through lower-level surfaces. Echo ID and
+source outcome.
 
 ## Preserve the plan's QA contract
 

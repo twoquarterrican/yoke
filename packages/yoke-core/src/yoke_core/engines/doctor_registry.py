@@ -57,7 +57,7 @@ from yoke_core.engines.doctor_hc_meta import (  # noqa: F401
     hc_title_length,
     hc_undeployed_done,
 )
-from yoke_core.engines.doctor_hc_meta_backlog import hc_incomplete_idea_bodies  # noqa: F401
+from yoke_core.engines.doctor_hc_meta_backlog import hc_items_needing_spec  # noqa: F401
 from yoke_core.engines.doctor_hc_meta_epic import (  # noqa: F401
     hc_missing_flow,
     hc_orphaned_active_items,
@@ -211,7 +211,7 @@ HEALTH_CHECKS: list[HealthCheck] = [
     HealthCheck("frontmatter-schema", "Backlog frontmatter schema", hc_frontmatter_schema),
     HealthCheck("title-length", "Title length enforcement", hc_title_length),
     HealthCheck("backlog-quality", "Backlog quality", hc_backlog_quality),
-    HealthCheck("incomplete-idea-bodies", "Incomplete idea bodies after stale-heartbeat reclaim", hc_incomplete_idea_bodies),
+    HealthCheck("items-needing-spec", "Items that need a spec", hc_items_needing_spec),
     HealthCheck("epic-validation", "Per-epic validation", hc_epic_validation),
     HealthCheck("undeployed-done", "Undeployed done items", hc_undeployed_done),
     HealthCheck("orphan-fk", "Orphaned FK references", hc_orphan_fk),

@@ -55,31 +55,26 @@ def _spec_floor_refusal(response, *, preview: bool = True):
 def dispatch_create(*, target: TargetRef, payload: dict, session_id, json_mode: bool):
     _helpers.ensure_handlers_loaded()
     actor = build_actor(session_id=session_id)
-    if payload.get("spec") is not None:
-        # A preview proves the contract without a title-only write on an older server.
-        proof = call_dispatcher(
-            function_id="items.create",
-            target=target,
-            payload={**payload, "dry_run": True},
-            actor=actor,
-        )
-        if proof.success and proof.result.get("spec_accepted") is not True:
-            proof = _spec_floor_refusal(proof)
-        elif (
-            not proof.success
-            and proof.error
-            and "requires a nonblank instruction" in proof.error.message
-        ):
-            proof = _spec_floor_refusal(proof)
-        if not proof.success or payload.get("dry_run"):
-            return _helpers.emit_response(proof, json_mode=json_mode)
+    # A preview proves the contract without a title-only write on an older server.
+    proof = call_dispatcher(
+        function_id="items.create",
+        target=target,
+        payload={**payload, "dry_run": True},
+        actor=actor,
+    )
+    if proof.success and proof.result.get("spec_accepted") is not True:
+        proof = _spec_floor_refusal(proof)
+    elif (
+        not proof.success
+        and proof.error
+        and "requires a nonblank instruction" in proof.error.message
+    ):
+        proof = _spec_floor_refusal(proof)
+    if not proof.success or payload.get("dry_run"):
+        return _helpers.emit_response(proof, json_mode=json_mode)
 
     def verify_receipt(response, _actor):
-        if (
-            payload.get("spec") is not None
-            and response.success
-            and response.result.get("spec_accepted") is not True
-        ):
+        if response.success and response.result.get("spec_accepted") is not True:
             return _spec_floor_refusal(response, preview=False)
         return response
 

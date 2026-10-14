@@ -19,16 +19,17 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
 
     if not args:
-        print("Usage: python3 -m yoke_core.domain.backlog <command> [args...]", file=sys.stderr)
-        print("Commands: create, update, structured-write", file=sys.stderr)
+        print(
+            "Usage: python3 -m yoke_core.domain.backlog <command> [args...]",
+            file=sys.stderr,
+        )
+        print("Commands: update, structured-write", file=sys.stderr)
         return 2
 
     command = args[0]
     rest = args[1:]
 
-    if command == "create":
-        return _cli_create(rest)
-    elif command == "update":
+    if command == "update":
         return _cli_update(rest)
     elif command == "structured-write":
         return _cli_structured_write(rest)
@@ -37,67 +38,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 2
 
 
-def _cli_create(args: list[str]) -> int:
-    title = None
-    workflow = None
-    priority = None
-    project = None
-    deployment_flow = None
-    status = None
-    source = None
-    entry_surface = None
-    dry_run = False
-
-    i = 0
-    while i < len(args):
-        if args[i] == "--title" and i + 1 < len(args):
-            title = args[i + 1]; i += 2
-        elif args[i] == "--workflow" and i + 1 < len(args):
-            workflow = args[i + 1]; i += 2
-        elif args[i] == "--priority" and i + 1 < len(args):
-            priority = args[i + 1]; i += 2
-        elif args[i] == "--project" and i + 1 < len(args):
-            project = args[i + 1]; i += 2
-        elif args[i] == "--deployment-flow" and i + 1 < len(args):
-            deployment_flow = args[i + 1]; i += 2
-        elif args[i] == "--status" and i + 1 < len(args):
-            status = args[i + 1]; i += 2
-        elif args[i] == "--source" and i + 1 < len(args):
-            source = args[i + 1]; i += 2
-        elif args[i] == "--entry-surface" and i + 1 < len(args):
-            entry_surface = args[i + 1]; i += 2
-        elif args[i] == "--dry-run":
-            dry_run = True; i += 1
-        else:
-            print(f"Unknown argument: {args[i]}", file=sys.stderr)
-            return 2
-
-    if title is None:
-        print(
-            "Usage: create --title TITLE [--workflow WORKFLOW] "
-            "[--entry-surface SURFACE] [--priority P] ...",
-            file=sys.stderr,
-        )
-        return 2
-
-    result = _bu.execute_create(
-        title=title,
-        workflow=workflow,
-        priority=priority,
-        project=project,
-        deployment_flow=deployment_flow,
-        status=status,
-        source=source,
-        entry_surface=entry_surface,
-        dry_run=dry_run,
-    )
-    print(json.dumps(result))
-    return 0 if result.get("success") else 1
-
-
 def _cli_update(args: list[str]) -> int:
     if not args:
-        print("Usage: update <item-id> --field FIELD --value VALUE ...", file=sys.stderr)
+        print(
+            "Usage: update <item-id> --field FIELD --value VALUE ...", file=sys.stderr
+        )
         return 2
 
     try:
@@ -116,23 +61,31 @@ def _cli_update(args: list[str]) -> int:
     i = 1
     while i < len(args):
         if args[i] == "--field" and i + 1 < len(args):
-            field = args[i + 1]; i += 2
+            field = args[i + 1]
+            i += 2
         elif args[i] == "--value" and i + 1 < len(args):
-            value = args[i + 1]; i += 2
+            value = args[i + 1]
+            i += 2
         elif args[i] == "--done-nonce-verified":
-            done_nonce_verified = True; i += 1
+            done_nonce_verified = True
+            i += 1
         elif args[i] == "--force":
-            force_flag = True; i += 1
+            force_flag = True
+            i += 1
         elif args[i] == "--qa-bypass":
-            qa_bypass = True; i += 1
+            qa_bypass = True
+            i += 1
         elif args[i] == "--dry-run":
-            dry_run = True; i += 1
+            dry_run = True
+            i += 1
         else:
             print(f"Unknown argument: {args[i]}", file=sys.stderr)
             return 2
 
     if field is None or value is None:
-        print("Usage: update <item-id> --field FIELD --value VALUE ...", file=sys.stderr)
+        print(
+            "Usage: update <item-id> --field FIELD --value VALUE ...", file=sys.stderr
+        )
         return 2
 
     result = _bu.execute_update(
@@ -151,7 +104,10 @@ def _cli_update(args: list[str]) -> int:
 
 def _cli_structured_write(args: list[str]) -> int:
     if not args:
-        print("Usage: structured-write <item-id> --field FIELD (--file PATH | --stdin) ...", file=sys.stderr)
+        print(
+            "Usage: structured-write <item-id> --field FIELD (--file PATH | --stdin) ...",
+            file=sys.stderr,
+        )
         return 2
 
     try:
@@ -169,29 +125,51 @@ def _cli_structured_write(args: list[str]) -> int:
     i = 1
     while i < len(args):
         if args[i] == "--field" and i + 1 < len(args):
-            field = args[i + 1]; i += 2
+            field = args[i + 1]
+            i += 2
         elif args[i] == "--file" and i + 1 < len(args):
-            file_path = args[i + 1]; i += 2
+            file_path = args[i + 1]
+            i += 2
         elif args[i] == "--stdin":
-            use_stdin = True; i += 1
+            use_stdin = True
+            i += 1
         elif args[i] == "--force":
-            force_flag = True; i += 1
+            force_flag = True
+            i += 1
         elif args[i] == "--source" and i + 1 < len(args):
-            source = args[i + 1]; i += 2
+            source = args[i + 1]
+            i += 2
         else:
             print(f"Unknown argument: {args[i]}", file=sys.stderr)
             return 2
 
     if field is None:
-        print("Usage: structured-write <item-id> --field FIELD (--file PATH | --stdin) ...", file=sys.stderr)
+        print(
+            "Usage: structured-write <item-id> --field FIELD (--file PATH | --stdin) ...",
+            file=sys.stderr,
+        )
         return 2
 
     if file_path and use_stdin:
-        print(json.dumps({"success": False, "error": "cannot use both --stdin and --file; pick one"}))
+        print(
+            json.dumps(
+                {
+                    "success": False,
+                    "error": "cannot use both --stdin and --file; pick one",
+                }
+            )
+        )
         return 2
 
     if not file_path and not use_stdin:
-        print(json.dumps({"success": False, "error": "structured field write requires --file or --stdin"}))
+        print(
+            json.dumps(
+                {
+                    "success": False,
+                    "error": "structured field write requires --file or --stdin",
+                }
+            )
+        )
         return 2
 
     if use_stdin:

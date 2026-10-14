@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
 
 from yoke_core.domain import lint_db_cmd as lint_mod
-from yoke_core.domain.lint_db_cmd import run_hook
 from yoke_core.domain.lint_db_cmd_test_helpers import (
     _assert_allows,
     _assert_blocks,
@@ -115,7 +113,10 @@ def test_yok1323_raw_body_writes_always_blocked() -> None:
     decision = _assert_blocks(
         'sh "$SCRIPT_DIR/yoke-db.sh" items update YOK-9999 body --body-file "$_tmp_body"',
     )
-    assert "Raw body writes are no longer supported" in decision["permissionDecisionReason"]
+    assert (
+        "Raw body writes are no longer supported"
+        in decision["permissionDecisionReason"]
+    )
 
     # Body-only item — still blocked.
     _assert_blocks(
@@ -125,44 +126,6 @@ def test_yok1323_raw_body_writes_always_blocked() -> None:
     # Old bypass comment is inert.
     _assert_blocks(
         'sh "$SCRIPT_DIR/yoke-db.sh" items update 44 body --body-file "$_tmp_body" # lint:no-body-write-check',
-    )
-
-
-# ---------------------------------------------------------------------------
-# Check 14 — items add without --project emits advisory
-# ---------------------------------------------------------------------------
-
-
-def test_yok1158_items_add_without_project_emits_allow_advisory() -> None:
-    output = run_hook(
-        _payload('sh scripts/yoke-db.sh items add "Missing project" issue idea medium')
-    )
-    assert output, "expected advisory output"
-    decision = json.loads(output)["hookSpecificOutput"]
-    assert decision["permissionDecision"] == "allow", (
-        f"expected advisory ALLOW, got: {output!r}"
-    )
-
-
-def test_yok1158_items_add_with_project_silent() -> None:
-    assert (
-        run_hook(
-            _payload(
-                'sh scripts/yoke-db.sh items add --project yoke "Has project" issue idea medium'
-            )
-        )
-        == ""
-    )
-
-
-def test_yok1158_items_add_suppression_silent() -> None:
-    assert (
-        run_hook(
-            _payload(
-                'sh scripts/yoke-db.sh items add "Suppressed" issue idea medium # lint:no-project-check'
-            )
-        )
-        == ""
     )
 
 
@@ -227,9 +190,7 @@ def test_yok1384_main_without_yoke_db_env_falls_back_to_canonical(
     )
 
 
-def test_yok1384_main_prefers_yoke_db_env_when_set(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_yok1384_main_prefers_yoke_db_env_when_set(tmp_path: Path, monkeypatch) -> None:
     """Programmatic callers (Codex, tests) still win via the env var —
     the canonical DB fallback must only engage when YOKE_DB is unset."""
     explicit_db = _fresh_live_db(tmp_path)
@@ -251,9 +212,7 @@ def test_yok1384_main_prefers_yoke_db_env_when_set(
         return original_run_hook(payload, yoke_db=yoke_db)
 
     monkeypatch.setattr(lint_mod, "run_hook", spy_run_hook)
-    monkeypatch.setattr(
-        "sys.stdin", _StdinStub(_payload("echo hello"))
-    )
+    monkeypatch.setattr("sys.stdin", _StdinStub(_payload("echo hello")))
 
     rc = lint_mod.main()
     assert rc == 0

@@ -26,12 +26,13 @@ handoff), or N/A with honest no-code-growth reason. If code is discovered later,
 add a real budget before coding. The design target is<=300, hard350.
 ACs use canonical `- [ ] AC-N: ...`; normalize labels without losing content.
 
-No supplied description: ask once whether to add one. If declined, still write
-title plus all pre-check lenses and the appropriate enabled budget shape.
-Do not leave a title-only row as successful intake.
+No supplied description: ask once for the intended outcome before step 5;
+creation refuses without one. Then write all pre-check lenses and the
+appropriate enabled budget shape around it.
 
-Write authored complete spec through items.structured_field.replace, guards
-enabled; additions use dedicated additive/section transforms:
+Replace the creation spec with the authored complete spec through
+items.structured_field.replace, guards enabled; additions use dedicated
+additive/section transforms:
 ```bash
 yoke items structured-field replace "$ITEM_REF" --field spec --source idea --stdin < <authored-artifact-path>
 ```
@@ -76,8 +77,6 @@ yoke items github-sync "$ITEM_REF"
 yoke readiness check "$ITEM_REF" --json
 ```
 
-Skip GitHub body sync only for the expressly declined-description title-only
-case allowed by the actual persisted result, not a lost body write.
 
 The draft claim **stays held** until actual verdict=pass:
 - pass, including documented UNRESOLVED deferral at idea/source entry:
@@ -108,5 +107,5 @@ yoke claims work release --item "$ITEM_REF" --reason idea-complete
 Use acquire's actual claim_id on typed dispatch. Idea-complete stores handed_off,
 preserves release_reason_intent on WorkReleased, and emits IdeaClaimHeld with
 duration/claim/draft-in-progress provenance. No error/dry-run release; name
-release failure. Frontier guards incomplete bodies even after stale reclaim.
+release failure.
 Then render infer-and-create's fresh confirmation/handoff.

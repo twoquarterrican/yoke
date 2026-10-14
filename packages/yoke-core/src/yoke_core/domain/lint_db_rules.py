@@ -24,7 +24,6 @@ from yoke_core.domain.lint_db_rules_guards import (
     RULE_TEXT_GUARDS_INPUT,
 )
 from yoke_core.domain.lint_db_rules_lifecycle import (
-    RULE_TEXT_ADD_PROJECT,
     RULE_TEXT_DONE,
     RULE_TEXT_LIFECYCLE,
 )
@@ -53,7 +52,6 @@ HOOK_POLICY_SOURCE: str = (
     + RULE_TEXT_GUARDS_CLI
     + RULE_TEXT_DONE
     + RULE_TEXT_BODY_BANS
-    + RULE_TEXT_ADD_PROJECT
     + RULE_TEXT_EXECUTED_SQL
     + RULE_TEXT_LIFECYCLE
     + RULE_TEXT_DDL_GATE

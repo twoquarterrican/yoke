@@ -17,20 +17,20 @@ from typing import Dict, FrozenSet, List
 #: its semantics. Each target module exposes ``main(argv=None)`` and
 #: accepts the current db_router subcommand grammar.
 _DOMAIN_PY_MODULES: Dict[str, str] = {
-    "epic":              "yoke_core.domain.epic",
-    "shepherd":          "yoke_core.domain.shepherd",
-    "ouroboros":         "yoke_core.domain.ouroboros",
-    "projects":          "yoke_core.domain.projects",
+    "epic": "yoke_core.domain.epic",
+    "shepherd": "yoke_core.domain.shepherd",
+    "ouroboros": "yoke_core.domain.ouroboros",
+    "projects": "yoke_core.domain.projects",
     "project-structure": "yoke_core.domain.project_structure",
-    "release":           "yoke_core.domain.release_notes",
-    "flows":             "yoke_core.domain.flow",
-    "events":            "yoke_core.domain.events_crud",
-    "runs":              "yoke_core.domain.deployment_runs",
-    "envs":              "yoke_core.domain.ephemeral_env",
-    "qa":                "yoke_core.domain.qa",
-    "harness-sessions":  "yoke_core.hooks.sessions_cli",
-    "sections":          "yoke_core.domain.sections",
-    "path-claims":       "yoke_core.domain.path_claims_dispatch",
+    "release": "yoke_core.domain.release_notes",
+    "flows": "yoke_core.domain.flow",
+    "events": "yoke_core.domain.events_crud",
+    "runs": "yoke_core.domain.deployment_runs",
+    "envs": "yoke_core.domain.ephemeral_env",
+    "qa": "yoke_core.domain.qa",
+    "harness-sessions": "yoke_core.hooks.sessions_cli",
+    "sections": "yoke_core.domain.sections",
+    "path-claims": "yoke_core.domain.path_claims_dispatch",
 }
 
 
@@ -43,7 +43,6 @@ _ITEMS_READ_SUBCMDS: FrozenSet[str] = frozenset(
 #: Items write subcommands — route to the Python-owned backlog CLI parser.
 _ITEMS_WRITE_SUBCMDS: FrozenSet[str] = frozenset(
     {
-        "add",
         "update",
         "batch-update",
         "rebuild-board",
@@ -103,7 +102,9 @@ def _dispatch_python_module(module_name: str, argv: List[str]) -> int:
     return 0
 
 
-def _dispatch_module_function(module_name: str, function_name: str, argv: List[str]) -> int:
+def _dispatch_module_function(
+    module_name: str, function_name: str, argv: List[str]
+) -> int:
     """Import *module_name* and call *function_name*(argv), normalizing exits."""
     # Lazy import to avoid the circular at module load time —
     # db_router imports from db_router_dispatch at top-level for re-export.

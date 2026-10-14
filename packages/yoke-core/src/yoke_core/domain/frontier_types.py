@@ -50,6 +50,8 @@ class FrontierItem:
     probe_path_claim_activation: bool = False
     blocked_by: List[str] = field(default_factory=list)
     blocked_reasons: List[str] = field(default_factory=list)
+    # Saved with only its title: the frontier holds it labelled "Needs a spec".
+    needs_spec: bool = False
     blocker_details: List[dict[str, Any]] = field(default_factory=list)
     unblocks_count: int = 0
     downstream_depth: int = 0

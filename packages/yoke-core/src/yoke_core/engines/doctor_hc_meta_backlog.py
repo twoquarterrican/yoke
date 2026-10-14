@@ -7,6 +7,7 @@ This sibling owns the backlog-quality and schema-validation HCs:
 - ``hc_title_length`` — configured per-project title-limit settings below
   the minimum.
 - ``hc_backlog_quality`` — stale ideas, short titles, missing bodies.
+- ``hc_items_needing_spec`` — items left with only their title.
 - ``hc_epic_validation`` — per-epic DB validation (task numbering, statuses).
 
 ``doctor.py`` continues to import these symbols via ``doctor_hc_meta`` for
@@ -26,7 +27,10 @@ from yoke_contracts.title_policy import title_max_length_setting_error
 from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import query_rows
 from yoke_core.domain.project_policy_capabilities import project_policy_value
-from yoke_core.domain.idea_body_completeness import is_idea_body_incomplete
+from yoke_core.domain.item_spec_completeness import (
+    item_needs_spec,
+    needs_spec_reason,
+)
 from yoke_core.domain.item_workflow_validation import (
     invalid_item_workflow_stages,
 )
@@ -198,63 +202,41 @@ def hc_backlog_quality(conn, args: DoctorArgs, rec: RecordCollector) -> None:
         rec.record("HC-backlog-quality", "Backlog quality", "PASS", "")
 
 
-def hc_incomplete_idea_bodies(conn, args: DoctorArgs, rec: RecordCollector) -> None:
-    """HC-incomplete-idea-bodies: title-only idea bodies whose draft claim was reclaimed.
+def hc_items_needing_spec(conn, args: DoctorArgs, rec: RecordCollector) -> None:
+    """HC-items-needing-spec: items left with only their title.
 
-    Lists every ``status='idea'`` item whose body is title-only AND whose
-    most recent work_claim was released with ``reason='reclaimed'`` (the
-    stale-heartbeat eviction path). These are the items the operator
-    needs to either rescue (re-run ``/yoke idea`` with the missing
-    body), ``yoke items freeze`` so they stop polluting the frontier, or
-    ``yoke items cancel`` if they will never be rescued.
+    Every create now carries its spec, so these are leftovers from before
+    that rule or from a session that stopped between two writes. The
+    frontier holds each one labelled "Needs a spec"; this check lists them
+    with the command that writes the spec or cancels the item.
     """
+    from yoke_core.domain.workflow_runtime import load_workflow_runtime
+
+    first_stages: dict = {}
     issues: List[str] = []
     rows = query_rows(
         conn,
-        "SELECT id, title, spec, created_at FROM items "
-        "WHERE status = 'idea' ORDER BY id",
+        "SELECT id, title, spec, status, workflow_id, workflow_version_id "
+        "FROM items ORDER BY id",
     )
     for row in rows:
-        if not is_idea_body_incomplete(row):
+        if not item_needs_spec(row):
             continue
-        try:
-            from yoke_core.domain.work_claim_targets import scope_int_sql
-
-            item_scope = scope_int_sql(conn, "scope", "item_id")
-            claim = conn.execute(
-                "SELECT session_id, released_at FROM work_claims "
-                f"WHERE target_kind = 'item' AND {item_scope} = {_p(conn)} "
-                "  AND release_reason = 'reclaimed' "
-                "ORDER BY released_at DESC LIMIT 1",
-                (row["id"],),
-            ).fetchone()
-        except Exception:
-            claim = None
-        if claim is None:
+        key = (row["workflow_id"], row["workflow_version_id"])
+        if key not in first_stages:
+            first_stages[key] = load_workflow_runtime(
+                conn, workflow_id=key[0], workflow_version_id=int(key[1])
+            ).stage_ids[0]
+        if row["status"] != first_stages[key]:
             continue
-        session_id = claim["session_id"] if hasattr(claim, "keys") else claim[0]
-        released_at = claim["released_at"] if hasattr(claim, "keys") else claim[1]
-        issues.append(
-            f"- {render_item_ref(conn, row['id'])}: incomplete idea body "
-            f"(created_at={row['created_at']}), "
-            f"last_claim_session_id={session_id}, "
-            f"claim_released_reason='reclaimed' (released_at={released_at})"
-        )
+        issues.append(f"- {needs_spec_reason(render_item_ref(conn, row['id']))}")
 
-    if issues:
-        rec.record(
-            "HC-incomplete-idea-bodies",
-            "Incomplete idea bodies after stale-heartbeat reclaim",
-            "WARN",
-            "\n".join(issues),
-        )
-    else:
-        rec.record(
-            "HC-incomplete-idea-bodies",
-            "Incomplete idea bodies after stale-heartbeat reclaim",
-            "PASS",
-            "",
-        )
+    rec.record(
+        "HC-items-needing-spec",
+        "Items that need a spec",
+        "WARN" if issues else "PASS",
+        "\n".join(issues),
+    )
 
 
 def hc_epic_validation(conn, args: DoctorArgs, rec: RecordCollector) -> None:

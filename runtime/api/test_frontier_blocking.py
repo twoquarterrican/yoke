@@ -17,7 +17,6 @@ Covers:
 
 from __future__ import annotations
 
-import pytest
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.frontier_compute import compute_frontier
@@ -121,8 +120,8 @@ def test_blocked_flag_combines_with_dependency_blocker_details():
     assert "YOK-20" in fi.blocked_by
 
 
-def test_idea_incomplete_emits_no_synthesized_gate_evaluation():
-    """An idea_incomplete (title-only) item produces no GateEvaluation.
+def test_needs_spec_emits_no_synthesized_gate_evaluation():
+    """A title-only item that needs a spec produces no GateEvaluation.
 
     Self-readiness conditions are not dependency edges — they have no
     blocking_item, no gate_point, and no satisfaction. blocked_reasons
@@ -135,10 +134,8 @@ def test_idea_incomplete_emits_no_synthesized_gate_evaluation():
     sched = compute_schedule(conn, project_scope=["yoke"])
     blocked = next(s for s in sched.blocked_steps if s.item_id == 10)
     assert blocked.gate_evaluations == []
-    assert any(
-        "idea-incomplete: idea body is title-only" in r
-        for r in blocked.blocked_reasons
-    )
+    assert blocked.needs_spec is True
+    assert any(r.startswith("Needs a spec: ") for r in blocked.blocked_reasons)
 
 
 def test_runnable_when_unblocked():

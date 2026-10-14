@@ -269,7 +269,6 @@ class TestUsage:
         assert result.returncode == 0
         assert "approve-check" in result.stdout
         assert "active-queue" in result.stdout
-        assert "create-item" in result.stdout
         assert "update-item" in result.stdout
         assert "apply-approval" in result.stdout
 

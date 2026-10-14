@@ -103,17 +103,17 @@ Classify title/body match, scope overlap or adjacent-distinct work.
 Likely duplicates produce an advisory with refs/status/workflow and one
 create-anyway yes/no decision; no means use existing item, no matches proceed.
 
-## 5. Create The Item
+## 5. Create The Item With Its Spec
 
-Invoke items.create for the planned draft:
+An item is born with its spec; items.create refuses a missing or title-only
+spec (`spec_required`). First write the agreed outcome to a file: the
+user's description verbatim, the problem, the intended result and how to
+tell it is done. Step 8 completes it; it is never a placeholder.
 ```bash
-yoke items create "<title>" "$_workflow" --entry-surface harness_skill --execution-instructions-considered --project "$_project" --priority <priority> --json
+yoke items create "<title>" "$_workflow" --spec-file "$_spec_file" --entry-surface harness_skill --execution-instructions-considered --project "$_project" --priority <priority> --json
 ```
 
-For an already agreed initial spec, check `yoke items create --help` first,
-then add `--spec-file PATH` or `--stdin` when that CLI advertises it.
-The planned draft remains valid without that optional input. The selected
-workflow supplies its full spec through authoring. `--title-file PATH` reads
+`--stdin` reads the spec from a pipe instead; `--title-file PATH` reads the
 title only.
 
 Include --deployment-flow only for a valid nonempty assignment; never none.
@@ -130,9 +130,8 @@ yoke claims work acquire --item "$ITEM_REF" --reason draft-in-progress
 ```
 
 Use the returned full ref and claim identity. No claim for dry-run. Hold through
-body/AC/budget/readiness; a second worker must not refine an empty spec.
-Crashed drafts use the configured session_stale_ttl_minutes safety window;
-frontier idea-incomplete still guards title-only drafts after that window.
+body/AC/budget/readiness; a second worker must not refine a draft in flight.
+Crashed drafts use the configured session_stale_ttl_minutes safety window.
 After claiming, follow [delivery-requirements.md](delivery-requirements.md)
 when the operator requested deployed evidence/approval.
 

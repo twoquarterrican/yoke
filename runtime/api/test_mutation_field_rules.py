@@ -126,6 +126,7 @@ def _issue_create(**overrides):
     """
     overrides.setdefault("project", "yoke")
     overrides.setdefault("workflow", builtin_workflow_runtime("issue"))
+    overrides.setdefault("spec", "Agreed outcome: done when it shows.")
     return prepare_create(**overrides)
 
 

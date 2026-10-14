@@ -1,5 +1,5 @@
-"""Tests for yoke_core.domain.items — query_item, query_item_row,
-insert_item, and update_item_field."""
+"""Tests for yoke_core.domain.items — query_item, query_item_row and
+update_item_field."""
 
 from __future__ import annotations
 
@@ -12,12 +12,11 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from yoke_core.domain import db_backend
 from runtime.api.fixtures.file_test_db import apply_test_schema
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
+from runtime.api.items_seed_test_support import seed_item as insert_item
 from yoke_core.domain.items import (
     CANONICAL_COLUMNS,
-    insert_item,
     query_item,
     query_item_row,
     update_item_field,
@@ -173,60 +172,6 @@ class TestQueryItemRow:
 
     def test_returns_none_for_missing_item(self, db_path):
         assert query_item_row(999, db_path=db_path) is None
-
-
-class TestInsertItem:
-    def test_insert_and_query_back(self, db_path):
-        insert_item(
-            item_id=10,
-            title="New item",
-            workflow="issue",
-            status="idea",
-            priority="high",
-            source="test",
-            project="yoke",
-            db_path=db_path,
-        )
-        assert query_item(10, "title", db_path=db_path) == "New item"
-        assert query_item(10, "priority", db_path=db_path) == "high"
-        assert query_item(10, "source", db_path=db_path) == "test"
-
-    def test_insert_with_minimal_fields(self, db_path):
-        insert_item(
-            project="yoke",
-            item_id=11,
-            title="Minimal",
-            workflow="issue",
-            db_path=db_path,
-        )
-        assert query_item(11, "title", db_path=db_path) == "Minimal"
-
-    def test_insert_with_minimal_fields_stores_null_spec(self, db_path):
-        insert_item(
-            project="yoke",
-            item_id=12,
-            title="No spec",
-            workflow="issue",
-            db_path=db_path,
-        )
-        # No spec content set; COALESCE returns ''
-        assert query_item(12, "spec", db_path=db_path) == ""
-
-    def test_duplicate_id_raises(self, db_with_item):
-        with pytest.raises(db_backend.integrity_error_types()):
-            insert_item(
-                project="yoke",
-                item_id=1,
-                title="Dup",
-                workflow="issue",
-                db_path=db_with_item,
-            )
-
-    def test_insert_requires_workflow(self, db_path):
-        with pytest.raises(ValueError, match="workflow is required"):
-            insert_item(
-                project="yoke", item_id=13, title="Unclassified", db_path=db_path
-            )
 
 
 class TestUpdateItemField:

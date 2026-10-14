@@ -14,7 +14,6 @@ _RULE_MODULES = {
         "RULE_TEXT_GUARDS_INPUT",
     ),
     "lifecycle": (
-        "RULE_TEXT_ADD_PROJECT",
         "RULE_TEXT_DONE",
         "RULE_TEXT_LIFECYCLE",
     ),
@@ -30,9 +29,7 @@ _RULE_MODULES = {
 
 def test_lint_db_rule_modules_own_live_fragments() -> None:
     for suffix in _RULE_MODULES:
-        module = importlib.import_module(
-            f"yoke_core.domain.lint_db_rules_{suffix}"
-        )
+        module = importlib.import_module(f"yoke_core.domain.lint_db_rules_{suffix}")
         source = inspect.getsource(module)
         assert f"lint_db_rules_{suffix}" in module.__name__
         for symbol in _RULE_MODULES[suffix]:

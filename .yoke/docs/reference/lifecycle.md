@@ -85,37 +85,22 @@ The current built-in definitions reuse stage ids such as `idea`,
 `refining-idea`, `planning`, and `planned`, but each definition decides which
 of those stages exists, their order, and the skill that owns the segment.
 
-### `idea -> refine` handoff: two-layer guard against title-only dispatch
+### Items are created with their spec
 
-`/yoke idea` writes the row in two phases — `items add` lands the PREFIX-N
-row with empty `spec`, and `body-and-sync.md` writes the structured spec
-fields a few seconds later. The window between the two phases is
-unprotected unless both layers below hold:
+Every create path — `/yoke idea`, `/yoke onboard`, `/yoke curate`,
+`yoke dash`, `yoke task`, `yoke items create`, the web form and
+`POST /v1/items` — saves the title and spec in one write. The shared create
+validation (`yoke_core.domain.mutations_create.prepare_create`) refuses a
+missing spec, or one that only repeats the title, with `spec_required` and
+the `--spec-file PATH` / `--stdin` repair. The spec states the agreed
+outcome; refinement adds detail later. `/yoke idea` still takes a draft work
+claim right after creation so no other session refines it mid-authoring.
 
-- **Layer 1 — claim-on-create (live-race fix).** `infer-and-create.md`
-  step 5b acquires a draft work claim with reason `draft-in-progress`
-  immediately after `items add` returns the PREFIX-N id, and
-  `body-and-sync.md` step 10b releases it with reason `idea-complete`
-  once the spec/body, AC normalization, and every enabled File Budget or
-  path-claim artifact has landed.
-  The release path canonicalizes `idea-complete` → `handed_off` for
-  schema storage and preserves the original intent on the `WorkReleased`
-  event. While the draft claim is held, the scheduler filters the row out via the standard live-claim
-  conflict gate. Held duration is recorded on the `IdeaClaimHeld`
-  event for doctor and Ouroboros observability.
-- **Layer 2 — body-completeness skip on the frontier (structural
-  defense).** `yoke_core.domain.frontier_compute` calls
-  `yoke_core.domain.idea_body_completeness.is_idea_body_incomplete`
-  for every `status='idea'` row and pushes the title-only ones into
-  `blocked` with reason `idea-incomplete`. This catches every tail case
-  Layer 1 cannot reach: a `/yoke idea` session that crashes between
-  the two phases (the title-only body remains, while the active claim
-  stays held until explicit release or authorized termination); a manual
-  `python3 -m yoke_core.cli.db_router items add` from ad hoc tooling
-  that bypasses the claim convention; any future `/yoke idea` variant
-  that forgets to acquire the claim. The doctor health check
-  `HC-incomplete-idea-bodies` reports items in this state so the
-  operator can rescue or freeze them.
+Items left title-only by an older release wait on the frontier labelled
+**Needs a spec** (`needs_spec` on the blocked row), with the command that
+writes the spec or cancels the item. `yoke_core.domain.item_spec_completeness`
+owns the title-only test, and the doctor check `HC-items-needing-spec` lists
+those items.
 
 ### Implementation and review
 

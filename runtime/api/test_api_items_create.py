@@ -32,12 +32,16 @@ def client(test_db):
 class TestCreateItem:
     def test_create_item_success(self, client, test_db):
         """Item creation now goes through the shared mutation layer (no subprocess)."""
-        resp = client.post("/v1/items", json={
-            "title": "New idea",
-            "workflow": "dash",
-            "priority": "medium",
-            "project": "yoke",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "New idea",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "priority": "medium",
+                "project": "yoke",
+            },
+        )
 
         assert resp.status_code == 201
         data = resp.json()
@@ -64,55 +68,75 @@ class TestCreateItem:
         Filing under this installation's own project instead puts another
         project's work on a backlog nobody chose.
         """
-        resp = client.post("/v1/items", json={
-            "title": "Unattributed idea",
-            "workflow": "dash",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Unattributed idea",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+            },
+        )
 
         assert resp.status_code == 422
         assert resp.json()["error"]["code"] == "PROJECT_REQUIRED"
 
     def test_create_item_with_project(self, client, test_db):
         """POST /v1/items accepts optional project field."""
-        resp = client.post("/v1/items", json={
-            "title": "ExternalWebapp item",
-            "workflow": "dash",
-            "project": "externalwebapp",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "ExternalWebapp item",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "externalwebapp",
+            },
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["project"] == "externalwebapp"
 
     def test_create_item_with_deployment_flow(self, client, test_db):
         """POST /v1/items accepts optional deployment_flow field."""
-        resp = client.post("/v1/items", json={
-            "title": "Flow item",
-            "workflow": "dash",
-            "project": "yoke",
-            "deployment_flow": "test-approval-flow",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Flow item",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+                "deployment_flow": "test-approval-flow",
+            },
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["deployment_flow"] == "test-approval-flow"
 
     def test_create_item_rejects_retired_epic_field(self, client, test_db):
         """POST /v1/items rejects the retired epic field."""
-        resp = client.post("/v1/items", json={
-            "title": "Retired parent ref",
-            "workflow": "dash",
-            "project": "yoke",
-            "epic": 3,
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Retired parent ref",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+                "epic": 3,
+            },
+        )
         assert resp.status_code == 422
         data = resp.json()
         assert "extra_forbidden" in json.dumps(data)
 
     def test_create_item_missing_title(self, client):
-        resp = client.post("/v1/items", json={
-            "title": "",
-            "workflow": "dash",
-            "project": "yoke",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+            },
+        )
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"]["code"] == "VALIDATION_ERROR"
@@ -125,42 +149,58 @@ class TestCreateItem:
 
     def test_create_item_title_over_project_limit(self, client):
         """One past the project's effective limit is refused."""
-        resp = client.post("/v1/items", json={
-            "title": "x" * (title_max_length() + 1),
-            "workflow": "dash",
-            "project": "yoke",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "x" * (title_max_length() + 1),
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+            },
+        )
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"]["code"] == "VALIDATION_ERROR"
 
     def test_create_item_title_at_project_limit(self, client, test_db):
         """Exactly the project's effective limit is accepted."""
-        resp = client.post("/v1/items", json={
-            "title": "x" * title_max_length(),
-            "workflow": "dash",
-            "project": "yoke",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "x" * title_max_length(),
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+            },
+        )
         assert resp.status_code == 201
 
     def test_create_item_invalid_workflow(self, client):
-        resp = client.post("/v1/items", json={
-            "title": "Valid title",
-            "workflow": "not-a-workflow",
-            "project": "yoke",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Valid title",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "not-a-workflow",
+                "project": "yoke",
+            },
+        )
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"]["code"] == "VALIDATION_ERROR"
         assert "not-a-workflow" in data["error"]["message"]
 
     def test_create_item_invalid_priority(self, client):
-        resp = client.post("/v1/items", json={
-            "title": "Valid title",
-            "workflow": "dash",
-            "priority": "urgent",
-            "project": "yoke",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Valid title",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "priority": "urgent",
+                "project": "yoke",
+            },
+        )
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"]["code"] == "VALIDATION_ERROR"
@@ -168,23 +208,31 @@ class TestCreateItem:
 
     def test_create_item_default_priority(self, client, test_db):
         """Omitting priority defaults to 'medium' via the mutation layer."""
-        resp = client.post("/v1/items", json={
-            "title": "Another idea",
-            "workflow": "dash",
-            "project": "yoke",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Another idea",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+            },
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["priority"] == "medium"
 
     def test_create_item_rejects_unregistered_deployment_flow(self, client, test_db):
         """Unregistered non-empty deployment_flow values are rejected at create."""
-        resp = client.post("/v1/items", json={
-            "title": "Bad flow item",
-            "workflow": "dash",
-            "project": "yoke",
-            "deployment_flow": "garbage",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Bad flow item",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+                "deployment_flow": "garbage",
+            },
+        )
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"]["code"] == "VALIDATION_ERROR"
@@ -195,12 +243,16 @@ class TestCreateItem:
 
     def test_create_item_rejects_literal_none_string(self, client, test_db):
         """Literal string 'none' is rejected."""
-        resp = client.post("/v1/items", json={
-            "title": "Literal none",
-            "workflow": "dash",
-            "project": "yoke",
-            "deployment_flow": "none",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Literal none",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+                "deployment_flow": "none",
+            },
+        )
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"]["code"] == "VALIDATION_ERROR"
@@ -208,22 +260,30 @@ class TestCreateItem:
 
     def test_create_item_empty_string_deployment_flow_passes(self, client, test_db):
         """Empty-string deployment_flow is treated as unset (no rejection)."""
-        resp = client.post("/v1/items", json={
-            "title": "Empty flow",
-            "workflow": "dash",
-            "project": "yoke",
-            "deployment_flow": "",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Empty flow",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+                "deployment_flow": "",
+            },
+        )
         assert resp.status_code == 201
 
     def test_create_item_null_sentinel_deployment_flow_passes(self, client, test_db):
         """String null deployment_flow is treated as unset."""
-        resp = client.post("/v1/items", json={
-            "title": "Null flow",
-            "workflow": "dash",
-            "project": "yoke",
-            "deployment_flow": "null",
-        })
+        resp = client.post(
+            "/v1/items",
+            json={
+                "title": "Null flow",
+                "spec": "Agreed outcome: the item is filed with this spec.",
+                "workflow": "dash",
+                "project": "yoke",
+                "deployment_flow": "null",
+            },
+        )
         assert resp.status_code == 201
         assert resp.json()["deployment_flow"] is None
 
@@ -239,11 +299,15 @@ class TestCreateItem:
         permit git lookups.
         """
         with patch("yoke_core.api.main.subprocess.run") as mock_run:
-            resp = client.post("/v1/items", json={
-                "title": "Direct create",
-                "workflow": "dash",
-                "project": "yoke",
-            })
+            resp = client.post(
+                "/v1/items",
+                json={
+                    "title": "Direct create",
+                    "spec": "Agreed outcome: the item is filed with this spec.",
+                    "workflow": "dash",
+                    "project": "yoke",
+                },
+            )
         assert resp.status_code == 201
         non_git_calls = []
         for call in mock_run.call_args_list:

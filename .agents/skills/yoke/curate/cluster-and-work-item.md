@@ -100,25 +100,18 @@ For a work item, use the issue workflow's authorized `harness_skill` filing
 contract, the same contract `/yoke idea` uses. After the full instruction read,
 create once:
 
+The item is created with its full spec; creation refuses a missing or
+title-only spec (`spec_required`). Write the spec to a file first:
+
 ```sh
-yoke items create "{title}" issue --project {project} --priority {priority} --entry-surface harness_skill --execution-instructions-considered
+yoke items create "{title}" issue --spec-file {spec_file} --project {project} --priority {priority} --entry-surface harness_skill --execution-instructions-considered
 ```
 
-For an already agreed initial spec, check `yoke items create --help` first,
-then add `--spec-file PATH` or `--stdin` when that CLI advertises it.
-The planned draft remains valid without that optional input. The selected
-workflow supplies its full spec through authoring. `--title-file PATH` reads
-title only.
-
-Immediately write the spec through `items.structured_field.replace`:
-target `{kind: "item", public_ref: "PREFIX-N"}`, payload
-`{field: "spec", content: "<full spec>", source: "curate"}`.
-Use [typed envelopes](../idea/body-and-sync-functions.md).
 The spec includes observation summary, source entry ids/authors/categories,
 code verdict/evidence and File Budget. Mark unknown authored-file shape
 `UNRESOLVED`; Refine must resolve it before leaving `refining-idea`.
-Include that deferral even when budget is optional. Verify `success=true`,
-`result.new_line_count` and `result.verification`; virtual body is read-only.
+Include that deferral even when budget is optional. Verify the create
+receipt's `success=true` and `spec_accepted=true`; virtual body is read-only.
 When gh is available, ensure `source:ouroboros` exists and tag the resolved
 `github_issue`, rather than treating a public ref as an issue number.
 

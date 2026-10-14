@@ -300,8 +300,8 @@ def test_onboard_teaches_environment_and_flow_registration():
 def test_onboard_seeds_work_through_the_idea_intake_shape():
     text = _read(ONBOARD_DIR / "seed-work.md")
     assert (
-        'yoke items create "{title}" issue --entry-surface harness_skill '
-        "--execution-instructions-considered "
+        'yoke items create "{title}" issue --spec-file {spec_file} '
+        "--entry-surface harness_skill --execution-instructions-considered "
         "--project {project} --deployment-flow {flow_id} --priority {priority}"
     ) in text
     assert "yoke project-structure deploy-defaults get --project {project}" in text
@@ -310,6 +310,7 @@ def test_onboard_seeds_work_through_the_idea_intake_shape():
     # One batched confirmation, then serial filing.
     assert "one confirmation for the whole batch" in text
     assert "one at a time" in text
+    assert "`spec_required`" in text
     assert "/yoke steer" in text and "/yoke charge" in text
 
 

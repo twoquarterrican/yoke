@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from io import StringIO
 from pathlib import Path
 
 from yoke_cli.commands.adapters import items_create
@@ -152,12 +153,17 @@ def test_idea_to_blitz_route_dispatches_the_typed_create_payload(monkeypatch):
         return 0
 
     monkeypatch.setattr(items_create, "dispatch_create", _dispatch)
+    monkeypatch.setattr(
+        "yoke_cli.commands.text_file.sys.stdin",
+        StringIO("Roll out the linked document; done when it lands."),
+    )
 
     assert (
         items_create.items_create(
             [
                 "Reconcile the document-led rollout",
                 "blitz",
+                "--stdin",
                 "--entry-surface",
                 "harness_skill",
                 "--project",
@@ -172,6 +178,7 @@ def test_idea_to_blitz_route_dispatches_the_typed_create_payload(monkeypatch):
     assert captured["payload"] == {
         "title": "Reconcile the document-led rollout",
         "workflow": "blitz",
+        "spec": "Roll out the linked document; done when it lands.",
         "entry_surface": "harness_skill",
         "project": "yoke",
         "dry_run": False,

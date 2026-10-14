@@ -1,11 +1,8 @@
 # ruff: noqa: F811
-"""Pairing test for the /yoke idea -> frontier race guard.
+"""The /yoke idea draft claim keeps other workers off an item mid-authoring.
 
-Covers the guard's three failure modes: live race, stale-heartbeat tail,
-and happy-path regression. Layer 1 (claim-on-create) is
-exercised through the live ``claim-work`` / ``release-work-claim`` CLI
-surface; Layer 2 (frontier body-completeness skip) runs against the
-in-memory frontier helpers.
+Exercised through the live ``claim-work`` / ``release-work-claim`` CLI
+surface. The title-only guard lives in ``test_item_spec_required``.
 """
 
 from __future__ import annotations
@@ -16,16 +13,6 @@ import subprocess
 
 from runtime.api.fixtures.file_test_db import connect_test_db
 from yoke_core.domain import db_backend
-from yoke_core.domain.frontier import (
-    AdapterCategory,
-    FrontierResult,
-    compute_frontier,
-)
-from yoke_core.domain.idea_body_completeness import (
-    INCOMPLETE_REASON,
-    is_idea_body_incomplete,
-)
-from runtime.api.frontier_test_helpers import insert_item, make_test_db
 from runtime.api.test_service_client_sessions_helpers import (  # noqa: F401
     _pre_register_session,
     session_test_db,
@@ -277,57 +264,3 @@ def test_layer1_dispatcher_release_canonicalizes_and_emits(
     assert context.get("release_reason_intent") == "idea-complete"
     assert context.get("claim_reason_intent") == "draft-in-progress"
     assert context.get("duration_ms", -1) >= 0
-
-
-# ---------------------------------------------------------------------------
-# Layer 2 — frontier body-completeness skip catches the stale-heartbeat tail
-# ---------------------------------------------------------------------------
-
-
-def test_layer2_title_only_idea_is_classified_blocked():
-    """Title-only idea bodies land in blocked, not runnable."""
-    conn = make_test_db()
-    stale_id = 50
-    real_id = 51
-    insert_item(
-        conn,
-        stale_id,
-        title="Stale draft",
-        status="idea",
-        spec="# Stale draft",
-    )
-    insert_item(conn, real_id, title="Real idea", status="idea")  # default helper spec
-    conn.commit()
-
-    result = compute_frontier(conn, project_scope=["yoke"])
-    assert isinstance(result, FrontierResult)
-    runnable_ids = [fi.item_id for fi in result.runnable]
-    blocked_ids = [fi.item_id for fi in result.blocked]
-    assert stale_id in blocked_ids
-    assert real_id in runnable_ids
-    blocked_50 = next(fi for fi in result.blocked if fi.item_id == stale_id)
-    assert blocked_50.adapter == AdapterCategory.WAIT
-    assert any(INCOMPLETE_REASON in r for r in blocked_50.blocked_reasons)
-
-
-def test_layer2_empty_spec_idea_is_classified_blocked():
-    """An empty (NULL-equivalent) spec is treated as title-only too."""
-    conn = make_test_db()
-    item_num = 60
-    insert_item(conn, item_num, title="Empty spec", status="idea", spec="")
-    conn.commit()
-
-    result = compute_frontier(conn, project_scope=["yoke"])
-    blocked_ids = [fi.item_id for fi in result.blocked]
-    assert item_num in blocked_ids
-
-
-def test_layer2_helper_recognises_title_only_row():
-    """The shared heuristic agrees with the frontier classifier."""
-    title_only = {"title": "Same shape", "spec": "# Same shape"}
-    real_body = {
-        "title": "Same shape",
-        "spec": "# Same shape\n\nReal body content with multiple lines of detail.",
-    }
-    assert is_idea_body_incomplete(title_only) is True
-    assert is_idea_body_incomplete(real_body) is False

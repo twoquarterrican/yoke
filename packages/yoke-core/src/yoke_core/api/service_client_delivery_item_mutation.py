@@ -1,10 +1,9 @@
-"""Item create/update CLI commands.
+"""Item update validation CLI command.
 
-Owns ``create-item`` and ``validate-update`` — both are **internal
-validators for the ``/yoke idea`` workflow**, not agent-facing
-work-item entrypoints. They only call ``mutations.prepare_*``
-to return planned writes. Production callers enter a registered surface;
-``create-item`` checks workflow entry-surface permission.
+Owns ``validate-update`` — an **internal validator**, not an agent-facing
+work-item entrypoint. It only calls ``mutations.prepare_update`` to return
+planned writes. Items are created through the registered ``items.create``
+operation, which requires the spec with the title.
 """
 
 from __future__ import annotations
@@ -13,179 +12,15 @@ import json
 import sys
 
 from yoke_core.domain import db_backend
-from yoke_core.domain.item_entry_surface import enforce_item_entry_allowed
-from yoke_core.domain.project_selection import missing_project_on_connection
 from yoke_core.domain.project_identity_item_ref import item_ref_for_id
 from yoke_core.domain.item_ref_resolution import ITEM_REF_NOT_FOUND
 from yoke_core.api.service_client_shared import (
-    _get_db_path,
     _get_db_readonly,
     _load_gate_context,
     _load_item_state,
     _mutation_result_to_dict,
     mutations,
 )
-
-
-def cmd_create_item(args: list[str]) -> int:
-    """Validate and prepare an item creation.
-
-    Usage: create-item --title TITLE --workflow WORKFLOW [--priority PRIORITY]
-                       [--project PROJECT] [--deployment-flow FLOW]
-                       [--status STATUS] [--entry-surface SURFACE]
-
-    ``mutations.prepare_create`` returns planned writes; ``/yoke idea``
-    persists them with the workflow-authorized ``harness_skill`` entry surface.
-
-    Exit 0: valid, JSON result on stdout
-    Exit 1: validation error, JSON error on stdout
-    """
-    title = None
-    workflow_id = None
-    priority = "medium"
-    project = None
-    deployment_flow = None
-    status = None
-    entry_surface = None
-
-    i = 0
-    while i < len(args):
-        if args[i] == "--title" and i + 1 < len(args):
-            title = args[i + 1]
-            i += 2
-        elif args[i] == "--workflow" and i + 1 < len(args):
-            workflow_id = args[i + 1]
-            i += 2
-        elif args[i] == "--priority" and i + 1 < len(args):
-            priority = args[i + 1]
-            i += 2
-        elif args[i] == "--project" and i + 1 < len(args):
-            project = args[i + 1]
-            i += 2
-        elif args[i] == "--deployment-flow" and i + 1 < len(args):
-            deployment_flow = args[i + 1]
-            i += 2
-        elif args[i] == "--status" and i + 1 < len(args):
-            status = args[i + 1]
-            i += 2
-        elif args[i] == "--entry-surface" and i + 1 < len(args):
-            entry_surface = args[i + 1]
-            i += 2
-        else:
-            print(f"Unknown argument: {args[i]}", file=sys.stderr)
-            return 2
-
-    if title is None or workflow_id is None:
-        print(
-            "Usage: create-item --title TITLE --workflow WORKFLOW [--priority PRIORITY] "
-            "[--project PROJECT] [--deployment-flow FLOW] "
-            "[--status STATUS] [--entry-surface SURFACE]",
-            file=sys.stderr,
-        )
-        return 2
-
-    from yoke_core.domain.deployment_flow_validator import (
-        normalize_deployment_flow_value,
-        validate_and_lookup_flow_project,
-    )
-
-    from yoke_core.domain.workflow_registry import (
-        WorkflowRegistryError,
-        resolve_current_workflow_pin,
-    )
-
-    deployment_flow = normalize_deployment_flow_value(deployment_flow)
-    conn = _get_db_readonly()
-    try:
-        if not str(project or "").strip():
-            from yoke_core.domain.item_source_actor import resolve_item_source_actor
-
-            print(
-                json.dumps(
-                    {
-                        "success": False,
-                        "error_code": "project_required",
-                        "error": missing_project_on_connection(
-                            conn,
-                            actor_id=resolve_item_source_actor(conn, None),
-                        ),
-                    }
-                )
-            )
-            return 1
-        flow_project, flow_err = validate_and_lookup_flow_project(
-            conn, deployment_flow, project
-        )
-        from yoke_core.domain.workflow_runtime import load_workflow_runtime
-
-        resolved_workflow_id, workflow_version_id = resolve_current_workflow_pin(
-            conn,
-            workflow_id,
-        )
-        workflow = load_workflow_runtime(
-            conn,
-            workflow_id=resolved_workflow_id,
-            workflow_version_id=workflow_version_id,
-        )
-    except WorkflowRegistryError as exc:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": str(exc),
-                    "error_code": "VALIDATION_ERROR",
-                }
-            )
-        )
-        return 1
-    finally:
-        conn.close()
-
-    if flow_err:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": flow_err,
-                    "error_code": "VALIDATION_ERROR",
-                }
-            )
-        )
-        return 1
-
-    try:
-        intake_db = _get_db_path()
-    except Exception:
-        intake_db = None
-    intake_block = enforce_item_entry_allowed(
-        workflow=workflow,
-        entry_surface=entry_surface,
-        db_path=intake_db,
-    )
-    if intake_block:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": intake_block,
-                    "error_code": "ENTRY_SURFACE_DENIED",
-                }
-            )
-        )
-        return 1
-
-    result = mutations.prepare_create(
-        title=title,
-        workflow=workflow,
-        priority=priority,
-        project=project,
-        deployment_flow=deployment_flow,
-        flow_project=flow_project,
-        status=status,
-    )
-
-    print(json.dumps(_mutation_result_to_dict(result)))
-    return 0 if result.success else 1
 
 
 def cmd_update_item(args: list[str]) -> int:

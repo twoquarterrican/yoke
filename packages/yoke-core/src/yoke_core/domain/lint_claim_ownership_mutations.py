@@ -41,7 +41,7 @@ _SERVICE_CLIENT_MUTATIONS: frozenset[str] = frozenset(
         "path-claim-override path-claim-activate path-claim-cancel-amendment "
         "path-claim-unblock-stranded "
         "execute-structured-write execute-update execute-update-cli "
-        "execute-create execute-create-cli execute-batch-update "
+        "execute-batch-update "
         "execute-batch-update-cli execute-close update-item db-claim-amend "
         "backlog-github coordination-claim-acquire coordination-claim-heartbeat"
     ).split()
@@ -49,7 +49,7 @@ _SERVICE_CLIENT_MUTATIONS: frozenset[str] = frozenset(
 
 _BACKLOG_CLI_MUTATIONS: frozenset[str] = frozenset(
     (
-        "add update batch-update sync-item sync-labels sync-body post-comment "
+        "update batch-update sync-item sync-labels sync-body post-comment "
         "close close-issue backfill-oversized-bodies freeze thaw block "
         "unblock rebuild-board"
     ).split()

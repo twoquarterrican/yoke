@@ -173,6 +173,8 @@ class ScheduledStep:
         blocked_by: Blocker public text refs as stored on the
             ``item_dependencies`` rows.
         blocked_reasons: Human-readable blocking reasons.
+        needs_spec: The item was saved with only its title; it waits
+            labelled "Needs a spec" until its spec is written.
         unblocks_count: How many items this item hard-blocks.
         downstream_depth: Length of the longest downstream activation-gate
             chain from this item.
@@ -195,6 +197,7 @@ class ScheduledStep:
     adapter: str = ""
     blocked_by: List[str] = field(default_factory=list)
     blocked_reasons: List[str] = field(default_factory=list)
+    needs_spec: bool = False
     unblocks_count: int = 0
     downstream_depth: int = 0
     created_at: datetime | None = None

@@ -175,6 +175,7 @@ class TestExecuteCreate:
         ):
             result = backlog.execute_create(
                 title="Test item",
+                spec="Agreed outcome for Test item.",
                 workflow="issue",
                 priority="medium",
                 project="yoke",
@@ -185,7 +186,7 @@ class TestExecuteCreate:
         assert _item_field(tmp_db, result["item_id"], "title") == "Test item"
         assert _item_field(tmp_db, result["item_id"], "status") == "idea"
 
-    def test_dash_instruction_does_not_emit_empty_body_warning(self, tmp_db):  # noqa: F811
+    def test_dash_create_stores_its_spec(self, tmp_db):  # noqa: F811
         out = io.StringIO()
         spec = "Fix the footer and verify every link."
         with (
@@ -206,35 +207,6 @@ class TestExecuteCreate:
 
         assert result["success"] is True
         assert _item_field(tmp_db, result["item_id"], "spec") == spec
-        assert "created with no body content" not in out.getvalue()
-
-    def test_staged_issue_body_warns_with_registered_structured_field_recipe(
-        self, tmp_db
-    ):  # noqa: F811
-        out = io.StringIO()
-        with (
-            _patch_externals(),
-            mock.patch.dict(
-                os.environ,
-                {"YOKE_DB": tmp_db, ITEM_ENTRY_SURFACE_ENV: "harness_skill"},
-            ),
-        ):
-            result = backlog.execute_create(
-                title="Staged Issue item",
-                workflow="issue",
-                project="yoke",
-                entry_surface="harness_skill",
-                out=out,
-            )
-
-        assert result["success"] is True
-        log = out.getvalue()
-        assert "created with no body content" in log
-        assert (
-            f"yoke items structured-field replace {result['public_ref']} "
-            "--field spec --stdin"
-        ) in log
-        assert "python3 -m yoke_core.cli.db_router" not in log
 
     def test_create_validation_failure(self, tmp_db):  # noqa: F811
         out = io.StringIO()
@@ -265,6 +237,7 @@ class TestExecuteCreate:
             result = backlog.execute_create(
                 project="yoke",
                 title="Dry run item",
+                spec="Agreed outcome for Dry run item.",
                 workflow="issue",
                 dry_run=True,
                 out=out,
@@ -287,6 +260,7 @@ class TestExecuteCreate:
             result = backlog.execute_create(
                 project="yoke",
                 title="Attributed item",
+                spec="Agreed outcome for Attributed item.",
                 workflow="issue",
                 session_id="sess-1",
                 out=out,
@@ -316,6 +290,7 @@ class TestExecuteCreate:
             result = backlog.execute_create(
                 project="yoke",
                 title="Filed while claimed",
+                spec="Agreed outcome for Filed while claimed.",
                 workflow="issue",
                 session_id="sess-1",
                 out=out,

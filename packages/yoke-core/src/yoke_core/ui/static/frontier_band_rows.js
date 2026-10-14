@@ -78,9 +78,13 @@ export function waitingReason(row, blockedRows = []) {
   const blockers = [...new Set(blockedRows.map((entry) => entry.blocking_item).filter(Boolean))];
   const text = blockedRows.map((entry) => entry.why).filter(Boolean).join(" ")
     || "An upstream fact is unsatisfied.";
+  // An item saved with only its title waits for its spec, and says so.
+  if (blockedRows.some((entry) => entry.needs_spec === true)) {
+    return { rank: 1, flag: { label: "Needs a spec", text, tone: "blocked" } };
+  }
   // A wait with no blocking item is the scheduler holding the item for a
-  // reason of its own (an incomplete idea body, a defended prior owner): it
-  // is held, not waiting on other work.
+  // reason of its own (a defended prior owner): it is held, not waiting on
+  // other work.
   if (!blockers.length) {
     return { rank: 1, flag: { label: "Held", text, tone: "blocked" } };
   }

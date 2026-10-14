@@ -69,6 +69,7 @@ FRONTIER_BLOCKED_FIELDS = (
     "gate_point",
     "why",
     "satisfaction",
+    "needs_spec",
     "created_at",
 )
 
@@ -151,9 +152,8 @@ def _blocked_row(
     blocking_route: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
     if detail is None:
-        # Non-edge wait: operator block, legacy blocked status, or an
-        # incomplete idea body. There is no blocking item or gate point;
-        # the reasons channel carries the whole story.
+        # Non-edge wait: operator block, legacy blocked status, or an item
+        # that needs a spec. No blocking item or gate point; reasons say why.
         return {
             "item_id": public_ref,
             "title": step.title,
@@ -167,6 +167,7 @@ def _blocked_row(
             "gate_point": "",
             "why": "; ".join(step.blocked_reasons) or step.explanation,
             "satisfaction": "",
+            "needs_spec": step.needs_spec,
             "created_at": step.created_at,
         }
     return {
@@ -182,6 +183,7 @@ def _blocked_row(
         "gate_point": detail.gate_point,
         "why": _compose_edge_why(detail.reason, detail.rationale),
         "satisfaction": detail.satisfaction,
+        "needs_spec": step.needs_spec,
         "created_at": step.created_at,
     }
 

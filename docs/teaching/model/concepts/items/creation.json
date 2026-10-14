@@ -4,8 +4,8 @@
  "status": "observed",
  "plan_refs": ["FIRST-USER.13", "FIRST-USER.2", "FIRST-USER.28"],
  "commands": ["yoke items create"],
- "skills": ["idea"],
+ "skills": ["curate", "idea", "onboard"],
  "page": "items",
  "position": 1,
- "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/items_create.py", "runtime/api/cli/test_items_create_spec_sources.py"]
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/items_create.py", "runtime/api/cli/test_items_create_spec_sources.py", "packages/yoke-core/src/yoke_core/domain/item_spec_completeness.py", "runtime/api/test_item_spec_required.py"]
 }

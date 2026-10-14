@@ -118,7 +118,7 @@ def test_direct_work_refuses_blank_spec_before_dispatch(
     assert not dispatched
     error = capsys.readouterr().err
     assert "--spec-file" in error and "--stdin" in error
-    assert "nonblank spec" in error or "is required" in error
+    assert "SPEC_REQUIRED" in error or "is required" in error
 
 
 def test_items_create_reads_spec_from_stdin(monkeypatch):

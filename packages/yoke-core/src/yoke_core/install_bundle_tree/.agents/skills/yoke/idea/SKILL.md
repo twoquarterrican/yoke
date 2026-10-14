@@ -47,7 +47,8 @@ another claim. Use existing capabilities before introducing infrastructure.
 yoke sessions touch --mode idea
 ```
 
-A title is required; ask if absent. Resolve the target project before reading
+A title and its intended outcome are required; ask if absent. The item is
+created together with that outcome as its spec, never title-only. Resolve the target project before reading
 its effective title_max_length from the workflow registry. If the title exceeds
 it, ask for a shorter title and move detail into body; no create until valid.
 

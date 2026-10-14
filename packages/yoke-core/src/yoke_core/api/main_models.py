@@ -182,6 +182,7 @@ class FrontierItemModel(BaseModel):
     adapter: str
     blocked_by: List[str] = Field(default_factory=list)
     blocked_reasons: List[str] = Field(default_factory=list)
+    needs_spec: bool = False
     unblocks_count: int = 0
     downstream_depth: int = 0
     created_at: Optional[str] = None
@@ -238,6 +239,7 @@ class ScheduledStepModel(BaseModel):
     adapter: str = ""
     blocked_by: List[str] = Field(default_factory=list)
     blocked_reasons: List[str] = Field(default_factory=list)
+    needs_spec: bool = False
     unblocks_count: int = 0
     downstream_depth: int = 0
     created_at: Optional[str] = None
@@ -276,6 +278,8 @@ class CreateItemRequest(BaseModel):
 
     title: str
     workflow: str
+    # The agreed outcome; a missing or title-only spec refuses SPEC_REQUIRED.
+    spec: Optional[str] = None
     priority: str = "medium"
     project: Optional[str] = None
     deployment_flow: Optional[str] = None

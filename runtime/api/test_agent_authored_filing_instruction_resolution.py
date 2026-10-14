@@ -86,7 +86,10 @@ def test_curate_resolves_both_cluster_outputs_and_quick_promotion() -> None:
         "Run only the resolver for the selected output; these are alternatives"
         in cluster
     )
-    assert 'yoke items create "{title}" issue --project {project}' in cluster
+    assert (
+        'yoke items create "{title}" issue --spec-file {spec_file} --project {project}'
+        in cluster
+    )
     filing = cluster.split("## 3. Validate and propose", 1)[1]
     _ordered(filing, RESOLVER, "## 4. Produce approved outputs")
     _ordered(
