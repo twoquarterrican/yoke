@@ -45,13 +45,27 @@ native JSON/JSONB values are JSON objects. Native instants use the diagnostic
 read's wire format. No snapshot may contain secret-bearing columns or JSON keys;
 use the credential capability's own command for those values.
 
-### Item-keyed rows
+### Item references
 
-For a primary key containing `item_id`, keep that physical column name in
-`key_columns` and use `public_ref` in every snapshot instead of its internal
-value. The server resolves each reference within the document's project.
-Use the virtual `public_ref` column in SQL expressions to select reviewed
-items without knowing their internal ids:
+A column whose name ends in `item_id` and stores an `items.id` value is an
+item reference. A foreign key to `items.id` qualifies. So does an `item_id`
+column with no foreign key, which is how several tables store the id. A
+foreign key to any other table does not qualify.
+
+Use the public name in snapshots and in SQL. `item_id` is `public_ref`.
+`<prefix>_item_id` is `<prefix>_public_ref`, so `deployment_member_item_id`
+is `deployment_member_public_ref`. Keep a physical primary-key column in
+`key_columns`. The server resolves each reference through `item_refs` within
+the document's project.
+
+The public name is comparable. A non-key public name is also assignable:
+assigning it writes the physical item id. `public_ref` for a primary-key
+`item_id` stays immutable. A comparison matches only the items in the
+reviewed before snapshot; other rows have a null virtual reference. The
+exact-row guards still reject extra matches. Do not put the public name in
+`key_columns`.
+
+For a primary key containing `item_id`:
 
 ```json
 {
@@ -66,11 +80,23 @@ items without knowing their internal ids:
 ```
 
 Discover the live table's key order and required row values before adapting
-this example. `public_ref` in SQL maps only the items in the reviewed before
-snapshot; other rows have a null virtual reference. The exact-row guards still
-reject extra matches. It cannot be assigned or used in place of `item_id` in
-`key_columns`. Expected and observed audit snapshots retain public references.
-Raw `item_id` snapshot fields refuse with `internal_item_id_forbidden`; replace
+this example. The same public name works for a non-key column. This dry-run
+moves one requirement onto another item in the same project:
+
+```json
+{
+  "project": "example",
+  "sql": "UPDATE qa_requirements SET deployment_member_public_ref='EXAMPLE-43' WHERE id=5 AND deployment_member_public_ref='EXAMPLE-42'",
+  "table": "qa_requirements",
+  "key_columns": ["id"],
+  "before": [{"id": 5, "deployment_member_public_ref": "EXAMPLE-42"}],
+  "after": [{"id": 5, "deployment_member_public_ref": "EXAMPLE-43"}],
+  "reason": "Move the reviewed requirement onto the replacement member"
+}
+```
+
+Expected and observed audit snapshots retain public references.
+Raw item-id snapshot fields refuse with `internal_item_id_forbidden`; replace
 them with complete public references and review the changed document again.
 Unknown references refuse with `repair_item_ref_unknown`; read current refs
 and review again. References belonging to another project refuse with

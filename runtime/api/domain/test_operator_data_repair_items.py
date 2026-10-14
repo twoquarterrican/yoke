@@ -7,7 +7,7 @@ import pytest
 
 from runtime.api.domain.test_operator_data_repair import execute, receipt
 from runtime.api.domain.test_operator_data_repair_boundary import _Unclosed
-from runtime.api.fixtures.backlog import insert_item
+from runtime.api.fixtures.backlog import insert_item, insert_qa_requirement
 from yoke_contracts.api.function_call import (
     ActorContext,
     FunctionCallRequest,
@@ -229,6 +229,57 @@ def test_raw_internal_snapshot_still_refuses_at_wire_boundary():
         before=[dict(item_id=ITEM_KEY, transition_id="review", plan_id=7, note="old")]
     )
     assert public_item_request_error(request(plan)).code == "internal_item_id_forbidden"
+
+
+def test_member_public_ref_dry_run_resolves_and_raw_item_id_refuses(item_conn):
+    raw = document(
+        table="qa_requirements",
+        key_columns=["id"],
+        sql="UPDATE qa_requirements SET note='x' WHERE id=1",
+        before=[dict(id=1, deployment_member_item_id=ITEM_KEY)],
+        after=[dict(id=1, deployment_member_item_id=ITEM_KEY)],
+    )
+    with pytest.raises(RepairRefusal) as refused:
+        repair.validate_plan(raw, repair.review_digest(raw))
+    assert refused.value.code == "internal_item_id_forbidden"
+
+    new_ref = f"YOK-{SEQUENCE + 1}"
+    insert_item(
+        item_conn,
+        id=ITEM_KEY + 1,
+        title="Replacement member",
+        project_id=1,
+        project_sequence=SEQUENCE + 1,
+    )
+    requirement = insert_qa_requirement(
+        item_conn,
+        item_id=None,
+        deployment_run_id="repair-run",
+        deployment_stage="qa",
+        deployment_member_item_id=ITEM_KEY,
+    )
+    before = dict(id=int(requirement["id"]), deployment_member_public_ref=REF)
+    plan = document(
+        table="qa_requirements",
+        key_columns=["id"],
+        sql=(
+            "UPDATE qa_requirements "
+            f"SET deployment_member_public_ref='{new_ref}' "
+            f"WHERE id={before['id']} AND deployment_member_public_ref='{REF}'"
+        ),
+        before=[before],
+        after=[dict(before, deployment_member_public_ref=new_ref)],
+    )
+    execute(item_conn, plan, dry_run=True)
+    stored = item_conn.execute(
+        "SELECT deployment_member_item_id FROM public.qa_requirements WHERE id=%s",
+        (before["id"],),
+    ).fetchone()
+    assert stored[0] == ITEM_KEY
+    observed = json.loads(receipt(item_conn)[3])
+    assert observed["observed_before"] == plan.before
+    assert observed["observed_after"] == plan.after
+    assert receipt(item_conn)[0] == "test_verified"
 
 
 def test_public_reference_changes_invalidate_operator_review():
