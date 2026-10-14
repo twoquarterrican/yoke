@@ -125,6 +125,8 @@ def _ensure_flow_schema(conn) -> None:
             "driver_attachment",
             "settling_at",
             "membership_removals",
+            "superseded_by_run_id",
+            "supersedes_run_id",
             KEY_COLUMN,
             REQUEST_COLUMN,
         ):

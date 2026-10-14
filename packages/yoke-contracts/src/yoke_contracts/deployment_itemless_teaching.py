@@ -130,7 +130,10 @@ CREATE_DESCRIPTION = (
     "A run on a flow with an item-scoped QA stage that carries or owes "
     "members must take delivery custody, or it is refused "
     "(item_qa_flow_without_delivery_custody), because its members could "
-    "never be proven at item QA. Whether a memberless item-QA run owes a "
+    "never be proven at item QA. "
+    "Takes over a contained same-target run waiting only on item QA "
+    "(agent-rules/delivery.md). "
+    "Whether a memberless item-QA run owes a "
     "delivery is asked by validate-composition and before execution, not "
     "here, so add-item can attach to an itemless run. "
     "Choose the items' selected completion flow or deliberately reconcile "
@@ -205,6 +208,15 @@ def unkeyed_server_warning(run_id: str) -> str:
     )
 
 
+def takeover_note(run_id: str, superseded: str) -> str:
+    """Post-create stderr line when the create took over an older run."""
+    return (
+        f"note: {run_id} took over {superseded}, which was waiting only on "
+        f"item QA on this target; its waiting members now ride {run_id}. "
+        f"`yoke deployment-runs get {superseded}` shows what stayed there."
+    )
+
+
 def execute_created_run_note(authority: str, run_id: str) -> str:
     """Post-create stderr line pointing at the watch-deploy execute path."""
     return (
@@ -225,6 +237,7 @@ __all__ = [
     "WATCH_DEPLOY_DESCRIPTION",
     "execute_created_run_note",
     "replayed_run_note",
+    "takeover_note",
     "unconverged_key_note",
     "unkeyed_server_warning",
 ]

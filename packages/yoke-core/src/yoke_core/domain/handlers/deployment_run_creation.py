@@ -48,6 +48,7 @@ class DeploymentRunCreateResponse(BaseModel):
     idempotency_key: Optional[str] = None
     replayed: bool = False
     idempotency_basis: Optional[str] = None
+    supersedes_run_id: Optional[str] = None
 
 
 def _retry_candidate(run_id: str, *, project: str, flow: str) -> tuple[str, str | None]:
@@ -231,11 +232,14 @@ def handle_deployment_run_create(
             create_kwargs["artifact_identity"] = artifact_identity
         if retry_source:
             create_kwargs["inherit_members_from"] = retry_source
+        actor_id = request.actor.actor_id
         created = create_run(
             clean_project,
             clean_flow,
             idempotency_key=key,
             create_request=create_request,
+            session_id=request.actor.session_id,
+            actor_id=int(actor_id) if str(actor_id or "").isdigit() else None,
             **create_kwargs,
         )
     except (
@@ -277,6 +281,7 @@ def _created_outcome(
     inherited_items = _member_item_ids(run_id) if retry_source else ()
     member_items = _member_item_ids(run_id)
     created = pipe_to_dict(cmd_get(run_id), RUN_FIELDS)
+    supersedes = _superseded_run(run_id)
     return HandlerOutcome(
         result_payload={
             "run_id": run_id,
@@ -293,9 +298,32 @@ def _created_outcome(
             "idempotency_key": key,
             "replayed": replayed,
             "idempotency_basis": basis,
+            "supersedes_run_id": supersedes,
         },
         primary_success=True,
     )
+
+
+def _superseded_run(run_id: str) -> Optional[str]:
+    """The run this creation took over, read back from what it committed."""
+    from yoke_core.domain.db_helpers import connect, query_scalar
+    from yoke_core.domain.deployment_run_target_takeover import (
+        SUPERSEDES_COLUMN,
+        takeover_available,
+    )
+
+    conn = connect(None)
+    try:
+        if not takeover_available(conn):
+            return None
+        value = query_scalar(
+            conn,
+            f"SELECT {SUPERSEDES_COLUMN} FROM deployment_runs WHERE id=%s",
+            (run_id,),
+        )
+        return str(value) if value else None
+    finally:
+        conn.close()
 
 
 __all__ = [

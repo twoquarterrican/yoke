@@ -92,6 +92,7 @@ def cmd_create_run(
     db_path: Optional[str] = None,
     inherit_members_from: Optional[str] = None,
     allow_pending_pair_merges: bool = False,
+    session_id: Optional[str] = None,
 ) -> str:
     """Create a new deployment run without a caller key. Returns its ID.
 
@@ -115,6 +116,7 @@ def cmd_create_run(
         db_path=db_path,
         inherit_members_from=inherit_members_from,
         allow_pending_pair_merges=allow_pending_pair_merges,
+        session_id=session_id,
     )
     return created.run_id
 
@@ -131,6 +133,8 @@ def create_run(
     idempotency_key: Optional[str] = None,
     create_request: Optional[str] = None,
     allow_pending_pair_merges: bool = False,
+    session_id: Optional[str] = None,
+    actor_id: Optional[int] = None,
 ) -> CreatedRun:
     """Create a new deployment run, or return the one a keyed repeat names.
 
@@ -151,6 +155,11 @@ def create_run(
     same items, so the two facts are one write: committing the run first would
     leave a member-less retry behind any copy failure, and a member-less
     item-bound retry is precisely what cannot reach its completion gate.
+
+    An executing run on the same flow and target that waits only on item QA
+    is taken over in this same transaction
+    (:mod:`~yoke_core.domain.deployment_run_target_takeover`); *session_id*
+    and *actor_id* are the creator, audited on that run's removals.
     """
     run = {
         "flow": flow,
@@ -159,6 +168,8 @@ def create_run(
         "artifact_identity": artifact_identity,
         "inherit_members_from": inherit_members_from,
         "allow_pending_pair_merges": allow_pending_pair_merges,
+        "session_id": session_id,
+        "actor_id": actor_id,
     }
     request = {
         "environment": environment,
@@ -243,7 +254,36 @@ def _create_locked(
     if not valid:
         raise CompositionRefused(message)
     conn.commit()
+    _finish_superseded_run(conn, run_id)
     return CreatedRun(run_id, False, basis)
+
+
+def _finish_superseded_run(conn, run_id: str) -> None:
+    """Let a taken-over run that kept its passed members complete now.
+
+    Its takeover already committed; completion is the run's own ordinary
+    close-out, which reports its own recovery when it cannot finish yet.
+    """
+    from yoke_core.domain.deployment_run_target_takeover import (
+        SUPERSEDES_COLUMN,
+        takeover_available,
+    )
+
+    if not takeover_available(conn):
+        return
+    row = conn.execute(
+        f"SELECT old.id FROM deployment_runs new JOIN deployment_runs old "
+        f"ON old.id = new.{SUPERSEDES_COLUMN} "
+        "WHERE new.id = %s AND old.status = 'executing'",
+        (run_id,),
+    ).fetchone()
+    if row is None:
+        return
+    from yoke_core.domain.deployment_run_auto_completion import (
+        continue_after_settlement,
+    )
+
+    continue_after_settlement(conn, str(row[0]))
 
 
 __all__ = [

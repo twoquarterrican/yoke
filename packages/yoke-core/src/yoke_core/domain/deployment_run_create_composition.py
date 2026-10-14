@@ -81,8 +81,12 @@ def compose_run(
     allow_pending_pair_merges: bool,
     create_idempotency_key: Optional[str] = None,
     create_request: Optional[str] = None,
+    session_id: Optional[str] = None,
+    actor_id: Optional[int] = None,
 ) -> tuple[bool, str]:
-    """Insert the run row, copy a retry's membership, and validate composition."""
+    """Insert the run row, take over a run waiting on item QA on its target,
+    copy a retry's membership, and validate composition."""
+    from yoke_core.domain.deployment_run_target_takeover import take_over_waiting_run
     from yoke_core.domain.deployment_runs_validation import cmd_validate_composition
 
     inserted = insert_run(
@@ -108,6 +112,13 @@ def compose_run(
         # bound branches here would let a retry ship a consumer revision
         # the run it retries never carried.
         copy_bound_sources(conn, inherit_members_from, run_id)
+    take_over_waiting_run(
+        conn,
+        run_id,
+        session_id=session_id,
+        actor_id=actor_id,
+        apply=not run_id.startswith(UNLOCKED_RUN_PREFIX),
+    )
     # The row and any inherited members are provisional until the same
     # validator used by the explicit command has checked the pinned
     # sources, carried work, member flows, and dependencies. A refusal

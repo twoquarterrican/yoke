@@ -19,7 +19,11 @@ Item-bound batch release — who runs what:
   starts each one. No claim is taken: a run occupies the servers it deploys to
   until its QA settles or it is terminal, so a run aimed at an occupied server
   refuses naming the holder, and a run's live driver is the only session its
-  execution answers to. On a flow
+  execution answers to. Creating a run on the flow and target of a run that
+  waits only on item QA takes that run over when the new candidate contains
+  its candidate: waiting members move to the new run (every unclosed member
+  when the flow has run-level QA or approval, which cancels the older run as
+  superseded); `deployment-runs create --help` has the rules. On a flow
   that waits for CI that SHA needs its own CI run: create the CI-gated run
   without --source-ref to bind one, then pin its release_lineage. The start
   enrolls every delivery-ready item its candidate carries that no live or
