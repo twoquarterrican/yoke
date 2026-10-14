@@ -26,8 +26,10 @@ mid-way and however the process stops.
 terminal lane cleanup, and ending the holders' now-empty sessions run over
 every member the run has closed. Each member's cleanup retires only that
 member's lanes. The machine-wide merged-lane sweep then runs once for each
-distinct checkout. A failure here never reopens a closed
-member: the run stays ``executing`` and settling, and the next re-drive of
+distinct checkout. No transaction is open across any of it: each member's
+database steps commit on their own short connection, so a connection lost
+on one member never fails the members after it. A failure here never
+reopens a closed member: the run stays ``executing`` and settling, and the next re-drive of
 ``status succeeded`` (or the replay a cleared blocker triggers) finds the
 commit phase already done and finishes the effects before the run is
 marked succeeded.
@@ -272,8 +274,13 @@ def _effects_phase(conn: Any, run_id: str, staged: list[Any]) -> Optional[str]:
     from ``staged``, so a replay finishes effects an earlier pass left
     undone. Only the pass that committed a member holds its effect receipt.
     After the loop, each distinct checkout is swept once.
+
+    The read's transaction ends before the first effect: the effects spend
+    minutes in git and on the network, and each effect's database step runs
+    on its own short connection, so ``conn`` sits idle rather than idle in
+    a transaction the server would end.
     """
-    from yoke_core.domain.delivery_member_close_steps import (
+    from yoke_core.domain.delivery_member_close_effects import (
         run_closed_member_effects,
         sweep_closed_member_checkouts,
     )
@@ -281,6 +288,7 @@ def _effects_phase(conn: Any, run_id: str, staged: list[Any]) -> Optional[str]:
     receipts = {int(written.item_id): written.receipt for written in staged}
     failed: list[str] = []
     members = _final_members(conn, run_id, at_wait=False)
+    conn.commit()
     for member in members:
         item_id = int(member["item_id"])
         print(
@@ -288,7 +296,6 @@ def _effects_phase(conn: Any, run_id: str, staged: list[Any]) -> Optional[str]:
             flush=True,
         )
         failure = run_closed_member_effects(
-            conn,
             item_id=item_id,
             public_ref=str(member["public_ref"]),
             receipt=receipts.get(item_id),
