@@ -17,6 +17,7 @@ from yoke_cli.transport.pre_resolved_https_connection import (
     PreResolvedHTTPSHandler,
 )
 from yoke_cli.transport.response_deadline_errors import (
+    ResponseHeadersDeadlineError,
     ResponseOpenDeadlineError,
     ResponseOpenError,
 )
@@ -48,7 +49,7 @@ def open_https_caller_owned(
     response = opener.open(request, timeout=_remaining(deadline, clock))
     if clock() >= deadline:
         _close(response)
-        raise ResponseOpenDeadlineError("HTTPS open exceeded its time limit")
+        raise ResponseHeadersDeadlineError("HTTPS open exceeded its time limit")
     return response
 
 
@@ -92,7 +93,7 @@ def open_loopback_http_caller_owned(
     response = opener.open(request, timeout=_remaining(deadline, clock))
     if clock() >= deadline:
         _close(response)
-        raise ResponseOpenDeadlineError("HTTP open exceeded its time limit")
+        raise ResponseHeadersDeadlineError("HTTP open exceeded its time limit")
     return response
 
 

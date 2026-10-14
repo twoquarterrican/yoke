@@ -15,10 +15,12 @@ nothing is listening on this machine's port, and no amount of waiting
 starts a server the operator has not started. Spending 95 seconds of
 backoff there reports minutes late what was known immediately.
 
-A *response-deadline* failure means the server accepted the envelope and is
-still working on it. These keep one immediate re-attempt and no backoff. The
-dispatcher serializes a repeated side-effecting ``request_id`` behind the
-in-flight call, then the idempotency ledger replays its completed result.
+A *response-deadline* failure means the request was sent and the server
+did not answer in time. It is never resent. The server keeps running the
+original after the client stops waiting, so a second copy only queues behind
+it — on a side-effecting call, blocked on the idempotency lock its own
+original holds — and doubles the in-flight work on a server that is already
+too slow. The caller reports the timeout once.
 
 Retrying at all is only safe because the envelope is serialized once, so every
 attempt carries the same ``request_id``. The dispatcher serializes concurrent
@@ -43,7 +45,6 @@ from yoke_contracts.timestamps import format_instant, utc_now
 
 CONNECTION_ATTEMPTS = 7
 CONNECTION_BACKOFF_SECONDS = (1.0, 3.0, 6.0, 12.0, 24.0, 48.0)
-RESPONSE_DEADLINE_ATTEMPTS = 2
 
 
 def http_status_is_transient(status: int | None) -> bool:
@@ -87,15 +88,6 @@ def attempt_budget(max_attempts: int | None) -> int:
     if max_attempts is None:
         return CONNECTION_ATTEMPTS
     return max(1, min(int(max_attempts), CONNECTION_ATTEMPTS))
-
-
-def should_retry_response_deadline(attempt: int, budget: int) -> bool:
-    """Whether a server still working on the envelope earns the one re-attempt.
-
-    The server accepted it, so this is not the connection ladder: one
-    immediate retry, no backoff, and never more than the caller's budget.
-    """
-    return attempt + 1 < min(RESPONSE_DEADLINE_ATTEMPTS, budget)
 
 
 def should_retry_connection(
@@ -265,9 +257,7 @@ __all__ = [
     "connection_refusal_is_conclusive",
     "is_sandbox_denial",
     "should_retry_connection",
-    "should_retry_response_deadline",
     "CONNECTION_BACKOFF_SECONDS",
-    "RESPONSE_DEADLINE_ATTEMPTS",
     "connection_backoff_seconds",
     "format_retry_notice",
     "utc_stamp",

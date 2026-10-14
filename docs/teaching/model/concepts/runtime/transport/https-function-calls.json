@@ -5,6 +5,6 @@
  "audience": "Maintainers",
  "page": "runtime",
  "position": 0,
- "sources": ["docs/public/reference/db-reference/functions.md"],
- "summary": "Side-effect-free handlers share a 25-second read budget inside the 30-second HTTPS attempt. Expiry returns read_deadline_exceeded with a narrower-read recovery and Performance failure evidence."
+ "sources": ["docs/public/reference/db-reference/functions.md", "docs/public/reference/https-connection-diagnostics.md"],
+ "summary": "Side-effect-free handlers share a 25-second read budget inside the 30-second HTTPS attempt. Expiry returns read_deadline_exceeded with a narrower-read recovery and Performance failure evidence. A response timeout is reported once and never resent, because the server may still be running the call; only failures that never reached the server retry."
 }

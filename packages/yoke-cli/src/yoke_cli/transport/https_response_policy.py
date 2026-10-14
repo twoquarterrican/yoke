@@ -31,6 +31,7 @@ from yoke_contracts.api.function_call import (
 
 FUNCTION_RESPONSE_LIMIT_BYTES = DEFAULT_JSON_RESPONSE_LIMIT_BYTES
 REDACTED = "<redacted>"
+RESPONSE_TIMEOUT_DETAIL = "HTTPS function relay response exceeded the time limit"
 
 
 class HttpsResponsePolicyError(ValueError):
@@ -57,9 +58,7 @@ def read_bounded_response(
             deadline=deadline,
         )
     except ResponseReadDeadlineError:
-        raise HttpsResponsePolicyError(
-            "HTTPS function relay response exceeded the time limit"
-        ) from None
+        raise HttpsResponsePolicyError(RESPONSE_TIMEOUT_DETAIL) from None
     except ResponseReadError:
         raise HttpsResponsePolicyError(
             "HTTPS function relay returned a malformed response"
@@ -332,6 +331,7 @@ __all__ = [
     "FUNCTION_RESPONSE_LIMIT_BYTES",
     "HttpsResponsePolicyError",
     "REDACTED",
+    "RESPONSE_TIMEOUT_DETAIL",
     "adopt_boundary_error",
     "collect_request_secrets",
     "parse_typed_response",

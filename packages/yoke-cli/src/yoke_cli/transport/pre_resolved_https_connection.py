@@ -12,6 +12,7 @@ from collections.abc import Callable
 from typing import Any
 
 from yoke_cli.transport.response_deadline_errors import (
+    ResponseHeadersDeadlineError,
     ResponseOpenDeadlineError,
     ResponseOpenError,
 )
@@ -257,7 +258,7 @@ class _DeadlineBufferedReader:
         try:
             raw = self._wrapped.read1(size)
         except TimeoutError:
-            raise ResponseOpenDeadlineError(
+            raise ResponseHeadersDeadlineError(
                 "HTTPS response headers exceeded the time limit"
             ) from None
         self._check()
@@ -298,11 +299,12 @@ class _DeadlineBufferedReader:
         return getattr(self._wrapped, name)
 
     def _set_timeout(self) -> None:
+        self._check()
         self._sock.settimeout(_remaining(self._deadline, self._clock))
 
     def _check(self) -> None:
         if self._clock() >= self._deadline:
-            raise ResponseOpenDeadlineError(
+            raise ResponseHeadersDeadlineError(
                 "HTTPS response headers exceeded the time limit"
             )
 

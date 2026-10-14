@@ -60,13 +60,13 @@ def test_exhausted_chunk_is_not_reexecuted(monkeypatch):
     def open_request(*a, **k):
         calls.append(k)
         now[0] = 60
-        raise relay.ResponseOpenDeadlineError("expired")
+        raise relay.ResponseHeadersDeadlineError("expired")
 
     monkeypatch.setattr(relay, "_open_function_relay", open_request)
     request = sensitive_request().model_copy(update={"function": "doctor.run.run"})
     response = relay.relay_https(request, CONNECTION, timeout_s=300)
     assert len(calls) == 1
-    assert "doctor_chunk_budget_exhausted" in response.error.message
+    assert "exceeded the time limit" in response.error.message
 
 
 def test_overall_deadline_retains_rows_cursor_and_error_identity(monkeypatch):

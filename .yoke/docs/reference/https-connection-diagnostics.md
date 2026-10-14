@@ -24,4 +24,6 @@ and describe their cause as unknown; check reachability and DNS. A loopback
 connection refusal still directs the caller to start the server or select
 another authority. Transient resets and server unavailability retain their
 retry budgets, deadlines and response bounds. Every relay attempt uses the
-same request body and request id for replay safety.
+same request body and request id for replay safety. A response timeout is
+reported once and never resent, because the server may still be running the
+call; read the affected state before re-running a command that changes it.
