@@ -228,7 +228,7 @@ class CoreSessionMessageDeliveryPort:
         claimed_at: datetime,
         not_after: datetime,
     ) -> None:
-        """Claim the report interval now that the reply confirms delivery."""
+        """Stamp delivered content inside the reserved composition interval."""
         claimed_at = as_utc(claimed_at)
         not_after = as_utc(not_after)
         from yoke_core.domain import db_backend

@@ -86,10 +86,10 @@ def _cell(row: Any, key: str, index: int) -> Any:
 def load_plan_limits(
     conn: Any,
     *,
-    project_id: int,
+    project_id: int | None,
     now: datetime | str,
     registered_names: Mapping[str, str] | None = None,
-) -> tuple[MachinePlanLimit, ...]:
+) -> tuple[MachinePlanLimit | tuple[frozenset[int], MachinePlanLimit], ...]:
     """Connected relays' cached readings for machines serving this project.
 
     ``registered_names`` lets a caller that already read the registry pass it
@@ -105,9 +105,13 @@ def load_plan_limits(
         "ORDER BY hostname, machine_id",
         (instant_parameter(conn, parse_instant(now)),),
     ).fetchall()
-    found: list[MachinePlanLimit] = []
+    found = []
     for row in rows:
-        if int(project_id) not in _projects(_cell(row, "project_checkouts", 2)):
+        projects = frozenset(_projects(_cell(row, "project_checkouts", 2)))
+        values = []
+        if project_id is not None and int(project_id) not in _projects(
+            _cell(row, "project_checkouts", 2)
+        ):
             continue
         remaining_source = sanitize_plan_limits(
             _document(_cell(row, "surface_plan_limits", 3))
@@ -125,7 +129,7 @@ def load_plan_limits(
             plan_tier = row_data.get("plan_tier")
             for window in row_data.get("windows") or ():
                 remaining = window.get("remaining_percent")
-                found.append(
+                values.append(
                     MachinePlanLimit(
                         machine_id=machine_id,
                         machine_name=machine_name,
@@ -144,6 +148,9 @@ def load_plan_limits(
                         else None,
                     )
                 )
+        found.extend(
+            (projects, value) if project_id is None else value for value in values
+        )
     return tuple(found)
 
 

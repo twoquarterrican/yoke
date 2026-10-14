@@ -14,7 +14,7 @@ from yoke_contracts.timestamps import parse_instant
 
 from datetime import datetime
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 from typing import Any, Mapping
 
@@ -151,6 +151,7 @@ def compose_held_reports(
     session_id: str,
     now: str,
     project_id: int | None = None,
+    include_inventory: bool = True,
 ) -> CombinedFleetReport:
     """Assemble one combined report from this session's active steering claims.
 
@@ -163,7 +164,7 @@ def compose_held_reports(
     from yoke_core.domain.steering_report_read_connection import ReportReadConnection
 
     conn = ReportReadConnection(conn)
-    reads = FleetReportReads()
+    reads = FleetReportReads(include_inventory=include_inventory)
     sections: list[ScopedFleetReport] = []
     for claim in list_session_claims(conn, session_id=session_id, active_only=True):
         scope = dict(claim.get("scope") or {})
@@ -209,6 +210,14 @@ def compose_held_reports(
     sections.sort(
         key=lambda section: (not section.report.actionable, section.descriptor)
     )
+    from yoke_core.domain.steering_fleet_report_labels import session_labels
+
+    labels = session_labels(
+        conn, tuple(s.report for s in sections), reads.machine_names(conn)
+    )
+    sections = [
+        replace(s, report=replace(s.report, session_labels=labels)) for s in sections
+    ]
     project_ids = [int(section.report.project_id) for section in sections]
     grace = wake_ack_grace_seconds(conn, project_ids[0] if project_ids else None)
     unacked = load_unacked_injected(

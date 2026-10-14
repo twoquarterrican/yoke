@@ -290,11 +290,8 @@ def settle_after_render(
             except Exception:
                 pass
         fingerprint = str(raw.get("report_fingerprint") or "").strip()
-        # A malformed or denied reply must not spend the report's interval:
-        # the composed candidate is best-effort until this confirms the
-        # reply that carried it was actually well-formed and undenied, so a
-        # byte-ceiling-omitted report leaves the hook or watcher free to retry instead of
-        # waiting out a whole interval for nothing.
+        # Composition reserved the interval already. Stamp content only when
+        # this reply carries it; an omitted report retries in the next window.
         if fingerprint and not denied and token_delivered(rendered_text, REPORT_BEGIN):
             if delivery_port is None:
                 delivery_port = _delivery_port()

@@ -4,7 +4,11 @@ The server composes reports for the calling session's held steering scopes;
 reporting never staffs work. `yoke steering report get` combines them;
 `--project P` filters a scope and `--full` retrieves complete detail.
 Headings use project slug or `<project> · <document>`.
-JSON returns one count summary per scope; `--json --full` returns every fact.
+JSON requests compute every fact; `--json --full` permits the complete reply.
+Digest and summary requests skip inventories that they do not render, retaining
+plan limits for stranded-session detection. Machine values load once per request
+and project membership filters those shared inputs. Session rows name their
+person and machine; unavailable identity is explicit, and command IDs stay intact.
 Repeated SQL reads share one request-local answer across sections and held seats;
 the next report reads fresh state. Waiter, machine-count and candidate-claim
 inputs load in sets before classification.
@@ -266,10 +270,12 @@ own unacked inbox and full-read/help pointer; deliver=true/shared delivered
 record prevents reprinting other's report. Worker mail wakes normally; no mail
 is still followed by next due hook report.
 
-Undenied/well-formed settlement confirms report survived byte ceiling; denied/
-malformed replies consume no delivery interval. Shared last_steering_report_at/
-fingerprint compare-and-set suppresses delivered duplicates. A watcher print
-racing provisional hook render can duplicate once; later shared identity stops it.
+Hook and watcher reserve last_steering_report_at before composition, so only one
+build runs per window, including denied, cut-off or failed replies. Settlement
+records last_steering_report_fingerprint only when the report survived the byte
+ceiling. Failed delivery leaves the old fingerprint; the next interval retries.
+Watcher replies carry the digest and compact disappearance identities, without
+the full body or full scope facts. A skipped window preserves watcher row memory.
 
 Project-policy defaults: staffing 5 minutes, idle 20, interval 2. Staffing age
 starts when pickable: later item change/claim release. Idle is last tool silence,

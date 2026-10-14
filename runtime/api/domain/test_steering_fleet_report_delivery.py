@@ -10,6 +10,7 @@ from runtime.api.fixtures.backlog import insert_item
 from yoke_core.domain.steering_claims import acquire as acquire_steering
 from yoke_core.domain.strategy_docs_defaults import seed_default_docs
 from yoke_core.domain.steering_fleet_report_delivery import (
+    claim_report_composition,
     confirm_steering_report_delivery,
     record_report_delivery,
     steered_project_id,
@@ -104,26 +105,25 @@ def test_the_steering_seat_receives_the_report(steering_scope):
     assert fingerprint
 
 
-def test_an_unconfirmed_candidate_does_not_take_the_interval(steering_scope):
-    """Peeking a candidate composes it without spending its delivery slot.
-
-    A reply that turns out denied or malformed must not cost the recipient
-    a whole interval's report — the next hook has to see the SAME candidate
-    again rather than a suppressed one, because nothing was ever confirmed.
-    """
+def test_unconfirmed_composition_reserves_interval_and_retries_later(steering_scope):
+    """Failed delivery cannot rebuild on every hook inside the same window."""
     first = steering_report_candidate(
         steering_scope, session_id=STEERING_SESSION, now=NOW
     )
     assert first is not None
     assert "=== BEGIN YOKE FLEET REPORT ===" in first.text
     stamped_at, fingerprint = _last_report(steering_scope, STEERING_SESSION)
-    assert stamped_at is None
+    assert stamped_at == NOW
     assert fingerprint == ""
 
     second = steering_report_candidate(
         steering_scope, session_id=STEERING_SESSION, now=NOW + timedelta(minutes=1)
     )
 
+    assert second is None
+    second = steering_report_candidate(
+        steering_scope, session_id=STEERING_SESSION, now=NOW + timedelta(minutes=30)
+    )
     assert second is not None
     assert second.fingerprint == first.fingerprint
 
@@ -312,6 +312,14 @@ def test_hook_and_watcher_share_one_delivery_record(steering_scope):
         )
 
     assert watcher(candidate.fingerprint) is False
+    assert (
+        claim_report_composition(
+            steering_scope,
+            session_id=STEERING_SESSION,
+            now="2026-08-26T12:05:00.000000Z",
+        )
+        is not None
+    )
     assert watcher("changed-content") is True
     assert watcher("changed-content") is False
     assert _last_report(steering_scope, STEERING_SESSION)[1] == "changed-content"

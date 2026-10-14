@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from yoke_contracts.timestamps import InvalidInstant, format_instant, parse_instant
+from yoke_contracts.timestamps import InvalidInstant, parse_instant
 from yoke_core.domain import db_backend, session_message_delivery
 from yoke_core.domain.steering_fleet_report_delivery import SteeringReportCandidate
 from yoke_core.hooks.session_message_delivery_port import (
@@ -77,13 +77,14 @@ def test_actual_report_port_round_trip_preserves_metadata_and_native_sql(
         claimed_at=lease.report_claimed_at,
         not_after=lease.report_not_after,
     )
-    sql_clocks = (INSTANT, CUTOFF) if postgres else (WIRE, format_instant(CUTOFF))
+    sql_clock = INSTANT if postgres else WIRE
     assert conn.calls[0][1] == (
-        sql_clocks[0],
         "opaque fingerprint",
         "sample",
-        sql_clocks[1],
+        sql_clock,
+        "opaque fingerprint",
     )
+    assert "last_steering_report_at =" in conn.calls[0][0].split(" WHERE ")[1]
     assert conn.commits == 1
     assert conn.closed == 2
     assert candidate.claimed_at is INSTANT

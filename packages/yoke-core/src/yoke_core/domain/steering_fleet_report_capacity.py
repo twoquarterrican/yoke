@@ -95,19 +95,21 @@ def launchable_surfaces(
     )
 
 
-def _serves(raw: Any, project_id: int) -> bool:
+def _projects(raw: Any) -> frozenset[str]:
     try:
         projects = json.loads(str(raw or "[]")) if not isinstance(raw, list) else raw
     except (TypeError, ValueError):
-        return False
-    return isinstance(projects, list) and any(
-        str(value) == str(project_id) for value in projects
+        return frozenset()
+    return (
+        frozenset(str(value) for value in projects if str(value).isdecimal())
+        if isinstance(projects, list)
+        else frozenset()
     )
 
 
 def machine_capacities(
-    conn: Any, *, project_id: int, now: datetime
-) -> tuple[MachineCapacity, ...]:
+    conn: Any, *, project_id: int | None, now: datetime
+) -> tuple[MachineCapacity | tuple[frozenset[str], MachineCapacity], ...]:
     """Lanes against cap for every connected machine serving this project.
 
     Read from the relay rows directly rather than from eligibility, because a
@@ -123,19 +125,32 @@ def machine_capacities(
         (instant_parameter(conn, current),),
     ).fetchall()
     counts = live_lane_counts(conn, now=current)
-    found: dict[str, MachineCapacity] = {}
+    found = {}
     for row in rows:
         machine_id = str(row["machine_id"])
-        if machine_id in found or not _serves(row["project_checkouts"], project_id):
+        projects = _projects(row["project_checkouts"])
+        keys = [
+            (project, machine_id)
+            for project in projects
+            if (project_id is None or str(project) == str(project_id))
+            and (project, machine_id) not in found
+        ]
+        if not keys:
             continue
-        found[machine_id] = machine_capacity(
+        entry = machine_capacity(
             conn,
             machine_id=machine_id,
             capacity_document=row["machine_capacity"],
             live_lanes=counts.get(machine_id, 0),
             now=current,
         )
-    return tuple(found[machine] for machine in sorted(found))
+        found.update(dict.fromkeys(keys, entry))
+    return tuple(
+        (frozenset({project}), found[(project, machine)])
+        if project_id is None
+        else found[(project, machine)]
+        for project, machine in sorted(found)
+    )
 
 
 def capacity_line(entry: MachineCapacity) -> str:

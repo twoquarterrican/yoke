@@ -1,7 +1,9 @@
 {
  "id": "live-workers",
  "title": "Live workers",
- "status": "draft-copy",
+ "status": "observed",
  "page": "frontier",
- "position": 2
+ "position": 2,
+ "need": "Fleet report rows name the session, its person and machine; command identities remain unchanged.",
+ "sources": ["docs/public/reference/db-reference/steering-fleet-report.md"]
 }
