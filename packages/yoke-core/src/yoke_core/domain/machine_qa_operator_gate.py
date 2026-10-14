@@ -12,10 +12,8 @@ from urllib.parse import urlsplit
 from yoke_contracts.machine_approval_coordinates import machine_approval_coordinates
 
 from yoke_core.domain.ssh_mac_terminal_capture import RunRemote
-from yoke_core.domain.ssh_mac_browser_approval import (
-    BrowserApprovalResult,
-    approve_machine_in_safari,
-)
+from yoke_harness.machine_browser_approval import BrowserApprovalResult
+from yoke_harness.ssh_mac_browser_approval import approve_machine_in_safari
 from yoke_core.domain.ssh_mac_terminal_recipe_support import (
     capture_recipe_transcript,
     send_recipe_keys,
@@ -66,11 +64,11 @@ def _current_gate_transcript(transcript: str, code: str) -> str:
     return transcript[code_index:] if code_index >= 0 else transcript
 
 
-def _emit_browser_approval(url: str, code: str) -> None:
+def _emit_browser_approval(url: str, code: str, browser: str) -> None:
     print(
         json.dumps(
             {
-                "approval_automation": "self_approving_visible_safari",
+                "approval_automation": f"self_approving_visible_{browser.casefold()}",
                 "event": "machine_qa.operator_gate",
                 "kind": "machine_browser_approval",
                 "self_approving": True,
@@ -108,6 +106,7 @@ def run_machine_browser_approval(
         action=action,
         progress_callback=progress_callback,
         allowed_base_urls=allowed_base_urls,
+        browser="Safari",
         approve_browser=lambda url, code: approve_machine_in_safari(
             run,
             verification_url=url,
@@ -123,6 +122,7 @@ def run_machine_browser_approval_with_io(
     action: Mapping[str, Any],
     progress_callback: Callable[[], None] | None,
     allowed_base_urls: tuple[str, ...],
+    browser: str,
     approve_browser: Callable[[str, str], BrowserApprovalResult],
 ) -> OperatorGateResult:
     """Run one browser handoff through an already-authorized terminal surface."""
@@ -138,7 +138,9 @@ def run_machine_browser_approval_with_io(
     try:
         coordinates = machine_approval_coordinates(url, code)
         if not _approved_origin(coordinates.origin, allowed_base_urls):
-            raise ValueError("machine approval origin is outside the declared execution target")
+            raise ValueError(
+                "machine approval origin is outside the declared execution target"
+            )
     except ValueError as exc:
         return OperatorGateResult(
             False,
@@ -150,7 +152,7 @@ def run_machine_browser_approval_with_io(
             },
         )
     url, code = coordinates.complete_uri, coordinates.user_code
-    _emit_browser_approval(url, code)
+    _emit_browser_approval(url, code, browser)
     if not send_keys(action["keys"]):
         return OperatorGateResult(
             False,

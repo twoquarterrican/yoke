@@ -12,6 +12,8 @@ from yoke_core.domain.ssh_mac_terminal_recipe_support import (
     stage_recipe_files,
 )
 from yoke_core.domain.ssh_mac_terminal_recipe_cleanup import with_staged_cleanup
+from yoke_core.domain.ssh_linux_browser_gate import checkpoint, run_browser_gate
+from yoke_harness.ssh_linux_browser_approval import prepare_desktop_chromium
 from yoke_harness.ssh_linux_terminal import (
     LinuxTerminal,
 )
@@ -38,13 +40,20 @@ def _interactive(
     secrets,
     size,
     progress_callback,
+    allowed_operator_urls,
 ):
     terminal = LinuxTerminal(control)
     deadline = time.monotonic() + float(config["max_wall_seconds"])
     rows = []
     result = HostActionResult(False, {}, "linux_terminal_recipe_failed")
     try:
-        if not terminal.open(entry_surface, size):
+        environment = None
+        if any(action.get("operator_gate") for action in config["actions"]):
+            prepared = prepare_desktop_chromium(control)
+            if not prepared.ok:
+                return prepared
+            environment = prepared.evidence["environment"]
+        if not terminal.open(entry_surface, size, environment):
             return HostActionResult(
                 False,
                 {"recovery": "Install tmux and repair the non-root user's SSH shell."},
@@ -67,21 +76,6 @@ def _interactive(
             )
         time.sleep(initial_wait)
         for action in config["actions"]:
-            if action.get("operator_gate"):
-                return HostActionResult(
-                    False,
-                    {
-                        "steps": rows,
-                        "designed_deferrals": [
-                            {
-                                "code": "headless_linux_browser_approval_unavailable",
-                                "outcome": "deferred",
-                            }
-                        ],
-                        "recovery": "Use headless device-auth sign-in before golden capture; use a macOS Test Machine for browser approval recipes.",
-                    },
-                    "headless_linux_browser_approval_unavailable",
-                )
             if time.monotonic() >= deadline:
                 return HostActionResult(
                     False,
@@ -91,6 +85,21 @@ def _interactive(
                     },
                     "terminal_recipe_timed_out",
                 )
+            if action.get("operator_gate"):
+                failed = run_browser_gate(
+                    control,
+                    terminal,
+                    action,
+                    rows,
+                    allowed_operator_urls,
+                    progress_callback,
+                )
+                if failed is None:
+                    # The approval leaves visual proof whether or not it is a checkpoint.
+                    failed = checkpoint(control, rows)
+                if failed is not None:
+                    return failed
+                continue
             ready = _wait(
                 terminal,
                 action.get("ready_text", ()),
@@ -155,14 +164,9 @@ def _interactive(
                 }
             )
             if str(action["step"]) in config["capture_checkpoints"]:
-                try:
-                    rows[-1].update(control.capture_terminal_checkpoint())
-                except RuntimeError as exc:
-                    return HostActionResult(
-                        False,
-                        {"steps": rows, "recovery": str(exc)},
-                        "desktop_screenshot_failed",
-                    )
+                failed = checkpoint(control, rows)
+                if failed is not None:
+                    return failed
         combined = "\n".join(row["transcript"] for row in rows)
         import re
 
@@ -221,6 +225,7 @@ def execute_linux_recipe(
     config,
     size,
     progress_callback=None,
+    allowed_operator_urls=(),
 ):
     ok, staged, staged_secrets = stage_recipe_files(
         config["stage_files"], upload_bytes=control._upload_bytes
@@ -257,6 +262,7 @@ def execute_linux_recipe(
                 secrets=secrets,
                 size=size,
                 progress_callback=progress_callback,
+                allowed_operator_urls=tuple(allowed_operator_urls),
             )
         safe = HostActionResult(
             result.ok,

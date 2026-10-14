@@ -12,9 +12,9 @@ from yoke_contracts.machine_qa_failures import bounded_machine_qa_diagnostic
 from yoke_harness.ssh_linux_reset_cleanup import RESET_WRITERS_PROGRAM
 from yoke_harness.ssh_linux_reset_preconditions import (
     DESKTOP_PROGRAM,
-    reset_preflight,
+    archive_admission,
 )
-from yoke_harness.ssh_linux_sign_in_stores import NO_SIGN_IN_PLAN, SIGN_IN_PROGRAM
+from yoke_harness.ssh_linux_sign_in_stores import SIGN_IN_PROGRAM
 from yoke_harness.ssh_linux_reset_services import YOKE_SERVICE_PATTERNS
 from yoke_harness.ssh_test_machine_transport import SSH_TIMEOUT_DIAGNOSTIC
 from yoke_harness.ssh_mac_baseline_probes import (
@@ -217,12 +217,10 @@ def prove_linux_probes(control: Any, document: str) -> HostActionResult:
 def archive_operation(
     control: Any, operation: str, destination: str
 ) -> HostActionResult:
-    sign_in_plan = NO_SIGN_IN_PLAN
-    if operation == "reset":
-        preflight = reset_preflight(control, destination)
-        if not preflight.ok:
-            return preflight
-        sign_in_plan = preflight.evidence["sign_in_plan"]
+    admitted = archive_admission(control, operation, destination)
+    if not admitted.ok:
+        return admitted
+    sign_in_plan = admitted.evidence["sign_in_plan"]
     command = shlex.join(
         [
             "/usr/bin/python3",

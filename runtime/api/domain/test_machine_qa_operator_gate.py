@@ -12,7 +12,7 @@ from yoke_core.domain.machine_qa_operator_gate import (
     run_machine_browser_approval,
     run_machine_browser_approval_with_io,
 )
-from yoke_core.domain.ssh_mac_browser_approval import BrowserApprovalResult
+from yoke_harness.machine_browser_approval import BrowserApprovalResult
 from yoke_core.domain.machine_qa_recipe_contracts import (
     MachineQaRecipeError,
     validate_terminal_recipe,
@@ -57,8 +57,8 @@ def test_browser_gate_emits_coordinates_sends_enter_and_heartbeats(
                 command,
                 stdout=(
                     "https://app.stage.upyoke.com/connect?user_code=AB12-CD34\n"
-                    if "return tabURLs" in command else
-                    "approved|https://app.stage.upyoke.com/connect?user_code=AB12-CD34|"
+                    if "return tabURLs" in command
+                    else "approved|https://app.stage.upyoke.com/connect?user_code=AB12-CD34|"
                     "https://app.stage.upyoke.com/orgs/acme/frontier\n"
                 ),
             )
@@ -135,6 +135,7 @@ def test_browser_gate_ignores_stale_outcomes_before_current_code(
         action=_gate_action(),
         progress_callback=None,
         allowed_base_urls=("https://app.stage.upyoke.com",),
+        browser="Safari",
         approve_browser=lambda _url, _code: BrowserApprovalResult(
             True,
             {"browser": "Safari"},
@@ -163,6 +164,7 @@ def test_browser_gate_accepts_completion_after_browser_automation_failure() -> N
         action=_gate_action(),
         progress_callback=None,
         allowed_base_urls=("https://app.stage.upyoke.com",),
+        browser="Safari",
         approve_browser=lambda _url, _code: BrowserApprovalResult(
             False,
             browser_evidence,
@@ -186,6 +188,7 @@ def test_browser_gate_rejects_a_non_entry_path_before_automation() -> None:
         action=_gate_action(),
         progress_callback=None,
         allowed_base_urls=("https://app.stage.upyoke.com",),
+        browser="Safari",
         approve_browser=lambda _url, _code: (
             called.append(True) or BrowserApprovalResult(True, {})
         ),
@@ -229,7 +232,9 @@ def test_operator_sleep_is_rejected_by_the_recipe_contract() -> None:
 
 def test_standalone_gate_accepts_the_current_complete_verification_uri():
     uri = "https://example.invalid/connect?user_code=AB12-CD34"
-    transcripts = iter((f"One-time code: AB12-CD34\nOpen: {uri}\n", "Yoke token connected."))
+    transcripts = iter(
+        (f"One-time code: AB12-CD34\nOpen: {uri}\n", "Yoke token connected.")
+    )
     requests = []
     result = run_machine_browser_approval_with_io(
         read_transcript=lambda: next(transcripts),
@@ -237,7 +242,10 @@ def test_standalone_gate_accepts_the_current_complete_verification_uri():
         action=_gate_action(),
         progress_callback=None,
         allowed_base_urls=("https://example.invalid",),
-        approve_browser=lambda url, code: requests.append((url, code)) or BrowserApprovalResult(True, {}),
+        browser="Safari",
+        approve_browser=lambda url, code: (
+            requests.append((url, code)) or BrowserApprovalResult(True, {})
+        ),
     )
     assert result.ok
     assert requests == [(uri, "AB12-CD34")]
@@ -246,12 +254,17 @@ def test_standalone_gate_accepts_the_current_complete_verification_uri():
 def test_complete_uri_on_an_undeclared_origin_is_refused_before_approval():
     requests = []
     result = run_machine_browser_approval_with_io(
-        read_transcript=lambda: "One-time code: AB12-CD34\nOpen: https://other.invalid/connect?user_code=AB12-CD34\n",
+        read_transcript=lambda: (
+            "One-time code: AB12-CD34\nOpen: https://other.invalid/connect?user_code=AB12-CD34\n"
+        ),
         send_keys=lambda keys: True,
         action=_gate_action(),
         progress_callback=None,
         allowed_base_urls=("https://example.invalid",),
-        approve_browser=lambda url, code: requests.append((url, code)) or BrowserApprovalResult(True, {}),
+        browser="Safari",
+        approve_browser=lambda url, code: (
+            requests.append((url, code)) or BrowserApprovalResult(True, {})
+        ),
     )
     assert result.error_code == "machine_browser_approval_context_invalid"
     assert result.browser_evidence["recovery"]
