@@ -134,6 +134,22 @@ def test_atomic_text_preserves_canonical_lf_bytes(tmp_path):
     assert path.read_bytes() == b"first\nsecond\n"
 
 
+def test_crlf_only_interrupted_output_is_rewritten_canonically(tmp_path, monkeypatch):
+    monkeypatch.setattr(instruction_discovery.shutil, "which", lambda _: None)
+    _git(tmp_path, "init")
+    _file(tmp_path, "README.md", "project\n")
+    _commit(tmp_path, "Create project")
+    bundle = make_bundle()
+    apply_bundle(tmp_path, bundle, retain_pending=True)
+    skill = tmp_path / bundle["files"][0]["path"]
+    skill.write_bytes(skill.read_bytes().replace(b"\n", b"\r\n"))
+
+    assert recovery.recoverable_checkout(tmp_path)
+    apply_bundle(tmp_path, bundle, retain_pending=True)
+
+    assert b"\r\n" not in skill.read_bytes()
+
+
 def test_dirty_interrupted_checkout_accepts_planned_settings_and_refuses_edits(
     tmp_path, monkeypatch
 ):
