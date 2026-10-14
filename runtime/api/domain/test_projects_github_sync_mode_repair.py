@@ -8,7 +8,7 @@ import pytest
 
 from runtime.api.fixtures import pg_testdb
 from runtime.api.fixtures.backlog_inserts import insert_item
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain import db_backend
 from yoke_core.domain.github_app_user_verification import (
     VerifiedProjectGitHubBinding,
@@ -30,7 +30,7 @@ def project_db(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
             conn.commit()
         finally:
             conn.close()

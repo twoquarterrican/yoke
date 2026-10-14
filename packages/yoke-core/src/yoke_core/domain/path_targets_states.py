@@ -9,7 +9,6 @@ surfaces atomically.
 
 Adding a fifth state means: append to ``ALL_STATES`` here, update the
 authoritative DDL in :mod:`yoke_core.domain.schema_init_path_tables`
-and the fixture mirror in :mod:`runtime.api.fixtures.schema_ddl_runtime`,
 ship a governed migration that rebuilds the table with the widened
 CHECK, and the constant-owner test ratchets future surfaces onto the
 new vocabulary.

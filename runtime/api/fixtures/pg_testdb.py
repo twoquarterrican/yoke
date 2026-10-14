@@ -7,14 +7,14 @@ connection comes from ``YOKE_PG_DSN``.
 Two surfaces:
 
 - :func:`setup_ambient_test_db` — called once per (xdist) worker from conftest.
-  Creates a per-worker ambient test database with the fixture schema loaded and
+  Creates a per-worker ambient test database with the production schema loaded and
   repoints ``YOKE_PG_DSN`` at it so ambient ``db_helpers.connect()`` calls
   during the suite land in an isolated, schema-loaded test database.
 - :func:`test_database` / :func:`connect_test_database` — used by the ``test_db``
   fixture for per-test isolated databases.
 
 Schema-loaded databases are cloned from a per-worker template database
-(``CREATE DATABASE ... TEMPLATE``) so the fixture DDL executes once per
+(``CREATE DATABASE ... TEMPLATE``) so the production initialization executes once per
 worker rather than once per database. The per-test surface serves the
 common case from one reusable clone per worker that ``pg_reusable_db``
 resets between uses, so steady-state test traffic issues no
@@ -62,12 +62,6 @@ _BASE_DSN: "str | None" = None
 from runtime.api.fixtures.pg_cluster_role_authority import (  # noqa: E402
     cluster_role_authority,
 )
-
-
-def _apply_schema(conn) -> None:
-    from runtime.api.fixtures.schema_ddl import apply_fixture_schema
-
-    apply_fixture_schema(conn)
 
 
 def _base_dsn() -> str:
@@ -156,42 +150,14 @@ def create_test_database(template: "str | None" = None, *, pooled: bool = True) 
     return name
 
 
-_FIXTURE_TEMPLATE_DB: "str | None" = None
-
-
 def _fixture_template_db() -> str:
-    """Return this process's fixture-schema template database, building it once.
+    """Share init_test_db's cached production-schema template."""
+    from runtime.api.fixtures.file_test_db import (
+        _apply_production_schema,
+        _schema_template_db,
+    )
 
-    ``CREATE DATABASE ... TEMPLATE`` clones the schema-loaded template at the
-    storage layer, so per-test databases skip re-executing the fixture DDL.
-    The template is never connected to after its build completes (Postgres
-    refuses to clone a database with live connections) and is dropped at
-    process exit.
-    """
-    global _FIXTURE_TEMPLATE_DB
-    if _FIXTURE_TEMPLATE_DB is None:
-        # Not pooled: the template outlives every borrower and is cloned
-        # from, so it must be a database of its own for the whole process.
-        name = create_test_database(pooled=False)
-
-        def cleanup() -> None:
-            drop_test_database(name, pooled=False)
-
-        atexit.register(cleanup)
-        try:
-            conn = db_backend._open_native_postgres(dsn_for_test_database(name))
-            try:
-                _apply_schema(conn)
-            finally:
-                conn.close()
-        except BaseException:
-            try:
-                drop_test_database(name, pooled=False)
-            finally:
-                atexit.unregister(cleanup)
-            raise
-        _FIXTURE_TEMPLATE_DB = name
-    return _FIXTURE_TEMPLATE_DB
+    return _schema_template_db(_apply_production_schema)
 
 
 def drop_test_database(name: str, *, pooled: bool = True) -> None:
@@ -248,24 +214,18 @@ def drop_database_on_close(conn, name: str):
     return conn
 
 
-REUSABLE_FIXTURE_FLAVOR = "fixture_schema"
-
-
 def _build_reusable_fixture_db() -> str:
     return create_test_database(template=_fixture_template_db())
 
 
 def reusable_fixture_database():
-    """Checkout context for this worker's reusable fixture-schema database.
+    """Share init_test_db's reusable production database and nested isolation."""
+    from runtime.api.fixtures.file_test_db import (
+        _apply_production_schema,
+        _reusable_checkout,
+    )
 
-    Yields the database name, or ``None`` when the flavor is already checked
-    out (nested use) and the caller must fall back to a per-use clone.
-    Shared by every consumer of the fixture schema so one worker keeps one
-    reusable database regardless of which fixture surface a test enters by.
-    """
-    from runtime.api.fixtures import pg_reusable_db
-
-    return pg_reusable_db.checkout(REUSABLE_FIXTURE_FLAVOR, _build_reusable_fixture_db)
+    return _reusable_checkout(_apply_production_schema)
 
 
 @contextlib.contextmanager
@@ -277,7 +237,7 @@ def test_database():
     with no explicit conn) lands in the SAME database as the yielded fixture
     connection — not the shared ambient DB. Restores the prior DSN on exit.
 
-    Isolation is served by this worker's reusable fixture-schema database:
+    Isolation is served by this worker's reusable production-schema database:
     a single template clone per worker, reset to its baseline after every
     use (see ``pg_reusable_db``), instead of a ``CREATE DATABASE`` /
     ``DROP DATABASE`` pair per test — per-test clones saturate disk IO when

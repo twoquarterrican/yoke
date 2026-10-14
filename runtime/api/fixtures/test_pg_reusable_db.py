@@ -205,7 +205,7 @@ def test_init_test_db_fixture_strategy_shares_worker_fixture_database(tmp_path):
         fixture_db = conn.execute("SELECT current_database()").fetchone()[0]
 
     with file_test_db.init_test_db(
-        tmp_path, apply_schema=file_test_db.apply_fixture_schema_ddl
+        tmp_path, apply_schema=file_test_db.apply_test_schema
     ):
         conn = db_backend.connect_psycopg()
         try:

@@ -6,7 +6,7 @@ import pytest
 from yoke_contracts.timestamps import parse_instant, temporal_wire
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain import pack_projection
 
 
@@ -60,7 +60,7 @@ def test_project_report_distinguishes_available_installed_and_update_stale(
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
             monkeypatch.setattr(pack_projection, "catalog_rows", _catalog)
             pack_projection.converge_pack_catalog(conn)
             pack_projection.report_project_packs(
@@ -95,7 +95,7 @@ def test_expired_repository_report_is_labeled_stale() -> None:
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
             pack_projection.create_pack_projection_tables(conn)
             conn.execute(
                 "INSERT INTO pack_catalog("

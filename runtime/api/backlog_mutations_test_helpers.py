@@ -12,7 +12,6 @@ of reaching back into the original test module from multiple sites.
 from __future__ import annotations
 
 from runtime.api.conftest import insert_item
-from runtime.api.fixtures.schema_ddl import SCHEMA_DDL
 from runtime.api.test_backlog import (
     _conn,
     _item_field,
@@ -29,7 +28,6 @@ from runtime.api.test_backlog import (
 
 
 __all__ = [
-    "SCHEMA_DDL",
     "insert_item",
     "_conn",
     "_item_field",

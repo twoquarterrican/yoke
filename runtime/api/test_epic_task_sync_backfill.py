@@ -25,7 +25,7 @@ from runtime.api.conftest import insert_epic_task, insert_item
 from yoke_core.domain import epic_task_sync, github_rest
 from yoke_core.domain.project_github_auth import ProjectGithubAuth
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -40,7 +40,7 @@ def _issue(number: int, *, title: str = "t", state: str = "OPEN") -> github_rest
 
 @pytest.fixture
 def db(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         conn.execute(
             """

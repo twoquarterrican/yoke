@@ -10,7 +10,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -31,7 +31,7 @@ def db_path(tmp_path):
     code-under-test lands in an isolated DB (no item-id collision on the shared
     ambient DB across tests).
     """
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as path:
         yield path
 
 

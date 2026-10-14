@@ -19,7 +19,7 @@ from yoke_core.engines.doctor_hc_claim_boundary_audit import hc_claim_boundary_a
 from yoke_core.engines.doctor_report import DoctorArgs, RecordCollector
 from runtime.api.fixtures import pg_testdb
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -131,7 +131,7 @@ def _sid(label: str) -> str:
 
 @pytest.fixture
 def env(tmp_path: Path, monkeypatch) -> Iterator[dict]:
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             yield {"conn": conn}

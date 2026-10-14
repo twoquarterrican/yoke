@@ -48,6 +48,7 @@ ITEMS_TABLE: dict[str, dict] = {
             "Wrong guesses: description and instruction are not accepted items.get fields. "
             "Read landing time via items.get merged_at; merge_log, merge_commit and merge_sha are not "
             "accepted field. Read the merge identity from its recorded receipt or Git ancestry. "
+            "Read the landing PR number via items.get merge_queue_pr_number; github_pr is not an accepted field. "
             "Progress Log is a section, not an items.get progress_log column; "
             "read it via items.get body, and append via items.progress_log.append. "
             "Conflict Survey touch_paths are section data read via items.get body; "

@@ -17,24 +17,19 @@ alias ``lint_entry`` points to the entry-point.
 
 from __future__ import annotations
 
-import json
 import os
 import tempfile
 import time
 import unittest
-import uuid
 from pathlib import Path
 from unittest import mock
 
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
 from yoke_core.domain import lint_long_command_polling as lint_entry
-from yoke_core.domain import (
-    lint_long_command_polling_config as lint_config,
-)
 from yoke_core.domain import (
     lint_long_command_polling_evaluate as lint_eval,
 )
@@ -90,12 +85,12 @@ class TestExtractHelpers(unittest.TestCase):
         )
 
     def test_sleep_cadence_not_present(self) -> None:
-        self.assertIsNone(
-            lint_eval._extract_sleep_cadence("tail -80 /tmp/foo.out")
-        )
+        self.assertIsNone(lint_eval._extract_sleep_cadence("tail -80 /tmp/foo.out"))
 
     def test_suppression_token(self) -> None:
-        self.assertTrue(lint_eval._has_suppression("tail /tmp/x  # lint:no-polling-check"))
+        self.assertTrue(
+            lint_eval._has_suppression("tail /tmp/x  # lint:no-polling-check")
+        )
         self.assertFalse(lint_eval._has_suppression("tail /tmp/x"))
 
 
@@ -106,7 +101,9 @@ class TestLintModeConfig(unittest.TestCase):
         from yoke_core.domain import lint_config as registry
 
         with mock.patch.object(
-            registry, "resolve_mode_for_payload", return_value="warn",
+            registry,
+            "resolve_mode_for_payload",
+            return_value="warn",
         ) as m:
             self.assertEqual(lint_entry._read_lint_mode(), "warn")
         m.assert_called_once_with("lint_long_command_polling", None)
@@ -114,9 +111,13 @@ class TestLintModeConfig(unittest.TestCase):
 
 class TestRecentCommandLookup(unittest.TestCase):
     def test_reads_session_tool_calls_command_summary(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp, init_test_db(
-            Path(tmp), apply_schema=apply_fixture_schema_ddl,
-        ) as db_path:
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            init_test_db(
+                Path(tmp),
+                apply_schema=apply_test_schema,
+            ) as db_path,
+        ):
             conn = connect_test_db(db_path)
             now = iso8601_now()
             conn.execute(
@@ -185,11 +186,15 @@ class TestSessionScoping(unittest.TestCase):
                 return []
             return other_session_events
 
-        with mock.patch.object(
+        with (
+            mock.patch.object(
                 lint_eval, "_owning_command_still_running", return_value=True
-             ), \
-             mock.patch.object(lint_eval, "_db_available", return_value=True), \
-             mock.patch.object(lint_eval, "_recent_bash_commands", side_effect=fake_recent):
+            ),
+            mock.patch.object(lint_eval, "_db_available", return_value=True),
+            mock.patch.object(
+                lint_eval, "_recent_bash_commands", side_effect=fake_recent
+            ),
+        ):
             self.assertIsNone(
                 lint_eval.evaluate_payload(
                     _bash_payload(

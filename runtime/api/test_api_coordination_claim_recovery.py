@@ -11,8 +11,8 @@ import pytest
 
 from runtime.api.auth_test_helpers import mint_api_auth_context
 from runtime.api.domain.coordination_claim_test_support import seed_session
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
-from runtime.api.fixtures.schema_ddl import SCHEMA_DDL, apply_fixture_ddl
 from runtime.api.test_api_helpers import _install_overrides
 from yoke_core.api.main import app
 from yoke_core.domain import yoke_function_dispatch as dispatch_module
@@ -35,7 +35,7 @@ def _apply_schema() -> None:
 
     conn = db_backend.connect()
     try:
-        apply_fixture_ddl(conn, SCHEMA_DDL)
+        initialize_test_schema(conn)
     finally:
         conn.close()
 

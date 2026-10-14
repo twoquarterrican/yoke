@@ -13,7 +13,7 @@ from runtime.api.domain.project_github_auth_test_support import (
     db_path as db_path,
 )
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_contracts.github_origin import validate_github_api_endpoint
 from yoke_core.domain import db_backend, project_github_auth as pga
 from yoke_core.domain.github_app_control_plane import GitHubAppControlPlaneConfig
@@ -74,7 +74,7 @@ def binding_database(monkeypatch: pytest.MonkeyPatch):
     db_name = pg_testdb.create_test_database()
     conn = pg_testdb.connect_test_database(db_name)
     try:
-        apply_fixture_schema(conn)
+        initialize_test_schema(conn)
     finally:
         conn.close()
     monkeypatch.setenv(
@@ -145,8 +145,7 @@ def test_status_reports_binding_installation_origin_mismatch(
     conn = pg_testdb.connect_test_database(binding_database)
     try:
         conn.execute(
-            "UPDATE project_github_repo_bindings SET api_url=%s "
-            "WHERE project_id=2",
+            "UPDATE project_github_repo_bindings SET api_url=%s WHERE project_id=2",
             ("https://github.example/api/v3",),
         )
         conn.commit()
@@ -197,7 +196,8 @@ def test_local_user_provider_must_match_bound_github_origin(
     ):
         with pytest.raises(pga.UserAuthorizationUnavailable, match="does not match"):
             pga.resolve_project_github_auth(
-                "yoke", db_path=app_bound_db,
+                "yoke",
+                db_path=app_bound_db,
             )
 
     assert called is False

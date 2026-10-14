@@ -13,7 +13,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from yoke_core.domain import db_backend
-from runtime.api.fixtures.backlog import apply_fixture_schema_with_human
+from runtime.api.fixtures.file_test_db import apply_test_schema
 from runtime.api.fixtures.file_test_db import connect_test_db, init_test_db
 from yoke_core.domain.items import (
     CANONICAL_COLUMNS,
@@ -34,7 +34,7 @@ def db_path(tmp_path):
     code-under-test lands in an isolated DB (no item-id collision on the shared
     ambient DB across tests).
     """
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_with_human) as path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as path:
         yield path
 
 

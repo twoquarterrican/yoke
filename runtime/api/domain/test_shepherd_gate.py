@@ -10,7 +10,7 @@ from runtime.api.conftest import insert_item
 from yoke_core.domain import db_backend
 from yoke_core.domain import shepherd_gate
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -18,7 +18,7 @@ from runtime.api.fixtures.file_test_db import (
 
 @pytest.fixture
 def tmp_db(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as path:
         yield path
 
 

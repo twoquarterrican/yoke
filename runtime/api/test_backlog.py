@@ -21,7 +21,7 @@ from yoke_core.domain import backlog_updates
 from yoke_core.domain import db_backend
 from yoke_core.domain.work_claim_targets import make_item_target
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -49,7 +49,7 @@ def _apply_backlog_fixture_schema() -> None:
         seed_project_identities,
     )
 
-    apply_fixture_schema_ddl()
+    apply_test_schema()
     conn = db_backend.connect()
     try:
         seed_project_identities(conn)

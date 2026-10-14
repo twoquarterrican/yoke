@@ -24,7 +24,7 @@ from yoke_core.domain import db_backend
 from yoke_core.domain.project_identity import resolve_project_id
 from yoke_core.domain.project_seed_test_helpers import SEED_PROJECT_IDS
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -87,10 +87,10 @@ CREATE TABLE IF NOT EXISTS migration_audit (
 
 
 def _apply_gate_schema() -> None:
-    """``init_test_db`` apply_schema strategy: fixture ``SCHEMA_DDL`` + relaxed
+    """``init_test_db`` apply_schema strategy: fixture production-schema + relaxed
     ``migration_audit``.
 
-    ``SCHEMA_DDL`` builds items / projects / project_capabilities /
+    production-schema builds items / projects / project_capabilities /
     deployment_flows but omits ``migration_audit`` (a governed table that
     ``cmd_init`` creates separately). The gate reads ``migration_audit`` through
     ``db_helpers.connect(audit_path)``; on Postgres that resolves to the
@@ -100,11 +100,11 @@ def _apply_gate_schema() -> None:
     ``ensure_migration_audit_table`` DDL marks ``tables_declared`` /
     ``expected_deltas`` / ``pre_row_counts`` / ``backup_path`` ``NOT NULL``.
     The ``project_capabilities`` re-declaration inside ``_EXTRA_DDL`` is a
-    no-op (``IF NOT EXISTS``) since ``SCHEMA_DDL`` already created it.
+    no-op (``IF NOT EXISTS``) since production-schema already created it.
     """
     from yoke_core.domain import db_backend
 
-    apply_fixture_schema_ddl()
+    apply_test_schema()
     conn = db_backend.connect()
     try:
         execute_schema_script(conn, _EXTRA_DDL)

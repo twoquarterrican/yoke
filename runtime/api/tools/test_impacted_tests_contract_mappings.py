@@ -106,7 +106,7 @@ def test_contract_companions_survive_bounded_deferral(
 def test_fixture_schema_contract_selects_its_companions_when_bounded(
     tmp_path: Path,
 ) -> None:
-    source = "runtime/api/fixtures/schema_ddl_runtime.py"
+    source = "runtime/api/fixtures/production_schema.py"
     _write(tmp_path, source)
     expected = set(prefix_families.FIXTURE_SCHEMA_CONTRACT_TESTS)
     for test_path in {*impacted_tests.ALWAYS_RUN_TESTS, *expected}:

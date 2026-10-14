@@ -17,7 +17,7 @@ from yoke_core.domain.item_test_results_classify import (
 )
 from runtime.api.fixtures.backlog import insert_item
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -118,7 +118,7 @@ def fixture_db(tmp_path: Path):
     # connection ``read_item_test_results(db_path=...)`` opens, so insert and
     # read hit one store. ``db_path`` is the real file on SQLite and the ignored
     # placeholder on Postgres (the connection target is the DSN).
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             yield conn, db_path

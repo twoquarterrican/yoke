@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain import db_backend
 from yoke_core.domain.github_app_user_verification import (
     VerifiedProjectGitHubBinding,
@@ -58,7 +58,7 @@ def test_unbind_then_rebind_changes_only_the_selected_project(monkeypatch) -> No
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(

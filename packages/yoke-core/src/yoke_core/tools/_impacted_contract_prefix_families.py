@@ -208,7 +208,7 @@ INSTALL_BUNDLE_SHIPPED_SURFACE_TESTS = (
 )
 
 FIXTURE_SCHEMA_CONTRACT_TESTS = ("runtime/api/test_fixture_schema_ddl_apply.py",)
-FIXTURE_SCHEMA_SOURCE_PREFIXES = ("runtime/api/fixtures/schema_ddl",)
+FIXTURE_SCHEMA_SOURCE_PREFIXES = ("runtime/api/fixtures/",)
 
 #: Canonical agent bodies the per-harness adapters render from. Shipped by way
 #: of those adapters rather than as a bundle source dir of its own, so it is

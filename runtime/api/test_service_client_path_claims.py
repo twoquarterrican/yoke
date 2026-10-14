@@ -29,7 +29,7 @@ from runtime.api.domain.steering_claim_test_support import (
     acquire_steering,
 )
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -57,7 +57,7 @@ def path_claims_db(tmp_path, monkeypatch):
     # db_backend.connect, so on Postgres they read the same repointed per-test
     # DB this fixture seeds; YOKE_DB stays pointed at the test DB for the whole
     # body (init_test_db only sets it for the duration of the schema apply).
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         monkeypatch.setenv("YOKE_DB", db_path)
         conn = connect_test_db(db_path)
         try:

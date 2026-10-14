@@ -5,7 +5,7 @@ from typing import Mapping
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain import db_backend, project_github_binding_state, projects
 from yoke_core.domain.github_app_user_verification import (
     VerifiedProjectGitHubBinding,
@@ -84,7 +84,7 @@ def bound_yoke_db(monkeypatch):
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -104,7 +104,7 @@ def test_installation_permission_refresh_fans_out_downgrade_and_upgrade(
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -202,7 +202,7 @@ def test_installation_refresh_preserves_intentional_disabled(
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -255,7 +255,7 @@ def test_installation_permission_fanout_rolls_back_projection_failure(
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -313,7 +313,7 @@ def test_repository_identity_cannot_bind_a_second_project_after_rename(
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(

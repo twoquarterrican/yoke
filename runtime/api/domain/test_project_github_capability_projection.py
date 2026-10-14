@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_core.domain import db_backend
 from yoke_core.domain.github_app_user_verification import (
     VerifiedProjectGitHubBinding,
@@ -69,7 +69,7 @@ def test_binding_projects_current_capability_fields_and_drops_unknowns(
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
         finally:
             conn.close()
         monkeypatch.setenv(
@@ -92,17 +92,21 @@ def test_binding_projects_current_capability_fields_and_drops_unknowns(
             conn.execute(
                 "UPDATE project_capabilities SET settings=%s "
                 "WHERE project_id=2 AND type='github'",
-                (json.dumps({
-                    "repo_owner": "stale-owner",
-                    "repo_name": "stale-repo",
-                    "installation_id": "1",
-                    "repository_id": "2",
-                    "api_url": "https://github.example/api/v3",
-                    "permissions": {"administration": "write"},
-                    "ci_oidc_manage_provider": False,
-                    "unrecognized_secret": "must-not-survive",
-                    "unrecognized_setting": "must-not-survive",
-                }),),
+                (
+                    json.dumps(
+                        {
+                            "repo_owner": "stale-owner",
+                            "repo_name": "stale-repo",
+                            "installation_id": "1",
+                            "repository_id": "2",
+                            "api_url": "https://github.example/api/v3",
+                            "permissions": {"administration": "write"},
+                            "ci_oidc_manage_provider": False,
+                            "unrecognized_secret": "must-not-survive",
+                            "unrecognized_setting": "must-not-survive",
+                        }
+                    ),
+                ),
             )
             conn.commit()
         finally:

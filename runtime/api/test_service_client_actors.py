@@ -20,21 +20,15 @@ import pytest
 from yoke_core.domain import db_backend
 from yoke_core.domain.actors import seed_human_actor, seed_system_actor, set_actor_name
 from runtime.api.fixtures.backlog import seed_test_canonical_human
-from runtime.api.fixtures.file_test_db import apply_fixture_schema_ddl, init_test_db
+from runtime.api.fixtures.file_test_db import apply_test_schema, init_test_db
 from yoke_core.api.service_client_actors import cmd_actors_get, cmd_actors_list
 
 SYSTEM_COMPONENT = "test-component"
 
 
 def _apply_actors_fixture_schema() -> None:
-    """``apply_schema`` strategy: fixture ``SCHEMA_DDL`` + seeded actors.
-
-    :func:`apply_fixture_schema_ddl` reproduces the DDL apply (installing the
-    Postgres introspection shims); the local human actor seed and one
-    system actor then run on a fresh backend connection so the same post-init
-    shape the ``cmd_actors_*`` lookups read lands on both engines.
-    """
-    apply_fixture_schema_ddl()
+    """Production boot plus one named system actor for lookup tests."""
+    apply_test_schema()
     conn = db_backend.connect()
     try:
         seed_test_canonical_human(conn)
@@ -92,7 +86,7 @@ class TestActorsList:
 
     def test_list_empty_returns_array(self, tmp_path, monkeypatch):
         # Build a DB with empty actors table — schema only, no canonical seeding.
-        with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+        with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
             monkeypatch.setenv("YOKE_DB", str(db_path))
 
             rc, stdout = _capture_stdout(cmd_actors_list, [])

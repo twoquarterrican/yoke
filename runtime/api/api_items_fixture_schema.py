@@ -1,8 +1,8 @@
 """Schema and seed rows for API item fixture builders."""
 
-from runtime.api.fixtures.schema_ddl_project_environments import (
-    _PROJECT_ENVIRONMENT_TABLE_DDL,
-)
+from yoke_core.domain.projects_restart_schema import _INIT_TABLES_SQL
+from yoke_core.domain.schema_init_apply import iter_schema_statements
+
 from runtime.api.test_dependency_schema import ITEMS_SCHEMA, PROJECTS_SCHEMA
 from yoke_core.domain.work_claim_target_sql import TARGET_KIND_CHECK_SQL
 
@@ -12,7 +12,17 @@ from yoke_core.domain.work_claim_target_sql import TARGET_KIND_CHECK_SQL
 _SCHEMA_DDL = (
     PROJECTS_SCHEMA
     + ITEMS_SCHEMA
-    + _PROJECT_ENVIRONMENT_TABLE_DDL
+    + ";".join(
+        sql
+        for sql in iter_schema_statements(_INIT_TABLES_SQL)
+        if sql.lstrip().startswith(
+            (
+                "CREATE TABLE IF NOT EXISTS sites (",
+                "CREATE TABLE IF NOT EXISTS environments (",
+            )
+        )
+    )
+    + ";"
     + f"""
 CREATE TABLE project_capabilities (
     id INTEGER PRIMARY KEY, project_id INTEGER NOT NULL, type TEXT NOT NULL,

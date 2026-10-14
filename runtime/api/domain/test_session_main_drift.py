@@ -9,7 +9,7 @@ import pytest
 
 from yoke_core.domain import db_backend
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -23,7 +23,7 @@ def drift_db(tmp_path):
     # context's lifetime. The yield keeps the context (and the repointed
     # DSN) open across the whole test so ``check_drift`` and ``_session_row``
     # — both backend-routed through ``connect`` — share this DB.
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         try:
             p = "%s" if db_backend.connection_is_postgres(conn) else "?"

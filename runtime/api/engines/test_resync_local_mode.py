@@ -44,7 +44,7 @@ from yoke_cli.config.local_universe_setup import LOCAL_ENV
 
 from runtime.api.fixtures import pg_testdb
 from runtime.api.fixtures.backlog_inserts import insert_item
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from runtime.api.engines.resync_local_mode_test_support import (
     PROJECT_REPO,
     local_user_authorization,
@@ -150,7 +150,7 @@ def local_universe(tmp_path, monkeypatch):
         monkeypatch.setenv(db_backend.PG_DSN_ENV, dsn)
         conn = db_backend.connect()
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
             # A local universe holds only the user's own projects; blank
             # the second seeded project's repo so the multi-project fetch
             # loop skips it.

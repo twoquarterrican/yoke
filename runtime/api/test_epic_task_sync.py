@@ -27,7 +27,7 @@ from yoke_core.domain.project_github_auth import (
     ProjectGithubAuth,
 )
 from runtime.api.fixtures.file_test_db import (
-    apply_fixture_schema_ddl,
+    apply_test_schema,
     connect_test_db,
     init_test_db,
 )
@@ -38,7 +38,7 @@ _LABEL_REST = "yoke_core.domain.backlog_github_label_sync_rest"
 
 @pytest.fixture
 def db(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl) as db_path:
+    with init_test_db(tmp_path, apply_schema=apply_test_schema) as db_path:
         conn = connect_test_db(db_path)
         conn.execute(
             """

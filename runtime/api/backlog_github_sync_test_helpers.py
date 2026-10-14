@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import subprocess
 
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 
 
 # Patch targets used across every split file. ``backlog_github_sync`` is
@@ -58,7 +58,7 @@ def make_db():
 
     db_name = create_test_database()
     conn = connect_test_database(db_name)
-    apply_fixture_schema(conn)
+    initialize_test_schema(conn)
     conn.execute(
         "INSERT INTO projects "
         "(id, slug, name, github_repo, public_item_prefix, github_sync_mode, created_at) "

@@ -6,10 +6,17 @@ a reusable clone whose schema, rows and sequences reset after each checkout.
 The template never receives test writes. Nested contexts and replacements
 after schema changes clone the template instead of replaying initialization.
 
-The default strategy and explicit `schema.cmd_init` share the production
-schema flavor, including baseline test-project identities. The fixture DDL
-strategy shares the existing fixture template. Other callables, including
-`apply_fixture_schema_with_human`, have their own flavors by callable identity.
+The shared `test_db` fixture, the default strategy, explicit `schema.cmd_init`
+and `apply_test_schema` use one production schema flavor. The template runs
+`environment_bootstrap.run_init_chain`, including `schema.cmd_init`, then
+adds baseline test projects and their development sites. Every production
+trigger and constraint stays present; fixture code never copies the full DDL
+or stamps migration history independently. `test_fixture_schema_ddl_apply.py`
+compares every public trigger and table constraint with a freshly initialized
+production database and checks the migration birth ledger. Verdict evidence
+tests exercise the real binding under the immutable-verdict trigger.
+
+Other schema callables retain separate flavors by callable identity.
 Different functions with the same name remain separate. Callable objects and
 closures retain their identity for the worker's lifetime. Use a distinct
 callable for different schema or seed inputs; do not change a callable's

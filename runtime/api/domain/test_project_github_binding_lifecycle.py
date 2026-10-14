@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from runtime.api.fixtures import pg_testdb
-from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+from runtime.api.fixtures.production_schema import initialize_test_schema
 from yoke_contracts.api.function_call import (
     ActorContext,
     FunctionCallRequest,
@@ -67,7 +67,7 @@ def binding_db(monkeypatch):
     name = pg_testdb.create_test_database()
     conn = pg_testdb.connect_test_database(name)
     try:
-        apply_fixture_schema(conn)
+        initialize_test_schema(conn)
         seed_roles_and_permissions(conn)
     finally:
         conn.close()

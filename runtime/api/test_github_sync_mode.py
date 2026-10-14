@@ -239,14 +239,14 @@ def ambient_db(monkeypatch):
     pin the ambient DSN instead of threading a ``conn``.
     """
     from runtime.api.fixtures import pg_testdb
-    from runtime.api.fixtures.schema_ddl import apply_fixture_schema
+    from runtime.api.fixtures.production_schema import initialize_test_schema
     from yoke_core.domain import db_backend
 
     db_name = pg_testdb.create_test_database()
     try:
         conn = pg_testdb.connect_test_database(db_name)
         try:
-            apply_fixture_schema(conn)
+            initialize_test_schema(conn)
             conn.commit()
         finally:
             conn.close()

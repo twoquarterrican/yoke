@@ -4,22 +4,20 @@ Derives the items, item_sections, item_dependencies, and release_entries DDL fro
 canonical schema initialization run against a disposable Postgres scratch
 database, read back from the catalog. This is fixture derivation, not a
 Yoke authority read: the fixture mirrors the canonical schema code's shape
-so callers using ``SCHEMA_DDL`` see the same surface a freshly initialized
-Yoke DB exposes — and so future column additions to ``items`` land in this
-fixture automatically.
+for tests of intentionally partial or historical schemas. The shared test_db
+fixture instead clones the complete production schema, with every constraint
+and trigger intact.
 
 Derivation is lazy and cached per process: importing this module performs
 no database work; the first ``_ITEMS_DDL`` / ``_ITEMS_RELAXED_DDL`` access
 creates the scratch database (which requires the test-cluster DSN, present
 whenever pytest's conftest has run) and derives both variants in one pass.
 
-Like the rest of the fixture schema, the derived DDL carries no FOREIGN
-KEY constraints, so tests can seed rows in any order.
+The partial derived DDL omits FOREIGN KEY constraints so isolated domain
+tests can seed rows in any order.
 
-Composed into ``SCHEMA_DDL`` by the assembler at
-``runtime/api/fixtures/schema_ddl.py``. Read by the residue test at
-``runtime/api/test_schema_fixture_derivation.py`` to keep the
-migrated helper family from regressing back to copied long-form DDL.
+Read by runtime/api/test_schema_fixture_derivation.py to guard the partial
+helper family against copied long-form DDL.
 """
 
 from __future__ import annotations
@@ -98,9 +96,7 @@ def _read_table_ddl(conn: Any, table_name: str, *, relaxed: bool = False) -> str
     """
     columns = conn.execute(_COLUMNS_SQL, (table_name,)).fetchall()
     if not columns:
-        raise RuntimeError(
-            f"derived items-family DDL missing table {table_name!r}"
-        )
+        raise RuntimeError(f"derived items-family DDL missing table {table_name!r}")
     parts = [
         _column_clause(name, data_type, not_null, default, identity, relaxed=relaxed)
         for name, data_type, not_null, default, identity in columns

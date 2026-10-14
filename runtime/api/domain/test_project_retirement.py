@@ -7,7 +7,7 @@ import re
 
 import pytest
 
-from runtime.api.fixtures.file_test_db import init_test_db, apply_fixture_schema_ddl
+from runtime.api.fixtures.file_test_db import init_test_db, apply_test_schema
 from runtime.api.fixtures.backlog import insert_item
 from yoke_core.domain.db_helpers import connect
 from yoke_core.domain.project_identity import render_item_ref
@@ -27,7 +27,7 @@ from yoke_core.domain.projects_crud import cmd_list
 
 @pytest.fixture
 def conn(tmp_path):
-    with init_test_db(tmp_path, apply_schema=apply_fixture_schema_ddl):
+    with init_test_db(tmp_path, apply_schema=apply_test_schema):
         c = connect()
         c.execute(
             "INSERT INTO projects (id, slug, name, public_item_prefix, created_at) "
