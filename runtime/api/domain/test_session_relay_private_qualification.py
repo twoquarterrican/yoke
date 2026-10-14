@@ -40,6 +40,9 @@ MACHINE_ID = "11111111-1111-4111-8111-111111111111"
 @pytest.fixture(autouse=True)
 def _candidate_route_requires_grant(monkeypatch) -> None:
     require_exact_cli_idle_policy(monkeypatch)
+    monkeypatch.setattr(
+        "yoke_core.domain.session_staleness._resolve_effective_ttl", lambda *a: 1
+    )
 
 
 def _connection(*, target_version: str):
@@ -52,10 +55,9 @@ def _connection(*, target_version: str):
     conn.execute(
         "UPDATE harness_sessions SET actor_id=10,mode='wait' WHERE session_id='s1'"
     )
-    # Activity is a full day old so the target is idle under any staleness
-    # window, pinning the wake to the private idle route rather than leaving
-    # it to resolve near the boundary.
-    idle_since = format_instant(NOW - timedelta(days=1))
+    # Stale under the one-minute TTL, inside the five-minute hook grace.
+    # That selects the private idle route this qualification proof covers.
+    idle_since = format_instant(NOW - timedelta(minutes=2))
     conn.execute(
         "UPDATE harness_sessions SET executor_surface='claude-cli',"
         "executor_version=?,machine_id=?,turn_posture='running',"
@@ -124,12 +126,13 @@ def test_candidate_direct_wake_consumes_grant_before_return(monkeypatch) -> None
         conn,
         _heartbeat("2.1.241"),
         wait_seconds=0,
-        now_provider=lambda: "2026-08-22T16:11:00.000000Z",
+        now_provider=lambda: "2026-08-22T16:00:03.000000Z",
     )
 
     assert len(outcome.jobs) == 1
     assert outcome.jobs[0].message_id == message_id
     assert outcome.jobs[0].wake_route == "direct"
+    assert outcome.jobs[0].wake_mode.value == "idle_timeout"
     assert outcome.jobs[0].private_route_qualification == grant
     wire = outcome.to_dict()["jobs"][0]
     assert wire["private_route_qualification"]["grant_digest"] == scope.digest
@@ -139,7 +142,7 @@ def test_candidate_direct_wake_consumes_grant_before_return(monkeypatch) -> None
         "SELECT released_at,release_reason_intent FROM work_claims WHERE id=?",
         (grant.lease_id,),
     ).fetchone()
-    assert row["released_at"] == "2026-08-22T16:11:00.000000Z"
+    assert row["released_at"] == "2026-08-22T16:00:03.000000Z"
     assert row["release_reason_intent"] == QUALIFICATION_RELEASE_REASON
 
 
@@ -153,7 +156,7 @@ def test_candidate_without_exact_grant_remains_unclaimed(monkeypatch) -> None:
         conn,
         _heartbeat("2.1.241"),
         wait_seconds=0,
-        now_provider=lambda: "2026-08-22T16:11:00.000000Z",
+        now_provider=lambda: "2026-08-22T16:00:03.000000Z",
     )
 
     assert outcome.jobs == ()
@@ -161,7 +164,7 @@ def test_candidate_without_exact_grant_remains_unclaimed(monkeypatch) -> None:
         conn.execute(
             "SELECT wake_attempt_count FROM session_message_recipients"
         ).fetchone()[0]
-        == 0
+        == 1
     )
 
 
@@ -175,7 +178,7 @@ def test_canonical_version_stays_first_and_needs_no_grant(monkeypatch) -> None:
         conn,
         _heartbeat("2.1.238"),
         wait_seconds=0,
-        now_provider=lambda: "2026-08-22T16:11:00.000000Z",
+        now_provider=lambda: "2026-08-22T16:00:03.000000Z",
     )
 
     assert len(outcome.jobs) == 1
