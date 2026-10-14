@@ -40,6 +40,10 @@ QA_PLAN_REVIEW_SUBMIT_USAGE = (
     "(--item PREFIX-N | --deployment-run-id RUN) --execution-id ID "
     "--bundle-id ID --bundle-digest SHA256 --stdin [--session-id S]"
 )
+QA_PLAN_REVIEW_BEGIN_USAGE = (
+    "yoke qa plan review-begin (--item PREFIX-N | --deployment-run-id RUN | --project P) "
+    "--execution-id ID [--session-id S] [--json]"
+)
 QA_MISSION_HOST_COMMAND_USAGE = (
     "yoke qa mission host-command "
     "(--item PREFIX-N | --deployment-run-id RUN) "
@@ -84,6 +88,10 @@ def qa_plan_review_submit(args: List[str]) -> int:
         "yoke_core.domain.qa_plan_review_cli",
         args,
     )
+
+
+def qa_plan_review_begin(args: List[str]) -> int:
+    return _run_execution_module("yoke_core.domain.qa_plan_review_begin_cli", args)
 
 
 def qa_mission_host_command(args: List[str]) -> int:
@@ -179,6 +187,7 @@ TOOL_COMMANDS = {
     ("qa", "case", "run"): qa_case_run,
     ("qa", "plan", "abort"): qa_plan_abort,
     ("qa", "plan", "review-submit"): qa_plan_review_submit,
+    ("qa", "plan", "review-begin"): qa_plan_review_begin,
     ("qa", "plan", "run"): qa_plan_run,
     ("qa", "mission", "host-command"): qa_mission_host_command,
     ("qa", "mission", "walk-start"): qa_mission_walk_start,
@@ -189,6 +198,7 @@ USAGE = {
     "yoke qa case run": QA_CASE_RUN_USAGE,
     "yoke qa plan abort": QA_PLAN_ABORT_USAGE,
     "yoke qa plan review-submit": QA_PLAN_REVIEW_SUBMIT_USAGE,
+    "yoke qa plan review-begin": QA_PLAN_REVIEW_BEGIN_USAGE,
     "yoke qa plan run": QA_PLAN_RUN_USAGE,
     "yoke qa mission host-command": QA_MISSION_HOST_COMMAND_USAGE,
     "yoke qa mission walk-start": QA_MISSION_WALK_START_USAGE,
@@ -197,6 +207,8 @@ USAGE = {
 
 
 __all__ = [
+    "QA_PLAN_REVIEW_BEGIN_USAGE",
+    "qa_plan_review_begin",
     "QA_CASE_RUN_USAGE",
     "QA_PLAN_ABORT_USAGE",
     "QA_PLAN_RUN_USAGE",

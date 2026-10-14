@@ -61,8 +61,10 @@ def test_execution_termination_only_settles_its_bound_capture(test_db, terminati
             test_db.execute(
                 "SELECT verdict FROM qa_runs WHERE id=%s", (old_id,)
             ).fetchone()[0]
-            == "error"
+            is None
         )
+        bundle = begin_plan_review(test_db, execution, completed_captures_only=True)
+        assert bundle["cases"][0]["capture_run_id"] == old_id
     else:
         result = {"requirement_id": requirement_id, "case_outcome": "needs_review"}
         if termination == "judged_result":

@@ -46,10 +46,15 @@ def preboot(clocks, monkeypatch):
         "CREATE TABLE deployment_run_items (run_id text,item_id integer,delivery_intent text,requirement_selection text,requirement_snapshot text)"
     )
     clocks.execute(
-        "CREATE TABLE qa_requirements (id integer,deployment_run_id text,method_id integer,waived_at text,execution_target_digest text,plan_case_key text)"
+        "CREATE TABLE qa_requirements (id integer,deployment_run_id text,method_id integer,waived_at text,execution_target_digest text,plan_case_key text,"
+        "superseded_by_requirement_id integer,replacement_requirement_id integer,retracted_at text,retraction_rationale text,retraction_source text,"
+        "waiver_rationale text,waiver_source text,superseded_at text,supersession_rationale text,supersession_source text)"
     )
     clocks.execute(
-        "CREATE TABLE qa_runs (id integer,qa_requirement_id integer,started_at text,completed_at text,created_at text)"
+        "CREATE TABLE qa_runs (id integer,qa_requirement_id integer,started_at text,completed_at text,created_at text,verdict text)"
+    )
+    clocks.execute(
+        "CREATE TABLE qa_plan_review_verdicts (capture_run_id integer,review_run_id integer,requirement_id integer)"
     )
     clocks.execute(
         "CREATE TABLE item_status_transitions (item_id integer,task_num integer,to_status text,created_at text)"
@@ -210,7 +215,10 @@ def test_qa_attempt_order_uses_its_own_canonical_text_start(preboot):
             started_at=DRIVER_STAMP, completed_at=DRIVER_STAMP, created_at=DRIVER_STAMP
         ),
     )
-    preboot.execute("INSERT INTO qa_runs VALUES (1,2,%s,%s,%s)", tuple(values.values()))
+    preboot.execute(
+        "INSERT INTO qa_runs(id,qa_requirement_id,started_at,completed_at,created_at) VALUES (1,2,%s,%s,%s)",
+        tuple(values.values()),
+    )
     row = dict(preboot.execute("SELECT * FROM qa_runs").fetchone())
     assert select_latest_executions([row])[2]["id"] == 1
     assert all(parse_instant(row[name]) == DRIVER_STAMP for name in values)

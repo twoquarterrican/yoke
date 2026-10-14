@@ -13,7 +13,8 @@ and in a claimed lane. It writes only ignored views (and `live/` with `--live`);
 it never rewrites the model.
 Agents read the model JSON directly. If a review tool refuses `file:` URLs,
 serve this directory locally (`python3 -m http.server` from `docs/teaching`).
-The overview links to each record home; aggregate model counts stay out of
+The gap index links to one generated page per gap; existing index anchors stay
+valid. The overview links to each record home; aggregate model counts stay out of
 that shared page so independent model edits can land together.
 
 ## Canonical source and access

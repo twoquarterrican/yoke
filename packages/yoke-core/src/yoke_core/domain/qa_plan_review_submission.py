@@ -232,7 +232,7 @@ def submit_plan_review(
                     bundle_id,
                 ),
             )
-            if execution["state"] != "completed":
+            if execution["state"] not in {"completed", "aborted", "error"}:
                 from yoke_core.domain.qa_plan_execution_lifecycle import (
                     finish_plan_execution,
                 )
@@ -262,9 +262,13 @@ def submit_plan_review(
         )
         from yoke_core.domain.qa_plan_execution_store import result_rows
 
-        settled_state = _reviewed_execution_state(
-            result_rows(conn, str(execution["id"])),
-            validated,
+        settled_state = (
+            execution["state"]
+            if execution["state"] in {"aborted", "error"}
+            else _reviewed_execution_state(
+                result_rows(conn, str(execution["id"])),
+                validated,
+            )
         )
         conn.commit()
     except Exception:

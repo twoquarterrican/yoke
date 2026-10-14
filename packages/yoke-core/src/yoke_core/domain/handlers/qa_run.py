@@ -229,6 +229,9 @@ def handle_qa_run_record_verdict(request: FunctionCallRequest) -> HandlerOutcome
                     jsonpath="$.payload.performed_by",
                 )
         conn.commit()
+        from yoke_core.domain.qa_run_execution_evidence import settle_recorded_verdict
+
+        settle_recorded_verdict(conn, run_id)
         qa_events.emit_qa_run_event(
             conn,
             db_path=None,

@@ -78,7 +78,7 @@ class Pages:
             ("scenarios", "Scenarios", self.scenario),
             ("related_scenarios", "Related", self.scenario),
             ("boundaries", "Boundaries", lambda b: ("boundaries.html", b, b)),
-            ("gaps", "Gaps", lambda g: ("gaps.html", g, g)),
+            ("gaps", "Gaps", lambda g: (f"gaps/{g}.html", g, g)),
         ):
             if record.get(key) and key not in skip:
                 out += links_field(
@@ -228,12 +228,24 @@ class Pages:
             views[here] = page(here, group["title"], body)
         views["evidence.html"] = page("evidence.html", "Evidence", index)
 
-    # Single-page record lists -----------------------------------------------
+    # Record lists -----------------------------------------------
     def record_page(self, views, name, title, table):
         body = []
         for rid, record in table.items():
-            body += self.heading("h2", rid, record)
-            body += self.details(name, record, {"title", "status", "id"}, "")
+            if name == "gaps.html":
+                here = f"gaps/{rid}.html"
+                body += wrap(
+                    f'<h2 id="{esc(rid)}">'
+                    f'{link(name, here, record["title"], rid)} '
+                    f'{badge(record["status"])}</h2>'
+                )
+                detail = self.heading("h2", rid, record) + self.details(
+                    here, record, {"title", "status", "id"}, ""
+                )
+                views[here] = page(here, record["title"], detail)
+            else:
+                body += self.heading("h2", rid, record)
+                body += self.details(name, record, {"title", "status", "id"}, "")
         views[name] = page(name, title, body)
 
     # Documentation graph, commands and overview ------------------------------

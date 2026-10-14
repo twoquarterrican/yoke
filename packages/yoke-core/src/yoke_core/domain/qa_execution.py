@@ -99,7 +99,6 @@ def cmd_run_add(
     artifact_path: Optional[str] = None,
     head_sha: Optional[str] = None,
 ) -> int:
-    """Insert a qa_run row. Returns the new ID."""
     if not requirement_id:
         print("Error: --requirement-id is required", file=sys.stderr)
         sys.exit(2)
@@ -222,6 +221,12 @@ def cmd_run_add(
             rollback=conn.rollback,
         )
         conn.commit()
+        if verdict is not None:
+            from yoke_core.domain.qa_run_execution_evidence import (
+                settle_recorded_verdict,
+            )
+
+            settle_recorded_verdict(conn, inserted_id)
         _event_name = (
             "QARunCompleted"
             if verdict is not None
@@ -316,6 +321,11 @@ def cmd_run_complete(
         conn.commit()
 
         if verdict is not None:
+            from yoke_core.domain.qa_run_execution_evidence import (
+                settle_recorded_verdict,
+            )
+
+            settle_recorded_verdict(conn, run_id)
             check = query_scalar(
                 conn, "SELECT verdict FROM qa_runs WHERE id = %s", (run_id,)
             )

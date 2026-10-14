@@ -150,6 +150,7 @@ def require_plan_execution_owner(
     deployment_member_item_id: int | None = None,
     actor_id: str | None,
     session_id: str,
+    reviewing: bool = False,
 ) -> None:
     """Bind every execution mutation to its subject, actor, and session."""
     from yoke_core.domain.qa_plan_execution_store import same_owner
@@ -171,7 +172,13 @@ def require_plan_execution_owner(
         )
 
         try:
-            validate_deployment_execution_target(conn, execution)
+            validate_deployment_execution_target(
+                conn,
+                execution,
+                require_active=not (
+                    reviewing and execution["state"] in {"aborted", "error"}
+                ),
+            )
         except ValueError as exc:
             _fail(str(exc))
 

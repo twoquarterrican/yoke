@@ -130,8 +130,14 @@ def finish_plan_execution(
     terminal_settlement = state in TERMINAL_PLAN_EXECUTION_STATES
     if terminal_settlement:
         from yoke_core.domain.qa_host_turns import release_host_reservations
+        from yoke_core.domain.qa_plan_review import begin_plan_review
 
         release_host_reservations(conn, str(execution["id"]))
+        if state in {"aborted", "error"} and any(
+            case.get("verdict_path") == "agent"
+            for case in execution.get("roster") or []
+        ):
+            begin_plan_review(conn, execution, completed_captures_only=True)
         settle_unreviewed_execution_captures(conn, execution)
         record_inflight_case_failure(conn, execution, reason=reason)
     retain_lease = state == "awaiting_agent_review" and _mission_needs_retained_lease(

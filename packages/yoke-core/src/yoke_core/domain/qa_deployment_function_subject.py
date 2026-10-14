@@ -138,12 +138,22 @@ def resolve_run_qa_subject(
         project_id = int(row[0])
         slug = slug_for_project_id(conn, project_id)
     elif stage:
+        reviewing_terminal = False
+        if execution_id and request.function in {
+            "qa.plan_review.begin",
+            "qa.plan_review.submit",
+        }:
+            row = conn.execute(
+                "SELECT state FROM qa_plan_executions WHERE id=%s", (execution_id,)
+            ).fetchone()
+            reviewing_terminal = row is not None and row[0] in {"aborted", "error"}
         try:
             subject = deployment_qa_stage_subject(
                 conn,
                 run_id=run_id,
                 stage_name=str(stage),
                 member_item_id=member_id,
+                require_active=not reviewing_terminal,
             )
         except (LookupError, ValueError) as exc:
             raise QaSubjectProjectError(

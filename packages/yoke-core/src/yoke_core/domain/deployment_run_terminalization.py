@@ -153,14 +153,11 @@ def terminalize_run_on(
     from yoke_core.domain.deployment_run_carried_work import record_carried_work
 
     record_carried_work(conn, run_id, permanent_only=True)
-    if final_status == "cancelled":
-        from yoke_core.domain.deployment_run_member_removal import (
-            retract_outstanding_member_copies,
-        )
+    from yoke_core.domain.qa_deployment_run_settlement import settle_unsuccessful_run
 
-        retract_outstanding_member_copies(
-            conn, run_id, reason=f"deployment run cancelled: {clean_reason}"
-        )
+    settle_unsuccessful_run(
+        conn, run_id, reason=f"deployment run {run_id} {final_status}: {clean_reason}"
+    )
     withdraw_deployment_qa_wait_wakes(
         conn, run_id=run_id, reason=f"run_terminal:{final_status}"
     )

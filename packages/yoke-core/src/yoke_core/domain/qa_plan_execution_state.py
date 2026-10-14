@@ -101,6 +101,21 @@ def advance_plan_execution(
     )
     execution["cursor_ordinal"] = ordinal + 1
     execution["heartbeat_at"] = now
+    captured_run = result.get("qa_run_id") or result.get("run_id")
+    if captured_run is not None:
+        from yoke_core.domain.qa_run_verdict_record import link_verdict_evidence
+
+        try:
+            captured_run = int(captured_run)
+        except (TypeError, ValueError):
+            captured_run = None
+        if captured_run is not None:
+            bound = conn.execute(
+                "SELECT qa_requirement_id FROM qa_runs WHERE id=%s",
+                (captured_run,),
+            ).fetchone()
+            if bound is not None and int(bound[0]) == int(requirement_id):
+                link_verdict_evidence(conn, captured_run)
     if commit:
         conn.commit()
     return case

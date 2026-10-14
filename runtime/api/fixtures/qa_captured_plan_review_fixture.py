@@ -23,7 +23,7 @@ from yoke_core.domain.qa_plan_management import (
 from yoke_core.domain.machine_qa_capability import replace_test_machine_settings
 
 
-def captured_plan_review(conn, item_id: int):
+def captured_plan_review(conn, item_id: int, *, unfinished_case: bool = False):
     insert_item(
         conn,
         id=item_id,
@@ -69,6 +69,33 @@ def captured_plan_review(conn, item_id: int):
             }
         ],
     )
+    if unfinished_case:
+        from yoke_core.domain.qa_plan_detail import get_plan
+
+        cases = get_plan(conn, plan_id=int(plan["id"]))["cases"]
+        first = {
+            key: cases[0][key]
+            for key in (
+                "case_key",
+                "position",
+                "method_id",
+                "instructions",
+                "expected_outcome",
+                "method_config",
+                "entry_surface",
+                "required_completion",
+                "starting_state",
+                "starting_state_reason",
+            )
+        }
+        replace_plan_cases(
+            conn,
+            plan_id=int(plan["id"]),
+            cases=[
+                first,
+                {**first, "case_key": "unwalked-frame", "position": 2},
+            ],
+        )
     set_project_default(
         conn,
         plan_id=int(plan["id"]),

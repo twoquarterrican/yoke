@@ -102,7 +102,7 @@ def register(registry) -> None:
                 "complete_verdict_batch",
                 "actor_session_bound",
             ],
-            adapter_status=("internal" if function_id.endswith(".begin") else "live"),
+            adapter_status="live",
             claim_required_kind="qa_subject",
             ambient_session_required=True,
         )
