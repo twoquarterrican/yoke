@@ -133,6 +133,19 @@ def hc_session_hook_registration(conn, args: DoctorArgs, rec: RecordCollector) -
         identity = relay("sessions.identity", {})
         if identity.get("session_id") != session_id:
             raise ValueError("SESSION_REGISTRATION_UNVERIFIED")
+        if args.project:
+            from yoke_core.domain.project_checkout_locations import project_id_for_slug
+
+            requested = str(args.project)
+            expected_project = (
+                int(requested)
+                if requested.isdigit()
+                else project_id_for_slug(requested)
+            )
+            if expected_project is None or str(identity.get("project_id")) != str(
+                expected_project
+            ):
+                raise ValueError("SESSION_HOOK_PROJECT_MISMATCH")
         with scratch_project(str(identity.get("project_id") or args.project or "")):
             if not orientation_delivered(session_id):
                 raise ValueError("SESSION_HOOK_UNOBSERVED")

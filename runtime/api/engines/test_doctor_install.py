@@ -183,3 +183,16 @@ def test_residue_detects_foreign_project_binding_for_supported_mapping_shapes(
         if isinstance(config["projects"], list)
         else "projects_invalid"
     ) in result.detail
+
+
+def test_hook_delivery_from_another_project_cannot_prove_install_readiness(monkeypatch):
+    monkeypatch.setattr(
+        checks, "build_actor", lambda: SimpleNamespace(session_id="session")
+    )
+    monkeypatch.setattr(
+        checks, "relay", lambda *a: {"session_id": "session", "project_id": 99}
+    )
+    monkeypatch.setattr(checks, "orientation_delivered", lambda session: True)
+    result = run(checks.hc_session_hook_registration, project="42")[0]
+    assert result.result == "FAIL"
+    assert "Start a new harness session" in result.detail
