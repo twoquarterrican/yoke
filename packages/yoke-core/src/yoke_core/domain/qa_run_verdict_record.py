@@ -86,6 +86,10 @@ def _clock_columns(conn: Any, columns: Mapping[str, Any]) -> dict[str, Any]:
 def link_verdict_evidence(conn: Any, run_id: int) -> None:
     """Enrich the run's proof through the sole qa_runs writer."""
     from yoke_core.domain.qa_run_execution_evidence import execution_evidence_payload
+    from yoke_core.domain.schema_common import _table_exists
+
+    if not _table_exists(conn, "qa_plan_executions"):
+        return
 
     run = query_one(conn, "SELECT * FROM qa_runs WHERE id=%s FOR UPDATE", (run_id,))
     if run is None or run.get("verdict") is not None:
@@ -98,6 +102,10 @@ def link_verdict_evidence(conn: Any, run_id: int) -> None:
 def _bind_evidence(conn: Any, run_id: int | None, columns: dict[str, Any]) -> None:
     """Compose the final proof before a verdict can make it immutable."""
     from yoke_core.domain.qa_run_execution_evidence import execution_evidence_payload
+    from yoke_core.domain.schema_common import _table_exists
+
+    if not _table_exists(conn, "qa_plan_executions"):
+        return
 
     run = (
         query_one(conn, "SELECT * FROM qa_runs WHERE id=%s FOR UPDATE", (run_id,))
