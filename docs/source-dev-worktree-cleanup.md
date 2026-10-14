@@ -135,9 +135,10 @@ the lane's base branch, then counts again and refuses only for what remains.
 Unregistered directories, ambiguous owners, dirty or ignored content,
 unavailable claim/DB state, non-ancestor branches, and removal refusals are
 preserved and reported. Automatic cleanup of a done item's lanes never uses
-forced worktree removal or forced branch deletion, and deletes files only inside a tombstone git no
-longer registers, after the residue proof. `--keep-remote` remains
-the only intentional skip of remote delete (ephemeral environments).
+forced worktree removal or forced branch deletion, and deletes files only
+inside a tombstone git no longer registers, after the residue proof.
+`--keep-remote` remains the only intentional skip of remote delete (ephemeral
+environments).
 
 ### Cancelled items
 
