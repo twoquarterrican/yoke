@@ -56,8 +56,8 @@ class TestWorktreeHealth:
         mock_run.side_effect = [
             # git worktree list --porcelain
             _completed(stdout=("worktree /fake/repo\nbranch refs/heads/main\n\n")),
-            _completed(stdout=""),  # deploy-run driver worktree list
             _completed(stdout="main\n"),  # local branch inventory
+            _completed(stdout=""),  # deploy-run driver worktree list
         ]
         conn = _make_conn()
         conn.execute(
@@ -78,10 +78,10 @@ class TestWorktreeHealth:
         mock_run.side_effect = [
             # git worktree list --porcelain
             _completed(stdout=("worktree /fake/repo\nbranch refs/heads/main\n\n")),
-            # git worktree list for the deploy-run driver pass (none here)
-            _completed(stdout=""),
             # One local branch inventory includes the stale branch.
             _completed(stdout="main\nYOK-20\n"),
+            # git worktree list for the deploy-run driver pass (none here)
+            _completed(stdout=""),
             _completed(stdout=""),  # git remote
             _completed(stdout=""),  # git worktree list for assessment
         ]
@@ -120,8 +120,8 @@ class TestWorktreeHealth:
                     "\n"
                 )
             ),
-            _completed(stdout=" M file.py\n"),  # dirty
             _completed(stdout="main\nYOK-9999\n"),
+            _completed(stdout=" M file.py\n"),  # dirty
         ]
         conn = _make_conn()
         conn.execute(
