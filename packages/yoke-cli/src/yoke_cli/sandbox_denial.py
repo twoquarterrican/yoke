@@ -17,8 +17,6 @@ from __future__ import annotations
 import sys
 from typing import Any, Callable, List, Optional, Sequence
 
-from yoke_contracts.harness_sandbox_recovery import sandbox_recovery
-
 # Substrings an OS-level refusal carries once it surfaces as a connection or
 # write failure. Deliberately narrow: a permission error is the signal, and a
 # wider net would relabel ordinary authentication failures as sandbox ones.
@@ -37,6 +35,10 @@ def diagnose(exc: BaseException, argv: Sequence[str]) -> Optional[str]:
         detail = str(exc)
         if not any(marker in detail.lower() for marker in DENIAL_MARKERS):
             return None
+        # Loaded only for a real denial: the hook entrypoint runs through
+        # this wrapper on every tool call and must not pay for it.
+        from yoke_contracts.harness_sandbox_recovery import sandbox_recovery
+
         recovery = sandbox_recovery()
         if not recovery:
             return None

@@ -135,7 +135,7 @@ def token_sources(parsed: argparse.Namespace) -> list[bool]:
 def _local_destination_conflict(parsed: argparse.Namespace) -> str | None:
     """Flags that contradict the local destination (which has no sign-in).
 
-    ``yoke_cli.main`` folds a ``--env NAME`` anywhere on the command line
+    ``yoke_cli.command_router`` folds a ``--env NAME`` anywhere on the command line
     into the :data:`ENV_OVERRIDE` environment override before the adapter
     runs, so the env conflict is read from both surfaces.
     """

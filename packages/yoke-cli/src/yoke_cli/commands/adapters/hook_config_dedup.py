@@ -21,12 +21,6 @@ from yoke_contracts.hook_runner.config_owner import (
     is_cursor_hook_payload,
     is_cursor_imported_claude_hook,
 )
-from yoke_cli.filesystem_safety import first_symlink_component
-from yoke_cli.project_install.files import ProjectInstallError
-from yoke_cli.project_install.hook_schema import (
-    HOOK_FORMAT_CURSOR,
-    validate_hooks_subtree,
-)
 
 
 _CURSOR_EVENTS_BY_RUNNER_EVENT = {
@@ -35,9 +29,7 @@ _CURSOR_EVENTS_BY_RUNNER_EVENT = {
         for native_event, candidate in CURSOR_NATIVE_RUNNER_EVENTS
         if candidate == runner_event
     )
-    for runner_event in {
-        candidate for _, candidate in CURSOR_NATIVE_RUNNER_EVENTS
-    }
+    for runner_event in {candidate for _, candidate in CURSOR_NATIVE_RUNNER_EVENTS}
 }
 
 
@@ -57,11 +49,21 @@ def _cursor_config_owns_event(
     accepted_markers: tuple[str, ...] = (),
 ) -> bool:
     native_verb = CURSOR_COMPATIBILITY_RUNNER_ALIASES.get(
-        event_name, event_name,
+        event_name,
+        event_name,
     )
     native_events = _CURSOR_EVENTS_BY_RUNNER_EVENT.get(native_verb)
     if not native_events:
         return False
+    # Every hook process imports this module; only Cursor invocations read
+    # a config file, so only they pay for the installer's schema validator.
+    from yoke_cli.filesystem_safety import first_symlink_component
+    from yoke_cli.project_install.files import ProjectInstallError
+    from yoke_cli.project_install.hook_schema import (
+        HOOK_FORMAT_CURSOR,
+        validate_hooks_subtree,
+    )
+
     relative = Path(".cursor/hooks.json")
     config_path = root / relative
     if (
@@ -84,9 +86,7 @@ def _cursor_config_owns_event(
     except (OSError, UnicodeError, ValueError, ProjectInstallError):
         return False
     owner_marker = f"{CONFIG_OWNER_ENV_VAR}={owner}"
-    marker_pattern = re.compile(
-        rf"(?<![\w=-]){re.escape(owner_marker)}(?![\w=-])"
-    )
+    marker_pattern = re.compile(rf"(?<![\w=-]){re.escape(owner_marker)}(?![\w=-])")
     evaluate_pattern = re.compile(
         rf"(?<![\w-])yoke\s+hook\s+evaluate\s+"
         rf"{re.escape(native_verb)}(?![\w-])"
@@ -116,12 +116,15 @@ def _project_cursor_config_owns_event(
     if not isinstance(project_dir, str) or not project_dir:
         return False
     return _cursor_config_owns_event(
-        Path(project_dir), event_name, CURSOR_PROJECT_CONFIG_OWNER,
+        Path(project_dir),
+        event_name,
+        CURSOR_PROJECT_CONFIG_OWNER,
     )
 
 
 def _user_cursor_config_owns_lifecycle_event(
-    event_name: str, environment: Mapping[str, str],
+    event_name: str,
+    environment: Mapping[str, str],
 ) -> bool:
     if event_name not in {"Stop", "SessionEnd"}:
         return False
@@ -149,13 +152,13 @@ def should_skip_config_duplicate(
         # skipping it would drop the tool call's only hook invocation.
         if event_name not in CURSOR_DUAL_CONFIG_RUNNER_EVENTS:
             return False
-        return (
-            _project_cursor_config_owns_event(
-                event_name, environment, payload,
-            )
-            or _user_cursor_config_owns_lifecycle_event(
-                event_name, environment,
-            )
+        return _project_cursor_config_owns_event(
+            event_name,
+            environment,
+            payload,
+        ) or _user_cursor_config_owns_lifecycle_event(
+            event_name,
+            environment,
         )
     return (
         environment.get(CONFIG_OWNER_ENV_VAR) == CURSOR_USER_LIFECYCLE_OWNER
@@ -165,13 +168,13 @@ def should_skip_config_duplicate(
 
 
 def is_cursor_config_invocation(
-    environment: Mapping[str, str], stdin_data: str,
+    environment: Mapping[str, str],
+    stdin_data: str,
 ) -> bool:
     """Return whether process plus payload prove a Cursor config hook."""
-    return (
-        environment.get(EXECUTOR_ENV_VAR) == CURSOR_EXECUTOR_ID
-        or is_cursor_hook_payload(environment, _payload(stdin_data))
-    )
+    return environment.get(
+        EXECUTOR_ENV_VAR
+    ) == CURSOR_EXECUTOR_ID or is_cursor_hook_payload(environment, _payload(stdin_data))
 
 
 __all__ = ["is_cursor_config_invocation", "should_skip_config_duplicate"]

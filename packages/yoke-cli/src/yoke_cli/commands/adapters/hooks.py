@@ -1,4 +1,10 @@
-"""Thin entrypoint for the machine-local hook evaluator."""
+"""Thin entrypoint for the machine-local hook evaluator.
+
+``yoke hook evaluate`` runs on every harness tool call, ahead of the command
+registry (see :mod:`yoke_cli.main`), so this module imports only what the
+resident round trip needs. Everything the canonical in-process fallback
+needs loads inside that fallback.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +16,6 @@ import sys
 import time
 from typing import List
 
-from yoke_cli.commands._helpers import parse_or_usage_error
 from yoke_cli.commands.adapters.hook_config_dedup import (
     is_cursor_config_invocation,
     should_skip_config_duplicate,
@@ -50,11 +55,16 @@ def _evaluate_inprocess(
     """
     from yoke_cli.commands.adapters.hook_inprocess import evaluate_inprocess
     from yoke_cli.hook_client_wall import record_client_wall
+    from yoke_cli.invocation_locality import control_plane_locality
 
     stdout = io.StringIO()
     stderr = io.StringIO()
     started = time.monotonic()
-    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+    with (
+        control_plane_locality(None),
+        contextlib.redirect_stdout(stdout),
+        contextlib.redirect_stderr(stderr),
+    ):
         exit_code = evaluate_inprocess(
             event_name,
             stdin_data,
@@ -100,8 +110,12 @@ def hook_evaluate(args: List[str]) -> int:
         action="store_true",
         help="Print the ordered hook chain and exit.",
     )
-    parsed = parse_or_usage_error(parser, args, HOOK_EVALUATE_USAGE)
-    if parsed is None:
+    try:
+        parsed = parser.parse_args(args)
+    except SystemExit as exc:
+        if exc.code == 0:
+            raise
+        print(f"Usage: {HOOK_EVALUATE_USAGE}", file=sys.stderr)
         return 2
 
     stdin_data = "" if parsed.dry_run else _read_stdin()
