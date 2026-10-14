@@ -7,7 +7,7 @@ from runtime.api.domain.test_session_message_support import message_connection
 from yoke_core.domain.schema_init_tables_sessions import create_session_tables
 
 migration = importlib.import_module(
-    "yoke_core.domain.migrations.0075_open_attempt_and_latest_tool_call_indexes"
+    "yoke_core.domain.migrations.0076_open_attempt_and_latest_tool_call_indexes"
 )
 
 PLANS = {
