@@ -18,6 +18,9 @@ def test_oldest_leg_deselects_repository_and_wheel_checks(monkeypatch):
         _item("tests/teaching_prototype/test_map.py::test_links"),
         _item("runtime/api/test_runtime.py::test_installed", ["product_venv"]),
         _item("runtime/api/domain/test_path_snapshots.py::test_graph"),
+        _item("runtime/api/engines/test_doctor_hc_paths.py::test_tree"),
+        _item("runtime/api/test_doc_hygiene.py::test_links"),
+        _item("runtime/api/test_command_teaching.py::test_recipe"),
     ]
     runtime = _item("runtime/api/test_service_client.py::test_parser")
     items = independent + [runtime]

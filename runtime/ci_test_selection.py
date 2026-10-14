@@ -13,7 +13,17 @@ def version_independent(node_id: str, fixtures=()) -> bool:
         or "product_venv" in fixtures
         or path.startswith("tests/teaching_prototype/")
         or name.endswith("_docs.py")
-        or name.startswith(("test_path_snapshot", "test_install_bundle"))
+        or "_teaching" in name
+        or name.startswith(
+            (
+                "test_path_snapshot",
+                "test_install_bundle",
+                "test_doctor_hc_",
+                "test_doc_",
+                "test_docs_",
+                "test_generated_",
+            )
+        )
         or name
         in {
             "test_doctor_project_check_execution.py",
