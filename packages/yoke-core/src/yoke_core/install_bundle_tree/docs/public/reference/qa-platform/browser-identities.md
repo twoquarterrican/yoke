@@ -50,13 +50,38 @@ While a sign-in window is open no automated browser runs on the machine: every
 browser daemon is stopped first, and a daemon start is refused with
 `browser_human_gate_active` until the window closes.
 
+## Signing in on a Test Machine
+
+Run from the workstation connected to the project's control plane:
+
+```text
+yoke browser authorize --project P --identity buyer --machine NAME
+```
+
+Yoke reads the browser-control declarations here and runs authorization in the
+registered Test Machine's GUI session over its SSH route. Sign in on that
+desktop, then close the browser window; the command checks the identity again
+there before returning. The Test Machine needs an installed Yoke browser runtime,
+but no control-plane connection or pasted settings. Read `yoke browser authorize
+--help` for reset, starting URL, JSON output and window bounds.
+
+The workstation needs an ssh-agent with a key the host accepts. macOS uses its
+logged-in Terminal.app session; Linux and Windows WSL use the registered user's
+XFCE desktop. For a desktop that needs to start, its registered `desktop_password`
+secret must be stored on this workstation. A machine leased by another session
+refuses: wait for that lease to release or ask its holder to authorize the
+identity, because signing in stops every automated browser on that host.
+Use [desktop access](../test-machine-desktop.md) to view the remote desktop.
+
 ## Using an identity
 
 `yoke qa browser setup|status|stop|screenshot|step` take `--identity NAME`
 and read no declarations, so they run on a host that cannot reach the
 project's control plane. `verify` and `authorize` need the identity's sites:
-there, pass the project's browser-control settings document with
-`--declarations-json`, read where the project is reachable. A
+for a registered Test Machine, authorize from the connected workstation with
+`--machine NAME`. For hosts without a remote route, run locally there with
+`--declarations-json`, using the browser-control settings document read where
+the project is reachable. `--machine` and `--declarations-json` are exclusive. A
 Browser case names its identity with `method_config.browser_identity`; a run
 whose cases name several identities starts one daemon per identity. An
 hosted signed-in exploratory mission must name its persona, for example
