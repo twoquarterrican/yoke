@@ -144,7 +144,8 @@ def _run(
     timeout: int = 60,
 ) -> subprocess.CompletedProcess[str]:
     run_env = dict(env) if env is not None else os.environ.copy()
-    run_env.pop("PYTHONPATH", None)
+    if env is None:
+        run_env.pop("PYTHONPATH", None)
     result = subprocess.run(
         command,
         cwd=cwd,
@@ -168,18 +169,11 @@ def _format_result(result: subprocess.CompletedProcess[str]) -> str:
     )
 
 
-def _stub_native_provisioning(venv_python: Path, *, cwd: Path) -> None:
-    """Keep the wheel smoke off separately covered native/release provisioning."""
-    result = _run(
-        [
-            str(venv_python),
-            "-c",
-            "import sysconfig; print(sysconfig.get_path('purelib'))",
-        ],
-        cwd=cwd,
-    )
-    site_packages = Path(result.stdout.strip())
-    (site_packages / "onboard_native_test_stub.pth").write_text(
+def _stub_native_provisioning(*, cwd: Path) -> Path:
+    """Apply native setup substitutes only to this scenario's subprocesses."""
+    directory = cwd / "native-stub"
+    directory.mkdir()
+    (directory / "sitecustomize.py").write_text(
         "import yoke_cli.config.onboard_session_relay as relay; "
         "relay.install = lambda _outcome=relay.RelayInstallOutcome, **kwargs: _outcome(installed=True, reused=False); "
         "import yoke_harness.browser_setup as browser; "
@@ -188,3 +182,4 @@ def _stub_native_provisioning(venv_python: Path, *, cwd: Path) -> None:
         "venv.ensure_venv_support = lambda **kwargs: None\n",
         encoding="utf-8",
     )
+    return directory

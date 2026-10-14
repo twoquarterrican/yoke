@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from yoke_core.tools.build_release import create_seeded_pip_venv
 from pathlib import Path
 
 from runtime.api.cli.project_onboarding_test_helpers import (
@@ -22,6 +21,7 @@ BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 def test_product_wheels_exercise_installer_plan_surfaces(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
     built_wheels = sorted(path.name for path in product_wheelhouse.glob("*.whl"))
     assert any(name.startswith("yoke_cli-") for name in built_wheels)
@@ -30,26 +30,9 @@ def test_product_wheels_exercise_installer_plan_surfaces(
     assert any(name.startswith("yoke_core-") for name in built_wheels)
     assert not any(name.startswith("yoke-") for name in built_wheels)
 
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
     yoke = venv_dir / "bin" / "yoke"
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-harness",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
     assert yoke.is_file()
 
     project = tmp_path / "external-project"

@@ -30,8 +30,6 @@ import os
 import subprocess
 from pathlib import Path
 
-from yoke_core.tools.build_release import create_seeded_pip_venv
-
 
 BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
@@ -39,24 +37,10 @@ BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 def test_engine_wheel_boots_and_serves_standalone(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=300,
-    )
 
     home = tmp_path / "home"
     home.mkdir()

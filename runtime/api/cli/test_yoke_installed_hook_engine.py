@@ -10,15 +10,14 @@ from unittest.mock import patch
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.session_actor_binding_write import persist_operating_actor
-from yoke_core.tools.build_release import create_seeded_pip_venv
 
 
 def test_installed_hooks_register_emit_and_deny(
     tmp_path: Path,
-    product_wheelhouse: Path,
+    product_venv: Path,
     test_db,
 ) -> None:
-    venv = _install_product(tmp_path, product_wheelhouse)
+    venv = product_venv
     repo = _git_repo(tmp_path)
     env = _installed_env(tmp_path, venv, repo, test_db)
     yoke = venv / "bin" / "yoke"
@@ -87,10 +86,10 @@ def test_installed_hooks_register_emit_and_deny(
 
 def test_installed_hook_chain_imports_and_missing_member_is_loud(
     tmp_path: Path,
-    product_wheelhouse: Path,
+    product_venv: Path,
     test_db,
 ) -> None:
-    venv = _install_product(tmp_path, product_wheelhouse)
+    venv = product_venv
     repo = _git_repo(tmp_path)
     env = _installed_env(tmp_path, venv, repo, test_db)
     python = venv / "bin" / "python"
@@ -134,28 +133,6 @@ raise SystemExit(evaluate_local_hook("PreToolUse", payload))
     assert "YOKE_HOOK_GUARD_FAILURE" in result.stderr
     assert "missing_package.guard" in result.stderr
     assert "ModuleNotFoundError" in result.stderr
-
-
-def _install_product(tmp_path: Path, wheelhouse: Path) -> Path:
-    venv = tmp_path / "venv"
-    create_seeded_pip_venv(venv)
-    _run(
-        [
-            str(venv / "bin" / "python"),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(wheelhouse),
-            "yoke-cli",
-            "yoke-harness",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=300,
-    )
-    return venv
 
 
 def _git_repo(tmp_path: Path) -> Path:

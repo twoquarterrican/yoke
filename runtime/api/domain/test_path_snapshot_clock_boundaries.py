@@ -1,11 +1,10 @@
-"""Path resolution keeps Native clocks until PostgreSQL or SQLite writes."""
+"""Path resolution preserves native PostgreSQL clocks."""
 
 from datetime import datetime, timedelta, timezone
-import sqlite3
 
 import pytest
 
-from yoke_contracts.timestamps import InvalidInstant, format_instant
+from yoke_contracts.timestamps import InvalidInstant
 from yoke_core.domain.path_registry import (
     KIND_DIRECTORY,
     KIND_FILE,
@@ -15,39 +14,27 @@ from yoke_core.domain.path_registry import (
 from yoke_core.domain.path_snapshot_targets import resolve_snapshot_target_ids
 
 
-@pytest.fixture(params=["postgres", "sqlite"])
-def clock_connection(request, test_db):
-    if request.param == "postgres":
-        conn = test_db
-        prefix, identity, clock_type = (
-            "CREATE TEMP TABLE",
-            "SERIAL PRIMARY KEY",
-            "TIMESTAMPTZ",
-        )
-    else:
-        conn = sqlite3.connect(":memory:")
-        prefix, identity, clock_type = "CREATE TABLE", "INTEGER PRIMARY KEY", "TEXT"
-    conn.execute(f"""{prefix} projects (
+@pytest.fixture
+def clock_connection(test_db):
+    test_db.execute("""CREATE TEMP TABLE projects (
         id INTEGER PRIMARY KEY, slug TEXT, name TEXT, public_item_prefix TEXT
     )""")
-    conn.execute(
+    test_db.execute(
         "INSERT INTO projects VALUES (1, 'clock-project', 'Clock project', 'CLK')"
     )
-    conn.execute(f"""{prefix} path_targets (
-        id {identity}, project_id INTEGER, kind TEXT, path_string TEXT,
+    test_db.execute("""CREATE TEMP TABLE path_targets (
+        id SERIAL PRIMARY KEY, project_id INTEGER, kind TEXT, path_string TEXT,
         generation INTEGER, parent_target_id INTEGER,
-        materialization_state TEXT DEFAULT 'observed', created_at {clock_type}
+        materialization_state TEXT DEFAULT 'observed', created_at TIMESTAMPTZ
     )""")
-    conn.execute(f"""{prefix} path_snapshots (
+    test_db.execute("""CREATE TEMP TABLE path_snapshots (
         id INTEGER PRIMARY KEY, project_id INTEGER, commit_sha TEXT,
-        built_at {clock_type}
+        built_at TIMESTAMPTZ
     )""")
-    conn.execute(f"""{prefix} path_snapshot_entries (
+    test_db.execute("""CREATE TEMP TABLE path_snapshot_entries (
         snapshot_id INTEGER, target_id INTEGER
     )""")
-    yield conn, request.param
-    if request.param == "sqlite":
-        conn.close()
+    return test_db
 
 
 @pytest.fixture(params=["single", "bulk"])
@@ -69,24 +56,21 @@ def target_writer(request):
 
 @pytest.mark.parametrize("offset", [0, 330, -240])
 @pytest.mark.parametrize("microsecond", [0, 123456])
-def test_target_clock_keeps_native_type_or_fixed_six_sqlite_bytes(
+def test_target_clock_keeps_native_type(
     clock_connection,
     target_writer,
     offset,
     microsecond,
 ):
-    conn, backend = clock_connection
+    conn = clock_connection
     instant = datetime(1969, 12, 31, 23, 59, 59, microsecond, tzinfo=timezone.utc)
     supplied = instant.astimezone(timezone(timedelta(minutes=offset)))
     target_id = target_writer(conn, supplied)
     stored = conn.execute(
         "SELECT created_at FROM path_targets WHERE path_string='clock.py'"
     ).fetchone()[0]
-    if backend == "postgres":
-        assert isinstance(stored, datetime)
-        assert stored == instant
-    else:
-        assert stored == format_instant(instant)
+    assert isinstance(stored, datetime)
+    assert stored == instant
     assert target_writer(conn, supplied) == target_id
 
 
@@ -98,7 +82,7 @@ def test_target_resolution_refuses_non_native_clock_even_when_reusing(
     reuse,
     bad,
 ):
-    conn, _ = clock_connection
+    conn = clock_connection
     if reuse:
         target_writer(
             conn, datetime(1969, 12, 31, 23, 59, 59, 123456, tzinfo=timezone.utc)

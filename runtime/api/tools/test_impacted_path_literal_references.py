@@ -178,7 +178,7 @@ def _installer_tree(root: Path) -> Path:
     than a restatement of it.
     """
     repo_root = Path(__file__).resolve().parents[3]
-    subject = "runtime/api/cli/test_public_installer_shim.py"
+    subject = "tests/installer/test_public_installer_package_contract.py"
     _write(root, subject, (repo_root / subject).read_text(encoding="utf-8"))
     for rel in (
         "packaging/public-installer/install.py",
@@ -194,7 +194,7 @@ def test_editing_the_installer_reaches_the_test_that_loads_it(
 ) -> None:
     monkeypatch.setattr(
         "yoke_core.tools._impacted_import_index.current_test_roots",
-        lambda: ("runtime/",),
+        lambda: ("tests/",),
     )
     _installer_tree(tmp_path)
 
@@ -202,7 +202,7 @@ def test_editing_the_installer_reaches_the_test_that_loads_it(
 
     reached = reachable_tests(["packaging/public-installer/install.py"], index)
     assert reached is not None
-    assert "runtime/api/cli/test_public_installer_shim.py" in reached
+    assert "tests/installer/test_public_installer_package_contract.py" in reached
 
 
 def test_a_composed_path_names_only_the_file_it_spells(tmp_path: Path) -> None:
@@ -211,7 +211,7 @@ def test_a_composed_path_names_only_the_file_it_spells(tmp_path: Path) -> None:
 
     index = build_import_index(tmp_path)
 
-    subject = "runtime/api/cli/test_public_installer_shim.py"
+    subject = "tests/installer/test_public_installer_package_contract.py"
     assert subject in index.importers.get("packaging.public-installer.install", set())
     for other in (
         "yoke_cli.commands.adapters.install",

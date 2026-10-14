@@ -1,9 +1,7 @@
 """Wheel smoke for the field-note help surface without the engine package.
 
-External projects use the packaged client boundary.  This test installs only
-``yoke-cli`` and ``yoke-contracts`` into a disposable environment, blocks every
-source-checkout path, and proves field-note argument parsing remains available
-without ``yoke_core``.
+The shared interpreter runs with site loading disabled and a filtered view of
+installed packages. No engine or source-checkout package enters that view.
 """
 
 from __future__ import annotations
@@ -13,51 +11,47 @@ import os
 import subprocess
 from pathlib import Path
 
-from runtime.api.product_boundary_isolation import write_sitecustomize
-from yoke_core.tools.build_release import create_seeded_pip_venv
-
 
 BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_field_note_help_runs_from_core_less_product_wheels(
+def smoke(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir, system_site_packages=True)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
-    yoke = venv_dir / "bin" / "yoke"
-    _run(
+    site_result = _run(
         [
             str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--ignore-installed",
-            "--no-deps",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-contracts",
+            "-I",
+            "-c",
+            "import sysconfig; print(sysconfig.get_path('purelib'))",
         ],
         cwd=tmp_path,
-        timeout=180,
     )
+    installed_site = Path(site_result.stdout.strip())
+    client_site = tmp_path / "client-site"
+    client_site.mkdir()
+    for entry in installed_site.iterdir():
+        if not entry.name.startswith("yoke_core"):
+            (client_site / entry.name).symlink_to(
+                entry, target_is_directory=entry.is_dir()
+            )
+    yoke = tmp_path / "yoke"
+    yoke.write_text(
+        f"#!{venv_python} -S\nfrom yoke_cli.main import main\nraise SystemExit(main())\n",
+        encoding="utf-8",
+    )
+    yoke.chmod(0o755)
 
     external_project = tmp_path / "external-project"
     external_project.mkdir()
-    sitecustomize_dir = write_sitecustomize(
-        tmp_path,
-        repo_root=REPO_ROOT,
-        allowed_repo_paths=(),
-    )
     env = {
         "HOME": str(tmp_path / "home"),
         "PATH": f"{venv_dir / 'bin'}:{BASE_PATH}",
-        "PYTHONPATH": str(sitecustomize_dir),
+        "PYTHONPATH": str(client_site),
         "PYTHONNOUSERSITE": "1",
         "LANG": os.environ.get("LANG", "C.UTF-8"),
         "LC_ALL": os.environ.get("LC_ALL", "C.UTF-8"),
@@ -66,9 +60,11 @@ def test_field_note_help_runs_from_core_less_product_wheels(
     import_check = _run(
         [
             str(venv_python),
+            "-S",
             "-c",
             "import importlib.util; "
-            "assert importlib.util.find_spec('yoke_core') is None",
+            "assert importlib.util.find_spec('yoke_core') is None; "
+            "assert importlib.util.find_spec('runtime') is None",
         ],
         cwd=external_project,
         env=env,
@@ -143,12 +139,13 @@ assert main([
 print("__FIELD_NOTE_REQUESTS__" + json.dumps(requests, sort_keys=True))
 """
     read_result = _run(
-        [str(venv_python), "-c", read_script],
+        [str(venv_python), "-S", "-c", read_script],
         cwd=external_project,
         env=env,
     )
     marker = next(
-        line for line in read_result.stdout.splitlines()
+        line
+        for line in read_result.stdout.splitlines()
         if line.startswith("__FIELD_NOTE_REQUESTS__")
     )
     requests = json.loads(marker.removeprefix("__FIELD_NOTE_REQUESTS__"))

@@ -14,7 +14,6 @@ import pytest
 
 from runtime.api.cli.release_fixture_helpers import sample_release as _sample_release
 from yoke_core.tools import distribution_publish, package_index, release_artifacts
-from yoke_core.tools.build_release import create_seeded_pip_venv
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -25,6 +24,7 @@ _LINK_RE = re.compile(r'<a\s+href=["\'](?P<href>[^"\']+)["\']\s*>')
 def test_pep503_simple_index_and_clean_venv_install(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
     index_dir = tmp_path / "simple"
     wheel_base_url = "https://api.upyoke.com/dist/releases/0.2.0/wheels"
@@ -62,28 +62,11 @@ def test_pep503_simple_index_and_clean_venv_install(
         assert url == f"{wheel_base_url}/{quote(record.filename, safe='%')}"
         assert sha == record.sha256
 
-    venv_dir = tmp_path / "clean-venv"
-    create_seeded_pip_venv(venv_dir)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
     yoke = venv_dir / "bin" / "yoke"
     # The published index links remote wheels; the offline clean-venv proof
     # installs from the local closure (the same wheels plus third-party deps).
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-harness",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
     assert yoke.is_file()
 
     external_project = tmp_path / "external-project"
@@ -100,9 +83,14 @@ def test_pep503_simple_index_and_clean_venv_install(
         present=("yoke_core", "psycopg"),
         absent=("runtime",),
     )
-    assert _run(
-        [str(yoke), "--version"], cwd=external_project, env=env,
-    ).stdout.strip() == product_records["yoke-cli"].version
+    assert (
+        _run(
+            [str(yoke), "--version"],
+            cwd=external_project,
+            env=env,
+        ).stdout.strip()
+        == product_records["yoke-cli"].version
+    )
     help_result = _run([str(yoke), "--help"], cwd=external_project, env=env)
     assert "yoke status" in help_result.stdout
 
@@ -119,7 +107,8 @@ def test_validate_release_rejects_version_without_local_segment(
 
     records, wheel_records = _sample_release(wheels_dir, version=version)
     (release_dir / release_artifacts.RELEASE_RECORDS_FILENAME).write_text(
-        json.dumps(records, indent=2) + "\n", encoding="utf-8",
+        json.dumps(records, indent=2) + "\n",
+        encoding="utf-8",
     )
     package_index.write_simple_index(
         index_dir=simple_dir,
@@ -146,7 +135,8 @@ def test_validate_release_rejects_unpinned_sibling(tmp_path: Path) -> None:
         wheels_dir, version=version, sibling_specifier=""
     )
     (release_dir / release_artifacts.RELEASE_RECORDS_FILENAME).write_text(
-        json.dumps(records, indent=2) + "\n", encoding="utf-8",
+        json.dumps(records, indent=2) + "\n",
+        encoding="utf-8",
     )
     package_index.write_simple_index(
         index_dir=simple_dir,
@@ -174,7 +164,8 @@ def test_validate_release_rejects_manifest_version_drift(tmp_path: Path) -> None
     for record in records:
         record["version"] = "0.2.0+different"
     (release_dir / release_artifacts.RELEASE_RECORDS_FILENAME).write_text(
-        json.dumps(records, indent=2) + "\n", encoding="utf-8",
+        json.dumps(records, indent=2) + "\n",
+        encoding="utf-8",
     )
     package_index.write_simple_index(
         index_dir=simple_dir,
@@ -199,14 +190,14 @@ def test_validate_release_rejects_invalid_wheel_record(tmp_path: Path) -> None:
     with pytest.warns(UserWarning, match="Duplicate name"):
         with zipfile.ZipFile(core, "a") as archive:
             wheel_arcname = next(
-                name for name in archive.namelist()
-                if name.endswith(".dist-info/WHEEL")
+                name for name in archive.namelist() if name.endswith(".dist-info/WHEEL")
             )
             archive.writestr(wheel_arcname, archive.read(wheel_arcname))
     wheel_records = package_index.read_wheel_records(wheels_dir)
     records = package_index.build_records_manifest(wheel_records)
     (release_dir / release_artifacts.RELEASE_RECORDS_FILENAME).write_text(
-        json.dumps(records, indent=2) + "\n", encoding="utf-8",
+        json.dumps(records, indent=2) + "\n",
+        encoding="utf-8",
     )
     package_index.write_simple_index(
         index_dir=simple_dir,

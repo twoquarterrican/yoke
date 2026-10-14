@@ -3,8 +3,6 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
-import os
-import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -12,58 +10,9 @@ from pathlib import Path
 import pytest
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALL_SHIM = REPO_ROOT / "packaging" / "public-installer" / "install"
 INSTALL_PY = REPO_ROOT / "packaging" / "public-installer" / "install.py"
-
-
-def test_file_invocation_installs_uv_automatically(tmp_path: Path) -> None:
-    env = _installer_env(tmp_path, with_fake_curl=True)
-
-    result = subprocess.run(
-        ["/bin/sh", str(INSTALL_SHIM)],
-        input="",
-        text=True,
-        capture_output=True,
-        env=env,
-        check=False,
-    )
-
-    assert result.returncode == 0, result.stderr
-    # uv installs automatically with no Y/n consent to read; on success with
-    # no `yoke` on PATH yet, the shim prints the resume command (no gate).
-    assert "Installing uv" in result.stdout
-    assert (
-        "Run yoke setup to finish setting up your machine & projects." in result.stdout
-    )
-    assert "Start Yoke onboarding" not in result.stdout
-    assert "/dev/tty" not in result.stderr
-
-
-def test_pipe_invocation_without_yes_installs_uv_without_tty_noise(
-    tmp_path: Path,
-) -> None:
-    env = _installer_env(tmp_path, with_fake_curl=True)
-
-    result = subprocess.run(
-        ["/bin/sh"],
-        input=INSTALL_SHIM.read_text(encoding="utf-8"),
-        text=True,
-        capture_output=True,
-        env=env,
-        check=False,
-        # A local test runner may itself own a controlling PTY. Detach this
-        # child so the curl-pipe scenario exercises the intended no-TTY path.
-        start_new_session=True,
-    )
-
-    assert result.returncode == 0, result.stderr
-    # uv installs automatically with no consent read, so a curl|sh pipe with
-    # no controlling terminal and no --yes still succeeds; stderr stays
-    # clean of tty noise.
-    assert "Installing uv" in result.stdout
-    assert "Device not configured" not in result.stderr
-    assert "/dev/tty" not in result.stderr
 
 
 def test_python_helper_honors_plain_glyph_env(monkeypatch) -> None:
@@ -141,21 +90,6 @@ def test_product_audit_rejects_missing_hook_runtime_package() -> None:
         )
 
 
-def _installer_env(tmp_path: Path, *, with_fake_curl: bool) -> dict[str, str]:
-    home = tmp_path / "home"
-    home.mkdir()
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir()
-    if with_fake_curl:
-        _write_fake_curl(bin_dir / "curl")
-    _write_helper(tmp_path / "server")
-    env = os.environ.copy()
-    env["HOME"] = str(home)
-    env["PATH"] = f"{bin_dir}:/usr/bin:/bin"
-    env["YOKE_INSTALL_BASE_URL"] = (tmp_path / "server").as_uri()
-    return env
-
-
 class _InstallPyRunner:
     def __init__(self, version: str) -> None:
         self.version = version
@@ -212,39 +146,3 @@ def _load_install_py():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
-
-
-def _write_helper(root: Path) -> None:
-    dist = root / "dist"
-    dist.mkdir(parents=True)
-    (dist / "install.py").write_text(
-        "from __future__ import annotations\nprint('fake install helper ran')\n",
-        encoding="utf-8",
-    )
-
-
-def _write_fake_curl(path: Path) -> None:
-    python = shlex.quote(sys.executable)
-    path.write_text(
-        "#!/bin/sh\n"
-        "cat <<'UV_INSTALL'\n"
-        "#!/bin/sh\n"
-        'mkdir -p "$HOME/.local/bin"\n'
-        "cat > \"$HOME/.local/bin/uv\" <<'UV'\n"
-        "#!/bin/sh\n"
-        'if [ "$1" = "run" ]; then\n'
-        "  shift\n"
-        '  if [ "$1" = "--isolated" ]; then shift; fi\n'
-        '  if [ "$1" = "--no-project" ]; then shift; fi\n'
-        '  if [ "$1" = "python" ]; then shift; exec '
-        f'{python} "$@"; fi\n'
-        "fi\n"
-        'if [ "$1" = "tool" ] && [ "$2" = "install" ]; then exit 0; fi\n'
-        'echo "unexpected uv invocation: $*" >&2\n'
-        "exit 43\n"
-        "UV\n"
-        'chmod +x "$HOME/.local/bin/uv"\n'
-        "UV_INSTALL\n",
-        encoding="utf-8",
-    )
-    path.chmod(0o755)

@@ -37,8 +37,12 @@ def _settings_with_pulumi_state(
 
 class TestRenderPulumiArtifacts:
     @pytest.fixture
-    def infra_tree(self, tmp_path):
+    def infra_tree(self, tmp_path, monkeypatch):
         """Build a project root with the minimal Pulumi Pack files."""
+        monkeypatch.setattr(
+            project_renderer_pulumi, "load_project_renderer_settings",
+            lambda project: _settings_with_pulumi_state(project, f"{project}-infra"),
+        )
         root = tmp_path / "repo"
         infra = root / "infra"
         infra.mkdir(parents=True)

@@ -5,8 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from runtime.api.product_boundary_isolation import write_sitecustomize
-from test_yoke_cli_wheel_smoke import _product_env, _run
-from yoke_core.tools.build_release import create_seeded_pip_venv
+from tests.import_graph.wheel_smoke_cli import _product_env, _run
 
 
 PROBE = r"""
@@ -51,26 +50,9 @@ print(json.dumps({'installed_module': yoke_cli.__file__, 'certificate_probe': 'p
 """
 
 
-def test_installed_wheel_preserves_certificate_diagnosis(tmp_path, product_wheelhouse):
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir, system_site_packages=True)
+def smoke(tmp_path, product_wheelhouse, product_venv):
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--ignore-installed",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
     sitecustomize_dir = write_sitecustomize(
         tmp_path,
         repo_root=Path(__file__).resolve().parents[2],

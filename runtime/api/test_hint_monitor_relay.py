@@ -4,12 +4,21 @@ from __future__ import annotations
 
 from runtime.api.fixtures.machine_config_test import select_machine_config_file
 import io
+import subprocess
+import unittest
+from pathlib import Path
 import json
 from contextlib import redirect_stdout
 
 import pytest
 
 from yoke_core.domain import hint_monitor_relay
+from yoke_core.domain.hint_monitor_relay import (
+    DEFAULT_REMINDER,
+    HELP_REMINDER,
+    main,
+    resolve_reminder_text,
+)
 from yoke_core.hooks.types import HookContext, Outcome
 
 
@@ -170,3 +179,144 @@ def test_evaluate_typed_skips_non_monitor_tool() -> None:
     decision = hint_monitor_relay.evaluate(record)
     assert decision.outcome is Outcome.NOOP
     assert decision.audit_fields == {}
+
+
+REMINDER_REPO_ROOT = Path(__file__).resolve().parents[2]
+REMINDER_SOURCE_ROOT = REMINDER_REPO_ROOT / "packages" / "yoke-core" / "src"
+
+
+class TestDefaultReminderContent(unittest.TestCase):
+    """The widened reminder mirrors the deny-side coverage."""
+
+    def test_widened_peek_verb_enumeration_present(self) -> None:
+        self.assertIn(
+            "tail/head/cat/wc/grep/egrep/fgrep/rg/ls/awk/sed/less/more/file/stat/nl/cut/sort/uniq",
+            HELP_REMINDER,
+        )
+
+    def test_legacy_three_verb_phrasing_replaced(self) -> None:
+        # The old "(tail/head/cat) while the owning command is
+        # running" wording must be removed (replacement, not addition).
+        text = HELP_REMINDER
+        self.assertNotIn(
+            "(tail/head/cat) while the owning command is running",
+            text,
+        )
+
+    def test_bg_waiter_prohibition_present(self) -> None:
+        # The four waiter shapes are named.
+        text = HELP_REMINDER
+        self.assertIn("Bash(run_in_background)", text)
+        self.assertIn("tail -f <capture>", text)
+        self.assertIn("sleep N && tail/cat <capture>", text)
+        self.assertIn("while [ ! -f <sentinel> ]; do sleep; done", text)
+        self.assertIn("watch_tail <capture>", text)
+        self.assertIn("armed Monitor IS the waiter", text)
+
+    def test_private_tmp_claude_path_called_out(self) -> None:
+        # The Claude private-tmp capture root is named explicitly.
+        text = HELP_REMINDER
+        self.assertIn("/private/tmp/claude-", text)
+        # And the prose links it to the existing peek/waiter rules.
+        self.assertIn("peek", text)
+        self.assertIn("waiter", text)
+        self.assertNotIn("pgrep -f <pattern>", text)
+
+    def test_envelope_shape_preserved(self) -> None:
+        # The reminder is wrapped in exactly one envelope.
+        text = HELP_REMINDER
+        self.assertTrue(text.startswith("<system-reminder>"))
+        self.assertTrue(text.rstrip().endswith("</system-reminder>"))
+        # No nested envelopes.
+        self.assertEqual(text.count("<system-reminder>"), 1)
+        self.assertEqual(text.count("</system-reminder>"), 1)
+
+    def test_turn_end_is_not_the_wait(self) -> None:
+        text = HELP_REMINDER
+        self.assertNotIn("Waiting IS ending the turn", text)
+        self.assertIn("waiter dies with no wake", text)
+        self.assertIn("wait_mode=background-wake", text)
+        self.assertIn("wait_mode=in-turn", text)
+        self.assertNotIn("the completion notification was the verification", text)
+
+
+class TestReminderModuleSize(unittest.TestCase):
+    """hint_monitor_relay.py stays ≤200 lines."""
+
+    def test_module_size_under_cap(self) -> None:
+        path = REMINDER_SOURCE_ROOT / "yoke_core" / "domain" / "hint_monitor_relay.py"
+        line_count = sum(1 for _ in path.read_text(encoding="utf-8").splitlines())
+        self.assertLessEqual(line_count, 200)
+
+
+class TestReminderSingleSourceOfTruth(unittest.TestCase):
+    """``DEFAULT_REMINDER`` is the only canonical reminder source.
+
+    A grep for the ``"Avoid repeated peeks at the capture file"`` substring across
+    ``packages/yoke-core/src`` returns exactly one hit (the canonical
+    constant in ``hint_monitor_relay.py``).
+    """
+
+    def test_only_one_canonical_definition(self) -> None:
+        # The substring is an exact match against the widened reminder
+        # text. Only the canonical module should carry it. Skip __pycache__
+        # (bytecode caches contain the source-literal verbatim) and this
+        # test file itself.
+        try:
+            output = subprocess.run(
+                [
+                    "grep",
+                    "-r",
+                    "--exclude-dir=__pycache__",
+                    "-l",
+                    "--exclude-dir=__pycache__",
+                    "Avoid repeated peeks at the capture file",
+                    str(REMINDER_SOURCE_ROOT),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            self.skipTest("grep not available on this platform")
+        if output.returncode not in (0, 1):
+            self.fail(f"grep failed: rc={output.returncode} stderr={output.stderr}")
+        hits = [line.strip() for line in output.stdout.splitlines() if line.strip()]
+        hits = [h for h in hits if not h.endswith("test_hint_monitor_relay.py")]
+        self.assertEqual(len(hits), 1, f"expected 1 hit, got: {hits}")
+        self.assertTrue(hits[0].endswith("hint_monitor_relay_help.py"))
+
+
+class TestDefaultReminderConstantParity(unittest.TestCase):
+    """``DEFAULT_REMINDER`` and ``resolve_reminder_text()`` agree without override."""
+
+    def test_default_resolves_when_no_override(self) -> None:
+        text = resolve_reminder_text()
+        self.assertTrue(
+            text == DEFAULT_REMINDER or text.strip() == DEFAULT_REMINDER.strip()
+        )
+
+
+class TestInjectedReminderIsShort(unittest.TestCase):
+    """The hook injects a few lines; full rules live on ``--help``."""
+
+    def test_injected_text_points_at_help(self) -> None:
+        self.assertIn(
+            "python3 -m yoke_core.domain.hint_monitor_relay --help", DEFAULT_REMINDER
+        )
+        self.assertLessEqual(DEFAULT_REMINDER.count("\n"), 12)
+        self.assertTrue(DEFAULT_REMINDER.startswith("<system-reminder>"))
+
+    def test_help_prints_the_full_relay_rules(self) -> None:
+        from io import StringIO
+        from contextlib import redirect_stdout
+
+        buf = StringIO()
+        with redirect_stdout(buf):
+            rc = main(["--help"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(buf.getvalue().rstrip(), HELP_REMINDER.rstrip())
+
+
+if __name__ == "__main__":
+    unittest.main()

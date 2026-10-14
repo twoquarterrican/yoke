@@ -1,14 +1,5 @@
 name: yoke-ci
 
-# Dispatched runs embed the caller's correlation id in run-name for lost-
-# response recovery. FACTORY workflow: read-only GITHUB_TOKEN; never set
-# YOKE_LINUX_RUNS_ON on a public fork (that routes strangers onto private
-# runners). merge_group runs are the merge queue's one integration gate
-# per train of queued PRs; its ruleset requires the same named checks.
-# repo-contracts fast-fails; identical trees may reuse recent coverage.
-# Executable job timeouts: docs/testing-verification/ci-job-timeouts.md.
-# Consumer evidence runs in consumer-compatibility-advisory.yml separately:
-# its failures and timeouts cannot change this required workflow conclusion.
 run-name: >-
   ${{ inputs.yoke_dispatch_id
       && format('yoke-ci {0} [yoke-dispatch:{1}]', github.ref_name, inputs.yoke_dispatch_id)
@@ -20,7 +11,6 @@ on:
   merge_group:
   push:
     branches: [main]
-    # paths-ignore is push-only: a skipped required PR check stays pending.
     paths-ignore:
       - ".yoke/strategy/**"
       - "docs/**"
@@ -34,31 +24,25 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
-  # Releases need a completed verdict for their exact main commit, even after
-  # the next merge lands; separate groups also preserve pending main runs.
-  # Superseded PR and lane runs can still be cancelled.
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-# Read-only token everywhere; fork PRs must never see an elevated token.
-# reuse-coverage elevates actions:read at job scope only.
 permissions:
   contents: read
 
 env:
-  # Bound for reuse-coverage: covering runs older than this still force suite.
   REUSE_WINDOW_HOURS: "24"
-  # Public GHCR copy of the official image; refreshed daily by ci-image-mirror.
   POSTGRES_IMAGE: ghcr.io/upyoke/postgres:16
 
 jobs:
-  # Tree-only contracts precede shards, which also enforce them.
   repo_contracts:
     timeout-minutes: 5
     name: repo-contracts
+    permissions: {contents: read, actions: read}
     runs-on: ${{ fromJSON(vars.YOKE_LINUX_RUNS_ON || '["ubuntu-latest"]') }}
     outputs:
       shards: ${{ steps.fan_out.outputs.shards }}
       python_versions: ${{ steps.fan_out.outputs.python_versions }}
+      python_latest: ${{ steps.fan_out.outputs.python_latest }}
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -86,19 +70,31 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-packages --all-groups --locked
 
+      - name: Refresh shard timing profile from retained CI reports
+        continue-on-error: true # Missing telemetry leaves the committed profile usable.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          uv run python -m yoke_core.tools.ci_durations_refresh --target-root .
+          --latest --repository "${{ github.repository }}"
+          --python "${{ steps.fan_out.outputs.python_latest }}"
+
+      - name: Share the timing profile with every shard
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-test-durations
+          path: .test_durations
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Run repo contracts
-        # One changed-path scope for every event: the merge-base with the
-        # default branch. Scoping by event would let a dispatched gate and a
-        # pull-request entry run disagree about one tree.
         run: >-
           uv run python -m yoke_core.tools.ci_repo_contracts
           --base "origin/${{ github.event.repository.default_branch }}"
   reuse_coverage:
     timeout-minutes: 5
     name: reuse-coverage
-    # A main push re-proves its own tree; a train carrying a rebased item
-    # builds the tree its entry run proved. Consumers skip per step, never
-    # per job: see test_shard.
     runs-on: ${{ fromJSON(vars.YOKE_LINUX_RUNS_ON || '["ubuntu-latest"]') }}
     permissions:
       contents: read
@@ -121,15 +117,12 @@ jobs:
     timeout-minutes: 35
     name: test-shard
     needs: [repo_contracts, reuse_coverage]
-    # Reuse is gated per STEP below, never here: skipping a matrix job leaves
-    # its matrix unevaluated, so it reports one `test-shard` check and none of
-    # the required per-matrix contexts, stranding the queue entry.
     if: ${{ !cancelled() && needs.repo_contracts.result == 'success' }}
     runs-on: ${{ fromJSON(vars.YOKE_LINUX_RUNS_ON || '["ubuntu-latest"]') }}
     env:
+      RUN_PYTHON_LEG: ${{ matrix.python-version == needs.repo_contracts.outputs.python_latest || github.event_name == 'merge_group' }}
+      YOKE_CI_PYTHON_SCOPE: ${{ matrix.python-version == needs.repo_contracts.outputs.python_latest && 'all' || 'interpreter' }}
       SUITE_ALREADY_PROVEN: ${{ needs.reuse_coverage.outputs.skip_suite }}
-      # Hand-launched Postgres (not services:) so fsync can be disabled.
-      # Name is run-id + python + shard unique across shared self-hosted hosts.
       PG_CONTAINER: yoke-ci-pg-${{ github.run_id }}-${{ matrix.python-version }}-${{ matrix.shard }}
     strategy:
       fail-fast: false
@@ -139,17 +132,18 @@ jobs:
 
     steps:
       - name: Checkout
+        if: env.RUN_PYTHON_LEG == 'true'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          # Full history (NOT shallow). Every package derives its version from
-          # git via setuptools_scm, and a depth-1 clone drops tags+history,
-          # collapsing the editable installs to the 0.1.0 fallback — worth far
-          # more than the ~18s a shallow fetch saves. No test reads this repo's
-          # own commit history; the git/merge/worktree suites boot tmp repos.
-          # test_ci_builds_container_without_registry_push pins this value.
           fetch-depth: 0
 
+      - name: Use the shared timing profile
+        if: env.RUN_PYTHON_LEG == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: ci-test-durations}
+
       - name: Reclaim runner disk
+        if: env.RUN_PYTHON_LEG == 'true'
         run: >-
           PYTHONPATH=packages/yoke-core/src:packages/yoke-contracts/src python3 -m
           yoke_core.tools.github_runner_disk_reclaim
@@ -157,6 +151,7 @@ jobs:
           --runner-os "${{ runner.os }}"
 
       - name: Set up Python ${{ matrix.python-version }}
+        if: env.RUN_PYTHON_LEG == 'true'
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ matrix.python-version }}
@@ -164,27 +159,25 @@ jobs:
           cache-dependency-path: uv.lock
 
       - name: Install uv
+        if: env.RUN_PYTHON_LEG == 'true'
         run: |
           python -m pip install --upgrade pip
           python -m pip install uv
 
       - name: Install dependencies
+        if: env.RUN_PYTHON_LEG == 'true'
         run: uv sync --all-packages --all-groups --locked
 
       - name: Set up Node.js
+        if: env.RUN_PYTHON_LEG == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with: {node-version: "22", cache: npm, cache-dependency-path: packages/yoke-core/src/yoke_core/ui/package-lock.json}
       - name: Install TypeScript compiler
+        if: env.RUN_PYTHON_LEG == 'true'
         run: npm ci --prefix packages/yoke-core/src/yoke_core/ui
 
       - name: Register libpython with the system loader cache
-        # setup-python's --enable-shared interpreter keeps libpython in
-        # ${pythonLocation}/lib and exports LD_LIBRARY_PATH only for ordinary
-        # steps, but tests spawn python3 with a cleaned env (merge engine,
-        # update_status, installer shim, product-boundary probes), so the
-        # system loader cache has to know. Matrix lanes can share a self-hosted
-        # runner and ldconfig rewrites host-global /etc/ld.so.cache through a
-        # fixed temp path, so serialize the conf write and cache update.
+        if: env.RUN_PYTHON_LEG == 'true'
         run: |
           lib_dir="${pythonLocation}/lib"
           if ! compgen -G "${lib_dir}/libpython*.so*" >/dev/null; then
@@ -198,17 +191,17 @@ jobs:
             ldconfig
           ' _ "$lib_dir" "$conf_path"
 
-          # prove a clean-env subprocess can now start the venv interpreter
           env -i .venv/bin/python3 -c "import sys; print('clean-env venv python OK', sys.version.split()[0])"
 
       - name: Configure git identity (CI runners have no ~/.gitconfig)
+        if: env.RUN_PYTHON_LEG == 'true'
         run: |
           git config --global user.email "ci@yoke.local"
           git config --global user.name "Yoke CI"
           git config --global init.defaultBranch main
 
       - name: Start Postgres (durability off, dynamic host port)
-        # Not services: those cannot pass -c. Retry transient GHCR transport failures.
+        if: env.RUN_PYTHON_LEG == 'true'
         run: |
           socket_dir="$(mktemp -d /tmp/yoke-ci-pg.XXXXXX)"
           echo "YOKE_PG_SOCKET_DIR=${socket_dir}" >> "$GITHUB_ENV"
@@ -233,10 +226,7 @@ jobs:
             -c max_wal_senders=0
 
       - name: Resolve Postgres DSN (dynamic host port)
-        # `docker port <name> 5432` prints "0.0.0.0:NNNNN" (plus an IPv6
-        # "[::]:NNNNN" line); take the first line and strip to the last colon,
-        # then set the DSN for later steps via $GITHUB_ENV. libpq tries every
-        # address `localhost` resolves to, so publish order does not matter.
+        if: env.RUN_PYTHON_LEG == 'true'
         run: |
           set -o pipefail
           host_port="$(docker port "$PG_CONTAINER" 5432 | head -n1 | sed 's/.*://')"
@@ -248,16 +238,11 @@ jobs:
           echo "YOKE_PG_DSN=host=localhost port=${host_port} user=yoke password=yoke dbname=postgres" >> "$GITHUB_ENV"
 
       - name: Wait for Postgres
-        # conftest's setup_ambient_test_db opens an admin connection at
-        # collection time with NO retry, so the window where pg_isready reports
-        # healthy a beat before CREATE DATABASE is accepted would surface as a
-        # cryptic xdist collection crash rather than a clear early failure.
+        if: env.RUN_PYTHON_LEG == 'true'
         run: uv run python -m yoke_core.tools.wait_for_pg
 
       - name: Verify Postgres CREATEDB
-        # Each xdist worker gets its own disposable database and each isolated
-        # test a fresh one, so probe that privilege through the suite's own
-        # helper before the worker fan-out.
+        if: env.RUN_PYTHON_LEG == 'true'
         run: |
           uv run python - <<'PY'
           from runtime.api.fixtures.pg_testdb import (
@@ -273,18 +258,15 @@ jobs:
               print("Postgres CREATEDB preflight dropped:", name)
           PY
 
-      # Shard count, suite paths, and split settings all live in the module, so
-      # the matrix above and the split it selects cannot disagree — two
-      # literals that drift run a fraction of the suite and still report green.
       - name: Run pytest
         id: pytest
-        if: env.SUITE_ALREADY_PROVEN != 'true'
+        if: env.RUN_PYTHON_LEG == 'true' && env.SUITE_ALREADY_PROVEN != 'true'
         run: >-
           PYTHONPATH=packages/yoke-core/src:packages/yoke-contracts/src python3 -m
           yoke_core.tools.ci_shards run --group "${{ matrix.shard }}"
 
       - name: Upload pytest output
-        if: always() && env.SUITE_ALREADY_PROVEN != 'true'
+        if: always() && env.RUN_PYTHON_LEG == 'true' && env.SUITE_ALREADY_PROVEN != 'true'
         continue-on-error: true # reporting only: an artifact 403 must not conclude a green shard red
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -296,10 +278,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Stop Postgres
-        # A self-hosted instance can serve several jobs before the idle reaper
-        # takes it, so remove the manually-started container a `services:` one
-        # would have had reaped. `|| true` tolerates an already-gone container.
-        if: always()
+        if: env.RUN_PYTHON_LEG == 'true' && always()
         run: |
           docker rm -f "$PG_CONTAINER" || true
           if [ -n "${YOKE_PG_SOCKET_DIR:-}" ]; then sudo rm -rf -- "$YOKE_PG_SOCKET_DIR"; fi
@@ -320,8 +299,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          # The container build resolves the package version before invoking
-          # Docker, because .dockerignore keeps .git out of the image context.
           fetch-depth: 0
 
       - name: Resolve package version
@@ -331,7 +308,6 @@ jobs:
           echo "YOKE_ENGINE_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Build Yoke core image
-        # Pull retries before the build: retry transient GHCR transport failures.
         run: |
           python_image="$(sed -n 's/^ARG PYTHON_IMAGE=//p' Dockerfile)"
           for attempt in 1 2 3 4 5; do

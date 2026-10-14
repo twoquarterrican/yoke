@@ -19,6 +19,7 @@ _EXPECTED_ACTIONS = {
     "actions/setup-node",
     "actions/setup-python",
     "actions/upload-artifact",
+    "actions/download-artifact",
 }
 _WORKFLOWS = ("yoke-ci.yml", "browser-runtime-tests.yml")
 

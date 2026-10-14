@@ -1,47 +1,20 @@
-"""One source for how CI cuts the suite into shards.
+"""One shard count for the workflow matrix and pytest-split.
 
-The suite is split two ways that must agree: the workflow matrix fans out one
-job per shard, and pytest is told how many shards exist so it can select the
-matching group. Writing those as two literals is a silent-failure trap — a
-matrix of four against ``--splits 8`` runs half the suite and still reports
-green, because every job passes the slice it was given. So the workflow holds
-neither number. It asks this module for the fan-out, and asks this module to
-run the suite; :data:`SHARD_COUNT` is the only place the value exists.
+The newest Python endpoint runs the full suite. The oldest endpoint runs
+only in the merge queue and excludes repository-only checks through
+runtime.ci_test_selection before splitting. Both keep the same shard count
+and required check names. Queue tree reuse requires both-interpreter proof.
 
-Sizing: a shard pays a fixed ~41s of setup (checkout, Python, uv, dependencies,
-Postgres) against its share of the pytest wall time, so splitting further keeps
-paying off until the fixed cost stops being noise. Below roughly 150s of tests
-per shard the overhead crosses 20% and the profile's existing imbalance gets
-relatively worse.
+CI refreshes weights from a complete retained report set before fan-out,
+then shares the same profile with every shard. The committed baseline is
+refreshed through ci_durations_refresh; see docs/testing-verification/ci-shards.md.
+Times measured under xdist are scaled to each report's actual suite wall time.
+The greedy least_duration algorithm balances aggregate file weights; a file
+stays on one shard and one worker so its fixtures are not repeated elsewhere.
 
-The whole suite is always worth :data:`SHARD_COUNT` shards. A change-scoped
-selection is not: it can be three tests or most of the suite, so
-:func:`split_count` sizes it against that same fixed cost from the committed
-profile, and small selections stay on the one runner they already used.
-
-``least_duration`` greedily assigns the slowest tests first using the committed
-timing profile, so the profile has to stay current: tests missing from it are
-treated as unknown and land wherever the greedy pass puts them, which is how a
-stale profile turns more shards into worse balance rather than better. A lagging
-profile is also invisible to :func:`profiled_size`, so it shows up as a
-selection sized far below the work it then does.
-
-Refreshing it means reading the per-test times out of the ``pytest-report.xml``
-artifact every shard of a full-suite CI run uploads — never a local sweep,
-whose machine and parallelism are not the ones being predicted. Those times are
-measured under ``-n auto``, so each carries its neighbours' contention and their
-sum exceeds the wall time the session took: store each test as its share of that
-sum applied to the wall time actually spent. Relative weights — all
-``least_duration`` reads — are untouched, and a group's stored sum stays
-readable as the wall seconds it predicts, the unit
-:data:`MIN_SHARD_PROFILE_SECONDS` is written in.
-
-``-n auto`` mirrors ``DEFAULT_PARALLEL_WORKERS`` in
-``runtime/api/tools/_pytest_parallel.py`` — the canonical home the local
-``run_tests`` / ``watch_pytest`` runners read. CI pins flat ``auto`` on purpose:
-hosted runners should use every core, not the RAM-aware cliff that can drop a
-constrained box to ``-n 1``. The outer shard cuts total wall time; xdist still
-uses every core inside each shard.
+A change-scoped selection earns shards from its profiled wall seconds,
+up to SHARD_COUNT. Missing timings underestimate work, never coverage.
+CI uses every core inside each shard with -n auto and loadfile scheduling.
 """
 
 from __future__ import annotations
@@ -53,6 +26,7 @@ import math
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Sequence
 
@@ -243,7 +217,8 @@ def pytest_command(group: int) -> list[str]:
         "-n",
         "auto",
         "--dist",
-        "worksteal",
+        "loadfile",
+        "--no-loadscope-reorder",
         "--splits",
         str(SHARD_COUNT),
         "--group",
@@ -266,6 +241,8 @@ def _run_shard(group: int) -> int:
     """
     if group < 1 or group > SHARD_COUNT:
         raise SystemExit(f"shard {group} is outside 1..{SHARD_COUNT}")
+    capacity = runner_capacity()
+    print(capacity, flush=True)
     process = subprocess.Popen(
         pytest_command(group),
         stdout=subprocess.PIPE,
@@ -275,11 +252,33 @@ def _run_shard(group: int) -> int:
     )
     assert process.stdout is not None
     with Path(OUTPUT_LOG).open("w", encoding="utf-8") as log:
+        log.write(capacity + "\n")
         for line in process.stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
             log.write(line)
     return process.wait()
+
+
+def runner_capacity() -> str:
+    """Cheap diagnostic capacity evidence; it never controls test selection."""
+    cpuinfo = Path("/proc/cpuinfo")
+    model = "unavailable"
+    try:
+        model = next((line.partition(":")[2].strip()
+                      for line in cpuinfo.read_text().splitlines()
+                      if line.startswith("model name")), model)
+    except (OSError, UnicodeError):
+        pass  # Missing capacity telemetry proves nothing and never blocks tests.
+    samples = []
+    for _ in range(3):
+        started = time.perf_counter()
+        sum(value * value for value in range(300_000))
+        samples.append(time.perf_counter() - started)
+    return "CI runner capacity: " + json.dumps({
+        "cpu_model": model, "cpu_count": os.cpu_count(),
+        "python_loop_seconds": sorted(samples)[1],
+    }, sort_keys=True)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

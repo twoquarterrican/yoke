@@ -10,25 +10,20 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from yoke_core.tools.build_release import create_seeded_pip_venv
 from pathlib import Path
 
 
 BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 
-def test_project_onboard_product_wheel_dry_run_stays_inert_and_does_not_mutate(
+def smoke(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
     yoke = venv_dir / "bin" / "yoke"
-    _run([
-        str(venv_python), "-m", "pip", "install", "--no-index",
-        "--find-links", str(product_wheelhouse), "yoke-cli", "yoke-core",
-    ], cwd=tmp_path, timeout=180)
     assert yoke.is_file()
 
     checkout = tmp_path / "external-project"
@@ -40,49 +35,79 @@ def test_project_onboard_product_wheel_dry_run_stays_inert_and_does_not_mutate(
     machine_home = tmp_path / "home" / ".yoke"
     machine_home.mkdir(parents=True)
     config = machine_home / "config.json"
-    config.write_text(json.dumps({
-        "schema_version": 1,
-        "active_env": "prod",
-        "connections": {
-            "prod": {
-                "transport": "https",
-                "api_url": "https://api.example.invalid",
-                "credential_source": {
-                    "kind": "token_file",
-                    "path": str(machine_home / "secrets" / "prod.token"),
+    config.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "active_env": "prod",
+                "connections": {
+                    "prod": {
+                        "transport": "https",
+                        "api_url": "https://api.example.invalid",
+                        "credential_source": {
+                            "kind": "token_file",
+                            "path": str(machine_home / "secrets" / "prod.token"),
+                        },
+                    },
                 },
             },
-        },
-    }, indent=2) + "\n", encoding="utf-8")
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     before_config = config.read_text(encoding="utf-8")
     env = _product_env(machine_home, venv_dir)
 
     # The orchestration helper must also import first in a fresh interpreter;
     # source-suite import order can otherwise hide package-internal cycles.
-    _run([
-        str(venv_python), "-c",
-        "import importlib; "
-        "importlib.import_module('yoke_cli.config.project_onboard_existing')",
-    ], cwd=checkout, env=env)
+    _run(
+        [
+            str(venv_python),
+            "-c",
+            "import importlib; "
+            "importlib.import_module('yoke_cli.config.project_onboard_existing')",
+        ],
+        cwd=checkout,
+        env=env,
+    )
 
     # Engine present: the wheel channel ships yoke-core to every machine.
-    _run([
-        str(venv_python), "-c",
-        "import importlib.util; "
-        "assert importlib.util.find_spec('yoke_core') is not None",
-    ], cwd=checkout, env=env)
+    _run(
+        [
+            str(venv_python),
+            "-c",
+            "import importlib.util; "
+            "assert importlib.util.find_spec('yoke_core') is not None",
+        ],
+        cwd=checkout,
+        env=env,
+    )
 
-    result = _run([
-        str(yoke), "onboard", "project", str(checkout),
-        "--slug", "external",
-        "--name", "External",
-        "--github-repo", "owner/external",
-        "--default-branch", "main",
-        "--public-item-prefix", "EXT",
-        "--config", str(config),
-        "--dry-run",
-        "--json",
-    ], cwd=checkout, env=env)
+    result = _run(
+        [
+            str(yoke),
+            "onboard",
+            "project",
+            str(checkout),
+            "--slug",
+            "external",
+            "--name",
+            "External",
+            "--github-repo",
+            "owner/external",
+            "--default-branch",
+            "main",
+            "--public-item-prefix",
+            "EXT",
+            "--config",
+            str(config),
+            "--dry-run",
+            "--json",
+        ],
+        cwd=checkout,
+        env=env,
+    )
     payload = json.loads(result.stdout)
     assert payload["operation"] == "onboard.project"
     assert payload["applied"] is False

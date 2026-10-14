@@ -164,6 +164,7 @@ def decide_reuse(
     repository: str,
     token: str,
     current_run_id: int,
+    current_event: str = "",
     window_hours: int = DEFAULT_WINDOW_HOURS,
     workflow_file: str = DEFAULT_WORKFLOW_FILE,
     now: Optional[datetime] = None,
@@ -189,6 +190,8 @@ def decide_reuse(
         return _no_reuse("no_successful_runs", candidate)
 
     for run in runs:
+        if current_event == "merge_group" and run.get("event") != "merge_group":
+            continue
         try:
             run_id = int(run.get("id"))
         except (TypeError, ValueError):
@@ -288,6 +291,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 repository=repository,
                 token=token,
                 current_run_id=current_run_id,
+                current_event=_env("GITHUB_EVENT_NAME"),
                 window_hours=window_hours,
                 workflow_file=args.workflow_file,
             )

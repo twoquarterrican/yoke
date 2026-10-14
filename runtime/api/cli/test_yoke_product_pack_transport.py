@@ -10,35 +10,16 @@ from runtime.api.cli.project_onboarding_test_helpers import write_https_config
 from runtime.api.cli.test_yoke_product_distribution_wheel import (
     _assert_command,
     _product_env,
-    _run,
 )
-from yoke_core.tools.build_release import create_seeded_pip_venv
 
 
 def test_packaged_cli_gets_and_updates_customized_pack_over_https(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir)
-    python = venv_dir / "bin" / "python"
+    venv_dir = product_venv
     yoke = venv_dir / "bin" / "yoke"
-    _run(
-        [
-            str(python),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-harness",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
     project = tmp_path / "external-project"
     project.mkdir()
     machine_home = tmp_path / "home" / ".yoke"
