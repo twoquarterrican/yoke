@@ -109,17 +109,70 @@ def quit_chromium():
     return bool(pids)
 
 
-def _default_browser():
+_DESKTOP_XDG_MARK = "YOKE_DESKTOP_XDG:"
+
+
+def _desktop_env():
+    """This process environment plus the login shell's XDG_DATA_DIRS.
+
+    Chromium starts with that value. A non-login SSH session omits the snap
+    desktop directories that /etc/profile.d adds for the desktop session.
+    """
     try:
         result = subprocess.run(
-            ["xdg-settings", "get", "default-web-browser"],
+            ["bash", "-lc", f'printf "{_DESKTOP_XDG_MARK}%s" "$XDG_DATA_DIRS"'],
             capture_output=True,
             text=True,
             timeout=10,
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ChromiumRefusal(
+            "linux_desktop_session_environment_unavailable",
+            "Install bash so a login shell can print XDG_DATA_DIRS (bash -lc), then rerun. The desktop session reads snap desktop files from that value; the bare SSH environment does not.",
+        ) from exc
+    parts = result.stdout.rsplit(_DESKTOP_XDG_MARK, 1)
+    if result.returncode != 0 or len(parts) != 2:
+        raise ChromiumRefusal(
+            "linux_desktop_session_environment_unavailable",
+            "Install bash so a login shell can print XDG_DATA_DIRS (bash -lc), then rerun. The desktop session reads snap desktop files from that value; the bare SSH environment does not.",
+        )
+    env = os.environ.copy()
+    if parts[1]:
+        env["XDG_DATA_DIRS"] = parts[1]
+    else:
+        env.pop("XDG_DATA_DIRS", None)
+    return env
+
+
+def _default_browser():
+    """xdg-settings inside a login shell, the same read as the desktop provisioner."""
+    mark = "YOKE_DESKTOP_BROWSER:"
+    script = (
+        "browser=$(xdg-settings get default-web-browser); "
+        f'printf "{mark}%s:%s" "$?" "$browser"'
+    )
+    try:
+        result = subprocess.run(
+            ["bash", "-lc", script],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ChromiumRefusal(
+            "linux_desktop_session_environment_unavailable",
+            "Install bash so a login shell can run xdg-settings (bash -lc), then rerun. The desktop session resolves its default browser there; the bare SSH environment does not.",
+        ) from exc
+    body = result.stdout.rsplit(mark, 1)
+    if result.returncode != 0 or len(body) != 2 or ":" not in body[1]:
+        raise ChromiumRefusal(
+            "linux_desktop_session_environment_unavailable",
+            "Install bash so a login shell can run xdg-settings (bash -lc), then rerun. The desktop session resolves its default browser there; the bare SSH environment does not.",
+        )
+    status, chosen = body[1].split(":", 1)
+    if status != "0":
         return ""
-    return result.stdout.strip() if result.returncode == 0 else ""
+    return chosen.strip()
 
 
 def prepare():
@@ -147,6 +200,7 @@ def prepare():
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         start_new_session=True,
+        env=_desktop_env(),
     )
     deadline = time.monotonic() + DEVTOOLS_READY_SECONDS
     while devtools_port() is None:

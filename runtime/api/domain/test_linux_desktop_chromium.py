@@ -196,11 +196,23 @@ def test_prepare_restarts_a_running_chromium_with_a_devtools_port(
     monkeypatch.setattr(host, "quit_chromium", lambda: True)
     monkeypatch.setattr(host, "user_data_dirs", lambda: (tmp_path,))
     monkeypatch.setattr(
-        host.subprocess, "Popen", lambda argv, **kw: launched.append(argv)
+        host,
+        "_desktop_env",
+        lambda: {"XDG_DATA_DIRS": "/snap/data", "DISPLAY": ":11"},
+    )
+    monkeypatch.setattr(
+        host.subprocess,
+        "Popen",
+        lambda argv, **kw: launched.append((argv, kw.get("env"))),
     )
     monkeypatch.setattr(host.time, "sleep", lambda _s: None)
     assert host.prepare() == {"chromium": "restarted"}
-    assert launched == [["/usr/bin/chromium", "--remote-debugging-port=0"]]
+    assert launched == [
+        (
+            ["/usr/bin/chromium", "--remote-debugging-port=0"],
+            {"XDG_DATA_DIRS": "/snap/data", "DISPLAY": ":11"},
+        )
+    ]
 
 
 def test_prepare_reuses_a_debuggable_chromium(monkeypatch):
@@ -229,3 +241,46 @@ def test_quit_is_graceful_and_names_a_chromium_that_stays(monkeypatch):
     assert signals == [(41, host.signal.SIGTERM)]
     assert refusal.value.reason == "linux_desktop_chromium_quit_not_proved"
     assert "not force-killed" in refusal.value.recovery
+
+
+def test_default_browser_reads_xdg_settings_in_a_login_shell(monkeypatch):
+    calls = []
+
+    def run(argv, **kwargs):
+        calls.append(argv)
+        return subprocess.CompletedProcess(
+            argv, 0, "banner\nYOKE_DESKTOP_BROWSER:0:chromium_chromium.desktop", ""
+        )
+
+    monkeypatch.setattr(host.subprocess, "run", run)
+    assert host._default_browser() == "chromium_chromium.desktop"
+    assert calls == [
+        [
+            "bash",
+            "-lc",
+            "browser=$(xdg-settings get default-web-browser); "
+            'printf "YOKE_DESKTOP_BROWSER:%s:%s" "$?" "$browser"',
+        ]
+    ]
+
+
+def test_chromium_launch_env_uses_the_login_shell_data_dirs(monkeypatch):
+    def run(argv, **kwargs):
+        return subprocess.CompletedProcess(argv, 0, "YOKE_DESKTOP_XDG:/snap/data", "")
+
+    monkeypatch.setenv("XDG_DATA_DIRS", "/usr/share")
+    monkeypatch.setattr(host.subprocess, "run", run)
+    env = host._desktop_env()
+    assert env["XDG_DATA_DIRS"] == "/snap/data"
+    assert env["XDG_DATA_DIRS"] != "/usr/share"
+
+
+def test_missing_login_shell_names_the_session_environment(monkeypatch):
+    def run(argv, **kwargs):
+        raise OSError("bash missing")
+
+    monkeypatch.setattr(host.subprocess, "run", run)
+    with pytest.raises(host.ChromiumRefusal) as refusal:
+        host._default_browser()
+    assert refusal.value.reason == "linux_desktop_session_environment_unavailable"
+    assert "bash -lc" in refusal.value.recovery
