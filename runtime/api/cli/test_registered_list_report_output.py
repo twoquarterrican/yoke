@@ -89,7 +89,12 @@ def test_default_read_outputs_fit_fixed_universe(entry, read_universe, capsys):
     outcome = entry.handler(request)
     # A fixture without an external provider still exercises its diagnosed
     # refusal; data-owned reads must serve successful populated results.
-    external = {"github_actions.commit_runs.list", "test_machine.list", "packs.list"}
+    external = {
+        "github.open_work.list",
+        "github_actions.commit_runs.list",
+        "test_machine.list",
+        "packs.list",
+    }
     if entry.function_id not in external:
         assert outcome.primary_success, outcome.error
     response = FunctionCallResponse(
