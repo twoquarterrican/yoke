@@ -133,6 +133,22 @@ def test_missing_run_recovers_pending_receipt_with_original_payload(proof):
     assert dispatches[0][0] == "c" * 40
 
 
+def test_denied_receipt_read_names_the_run_read_grant(proof, monkeypatch):
+    _, dispatches, _, _ = proof
+
+    def denied(argv):
+        if argv[:3] == ["github", "branch", "head"]:
+            return {"head_sha": CONSUMER}
+        raise RuntimeError("permission_denied: actor 170 lacks 'project.admin'")
+
+    monkeypatch.setattr(advisory, "_read", denied)
+    with pytest.raises(RuntimeError, match="dispatch_receipt_unauthorized") as err:
+        advisory.check(CANDIDATE, timeout_sec=1)
+    assert "github_actions.run.read" in str(err.value)
+    assert "never grant project.admin" in str(err.value)
+    assert dispatches == []
+
+
 def test_wrong_original_tree_refuses_before_dispatch(proof, monkeypatch):
     _, dispatches, receipts, _ = proof
     key = f"consumer-advisory:{TREE}:{CONSUMER}:{gate.CONSUMER_CHECK_WORKFLOW}"

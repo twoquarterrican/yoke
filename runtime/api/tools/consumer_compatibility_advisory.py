@@ -80,17 +80,30 @@ def candidate_tree(candidate: str) -> str:
 
 
 def _receipt(request_id: str) -> dict:
-    receipt = _read(
-        [
-            "github-actions",
-            "dispatch-receipt",
-            "get",
-            request_id,
-            "--project",
-            gate.CONSUMER_PROJECT,
-            "--json",
-        ]
-    )
+    try:
+        receipt = _read(
+            [
+                "github-actions",
+                "dispatch-receipt",
+                "get",
+                request_id,
+                "--project",
+                gate.CONSUMER_PROJECT,
+                "--json",
+            ]
+        )
+    except RuntimeError as exc:
+        if "permission_denied" not in str(exc):
+            raise
+        raise RuntimeError(
+            "dispatch_receipt_unauthorized: the receipt read needs "
+            f"github_actions.run.read on {gate.CONSUMER_PROJECT}, which the "
+            "deployment_ci role carries; an engine serving below that grant "
+            "demands project.admin instead. Ask the control-plane operator to "
+            "serve a release that authorizes github_actions.dispatch_receipt.get "
+            "on run read; never grant project.admin to the release identity. "
+            f"Refusal: {exc}"
+        ) from exc
     if not isinstance(receipt.get("found"), bool) or (
         receipt["found"]
         and (

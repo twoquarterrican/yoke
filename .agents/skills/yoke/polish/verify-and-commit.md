@@ -73,6 +73,9 @@ dependency or claim reconciliation before retrying.
 Do not use `path-claim-override` for a planned future claim when reconciliation
 works; override is last resort for irreducible live collisions and needs
 explicit operator approval. Do not leave the worktree in a failing state.
+An unchanged consumer test failing against new producer source is evidence
+against the producer: never edit or weaken it; route it per AGENTS
+Verification Failure Ownership.
 
 ## 9. Commit and prove the final head
 

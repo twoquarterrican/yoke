@@ -67,6 +67,7 @@ function before this recovery is available.
 
 - **Current-item verification failures belong to the current item.** A future/planned item, planned path claim, or cleanup work item owning a touched file is not a waiver. If the current branch has a failing registered command, gate, or regression, fix it here — unless there's a live active-session conflict or explicit operator waiver.
 - **Use dependency and claim reconciliation before override.** If the fix touches a file outside the current claim, use the sanctioned surfaces first: widen the claim, add/verify the serial dependency, wait for or release a live holder, or reconcile the future claim. Do not use `path-claim-override` for a planned future claim when reconciliation works — override is last resort for irreducible live collisions and requires a live steering seat covering the project.
+- **A consumer test this item did not change that fails against a new producer source is evidence against the producer.** Never edit, skip or weaken it to go green. Name the producer commit range or item and route the failure to steering (`yoke say --steering`) or to the producer's companion item. Current-item ownership covers what this item changed, not a regression the producer shipped.
 - **Verification summaries are evidence-bound.** A failing registered command can't be reported green by pointing at a future work item. Record the failure, the dependency/claim action, and the rerun evidence that made the item green.
 
 ## Health checks

@@ -69,6 +69,13 @@ RELEASE_CI_AUTHZ_BY_ID = {
         PROJECT,
         PERM_GITHUB_ACTIONS_RUN_READ,
     ),
+    # The consumer advisory reads which candidate a dispatch recorded, so a
+    # re-run proves the original commit. The receipt names a run and its
+    # inputs, which a run read already reveals.
+    "github_actions.dispatch_receipt.get": AuthzSpec(
+        PROJECT,
+        PERM_GITHUB_ACTIONS_RUN_READ,
+    ),
     "github_actions.run.jobs_count": AuthzSpec(
         PROJECT,
         PERM_GITHUB_ACTIONS_RUN_READ,
