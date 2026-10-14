@@ -9,6 +9,7 @@ import pytest
 
 from runtime.api.cli.project_onboarding_test_helpers import ProjectOnboardApi, run_git
 from yoke_cli import main as yoke_operations_cli
+from yoke_cli.config import path_doctor
 
 pytestmark = pytest.mark.usefixtures("stub_onboard_session_relay")
 
@@ -18,6 +19,13 @@ def test_onboard_yes_writes_machine_config_and_project_handoff(
     monkeypatch,
     capsys,
 ) -> None:
+    monkeypatch.setattr(path_doctor, "supported_startup_files", lambda _home: ())
+    monkeypatch.setattr(path_doctor, "update_shell", lambda: "already configured")
+    monkeypatch.setattr(
+        path_doctor,
+        "verify_fresh_login",
+        lambda *_args, **_kwargs: [path_doctor.ToolResolution("yoke", "/tmp/bin/yoke")],
+    )
     home = tmp_path / "home"
     config = home / "config.json"
     checkout = tmp_path / "local-checkout"
@@ -80,7 +88,12 @@ def test_onboard_yes_writes_machine_config_and_project_handoff(
         "/yoke onboard --run-id "
     )
     assert project_report["github_adoption"]["choice"] == "disabled"
-    assert api.function_call("projects.get")["payload"] == {"project": "local"}
+    project_reads = api.function_calls("projects.get")
+    assert project_reads
+    assert project_reads[0]["payload"] == {"project": "local"}
+    assert all(call["payload"]["project"] == "local" for call in project_reads)
+    assert "install_health" in payload
+    assert payload["install_health"]["ready"] is False
     assert api.function_calls("projects.create") == []
     checklist_call = api.function_call("onboard.checklist.run")
     assert checklist_call["payload"]["project_id"] == 44
