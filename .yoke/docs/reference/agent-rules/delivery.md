@@ -106,10 +106,13 @@ environment and exact item-project commit holds its targeted obligations.
 A pre-admission holder without a snapshot or selection also needs that same
 commit; an older stage pass cannot exclude an item from a new stage release.
 A production run
-on the same commit never holds an item away from the stage run that owes it
-stage QA. A production run that pinned a different commit for the item's
-project does hold it, and the skip notice names that commit, because stage
-proof credits only against the commit production ships. Target
+that pinned or delivered the stage run's commit never holds an item away from
+the stage run that owes it stage QA. A production run that neither pinned nor
+delivered that item-project commit does hold it, and the skip notice names
+that commit, because stage proof credits only against the commit production
+pins or ships (a hosted promotion ships the commit in its promotion receipt).
+`deployment-runs add-item` warns `supplemental_proof_not_credited` when the
+stage proof it would compose is on neither commit. Target
 splitting uses recorded selections through unlocked, set-based reads.
 
 All records, claims, receipts and QA evidence remain on the connected control

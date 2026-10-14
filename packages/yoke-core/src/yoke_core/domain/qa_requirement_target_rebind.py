@@ -102,7 +102,7 @@ def rebind_requirement(
         )
     row = query_one(
         conn,
-        "SELECT id,item_id,epic_id,task_num,deployment_run_id,plan_id,"
+        "SELECT id,item_id,epic_id,task_num,deployment_run_id,plan_id,target_env,"
         "qa_kind,qa_phase,execution_target_json,execution_target_digest,"
         "rebound_at,rebound_from_digest,rebound_from_target_json,"
         "rebind_endpoint_delta_json,rebind_rationale,rebind_actor_id "
@@ -125,7 +125,10 @@ def rebind_requirement(
             "supersession"
         )
     live, environment_id, resolved_from = _live_target(
-        conn, stored, plan_id=_int_or_none(row["plan_id"])
+        conn,
+        stored,
+        plan_id=_int_or_none(row["plan_id"]),
+        target_env=str(row["target_env"] or ""),
     )
     old_digest = str(row["execution_target_digest"] or "")
     new_json = canonical_target(live)

@@ -34,7 +34,10 @@ from yoke_core.domain.deployment_item_flow_resolution import (
     membership_closes_item,
 )
 from yoke_core.domain.deployment_run_bound_sources import BOUND_SOURCES_FIELD
-from yoke_core.domain.deployment_run_project_sources import recorded_source_sha
+from yoke_core.domain.deployment_run_project_sources import (
+    recorded_source_sha,
+    run_recorded_and_delivered_shas,
+)
 from yoke_core.domain.schema_common import _column_exists, _table_exists
 
 
@@ -137,7 +140,58 @@ def succeeded_completion_runs(conn: Any, item_id: int) -> list[dict[str, Any]]:
     ]
 
 
-__all__ = ["completion_runs", "succeeded_completion_runs"]
+def current_final_run(finals: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The newest final membership that a failed or cancelled run cannot be."""
+    return next(
+        (run for run in finals if run["status"] not in {"failed", "cancelled"}), None
+    )
+
+
+def uncredited_supplemental_notice(conn: Any, *, run_id: str, item_id: int) -> str:
+    """Name a supplemental membership whose proof close-out will not read, or ``''``.
+
+    Close-out credits supplemental QA only on the current final run's pinned
+    or delivered item-project commit. Said at the attach, the last moment the
+    caller can pick a run on a commit the final delivery answers for.
+    """
+    if not supplemental_qa_run(conn, run_id=run_id, item_id=item_id):
+        return ""
+    final = current_final_run(completion_runs(conn, item_id))
+    if final is None:
+        return ""
+    member = next(
+        (
+            run
+            for run in completion_runs(conn, item_id, include_qa=True)
+            if run["id"] == str(run_id)
+        ),
+        None,
+    )
+    if member is None:
+        return ""
+    credited = run_recorded_and_delivered_shas(conn, final["id"], final["project_id"])
+    if member["release_lineage"] in credited:
+        return ""
+    from yoke_core.domain.project_identity import render_item_ref
+
+    ref = render_item_ref(conn, item_id)
+    return (
+        f"Warning (supplemental_proof_not_credited): run {run_id} recorded "
+        f"commit {member['release_lineage'] or '(none)'} for {ref}'s project, "
+        f"but its final run {final['id']} pinned or delivered "
+        f"{', '.join(sorted(credited)) or '(none)'}, so close-out will not "
+        f"credit QA this run proves for {ref}. Remove it with `yoke "
+        f"deployment-runs remove-item {run_id} {ref} --reason TEXT` and prove "
+        "it on a run that records one of those commits."
+    )
+
+
+__all__ = [
+    "completion_runs",
+    "current_final_run",
+    "succeeded_completion_runs",
+    "uncredited_supplemental_notice",
+]
 
 
 def latest_qa_member_run(
@@ -145,7 +199,8 @@ def latest_qa_member_run(
 ) -> dict[str, Any] | None:
     """Newest live or delivered member capable of answering this source target.
 
-    An explicit target can be answered by a supplemental member. Untargeted
+    An explicit target can be answered by a supplemental member that recorded
+    the current final run's pinned or delivered item-project commit. Untargeted
     intake remains with final delivery; neither a differently targeted sibling
     nor a cancelled attempt can shadow the member that owes this proof.
     """
@@ -157,13 +212,18 @@ def latest_qa_member_run(
     from yoke_core.domain.deployment_qa_member_scope import legacy_run_credits_run_wide
 
     finals = completion_runs(conn, item_id)
-    current_final = next(
-        (run for run in finals if run["status"] not in {"failed", "cancelled"}), None
+    current_final = current_final_run(finals)
+    credited = (
+        frozenset()
+        if current_final is None
+        else run_recorded_and_delivered_shas(
+            conn, current_final["id"], current_final["project_id"]
+        )
     )
     for run in completion_runs(conn, item_id, include_qa=bool(target_env)):
-        if supplemental_qa_run(conn, run_id=run["id"], item_id=item_id) and (
-            current_final is None
-            or run["release_lineage"] != current_final["release_lineage"]
+        if (
+            supplemental_qa_run(conn, run_id=run["id"], item_id=item_id)
+            and run["release_lineage"] not in credited
         ):
             continue
         if run["status"] in {"failed", "cancelled"}:
