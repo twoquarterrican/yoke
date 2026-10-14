@@ -42,6 +42,9 @@ class RecordingBoardDB:
     over-collect instead of consulting machine-local caches (the
     activity day-counts cache reads it): every query a client render
     could need has to land in the recorded payload.
+
+    Identical query reads reuse this collection's first result, matching
+    the single result replay will serve and loading immutable catalogs once.
     """
 
     record_mode = True
@@ -50,6 +53,7 @@ class RecordingBoardDB:
         self._inner = inner
         self._entries: List[Dict[str, Any]] = []
         self._recorded: set = set()
+        self._query_results: Dict[Tuple[str, str, str], List[Tuple]] = {}
 
     def query(self, sql: str, params: Optional[Sequence[Any]] = None) -> List[Tuple]:
         return self._record("query", sql, params, self._inner.query)
@@ -76,7 +80,10 @@ class RecordingBoardDB:
 
     def _record(self, kind: str, sql: str, params, run) -> List[Tuple]:
         key = entry_key(kind, sql, params)
+        if key in self._query_results:
+            return list(self._query_results[key])
         rows = run(sql, params)
+        self._query_results[key] = list(rows)
         if key not in self._recorded:
             self._recorded.add(key)
             self._entries.append(
