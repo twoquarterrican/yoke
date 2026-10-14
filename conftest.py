@@ -18,6 +18,7 @@ from yoke_core.domain import verification_tree_binding_pytest_startup as _bindin
 
 
 REPO_ROOT = Path(__file__).resolve().parent
+pytest_plugins = ["runtime.ci_test_selection"]
 
 # ---------------------------------------------------------------------------
 # Tree binding
@@ -48,6 +49,7 @@ from runtime.browser_launch_isolation import (  # noqa: E402,F401
     _forbid_real_browser_launches,
 )
 from runtime.project_context_fixture import bound_project_context  # noqa: E402,F401
+from runtime.product_wheel_fixture import product_venv  # noqa: E402,F401
 from yoke_core.tools import build_release  # noqa: E402
 from yoke_core.tools import launchctl_boundary  # noqa: E402
 

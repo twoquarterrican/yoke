@@ -10,36 +10,20 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from yoke_core.tools.build_release import create_seeded_pip_venv
 from pathlib import Path
 
 BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 REFRESH_SECRET = "github-app-refresh-secret"
 
 
-def test_github_machine_commands_work_from_product_wheel_with_inert_engine(
+def smoke(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
     yoke = venv_dir / "bin" / "yoke"
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
     assert yoke.is_file()
 
     checkout = tmp_path / "external-project"

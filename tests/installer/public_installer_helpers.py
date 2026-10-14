@@ -140,6 +140,7 @@ def run_shim(
     env = {
         "PATH": path,
         "YOKE_INSTALL_BASE_URL": "https://example.invalid",
+        "YOKE_UV_BOOTSTRAP_TIMEOUT_SECONDS": "5",
     }
     if env_extra:
         env.update(env_extra)

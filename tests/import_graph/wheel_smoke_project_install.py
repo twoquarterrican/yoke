@@ -8,7 +8,6 @@ present but inert.
 from pathlib import Path
 import json
 
-from yoke_core.tools.build_release import create_seeded_pip_venv
 from runtime.api.fixtures.project_install_wheel_smoke import (
     _assert_installed,
     _BundleServer,
@@ -19,29 +18,14 @@ from runtime.api.fixtures.project_install_wheel_smoke import (
 )
 
 
-def test_project_install_product_wheel_uses_https_bundle_with_inert_engine(
+def smoke(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
     yoke = venv_dir / "bin" / "yoke"
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
     assert yoke.is_file()
 
     checkout = tmp_path / "external-project"

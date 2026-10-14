@@ -26,7 +26,7 @@ def _run_help(args: list[str]) -> subprocess.CompletedProcess:
     """Run ``python3 -m yoke_core.api.service_client <args>`` as subprocess.
 
     Returns the CompletedProcess; tests inspect ``returncode`` and
-    ``stdout`` (decoded as bytes for the AC's literal-byte assertion).
+    ``stdout`` (decoded as bytes for the literal-byte assertion).
     Captures stderr too for diagnostic context on failure.
     """
     return subprocess.run(
@@ -122,7 +122,7 @@ def test_backlog_cli_freeze_help_exits_zero_with_usage() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ac6_execute_structured_write_help_exits_zero_with_usage() -> None:
+def test_execute_structured_write_help_exits_zero_with_usage() -> None:
     """``execute-structured-write --help`` exits 0, prints usage."""
     proc = _run_help(["execute-structured-write", "--help"])
     assert proc.returncode == 0, (
@@ -133,14 +133,14 @@ def test_ac6_execute_structured_write_help_exits_zero_with_usage() -> None:
     assert b"<PREFIX-N>" in proc.stdout
 
 
-def test_ac6_execute_structured_write_dash_h_exits_zero_with_usage() -> None:
+def test_execute_structured_write_dash_h_exits_zero_with_usage() -> None:
     """``execute-structured-write -h`` matches the long-form behavior."""
     proc = _run_help(["execute-structured-write", "-h"])
     assert proc.returncode == 0
     assert b"Usage: execute-structured-write" in proc.stdout
 
 
-def test_ac7_flag_first_positional_names_real_shape() -> None:
+def test_flag_first_positional_names_real_shape() -> None:
     """``execute-structured-write --item YOK-N --field spec`` (the
     agent-natural flag-first shape) returns non-zero with an error
     message that names the actual positional shape — never the cryptic
@@ -172,71 +172,24 @@ def test_ac7_flag_first_positional_names_real_shape() -> None:
     assert "Usage: execute-structured-write" in body or "expects a bare numeric" in body
 
 
-def test_ac8_every_subcommand_exits_zero_on_help(tmp_path) -> None:
-    """Service_client subcommands and db_router domains exit 0 on
-    ``--help`` and create no file artifacts in cwd. The dispatcher's
-    universal safety net (`service_client_help.run_with_help_fallback`)
-    catches subcommands that crash or return non-zero and replaces
-    their noise with a clean fallback usage block.
-    """
-    import os
-
+def test_every_subcommand_exits_zero_on_help(tmp_path, monkeypatch, capsys) -> None:
+    """Dispatch every parser in process without creating cwd artifacts."""
+    from yoke_core.api import service_client
+    from yoke_core.cli import db_router
     from yoke_core.cli.db_router_dispatch import _DOMAIN_PY_MODULES
-    from yoke_core.api.service_client import COMMANDS
 
-    # Subprocess needs runtime/ importable; cwd is the isolated tmp_path
-    # so any accidental file artifacts surface immediately.
-    env = dict(os.environ)
-    env["PYTHONPATH"] = str(_REPO_ROOT) + os.pathsep + env.get("PYTHONPATH", "")
-
-    failures: list[tuple[str, int, str]] = []
-    for cmd in sorted(COMMANDS.keys()):
-        proc = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "yoke_core.api.service_client",
-                cmd,
-                "--help",
-            ],
-            capture_output=True,
-            cwd=str(tmp_path),
-            env=env,
-            timeout=30,
-        )
-        if proc.returncode != 0:
-            failures.append(
-                (
-                    f"service_client {cmd}",
-                    proc.returncode,
-                    proc.stderr.decode(errors="replace")[:200],
-                )
-            )
-    for domain in sorted(_DOMAIN_PY_MODULES.keys()):
-        proc = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "yoke_core.cli.db_router",
-                domain,
-                "--help",
-            ],
-            capture_output=True,
-            cwd=str(tmp_path),
-            env=env,
-            timeout=30,
-        )
-        if proc.returncode != 0:
-            failures.append(
-                (
-                    f"db_router {domain}",
-                    proc.returncode,
-                    proc.stderr.decode(errors="replace")[:200],
-                )
-            )
-
-    leftover = sorted(p.name for p in tmp_path.iterdir())
-    assert not failures, "--help failed for: " + "\n".join(
-        f"  {c} rc={rc} stderr={err!r}" for c, rc, err in failures
-    )
-    assert not leftover, f"unexpected file artifacts in cwd: {leftover}"
+    monkeypatch.chdir(tmp_path)
+    failures = []
+    for command in sorted(service_client.COMMANDS):
+        monkeypatch.setattr(sys, "argv", ["service_client", command, "--help"])
+        result = service_client.main()
+        output = capsys.readouterr()
+        if result != 0:
+            failures.append((command, result, output.err))
+    for domain in sorted(_DOMAIN_PY_MODULES):
+        result = db_router.main([domain, "--help"])
+        output = capsys.readouterr()
+        if result != 0:
+            failures.append((domain, result, output.err))
+    assert not failures, failures
+    assert not list(tmp_path.iterdir())

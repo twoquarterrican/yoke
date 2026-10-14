@@ -1,0 +1,9 @@
+{
+ "id": "ci-shards",
+ "title": "CI interpreter coverage and shard timing",
+ "status": "observed",
+ "audience": "Maintainers",
+ "sources": ["docs/testing-verification/ci-shards.md", ".github/workflows/yoke-ci.yml", "runtime/ci_test_selection.py", "runtime/product_wheel_fixture.py", "packages/yoke-core/src/yoke_core/tools/ci_durations_refresh.py"],
+ "page": "contributing-guides",
+ "position": 8
+}

@@ -7,11 +7,10 @@ a pure product-client flow with the engine present but inert.
 from __future__ import annotations
 
 import json
-from yoke_core.tools.build_release import create_seeded_pip_venv
 from pathlib import Path
 
 
-from onboard_wheel_smoke_support import (
+from tests.import_graph.onboard_wheel_smoke_support import (
     _fake_external_command_bin,
     _format_result,
     _product_env,
@@ -22,31 +21,16 @@ from onboard_wheel_smoke_support import (
 )
 
 
-def test_onboard_product_wheel_plans_and_writes_machine_config_with_inert_engine(
+def smoke(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
     yoke = venv_dir / "bin" / "yoke"
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
     assert yoke.is_file()
-    _stub_native_provisioning(venv_python, cwd=tmp_path)
+    native_stub = _stub_native_provisioning(cwd=tmp_path)
 
     checkout = tmp_path / "external-project"
     checkout.mkdir()
@@ -61,6 +45,7 @@ def test_onboard_product_wheel_plans_and_writes_machine_config_with_inert_engine
     gh_marker = tmp_path / "gh-called"
     fake_bin = _fake_external_command_bin(tmp_path, gh_marker)
     env = _product_env(machine_home, venv_dir, extra_path=fake_bin)
+    env["PYTHONPATH"] = str(native_stub)
 
     # Engine present: the wheel channel ships yoke-core to every machine.
     _run(

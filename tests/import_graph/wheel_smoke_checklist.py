@@ -10,7 +10,6 @@ import json
 import os
 import subprocess
 import threading
-from yoke_core.tools.build_release import create_seeded_pip_venv
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -22,29 +21,14 @@ MACHINE_ID = str(uuid4())
 BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 
-def test_onboard_checklist_product_wheel_renders_with_inert_engine(
+def smoke(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
     yoke = venv_dir / "bin" / "yoke"
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-core",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
     assert yoke.is_file()
 
     checkout = tmp_path / "external-project"
@@ -129,7 +113,10 @@ def test_onboard_checklist_product_wheel_renders_with_inert_engine(
         assert payload["summary"]["status"] == "open"
         assert _tree_snapshot(checkout) == before_checkout
 
-    assert [r["function"] for r in function_server.requests] == ["onboard.checklist.get", "onboard.checklist.init"]
+    assert [r["function"] for r in function_server.requests] == [
+        "onboard.checklist.get",
+        "onboard.checklist.init",
+    ]
     request = function_server.requests[1]
     observations = request["payload"]["observations"]
     assert observations["yoke-connection"]["status"] == "configured"
@@ -194,14 +181,20 @@ class _FunctionCallServer:
                 request = json.loads(self.rfile.read(length).decode("utf-8"))
                 owner.requests.append(request)
                 if request["function"] == "onboard.checklist.get":
-                    result = {"schema_version": SCHEMA_VERSION, "exists": False, "run": None}
+                    result = {
+                        "schema_version": SCHEMA_VERSION,
+                        "exists": False,
+                        "run": None,
+                    }
                 else:
                     result = {
                         "schema_version": SCHEMA_VERSION,
                         "operation": request["function"],
                         "run_id": "run-wheel-smoke",
                         "resumed": False,
-                        "machine_config_path": request["payload"]["machine_config_path"],
+                        "machine_config_path": request["payload"][
+                            "machine_config_path"
+                        ],
                         "checkout_path": request["payload"]["checkout_path"],
                         "project_id": request["payload"]["project_id"],
                         "status": "open",

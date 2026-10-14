@@ -183,7 +183,8 @@ def test_decide_reuse_ignores_runs_outside_window(tmp_path: Path) -> None:
 
 
 def test_main_writes_github_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repo = _init_repo(tmp_path)
     head = _git(repo, "rev-parse", "HEAD")
@@ -315,22 +316,35 @@ def test_commit_tree_via_api_reads_tree_sha() -> None:
     )
 
 
-def test_decide_reuse_accepts_any_trigger_event(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "current_event,reused", [("pull_request", True), ("merge_group", False)]
+)
+def test_queue_reuse_requires_a_run_that_covered_both_interpreters(
+    tmp_path: Path, current_event, reused
+) -> None:
     repo = _init_repo(tmp_path)
     head = _git(repo, "rev-parse", "HEAD")
     now = datetime(2026, 8, 7, 18, 0, tzinfo=timezone.utc)
     runs = {
-        "workflow_runs": [{
-            "id": 100, "event": "schedule", "head_sha": head,
-            "created_at": "2026-08-07T17:00:00Z",
-            "html_url": "https://example.test/runs/100",
-        }]
+        "workflow_runs": [
+            {
+                "id": 100,
+                "event": "schedule",
+                "head_sha": head,
+                "created_at": "2026-08-07T17:00:00Z",
+                "html_url": "https://example.test/runs/100",
+            }
+        ]
     }
     decision = probe.decide_reuse(
-        worktree=repo, api_url="https://api.github.com",
-        repository="upyoke/yoke", token="token", current_run_id=999,
-        window_hours=24, now=now,
+        worktree=repo,
+        api_url="https://api.github.com",
+        repository="upyoke/yoke",
+        token="token",
+        current_run_id=999,
+        current_event=current_event,
+        window_hours=24,
+        now=now,
         opener=lambda request, timeout=0: _FakeResponse(runs),
     )
-    assert decision.skip_suite is True
-    assert decision.covering_run_id == 100
+    assert decision.skip_suite is reused

@@ -20,7 +20,7 @@ def test_project_install_wheel_smoke_survives_bounded_doc_deferral(
     source: str,
 ) -> None:
     docs = "docs/public/install.md"
-    smoke = "tests/import_graph/test_yoke_cli_project_install_wheel_smoke.py"
+    smoke = "tests/import_graph/test_yoke_cli_wheel_smoke.py"
     for path, body in (
         (source, "VALUE = 1\n"),
         (docs, "Install and uninstall\n"),

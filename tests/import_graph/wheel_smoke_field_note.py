@@ -14,38 +14,20 @@ import subprocess
 from pathlib import Path
 
 from runtime.api.product_boundary_isolation import write_sitecustomize
-from yoke_core.tools.build_release import create_seeded_pip_venv
 
 
 BASE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_field_note_help_runs_from_core_less_product_wheels(
+def smoke(
     tmp_path: Path,
     product_wheelhouse: Path,
+    product_venv: Path,
 ) -> None:
-    venv_dir = tmp_path / "venv"
-    create_seeded_pip_venv(venv_dir, system_site_packages=True)
+    venv_dir = product_venv
     venv_python = venv_dir / "bin" / "python"
     yoke = venv_dir / "bin" / "yoke"
-    _run(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--ignore-installed",
-            "--no-deps",
-            "--no-index",
-            "--find-links",
-            str(product_wheelhouse),
-            "yoke-cli",
-            "yoke-contracts",
-        ],
-        cwd=tmp_path,
-        timeout=180,
-    )
 
     external_project = tmp_path / "external-project"
     external_project.mkdir()
@@ -148,7 +130,8 @@ print("__FIELD_NOTE_REQUESTS__" + json.dumps(requests, sort_keys=True))
         env=env,
     )
     marker = next(
-        line for line in read_result.stdout.splitlines()
+        line
+        for line in read_result.stdout.splitlines()
         if line.startswith("__FIELD_NOTE_REQUESTS__")
     )
     requests = json.loads(marker.removeprefix("__FIELD_NOTE_REQUESTS__"))
