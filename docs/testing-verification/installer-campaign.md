@@ -104,6 +104,13 @@ always attaches a desktop screenshot. A host without a desktop refuses
 [Linux browser approval gates](../../packs/machine-qa/versions/1.3.24/files/docs/packs/machine-qa/linux-host-provisioning.md#browser-approval-gates)
 list every refusal and its recovery.
 
+## Local universe birth
+
+The local Apply journey chooses Start fresh, waits for `What's your name?`,
+and submits a validated first-admin name before `Connect GitHub?`. Command-based
+local journeys supply `--admin-name`. Every local journey keeps its Apply report,
+successful exit and installer parent-handoff checks.
+
 ## Isolated welcome frame
 
 The welcome probe uses an unwritable home to keep the real host untouched.
