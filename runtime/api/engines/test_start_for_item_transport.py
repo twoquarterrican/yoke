@@ -192,6 +192,7 @@ def test_start_for_item_trusts_supplied_lineage_with_no_checkout(monkeypatch):
         release_lineage,
         created_by,
         allow_pending_pair_merges,
+        session_id,
     ):
         seen["release_lineage"] = release_lineage
         seen["allow_pending_pair_merges"] = allow_pending_pair_merges
