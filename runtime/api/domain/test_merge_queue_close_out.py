@@ -34,11 +34,14 @@ def _wire(
     recorded_batch=None,
     touched=("runtime/api/thing.py",),
     files_error=None,
+    landing_merge=MERGE_SHA,
 ):
     recorded: dict = {}
     monkeypatch.setattr(
         close_out_mod, "repoint_to_landing_carrier", lambda *_a, **_kw: ""
     )
+    # The member's own first-parent merge, which the batch's merge never replaces.
+    monkeypatch.setattr(close_out_mod, "_landing_merge", lambda *_a: landing_merge)
     monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_landing_identity",
         lambda _repo, _target, candidate, reported="": reported or candidate,
@@ -220,6 +223,7 @@ def test_unresolved_batch_still_records_the_lane_head(monkeypatch):
         monkeypatch,
         batch=None,
         batch_warning="merge_group run lookup failed",
+        landing_merge="",
     )
 
     outcome = close_out_mod.record_landing(
