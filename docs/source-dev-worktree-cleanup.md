@@ -134,10 +134,30 @@ the lane's base branch, then counts again and refuses only for what remains.
 
 Unregistered directories, ambiguous owners, dirty or ignored content,
 unavailable claim/DB state, non-ancestor branches, and removal refusals are
-preserved and reported. Automatic cleanup never uses forced worktree removal
-or forced branch deletion, and deletes files only inside a tombstone git no
-longer registers, after the residue proof. `--keep-remote` remains
-the only intentional skip of remote delete (ephemeral environments).
+preserved and reported. Automatic cleanup of a done item's lanes never uses
+forced worktree removal or forced branch deletion, and deletes files only
+inside a tombstone git no longer registers, after the residue proof.
+`--keep-remote` remains the only intentional skip of remote delete (ephemeral
+environments).
+
+### Cancelled items
+
+Cancelling an item deletes all of its lanes, because cancelling says the work
+is not wanted. `yoke items cancel` (or a lifecycle transition to `cancelled`)
+force-removes every lane worktree of the item on the machine that ran it —
+dirty, locked or unmerged — then deletes the local branch and the branch on
+`origin`. Before deleting, it reads each lane's local head, remote head and
+uncommitted path count, and writes them to the item's Progress Log under
+`Cancelled lanes deleted` through `item_worktrees.cancelled_lanes.record`.
+Use those SHAs to find discarded commits while git still holds the objects.
+A closed pull request's GitHub ref stays on GitHub.
+
+Every other machine deletes its copy on its next machine-wide sweep:
+`merge.prune.authority_verdict` names the cancelled owner as
+`cancelled_item_ref`, and the sweep deletes that lane the same way and
+records it the same way. A live session whose workspace is the lane still
+keeps it until that session ends. A step git refuses is printed as a warning
+naming the lane, and the Progress Log record lists it under `not deleted`.
 
 ### Health-check repair
 

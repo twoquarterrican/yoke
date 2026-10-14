@@ -9,22 +9,24 @@ control plane must name a terminal owner with no live authority
 (``merge.prune.authority_verdict`` over the active transport), the tree must
 hold nothing but named caches once those are gone, ``origin/<target>`` must
 retain every change the branch carries, and the remote branch goes before
-any local ref. The one thing that ordering does not do is hold the local
-side hostage: a remote proven to carry unmerged work will never become
+any local ref. A remote proven to carry unmerged work never becomes
 deletable by sweeping again, so the local worktree and branch retire on
 their own proof and the remote is named as a leftover for a person. The
 residue and landing proofs are the shared ones the per-lane retirement
 applies, so the two boundaries never disagree about the same lane.
 Unreachable authority skips everything. What was removed and what was kept,
-each with its reason, comes back as a :class:`WorktreeSweep` so the landing
-that ran the sweep can show it instead of burying it in progress output.
+each with its reason, comes back as a :class:`WorktreeSweep`.
+
+A lane whose owner is a cancelled item is the exception the verdict names:
+cancelling discards the work, so ``cancelled_lane_discard`` deletes its
+worktree and branches without the landing and residue proofs. This is how a
+cancel reaches every machine other than the one that ran it.
 
 The sweep also covers the one managed worktree that is not an item lane: a
 self-deploy run's detached driver tree, retired by
-``deploy_run_worktree_retirement`` once its run is over. It consumes the same
-per-checkout cap an item lane does, and being detached it is invisible to the
-branch-bearing registry the lane pass reads, so this is the only landing
-boundary that can reach it.
+``deploy_run_worktree_retirement`` once its run is over. Being detached it is
+invisible to the branch-bearing registry the lane pass reads, so this is the
+only landing boundary that can reach it.
 """
 
 from __future__ import annotations
@@ -36,6 +38,7 @@ from typing import Any, Callable
 from yoke_contracts.api.function_call import TargetRef
 from yoke_core.api.service_client_structured_api_adapter import call_dispatcher
 from yoke_contracts.codex_hook_trust_store import worktree_cleanup_warning
+from yoke_core.engines.cancelled_lane_discard import discard_and_record
 from yoke_core.engines.branch_landed_evidence import (
     assess_branch_landed,
     delete_landed_branch,
@@ -169,10 +172,8 @@ def prune_managed_worktrees(
 ) -> WorktreeSweep:
     """Prune clean, unclaimed, terminal lanes after remote-first delete.
 
-    Authority verdicts relay via ``merge.prune.authority_verdict``; git stays
-    local. Unreachable DB authority skips pruning. Incomplete remote cleanup
-    preserves the local retry lane. Every kept lane is named with its reason
-    on the returned sweep as well as on ``emit``.
+    Unreachable DB authority skips pruning; incomplete remote cleanup keeps
+    the local retry lane. Every kept lane is named with its reason.
 
     A lane whose directory is already gone is swept, not refused: the sweep
     still walks the whole registry, and the reclaimable lanes behind the
@@ -198,13 +199,8 @@ def prune_managed_worktrees(
         say(f"Preserving worktree {path}: {reason}")
         preserved.append(PreservedLane(str(path), reason))
 
-    # A self-deploy run's pinned driver tree is detached, so it is absent from
-    # the branch-bearing registry the lane pass below walks and no landing
-    # would ever reach it. It occupies the same cap an item lane does, so it
-    # retires on the same sweep, first — the item pass can return early on
-    # unreachable authority, and a finished run's directory should not wait
-    # for the next landing because of that.
-    # A removal an earlier run was interrupted in left only a tombstone.
+    # Interrupted removals' tombstones and deploy-run driver trees retire
+    # first: the item pass below can return early on unreachable authority.
     for leftover in finish_tombstones(repo_root):
         if leftover.reason:
             say(f"WARNING: {leftover.reason}", err=True)
@@ -229,6 +225,16 @@ def prune_managed_worktrees(
         if not verdict.get("prunable"):
             if verdict.get("reason") == "active_authority":
                 keep(entry.path, "actively claimed")
+            continue
+        if cancelled_ref := verdict.get("cancelled_item_ref"):
+            lane = discard_and_record(
+                repo_root, entry.branch, target, cancelled_ref, run_git=git, emit=say
+            )
+            checked_out.discard(entry.branch)
+            if lane.kept:
+                keep(entry.path, "; ".join(lane.kept))
+            else:
+                removed.append(str(entry.path))
             continue
         if entry.lock_reason is not None:
             keep(
@@ -306,6 +312,11 @@ def prune_managed_worktrees(
             )
         assert verdict is not None  # not unavailable -> a dict
         if not verdict.get("prunable"):
+            continue
+        if cancelled_ref := verdict.get("cancelled_item_ref"):
+            discard_and_record(
+                repo_root, branch, target, cancelled_ref, run_git=git, emit=say
+            )
             continue
         landed = _landed(git, repo_root, branch, base)
         if not landed.landed:

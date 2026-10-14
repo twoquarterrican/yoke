@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+from runtime.api.engines._merge_prune_test_helpers import _git, _repo
 from yoke_core.domain import standalone_item_merge as merge_domain
 from yoke_core.domain import standalone_item_merge_cli as merge_cli
 from yoke_core.domain import (
@@ -277,3 +280,63 @@ def test_unexpected_cleanup_error_is_advisory_after_terminal_state(
 
     assert "unexpected refusal" in warnings.warnings[0]
     assert "cleanup transport unavailable" in warnings.warnings[0]
+
+
+def test_cancel_deletes_dirty_unmerged_lane_and_records_its_head(monkeypatch, tmp_path):
+    repo, worktree, branch = _repo(tmp_path)
+    (worktree / "work.txt").write_text("unlanded\n", encoding="utf-8")
+    _git(worktree, "add", "work.txt")
+    _git(worktree, "commit", "-m", "unlanded work")
+    _git(worktree, "push", "origin", branch)
+    (worktree / "draft.txt").write_text("uncommitted\n", encoding="utf-8")
+    head = _git(repo, "rev-parse", branch).stdout.strip()
+    item = _item()
+    item["worktrees"] = [{"branch": branch, "path": str(worktree)}]
+    recorded: list[tuple] = []
+    monkeypatch.setattr(
+        terminal_lane_cleanup,
+        "record_discarded_lanes",
+        lambda ref, lanes: recorded.append((ref, lanes)) or "",
+    )
+
+    close = terminal_lane_cleanup.cleanup_terminal_item_lanes(
+        item,
+        target_status="cancelled",
+        session_id="session-1",
+        repo_root=repo,
+        emit=lambda *_a, **_k: None,
+        prune=lambda **_k: pytest.fail("a cancelled lane is never landing-proved"),
+        sweep=_no_sweep,
+    )
+
+    assert close.warnings == ()
+    assert not worktree.exists()
+    assert _git(repo, "branch", "--list", branch).stdout.strip() == ""
+    assert _git(repo, "ls-remote", "--heads", "origin", branch).stdout.strip() == ""
+    [(ref, [lane])] = recorded
+    assert ref == "ITEM-7"
+    assert (lane.head_sha, lane.remote_head_sha) == (head, head)
+    assert lane.uncommitted_paths == 1
+
+
+def test_done_item_still_routes_unmerged_lanes_through_landing_proof(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(terminal_lane_cleanup.git, "branch_exists", lambda *_a: True)
+    monkeypatch.setattr(
+        terminal_lane_cleanup, "_record_preserved_lane", lambda *_a, **_k: ""
+    )
+
+    close = terminal_lane_cleanup.cleanup_terminal_item_lanes(
+        _item(),
+        target_status="done",
+        session_id="session-1",
+        repo_root=tmp_path,
+        prune=lambda **_k: ("lane ITEM-7 preserved: branch is not merged",),
+        discard=lambda **_k: pytest.fail("a done item's lane is never discarded"),
+        sweep=_no_sweep,
+    )
+
+    assert close.warnings == (
+        "ITEM-7 at /repo/.worktrees/ITEM-7: lane ITEM-7 preserved: branch is not merged",
+    )
