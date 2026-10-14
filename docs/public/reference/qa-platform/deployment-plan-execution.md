@@ -30,7 +30,9 @@ and retry afterward. `shared_plan_execution_busy` names a different group
 already using the stage's ordered cursor. Refresh and declared corrections
 also use an attaching member and keep the failed group's target identity.
 Removing one member or withdrawing its attachment preserves shared evidence for
-the members still attached. Source-case refresh and withdrawal resolve the same
+the members still attached. Removing the last attaching member with
+`yoke deployment-runs remove-item` retracts the group's unsettled rows, so an
+orphaned group never stays a run-wide blocker. Source-case refresh and withdrawal resolve the same
 shared target; a recorded run keeps the existing retraction refusal.
 At materialization, redundant member copies retire as history. A live cursor
 using those copies refuses as `shared_plan_duplicate_execution_live`: its owner

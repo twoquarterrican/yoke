@@ -98,3 +98,20 @@ def test_plan_attached_by_one_member_stays_that_members_private_copy(test_db):
     assert deployment_qa_stage_status(
         test_db, run_id=RUN, stage_name="item-qa", member_item_id=MEMBERS[1]
     )["accepted"]
+
+
+def test_removing_the_last_attaching_member_retracts_the_shared_copy(test_db):
+    from yoke_core.domain.deployment_run_member_removal import remove_member_on
+
+    _seed(test_db)
+    (requirement_id,) = _materialize(test_db, MEMBERS[0])["created_requirement_ids"]
+
+    def retracted_at():
+        return test_db.execute(
+            "SELECT retracted_at FROM qa_requirements WHERE id=%s", (requirement_id,)
+        ).fetchone()[0]
+
+    remove_member_on(test_db, RUN, MEMBERS[0], reason="split out of the release")
+    assert retracted_at() is None
+    remove_member_on(test_db, RUN, MEMBERS[1], reason="split out of the release")
+    assert retracted_at() is not None
