@@ -246,6 +246,6 @@ def test_locked_worktree_is_preserved_with_git_reason_named(landed_lane):
     )
 
     assert len(preserved) == 1
-    assert "worktree removal refused" in preserved[0]
-    assert "locked" in preserved[0]
+    assert "worktree is locked (initializing)" in preserved[0]
+    assert landed_lane.worktree.is_dir()
     assert landed_lane.worktree.exists()

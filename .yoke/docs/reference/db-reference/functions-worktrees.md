@@ -39,6 +39,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `merge.preflight.dependency_gate` | `none` |
 | `merge.preflight.epic_task_statuses` | `none` |
 | `merge.prune.authority_verdict` | `none` |
+| `merge.prune.authority_verdicts` | `none` |
 | `merge.tests.post_rebase_requirement` | `none` |
 | `merge.tests.record_post_rebase_ci_run` | `none` |
 | `merge.tests.recorded_queue_receipt` | `none` |

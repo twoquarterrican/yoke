@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from yoke_core.engines import merge_landed_lane_cleanup as cleanup
+from yoke_core.engines.worktree_removal import WorktreeRemoval
 from yoke_core.engines.branch_landed_evidence import (
     ANCESTOR_PROOF,
     BranchLandedEvidence,
@@ -48,6 +49,7 @@ trust_level = "trusted"
         cleanup, "clear_lane_residue", lambda *_a: LaneResidueAssessment(True)
     )
     monkeypatch.setattr(cleanup, "release_lane_row", lambda *_a, **_kw: None)
+    monkeypatch.setattr(cleanup, "remove_worktree", lambda *_a: WorktreeRemoval(True))
 
     preserved = cleanup.prune_landed_lane(
         repo_root=str(main),

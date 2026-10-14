@@ -14,6 +14,17 @@ TEST_ITEM_ID = 42
 TEST_ITEM_REF = f"YOK-{TEST_ITEM_ID}"
 
 
+def _removal_through_mocked_git(repo_root, worktree_path):
+    """Route the tombstone removal through the test's mocked git call log."""
+    from yoke_core.engines import merge_worktree
+    from yoke_core.engines.worktree_removal import WorktreeRemoval
+
+    merge_worktree._run_git(
+        ["worktree", "remove", str(worktree_path)], cwd=repo_root, capture=True
+    )
+    return WorktreeRemoval(True)
+
+
 def _ctx(tmp_path):
     repo = tmp_path / "repo"
     worktree = repo / ".worktrees" / TEST_ITEM_REF
@@ -75,6 +86,10 @@ def test_clean_worktree_uses_normal_remove_before_branch_delete(tmp_path):
             "worktree_cleanup_warning",
             return_value="",
         ) as cleanup_trust,
+        mock.patch(
+            "yoke_core.engines.worktree_removal.remove_worktree",
+            _removal_through_mocked_git,
+        ),
     ):
         run_git.side_effect = [
             mock.Mock(returncode=0, stdout=""),  # checkout target
@@ -132,6 +147,12 @@ def test_lane_removal_runs_after_every_step_that_reads_from_it(tmp_path):
             )
         )
         run_git = stack.enter_context(mock.patch.object(merge_worktree, "_run_git"))
+        stack.enter_context(
+            mock.patch(
+                "yoke_core.engines.worktree_removal.remove_worktree",
+                _removal_through_mocked_git,
+            )
+        )
 
         def record(command, **_kwargs):
             if "worktree" in command and "remove" in command:

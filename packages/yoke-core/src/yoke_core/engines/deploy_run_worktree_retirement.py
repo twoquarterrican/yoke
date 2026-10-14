@@ -15,9 +15,10 @@ directories whose run the control plane names as terminal.
 
 Reclaiming is the same two steps the item-lane paths use: the shared residue
 policy clears named and project-declared caches (a driver that executed here
-left ``__pycache__`` behind, and that is not content), then a non-force
-``git worktree remove`` proves the directory holds nothing else. Force is never
-used, so a tree holding real work refuses and says what survived.
+left ``__pycache__`` behind, and that is not content) and proves the directory
+holds nothing else, then ``worktree_removal`` retires it through a tombstone so
+an interruption never strands a half-deleted registered tree. A tree holding
+real work refuses and says what survived.
 
 Every answer short of "terminal" keeps the directory and names why: a run still
 open, a status this build does not recognise, an unreachable control plane, a
@@ -33,6 +34,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
+
+from yoke_core.engines.worktree_removal import remove_worktree
 
 from yoke_contracts.api.function_call import TargetRef
 from yoke_contracts.deployment_run_lifecycle import (
@@ -239,26 +242,22 @@ def retire_terminal_deploy_run_worktrees(
         if lane.state != LANE_RETIRABLE:
             verdicts.append(lane)
             continue
-        # Clearing named caches is what lets the non-force remove succeed: a
-        # driver that executed here left __pycache__ behind, and that is not
-        # content. Anything the shared policy will not name stays, and takes
-        # the directory with it.
+        # Clearing named caches proves the tree holds nothing else: a driver
+        # that executed here left __pycache__ behind, and that is not content.
+        # Anything the shared policy will not name stays, and takes the
+        # directory with it.
         residue = clear_lane_residue(git, lane.path, declared_roots)
         if not residue.disposable:
-            verdicts.append(
-                _lane(lane.path, lane.run_id, LANE_BLOCKED, residue.reason)
-            )
+            verdicts.append(_lane(lane.path, lane.run_id, LANE_BLOCKED, residue.reason))
             continue
-        removed = git(
-            ["worktree", "remove", str(lane.path)], cwd=str(root), capture=True
-        )
-        if removed.returncode != 0:
+        removal = remove_worktree(root, lane.path)
+        if not removal.removed:
             verdicts.append(
                 _lane(
                     lane.path,
                     lane.run_id,
                     LANE_BLOCKED,
-                    f"removal refused: {_first_line(removed)}",
+                    f"removal refused: {removal.reason}",
                 )
             )
             continue
@@ -270,12 +269,6 @@ def _runtime_git() -> Callable[..., Any]:
     from yoke_core.engines._merge_worktree_runtime import _run_git
 
     return _run_git
-
-
-def _first_line(result: Any) -> str:
-    from yoke_core.engines.git_worktree_registry import first_output_line
-
-    return first_output_line(result)
 
 
 __all__ = [

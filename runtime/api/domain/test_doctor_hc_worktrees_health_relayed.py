@@ -17,6 +17,7 @@ import pytest
 
 from yoke_core.engines import doctor_hc_worktrees_health as hc
 from yoke_core.engines import doctor_worktree_lane_authority as lane_authority
+from yoke_core.engines import doctor_worktree_terminal_lanes as terminal_lanes
 from yoke_core.engines.doctor_https_compose import UnavailableControlPlane
 from yoke_core.engines.doctor_report import DoctorArgs, RecordCollector
 
@@ -53,6 +54,7 @@ class _Residue:
     """A lane holding nothing but disposable generated state."""
 
     disposable = True
+    removable_once_landed = True
     precious_paths: tuple[str, ...] = ()
     reason = ""
 
@@ -76,13 +78,15 @@ def relayed_client(monkeypatch):
     monkeypatch.setattr(
         hc.Path, "is_dir", lambda self: str(self) == "/repo/.worktrees/PLAT-139"
     )
-    monkeypatch.setattr(hc, "assess_landed_lane", lambda **_kw: _Assessment(safe=True))
+    monkeypatch.setattr(
+        terminal_lanes, "assess_landed_lane", lambda **_kw: _Assessment(safe=True)
+    )
 
     def fake_prune(**kwargs):
         calls["prune"].append(kwargs)
         return ()
 
-    monkeypatch.setattr(hc, "prune_landed_lane", fake_prune)
+    monkeypatch.setattr(terminal_lanes, "prune_landed_lane", fake_prune)
     return calls
 
 
@@ -93,10 +97,10 @@ def _install_relay(monkeypatch, calls, *, inventory, verdict):
             if isinstance(inventory, Exception):
                 raise inventory
             return inventory
-        if function_id == "merge.prune.authority_verdict":
+        if function_id == "merge.prune.authority_verdicts":
             if isinstance(verdict, Exception):
                 raise verdict
-            return verdict
+            return {"verdicts": [verdict] * len(payload["lanes"])}
         raise AssertionError(f"unexpected relayed function {function_id}")
 
     monkeypatch.setattr(lane_authority, "relay", fake_relay)
@@ -197,7 +201,7 @@ def test_unservable_inventory_is_not_applicable_never_a_pass(
 def test_active_authority_preserves_the_lane(monkeypatch, relayed_client) -> None:
     """A live holder keeps its lane even with --fix."""
     monkeypatch.setattr(
-        hc,
+        terminal_lanes,
         "assess_landed_lane",
         lambda **kw: _Assessment(
             safe=not kw.get("authority_block"),
@@ -221,7 +225,7 @@ def test_active_authority_preserves_the_lane(monkeypatch, relayed_client) -> Non
 def test_unreachable_authority_fails_closed(monkeypatch, relayed_client) -> None:
     """An unreadable verdict preserves rather than prunes."""
     monkeypatch.setattr(
-        hc,
+        terminal_lanes,
         "assess_landed_lane",
         lambda **kw: _Assessment(
             safe=not kw.get("authority_block"),
@@ -235,9 +239,15 @@ def test_unreachable_authority_fails_closed(monkeypatch, relayed_client) -> None
         verdict=RuntimeError("control plane unreachable"),
     )
 
-    _run_check(DoctorArgs(project="platform", fix=True))
+    rec = _run_check(DoctorArgs(project="platform", fix=True))
 
     assert not relayed_client["prune"]
+    [result] = rec.results
+    assert (
+        "Cleanup authority unreadable: merge.prune.authority_verdicts did not "
+        "answer (control plane unreachable)"
+    ) in result.detail
+    assert "rerun this check with --fix" in result.detail
 
 
 def test_historical_lane_count_does_not_launch_one_git_read_per_row(

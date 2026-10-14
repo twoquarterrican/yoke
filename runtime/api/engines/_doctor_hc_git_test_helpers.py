@@ -13,7 +13,6 @@ from __future__ import annotations
 import contextlib
 import subprocess
 import textwrap
-from pathlib import Path
 
 from yoke_contracts.api.function_call import (
     ActorContext,
@@ -169,10 +168,17 @@ def relayed_control_plane(conn):
 
     from yoke_core.domain import db_helpers
     from yoke_core.domain.handlers import item_worktree_inventory
-    from yoke_core.engines import merge_prune_authority
+    from yoke_core.domain.handlers import merge_engine_internal_ops
+
+    handlers = {
+        "item_worktrees.inventory": item_worktree_inventory.handle_inventory,
+        "merge.prune.authority_verdicts": (
+            merge_engine_internal_ops.handle_prune_authority_verdicts
+        ),
+    }
 
     def _relay(function_id: str, payload: dict, *_args, **_kwargs) -> dict:
-        if function_id == "item_worktrees.inventory":
+        if function_id in handlers:
             request = FunctionCallRequest(
                 function=function_id,
                 actor=ActorContext(actor_id="1", session_id="doctor-test"),
@@ -180,22 +186,12 @@ def relayed_control_plane(conn):
                 payload=payload,
             )
             with patch.object(db_helpers, "connect", lambda: _KeepOpenConn(conn)):
-                outcome = item_worktree_inventory.handle_inventory(request)
+                outcome = handlers[function_id](request)
             if not outcome.primary_success:
                 raise RuntimeError(
                     outcome.error.message if outcome.error else "refused"
                 )
             return outcome.result_payload
-        if function_id == "merge.prune.authority_verdict":
-            path = Path(payload["path"]) if payload.get("path") else None
-            owner = merge_prune_authority.terminal_owner(
-                conn, branch=payload["branch"], path=path
-            )
-            if owner is None:
-                return {"prunable": False, "reason": "no_terminal_owner"}
-            if merge_prune_authority.has_active_authority(conn, owner, path):
-                return {"prunable": False, "reason": "active_authority"}
-            return {"prunable": True, "reason": "prunable"}
         raise AssertionError(f"unexpected relayed function {function_id}")
 
     with patch(

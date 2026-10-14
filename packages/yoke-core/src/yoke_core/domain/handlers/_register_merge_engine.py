@@ -1,8 +1,8 @@
 """Register the internal merge-worktree finalize control-plane touches.
 
-These two functions are the transport-aware forms of the prune authority
-verdict and integrated-tree verification-command resolution the merge engine
-relays so the finalize path works over an https control plane as well as a
+These functions are the transport-aware forms of the prune authority
+verdict (per lane, and batched for a machine-wide lane sweep) and
+integrated-tree verification-command resolution the merge engine relays so the finalize path works over an https control plane as well as a
 local Postgres connection. Both are ``adapter_status='internal'`` (merge glue,
 never an agent CLI surface), so they need no CLI adapter inventory row.
 """
@@ -69,6 +69,21 @@ def register(registry) -> None:
         guardrails=[],
         adapter_status="internal",
         claim_required_kind=None,
+    )
+    registry.register(
+        "merge.prune.authority_verdicts",
+        _ops.handle_prune_authority_verdicts,
+        _ops.PruneAuthorityBatchRequest,
+        _ops.PruneAuthorityBatchResponse,
+        stability="stable",
+        owner_module="yoke_core.domain.handlers.merge_engine_internal_ops",
+        target_kinds=["global"],
+        side_effects=[],
+        emitted_event_names=["YokeFunctionCalled"],
+        guardrails=[],
+        adapter_status="internal",
+        claim_required_kind=None,
+        minimum_serving_version="next-release",
     )
     registry.register(
         "merge.tests.post_rebase_requirement",

@@ -92,9 +92,22 @@ must have one exact terminal DB owner, no active work claim or harness session,
 a clean status including ignored and untracked files, and a branch tip that is
 an ancestor of the freshly fetched target. For each lane it first proves and
 deletes the exact remote ref (or proves it already absent) via the shared
-`delete_remote_branch_if_merged` helper; only then does removal use normal
-`git worktree remove`, followed by normal `git branch -d`. Incomplete remote
-cleanup preserves the local worktree and branch for a later safe retry.
+`delete_remote_branch_if_merged` helper; only then is the proved-clean worktree
+removed, followed by normal `git branch -d`. Incomplete remote cleanup
+preserves the local worktree and branch for a later safe retry.
+
+Removal is resumable, because `git worktree remove` deletes files one by one
+and drops git's record last: killed midway, it stranded a registered,
+half-deleted tree. Every removal path instead renames the worktree to a
+`.removing-<name>-<id>` tombstone in its managed root (one atomic step), runs
+`git worktree prune`, then deletes the tombstone. Any later sweep or
+`HC-worktree-health --fix` finishes a tombstone an interruption left behind.
+A removal runs to completion once started rather than under a caller's
+shrinking deadline; a doctor check starts one only with at least 10 seconds of
+its budget left and otherwise defers it with the reason named. A tree whose
+only changes are deleted tracked files is an interrupted removal: once its
+branch is proved landed, cleanup completes it rather than preserving it as
+dirty work.
 
 Done-transition uses the same fail-closed, remote-first evidence for its
 current item lane and the same shared helper — never a duplicate remote-delete
@@ -121,9 +134,20 @@ the lane's base branch, then counts again and refuses only for what remains.
 
 Unregistered directories, ambiguous owners, dirty or ignored content,
 unavailable claim/DB state, non-ancestor branches, and removal refusals are
-preserved and reported. Automatic cleanup never uses filesystem `rm -rf`,
-forced worktree removal, or forced branch deletion. `--keep-remote` remains
+preserved and reported. Automatic cleanup never uses forced worktree removal
+or forced branch deletion, and deletes files only inside a tombstone git no
+longer registers, after the residue proof. `--keep-remote` remains
 the only intentional skip of remote delete (ephemeral environments).
+
+### Health-check repair
+
+`yoke watch doctor -- --only HC-worktree-health --fix` retires terminal item
+lanes a landing sweep missed, under the same proof. It reads every lane's
+cleanup-authority verdict in one `merge.prune.authority_verdicts` call and
+fetches each target branch once per run, then retires each lane as soon as it
+is proved. A run that exhausts the check budget keeps the lanes it already
+retired, so rerunning the same command continues from there. If the authority
+read fails, the check names the failure and preserves every lane.
 
 ### Lane residue and project-declared renders
 
@@ -170,8 +194,9 @@ keep the directory with the reason named — reclaiming a live run's pinned
 source would pull the ground out from under a driver mid-deploy.
 
 Removal is the same two steps the item lanes use: clear named and declared
-caches (a driver that executed there left `__pycache__` behind), then a
-non-force `git worktree remove`. Force is never used.
+caches (a driver that executed there left `__pycache__` behind) and prove
+nothing else remains, then the resumable tombstone removal. Force is never
+used.
 
 When the cap still refuses after that sweep, it sorts the slots by what frees
 them, because merging is the recovery only for an item lane that has not landed:

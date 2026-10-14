@@ -8,6 +8,9 @@ summary ahead of each lane's detail.
 Lane reads run on the checkout machine, with ownership served through
 ``doctor_worktree_lane_authority``. Unreadable ownership reports N/A. Independent
 residue reads overlap under the shared deadline; every lane remains checked.
+Terminal lanes are proved by ``doctor_worktree_terminal_lanes`` against one
+batched authority read and, under ``--fix``, retired one at a time as each is
+proved, so a run the budget cuts short keeps what it already retired.
 
 Detached self-deploy driver trees are checked against their run status and
 retired under ``--fix`` once the run is over.
@@ -25,16 +28,15 @@ from yoke_core.engines.deploy_run_worktree_retirement import (
     assess_deploy_run_worktrees,
     retire_terminal_deploy_run_worktrees,
 )
-from yoke_core.engines.doctor_worktree_lane_authority import (
-    LaneRow,
-    authority_block,
-    lane_inventory,
-)
-from yoke_core.engines.merge_landed_lane_cleanup import (
-    assess_landed_lane,
-    prune_landed_lane,
+from yoke_core.engines.doctor_worktree_lane_authority import LaneRow, lane_inventory
+from yoke_core.engines.doctor_worktree_terminal_lanes import (
+    DEPLOY_RUN_CATEGORY,
+    TerminalLaneRetirer,
+    stranded_category,
+    stranded_summary,
 )
 from yoke_core.engines.lane_residue_declared_paths import declared_disposable_roots
+from yoke_core.engines.worktree_removal import finish_tombstones, tombstones
 from yoke_core.engines.merge_worktree_cleanliness import assess_lane_residue
 
 import yoke_core.engines.doctor_report as _base
@@ -47,21 +49,9 @@ from yoke_core.engines.doctor_tree_scan import list_directory
 from yoke_core.engines.doctor_parallel_reads import bounded_read_map
 
 _TERMINAL = ("done", "cancelled")
-# Summary order: what needs an operator first, what the next landing sweeps last.
-_DEPLOY_RUN_CATEGORY = "finished deploy run"
 _DEPLOY_RUN_RETIRABLE_LABEL = (
     "verified-safe; this check's --fix retires it, as does the next landing "
     "on this machine"
-)
-_STRANDED_ORDER = (
-    "dirty",
-    _DEPLOY_RUN_CATEGORY,
-    "locked",
-    "unregistered directory",
-    "claimed",
-    "unmerged",
-    "preserved",
-    "sweep-ready",
 )
 
 
@@ -89,36 +79,6 @@ def _worktree_entries(porcelain: str) -> List[dict]:
             entries.append(current)
             current = {}
     return entries
-
-
-def _stranded_category(entry: dict, residue, assessment) -> tuple[str, str]:
-    """Name why a terminal item's lane is still on disk, operator-first."""
-    if "locked" in entry:
-        return "locked", entry["locked"]
-    if residue is not None and not residue.disposable:
-        count = len(residue.precious_paths)
-        if not count:
-            return "preserved", residue.reason
-        return "dirty", f"{count} modified file{'s' if count != 1 else ''}"
-    if assessment.safe:
-        return "sweep-ready", ""
-    reason = assessment.reason
-    if "authority" in reason:
-        return "claimed", reason.split("preserved: ", 1)[-1]
-    if "not merged" in reason:
-        return "unmerged", reason.split("preserved: ", 1)[-1]
-    return "preserved", reason.split("preserved: ", 1)[-1]
-
-
-def _summary(stranded: Dict[str, List[str]]) -> str:
-    total = sum(len(refs) for refs in stranded.values())
-    parts = [
-        f"{category} ({', '.join(stranded[category])})"
-        for category in _STRANDED_ORDER
-        if stranded.get(category)
-    ]
-    plural = "s" if total != 1 else ""
-    return f"- {total} released lane{plural} still on disk: " + ", ".join(parts)
 
 
 def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
@@ -153,33 +113,85 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
         if lane.path:
             by_path.setdefault(lane.path, []).append(lane)
 
-    roots = declared_disposable_roots(repo_root) if repo_root else None
-    paths = [
-        e["path"]
+    # Enumerate once rather than launching Git for every historical lane row.
+    branch_refs = _base._run(
+        ["git", "for-each-ref", "--format=%(refname:lstrip=2)", "refs/heads"]
+    )
+    if branch_refs.returncode:
+        rec.record(
+            "HC-worktree-health",
+            "Worktree health",
+            "FAIL",
+            "Local branch inventory unreadable; retry after Git recovers.",
+        )
+        return
+    local_branches = set(branch_refs.stdout.splitlines())
+    live_branches = {entry.get("branch", "") for entry in entries}
+
+    def root_for(path: str) -> str:
+        return str(repo_root or Path(path).parents[1])
+
+    # Detached deploy drivers are answered from their run status below.
+    lane_entries = [
+        e
         for e in entries
         if e.get("branch") not in ("main", "master")
-        and Path(e["path"]).is_dir()
-        and not run_id_for_driver_worktree(
-            Path(e["path"]), Path(repo_root or Path(e["path"]).parents[1])
-        )
+        and e.get("path")
+        and not run_id_for_driver_worktree(Path(e["path"]), Path(root_for(e["path"])))
     ]
 
+    def terminal_owners(entry: dict) -> List[LaneRow]:
+        owners = {
+            lane.public_ref: lane
+            for lane in [
+                *by_branch.get(entry.get("branch", ""), []),
+                *by_path.get(entry["path"], []),
+            ]
+        }
+        return [lane for lane in owners.values() if lane.status in _TERMINAL]
+
+    stale_branches = [
+        lane
+        for lane in lanes
+        if repo_root
+        and lane.status in _TERMINAL
+        and lane.branch in local_branches
+        and lane.branch not in live_branches
+    ]
+    retirer = TerminalLaneRetirer(
+        [
+            *(
+                (entry.get("branch", ""), entry["path"])
+                for entry in lane_entries
+                if terminal_owners(entry)
+            ),
+            *((lane.branch, lane.path) for lane in stale_branches),
+        ],
+        fix=args.fix,
+        git_for_repo=_git_for_repo,
+    )
+    if retirer.authority_failure:
+        issues.append(
+            "- Cleanup authority unreadable: merge.prune.authority_verdicts did "
+            f"not answer ({retirer.authority_failure}), so every terminal lane "
+            "is preserved; rerun this check with --fix once the control plane "
+            "answers it"
+        )
+
+    roots = declared_disposable_roots(repo_root) if repo_root else None
+    paths = [e["path"] for e in lane_entries if Path(e["path"]).is_dir()]
+
     def read_residue(path):
-        root = str(repo_root or Path(path).parents[1])
+        root = root_for(path)
         lane_roots = roots if roots is not None else declared_disposable_roots(root)
         return assess_lane_residue(_git_for_repo(root), path, lane_roots)
 
     residues = dict(zip(paths, bounded_read_map(read_residue, paths)))
 
-    for entry in entries:
-        wt_path = entry.get("path", "")
+    for entry in lane_entries:
+        wt_path = entry["path"]
         branch = entry.get("branch", "")
-        if branch in ("main", "master") or not wt_path:
-            continue
-        root = str(repo_root or Path(wt_path).parents[1])
-        if run_id_for_driver_worktree(Path(wt_path), Path(root)):
-            # Detached deploy drivers are answered from their run status below.
-            continue
+        root = root_for(wt_path)
 
         # Named or project-declared ignored caches are disposable; anything
         # else is lane content.
@@ -193,36 +205,25 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
                 )
 
         # Check terminal ownership through the universal registry.
-        owners = {
-            lane.public_ref: lane
-            for lane in [*by_branch.get(branch, []), *by_path.get(wt_path, [])]
-        }.values()
-        for owner in owners:
-            if owner.status not in _TERMINAL:
-                continue
+        for owner in terminal_owners(entry):
             public_ref = owner.public_ref
-            assessment = assess_landed_lane(
-                repo_root=root,
-                branch=branch,
-                target=owner.target_branch,
-                run_git=_git_for_repo(root),
-                refresh_target=False,
-                authority_block=authority_block(branch, wt_path),
+            assessment = retirer.assess(
+                root=root, branch=branch, path=wt_path, target=owner.target_branch
             )
-            category, detail = _stranded_category(entry, residue, assessment)
+            category, detail = stranded_category(entry, residue, assessment)
             label = assessment.reason
             if category == "sweep-ready":
                 label = "verified-safe; the next landing on this machine sweeps it"
             elif category in ("locked", "dirty"):
                 label = f"worktree is {category} ({detail})"
             if args.fix and category == "sweep-ready":
-                preserved = prune_landed_lane(
-                    repo_root=root,
+                preserved = retirer.prune(
+                    root=root,
                     branch=branch,
+                    path=wt_path,
                     target=owner.target_branch,
-                    item_id=owner.public_ref,
-                    run_git=_git_for_repo(root),
-                    emit=lambda *_a, **_kw: None,
+                    item_id=public_ref,
+                    assessment=assessment,
                 )
                 if not preserved:
                     fixed.append(
@@ -235,6 +236,20 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
             )
             issues.append(
                 f"- Terminal-item lane: {branch} at {wt_path} — {public_ref} is {owner.status}; {label}"
+            )
+
+    # An interrupted removal leaves an unregistered tombstone; --fix finishes it.
+    if repo_root:
+        leftovers = tombstones(repo_root)
+        results = finish_tombstones(repo_root) if args.fix else []
+        for leftover, result in zip(leftovers, results):
+            if result.removed and not result.reason:
+                fixed.append(f"- Fixed: finished interrupted removal {leftover}")
+            else:
+                issues.append(f"- Interrupted removal not finished: {result.reason}")
+        for leftover in leftovers[len(results) :]:
+            issues.append(
+                f"- Interrupted removal left tombstone {leftover}; --fix finishes it"
             )
 
     # Self-deploy driver trees, answered from their run's status rather than
@@ -257,7 +272,7 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
                 continue
             if lane.run_is_open:
                 continue
-            stranded.setdefault(_DEPLOY_RUN_CATEGORY, []).append(lane.run_id)
+            stranded.setdefault(DEPLOY_RUN_CATEGORY, []).append(lane.run_id)
             issues.append(
                 f"- Finished deploy-run worktree: {lane.path} — {lane.run_id}; "
                 + (lane.reason or _DEPLOY_RUN_RETIRABLE_LABEL)
@@ -284,49 +299,30 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
                             "(unregistered directory preserved for inspection)"
                         )
 
-    # Enumerate once rather than launching Git for every historical lane row.
-    branch_refs = _base._run(
-        ["git", "for-each-ref", "--format=%(refname:lstrip=2)", "refs/heads"]
-    )
-    if branch_refs.returncode:
-        rec.record(
-            "HC-worktree-health",
-            "Worktree health",
-            "FAIL",
-            "Local branch inventory unreadable; retry after Git recovers.",
-        )
-        return
-    local_branches = set(branch_refs.stdout.splitlines())
-    live_branches = {entry.get("branch", "") for entry in entries}
-    for lane in lanes:
-        if lane.status not in _TERMINAL:
-            continue
+    for lane in stale_branches:
         branch = lane.branch
-        if repo_root and branch in local_branches and branch not in live_branches:
-            assessment = assess_landed_lane(
-                repo_root=str(repo_root),
+        assessment = retirer.assess(
+            root=str(repo_root),
+            branch=branch,
+            path=lane.path,
+            target=lane.target_branch,
+        )
+        if args.fix and assessment.safe:
+            preserved = retirer.prune(
+                root=str(repo_root),
                 branch=branch,
+                path=lane.path,
                 target=lane.target_branch,
-                run_git=_git_for_repo(str(repo_root)),
-                refresh_target=False,
-                authority_block=authority_block(branch, lane.path),
+                item_id=lane.public_ref,
+                assessment=assessment,
             )
-            if args.fix and assessment.safe:
-                preserved = prune_landed_lane(
-                    repo_root=str(repo_root),
-                    branch=branch,
-                    target=lane.target_branch,
-                    item_id=lane.public_ref,
-                    run_git=_git_for_repo(str(repo_root)),
-                    emit=lambda *_a, **_kw: None,
-                )
-                if not preserved:
-                    fixed.append(f"- Fixed: deleted terminal local branch {branch}")
-                    continue
-            issues.append(
-                f"- Stale local branch: {branch} — {lane.public_ref}; "
-                f"{assessment.reason or 'verified-safe'}"
-            )
+            if not preserved:
+                fixed.append(f"- Fixed: deleted terminal local branch {branch}")
+                continue
+        issues.append(
+            f"- Stale local branch: {branch} — {lane.public_ref}; "
+            f"{assessment.reason or 'verified-safe'}"
+        )
 
     # Terminal updates release operational lanes but retain audit history.
     for lane in lanes:
@@ -338,7 +334,7 @@ def hc_worktree_health(_conn, args: DoctorArgs, rec: RecordCollector) -> None:
             )
 
     if stranded:
-        issues.insert(0, _summary(stranded))
+        issues.insert(0, stranded_summary(stranded))
     if issues:
         detail = [*fixed, *issues]
         rec.record("HC-worktree-health", "Worktree health", "WARN", "\n".join(detail))

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
 from yoke_contracts.codex_hook_trust_store import worktree_cleanup_warning
 from yoke_core.domain.public_item_target import public_item_target
@@ -167,36 +166,28 @@ def _post_merge_cleanup(
             ctx.worktree_path,
             declared_disposable_roots_for_project(ctx.project),
         )
-        worktree_clean = residue.disposable
-        if not worktree_clean:
+        removal = None
+        if not residue.removable_once_landed:
             _print(
                 f"WARNING: Preserving worktree {ctx.worktree_path}: {residue.reason}",
                 err=True,
             )
         else:
-            wt_remove = _run_git(
-                ["worktree", "remove", ctx.worktree_path],
-                cwd=ctx.repo_root,
-                capture=True,
-            )
-            worktree_removed = wt_remove.returncode == 0
+            from yoke_core.engines.worktree_removal import remove_worktree
+
+            removal = remove_worktree(ctx.repo_root, ctx.worktree_path)
+            worktree_removed = removal.removed
         if worktree_removed:
             _print(f"Cleaned up worktree: {ctx.worktree_path}")
+            if removal is not None and removal.reason:
+                _print(f"WARNING: {removal.reason}", err=True)
             if warning := worktree_cleanup_warning(ctx.worktree_path):
                 _print(f"WARNING: {warning}", err=True)
             _release_lane_row(ctx)
-            # Clean empty parent
-            parent = str(Path(ctx.worktree_path).parent)
-            if "/.worktrees/" in parent:
-                try:
-                    if not list(Path(parent).iterdir()):
-                        Path(parent).rmdir()
-                except OSError:
-                    pass
-        elif worktree_clean:
+        elif removal is not None:
             _print(
-                f"WARNING: Worktree removal refused; preserving branch "
-                f"{ctx.args.branch}",
+                f"WARNING: Worktree removal refused ({removal.reason}); preserving "
+                f"branch {ctx.args.branch}",
                 err=True,
             )
 

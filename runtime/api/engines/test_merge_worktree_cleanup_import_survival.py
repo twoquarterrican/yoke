@@ -18,6 +18,17 @@ from yoke_core.engines.merge_worktree import MergeArgs, MergeContext
 from yoke_core.engines.remote_branch_cleanup import RemoteBranchDeleteResult
 
 
+def _removal_through_mocked_git(repo_root, worktree_path):
+    """Route the tombstone removal through the test's mocked git call log."""
+    from yoke_core.engines import merge_worktree
+    from yoke_core.engines.worktree_removal import WorktreeRemoval
+
+    merge_worktree._run_git(
+        ["worktree", "remove", str(worktree_path)], cwd=repo_root, capture=True
+    )
+    return WorktreeRemoval(True)
+
+
 def _cleanup_ctx(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "yoke_core.domain.merge_landing_proof.verified_target_sha", lambda *_a: "a" * 40
@@ -81,6 +92,10 @@ class TestImportsSurviveLaneRemoval:
         )
         monkeypatch.setattr(
             merge_worktree_cleanup, "_release_lane_row", lambda _ctx: None
+        )
+        monkeypatch.setattr(
+            "yoke_core.engines.worktree_removal.remove_worktree",
+            _removal_through_mocked_git,
         )
 
         assert merge_worktree._post_merge_cleanup(ctx, no_changes=True) == 0

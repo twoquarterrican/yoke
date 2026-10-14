@@ -44,7 +44,6 @@ from yoke_core.engines.deploy_run_worktree_retirement import (
     retire_terminal_deploy_run_worktrees,
 )
 from yoke_core.engines.git_worktree_registry import (
-    first_output_line,
     is_managed_worktree_path,
     registered_worktrees,
 )
@@ -54,6 +53,7 @@ from yoke_core.engines.remote_branch_cleanup import (
     delete_remote_branch_if_merged,
     unmerged_remote_note,
 )
+from yoke_core.engines.worktree_removal import finish_tombstones, remove_worktree
 
 
 @dataclass(frozen=True)
@@ -204,6 +204,10 @@ def prune_managed_worktrees(
     # retires on the same sweep, first — the item pass can return early on
     # unreachable authority, and a finished run's directory should not wait
     # for the next landing because of that.
+    # A removal an earlier run was interrupted in left only a tombstone.
+    for leftover in finish_tombstones(repo_root):
+        if leftover.reason:
+            say(f"WARNING: {leftover.reason}", err=True)
     for lane in retire_terminal_deploy_run_worktrees(repo_root=repo_root):
         if lane.retired:
             say(f"Retired finished deploy-run worktree: {lane.path}")
@@ -248,7 +252,7 @@ def prune_managed_worktrees(
             keep(entry.path, f"worktree branch {entry.branch} {landed.reason}")
             continue
         residue = clear_lane_residue(git, entry.path, declared_roots)
-        if not residue.disposable:
+        if not residue.removable_once_landed:
             keep(entry.path, residue.reason)
             continue
         remote = _delete_remote_before_local(
@@ -262,16 +266,17 @@ def prune_managed_worktrees(
             keep(entry.path, f"remote cleanup incomplete: {remote.reason}")
             continue
         if not remote.cleanup_complete:
-            say(f"WARNING: {unmerged_remote_note(entry.branch, remote.reason)}", err=True)
-        removal = git(
-            ["worktree", "remove", str(entry.path)],
-            cwd=repo_root,
-            capture=True,
-        )
-        if removal.returncode != 0:
-            keep(entry.path, f"removal refused: {first_output_line(removal)}")
+            say(
+                f"WARNING: {unmerged_remote_note(entry.branch, remote.reason)}",
+                err=True,
+            )
+        removal = remove_worktree(repo_root, entry.path)
+        if not removal.removed:
+            keep(entry.path, f"removal refused: {removal.reason}")
             continue
         say(f"Pruned terminal merged worktree: {entry.path}")
+        if removal.reason:
+            say(f"WARNING: {removal.reason}", err=True)
         if warning := worktree_cleanup_warning(entry.path):
             say(f"WARNING: {warning}", err=True)
         removed.append(str(entry.path))
