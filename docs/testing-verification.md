@@ -23,6 +23,11 @@ mission** through the Main-owned `agent_mission` runner. A mission uses its
 declared browser/machine substrates and an informed subagent walker;
 deterministic checks stay with Command methods.
 
+Hosted Yoke dashboard pages live under `/orgs/<org>/`: a browser case for
+production routes to `/orgs/upyoke/workflows`, and for stage to
+`/orgs/upyoke-stage-1/workflows`. A bare `/workflows` returns HTTP 404 there,
+and the navigate step fails as `route_not_found`.
+
 Inspect the roster and a method contract with:
 
 ```text

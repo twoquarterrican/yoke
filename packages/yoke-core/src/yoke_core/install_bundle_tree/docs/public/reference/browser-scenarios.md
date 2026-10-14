@@ -97,7 +97,7 @@ repair the named failure and rerun the case after restoring external state.
 
 | Action | Required fields | Purpose |
 |---|---|---|
-| `navigate` | `route` | Navigate to a relative or absolute URL. |
+| `navigate` | `route` | Navigate to a relative or absolute URL. HTTP 401 or 403 fails as an authentication refusal; HTTP 404 fails as `route_not_found` naming the URL, so correct the route. |
 | `click` | `target` | Click an element. |
 | `type` | `target`, `value` | Type into an input. |
 | `fill_form` | `fields` | Fill several target/value pairs. |

@@ -144,6 +144,11 @@ function resolveUrl(route, baseUrl) {
 // of a refusal looks like a rendered page.
 const AUTH_REFUSAL_STATUSES = new Set([401, 403]);
 
+// The server has no page at this address. A not-found page renders like any
+// other screen, so without this check the case fails later on a missing
+// element, or passes a screenshot of the not-found page.
+const NOT_FOUND_STATUS = 404;
+
 /**
  * Execute a navigate action.
  */
@@ -152,6 +157,17 @@ async function executeNavigate(page, step, options) {
   const timeout = step.timeout_ms || options.timeout || DEFAULT_TIMEOUT_MS;
   const response = await page.goto(url, { timeout, waitUntil: 'domcontentloaded' });
   const status = response ? response.status() : 0;
+  if (status === NOT_FOUND_STATUS) {
+    const landed = response.url() === url
+      ? ''
+      : ` (redirected to ${redactUrl(response.url())})`;
+    throw new Error(
+      `route_not_found: navigation to ${redactUrl(url)}${landed} returned ` +
+      'HTTP 404, so the server has no page at this route. Correct the ' +
+      "step's route to a page the site serves, including any path prefix " +
+      'the site mounts its pages under, then run the case again.'
+    );
+  }
   if (AUTH_REFUSAL_STATUSES.has(status)) {
     throw new Error(
       `navigation to ${redactUrl(response.url())} was refused with HTTP ${status}: ` +
