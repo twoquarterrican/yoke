@@ -1,7 +1,7 @@
 """Per-key guards that keep a posture amendment from stranding evidence.
 
-Posture keys differ in what they leave behind once selected.  A verification
-selection materializes QA requirement rows that can carry recorded runs; a
+Posture keys differ in what they leave behind once selected.  Explicit verification
+attachments materialize QA requirement rows that can carry recorded runs; a
 path-claims selection activates registered claims; an approval selection puts
 a decision request in somebody's inbox.  Changing the selection out from under
 any of those would leave the record attached to a posture nothing reads.

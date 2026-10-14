@@ -59,7 +59,7 @@ def _requirement_request(item_id: int) -> FunctionCallRequest:
     )
 
 
-def test_plan_posture_attaches_and_materializes_at_dash_review(
+def test_plan_posture_records_choice_before_explicit_review_attachment(
     tmp_db,  # noqa: F811
     monkeypatch,
 ) -> None:
@@ -67,7 +67,10 @@ def test_plan_posture_attaches_and_materializes_at_dash_review(
         create_qa_catalog_tables,
         seed_builtin_qa_methods,
     )
-    from yoke_core.domain.qa_plan_attachments import materialize_for_item
+    from yoke_core.domain.qa_plan_attachments import (
+        attach_plan_to_item,
+        materialize_for_item,
+    )
     from yoke_core.domain.qa_plan_management import create_plan, replace_plan_cases
 
     conn = _conn(tmp_db)
@@ -114,6 +117,15 @@ def test_plan_posture_attaches_and_materializes_at_dash_review(
             "SELECT COUNT(*) FROM qa_requirements WHERE item_id=%s",
             (item_id,),
         ).fetchone()[0]
+        assert attachment is None
+        assert check_verification_gate(GateTarget(item_id=item_id), tmp_db).passed
+        attach_plan_to_item(
+            conn,
+            item_id=item_id,
+            plan_id=plan["id"],
+            transition_id="reviewing-implementation",
+            qa_phase="verification",
+        )
         materialized = materialize_for_item(
             conn,
             item_id=item_id,
@@ -122,8 +134,6 @@ def test_plan_posture_attaches_and_materializes_at_dash_review(
     finally:
         conn.close()
 
-    assert int(attachment["plan_id"]) == int(plan["id"])
-    assert attachment["transition_id"] == "reviewing-implementation"
     assert int(before) == 0
     assert len(materialized["created_requirement_ids"]) == 1
 
@@ -228,7 +238,10 @@ def test_attached_plan_without_materialized_requirements_refuses(
         seed_builtin_qa_methods(conn)
         insert_item(conn, id=2420, workflow_id="dash")
         plan = create_plan(
-            conn, project="yoke", slug="unmaterialized", name="Unmaterialized",
+            conn,
+            project="yoke",
+            slug="unmaterialized",
+            name="Unmaterialized",
         )
         replace_plan_cases(conn, plan_id=plan["id"], cases=[CATALOG_CASES[0]])
         conn.execute(

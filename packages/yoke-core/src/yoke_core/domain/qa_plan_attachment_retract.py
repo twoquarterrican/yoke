@@ -49,8 +49,8 @@ def retract_plan_from_item(
     """Withdraw a standing attachment so it stops answering future runs.
 
     The row stays. Requirements it materialized retire as retracted — not
-    waived, not superseded — and a passing verdict refuses, because that
-    would rewrite settled delivery evidence. Repeating a withdrawal also
+    waived, not superseded — and any recorded run or verdict refuses, because that
+    would rewrite execution evidence. Repeating a withdrawal also
     retires copies an older serving build admitted after the first call.
     """
     reason = str(reason or "").strip()
@@ -74,29 +74,31 @@ def retract_plan_from_item(
     if attachment is None:
         raise QaPlanError("no such item plan attachment")
     already_retracted = bool(attachment.get("retracted_at"))
-    if str(attachment["qa_phase"] or "") != "post_deploy":
-        raise QaPlanError(
-            "retraction retires a mis-specified post-deploy attachment, not "
-            "a verification case. A failing verification case is an "
-            "unwelcome verdict and still owes evidence."
-        )
-    from yoke_core.domain.qa_requirement_supersession import latest_verdict
-
     requirements = query_rows(
         conn,
-        "SELECT id FROM qa_requirements WHERE plan_id=%s AND retracted_at IS NULL AND ("
+        "SELECT r.id, r.retracted_at, EXISTS(SELECT 1 FROM qa_runs run "
+        "WHERE run.qa_requirement_id=r.id) AS has_recorded_run "
+        "FROM qa_requirements r WHERE plan_id=%s AND qa_phase=%s AND ("
         "(item_id=%s AND (workflow_transition_id=%s "
         "OR workflow_transition_id IS NULL)) "
         "OR deployment_member_item_id=%s)",
-        (int(plan_id), int(item_id), str(transition_id), int(item_id)),
+        (
+            int(plan_id),
+            str(attachment["qa_phase"]),
+            int(item_id),
+            str(transition_id),
+            int(item_id),
+        ),
     )
     for row in requirements:
-        if latest_verdict(conn, int(row["id"])) == "pass":
+        if row["has_recorded_run"]:
             raise QaPlanError(
-                f"requirement {int(row['id'])} already recorded a passing "
-                "verdict, so retracting it would rewrite settled delivery "
-                "evidence"
+                f"attachment_has_recorded_run: requirement {int(row['id'])} "
+                "already has a recorded run or verdict; preserve its evidence "
+                "and use yoke qa requirement waive or supersede --help for "
+                "settlement instead of retracting the attachment"
             )
+    requirements = [row for row in requirements if not row["retracted_at"]]
     if not already_retracted:
         now = instant_parameter(conn, utc_now())
         conn.execute(
@@ -127,7 +129,7 @@ def retract_plan_from_item(
             event_name="QARequirementRetracted",
             requirement_id=req_id,
             qa_kind="plan_case",
-            qa_phase="post_deploy",
+            qa_phase=str(attachment["qa_phase"]),
             rationale=reason,
             source=source,
         )

@@ -103,8 +103,11 @@ What it does besides the write
   Replacing a verification selection retires what the previous one left
   behind: unexecuted requirement snapshots are waived (never deleted, so the
   history stays readable) and a superseded plan attachment is removed. A new
-  plan selection is attached at the review transition in the same
-  transaction, so `yoke qa plan materialize` works immediately afterwards.
+  plan selection records only the choice; it creates no attachment. Attach
+  verification explicitly with `yoke qa item-plan attach --item PREFIX-N
+  --project P --plan-id N --transition reviewing-implementation --qa-phase
+  verification`. For post-deploy acceptance, attach at the pinned release
+  stage with --qa-phase post_deploy; no posture selection is required.
   Amending back to a plan whose snapshots this waived leaves those rows
   waived; `yoke qa plan rematerialize --item PREFIX-N --transition
   reviewing-implementation` refreshes and un-waives them.

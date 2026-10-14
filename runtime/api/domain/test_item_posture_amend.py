@@ -93,15 +93,20 @@ def test_amend_selects_verification_so_attach_and_materialize_succeed() -> None:
             "kind": "plan",
             "plan_id": int(plan["id"]),
         }
-        # The amendment attaches the plan itself, so materialization is
-        # immediately reachable without a second attach call.
-        attached = conn.execute(
-            "SELECT plan_id, transition_id FROM qa_plan_item_attachments "
-            "WHERE item_id=%s",
-            (item_id,),
-        ).fetchone()
-        assert int(attached["plan_id"]) == int(plan["id"])
-        assert attached["transition_id"] == REVIEW
+        assert (
+            conn.execute(
+                "SELECT 1 FROM qa_plan_item_attachments WHERE item_id=%s", (item_id,)
+            ).fetchone()
+            is None
+        )
+        assert result["binding"] is None
+        attach_plan_to_item(
+            conn,
+            item_id=item_id,
+            plan_id=int(plan["id"]),
+            transition_id=REVIEW,
+            qa_phase="verification",
+        )
         materialized = materialize_for_item(
             conn,
             item_id=item_id,
@@ -140,14 +145,6 @@ def test_selecting_post_deploy_plan_creates_no_review_attachment() -> None:
         assert [(row["transition_id"], row["qa_phase"]) for row in attachments] == [
             ("release", "post_deploy"),
         ]
-        assert (
-            conn.execute(
-                "SELECT 1 FROM qa_requirements WHERE item_id=%s "
-                "AND qa_phase='verification'",
-                (item_id,),
-            ).fetchone()
-            is None
-        )
 
 
 def test_replacing_verification_retires_the_superseded_snapshot() -> None:
@@ -192,7 +189,7 @@ def test_replacing_verification_retires_the_superseded_snapshot() -> None:
             "ORDER BY plan_id",
             (item_id,),
         ).fetchall()
-        assert [int(row["plan_id"]) for row in attached] == [int(second["id"])]
+        assert attached == []
 
 
 def test_amend_refuses_over_a_recorded_run_and_names_the_recovery() -> None:

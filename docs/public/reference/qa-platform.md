@@ -259,15 +259,15 @@ or failing. Review bundle includes newly captured cases only. Independent pass
 undetermined supersedes nothing. Content refresh declares correction automatically;
 qa.requirement.supersede can declare one explicitly.
 
-**Retraction:** qa.item-plan.retract withdraws a mis-specified post-deploy item
-attachment; retain attachment/requirements as retracted history, not waiver or
+**Retraction:** qa.item-plan.retract withdraws a mis-specified unexecuted item
+attachment at any phase; retain attachment/requirements as retracted history, not waiver or
 supersession. Item becomes unanswered. Done/member/freshness readers exclude
 withdrawn obligations; summaries keep RETIRED/retracted_at history. Admission
 and frozen selection skip withdrawn attachments; replacement plan owes proof.
 For older frozen copies, repeat with item/project/plan-id/transition release/
 reason: retires remaining copies, preserves original withdrawal, refuses any
-passed copy. Re-drive scoped QA/run. Verification attachments and passed
-post-deploy cases refuse retraction.
+copy with a recorded run or verdict. Re-drive scoped QA/run. Preserve recorded
+evidence and use waiver or supersession to settle executed cases.
 
 Waiver/supersession answer every gate, including Dash verification/close-out.
 Supersession still needs current same-candidate pass within accepted revisions

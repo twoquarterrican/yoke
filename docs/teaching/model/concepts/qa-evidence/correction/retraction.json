@@ -1,7 +1,8 @@
 {
  "id": "retraction",
  "title": "Retraction",
- "status": "draft-copy",
+ "status": "observed",
  "page": "qa-evidence",
- "position": 4
+ "position": 4,
+ "summary": "A mis-scoped plan attachment at any phase can be retracted before any associated requirement records a run or verdict. Retraction preserves attachment and requirement history; executed cases require waiver or supersession instead."
 }

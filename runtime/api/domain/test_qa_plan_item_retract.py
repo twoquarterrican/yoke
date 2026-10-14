@@ -290,7 +290,7 @@ def test_a_failing_verification_case_is_not_retirable_this_way(test_db) -> None:
     test_db.commit()
     _record_verdict(test_db, requirement_id, "fail")
 
-    with pytest.raises(QaPlanError, match="unwelcome verdict|verification"):
+    with pytest.raises(QaPlanError, match="attachment_has_recorded_run"):
         from yoke_core.domain.qa_plan_attachment_retract import retract_plan_from_item
 
         retract_plan_from_item(
@@ -319,5 +319,5 @@ def test_a_passing_post_deploy_case_is_not_rewritten(test_db) -> None:
     created = _materialize_item(test_db, item_id=item_id)["created_requirement_ids"]
     _record_verdict(test_db, int(created[0]), "pass")
 
-    with pytest.raises(QaPlanError, match="settled delivery|passing"):
+    with pytest.raises(QaPlanError, match="attachment_has_recorded_run"):
         _retract(test_db, item_id=item_id, plan_id=plan_id)

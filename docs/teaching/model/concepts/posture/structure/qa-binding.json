@@ -2,7 +2,7 @@
  "id": "qa-binding",
  "title": "QA binding",
  "status": "observed",
- "summary": "Verification posture binds premerge plans at review. A live post_deploy plan attachment remains at release and creates no review attachment when selected in posture. Attach post-deploy plans directly without selecting posture; clear a mistaken review selection through item-posture amend.",
+ "summary": "Plan selection records the choice and creates no attachment. Explicit attachments name their phase and workflow transition: verification at review, post_deploy at release. Only matching phase obligations enforce each boundary. Post-deploy attachment needs no posture selection.",
  "commands": ["yoke workflows item-posture amend", "yoke qa item-plan attach"],
  "functions": ["workflows.item_posture.amend", "qa.item_plan.attach"],
  "sources": ["packages/yoke-core/src/yoke_core/domain/item_posture_bindings.py", ".agents/skills/yoke/dash/verify.md", "runtime/api/domain/test_item_posture_amend.py"],
