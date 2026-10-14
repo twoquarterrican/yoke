@@ -4,6 +4,19 @@ Workers merge, never create/dispatch runs. Steerer uses prod control plane even
 for stage target; ordinary external delivery is HTTPS. Yoke self-deploy first
 reads [source-dev-delivery.md](source-dev-delivery.md).
 
+## Stacked migration entries
+
+When several open items each carry a migration entry, assign ordinals up
+front. Each later item rebases its lane onto the previous item's branch
+(`git fetch origin && git rebase origin/<previous-item-branch>`), so the
+top branch carries every entry in order, and the top item's DB claim lists
+every stacked module. One `yoke migration rehearse` on the top item records
+each module's receipt and holds `LIVE_DB_MIGRATION:<model>` until that top
+item lands; a lower item's evidence gate accepts the receipt for its own
+module. Land in order — each later item rebases onto main after the one
+before lands — and ship the stack in one release with one fleet preflight
+per environment.
+
 ## Compose exact code/selected flow
 
 ```text
