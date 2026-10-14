@@ -110,6 +110,32 @@ def test_red_member_removal_retracts_only_its_outstanding_run_qa(
     )
 
 
+def test_removal_retracts_a_member_copy_that_passed_then_errored(test_db):
+    requirement = seed_member_qa_case(test_db, run_id=RUN, member_item_id=ITEM)
+    test_db.execute("UPDATE items SET status='release' WHERE id=%s", (ITEM,))
+    test_db.commit()
+    for verdict in ("pass", "error"):
+        record_case_verdict(test_db, requirement, verdict, evidence=True)
+    assert unresolved_blocking_qa(test_db, RUN)
+    release_seeded_driver(test_db, RUN)
+
+    cmd_remove_item(RUN, ITEM, reason=REASON, session_id="remover", actor_id=1)
+
+    assert (
+        test_db.execute(
+            "SELECT retraction_rationale FROM qa_requirements WHERE id=%s",
+            (requirement,),
+        ).fetchone()["retraction_rationale"]
+        == REASON
+    )
+    assert unresolved_blocking_qa(test_db, RUN) == []
+    verdicts = test_db.execute(
+        "SELECT verdict FROM qa_runs WHERE qa_requirement_id=%s ORDER BY id",
+        (requirement,),
+    ).fetchall()
+    assert [row["verdict"] for row in verdicts] == ["pass", "error"]
+
+
 @pytest.mark.parametrize(
     "change,reason",
     [
