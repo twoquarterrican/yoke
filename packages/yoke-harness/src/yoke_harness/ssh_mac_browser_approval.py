@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import re
 from typing import Any
 from urllib.parse import parse_qs, urlsplit, urlunsplit
 
@@ -32,6 +33,17 @@ def _approval_url(verification_url: str, user_code: str) -> tuple[str, str]:
     return coordinates.complete_uri, coordinates.origin
 
 
+def _canonical_selection_query(query: str) -> bool:
+    """Accept only the dashboard's single, unescaped selection parameter."""
+    if not query:
+        return True
+    match = re.fullmatch(r"selection=(all|[1-9][0-9]*(?:,[1-9][0-9]*)*)", query)
+    if match is None:
+        return False
+    members = match[1].split(",")
+    return len(members) == len(set(members))
+
+
 def _approval_tab_urls(expected_url: str, user_code: str, observed: list[str]) -> list[str]:
     """Allow the entry URL or its same-origin, exact-code organization route."""
     expected = urlsplit(expected_url)
@@ -47,7 +59,7 @@ def _approval_tab_urls(expected_url: str, user_code: str, observed: list[str]) -
         if (
             parsed.scheme == expected.scheme
             and parsed.netloc == expected.netloc
-            and not parsed.query
+            and _canonical_selection_query(parsed.query)
             and not parsed.fragment
             and len(parts) == 5
             and parts[1] == "orgs"

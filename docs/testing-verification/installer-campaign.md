@@ -86,7 +86,9 @@ does not grant approval authority; keep the selected human/fixture boundary.
 With the dedicated-machine approval exception, the visible Safari helper
 also accepts the declared origin's `/orgs/<org>/machine-approval/<code>`
 redirect from `/connect`. The code must match the displayed one-time code
-exactly; extra path segments, parameters, fragments and other origins refuse.
+exactly. The redirect may carry one canonical `selection=all` or a comma-separated
+list of unique positive project IDs. Unknown, repeated, empty or encoded query
+parameters, extra path segments, fragments and other origins refuse.
 The helper presses the visible approval control only in an exact validated
 tab and requires navigation from that tab's own starting URL. An unchanged
 redirect page is not approval evidence. Full hosted setup still requires the
