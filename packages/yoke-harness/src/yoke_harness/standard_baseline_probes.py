@@ -67,7 +67,7 @@ def _probe(name: str, program: str) -> dict:
 
 
 def standard_probes(os_name: str) -> list[dict]:
-    """Run harnesses without tools; only bounded success leaves the remote process."""
+    """Run harnesses without tools; only an exit code and a sanitized rejection leave the host."""
     if os_name not in {"macos", "linux", "windows"}:
         raise ValueError("baseline_probe_os_unsupported")
     source = (
@@ -87,7 +87,7 @@ def standard_probes(os_name: str) -> list[dict]:
             source
             + "\n"
             + f"""
-import os, shutil, subprocess, sys
+import json, os, shutil, subprocess, sys
 from pathlib import Path
 search = os.pathsep.join([str(Path.home() / '.local/bin'), os.environ.get('PATH', '')])
 executable = next((p for x in {executables!r} if (p := shutil.which(x, path=search))), None)
@@ -100,7 +100,11 @@ except subprocess.TimeoutExpired:
 except OSError:
     sys.exit(EXIT['probe_launch_failed'])
 if result.returncode != 0: sys.exit(EXIT['probe_harness_exit_nonzero'])
-sys.exit(0 if request.answered(result.stdout) else EXIT['probe_reply_unanswered'])
+rejection = request.reply_rejection(result.stdout)
+if rejection is None: sys.exit(0)
+# Only the sanitized rejection record leaves the host; the reply stays here.
+print(json.dumps({{**rejection, 'harness_exit_code': result.returncode}}))
+sys.exit(EXIT['probe_reply_unanswered'])
 """
         )
         probes.append(_probe(f"{name} real request", program))

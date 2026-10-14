@@ -124,6 +124,17 @@ Each sealed standard probe exits with a code from one table
 executable missing, request timed out, launch failed, harness non-zero exit,
 unanswered reply, or check unmet. No failure defaults to "not signed in", and
 `expectation_met` is null when nothing was expected.
+An unanswered reply is one the shared reply parser rejected while the harness
+exited 0. The parser prints only a sanitized `reply_rejection` record, and that
+record is the only output that leaves the host. It holds the rejection branch,
+the stream's event types in order, the final event's shape, the booleans
+`exact_ok_reply`, `tool_use` and `degraded_context` (lines that were not JSON
+events), and the harness exit code. It never holds reply text, account output
+or a transcript. The failed probe row keeps the record, so an operator-run
+reset or verify returns it in its result. A QA run whose baseline rejected a
+reply stores each record as a `probe_reply_rejection` JSON artifact and names
+the branch in its verdict reason. A golden sealed before these records returns
+none; its reason says so and asks for a recapture.
 An undeclared nonzero exit is retried exactly once before `baseline_probe_failed`;
 evidence retains the first attempt as `retrying`. Declared causes, unmet
 expectations and unavailable bridges fail immediately. A repeated

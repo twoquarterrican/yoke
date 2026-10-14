@@ -18,6 +18,7 @@ from yoke_harness.baseline_harness_requests import harness_request
 from yoke_harness.baseline_probe_failure_causes import (
     UNDECLARED_EXIT,
     classify_declared_failure,
+    with_reply_rejection,
 )
 from yoke_harness.ssh_mac_full_reset_contract import GOLDEN_PROBES_SUFFIX
 from yoke_harness.ssh_mac_gui_session import (
@@ -139,7 +140,7 @@ def _failed_row(
     *,
     exit_code: int | None,
     expectation_met: bool | None,
-    failure: dict[str, str],
+    failure: dict[str, Any],
 ) -> dict[str, Any]:
     """Record one failure as a named cause with its recovery."""
     return {
@@ -209,7 +210,7 @@ def run_baseline_probes(
             # Nothing expected is not an expectation met: it is reported as None.
             matched: bool | None = None
             if request:
-                matched = request.answered(stdout)
+                matched = request.reply_rejection(stdout) is None
             elif expectation is not None:
                 matched = expectation in "\n".join((stdout, stderr))
             if exit_code == 0 and matched is not False:
@@ -228,13 +229,16 @@ def run_baseline_probes(
                 if classify_gui_failures
                 else None
             )
-            failure = (
+            failure = with_reply_rejection(
                 _bridge_failure(classified.error_code, classified.reason)
                 if classified is not None
                 else standard_probe_failure(probe.name, exit_code)
                 or classify_declared_failure(
                     probe.name, exit_code, request=request, stdout=stdout, stderr=stderr
-                )
+                ),
+                request=request,
+                exit_code=exit_code,
+                stdout=stdout,
             )
             rows.append(
                 _failed_row(

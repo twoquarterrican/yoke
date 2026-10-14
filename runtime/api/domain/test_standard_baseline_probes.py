@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from yoke_harness.baseline_harness_requests import read_rejection_record
 from yoke_harness.baseline_probe_failure_causes import PROBE_EXIT_CODES
 from yoke_harness.standard_baseline_probes import (
     CHECKLIST,
@@ -90,7 +91,19 @@ def test_sealed_request_program_checks_native_completion_without_leaking_output(
     )
     result = _run_probe(probe, tmp_path)
     assert (result.returncode == 0) == (answer == "OK"), result.stderr
-    assert result.stdout == result.stderr == ""
+    assert result.stderr == ""
+    if answer == "OK":
+        assert result.stdout == ""
+        return
+    # A rejection leaves only its sanitized record; never the reply itself.
+    assert answer not in result.stdout
+    record = read_rejection_record(result.stdout)
+    assert record is not None, result.stdout
+    assert record["harness"] == name
+    assert record["rejection"] == "reply_not_exact"
+    assert record["harness_exit_code"] == 0
+    assert record["exact_ok_reply"] is record["tool_use"] is False
+    assert record["final_event"]["answer_length"] == len(answer)
 
 
 @pytest.mark.parametrize("setting", [None, False, "true", True])

@@ -19,6 +19,11 @@ def insert_mission_docket(
     from yoke_core.domain.machine_qa_execution_protocol import (
         host_control_submission_receipt,
     )
+    from yoke_core.domain.probe_reply_rejection_evidence import (
+        record_reply_rejections,
+        rejection_verdict_reason,
+        reply_rejections,
+    )
     from yoke_core.domain.qa_capture_agreement import AGENT_MISSION_DOCKET_REASON
     from yoke_core.domain.qa_plan_execution_store import canonical
     from yoke_core.domain.qa_requirement_pass_currency import (
@@ -40,6 +45,12 @@ def insert_mission_docket(
 
     failed = not preparation["ok"]
     failure = preparation["evidence"].get("preparation_failure", {})
+    rejections = reply_rejections(preparation["evidence"])
+    reason = " | ".join(
+        part
+        for part in (rejection_verdict_reason(rejections), failure.get("diagnostic"))
+        if part
+    )
     run_id = insert_qa_run(
         conn,
         qa_requirement_id=int(case["requirement_id"]),
@@ -48,7 +59,7 @@ def insert_mission_docket(
         execution_status="capture_failed" if failed else "captured",
         case_outcome="blocked_on_precondition" if failed else "needs_review",
         verdict="error" if failed else None,
-        verdict_reason=failure.get("diagnostic") if failed else None,
+        verdict_reason=(reason or None) if failed else None,
         capture_degraded_reason=preparation.get("error_code")
         if failed
         else AGENT_MISSION_DOCKET_REASON,
@@ -61,6 +72,14 @@ def insert_mission_docket(
         completed_at=now,
         created_at=now,
     ).run_id
+    record_reply_rejections(
+        conn,
+        requirement_id=int(case["requirement_id"]),
+        run_id=run_id,
+        rejections=rejections,
+        metadata={"executor": executor, "baseline": preparation.get("baseline")},
+        created_at=now,
+    )
     result = {
         "requirement_id": int(case["requirement_id"]),
         "runner_id": "agent_mission",
@@ -73,7 +92,7 @@ def insert_mission_docket(
     if failed:
         result.update(
             error_code=preparation.get("error_code"),
-            error=failure.get("diagnostic"),
+            error=reason or None,
             recovery=failure.get("recovery"),
         )
     return run_id, result
