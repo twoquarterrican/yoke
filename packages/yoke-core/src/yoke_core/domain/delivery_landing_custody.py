@@ -21,13 +21,18 @@ from yoke_core.domain import db_backend
 from yoke_core.domain.conflict_survey_declared_paths import TERMINAL_STATUSES
 from yoke_core.domain.deployment_run_candidate_containment import (
     UNDETERMINED as CONTAINMENT_UNDETERMINED,
-    candidate_contains_commit,
+    CandidateContainment,
 )
 from yoke_core.domain.deployment_run_bound_sources import (
     BOUND_SOURCES_FIELD,
     bound_sources_recorded,
 )
 from yoke_core.domain.deployment_run_project_sources import recorded_source_sha
+from yoke_core.domain.item_json_sections import read_json_sections
+from yoke_core.domain.item_merge_receipt_document import (
+    MERGE_RECEIPTS_SECTION,
+    newest_first,
+)
 from yoke_core.domain.runs import ACTIVE_RUN_STATUSES, RunStatus
 from yoke_core.domain.schema_common import _column_exists, _table_exists
 
@@ -116,16 +121,7 @@ def landing_stamp_columns(conn: Any) -> tuple[str, ...]:
 
 
 def merged_open_items(conn: Any, project_id: int) -> tuple[dict[str, Any], ...]:
-    """This project's items that landed and never reached a terminal status.
-
-    The one definition of "merged but still open", shared by the steering
-    report's landed section and by run enrollment, so the two can never
-    disagree about which items are even in the conversation.
-
-    Each row carries the workflow the item pins, because what close-out
-    requires is a property of that workflow: a reader recommending the
-    command has to know whether its terminal transition is evidence-gated.
-    """
+    """Landed nonterminal items and their pinned close-out workflows."""
     columns = landing_stamp_columns(conn)
     if not columns:
         return ()
@@ -207,11 +203,27 @@ def _member_runs(
 
 
 def _landing_shas(conn: Any, item_ids: Sequence[int]) -> dict[int, str]:
-    from yoke_core.domain.delivery_evidence_ladder import item_merge_identity
-
-    return {
-        int(item_id): item_merge_identity(conn, int(item_id)) for item_id in item_ids
-    }
+    documents = read_json_sections(
+        conn, item_ids=item_ids, section=MERGE_RECEIPTS_SECTION
+    )
+    identities = {}
+    for item_id, document in documents.items():
+        entries = document.get("receipts")
+        if not isinstance(entries, Mapping):
+            continue
+        ordered = newest_first(
+            {
+                str(key): value
+                for key, value in entries.items()
+                if isinstance(value, Mapping)
+            }
+        )
+        commit, merge = "", ""
+        for entry in ordered:
+            commit = commit or str(entry.get("commit_sha") or "").strip()
+            merge = merge or str(entry.get("merge_sha") or "").strip()
+        identities[item_id] = merge or commit
+    return identities
 
 
 def _custody_for(
@@ -221,6 +233,7 @@ def _custody_for(
     project_id: int,
     landing_sha: str,
     runs: Sequence[Mapping[str, Any]],
+    candidates: dict[str, CandidateContainment],
 ) -> LandingCustody:
     """Walk one item's member runs for the first that carries this landing."""
     if not runs:
@@ -246,12 +259,11 @@ def _custody_for(
         lineage = recorded_source_sha(dict(run), int(project_id))
         if not lineage:
             continue
-        verdict = candidate_contains_commit(
-            conn,
-            int(project_id),
-            candidate_lineage=lineage,
-            commit_sha=landing_sha,
-        )
+        if lineage not in candidates:
+            candidates[lineage] = CandidateContainment(
+                conn, int(project_id), candidate_lineage=lineage
+            )
+        verdict = candidates[lineage].contains(landing_sha)
         if verdict.contained:
             return LandingCustody(
                 item_id=item_id,
@@ -293,18 +305,16 @@ def landing_custody(
 ) -> dict[int, LandingCustody]:
     """Answer custody for every one of ``item_ids`` in one pass.
 
-    Batched because both callers ask about a whole project's landed items at
-    once, and the membership read is the part worth doing once. Containment
-    is still asked per item: it is a comparison against that item's own
-    commit, and there is no cheaper shape for it. ``exclude_run_id`` asks who
-    OTHER than that run holds it, the only sound question a run can ask while
-    reasoning about its own composition.
+    Membership and landing receipts are batched. One comparison source per
+    candidate serves every item; immutable definite answers survive requests.
+    Excluding a run asks who OTHER than that run holds its members.
     """
     ids = [int(value) for value in item_ids]
     if not ids:
         return {}
     runs = _member_runs(conn, ids, exclude_run_id=str(exclude_run_id))
     shas = _landing_shas(conn, ids)
+    candidates: dict[str, CandidateContainment] = {}
     return {
         item_id: _custody_for(
             conn,
@@ -312,6 +322,7 @@ def landing_custody(
             project_id=int(project_id),
             landing_sha=shas.get(item_id, ""),
             runs=runs.get(item_id, ()),
+            candidates=candidates,
         )
         for item_id in ids
     }

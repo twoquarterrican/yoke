@@ -161,6 +161,11 @@ holders, aged working holder + landing, unavailable flow, remerged/unreadable
 custody or actionable run keeps full detail. Section owns these rows; never
 duplicates idle/live holders or members already shown in deployment runs.
 
+Custody batches landing receipt reads and reuses one comparison source per
+project and release commit. Definite containment answers for full commit hashes
+are cached across requests in bounded process storage, keyed by repository and
+commit pair; unknown answers retry. Membership, holder and flow state stay live.
+
 Close-out requires holder claim: never propose seat recovery against a live
 holder. Orphan rows alone name pinned workflow recovery including --result/
 --verification when close_out_evidence_gate requires them. delivery_landing_custody
