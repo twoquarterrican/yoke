@@ -20,8 +20,10 @@ from __future__ import annotations
 
 import io
 from dataclasses import dataclass
-from typing import Any, Optional, TextIO
+from typing import Any
 
+from yoke_contracts.api.function_call import TargetRef
+from yoke_core.api.service_client_structured_api_adapter import call_dispatcher
 from yoke_core.domain import db_backend
 from yoke_core.domain.dash_execution import evaluate_dash_evidence
 from yoke_core.domain.delivery_evidence_ladder import item_merge_identity
@@ -158,41 +160,69 @@ def stage_member_close(
     )
 
 
+def _closed_item(public_ref: str) -> tuple[dict[str, Any], str]:
+    """The closed member as terminal lane cleanup reads it, or why it could not.
+
+    The same ``items.detail.get`` read a standalone close-out retires lanes
+    from: the project names this machine's checkout and the target branch,
+    and the lane rows name what to retire.
+    """
+    try:
+        response = call_dispatcher(
+            function_id="items.detail.get",
+            target=TargetRef(kind="item", public_ref=public_ref),
+            payload={},
+        )
+    except Exception as exc:  # noqa: BLE001 - reported as a cleanup warning
+        return {}, str(exc) or exc.__class__.__name__
+    if not response.success:
+        error = response.error
+        return {}, error.message if error is not None else "item read refused"
+    return (response.result or {}).get("item") or {}, ""
+
+
+def _retire_closed_member_lanes(public_ref: str) -> list[str]:
+    """Retire the closed member's lanes and sweep; return what was preserved."""
+    from yoke_core.domain.terminal_lane_cleanup import record_terminal_lane_close_out
+
+    item, refusal = _closed_item(public_ref)
+    if refusal:
+        return [
+            f"{public_ref}: terminal lane cleanup preserved: the item could not "
+            f"be read ({refusal})"
+        ]
+    envelope: dict[str, Any] = {"warnings": []}
+    record_terminal_lane_close_out(item, envelope, target_status=CLOSED_OUT_STATUS)
+    return list(envelope["warnings"])
+
+
 def run_closed_member_effects(
     conn: Any,
     *,
     item_id: int,
     public_ref: str,
     receipt: Any = None,
-    out: Optional[TextIO] = None,
 ) -> str:
     """Run a closed member's post-commit effects; name any that failed.
 
     Every step is idempotent, so a replay over a member whose effects
     already ran repeats nothing harmful. ``receipt`` is the status write's
     own effect receipt, held only by the pass that committed the close.
+    Lane cleanup is best-effort: what it preserved is printed with the
+    recovery that retires it, and never fails the close.
     Returns ``""`` when every effect finished.
     """
     from yoke_core.domain.backlog_update_effects import (
         run_post_commit_update_effects,
     )
     from yoke_core.domain.standalone_item_merge import sync_item_to_github
-    from yoke_core.domain.terminal_lane_cleanup import record_terminal_lane_close_out
+    from yoke_core.domain.worktree_capacity import DOCTOR_RETIRE_RECIPE
 
-    sink = out if out is not None else io.StringIO()
     try:
         if receipt is not None:
-            run_post_commit_update_effects(conn, receipt=receipt, out=sink)
+            run_post_commit_update_effects(conn, receipt=receipt, out=io.StringIO())
         github_error = sync_item_to_github(int(item_id))
-        envelope: dict[str, Any] = {"warnings": []}
-        if github_error:
-            envelope["warnings"].append(f"GitHub sync skipped: {github_error}")
-        record_terminal_lane_close_out(
-            {"id": int(item_id), "public_ref": public_ref, "claim": None},
-            envelope,
-            target_status=CLOSED_OUT_STATUS,
-            landing_recorded=True,
-        )
+        lane_warnings = _retire_closed_member_lanes(public_ref)
         _end_previous_claim_holders_if_empty(conn, item_id=int(item_id))
     except Exception as exc:  # noqa: BLE001 - reported; the close stays committed
         try:
@@ -200,6 +230,16 @@ def run_closed_member_effects(
         except Exception:  # noqa: BLE001 - the failure below is what is reported
             pass
         return str(exc) or exc.__class__.__name__
+    if github_error:
+        print(f"{public_ref}: GitHub sync skipped: {github_error}", flush=True)
+    for warning in lane_warnings:
+        print(f"Lane cleanup warning: {warning}", flush=True)
+    if lane_warnings:
+        print(
+            f"{public_ref}: once each preserved lane is resolved, retire it "
+            f"with `{DOCTOR_RETIRE_RECIPE}` on the machine holding it.",
+            flush=True,
+        )
     if receipt is not None:
         print(
             f"{public_ref}: post-deploy obligations satisfied; closed without a wake."

@@ -159,7 +159,7 @@ def test_an_effects_failure_keeps_members_done_and_replay_finishes_it(
     _isolate_status_effects(monkeypatch)
     _five_ready_members(test_db)
     _executing_run(test_db, "run-effects")
-    retired: list[int] = []
+    retired: list[str] = []
 
     def _broken(item, envelope, **_kwargs):
         raise RuntimeError("lane cleanup unavailable")
@@ -178,14 +178,16 @@ def test_an_effects_failure_keeps_members_done_and_replay_finishes_it(
         assert not _claim_held(test_db, item_id)
 
     def _retire(item, envelope, **_kwargs):
-        retired.append(int(item["id"]))
+        retired.append(str(item["public_ref"]))
 
     monkeypatch.setattr(
         terminal_lane_cleanup, "record_terminal_lane_close_out", _retire
     )
     assert cmd_update("run-effects", "status", "succeeded") is None
 
-    assert sorted(retired) == list(MEMBERS)
+    assert sorted(retired) == sorted(
+        render_item_ref(test_db, item_id) for item_id in MEMBERS
+    )
     assert _run(test_db, "run-effects") == ("succeeded", True)
 
 

@@ -33,7 +33,6 @@ marked succeeded.
 
 from __future__ import annotations
 
-import io
 from typing import Any, Optional
 
 from yoke_core.domain.db_helpers import instant_parameter, utc_now
@@ -313,7 +312,6 @@ def _effects_phase(conn: Any, run_id: str, staged: list[Any]) -> Optional[str]:
             item_id=item_id,
             public_ref=str(member["public_ref"]),
             receipt=receipts.get(item_id),
-            out=io.StringIO(),
         )
         if failure:
             failed.append(

@@ -24,8 +24,10 @@ from yoke_core.domain.worktree_create_db import (
     prepare_authoritative_item_worktrees,
     provisioning_project,
 )
+from yoke_core.domain.worktree_capacity import retire_finished_lanes
 from yoke_core.domain.worktree_create_plan import (
     WorktreeCreationEntry,
+    WorktreeCreationPlan,
     dirty_main_error,
     preflight_worktree_plan,
 )
@@ -225,15 +227,23 @@ def create_worktree(
         5,
         config_path=config_path,
     )
-    active_count, active_names = _count_active_worktrees(repo_root, worktrees_dir)
-    plan = preflight_worktree_plan(
-        raw_worktrees,
-        repo_root,
-        worktrees_dir,
-        max_wt,
-        active_count,
-        active_names,
-    )
+
+    def preflight() -> WorktreeCreationPlan:
+        active_count, active_names = _count_active_worktrees(repo_root, worktrees_dir)
+        return preflight_worktree_plan(
+            raw_worktrees,
+            repo_root,
+            worktrees_dir,
+            max_wt,
+            active_count,
+            active_names,
+            base_branch or "",
+        )
+
+    plan = preflight()
+    if plan.capacity_refused and base_branch:
+        retire_finished_lanes(repo_root, base_branch.removeprefix("origin/"))
+        plan = preflight()
     if plan.error:
         primary = plan.primary or (plan.worktrees[0] if plan.worktrees else None)
         return CreateWorktreeResult(

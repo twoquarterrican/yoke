@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
-from yoke_core.domain import db_backend
+from yoke_core.domain import db_backend, worktree_create
 from yoke_core.domain.project_seed_test_helpers import SEED_PROJECT_IDS
 from yoke_core.domain.item_worktrees import (
     list_item_worktrees,
@@ -230,6 +230,35 @@ class TestCreateWorktree:
         assert result.error is not None
         assert "max_active_worktrees" in result.error
         assert result.created is False
+
+    def test_full_checkout_sweeps_before_refusing(self, git_repo, yoke_db):
+        cfg = git_repo / "runtime" / "config"
+        cfg.write_text("worktrees_dir=.worktrees\nmax_active_worktrees=1\n")
+        config_path = str(cfg)
+        for lane_item in (1, 2):
+            seed_lane_item(yoke_db, lane_item)
+        first = create_worktree(
+            1, project="yoke", repo_root=str(git_repo), config_path=config_path
+        )
+        swept: list[tuple[str, str]] = []
+
+        def _retire(repo_root: str, target: str) -> None:
+            swept.append((repo_root, target))
+            subprocess.run(
+                ["git", "worktree", "remove", first.path],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+            )
+
+        with patch.object(worktree_create, "retire_finished_lanes", _retire):
+            result = create_worktree(
+                2, project="yoke", repo_root=str(git_repo), config_path=config_path
+            )
+
+        assert swept and swept[0][1] == "main"
+        assert result.error is None
+        assert result.created is True
 
     def test_nonexistent_repo(self, tmp_path):
         """Worktree creation fails gracefully when repo doesn't exist."""
