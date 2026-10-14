@@ -20,8 +20,9 @@ instead:
   service manager's stop deadline; release repinning retains its own window.
   Durable leases, native custody and pending reports survive interrupted jobs.
 
-Failure bursts log immediately, periodically, and on recovery. Transient
-cycle exceptions stay visible without ending the relay or flooding its log.
+Failure bursts log immediately, periodically, and on recovery; a failed poll
+backs off exponentially. A credential rejected for good stops the daemon with
+exit 0, which the service manager does not restart.
 
 A new served build is installed beside the running release and ends in
 ``exec`` rather than exit. Failed fetches leave the prior process and venv
@@ -33,6 +34,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 from pathlib import Path
+import random
 import signal
 import threading
 import time
@@ -40,11 +42,23 @@ from typing import Callable, Sequence
 
 from yoke_contracts.session_control.relay_health import RELAY_NEWER_THAN_SERVER
 from yoke_cli.transport import control_plane_payload
-from yoke_harness.session_relay import ServeOnceOutcome, run_serve_cycle
+from yoke_harness.session_relay import (
+    CREDENTIAL_REJECTED,
+    ServeOnceOutcome,
+    run_serve_cycle,
+)
 from yoke_harness.session_relay_failure_log import FailureReporter
 from yoke_harness.session_relay_supervision import RelayStopRequested, Supervisor
-from yoke_harness.session_relay_poll_health import reset_poll_outcome
-from yoke_harness.session_relay_schedule import relay_run_lock, relay_state_dir
+from yoke_harness.session_relay_poll_health import (
+    connection_recovery,
+    record_poll_failure,
+    reset_poll_outcome,
+)
+from yoke_harness.session_relay_schedule import (
+    record_next_poll,
+    relay_run_lock,
+    relay_state_dir,
+)
 from yoke_harness.session_relay_process_restart import exec_relay_release
 from yoke_harness.session_relay_stop_deadline import read_stop_settlement_seconds
 
@@ -58,7 +72,17 @@ IDLE_TICK_SECONDS = 0.5
 # by its own attempt record, so waiting past this only delays the restart.
 DRAIN_TIMEOUT_SECONDS = 120
 
+# Doubles per consecutive failed poll, jittered so machines do not retry in step.
+POLL_BACKOFF_INITIAL_SECONDS = 5
+POLL_BACKOFF_MAX_SECONDS = 300
+
 _LOGGER = logging.getLogger(__name__)
+
+
+def poll_backoff_seconds(consecutive_failures: int) -> int:
+    exponent = min(max(consecutive_failures, 1) - 1, 16)
+    ceiling = min(POLL_BACKOFF_MAX_SECONDS, POLL_BACKOFF_INITIAL_SECONDS << exponent)
+    return random.randint(max(1, ceiling // 2), ceiling)
 
 
 def _observed_server_build() -> control_plane_payload.ObservedServerBuild:
@@ -211,6 +235,7 @@ def _serve_under_lock(
         reset_poll_outcome(resolved)
         supervisor = Supervisor(max_job_workers, failures, stop)
         cycles = 0
+        failed_polls = 0
         last_state = ""
         replacement: Path | None = None
         try:
@@ -231,6 +256,17 @@ def _serve_under_lock(
                     last_state = "poll_failed"
                 else:
                     last_state = str(getattr(outcome, "state", ""))
+                    if last_state == CREDENTIAL_REJECTED:
+                        code = str(getattr(outcome, "error_code", None) or last_state)
+                        record_poll_failure(resolved, error_code=code)
+                        _LOGGER.error(
+                            "relay stopped: credential rejected (%s); "
+                            "class=relay_failure outcome=stopped recovery=%s",
+                            code,
+                            connection_recovery(code),
+                        )
+                        stop.set(CREDENTIAL_REJECTED)
+                        break
                     if last_state in {"claim_failed", RELAY_NEWER_THAN_SERVER}:
                         code = getattr(outcome, "error_code", None) or last_state
                         failures.failed(
@@ -248,6 +284,15 @@ def _serve_under_lock(
                         if last_state == "reported":
                             failures.recovered("report")
                 cycles += 1
+                if last_state in {"claim_failed", "poll_failed"}:
+                    failed_polls += 1
+                    record_next_poll(
+                        poll_backoff_seconds(failed_polls),
+                        resolved,
+                        started_at=time.time(),
+                    )
+                elif last_state != "backoff":
+                    failed_polls = 0
                 observation_after = (
                     served_build_observer() if pin_served_release is not None else None
                 )
@@ -300,5 +345,6 @@ __all__ = [
     "DRAIN_TIMEOUT_SECONDS",
     "IDLE_TICK_SECONDS",
     "DaemonOutcome",
+    "poll_backoff_seconds",
     "serve_forever",
 ]

@@ -33,8 +33,8 @@ from yoke_core.tools import session_relay_release_install as relay_install
 
 
 RELAY_LAUNCHD_LABEL = PROD_RELAY_LABEL
-# The daemon owns polling cadence; launchd only keeps its process alive.
-RELAY_KEEP_ALIVE = True
+# launchd restarts a crash; exit 0 is the daemon's own stop (rejected credential).
+RELAY_KEEP_ALIVE = {"SuccessfulExit": False}
 
 
 class RelayInstallError(RuntimeError):
