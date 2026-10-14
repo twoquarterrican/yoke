@@ -12,6 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from yoke_harness.ssh_linux_sign_in_stores import NO_SIGN_IN_PLAN
 from yoke_contracts.machine_config.test_machine import validate_test_machine_settings
 from yoke_harness.ssh_linux_baseline import (
     ABSENT_HOME_PATHS,
@@ -165,9 +166,7 @@ def test_archive_operation_records_malformed_transport_receipt_as_named_failure(
     monkeypatch.setattr(
         ssh_linux_baseline,
         "reset_preflight",
-        lambda *a: HostActionResult(
-            True, {"sign_in_plan": {"carry": [], "unverified": {}}}
-        ),
+        lambda *a: HostActionResult(True, {"sign_in_plan": NO_SIGN_IN_PLAN}),
     )
     control = SimpleNamespace(
         home="/home/tester",

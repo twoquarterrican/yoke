@@ -26,6 +26,8 @@ SIGN_IN_STORES = {
     "Cursor real request": ".config/cursor/auth.json",
 }
 SIGN_IN_NEWER_THAN_BASELINE = "test_machine_sign_in_newer_than_baseline"
+#: The plan for an operation that carries nothing forward (capture).
+NO_SIGN_IN_PLAN: dict = {"carry": [], "unverified": {}}
 
 
 def verify_sign_in_stores(control: Any, probes: Sequence[BaselineProbe]) -> dict:
@@ -106,6 +108,7 @@ def restore_sign_ins(stashes):
 
 
 __all__ = [
+    "NO_SIGN_IN_PLAN",
     "SIGN_IN_NEWER_THAN_BASELINE",
     "SIGN_IN_PROGRAM",
     "SIGN_IN_STORES",
