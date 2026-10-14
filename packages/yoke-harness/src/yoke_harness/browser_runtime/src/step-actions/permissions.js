@@ -63,6 +63,36 @@ function unsupported(detail) {
 }
 
 /**
+ * Grant clipboard-read and clipboard-write on a browser context.
+ *
+ * Called when the runtime opens a context, so a case that clicks Copy works
+ * without a new step. Chromium accepts the grant for the context. Any other
+ * surface is refused by name.
+ *
+ * @param {import('playwright').BrowserContext} context
+ * @returns {Promise<void>}
+ */
+async function grantClipboardOnContext(context) {
+  if (!context || typeof context.grantPermissions !== 'function') {
+    throw unsupported('this browser surface has no permission grant.');
+  }
+  const name = browserName(context);
+  if (name && name !== 'chromium') {
+    throw unsupported(
+      `${name} cannot grant clipboard-read and clipboard-write.`
+    );
+  }
+  try {
+    await context.grantPermissions(CLIPBOARD_PERMISSIONS);
+  } catch (err) {
+    const detail = err && err.message ? err.message : String(err);
+    throw unsupported(
+      `the browser refused clipboard-read and clipboard-write (${detail}).`
+    );
+  }
+}
+
+/**
  * Grant clipboard-read and clipboard-write for the open page's origin.
  *
  * @param {import('playwright').Page} page
@@ -96,4 +126,5 @@ async function executeGrantClipboard(page) {
 
 module.exports = {
   executeGrantClipboard,
+  grantClipboardOnContext,
 };

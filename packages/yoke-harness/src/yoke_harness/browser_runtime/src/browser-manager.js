@@ -24,6 +24,7 @@ const crypto = require('crypto');
 const { chromium } = require('playwright');
 const { launchOptions } = require('./browser-executable');
 const { applyColorScheme, validateColorScheme } = require('./page-color-scheme');
+const { grantClipboardOnContext } = require('./step-actions/permissions');
 
 /**
  * @param {Object} options
@@ -51,11 +52,25 @@ function createBrowserManager(options = {}) {
       // A persistent context owns its own browser process; Playwright returns
       // no Browser handle for it, so `context` is the lifecycle authority.
       context = await chromium.launchPersistentContext(profileDir, { ...launchOptions(), headless, chromiumSandbox: true });
-      return context;
+    } else {
+      browser = await chromium.launch({ ...launchOptions(), headless, chromiumSandbox: true });
+      context = await browser.newContext();
     }
-    browser = await chromium.launch({ ...launchOptions(), headless, chromiumSandbox: true });
-    context = await browser.newContext();
-    return browser;
+    try {
+      // Copy on the open page works without a case adding a step. A surface
+      // that cannot grant clipboard permission fails here, by name.
+      await grantClipboardOnContext(context);
+    } catch (err) {
+      try {
+        await (browser || context).close();
+      } catch (_) {
+        // The browser may already be gone.
+      }
+      browser = null;
+      context = null;
+      throw err;
+    }
+    return browser || context;
   }
 
   function getBrowser() {

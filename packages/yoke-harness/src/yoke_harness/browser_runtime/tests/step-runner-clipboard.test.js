@@ -8,6 +8,7 @@
 
 const http = require('http');
 const { chromium } = require('playwright');
+const { createBrowserManager } = require('../src/browser-manager');
 const { executeStep } = require('../src/step-runner');
 const { executeGrantClipboard } = require('../src/step-actions/permissions');
 
@@ -48,6 +49,30 @@ function listen() {
     server.listen(0, '127.0.0.1', () => resolve(server));
     server.on('error', reject);
   });
+}
+
+async function testContextGrantLetsCopyWork() {
+  console.log('\n## Test: opening a context grants clipboard write');
+  const server = await listen();
+  const { port } = server.address();
+  const origin = `http://127.0.0.1:${port}`;
+  const manager = createBrowserManager({ headless: true });
+  await manager.launch();
+  try {
+    const page = await manager.getPage(`${origin}/`);
+    const written = await page.evaluate(async () => {
+      await navigator.clipboard.writeText('yoke-clipboard');
+      return navigator.clipboard.readText();
+    });
+    assertEqual(
+      written,
+      'yoke-clipboard',
+      'writeText succeeds without a grant_clipboard step'
+    );
+  } finally {
+    await manager.closeBrowser();
+    await new Promise((resolve) => server.close(resolve));
+  }
 }
 
 async function testWriteSucceedsAfterGrant() {
@@ -129,6 +154,7 @@ async function testOtherBrowserIsRefused() {
 async function run() {
   console.log('=== Step Runner Tests: Clipboard ===');
   try {
+    await testContextGrantLetsCopyWork();
     await testWriteSucceedsAfterGrant();
     await testNonHttpOriginIsRefused();
     await testOtherBrowserIsRefused();
