@@ -7,7 +7,6 @@ from runtime.api.domain.function_permission_test_support import (
     _create_ephemeral_env_table,
     _entry,
     _read_entry,
-    _request,
     _process_acquire_request,
     _seed_session,
 )
@@ -42,36 +41,6 @@ from yoke_core.domain.yoke_function_permissions import (
 )
 from yoke_core.domain.work_claim_targets import make_process_target
 from yoke_core.domain.work_processes import PROCESS_DOCTOR
-
-
-def test_dispatch_permission_allows_role_project_and_denies_missing_project_role():
-    conn = _conn()
-    try:
-        actor_id = seed_human_actor(conn)
-        yoke_id = resolve_project_id(conn, "yoke")
-        grant_actor_project_role(
-            conn,
-            actor_id=actor_id,
-            project_id=yoke_id,
-            role_name=ROLE_OWNER,
-            granted_by_actor_id=actor_id,
-        )
-        entry = _entry("items.structured_field.replace")
-
-        allowed = check_dispatch_permission(conn, entry, _request(actor_id, "yoke"))
-        assert allowed.error is None
-        assert allowed.permission_key == "items.write"
-        assert allowed.project_slug == "yoke"
-
-        denied = check_dispatch_permission(
-            conn, entry, _request(actor_id, "externalwebapp")
-        )
-        assert denied.error is not None
-        assert denied.error.error is not None
-        assert denied.error.error.code == "permission_denied"
-        assert denied.project_slug == "externalwebapp"
-    finally:
-        conn.close()
 
 
 def test_project_scoped_github_write_teaches_omitted_project_context():

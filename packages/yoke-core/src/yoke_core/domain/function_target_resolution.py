@@ -59,28 +59,22 @@ def resolve_project_context(
             )
         except (KeyError, TypeError, ValueError):
             return None
+    if request.target.kind == "item":
+        item_id = request.target.item_id
+        return resolve_item_project(conn, int(item_id)) if item_id is not None else None
     if entry.function_id == "ephemeral_env.update":
         try:
             env_id = int(request.payload.get("env_id"))
         except (TypeError, ValueError):
             return None
         return resolve_ephemeral_env_project(conn, env_id)
-    if entry.function_id == "github_actions.run.rerun_failed":
-        item_id = request.target.item_id
-        if request.target.kind != "item" or item_id is None:
-            return None
-        return resolve_item_project(conn, int(item_id))
     if entry.function_id.startswith("github_actions."):
         return _resolve_github_actions_project_context(
-            conn,
-            request,
-            visible_project_ids=visible_project_ids,
+            conn, request, visible_project_ids=visible_project_ids
         )
     if entry.function_id in PAYLOAD_NAMED_PROJECT_FUNCTIONS:
         return _resolve_named_project_context(
-            conn,
-            request,
-            visible_project_ids=visible_project_ids,
+            conn, request, visible_project_ids=visible_project_ids
         )
     if entry.function_id.startswith("ouroboros.entry.") and request.payload.get(
         "entry_id"
