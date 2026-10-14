@@ -44,6 +44,8 @@ fixtures across shards or workers. Local partial splitting keeps pytest-split's
 ordinary individual-test behavior.
 Files enter the worker queue in descending measured duration; xdist's default
 test-count reorder is disabled so short, expensive files start early.
+Each shard log records CPU model, core count, and a short Python-loop timing
+for diagnosing runner variation. This telemetry never changes test selection.
 GitHub-sync test databases clone the existing per-worker production schema
 template rather than replaying schema DDL for every case; their project and
 actor seeds and connection-close isolation remain per case.

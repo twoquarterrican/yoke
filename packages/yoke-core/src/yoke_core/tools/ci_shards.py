@@ -26,6 +26,7 @@ import math
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Sequence
 
@@ -240,6 +241,8 @@ def _run_shard(group: int) -> int:
     """
     if group < 1 or group > SHARD_COUNT:
         raise SystemExit(f"shard {group} is outside 1..{SHARD_COUNT}")
+    capacity = runner_capacity()
+    print(capacity, flush=True)
     process = subprocess.Popen(
         pytest_command(group),
         stdout=subprocess.PIPE,
@@ -249,11 +252,33 @@ def _run_shard(group: int) -> int:
     )
     assert process.stdout is not None
     with Path(OUTPUT_LOG).open("w", encoding="utf-8") as log:
+        log.write(capacity + "\n")
         for line in process.stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
             log.write(line)
     return process.wait()
+
+
+def runner_capacity() -> str:
+    """Cheap diagnostic capacity evidence; it never controls test selection."""
+    cpuinfo = Path("/proc/cpuinfo")
+    model = "unavailable"
+    try:
+        model = next((line.partition(":")[2].strip()
+                      for line in cpuinfo.read_text().splitlines()
+                      if line.startswith("model name")), model)
+    except (OSError, UnicodeError):
+        pass  # Missing capacity telemetry proves nothing and never blocks tests.
+    samples = []
+    for _ in range(3):
+        started = time.perf_counter()
+        sum(value * value for value in range(300_000))
+        samples.append(time.perf_counter() - started)
+    return "CI runner capacity: " + json.dumps({
+        "cpu_model": model, "cpu_count": os.cpu_count(),
+        "python_loop_seconds": sorted(samples)[1],
+    }, sort_keys=True)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
