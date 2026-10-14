@@ -109,25 +109,25 @@ def _require_removable(conn: Any, run_id: str, item_id: int) -> str:
     return status
 
 
-def retract_outstanding_member_copies(
-    conn: Any, run_id: str, *, item_id: int | None = None, reason: str
+def retract_member_copies(
+    conn: Any, run_id: str, *, item_id: int, reason: str
 ) -> list[int]:
-    """Retract the run's unsettled, never-passed blocking member QA copies.
+    """Retract every unsettled copy of the member's QA bound to this run.
 
-    One member when *item_id* is named, every member otherwise. Standing item
-    plans and passing evidence survive; the next release materializes fresh
-    run-bound copies.
+    A removed member owes this run nothing, whatever its copies' verdict
+    history: completion grades each copy's latest attempt, so a copy that
+    passed and later failed would otherwise hold the run. Retraction keeps
+    the rows and their qa_runs; standing item plans survive and the next
+    release materializes fresh run-bound copies.
     """
     if not _table_exists(conn, "qa_requirements"):
         return []
-    member = " AND r.deployment_member_item_id=%s" if item_id is not None else ""
     rows = query_rows(
         conn,
         "SELECT r.id FROM qa_requirements r WHERE r.deployment_run_id=%s "
-        f"AND r.deployment_member_item_id IS NOT NULL{member} "
-        f"AND r.blocking_mode='blocking' AND NOT {settled_obligation_sql(conn, 'r')} "
-        "AND NOT EXISTS (SELECT 1 FROM qa_runs qr WHERE qr.qa_requirement_id=r.id AND qr.verdict='pass')",
-        (run_id, item_id) if item_id is not None else (run_id,),
+        "AND r.deployment_member_item_id=%s "
+        f"AND NOT {settled_obligation_sql(conn, 'r')}",
+        (run_id, item_id),
     )
     ids = [int(r["id"]) for r in rows]
     retract_requirements(conn, ids, reason=reason, source="operator")
@@ -144,10 +144,11 @@ def remove_member_on(
     actor_id: int | None = None,
     removed_by: str = "steering",
 ) -> str:
-    """Apply the audited removal and retire only this run's outstanding member QA.
+    """Apply the audited removal and retract the member's unsettled run copies.
 
-    Caller owns the locks and transaction. Standing item plans and passing
-    evidence survive; the next release materializes fresh run-bound copies.
+    Caller owns the locks and transaction. Retracted copies keep their verdict
+    history; standing item plans survive and the next release materializes
+    fresh run-bound copies.
     """
     ref = render_item_ref(conn, item_id)
     deleted = conn.execute(
@@ -166,7 +167,7 @@ def remove_member_on(
     )
 
     abort_removed_member_executions(conn, run_id=run_id, item_id=item_id)
-    retract_outstanding_member_copies(conn, run_id, item_id=item_id, reason=reason)
+    retract_member_copies(conn, run_id, item_id=item_id, reason=reason)
     from yoke_core.domain.deployment_qa_stage_wake_withdraw import (
         withdraw_deployment_qa_wait_wakes,
     )

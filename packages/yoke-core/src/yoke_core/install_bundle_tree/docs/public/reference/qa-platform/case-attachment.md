@@ -50,13 +50,13 @@ A completed blocker stays satisfied even while its carrying release waits on
 siblings. An incomplete blocker remains held; the receipt names the run.
 Coordination-only and satisfied edges do not delay composition.
 
-Removing a release member also aborts its live run/member QA executions and
-releases their queued host turns and leases in the removal transaction. Standing
-item plans and passing evidence remain. A holder cleaning residue from an older
-removal can use `yoke qa plan abort --deployment-run-id RUN --execution-id ID
---reason TEXT --project P`; read `yoke qa plan abort --help` first. The audited
-removal preserves abort authority under the member's item claim and execution
-ownership; it does not authorize continuing QA for a removed member.
+Removing a release member aborts its live run/member QA executions, releases
+their host turns and leases, and retracts every unsettled run copy of its QA,
+even one passed before a later failure; history and item plans remain. To clean
+an older removal's residue, a holder runs `yoke qa plan abort --deployment-run-id
+RUN --execution-id ID --reason TEXT --project P` (read its `--help` first). The
+audited removal keeps abort authority under the member's item claim and
+execution ownership; it never authorizes continuing QA for a removed member.
 
 ```text
 yoke qa requirement add --deployment-run run-YYYYMMDD-NNN \
