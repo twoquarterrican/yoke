@@ -11,24 +11,7 @@ from yoke_contracts.api.function_call import (
     FunctionError,
     HandlerOutcome,
 )
-
-
-class PlanEditCase(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    case_key: str = Field(..., min_length=1)
-    position: int = Field(..., ge=1)
-    method_id: str = Field(..., min_length=1)
-    instructions: str = Field(..., min_length=1)
-    expected_outcome: str = Field(..., min_length=1)
-    method_config: Dict[str, Any] = Field(default_factory=dict)
-    success_policy_id: Optional[str] = None
-    success_policy_params: Optional[Dict[str, Any]] = None
-    host_baselines: List[str] = Field(default_factory=list)
-    starting_state: Optional[str] = None
-    starting_state_reason: Optional[str] = None
-    entry_surface: Optional[str] = None
-    required_completion: Optional[str] = None
+from yoke_contracts.qa_plan_case_document import QaPlanCaseDocument
 
 
 class PlanEditRequest(BaseModel):
@@ -42,7 +25,7 @@ class PlanEditRequest(BaseModel):
     success_policy_id: str = "all-pass"
     success_policy_params: Dict[str, Any] = Field(default_factory=dict)
     target_environment: Optional[str] = Field(default=None, min_length=1)
-    cases: List[PlanEditCase] = Field(..., min_length=1)
+    cases: List[QaPlanCaseDocument] = Field(..., min_length=1)
 
 
 class PlanEditResponse(BaseModel):
@@ -89,9 +72,15 @@ def handle_plan_edit(request: FunctionCallRequest) -> HandlerOutcome:
 
     try:
         with connect() as conn:
+            # A case field the document left out reaches the domain absent,
+            # not defaulted, so the edit can refuse to reset a stored value.
             result = edit_plan(
                 conn,
-                **payload.model_dump(mode="python"),
+                **payload.model_dump(mode="python", exclude={"cases"}),
+                cases=[
+                    case.model_dump(mode="python", exclude_unset=True)
+                    for case in payload.cases
+                ],
             )
             # Read after the write commits, so the report names what is
             # behind the plan as it now stands rather than as it was read.
@@ -104,7 +93,6 @@ def handle_plan_edit(request: FunctionCallRequest) -> HandlerOutcome:
 
 
 __all__ = [
-    "PlanEditCase",
     "PlanEditRequest",
     "PlanEditResponse",
     "handle_plan_edit",

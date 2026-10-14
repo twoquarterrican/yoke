@@ -60,8 +60,11 @@ Standalone execution uses existing QA records and never credits item or deployme
 
 A case can declare `"target_envs": ["stage", "prod"]` in the JSON supplied to
 `yoke qa plan-cases replace` or `yoke qa plan edit`. These are unique registered
-environment names on the plan's project, each with a reviewable URL. Omit the
-field or use `[]` to keep the plan's default target.
+environment names on the plan's project, each with a reviewable URL. Use `[]`
+to keep the plan's default target. `qa plan edit` puts every case field in its
+document, `target_envs` included; a save that leaves out a field of an existing
+case and would reset its stored value is refused as
+`qa_plan_edit_unedited_field_changed`, naming each case and field.
 
 Item materialization creates one requirement per environment and host baseline,
 with `target_env` and an immutable execution target on each row. Rematerializing

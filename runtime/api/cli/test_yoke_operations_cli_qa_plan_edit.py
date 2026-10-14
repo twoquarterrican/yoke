@@ -55,6 +55,7 @@ def test_edit_opens_only_authorable_fields_and_dispatches_full_cas() -> None:
             "host_baselines",
             "starting_state",
             "starting_state_reason",
+            "target_envs",
             "entry_surface",
             "required_completion",
         }
@@ -89,7 +90,39 @@ def test_edit_opens_only_authorable_fields_and_dispatches_full_cas() -> None:
     assert saved.payload["name"] == "Release gate"
     assert saved.payload["target_environment"] is None
     assert saved.payload["base_updated_at"] == PLAN["updated_at"]
-    assert saved.payload["cases"][0]["case_key"] == "backend-suite"
+    # Every field the operator did not touch goes back exactly as it was read.
+    assert saved.payload["cases"] == [
+        {field: case[field] for field in saved.payload["cases"][0]}
+        for case in PLAN["cases"]
+    ]
+    assert saved.payload["cases"][0]["target_envs"] == ["stage", "prod"]
+
+
+def test_a_read_missing_a_case_field_refuses_before_the_editor_opens() -> None:
+    requests: list[FunctionCallRequest] = []
+    case = {
+        key: value for key, value in PLAN["cases"][0].items() if key != "target_envs"
+    }
+
+    def editor(argv, *, check):
+        raise AssertionError("the editor must not open")
+
+    result, stdout, _stderr = run_cli(
+        requests,
+        editor,
+        *EDIT_ARGS,
+        "--json",
+        plan={**PLAN, "cases": [case]},
+    )
+    assert result == 1
+    envelope = json.loads(stdout)
+    assert envelope["error"]["code"] == "invalid_response"
+    assert "without target_envs" in envelope["error"]["message"]
+    assert "Upgrade the serving Yoke" in envelope["error"]["message"]
+    assert [request.function for request in requests] == [
+        "qa.plan.list",
+        "qa.plan.get",
+    ]
 
 
 def test_checkout_project_id_is_canonicalized_from_the_list_row() -> None:
