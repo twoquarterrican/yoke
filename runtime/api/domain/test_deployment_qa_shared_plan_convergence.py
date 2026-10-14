@@ -117,3 +117,36 @@ def test_live_member_copy_refuses_conversion_without_partial_retirement(test_db)
         test_db, execution, state="aborted", reason="owner stops old roster"
     )
     assert len(_materialize(test_db, MEMBERS[1])["created_requirement_ids"]) == 1
+
+
+def test_member_source_obligations_read_the_same_shared_verdict(test_db, monkeypatch):
+    from runtime.api.domain.test_deployment_qa_admission_execution import (
+        _original_requirement,
+    )
+    from yoke_core.domain import deployment_qa_source_obligation as source_authority
+
+    plan_id = _seed(test_db)
+    sources = []
+    for member in MEMBERS:
+        source = _original_requirement(test_db, item_id=member, method_id="command")
+        test_db.execute(
+            "UPDATE qa_requirements SET qa_kind='plan_case',plan_id=%s,plan_case_key='command-smoke' WHERE id=%s",
+            (plan_id, source),
+        )
+        sources.append(source)
+    test_db.commit()
+    _materialize(test_db, MEMBERS[0])
+    _complete_case(test_db, _begin(test_db, MEMBERS[0]))
+    monkeypatch.setattr(
+        source_authority,
+        "latest_qa_member_run",
+        lambda *args, **kwargs: {"id": RUN, "status": "succeeded"},
+    )
+    assert all(
+        source_authority.source_obligation_consumed(
+            test_db,
+            item_id=member,
+            source_requirement_id=source,
+        )
+        for member, source in zip(MEMBERS, sources, strict=True)
+    )

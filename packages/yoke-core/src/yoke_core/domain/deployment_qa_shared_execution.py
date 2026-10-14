@@ -2,7 +2,10 @@
 
 from functools import wraps
 
-from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
+from yoke_core.domain.qa_obligation_settlement import (
+    settled_obligation_sql,
+    unanswered_attempt_sql,
+)
 
 
 def route_shared_plan_execution(begin):
@@ -69,7 +72,7 @@ def route_shared_plan_execution(begin):
         private = conn.execute(
             "SELECT COUNT(*) FROM qa_requirements WHERE deployment_run_id=%s AND deployment_stage=%s "
             "AND deployment_member_item_id=%s AND method_id IS NOT NULL "
-            f"AND NOT {settled_obligation_sql(conn)}",
+            f"AND NOT {settled_obligation_sql(conn)} AND {unanswered_attempt_sql(conn)}",
             (run_id, stage, member),
         ).fetchone()[0]
         if pending:
@@ -109,7 +112,8 @@ def route_shared_plan_execution(begin):
                 + sum(
                     conn.execute(
                         "SELECT COUNT(*) FROM qa_requirements WHERE deployment_run_id=%s AND deployment_stage=%s "
-                        "AND deployment_member_item_id IS NULL AND execution_target_digest=%s AND method_id IS NOT NULL",
+                        "AND deployment_member_item_id IS NULL AND execution_target_digest=%s AND method_id IS NOT NULL "
+                        f"AND waived_at IS NULL AND {unanswered_attempt_sql(conn)}",
                         (
                             run_id,
                             stage,
