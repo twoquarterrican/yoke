@@ -11,6 +11,6 @@
  "review": "Pending exact recipe proof.",
  "recipes": ["yoke workflows item get --help"],
  "plan_notes": ["FIRST-USER C", "FIRST-USER 8", "JOURNEYS row 11"],
- "sources": [".agents/skills/yoke/onboard/seed-work.md", ".agents/skills/yoke/SKILL.md", ".agents/skills/yoke/help/SKILL.md", ".agents/skills/yoke/dash/SKILL.md", ".agents/skills/yoke/charge/SKILL.md", ".agents/skills/yoke/steer/SKILL.md"],
+ "sources": [".agents/skills/yoke/onboard/first-work.md", ".agents/skills/yoke/SKILL.md", ".agents/skills/yoke/help/SKILL.md", ".agents/skills/yoke/dash/SKILL.md", ".agents/skills/yoke/charge/SKILL.md", ".agents/skills/yoke/steer/SKILL.md"],
  "position": 0
 }

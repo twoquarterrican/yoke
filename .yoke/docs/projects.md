@@ -83,11 +83,14 @@ field with a repository-local Yoke identity and reports the values used.
 Existing local or global identity fields are preserved; global Git configuration
 is unchanged. Setup proceeds automatically without an identity prompt.
 
-## Execution-ready onboard
+## Onboard existing work
 
-The `/yoke onboard` harness skill makes a wired project execution-ready:
-strategy docs, execution profile, Packs, hosting, environments, gated first
-deploy, seeded work. Distinct from machine `yoke setup`.
+The `/yoke onboard` harness skill starts from what already exists: open
+issues, pull requests and local session transcripts, plus anything you add.
+It drafts strategy and CURRENT-PLAN, walks the decisions with you one at a
+time, configures only what the first work needs, then hands off to
+`/yoke steer`. Onboarding is done when that first item reaches done under its
+own completion obligations. Distinct from machine `yoke setup`.
 
 ## Packs
 

@@ -7,9 +7,9 @@
  "need": "An existing app needs mapping of docs, tests, CI and deployment. Agree on inherited work to adopt versus leave underway; a new project may need scaffolding.",
  "disclosure": "planned cue",
  "surface": "Onboard survey/profile plus FIRST-USER 24 intake",
- "gap": "Define the adoption boundary for existing PRs/items, avoid duplicate seeding, and preserve accepted strategy. JOURNEYS proposes moving later infrastructure setup to the relevant moment.",
+ "gap": "Define the adoption boundary for existing PRs/items, avoid duplicate filing, and preserve accepted strategy. Infrastructure setup now waits until the first work needs it; later adoption scenarios stay with JOURNEYS.",
  "review": "Pending exact recipe proof.",
  "plan_notes": ["FIRST-USER 24", "FIRST-USER 25", "JOURNEYS 9"],
- "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", ".agents/skills/yoke/onboard/strategy-conversation.md"],
+ "sources": [".agents/skills/yoke/onboard/profile-and-scaffold.md", ".agents/skills/yoke/onboard/strategy-conversation.md", ".agents/skills/yoke/onboard/run-and-rows.md"],
  "position": 2
 }

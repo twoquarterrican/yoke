@@ -91,7 +91,7 @@ def test_interactive_success_launches_onboard_by_absolute_path(tmp_path: Path) -
     assert launched_path.endswith("/yoke")
     assert logged.endswith("setup --post-install")
     assert "☀ Starting Yoke setup…" in result.stdout
-    assert "Next: make it execution-ready." in result.stdout
+    assert "Next: bring your existing work into Yoke." in result.stdout
     assert "(uv updated your shell configuration)" in result.stdout
     assert "1  open a new terminal" in result.stdout
     assert (
@@ -135,7 +135,7 @@ def test_screen_mode_success_guidance_uses_ascii_glyphs(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert "* Starting Yoke setup..." in result.stdout
     assert "Yoke installation complete." in result.stdout
-    assert "  | Next: make it execution-ready." in result.stdout
+    assert "  | Next: bring your existing work into Yoke." in result.stdout
     assert "  |   1  open a new terminal" in result.stdout
     assert "  |   3  run /yoke onboard" in result.stdout
     assert "☀" not in result.stdout
@@ -147,7 +147,7 @@ def test_successful_interactive_onboard_prints_path_guidance_contract() -> None:
     text = INSTALL_SHIM_PATH.read_text(encoding="utf-8")
 
     assert "print_path_guidance_after_onboard" in text
-    assert "Next: make it execution-ready." in text
+    assert "Next: bring your existing work into Yoke." in text
     assert "/yoke onboard" in text
     assert 'exec "$shell_path" -l' not in text
 
@@ -183,7 +183,7 @@ def test_handoff_omits_reload_step_when_calling_shell_already_resolves_yoke(
     )
 
     assert result.returncode == 0
-    assert "Next: make it execution-ready." in result.stdout
+    assert "Next: bring your existing work into Yoke." in result.stdout
     assert "open a new terminal" not in result.stdout
     assert "uv updated your shell configuration" not in result.stdout
     assert (

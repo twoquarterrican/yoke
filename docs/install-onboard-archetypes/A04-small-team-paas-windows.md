@@ -74,10 +74,10 @@ suite is Linux.
 Register exact project-local `quick`/`full` argv. Bind `command-ci` only after
 the GitHub App and eligible **test** workflow are configured; the Render deploy
 job is not verification. Queue delivery also requires `merge_group` support.
-Attach the reusable QA plan's immutable snapshot to seeded items at their
+Attach the reusable QA plan's immutable snapshot to steering-filed items at their
 required transition. Follow the current
 [verification binding](../../.agents/skills/yoke/onboard/verification-binding.md)
-and [work seeding](../../.agents/skills/yoke/onboard/seed-work.md) contracts.
+and [first-work handoff](../../.agents/skills/yoke/onboard/first-work.md) contracts.
 
 ## Crux
 

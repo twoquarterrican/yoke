@@ -73,7 +73,7 @@ def test_terminal_cases_use_current_stage_and_browser_approval_surfaces() -> Non
     assert all(
         "Sign in and choose an organization." in config["expected_text"]
         and "Setup complete." in config["expected_text"]
-        and "Next: make it execution-ready." in config["expected_text"]
+        and "Next: bring your existing work into Yoke." in config["expected_text"]
         and "terminal_exit_code:0" in config["post_checks"]
         for config in cold_configs.values()
     )
@@ -112,7 +112,7 @@ def test_terminal_cases_use_current_stage_and_browser_approval_surfaces() -> Non
     )
     assert "Report:" in handoff["method_config"]["expected_text"]
     assert (
-        "Next: make it execution-ready." in (handoff["method_config"]["expected_text"])
+        "Next: bring your existing work into Yoke." in (handoff["method_config"]["expected_text"])
     )
     assert "One-time code:" not in handoff["method_config"]["expected_text"]
     assert "terminal_exit_code:0" in handoff["method_config"]["post_checks"]

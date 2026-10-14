@@ -47,9 +47,9 @@ edit `.yoke/board-art` to change the map or saved art; run `yoke board rebuild`
 to see the result.
 
 Setup wires the project to Yoke and installs its operating guidance. It does
-not install an application scaffold. `/yoke onboard` derives and confirms the
-project's execution profile, then installs the chosen application Pack when
-the repo needs one. The webapp scaffold contributes an application-docs
+not install an application scaffold. `/yoke onboard` starts from the project's
+existing work and configures only what the first work needs, including the
+chosen application Pack when that work needs one. The webapp scaffold contributes an application-docs
 reference to canonical `AGENTS.md` and a marked `.gitignore` block; project
 guidance, the Yoke managed block and custom ignore rules remain intact.
 Preview with `yoke packs get webapp-scaffold /path/to/project --project P`,

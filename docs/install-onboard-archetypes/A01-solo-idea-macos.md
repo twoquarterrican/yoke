@@ -188,7 +188,7 @@ Customize later: yoke board art variant create --help
   Show report
 ```
 
-After **Exit**, the installer prints its execution-ready handoff (reload the
+After **Exit**, the installer prints its onboarding handoff (reload the
 current shell only if needed, open a supported harness in the project, then run
 `/yoke onboard`). This is terminal guidance after completion, not a TUI
 congratulations click-through.
@@ -213,9 +213,9 @@ Init: `yoke onboard checklist init --project notebook-app --checkout ~/code/note
    `hosting-setup=deferred`; step 7 is unreachable and step 8 still runs.
 5. Step 5 creates `notebook-app-merge-only`, verifies its empty target tier,
    and reads it back as the project default without creating a site or
-   environment. Seeded issues receive that flow; Usher routes it through
+   environment. Items steering files receive that flow; Usher routes it through
    Route A without `deployment-runs start-for-item`. If Alex chose no default,
-   the empty readback instead makes seed-work omit `--deployment-flow`.
+   the empty readback instead makes steering's filing omit `--deployment-flow`.
 
 ## Test setup
 

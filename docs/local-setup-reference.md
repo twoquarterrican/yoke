@@ -254,7 +254,8 @@ First project adoption after install should start with:
 /yoke onboard --run-id <run-id>
 ```
 
-After adoption, normal item flow is:
+Onboarding hands CURRENT-PLAN to `/yoke steer`, which files and routes the
+work. Filing one item by hand uses the normal item flow:
 
 ```text
 /yoke idea "my first item"

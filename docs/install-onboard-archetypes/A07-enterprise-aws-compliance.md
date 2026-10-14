@@ -49,7 +49,7 @@ profiles, SSO, OIDC, web identity, or role assumption work.
 
 Apply still creates the project. `/yoke onboard` records
 `hosting-setup=deferred`, skips the credential probe and cloud apply, and keeps
-seed work legal with a merge-only flow or no default. Step 7 remains
+the steering handoff legal with a merge-only flow or no default. Step 7 remains
 unreachable until the operator supplies a supported access key or Yoke gains a
 non-static execution path.
 

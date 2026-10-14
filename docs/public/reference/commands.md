@@ -233,9 +233,10 @@ checkpoint history. See [strategy](../strategy.md).
 
 ### onboard
 
-Make a wired project execution-ready with confirmed strategy/profile, Packs,
-explicit test/hosting/database posture, verified delivery defaults and seeded
-QA-bound work. Follow its approvals before infrastructure effects. Existing
+Adopt a wired project's existing work: scan open issues, pull requests and
+local session transcripts, settle strategy and CURRENT-PLAN one decision at a
+time, configure only what the first work needs, then hand off to `/yoke steer`.
+Done when the first item is done. Follow its approvals before infrastructure effects. Existing
 credentials and host exclusions retain their custody and named refusals.
 Machine `yoke setup` and harness onboarding are separate operations.
 

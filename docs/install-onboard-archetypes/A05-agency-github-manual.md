@@ -77,7 +77,7 @@ profile omits AWS Packs and offers merge-only or no default. Dana chooses
 **no default** for manual client delivery; step 5 removes any stale project
 attachment and verifies an empty readback without creating environments.
 
-Seeded items omit `--deployment-flow`. A prior client default is project-local
+Steering-filed items omit `--deployment-flow`. A prior client default is project-local
 and cannot leak into this slug.
 
 ## Test setup
@@ -91,11 +91,11 @@ for no-tests; an undecided posture blocks completion. The agency business
 model does not choose no-tests. Review-only needs blocking review and advisory
 legacy-command evidence. With no eligible Actions test workflow, do not bind
 `command-ci` or a merge queue. A registered command uses this project's exact
-argv and reusable QA plan; seeded items attach its immutable snapshot at the
+argv and reusable QA plan; steering-filed items attach its immutable snapshot at the
 required transition. Follow the current
 [profile](../../.agents/skills/yoke/onboard/profile-and-scaffold.md),
 [verification binding](../../.agents/skills/yoke/onboard/verification-binding.md)
-and [work seeding](../../.agents/skills/yoke/onboard/seed-work.md) contracts.
+and [first-work handoff](../../.agents/skills/yoke/onboard/first-work.md) contracts.
 
 ## Crux
 

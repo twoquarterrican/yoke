@@ -63,7 +63,7 @@ APPLY_SUCCESS_TEXT = (
     "Report:",
 )
 PARENT_HANDOFF_TEXT = (
-    "Next: make it execution-ready.",
+    "Next: bring your existing work into Yoke.",
     "run /yoke onboard",
 )
 MACHINE_GITHUB_TEXT = ("Connect GitHub?",)

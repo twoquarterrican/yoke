@@ -6,7 +6,7 @@
  "when": "User deliberately chooses delivery at merge",
  "need": "Select an active registered flow with no target tier/environment. Complete the pinned review and workflow gates without creating a deployment run.",
  "disclosure": "current cue",
- "surface": "Onboard hosting-and-environments lines 140–164.",
+ "surface": "Onboard hosting-and-environments “Hosting deferred/not-needed: create the confirmed merge-only default”.",
  "gap": "Keep a short merge-only explanation reachable from the release nudge; do not treat a missing flow as equivalent.",
  "review": "Pending exact recipe proof.",
  "recipes": ["yoke deployment-flows get FLOW-ID --json"],

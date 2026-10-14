@@ -20,7 +20,7 @@ empty. If a persistent flow is set and `--skip-deploy` is used: exit 7
 
 **Instead:** Route A `yoke watch merge done-transition -- PREFIX-N --skip-deploy`
 for an empty/`-internal` flow or any registered flow whose `target_tier` is
-empty. Seed-work omits `--deployment-flow` when `deploy-defaults get` prints
+empty. Steering's filing omits `--deployment-flow` when `deploy-defaults get` prints
 nothing and attaches a configured merge-only default when it prints one.
 
 ### Merge target

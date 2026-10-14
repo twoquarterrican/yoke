@@ -90,12 +90,12 @@ persistent --environment stage`. `yoke project-structure patch apply` for
 Step 7 gate `[y/N]` defaults **No**. Preview: Pulumi/stacks, OIDC provider,
 CI roles. **User:** yes. Apply + first stage deploy + smoke.
 
-If he declines: `infra-apply-first-deploy=deferred`; seed still runs. Items
+If he declines: `infra-apply-first-deploy=deferred`; the steering handoff still runs. Items
 still get the project default flow from step 5. Usher Route B then requires
 the pipeline even though infra was never applied — **blocker** unless flows
 are merge-only or unset.
 
-Seed: `yoke items create … --deployment-flow {default}`.
+Handoff: `/yoke steer CURRENT-PLAN` files the first work with the project default flow.
 
 ## Test setup
 
@@ -108,7 +108,7 @@ The confirmed profile, command/CI binding and immutable QA attachment follow
 
 | Requirement | Declare | Refusal | Instead |
 |---|---|---|---|
-| AWS apply | AWS identity summarized in Review + step 7 explicit yes | Gate default No; `deferred` does not block seed | Do not assign persistent default flow until apply succeeded |
+| AWS apply | AWS identity summarized in Review + step 7 explicit yes | Gate default No; `deferred` does not block the handoff | Do not assign persistent default flow until apply succeeded |
 | Existing CI | `.github/workflows` is a **hint**, not a Yoke flow | Do not fail onboard if Actions already deploy | Map or ignore; never dual-write two production pipelines silently |
 | Migration | Step-2 governed-database box; step 5 writes the `migration_model` capability or records the model to attach once the stack exists | Rehearsal refuses HTTPS product connections | Attach-later is recorded on `migration-model-setup`; idea items that mutate DB need a DB claim |
 

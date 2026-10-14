@@ -28,7 +28,7 @@ The agency confirms **merge-only** for local delivery until AWS is ready.
 Step 5 creates no site or environment. It registers the empty-tier local-merge
 flow, verifies the project default, marks domain setup not needed, and defers
 the first infrastructure apply. Choosing no default would instead clear the
-attachment and make seed-work omit `--deployment-flow`.
+attachment and make steering's filing omit `--deployment-flow`.
 
 Later, when AWS arrives: re-run `/yoke onboard`. Step 4 connect:
 
