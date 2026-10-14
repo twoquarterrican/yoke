@@ -142,6 +142,13 @@
     "verified_on_surface": "cursor-cli",
     "evidence": "No reader is needed and none is built. cursor-cli print mode (every relay launch and resume) never fires stop; the process exits when the turn finishes and fires sessionEnd with reason completed, which the surface declares as its turn_end_event, so a hook still stamps posture at every observed ending and a transcript read would answer nothing further. Designed deferral on the same terms as claude-code."
   },
+  "session_transcripts": {
+    "source": "yoke_contracts.harness_session_transcripts.HARNESS_SESSION_TRANSCRIPTS",
+    "store": "local_jsonl",
+    "location": "~/.cursor/projects/<checkout-slug>/agent-transcripts/<id>/<id>.jsonl",
+    "project_match": "<checkout-slug> is yoke_contracts.harness_folder_trust.cursor_project_slug(checkout): the absolute path with dots dropped and each non-alphanumeric run collapsed to '-'",
+    "evidence": "yoke_contracts.cursor_session_map parses this layout and harness_folder_trust reproduces the slug, verified against entries Cursor wrote."
+  },
   "worktree_hook_enablement": {
     "config_path": ".cursor/hooks.json",
     "operations": [
