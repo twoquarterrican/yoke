@@ -67,7 +67,7 @@ def test_runner_packet_creation_recipes_are_transition_bound(
             "--qa-phase verification --workflow-transition QA_STAGE",
         ),
         (
-            ".agents/skills/yoke/onboard/seed-work.md",
+            ".agents/skills/yoke/onboard/first-work.md",
             "--requirement-source explicit --workflow-transition reviewed-implementation",
         ),
         (

@@ -38,7 +38,9 @@ def test_step_map_rechecks_the_live_hosting_branch() -> None:
         assert state_pair in router
     assert "no-host delivery choice is verified" in router
     assert "current no-host branch recorded `domain-setup=not-needed`" in router
-    assert "terminal `deferred\\|not-needed` still matches the live hosting row" in router
+    assert (
+        "terminal `deferred\\|not-needed` still matches the live hosting row" in router
+    )
 
 
 def test_managed_and_merge_only_recipes_stay_in_their_branches() -> None:
@@ -71,9 +73,9 @@ def test_managed_and_merge_only_recipes_stay_in_their_branches() -> None:
         assert recipe in merge_only
         assert recipe not in no_default
     assert "--target-tier persistent" in managed
-    create_command = merge_only.split(
-        "yoke deployment-flows create", 1
-    )[1].split("yoke deployment-flows get", 1)[0]
+    create_command = merge_only.split("yoke deployment-flows create", 1)[1].split(
+        "yoke deployment-flows get", 1
+    )[0]
     assert "--target-tier" not in create_command
     assert "--environment" not in create_command
 
@@ -120,14 +122,6 @@ def test_no_host_domain_and_deploy_rows_are_terminal() -> None:
     assert "continue directly to step 8" in no_host
     assert "registered merge-only default or an empty default" in no_host
     assert "no-host branch above does not enter this gate" in text
-
-
-def test_empty_default_keeps_seeded_work_unassigned() -> None:
-    text = _read(ONBOARD / "seed-work.md")
-
-    assert "empty output means no flow — omit the flag" in text
-    assert "When no flow applies, omit `--deployment-flow`" in text
-    assert "never pass the literal string `none`" in text
 
 
 def test_packaged_onboard_contract_is_byte_exact() -> None:

@@ -35,7 +35,8 @@ domain-setup with command/recovery and stops.
 
 ## Step 7: Gated Infra Apply + First Deploy
 
-Entry: live hosting-setup=verified|configured and all prior managed steps satisfied;
+Entry: the first work deploys to managed infrastructure, live
+hosting-setup=verified|configured and all prior managed steps satisfied;
 the no-host branch above does not enter this gate. Skip only applied infra
 plus a healthy live deployment: report URL. Old deferred/not-needed is no proof.
 
@@ -70,4 +71,4 @@ yoke onboard checklist --run-id {run_id} --row-status infra-apply-first-deploy=b
 ```
 
 Requested live-infra/app reconfigure presents its delta behind the same gate;
-never silently reapply. Next: [seed-work.md](seed-work.md).
+never silently reapply. Next: [first-work.md](first-work.md).

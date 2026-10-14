@@ -160,7 +160,7 @@ SKILLS: tuple[Skill, ...] = (
         "orchestrator",
         "wait",
         False,
-        "make a wired project execution-ready",
+        "adopt existing work and reach the first item done",
         "[--project P] [--run-id RUN]",
     ),
     Skill(

@@ -1,4 +1,4 @@
-"""Doc regressions for the harness-side /yoke onboard execution-readiness skill."""
+"""Doc regressions for the harness-side /yoke onboard adoption skill."""
 
 from __future__ import annotations
 
@@ -132,14 +132,14 @@ def test_yoke_skill_refs_teach_setup_replacements_and_agentic_handoff():
 def test_onboard_skill_exists_with_expected_frontmatter():
     text = _read(ONBOARD)
     assert "name: onboard" in text
-    assert "execution-ready" in text
+    assert "first item done" in text
     assert '"[--project P] [--run-id RUN]"' in text
 
 
 def test_router_lists_onboard():
     router = _read(SKILLS / "SKILL.md")
     assert "/yoke onboard" in router
-    assert "execution-ready" in router
+    assert "first item is done" in router
 
 
 def test_onboard_initializes_and_resumes_the_durable_checklist():
@@ -175,7 +175,7 @@ def test_onboard_has_the_eight_step_structure():
         "Deploy Flow",
         "Domain",
         "Gated Infra Apply + First Deploy",
-        "Seed The First Work",
+        "Hand Off The First Work",
     ):
         assert heading in text, f"step heading {heading!r} missing"
     # Every step carries entry and skip conditions in the router map.
@@ -185,7 +185,7 @@ def test_onboard_has_the_eight_step_structure():
 
 def test_onboard_binds_two_stop_pacing_and_the_apply_gate():
     text = _onboard_bundle()
-    assert "Exactly two stops" in text
+    assert "At most two more stops" in text
     assert "[y/N]" in text
     assert "defaults No" in text
     assert "unattended" in text
@@ -295,23 +295,6 @@ def test_onboard_teaches_environment_and_flow_registration():
     assert len(patch_commands) == 5
     assert all("--project {project} --ops-json " in line for line in patch_commands)
     assert all("--item" not in line for line in patch_commands)
-
-
-def test_onboard_seeds_work_through_the_idea_intake_shape():
-    text = _read(ONBOARD_DIR / "seed-work.md")
-    assert (
-        'yoke items create "{title}" issue --spec-file {spec_file} '
-        "--entry-surface harness_skill --execution-instructions-considered "
-        "--project {project} --deployment-flow {flow_id} --priority {priority}"
-    ) in text
-    assert "yoke project-structure deploy-defaults get --project {project}" in text
-    assert "omit `--deployment-flow`" in text
-    assert "never pass the literal string `none`" in text
-    # One batched confirmation, then serial filing.
-    assert "one confirmation for the whole batch" in text
-    assert "one at a time" in text
-    assert "`spec_required`" in text
-    assert "/yoke steer" in text and "/yoke charge" in text
 
 
 def test_onboard_honors_the_web_views_and_steers_boundary():

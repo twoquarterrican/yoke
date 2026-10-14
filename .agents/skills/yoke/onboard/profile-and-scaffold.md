@@ -2,10 +2,16 @@
 
 ## Step 2: Derive The Execution Profile
 
-Entry: accepted strategy. Read the project-scoped checklist first.
-Reuse `run.execution_profile` when `profile_changed=false`; recheck local tools
-and each live skip predicate. When facts changed, show and confirm only the
-changed proposal. Shared choices live in the existing run metadata.
+Entry: accepted strategy and a chosen first work. Read the project-scoped
+checklist first. Reuse `run.execution_profile` when `profile_changed=false`;
+recheck local tools and each live skip predicate. When facts changed, show
+and confirm only the changed proposal. Shared choices live in the existing
+run metadata.
+
+Scope every box to the first work: what its workflow, delivery and QA must
+have before that item can reach done. Existing setup, checks, approvals and
+rules are reused as they are. A box the first work does not need is recorded
+`deferred` with that reason; it is not a question now.
 
 Use all five docs, survey and installed .yoke/packs.json baseline.
 Read hosting first; existing artifacts map to profile roles rather than reinstall.
@@ -22,7 +28,7 @@ No-yoke-managed-host excludes aws-admin and AWS infra/deploy Packs; name the
 recorded provider. Empty posture is an unknown to resolve once, written in step 4.
 Existing deployment configuration is only a hint, not an install contract.
 
-### Propose the whole profile
+### Propose the profile the first work needs
 
 Packs: webapp-scaffold is provider-neutral; pulumi-foundation handles state/
 stack setup, vps-hosting targets AWS EC2, webapp-environment-infrastructure
@@ -44,7 +50,8 @@ test workflow declared and merge_group present.
 
 ### The delivery box
 
-Every profile names exactly one delivery outcome:
+Every profile names exactly one delivery outcome; a first work that ships
+nowhere takes no default until later work needs one:
 
 1. **Persistent environment** — registered environment plus pipeline, legal
    only with hosting verified/configured.
@@ -58,8 +65,11 @@ serving flow validation execution_supported=true.
 
 ### The test-setup box
 
-Every profile answers; the registered command owns the reviewing-implementation
-gate. A descriptive `verification_profiles.test_command` is never a binding.
+Answer it when the first work's verification needs a registered command;
+otherwise record it deferred: default-consuming workflows seed blocking review
+until a command is bound, and item QA can use local tests or review.
+The registered command owns the reviewing-implementation gate. A descriptive
+`verification_profiles.test_command` is never a binding.
 
 1. **A surveyed command** (surveyed-command): exact native argv, e.g.
    mvn -q -DskipITs test, vendor/bin/phpunit, xcodebuild or container tests.
@@ -68,7 +78,7 @@ gate. A descriptive `verification_profiles.test_command` is never a binding.
    Webapp-scaffold supplies FastAPI/Vitest/Playwright examples and ci.yml.
 3. **A review-only suite** (review-only-suite): known-red/flaky legacy roots,
    exact argv and condition retained. No quick/full/command-ci default;
-   seed blocking implementation_review plus non-blocking command.
+   each item carries blocking implementation_review plus non-blocking command.
 4. **No suite at all**: offer these three choices in order; no fabricated
    pytest/CI declaration/merge queue:
    **Scaffold a minimal suite** first (Pack for empty apps; project-native
@@ -85,7 +95,7 @@ compose service. Read [governed-database.md](governed-database.md) before coordi
 yoke projects capability-settings get --project {project} --cap-type migration_model --json
 ```
 
-Propose exactly one:
+When the first work changes a database, propose exactly one; otherwise defer:
 **A governed model, declarable now** (supported kind and existing coordinates,
 name slug/history/ledger); **A governed model, attached later** (same known
 facts, missing stack/coordinates); **No Yoke-governed database** (none, external
@@ -94,8 +104,8 @@ schema owner or unsupported kind; work-item DB claims none is expected);
 
 ### Confirm (stop 1 of 2)
 
-Present the whole profile for confirmation/edits; no application/setup mutation
-before approval. Resolve all remaining unknowns or block human-interview and stop.
+Present the profile for confirmation/edits, naming each deferred box and the
+first work it was scoped to; no application/setup mutation before approval. Resolve all remaining unknowns or block human-interview and stop.
 After confirmation, write the non-secret profile JSON to a local file, then
 persist it through the existing checklist owner:
 
@@ -113,13 +123,15 @@ Record evidence including the chosen delivery meaning, not assumed stage+prod:
 yoke onboard checklist --run-id {run_id} --row-status human-interview=verified --evidence human-interview="confirmed Packs {packs}; capabilities {caps}; delivery {persistent-environment|merge-only|no-default}: {meaning}; domain {posture}; tests {surveyed-command|scaffold-suite|review-only-suite|attested-no-tests}; roots {test_roots}; quick {quick_argv|not-applicable}; full {full_argv|same-as-quick|not-applicable}; suite health {suite_health}; runner {command|command-ci|review-only|none} because {runner_rationale}; governed database {declare-now|attach-later|none}: {model/kind/history/ledger or no-model reason}"
 ```
 
-Steps 3–6 then run unattended, except credential user-action/approval.
-Next stop is step-7 infrastructure approval.
+The needed steps among 3–6 then run unattended, except credential
+user-action/approval; each unneeded one records its rows deferred. The only
+later stop is step-7 infrastructure approval, when the first work deploys.
 
 ## Step 3: Install The Scaffold Pack
 
-Entry: confirmed Pack; existing app maps instead, scaffold-install=not-needed
-with exact mapped surfaces. Read installed .yoke/packs.json before touching
+Entry: confirmed Pack the first work needs; existing app maps instead,
+scaffold-install=not-needed with exact mapped surfaces. No Pack needed yet:
+scaffold-install=deferred naming the first work. Read installed .yoke/packs.json before touching
 the Pack surface. Receipt already lists it: report version, mark verified,
 skip. Version moves belong to yoke packs update, not onboarding.
 
