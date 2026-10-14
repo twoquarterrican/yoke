@@ -24,7 +24,9 @@ from yoke_harness.ssh_mac_golden_capture_contract import (
     CAPTURE_REFUSAL_KIND_DESTINATION_OCCUPIED,
     CAPTURE_REFUSAL_KIND_FOREIGN_OWNER,
     CAPTURE_REFUSAL_KIND_RESIDUE,
+    CAPTURE_REFUSAL_KIND_INSUFFICIENT_SPACE,
     CAPTURE_REFUSAL_KIND_PRESERVED_STATE,
+    CAPTURE_REFUSAL_KIND_SPACE_CHECK_FAILED,
     CAPTURE_REFUSAL_PREFIX,
     GOLDEN_CAPTURE_MARKER,
     GOLDEN_DIRECTORY_MODE,
@@ -74,6 +76,10 @@ def render_golden_capture_script(contract: FullResetPathContract) -> str:
             + shlex.quote(CAPTURE_REFUSAL_KIND_FOREIGN_OWNER),
             "refusal_kind_destination_occupied="
             + shlex.quote(CAPTURE_REFUSAL_KIND_DESTINATION_OCCUPIED),
+            "refusal_kind_insufficient_space="
+            + shlex.quote(CAPTURE_REFUSAL_KIND_INSUFFICIENT_SPACE),
+            "refusal_kind_space_check_failed="
+            + shlex.quote(CAPTURE_REFUSAL_KIND_SPACE_CHECK_FAILED),
             *(
                 f"capture_phase_{name}={shlex.quote(value)}"
                 for name, value in CAPTURE_PHASES.items()

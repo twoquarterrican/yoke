@@ -227,6 +227,30 @@ def _execute(
                 ),
                 json_mode=json_mode,
             )
+    from yoke_harness.golden_snapshot_retention import (
+        SnapshotRetentionError,
+        retain_after_verified_capture,
+    )
+
+    try:
+        removed = retain_after_verified_capture(
+            operation, submit.success, submit.result, execution
+        )
+    except SnapshotRetentionError as error:
+        return emit_response(
+            _local_execution_error(
+                operation,
+                error.detail,
+                error_code=error.code,
+                recovery_hint=error.recovery,
+                lease_released=True,
+            ),
+            json_mode=json_mode,
+        )
+    if removed is not None:
+        submit = submit.model_copy(
+            update={"result": {**submit.result, "removed_snapshots": removed}}
+        )
     exit_code = emit_response(_as_public(submit, operation), json_mode=json_mode)
     if (
         operation == "screenshot"

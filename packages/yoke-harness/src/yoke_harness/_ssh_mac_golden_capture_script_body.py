@@ -28,6 +28,21 @@ assert_full_disk_access() {
   /bin/cat -- "$full_disk_access_probe" > /dev/null 2>&1
 }
 
+assert_capture_space() {
+  local parent available expected
+  parent="${destination:h}"
+  available=$(/bin/df -k -P -- "$parent" 2>/dev/null | /usr/bin/awk 'NR==2 {print $4}') || true
+  expected=$(/usr/bin/du -sk -- "$home" 2>/dev/null | /usr/bin/awk '{print $1}') || true
+  if [[ "$available" != <-> || "$expected" != <-> ]]; then
+    failure_detail="$refusal_prefix$refusal_kind_space_check_failed $parent"
+    return 1
+  fi
+  if (( available < expected )); then
+    failure_detail="$refusal_prefix$refusal_kind_insufficient_space $parent"
+    return 1
+  fi
+}
+
 validate_destination() {
   [[ "$destination" == /* ]] || return 1
   case "$destination" in *'~'*|*'$'*|*'/../'*|*'/..') return 1 ;; esac
@@ -40,6 +55,7 @@ validate_destination() {
     failure_detail="$refusal_prefix$refusal_kind_destination_occupied $destination"
     return 1
   fi
+  assert_capture_space || return 1
   return 0
 }
 

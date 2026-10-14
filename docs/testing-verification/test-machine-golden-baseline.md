@@ -82,6 +82,23 @@ session before registration. Its receipt names the failing step when any check
 fails. Desktop discovery counts active logged-in fixture users, excluding
 greeters, closing sessions and other users. Reset ends the fixture desktop.
 
+Before it writes, capture compares free space on the destination filesystem
+with the home's file bytes. `golden_capture_insufficient_space` names that
+parent and the recovery: remove every other snapshot there, keep the
+registered golden and its `.probes` and `.manifest` files, then retry
+`yoke test-machine golden-capture`. A check that cannot read the home or the
+filesystem refuses `golden_capture_space_check_failed` instead of a traceback.
+After the new golden is registered, capture deletes retired snapshots beside
+it. A parent directory named for the test user is that user's golden root, so
+every other child goes, including dated homes, mixed captures, `.yoke-golden-*`
+temporaries and retired browser profiles. A shared parent deletes only this
+user's `USER-home-*` and `home-*` snapshots, so another user's baseline stays.
+The registered directory and its sidecars stay. A symlink is left in place.
+`golden_snapshot_retention_failed` means the new golden is already registered
+and the named leftovers are still there; remove them and do not capture again
+until they are gone. Windows/WSL capture uses this same Linux archive, so the
+same check and retention apply there.
+
 Linux user-service mutations share the relay's 180-second operation budget;
 inventory probes retain a 30-second limit. Timeout receipts name the command
 and unsettled job. Archive failures preserve bounded, redacted native exit,
