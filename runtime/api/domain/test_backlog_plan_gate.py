@@ -10,6 +10,8 @@ from typing import Optional
 import pytest
 
 from yoke_core.domain.backlog_updates_helpers import _run_authoritative_status_gate
+from yoke_core.domain.qa_gate_definitions import GateTarget
+from yoke_core.domain.qa_gates import check_verification_gate
 from yoke_core.domain.schema_init_apply import execute_schema_script
 from yoke_core.domain.workflow_registry import (
     converge_builtin_workflows,
@@ -85,14 +87,20 @@ def _seed_req(
     *,
     verdict: Optional[str] = None,
     waived: bool = False,
+    qa_kind: str = "simulation",
+    workflow_transition_id: Optional[str] = None,
 ) -> int:
+    extra = {}
+    if workflow_transition_id is not None:
+        extra["workflow_transition_id"] = workflow_transition_id
     req = insert_qa_requirement(
         conn,
         item_id=item_id,
-        qa_kind="simulation",
+        qa_kind=qa_kind,
         qa_phase="verification",
         blocking_mode="blocking",
         waived_at="2026-04-25T00:00:00Z" if waived else None,
+        **extra,
     )
     req_id = int(req["id"])
     if verdict is not None:
@@ -100,7 +108,7 @@ def _seed_req(
             conn,
             qa_requirement_id=req_id,
             verdict=verdict,
-            qa_kind="simulation",
+            qa_kind=qa_kind,
         )
     return req_id
 
@@ -188,3 +196,28 @@ class TestPlanSimulationGateComposition:
         assert outcome is not None
         assert outcome["error_code"] == "GATE_PLAN_SIM_UNAVAILABLE"
         assert "QA gate helpers are unavailable" in outcome["error"]
+
+    def test_later_transition_verification_does_not_block_planned(
+        self, helper_db
+    ) -> None:
+        conn, db_path = helper_db
+        _seed_item(conn, 90)
+        _seed_req(
+            conn,
+            90,
+            verdict="pass",
+            qa_kind="simulation",
+            workflow_transition_id="planned",
+        )
+        ac_id = _seed_req(
+            conn,
+            90,
+            qa_kind="ac_verification",
+            workflow_transition_id="reviewed-implementation",
+        )
+        assert _status_gate(90, db_path) is None
+        review = check_verification_gate(GateTarget(item_id=90), db_path)
+        assert not review.passed
+        joined = "\n".join(review.errors)
+        assert f"#{ac_id}" in joined
+        assert "reviewed-implementation" in joined
