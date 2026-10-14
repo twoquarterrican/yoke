@@ -10,6 +10,9 @@ from typing import Any, Callable, Mapping
 
 from yoke_cli.commands._helpers import ensure_handlers_loaded
 from yoke_cli.transport.dispatcher import call_dispatcher
+from yoke_cli.transport.https_retry_policy import (
+    error_code_is_terminal_authentication,
+)
 from yoke_contracts.api.function_call import TargetRef
 from yoke_contracts.fleet_policy import RELAY_POLL_SECONDS
 from yoke_contracts.session_control.evidence import redacted_evidence_document
@@ -55,6 +58,8 @@ from yoke_harness.session_relay_schedule import (
 
 
 RELAY_DISPATCH_TIMEOUT_SECONDS = RELAY_POLL_SECONDS + 5
+# The server refused this machine's credential for good; the daemon stops.
+CREDENTIAL_REJECTED = "credential_rejected"
 
 
 Dispatcher = Callable[..., Any]
@@ -209,7 +214,10 @@ def _poll(
         timeout_s=RELAY_DISPATCH_TIMEOUT_SECONDS,
     )
     if not getattr(response, "success", False):
-        return ServeOnceOutcome("claim_failed", error_code=_error_code(response))
+        code = _error_code(response)
+        if error_code_is_terminal_authentication(code):
+            return ServeOnceOutcome(CREDENTIAL_REJECTED, error_code=code)
+        return ServeOnceOutcome("claim_failed", error_code=code)
     payload = getattr(response, "result", None) or {}
     # A turn that ended with no hook to say so left a posture nothing wakes.
     report_native_turn_ends(dispatcher, inventory, payload.get("turn_end_probes"))
@@ -324,6 +332,7 @@ def serve_once(
 
 
 __all__ = [
+    "CREDENTIAL_REJECTED",
     "RELAY_CLAIM_FUNCTION_ID",
     "RELAY_DISPATCH_TIMEOUT_SECONDS",
     "RELAY_REPORT_FUNCTION_ID",

@@ -62,6 +62,26 @@ def http_status_is_transient(status: int | None) -> bool:
     return code >= 500
 
 
+TERMINAL_AUTHENTICATION_CODES = frozenset(
+    {
+        "actor_disabled",
+        "authentication_expired",
+        "authentication_revoked",
+        "authentication_unknown",
+        "machine_retired",
+    }
+)
+
+
+def error_code_is_terminal_authentication(code: object) -> bool:
+    """Whether the server rejected this credential for good.
+
+    No retry with the same credential can succeed; only a new credential from
+    ``yoke connect`` can.
+    """
+    return str(code or "") in TERMINAL_AUTHENTICATION_CODES
+
+
 def typed_failure_status_is_transient(status: int | None) -> bool:
     """Whether a typed application failure explicitly reports unavailability.
 
@@ -260,9 +280,11 @@ def write_retry_notice(
 
 __all__ = [
     "CONNECTION_ATTEMPTS",
+    "TERMINAL_AUTHENTICATION_CODES",
     "attempt_budget",
     "certificate_validation_error",
     "connection_refusal_is_conclusive",
+    "error_code_is_terminal_authentication",
     "is_sandbox_denial",
     "should_retry_connection",
     "should_retry_response_deadline",

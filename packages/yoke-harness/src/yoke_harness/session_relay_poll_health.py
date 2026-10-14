@@ -10,6 +10,9 @@ from collections.abc import Mapping
 from pathlib import Path
 import re
 
+from yoke_cli.transport.https_retry_policy import (
+    error_code_is_terminal_authentication,
+)
 from yoke_harness.session_relay_health import (
     _LOCK,
     _health_path,
@@ -59,7 +62,9 @@ def _bounded_poll(value: object) -> dict[str, object]:
         return {}
     result: dict[str, object] = {"status": status}
     try:
-        consecutive = max(0, min(int(value.get("consecutive_failures") or 0), 1_000_000))
+        consecutive = max(
+            0, min(int(value.get("consecutive_failures") or 0), 1_000_000)
+        )
     except (TypeError, ValueError):
         consecutive = 0
     if consecutive:
@@ -155,17 +160,21 @@ def attach_poll_outcome(
     return health
 
 
+def connection_recovery(code: str) -> str:
+    """Operator recovery for one failed control-plane poll code."""
+    reconnect = code in _CREDENTIAL_CODES or error_code_is_terminal_authentication(code)
+    return (_CONNECT_THEN_INSTALL if reconnect else _RESTORE_TRANSPORT).format(
+        code=code
+    )
+
+
 def poll_connection_recovery(health: Mapping[str, object]) -> str:
     """Operator recovery for a failed or not-yet-proven control-plane poll."""
     poll = health.get("poll_outcome")
     poll = poll if isinstance(poll, Mapping) else {}
     status = str(poll.get("status") or "")
     if status == "failed":
-        code = str(poll.get("error_code") or "poll_failed")
-        template = (
-            _CONNECT_THEN_INSTALL if code in _CREDENTIAL_CODES else _RESTORE_TRANSPORT
-        )
-        return template.format(code=code)
+        return connection_recovery(str(poll.get("error_code") or "poll_failed"))
     if status == "pending":
         return (
             "Relay is loaded but has not completed a control-plane poll yet. "
@@ -176,6 +185,7 @@ def poll_connection_recovery(health: Mapping[str, object]) -> str:
 
 __all__ = [
     "attach_poll_outcome",
+    "connection_recovery",
     "diagnosed_poll_code",
     "poll_connection_recovery",
     "record_poll_failure",

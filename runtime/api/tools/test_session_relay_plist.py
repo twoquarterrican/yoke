@@ -89,7 +89,7 @@ def test_plist_keeps_one_standing_relay_alive_without_scheduling_it(
         "relay",
         "serve",
     ]
-    assert document["KeepAlive"] is RELAY_KEEP_ALIVE is True
+    assert document["KeepAlive"] == RELAY_KEEP_ALIVE == {"SuccessfulExit": False}
     assert document["RunAtLoad"] is True
     assert "StartInterval" not in document
     # launchd's Standard default lets requested workers and their browsers run
