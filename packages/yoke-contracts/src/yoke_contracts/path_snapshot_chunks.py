@@ -13,6 +13,12 @@ from yoke_contracts.path_snapshot import (
 )
 
 SNAPSHOT_SYNC_CHUNK_TARGET_BYTES = 700_000
+#: The most commits one begin may offer as an incremental-upload base.
+SNAPSHOT_BASE_CANDIDATE_LIMIT = 256
+#: Refusal: staging for the upload id is gone; restart from begin.
+SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE = "snapshot_chunk_upload_missing"
+#: Refusal: the stored base plus the delta does not give the scanned tree.
+SNAPSHOT_BASE_MISMATCH_CODE = "snapshot_base_mismatch"
 
 
 class PathSnapshotChunkMetadata(BaseModel):
@@ -25,6 +31,12 @@ class PathSnapshotChunkMetadata(BaseModel):
     warnings: List[str] = Field(default_factory=list)
     # False: identity-only; begin records the lane head and stages nothing.
     contents_included: bool = True
+    # Non-empty: begin stages nothing and answers ``base_commit_sha``, the
+    # first of these commits whose snapshot the server already holds (or
+    # null). The client then uploads only files that differ from that base.
+    base_candidates: List[str] = Field(
+        default_factory=list, max_length=SNAPSHOT_BASE_CANDIDATE_LIMIT
+    )
 
     @model_validator(mode="after")
     def _valid_metadata(self) -> "PathSnapshotChunkMetadata":
@@ -35,6 +47,22 @@ class PathSnapshotChunkMetadata(BaseModel):
         return self
 
 
+class PathSnapshotDelta(BaseModel):
+    """How finalize assembles a snapshot from a base plus uploaded changes.
+
+    The server starts from its stored snapshot for ``base_commit_sha``, drops
+    ``deleted_paths`` and every uploaded path, then adds the uploaded files.
+    It refuses unless the result holds exactly ``path_count`` files whose
+    :func:`~yoke_contracts.path_snapshot.snapshot_path_digest` is
+    ``path_digest``.
+    """
+
+    base_commit_sha: str = Field(min_length=1)
+    deleted_paths: List[str] = Field(default_factory=list)
+    path_count: int = Field(ge=0)
+    path_digest: str = Field(min_length=1)
+
+
 class PathSnapshotChunkSyncPayload(BaseModel):
     project_id: Optional[str] = None
     repo_root: Optional[str] = None
@@ -43,6 +71,7 @@ class PathSnapshotChunkSyncPayload(BaseModel):
     snapshot: Optional[PathSnapshotChunkMetadata] = None
     chunk_index: Optional[int] = None
     files: List[SnapshotFileEntry] = Field(default_factory=list)
+    delta: Optional[PathSnapshotDelta] = None
     hook_mode: bool = False
 
     @field_validator("upload_id")
@@ -64,6 +93,8 @@ class PathSnapshotChunkSyncPayload(BaseModel):
                 raise ValueError("append requires at least one file entry")
         if self.operation in {"finalize", "abort"} and self.files:
             raise ValueError(f"{self.operation} must not carry files")
+        if self.delta is not None and self.operation != "finalize":
+            raise ValueError("only finalize carries a delta")
         return self
 
 
@@ -73,8 +104,12 @@ def snapshot_chunk_payload_size_bytes(payload: PathSnapshotChunkSyncPayload) -> 
 
 
 __all__ = [
+    "SNAPSHOT_BASE_CANDIDATE_LIMIT",
+    "SNAPSHOT_BASE_MISMATCH_CODE",
+    "SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE",
     "SNAPSHOT_SYNC_CHUNK_TARGET_BYTES",
     "PathSnapshotChunkMetadata",
     "PathSnapshotChunkSyncPayload",
+    "PathSnapshotDelta",
     "snapshot_chunk_payload_size_bytes",
 ]

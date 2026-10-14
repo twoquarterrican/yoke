@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from yoke_contracts.api.function_call import FunctionCallResponse, FunctionError
-from yoke_contracts.path_snapshot import PathSnapshotPayload
 
 
 def upload_result(
@@ -42,7 +41,8 @@ def deferral_response() -> FunctionCallResponse:
 
 
 def begin_settled_row(
-    snapshot: PathSnapshotPayload,
+    label: str,
+    commit_sha: str,
     result: Dict[str, Any],
 ) -> Optional[Dict[str, Any]]:
     """The begin's own row when it needed no chunks: reused or identity-only."""
@@ -51,35 +51,31 @@ def begin_settled_row(
         return None
     rows = result.get("snapshots") or []
     for row in rows:
-        if row.get("commit_sha") == snapshot.commit_sha:
-            return {
-                **row,
-                "status": status,
-                "ref": snapshot.ref,
-                "commit_sha": snapshot.commit_sha,
-            }
+        if row.get("commit_sha") == commit_sha:
+            return {**row, "status": status, "ref": label, "commit_sha": commit_sha}
     snapshot_id = result.get("snapshot_id")
     if snapshot_id is None:
         return None
     return {
         "status": "reused",
         "snapshot_id": snapshot_id,
-        "ref": snapshot.ref,
-        "commit_sha": snapshot.commit_sha,
+        "ref": label,
+        "commit_sha": commit_sha,
         "entry_count": 0,
         "symlink_count": 0,
     }
 
 
 def alias_snapshot_row(
-    snapshot: PathSnapshotPayload,
+    label: str,
+    commit_sha: str,
     source_row: Dict[str, Any],
 ) -> Dict[str, Any]:
     return {
         "status": "reused",
         "snapshot_id": source_row.get("snapshot_id"),
-        "ref": snapshot.ref,
-        "commit_sha": snapshot.commit_sha,
+        "ref": label,
+        "commit_sha": commit_sha,
         "entry_count": 0,
         "symlink_count": 0,
     }

@@ -6,6 +6,7 @@ Per-file source scanning that fills a file entry lives in
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any, Dict, Iterable, List, Literal, Optional, Sequence, Tuple
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -143,6 +144,16 @@ def snapshot_sync_payload_size_bytes(payload: PathSnapshotSyncPayload) -> int:
     return len(payload.model_dump_json().encode("utf-8"))
 
 
+def snapshot_path_digest(file_paths: Iterable[str]) -> str:
+    """SHA-256 of the sorted file paths: one inventory's path-set identity.
+
+    An incremental sync declares it for the tree it scanned; the server
+    recomputes it over the snapshot it assembled, so the two cannot drift.
+    """
+    joined = "\n".join(sorted(file_paths))
+    return hashlib.sha256(joined.encode("utf-8", "surrogateescape")).hexdigest()
+
+
 def parent_path_string(path_string: str) -> Optional[str]:
     if path_string == ROOT_PATH_SENTINEL:
         return None
@@ -182,4 +193,4 @@ SYMLINK_CANONICALIZED SYMLINK_DANGLING_TARGET SYMLINK_EXTERNAL_TARGET
 PathSnapshotPayload PathSnapshotSyncPayload SnapshotContractError
 SnapshotFileEntry SnapshotSymlinkFact all_paths_with_kinds
 invalid_project_relative_paths parent_path_string
-snapshot_sync_payload_size_bytes""".split()
+snapshot_path_digest snapshot_sync_payload_size_bytes""".split()

@@ -21,13 +21,8 @@ from yoke_contracts.path_snapshot_chunks import (
     snapshot_chunk_payload_size_bytes,
 )
 from yoke_core.domain.project_derived_facts import converge_derived_facts
-from yoke_core.domain.project_snapshot_chunk_uploads import (
-    ChunkUploadMissingError,
-    sync_chunk,
-)
-
-
-SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE = "snapshot_chunk_upload_missing"
+from yoke_core.domain.project_snapshot_chunk_uploads import sync_chunk
+from yoke_core.domain.project_snapshot_sync_refusals import SnapshotSyncRefusal
 
 
 class ProjectSnapshotSyncRequest(PathSnapshotSyncPayload):
@@ -126,16 +121,13 @@ def _handle_chunk_sync(request: FunctionCallRequest) -> HandlerOutcome:
         )
     try:
         result = sync_chunk(project_ref, payload, _sync)
-    except ChunkUploadMissingError as exc:
+    except SnapshotSyncRefusal as exc:
         return HandlerOutcome(
             primary_success=False,
             error=FunctionError(
-                code=SNAPSHOT_CHUNK_UPLOAD_MISSING_CODE,
+                code=exc.code,
                 message=str(exc),
-                recovery_hint=(
-                    "Restart the chunked upload from `begin`; nothing was "
-                    "staged for this upload id."
-                ),
+                recovery_hint=exc.recovery_hint,
             ),
         )
     except Exception as exc:

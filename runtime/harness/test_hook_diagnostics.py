@@ -18,7 +18,7 @@ from yoke_core.hooks.decision_render import (
 from yoke_core.hooks.types import HookDecision, Outcome
 from yoke_harness.hooks.decision_render import merge_allow_stdout, write_hook_output
 from yoke_harness.git_hooks import pre_commit
-from yoke_cli.project_snapshot.scanner import build_sync_payload
+from yoke_cli.project_snapshot import identity_sync_payload, plan_sync
 
 
 def test_labels_preserve_multiline_recovery_and_do_not_repeat():
@@ -59,14 +59,8 @@ def test_identity_only_scan_is_silent_and_preserves_head(tmp_path, capsys):
     git("config", "user.email", "test@example.com")
     git("config", "user.name", "Test")
     git("-c", "core.hooksPath=/dev/null", "commit", "--allow-empty", "-m", "initial")
-    payload = build_sync_payload(
-        tmp_path,
-        project_id="demo",
-        integration_target=None,
-        head_only=True,
-        hook_mode=True,
-        include_contents=False,
-    )
+    plan = plan_sync(tmp_path, integration_target=None, head_only=True)
+    payload = identity_sync_payload(plan, project_id="demo", hook_mode=True)
     assert payload.snapshots[0].commit_sha == git("rev-parse", "HEAD")
     assert not payload.snapshots[0].contents_included
     assert capsys.readouterr() == ("", "")

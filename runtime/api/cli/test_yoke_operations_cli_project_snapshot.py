@@ -6,7 +6,6 @@ import io
 from pathlib import Path
 from typing import List
 
-from yoke_cli.project_snapshot import scanner
 from yoke_contracts.api.function_call import (
     FunctionCallResponse,
     FunctionError,
@@ -38,46 +37,45 @@ def test_project_snapshot_sync_scans_and_dispatches_payload(tmp_path: Path) -> N
         str(repo),
         "--project",
         "demo",
+        "--integration-target",
+        "no-such-branch",
     )
     assert rc == 0
     assert "created: HEAD abc snapshot=1" in out
     assert non_progress_err(err) == ""
     assert "snapshot sync:" in err
 
-    call = _CALLS[-1]
-    assert call["function_id"] == "project.snapshot.sync"
-    assert call["target"].project_id == "demo"
-    payload = call["payload"]
-    assert payload["project_id"] == "demo"
-    assert payload["repo_root"] == str(repo)
-    assert call["timeout_s"] is None
-    files = {entry["path"] for entry in payload["snapshots"][0]["files"]}
+    assert {call["function_id"] for call in _CALLS} == {"project.snapshot.sync"}
+    assert {call["target"].project_id for call in _CALLS} == {"demo"}
+    assert {call["timeout_s"] for call in _CALLS} == {None}
+    payloads = [call["payload"] for call in _CALLS]
+    assert {payload["project_id"] for payload in payloads} == {"demo"}
+    assert payloads[0]["repo_root"] == str(repo)
+    files = {entry["path"] for entry in payloads[2]["files"]}
     assert {"README.md", "src/app.py"} <= files
 
 
-def test_build_sync_payload_reuses_head_scan_for_same_commit_refs(
+def test_sync_scans_once_for_same_commit_refs(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
+    from yoke_cli.project_snapshot import tree_delta
+
     repo = _make_repo(tmp_path)
-    real_scan_ref = scanner.scan_ref
+    real_scan_ref = tree_delta.scan_ref
     calls: List[str] = []
 
     def fake_scan_ref(*args, **kwargs):
         calls.append(kwargs.get("label") or args[1])
         return real_scan_ref(*args, **kwargs)
 
-    monkeypatch.setattr(scanner, "scan_ref", fake_scan_ref)
+    monkeypatch.setattr(tree_delta, "scan_ref", fake_scan_ref)
 
-    payload = scanner.build_sync_payload(
-        repo,
-        project_id="demo",
-        integration_target="main",
-    )
+    rc, out, _err = _run("project", "snapshot", "sync", str(repo), "--project", "demo")
 
-    assert [snapshot.ref for snapshot in payload.snapshots] == ["HEAD", "main"]
-    assert payload.snapshots[0].commit_sha == payload.snapshots[1].commit_sha
-    assert calls == ["HEAD"]
+    assert rc == 0
+    assert calls == ["main"]
+    assert [line.split(":")[0] for line in out.splitlines()] == ["reused", "created"]
 
 
 def test_hook_mode_reports_failure_but_exits_zero(tmp_path: Path) -> None:
@@ -200,7 +198,7 @@ def _write_sync(
     )
     if scan_error is not None:
         monkeypatch.setattr(
-            "yoke_cli.commands.adapters.project_snapshot.build_sync_payload",
+            "yoke_cli.commands.adapters.project_snapshot.plan_sync",
             lambda *_args, **_kwargs: (_ for _ in ()).throw(scan_error),
         )
     err = io.StringIO()

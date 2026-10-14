@@ -6,12 +6,13 @@ import io
 from pathlib import Path
 
 from yoke_cli.commands.adapters.project_snapshot import HOOK_WRITE_TIMEOUT_S
-from yoke_cli.project_snapshot import scanner
+from yoke_cli.project_snapshot import identity_sync_payload, plan_sync, scanner
 from yoke_cli.project_snapshot.scan_progress import ScanProgress
 from yoke_cli.project_snapshot.scanner_blobs import blob_sources
 from yoke_contracts.api.function_call import FunctionCallResponse
 from runtime.api.cli.project_snapshot_cli_test_helpers import (
     CALLS,
+    head_sha,
     make_repo,
     run_cli,
 )
@@ -27,31 +28,38 @@ def test_identity_scan_skips_blob_reads(tmp_path: Path, monkeypatch) -> None:
         "yoke_cli.project_snapshot.scanner.blob_sources",
         boom,
     )
-    payload = scanner.build_sync_payload(
-        repo,
-        project_id="demo",
-        integration_target="main",
-        head_only=True,
-        hook_mode=True,
-        include_contents=False,
-    )
+    plan = plan_sync(repo, integration_target="main", head_only=True)
+    payload = identity_sync_payload(plan, project_id="demo", hook_mode=True)
     assert payload.hook_mode is True
     assert payload.snapshots[0].files == []
+    assert payload.snapshots[0].contents_included is False
 
 
-def test_hook_cli_defers_without_reading_file_contents(tmp_path: Path) -> None:
+def test_hook_cli_records_identity_without_reading_file_contents(
+    tmp_path: Path, monkeypatch
+) -> None:
     repo = make_repo(tmp_path)
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("the git hook sync must not read blobs")
+
+    monkeypatch.setattr("yoke_cli.project_snapshot.scanner.blob_sources", boom)
     begin = FunctionCallResponse(
         success=True,
         function="project.snapshot.sync",
         version="v1",
-        result={"status": "chunk_upload_started"},
-    )
-    abort = FunctionCallResponse(
-        success=True,
-        function="project.snapshot.sync",
-        version="v1",
-        result={},
+        result={
+            "status": "identity_only",
+            "snapshot_id": None,
+            "snapshots": [
+                {
+                    "status": "identity_only",
+                    "snapshot_id": None,
+                    "ref": "HEAD",
+                    "commit_sha": head_sha(repo),
+                }
+            ],
+        },
     )
     rc, out, err = run_cli(
         "project",
@@ -62,16 +70,42 @@ def test_hook_cli_defers_without_reading_file_contents(tmp_path: Path) -> None:
         "demo",
         "--head-only",
         "--hook",
-        responses=[begin, abort],
+        responses=[begin],
     )
     assert rc == 0
     assert out == ""
-    assert "identity only" not in err
-    assert err.startswith("yoke (post-commit): ")
-    assert "deferred" in err
-    assert [call["payload"]["operation"] for call in CALLS] == ["begin", "abort"]
-    assert CALLS[0]["payload"]["snapshot"]["file_count"] == 0
+    assert err == ""
+    assert [call["payload"]["operation"] for call in CALLS] == ["begin"]
+    snapshot = CALLS[0]["payload"]["snapshot"]
+    assert snapshot["file_count"] == 0
+    assert snapshot["contents_included"] is False
+    assert snapshot["base_candidates"] == []
     assert CALLS[0]["timeout_s"] == HOOK_WRITE_TIMEOUT_S
+
+
+def test_hook_cli_reports_an_unsettled_identity_begin(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path)
+    begin = FunctionCallResponse(
+        success=True,
+        function="project.snapshot.sync",
+        version="v1",
+        result={"status": "chunk_upload_started"},
+    )
+    rc, out, err = run_cli(
+        "project",
+        "snapshot",
+        "sync",
+        str(repo),
+        "--project",
+        "demo",
+        "--head-only",
+        "--hook",
+        responses=[begin],
+    )
+    assert rc == 0
+    assert out == ""
+    assert err.startswith("yoke (post-commit): ")
+    assert "was not settled at begin" in err
 
 
 def test_full_scan_emits_progress_and_still_reads_files(
