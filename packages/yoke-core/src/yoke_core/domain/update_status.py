@@ -91,6 +91,7 @@ def update_task_status(
     new_status: str,
     note: str = "",
     *,
+    session_id: Optional[str] = None,
     no_github: bool = False,
     no_derive: bool = False,
     stdout: Optional[TextIO] = None,
@@ -166,7 +167,7 @@ def update_task_status(
                 return 1
 
     # --- claim verification ---
-    _verify_claim(epic_id, task_num, stderr=stderr)
+    _verify_claim(epic_id, task_num, session_id=session_id, stderr=stderr)
 
     # --- DB update ---
     conn.execute(
