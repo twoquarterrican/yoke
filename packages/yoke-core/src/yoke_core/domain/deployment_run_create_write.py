@@ -31,6 +31,7 @@ from yoke_core.domain.deployment_source_reads import (
     SourcePreparationChanged,
 )
 from yoke_core.domain.deployment_runs_lock import bounded_run_write
+from yoke_core.domain.deployment_start_timing import timed_preparation, timing_facts
 
 
 class CompositionRefused(DomainRefusal, ValueError):
@@ -185,14 +186,23 @@ def create_run(
     try:
         with composition_reads():
             if db_backend.connection_is_postgres(conn):
-                validate_before_lock(conn, project, **request, **run)
+                timed_preparation(
+                    "create_provisional_composition",
+                    validate_before_lock,
+                    conn,
+                    project,
+                    **request,
+                    **run,
+                )
                 for attempt in range(8):
                     try:
                         with (
                             bounded_run_write(conn, "new release"),
                             prepared_sources_only(),
                         ):
-                            conn.execute(_CREATE_LOCK_SQL)
+                            timed_preparation(
+                                "create_lock", conn.execute, _CREATE_LOCK_SQL
+                            )
                             return _create_locked(conn, project, **request, **run)
                     except SourcePreparationChanged as exc:
                         conn.rollback()
@@ -200,7 +210,7 @@ def create_run(
                             raise
                         # Answer only the new exact source question with every
                         # write lock released, then revalidate mutable facts.
-                        exc.prepare()
+                        timed_preparation("create_source_refresh", exc.prepare)
             return _create_locked(conn, project, **request, **run)
     finally:
         conn.close()
@@ -259,8 +269,11 @@ def _create_locked(
     # standalone next-id command remains a non-reserving preview.
     now = utc_now()
     run_id = _next_run_id(conn, now)
+    timing_facts(run_id=run_id, source_sha=run["release_lineage"] or "")
     keyed = basis == idempotency.BASIS_RECORDED_KEY
-    valid, message = compose_run(
+    valid, message = timed_preparation(
+        "create_locked_composition",
+        compose_run,
         conn,
         run_id,
         created_at=now,
@@ -272,8 +285,10 @@ def _create_locked(
     )
     if not valid:
         raise CompositionRefused(message)
-    conn.commit()
-    _finish_superseded_run(conn, run_id)
+    timed_preparation("create_commit", conn.commit)
+    timed_preparation(
+        "create_takeover_settlement", _finish_superseded_run, conn, run_id
+    )
     return CreatedRun(run_id, False, basis)
 
 

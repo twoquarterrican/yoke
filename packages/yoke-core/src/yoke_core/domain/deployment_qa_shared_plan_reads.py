@@ -11,42 +11,58 @@ from yoke_core.domain.deployment_qa_presentation_reads import (
 )
 
 
+def read_plan_rows(conn, plan_ids, *, lock_plan):
+    """Read each definition once, optionally holding plans in stable ID order.
+
+    Case writers update the owning plan before replacing its cases. Admission
+    holds those plan locks until its transaction ends; presentation never locks.
+    """
+    from yoke_core.domain import db_backend
+    from yoke_core.domain.deployment_requirement_snapshot_format import (
+        PLAN_FIELDS,
+        PLAN_CASE_COLUMNS,
+    )
+    from yoke_core.domain.qa_converging_columns import converged_select
+
+    ids = tuple(sorted(set(int(value) for value in plan_ids)))
+    if not ids:
+        return {}
+    postgres = db_backend.connection_is_postgres(conn)
+    markers = ",".join("%s" if postgres else "?" for _ in ids)
+    lock = " FOR UPDATE" if lock_plan and postgres else ""
+    plans = query_rows(
+        conn,
+        f"SELECT {converged_select(conn, 'qa_plans', (*PLAN_FIELDS, 'retired_at'))} "
+        f"FROM qa_plans WHERE id IN ({markers}) ORDER BY id{lock}",
+        ids,
+    )
+    columns = converged_select(conn, "qa_plan_cases", PLAN_CASE_COLUMNS, "c")
+    cases = query_rows(
+        conn,
+        f"SELECT {columns},m.name AS method_name,m.runner_id,"
+        "m.required_capability_kinds,m.verdict_path,m.config_contract_id "
+        "FROM qa_plan_cases c JOIN qa_methods m ON m.id=c.method_id "
+        f"WHERE c.plan_id IN ({markers}) ORDER BY c.position,c.id",
+        ids,
+    )
+    rows = {int(plan["id"]): (plan, []) for plan in plans}
+    for case in cases:
+        if int(case["plan_id"]) in rows:
+            rows[int(case["plan_id"])][1].append(case)
+    return rows
+
+
 def presented_plan_rows(conn, plan_id):
     from yoke_core.domain.deployment_qa_presentation_facts import presented_plan_ids
 
     ids = presented_plan_ids(conn)
     if ids is None or int(plan_id) not in ids:
         return None
-
-    def read():
-        from yoke_core.domain.deployment_requirement_snapshot_format import (
-            PLAN_FIELDS,
-            PLAN_CASE_COLUMNS,
-        )
-        from yoke_core.domain.qa_converging_columns import converged_select
-
-        markers = ",".join("%s" for _ in ids)
-        plans = query_rows(
-            conn,
-            f"SELECT {converged_select(conn, 'qa_plans', (*PLAN_FIELDS, 'retired_at'))} "
-            f"FROM qa_plans WHERE id IN ({markers})",
-            ids,
-        )
-        columns = converged_select(conn, "qa_plan_cases", PLAN_CASE_COLUMNS, "c")
-        cases = query_rows(
-            conn,
-            f"SELECT {columns},m.name AS method_name,m.runner_id,"
-            "m.required_capability_kinds,m.verdict_path,m.config_contract_id "
-            "FROM qa_plan_cases c JOIN qa_methods m ON m.id=c.method_id "
-            f"WHERE c.plan_id IN ({markers}) ORDER BY c.position,c.id",
-            ids,
-        )
-        rows = {int(plan["id"]): (plan, []) for plan in plans}
-        for case in cases:
-            rows[int(case["plan_id"])][1].append(case)
-        return rows
-
-    return presentation_read(conn, ("qa_presented_plans", ids), read).get(int(plan_id))
+    return presentation_read(
+        conn,
+        ("qa_presented_plans", ids),
+        lambda: read_plan_rows(conn, ids, lock_plan=False),
+    ).get(int(plan_id))
 
 
 def plan_snapshot_row(conn, plan_id, *, lock_plan):
