@@ -131,7 +131,7 @@ ALREADY_SERVED_FUNCTION_IDS: frozenset[str] = frozenset((
     'workflow_item.epic_task.body_get', 'workflow_item.epic_task.body_replace', 'workflow_item.epic_task.file_add', 'workflow_item.epic_task.get',
     'workflow_item.epic_task.history_insert', 'workflow_item.epic_task.metadata_update', 'workflow_item.epic_task.reassign', 'workflow_item.epic_task.remove',
     'workflow_item.epic_task.review_get', 'workflow_item.epic_task.review_insert', 'workflow_item.epic_task.review_list', 'workflow_item.epic_task.review_seed',
-    'workflow_item.epic_task.scope_finalize', 'workflow_item.epic_task.scope_no_files', 'workflow_item.epic_task.scope_reopen', 'workflow_item.epic_task.scope_repair_legacy',
+    'workflow_item.epic_task.scope_finalize', 'workflow_item.epic_task.scope_no_files', 'workflow_item.epic_task.scope_reopen',
     'workflow_item.epic_task.simulation_get', 'workflow_item.epic_task.simulation_upsert', 'workflow_item.epic_task.split', 'workflow_item.epic_task.submission_receipt_get',
     'workflow_item.epic_task.update_status', 'workflows.approval_defaults.publish', 'workflows.canon.get', 'workflows.canon_follow.set',
     'workflows.canon_update.apply', 'workflows.canon_update.apply_all', 'workflows.canon_update.preview', 'workflows.current.set',
