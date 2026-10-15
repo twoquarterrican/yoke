@@ -7,7 +7,7 @@
  "need": "Issue mirroring is independent of GitHub access. Setup binds repositories without enabling sync and preserves saved modes. Terminal setup adds no sync question. Agents offer a separate opt-in only when useful, using the project setting after setup. Deliberate enables require verified App permissions; creation returns a short notice and issue link.",
  "disclosure": "Before deliberate enable; after successful issue creation",
  "surface": "Agent project GitHub guidance and GitHub sync reference",
- "gap": "Installed campaign proof is held pending operator approval; stronger duplicate detection remains deferred.",
+ "gap": "Installed candidate campaign proof awaits the existing owner’s admission and readiness checks; stronger duplicate detection remains deferred.",
  "review": "Source regression coverage; installed candidate proof remains pending.",
  "plan_notes": ["FIRST-USER 10", "FIRST-USER 2"],
  "sources": ["docs/public/reference/github-sync.md", "docs/public/guides/agent-setup.md", "packages/yoke-cli/src/yoke_cli/config/project_onboard_progress.py", "runtime/api/cli/test_onboard_project_sync_activation.py", "runtime/api/domain/test_projects_github_sync_mode_invariant.py"],
