@@ -3,6 +3,7 @@
 import shlex
 
 from yoke_core.domain.machine_qa_fixture_constants import YOKE_BIN
+from yoke_core.domain.installer_campaign_plan_common import action
 
 
 ISSUE_SYNC_DEFAULT_SCRIPT = r"""
@@ -33,22 +34,28 @@ print('issue mirroring remained disabled; deliberate unbound enable refused')
 
 def issue_sync_cases(command_case, local_setup):
     """Use the existing campaign's command recipe and isolated local setup."""
-    return (
-        command_case(
-            25,
-            "issue-sync-default",
-            local_setup
-            + '; "$(uv tool dir)/yoke-cli/bin/python3" -c '
-            + shlex.quote(ISSUE_SYNC_DEFAULT_SCRIPT)
-            + f" {YOKE_BIN}",
-            execution_mode="terminal",
-            instructions=(
-                "Create an isolated local project using the installed candidate. "
-                "Verify disabled mode before and after a deliberate enable without App access. "
-                "Keep the named refusal; restore the declared baseline afterward. "
-                "Real active-binding, agent opt-in and first-issue URL proof remains "
-                "with the installer exploration and its approved repository fixture."
-            ),
-            outcome="A new project stays disabled and unbound enable refuses with binding recovery.",
+    case = command_case(
+        25,
+        "issue-sync-default",
+        local_setup
+        + '; "$(uv tool dir)/yoke-cli/bin/python3" -c '
+        + shlex.quote(ISSUE_SYNC_DEFAULT_SCRIPT)
+        + f" {YOKE_BIN}",
+        execution_mode="terminal",
+        instructions=(
+            "Create an isolated local project using the installed candidate. "
+            "Verify disabled mode before and after a deliberate enable without App access. "
+            "Keep the named refusal; restore the declared baseline afterward. "
+            "Real active-binding, agent opt-in and first-issue URL proof remains "
+            "with the installer exploration and its approved repository fixture."
         ),
+        outcome="A new project stays disabled and unbound enable refuses with binding recovery.",
     )
+    case["method_config"]["actions"] = [
+        action(
+            "issue-sync-default",
+            ready_text=("issue-sync-default",),
+            ready_timeout_seconds=300,
+        )
+    ]
+    return (case,)
