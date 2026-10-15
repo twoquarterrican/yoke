@@ -52,16 +52,23 @@ def main():
         "(SELECT count(*) FROM qa_plan_executions WHERE deployment_run_id="
         + quoted_run
         + ") AS execution_count, "
-        "(SELECT m.item_id FROM deployment_run_items m JOIN item_refs r ON r.item_id=m.item_id "
+        "(SELECT r.public_ref FROM deployment_run_items m JOIN item_refs r ON r.item_id=m.item_id "
         "WHERE m.run_id="
         + quoted_run
         + " AND r.public_ref="
         + quoted_member
-        + ") AS member_item_id"
+        + ") AS member_public_ref, "
+        "(SELECT p.slug FROM deployment_run_items m JOIN items i ON i.id=m.item_id "
+        "JOIN projects p ON p.id=i.project_id JOIN item_refs r ON r.item_id=m.item_id "
+        "WHERE m.run_id="
+        + quoted_run
+        + " AND r.public_ref="
+        + quoted_member
+        + ") AS project"
     )
     population, _ = call("db", "read", population_sql)
-    member_count, execution_count, member_id = population["rows"][0]
-    if member_count < 44 or member_id is None:
+    member_count, execution_count, member_ref, project = population["rows"][0]
+    if member_count < 44 or member_ref != member or not project:
         raise RuntimeError(
             "materialization_proof_population: requires at least the observed 44 members and the exact attached member; restore representative admission before proving acceptance"
         )
@@ -70,7 +77,8 @@ def main():
             {
                 "member_count": member_count,
                 "execution_count": execution_count,
-                "member_item_id": member_id,
+                "member_public_ref": member_ref,
+                "project": project,
             }
         ),
         flush=True,
@@ -89,6 +97,8 @@ def main():
             stage,
             "--member",
             member,
+            "--project",
+            project,
         )
         result = envelope["result"]
         target = result["execution_target"]
@@ -134,9 +144,9 @@ def main():
             ids,
             target,
             result["candidate_revision"],
-            result["deployment_member_item_id"],
+            result["deployment_member_public_ref"],
         )
-        if current[3] != member_id:
+        if current[3] != member_ref or target["project"]["slug"] != project:
             raise RuntimeError(
                 "materialization_proof_member: returned a different member; inspect exact admission"
             )
