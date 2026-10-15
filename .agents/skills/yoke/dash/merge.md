@@ -135,7 +135,7 @@ Next: [close-out.md](close-out.md).
 
 The observer atomically saves current PR identity with landing stamps before
 notifying the holder. Worker closeout still records results and verification
-and enriches that same receipt; see [landing ownership](../../../../docs/public/reference/merge-queue-landings.md).
+and enriches that same receipt; see [landing ownership](../../../../.yoke/docs/reference/merge-queue-landings.md).
 During worker closeout, the merge boundary fetches the remote default
 branch and requires it to contain the exact candidate commit. The recorded
 merge SHA is the item's own PR merge on that fetched branch's first-parent
