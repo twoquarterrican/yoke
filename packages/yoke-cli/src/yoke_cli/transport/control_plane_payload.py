@@ -72,8 +72,9 @@ def required_field(payload: Mapping[str, Any], field: str) -> Any:
         )
     else:
         mismatch = f"control-plane server build {build} does not match this client"
+    checkout_ref = comparison.server_build if comparison is not None else ""
     recovery = (
-        f"pin the client checkout to {build}"
+        f"pin the client checkout to {checkout_ref or build}"
         if observed.name
         else "use a client build matching the deployed server"
     )

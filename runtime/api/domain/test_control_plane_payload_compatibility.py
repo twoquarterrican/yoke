@@ -29,7 +29,7 @@ def test_required_field_accepts_any_current_payload_contract() -> None:
 def test_older_server_case_payload_names_the_server_and_recovery(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    server_build = "0.1.1+launch.209"
+    server_build = "v0.1.1+launch.209"
     comparison = source_build_skew.BuildComparison(
         source_build_skew.AHEAD,
         local_head="a" * 40,
