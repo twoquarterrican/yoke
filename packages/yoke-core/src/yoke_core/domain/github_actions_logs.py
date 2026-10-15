@@ -269,13 +269,14 @@ def _error_snippet(
     deadline: float,
 ) -> str:
     try:
-        raw = read_bounded_response(
-            exc,
-            limit_bytes=GITHUB_SMALL_RESPONSE_LIMIT_BYTES,
-            label="GitHub Actions log error response",
-            deadline=deadline,
-        )
-        text = raw.decode("utf-8", errors="replace")
+        with exc:
+            raw = read_bounded_response(
+                exc,
+                limit_bytes=GITHUB_SMALL_RESPONSE_LIMIT_BYTES,
+                label="GitHub Actions log error response",
+                deadline=deadline,
+            )
+            text = raw.decode("utf-8", errors="replace")
     except GitHubResponseTooLargeError:
         text = "GitHub Actions log error response exceeded the size limit"
     except Exception:
