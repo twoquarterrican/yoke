@@ -36,7 +36,7 @@ ALREADY_SERVED_FUNCTION_IDS: frozenset[str] = frozenset((
     'done_transition.blocked_gate', 'done_transition.delivery_done_notice', 'done_transition.delivery_evidence', 'done_transition.done_preconditions',
     'done_transition.epic_task_github_issues', 'done_transition.epic_task_list', 'done_transition.epic_task_status_set', 'done_transition.finalize_local_side_effects',
     'done_transition.item_context', 'done_transition.item_field', 'done_transition.item_status_set', 'done_transition.latest_deployment_run',
-    'done_transition.populate_merged_at', 'done_transition.registered_flow_ids', 'done_transition.run_blocking_qa', 'done_transition.run_stage',
+    'done_transition.populate_merged_at', 'done_transition.registered_flow_ids', 'done_transition.run_stage',
     'done_transition.run_stage_qa_acceptance', 'env.list.run', 'env.use.run', 'ephemeral_env.create',
     'ephemeral_env.get', 'ephemeral_env.update', 'epic_tasks.list.run', 'events.anomalies.run',
     'events.count.run', 'events.emit', 'events.query.run', 'events.tail.run',

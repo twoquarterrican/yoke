@@ -14,9 +14,6 @@ from typing import Any
 
 from yoke_contracts.public_ref import format_item_ref
 from yoke_core.domain.deployment_qa_case_failure_kinds import RED_VERDICTS
-from yoke_core.domain.deployment_run_completion_preconditions import (
-    RESOLVED_RUN_QA_STATUSES,
-)
 from yoke_core.domain.deployment_run_stage_entry import (
     is_scoped_qa_stage,
     parse_stage_plan,
@@ -34,7 +31,6 @@ _FACT_TABLES = (
     "qa_requirements",
     "qa_runs",
     "decision_requests",
-    "deployment_run_qa",
 )
 
 
@@ -256,28 +252,6 @@ def _completion_boundary(
     unresolved: dict[str, list[str]] = {run_id: [] for run_id in run_ids}
     totals: dict[str, int] = {run_id: 0 for run_id in run_ids}
     holes, params = _holes(conn, run_ids)
-    if tables.has("deployment_run_qa"):
-        resolved_holes, resolved_params = _holes(conn, list(RESOLVED_RUN_QA_STATUSES))
-        flow_rows = conn.execute(
-            f"""SELECT run_id, check_name, status FROM deployment_run_qa
-                 WHERE run_id IN ({holes}) AND blocking=1
-                   AND status NOT IN ({resolved_holes})
-                 ORDER BY run_id, check_name""",
-            params + resolved_params,
-        ).fetchall()
-        for raw in flow_rows:
-            row = row_dict(raw)
-            unresolved[str(row["run_id"])].append(
-                f"check '{row['check_name']}' is {row['status']}"
-            )
-        for raw in conn.execute(
-            f"""SELECT run_id, COUNT(*) AS total FROM deployment_run_qa
-                 WHERE run_id IN ({holes}) AND blocking=1
-                 GROUP BY run_id""",
-            params,
-        ).fetchall():
-            row = row_dict(raw)
-            totals[str(row["run_id"])] += int(row["total"] or 0)
     if tables.has("qa_requirements") and tables.has("qa_runs"):
         settled = settled_obligation_sql(conn, "r")
         plan_rows = conn.execute(

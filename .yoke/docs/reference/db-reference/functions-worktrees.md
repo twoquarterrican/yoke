@@ -20,7 +20,6 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `done_transition.latest_deployment_run` | `none` |
 | `done_transition.populate_merged_at` | `none` |
 | `done_transition.registered_flow_ids` | `none` |
-| `done_transition.run_blocking_qa` | `none` |
 | `done_transition.run_stage` | `none` |
 | `done_transition.run_stage_qa_acceptance` | `none` |
 | `item_landings.list` | `none` |
