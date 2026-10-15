@@ -7,6 +7,11 @@ from copy import deepcopy
 from typing import Any
 
 from yoke_core.domain.db_helpers import query_rows
+from yoke_core.domain.deployment_qa_shared_plan_reads import (
+    _member_attached_plan_ids,
+    _other_members_plan_ids,
+    _formed_group_plan_ids,
+)
 from yoke_core.domain.qa_execution_environment_target import canonical_target
 
 
@@ -27,72 +32,6 @@ def shared_subject(subject: Mapping, target: Mapping, snapshot: Mapping) -> dict
         "shared_plan": identity,
         "shared_snapshot": dict(snapshot),
         "shared_target": normalized,
-    }
-
-
-def _member_attached_plan_ids(
-    conn: Any,
-    member: int,
-    snapshot: Mapping | None,
-    target: Mapping,
-    environment_id: int | None,
-) -> set[int]:
-    """Plans one member selects for this stage: attached, frozen or admitted."""
-    from yoke_core.domain.deployment_qa_frozen_plan_selection import member_requirements
-    from yoke_core.domain.qa_deployment_member_attached_plans import (
-        attached_member_plan_ids,
-    )
-
-    ids = set(
-        attached_member_plan_ids(
-            conn, member_item_id=member, environment_id=environment_id
-        )
-    )
-    for value in (snapshot or {}).get("plans") or []:
-        if (value.get("attachment") or {}).get("qa_phase") == "post_deploy":
-            ids.add(int(value["plan"]["id"]))
-    admitted = {"member_item_id": member, "member_snapshot": snapshot}
-    for requirement in member_requirements(conn, admitted, target=target):
-        if requirement.get("plan_id") is not None:
-            ids.add(int(requirement["plan_id"]))
-    return ids
-
-
-def _other_members_plan_ids(
-    conn: Any, run_id: str, member: int, target: Mapping, environment_id: int | None
-) -> set[int]:
-    """Plans any other member of the run attached for the same environment."""
-    import json
-
-    ids: set[int] = set()
-    for row in query_rows(
-        conn,
-        "SELECT item_id,requirement_snapshot FROM deployment_run_items "
-        "WHERE run_id=%s AND item_id<>%s ORDER BY item_id",
-        (run_id, member),
-    ):
-        raw = row["requirement_snapshot"]
-        snapshot = raw if isinstance(raw, Mapping) else json.loads(str(raw or "{}"))
-        ids |= _member_attached_plan_ids(
-            conn, int(row["item_id"]), snapshot, target, environment_id
-        )
-    return ids
-
-
-def _formed_group_plan_ids(conn: Any, run_id: str, stage_name: str) -> set[int]:
-    """Plans whose shared group already holds live memberless rows in this stage."""
-    from yoke_core.domain.qa_obligation_settlement import unretracted_requirement_sql
-
-    return {
-        int(row["plan_id"])
-        for row in query_rows(
-            conn,
-            "SELECT DISTINCT plan_id FROM qa_requirements "
-            "WHERE deployment_run_id=%s AND deployment_stage=%s "
-            "AND deployment_member_item_id IS NULL AND plan_id IS NOT NULL "
-            f"AND {unretracted_requirement_sql(conn)}",
-            (run_id, stage_name),
-        )
     }
 
 
@@ -210,6 +149,16 @@ def resolve_shared_subject(
 
 
 def frozen_shared_target(conn: Any, subject: Mapping) -> dict:
+    from yoke_core.domain.deployment_qa_presentation_reads import presentation_read
+
+    return presentation_read(
+        conn,
+        ("qa_shared_target", canonical_target(subject["shared_target"])),
+        lambda: _read_frozen_shared_target(conn, subject),
+    )
+
+
+def _read_frozen_shared_target(conn: Any, subject: Mapping) -> dict:
     """Freeze endpoints per group while its exact producer receipt is current."""
     import json
 

@@ -1,6 +1,8 @@
 """Member acceptance is the conjunction of its own private and shared subjects."""
 
 from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
+from yoke_core.domain.deployment_qa_presentation_reads import presentation_read
+from yoke_core.domain.qa_execution_environment_target import canonical_target
 from yoke_core.domain.deployment_qa_shared_plans import member_plan_subjects
 from yoke_core.domain.deployment_qa_execution_target import (
     deployment_qa_execution_target,
@@ -48,7 +50,18 @@ def shared_member_acceptance(conn, subject, target, acceptance_qa_kind):
             else None
         )
     answers = [
-        stage_acceptance(
+        presentation_read(
+            conn,
+            ("qa_shared_acceptance", canonical_target(part_target), acceptance_qa_kind),
+            lambda: stage_acceptance(
+                conn,
+                subject=part,
+                target=part_target,
+                acceptance_qa_kind=acceptance_qa_kind,
+            ),
+        )
+        if part.get("shared_plan")
+        else stage_acceptance(
             conn,
             subject=part,
             target=part_target,

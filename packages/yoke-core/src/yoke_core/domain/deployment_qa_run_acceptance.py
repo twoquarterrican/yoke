@@ -54,6 +54,7 @@ from yoke_core.domain.deployment_qa_execution_target import (
     deployment_qa_execution_target,
 )
 from yoke_core.domain.schema_common import _column_exists, _table_exists
+from yoke_core.domain.deployment_qa_presentation_reads import presentation_operation
 
 
 #: Every storage surface the scoped QA vocabulary is expressed in. A
@@ -225,6 +226,7 @@ def current_item_qa(
     )
 
 
+@presentation_operation
 def member_qa_standings(
     conn: Any, subjects: list[tuple[str, int, str]]
 ) -> dict[tuple[str, int], dict[str, Any]]:

@@ -46,23 +46,15 @@ function renderRunCards(context, host, rows, scope, cardOptions) {
 export async function loadDelivery(context, host, getScope) {
   const documentNode = context.document;
   const projects = context.projects();
-  const buckets = projects.length ? projects : [{ id: null }];
-  // Run rows and the facts beside them (flow names, QA checks) are fanned
-  // out together; neither waits on the other.
-  const [{ callResults }, facts] = await Promise.all([
-    settledScopedCalls(
-      context,
-      buckets.map((project) => ({
-        functionId: "deployment_runs.list",
-        payload: project.id === null
-          ? { relevance: "overview" }
-          : { project: String(project.id), relevance: "overview" },
-      })),
-    ),
-    projects.length
-      ? loadRunFacts(context, projects.map((project) => project.id))
-      : Promise.resolve(EMPTY_RUN_FACTS),
-  ]);
+  const factsPromise = projects.length
+    ? loadRunFacts(context, projects.map((project) => project.id))
+    : Promise.resolve(EMPTY_RUN_FACTS);
+  // The authorized universe overview returns each shared release once.
+  const { callResults } = await settledScopedCalls(context, [{
+    functionId: "deployment_runs.list", payload: { relevance: "overview" },
+  }]);
+  let facts = EMPTY_RUN_FACTS;
+  let factsPending = projects.length > 0;
   if (!context.isMounted()) return null;
   // Answering a request changes what the server would send, so the page
   // reloads rather than repainting the rows it already has.
@@ -80,24 +72,20 @@ export async function loadDelivery(context, host, getScope) {
   );
   let itemFacts = EMPTY_CARRIED_ITEM_FACTS;
   const paint = () => {
-    const chosen = projects.length
-      ? selectedProjects(projects, getScope()) : buckets;
-    const byId = new Map();
-    for (const project of chosen) {
-      const index = buckets.indexOf(project);
-      const result = successfulResult(callResults[index]);
-      if (!result) {
-        host.replaceChildren(el(
-          documentNode,
-          "p",
-          "error work-band-error",
-          callError(callResults[index], "Deployment runs could not be loaded."),
-        ));
-        return;
-      }
-      for (const row of result.rows || []) byId.set(String(row.id || row.run_id), row);
+    const result = successfulResult(callResults[0]);
+    if (!result) {
+      host.replaceChildren(el(
+        documentNode, "p", "error work-band-error",
+        callError(callResults[0], "Deployment runs could not be loaded."),
+      ));
+      return;
     }
-    const rows = [...byId.values()];
+    const chosen = new Set(selectedProjects(projects, getScope()).map((p) => Number(p.id)));
+    const rows = (result.rows || []).filter((row) => (
+      getScope() === "all"
+      || (row.member_items || []).some((member) => chosen.has(Number(member.project_id)))
+      || (!(row.member_items || []).length && chosen.has(Number(row.project_id)))
+    ));
     rows.sort((left, right) => (
       Number(left.overview_priority ?? 1) - Number(right.overview_priority ?? 1)
       || String(right.created_at || "").localeCompare(String(left.created_at || ""))
@@ -108,25 +96,32 @@ export async function loadDelivery(context, host, getScope) {
       itemFacts,
       onItemDecision,
     });
+    if (factsPending || facts.failed) {
+      host.appendChild(el(
+        documentNode, "p", "item-roster-note shipping-evidence-state",
+        factsPending ? "Loading QA evidence and flow names…" : facts.failed,
+      ));
+    }
   };
   paint();
+  factsPromise.then((loaded) => {
+    if (!context.isMounted()) return;
+    facts = loaded;
+    factsPending = false;
+    paint();
+  });
   // What each carried item proved is read for every member a card names,
   // including the ones behind "+N more". Fetching only the first three made
   // the rest look unverified: the production run that surfaced this had
   // twenty members and QA lines on exactly the first three in list order.
   const carried = [];
-  const seenRuns = new Set();
-  for (const callResult of callResults) {
-    const result = successfulResult(callResult);
-    for (const row of result?.rows || []) {
-      const runId = row.id || row.run_id;
-      if (seenRuns.has(String(runId))) continue;
-      seenRuns.add(String(runId));
-      // Derived carried work names no project; it is the run's own.
-      const projectId = runProjectId(context, row, "all");
-      for (const item of carriedItems(row)) {
-        carried.push({ ...item, project_id: item.project_id ?? projectId, run_id: runId });
-      }
+  const result = successfulResult(callResults[0]);
+  for (const row of result?.rows || []) {
+    const runId = row.id || row.run_id;
+    // Derived carried work names no project; it is the run's own.
+    const projectId = runProjectId(context, row, "all");
+    for (const item of carriedItems(row)) {
+      carried.push({ ...item, project_id: item.project_id ?? projectId, run_id: runId });
     }
   }
   loadCarriedItemEvidence(context, carried).then((loaded) => {

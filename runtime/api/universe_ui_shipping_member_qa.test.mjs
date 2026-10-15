@@ -264,3 +264,32 @@ test("collapsed and expanded shipping cards agree on how many members carry QA",
   assert.equal(membersWithQa(host, false).length, collapsedAll);
   assert.equal(membersWithQa(host, true).length, roster.length);
 });
+
+
+test("Shipping paints shared releases once while auxiliary reads are pending", async () => {
+  const documentNode = new FakeDocument();
+  const host = documentNode.createElement("div");
+  const client = shippingClient([]);
+  const calls = [];
+  let finishAuxiliary;
+  const pending = new Promise((resolve) => { finishAuxiliary = resolve; });
+  const context = shippingContext(documentNode, {
+    async call(request) {
+      calls.push(request);
+      if (request.function === "workflows.definition.get") return pending;
+      return client.call(request);
+    },
+  });
+  context.projects = () => [{ id: 1 }, { id: 2 }];
+  const paint = await loadDelivery(context, host, () => "all");
+  assert.equal(byClass(host, "shipping-run-card").length, 1);
+  assert.match(host.textContent, /Loading QA evidence/);
+  const overview = calls.filter((call) => call.function === "deployment_runs.list");
+  assert.equal(overview.length, 1);
+  assert.deepEqual(overview[0].payload, { relevance: "overview" });
+  finishAuxiliary({ status: 503, envelope: { success: false, error: { message: "Evidence service unavailable" } } });
+  await settle();
+  paint();
+  assert.equal(byClass(host, "shipping-run-card").length, 1);
+  assert.match(host.textContent, /Evidence service unavailable/);
+});

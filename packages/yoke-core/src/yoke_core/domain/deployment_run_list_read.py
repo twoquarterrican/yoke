@@ -29,6 +29,7 @@ from yoke_core.domain.actor_project_visibility import actor_visible_project_ids
 from yoke_core.domain.project_identity import resolve_project
 from yoke_core.domain.runs import TERMINAL_RUN_STATUSES
 from yoke_core.domain.workflows_definition_read import _stage_names
+from yoke_core.domain.schema_read_scope import composition_operation
 
 
 OVERVIEW_RUN_WINDOW = timedelta(hours=24)
@@ -232,6 +233,7 @@ def present_deployment_runs(
     return result
 
 
+@composition_operation
 def list_deployment_runs(
     *,
     project: Optional[str],

@@ -18,6 +18,10 @@ from yoke_core.domain.deployment_qa_stage_prerequisites import (
 )
 from yoke_core.domain.deployment_run_project_sources import carried_project_ids
 from yoke_core.domain.project_identity import render_item_ref
+from yoke_core.domain.deployment_qa_presentation_reads import (
+    presentation_active,
+    presentation_read,
+)
 
 
 def _p(conn: Any) -> str:
@@ -116,7 +120,17 @@ def deployment_qa_stage_subject(
     stage_name = str(stage_name or "").strip()
     if not stage_name:
         raise ValueError("deployment_stage must be a non-empty pinned stage name")
-    run = _run_stage(conn, str(run_id), stage_name)
+    run = (
+        _run_stage(conn, str(run_id), stage_name)
+        if require_active
+        else dict(
+            presentation_read(
+                conn,
+                ("qa_run_stage", str(run_id), stage_name),
+                lambda: _run_stage(conn, str(run_id), stage_name),
+            )
+        )
+    )
     stage = run["stage"]
     expected_scope = "item" if member_item_id is not None else "run"
     if str(stage.get("scope") or "") != expected_scope:
@@ -151,13 +165,28 @@ def deployment_qa_stage_subject(
     run["member_snapshot"] = None
     run["member_project_id"] = None
     if member_item_id is not None:
-        cursor = conn.execute(
-            "SELECT dri.requirement_snapshot,i.project_id "
-            "FROM deployment_run_items dri JOIN items i ON i.id=dri.item_id "
-            f"WHERE dri.run_id={_p(conn)} AND dri.item_id={_p(conn)}",
-            (str(run_id), int(member_item_id)),
+
+        def read_members():
+            member_filter = (
+                "" if presentation_active() else f" AND dri.item_id={_p(conn)}"
+            )
+            cursor = conn.execute(
+                "SELECT dri.item_id,dri.requirement_snapshot,i.project_id "
+                "FROM deployment_run_items dri JOIN items i ON i.id=dri.item_id "
+                f"WHERE dri.run_id={_p(conn)}{member_filter}",
+                (str(run_id),)
+                if presentation_active()
+                else (str(run_id), int(member_item_id)),
+            )
+            rows = [_row(cursor, value) for value in cursor.fetchall()]
+            return {int(row["item_id"]): row for row in rows}
+
+        members = (
+            read_members()
+            if require_active
+            else presentation_read(conn, ("qa_run_members", str(run_id)), read_members)
         )
-        member = _row(cursor, cursor.fetchone())
+        member = members.get(int(member_item_id))
         if member is None:
             raise ValueError(
                 f"{render_item_ref(conn, member_item_id)} is not an attached member of run {run_id!r}"
