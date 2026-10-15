@@ -117,12 +117,12 @@ CREATE INDEX IF NOT EXISTS idx_qa_artifacts_run ON qa_artifacts(qa_run_id);
 
 def cmd_init(*, db_path: Optional[str] = None) -> None:
     """Create QA tables (idempotent)."""
-    from yoke_core.domain.schema_migrations import _migrate_qa_execution_status
+    from yoke_core.domain.schema_migrations import _ensure_qa_runs_verdict_trigger
 
     conn = connect(path=db_path)
     try:
         execute_schema_script(conn, _QA_SCHEMA)
-        _migrate_qa_execution_status(conn)
+        _ensure_qa_runs_verdict_trigger(conn)
         conn.commit()
     finally:
         conn.close()
