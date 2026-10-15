@@ -1,4 +1,4 @@
-"""Share read-only Shipping QA facts for one member presentation operation."""
+"""Share QA facts during one read-only evaluation, including target occupancy."""
 
 from contextvars import ContextVar
 from functools import wraps
@@ -11,9 +11,13 @@ _PRESENTATION = ContextVar("deployment_qa_presentation", default=False)
 def presentation_operation(function):
     @wraps(function)
     def run(*args, **kwargs):
+        outer = not presentation_active()
         token = _PRESENTATION.set(True)
         try:
-            with composition_reads():
+            # A caller may have prepared sources before acquiring its locks.
+            # QA evidence must be read anew after that boundary, never borrowed
+            # from the caller's earlier evaluation.
+            with composition_reads(isolated=outer):
                 return function(*args, **kwargs)
         finally:
             _PRESENTATION.reset(token)

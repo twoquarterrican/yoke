@@ -192,9 +192,9 @@ def resolve_bound_branch_head(
     validates before its lock and again under it, and both have to pin the
     same commit without a second network read.
     """
-    from yoke_core.domain.schema_read_scope import shared_read
+    from yoke_core.domain.deployment_source_reads import source_read
 
-    return shared_read(
+    return source_read(
         conn,
         ("bound_branch_head", int(project_id), branch),
         lambda: _resolve_branch_head(
@@ -285,9 +285,14 @@ def record_bound_sources(conn: Any, run_id: str) -> dict[str, Any]:
     if recorded:
         conn.execute(
             f"UPDATE deployment_runs SET {BOUND_SOURCES_FIELD}={marker} "
-            f"WHERE id={marker}",
+            f"WHERE id={marker} AND COALESCE({BOUND_SOURCES_FIELD},'')=''",
             (dumps_compact(payload), run_id),
         )
+        stored = conn.execute(
+            f"SELECT {BOUND_SOURCES_FIELD} FROM deployment_runs WHERE id={marker}",
+            (run_id,),
+        ).fetchone()[0]
+        return parse_bound_sources(stored)
     return payload
 
 

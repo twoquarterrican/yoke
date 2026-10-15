@@ -9,7 +9,7 @@ delivery receipt and stamps ``deployed_to``, and the member closes against
 that delivery once its remaining target's obligations pass.
 
 A member still red on this run's own target, or owing anything that is not
-an other-target post-deploy obligation, is not deferred and still blocks.
+an other-target post-deploy or manual-acceptance obligation, is not deferred and still blocks.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from typing import Any
 
 from yoke_core.domain.deployment_member_post_deploy_admission import (
     outstanding_post_deploy_requirements,
+    requirement_target_environment,
 )
 from yoke_core.domain.deployment_qa_source_obligation import (
     latest_completion_run,
@@ -32,7 +33,7 @@ from yoke_core.domain.deployment_run_member_targeting import (
 def owes_only_other_targets(conn: Any, *, run_id: str, item_id: int) -> bool:
     """Whether this run answered the member and only other targets remain.
 
-    Every open done blocker must be post-deploy intake: either targeted at
+    Every open done blocker must be post-deploy intake or manual acceptance: targeted at
     another environment, or one this run selected and answered (its source
     row reads open until the delivery itself is recorded). At least one must
     target another environment, or there is nothing to defer.
@@ -57,9 +58,15 @@ def owes_only_other_targets(conn: Any, *, run_id: str, item_id: int) -> bool:
     blockers = unsatisfied_blocking(conn, item_id=int(item_id), target_status="done")
     for row in blockers.rows:
         requirement_id = int(row["id"])
-        if requirement_id not in targets:
+        target = targets.get(requirement_id)
+        if row.get("qa_phase") == "manual_acceptance":
+            target = requirement_target_environment(
+                row.get("target_env"), row.get("execution_target_json")
+            )
+            if not target or target == environment:
+                return False
+        elif requirement_id not in targets:
             return False
-        target = targets[requirement_id]
         if target and target != environment:
             deferred = True
         elif requirement_id not in selected:
@@ -130,3 +137,31 @@ __all__ = [
     "record_other_target_deliveries",
     "split_other_target_members",
 ]
+
+
+def member_completion_blocker(conn: Any, *, run_id: str, item_id: int) -> str:
+    """Name the exact still-open acceptance facts without changing them."""
+    from yoke_core.domain.project_identity import render_item_ref
+
+    ref = render_item_ref(conn, item_id)
+    blockers = unsatisfied_blocking(conn, item_id=item_id, target_status="done")
+    details = []
+    for row in blockers.rows:
+        target = requirement_target_environment(
+            row.get("target_env"), row.get("execution_target_json")
+        )
+        details.append(
+            f"requirement {row['id']} phase {row.get('qa_phase') or 'undeclared'} "
+            f"target {target or 'unspecified'}"
+        )
+    if details:
+        return (
+            f"final member {ref} still owes "
+            + "; ".join(details)
+            + f"; read `yoke qa requirement list --item {ref}` and satisfy each named "
+            "requirement on its declared target; delivery never accepts or waives it"
+        )
+    return (
+        f"final member {ref} has not independently closed; read `yoke items get {ref} status` "
+        f"and `yoke deployment-runs get {run_id}` and complete its pinned close-out"
+    )

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from yoke_cli.transport.relay_telemetry import TRANSPORT_FAILED_CODE
+from yoke_core.domain.deploy_pipeline_unknown_outcome import DeploymentOutcomeUnknown
 from yoke_core.domain import deploy_pipeline_control_plane
 from yoke_core.domain.deployment_run_settlement_refusal import (
     SETTLEMENT_BLOCKED_CODE,
@@ -53,6 +54,8 @@ def update_run_field(run_id: str, field: str, value: str) -> None:
     """Apply the registered run update mutation without spawning a helper."""
     try:
         deploy_pipeline_control_plane.update_run_field(run_id, field, value)
+    except DeploymentOutcomeUnknown:
+        raise
     except Exception as exc:
         code = ""
         if isinstance(exc, deploy_pipeline_control_plane.DeploymentControlPlaneError):
@@ -116,6 +119,8 @@ def start_run(
                     deploy_pipeline_control_plane.containment_basis,
                     run_id,
                 )
+    except DeploymentOutcomeUnknown:
+        raise
     except Exception as exc:
         detail = str(exc).strip() or type(exc).__name__
         raise DeployPipelineRunUpdateError(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoke_core.domain.deploy_pipeline_unknown_outcome import preserve_unknown_outcome
+
 import json
 import sys
 
@@ -61,6 +63,7 @@ def _finalize(*args, sd, members):
     return finalize_after_stages(*args, sd=sd, members=members, **_QA_EXITS)
 
 
+@preserve_unknown_outcome
 @timed_pipeline
 def run_pipeline(
     primary_arg: str,

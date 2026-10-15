@@ -30,6 +30,7 @@ is cheaper than deploying and then failing the receipt.
 from __future__ import annotations
 
 import uuid
+from yoke_core.domain.deploy_pipeline_unknown_outcome import DeploymentOutcomeUnknown
 from collections.abc import Mapping
 from typing import Any, Dict, List, Optional
 
@@ -253,6 +254,8 @@ def dispatch_step_runner_with_receipt(
                 identity_path=identity_path,
             )
         )
+    except DeploymentOutcomeUnknown:
+        raise
     except Exception as exc:
         control_plane.complete_stage_receipt(
             run_id,

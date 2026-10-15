@@ -35,6 +35,7 @@ from yoke_core.domain.db_helpers import query_one, query_rows, utc_now
 from yoke_core.domain.domain_refusal import DomainRefusal
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.schema_common import _column_exists
+from yoke_core.domain.deployment_qa_presentation_reads import presentation_operation
 
 SUPERSEDED_BY_COLUMN = "superseded_by_run_id"
 SUPERSEDES_COLUMN = "supersedes_run_id"
@@ -79,7 +80,9 @@ def _waits_only_on_item_qa(row: Mapping[str, Any], stages: list[dict]) -> bool:
         return False
     remaining = stages[names.index(current) :]
     return _is_item_qa(remaining[0]) and all(
-        stage.get("step_runner") in _GATE_RUNNERS for stage in remaining
+        stage.get("step_runner") in _GATE_RUNNERS
+        or (stage == stages[-1] and stage.get("step_runner") == "auto")
+        for stage in remaining
     )
 
 
@@ -102,7 +105,9 @@ def _waiting_run(conn: Any, new_run: Mapping[str, Any]) -> Optional[dict]:
     )
     for row in rows:
         stages = pinned_stages(conn, str(row["id"]))
-        if _waits_only_on_item_qa(row, stages) and open_qa_lines(conn, str(row["id"])):
+        if _waits_only_on_item_qa(row, stages) and open_qa_lines(
+            conn, str(row["id"]), first_wait=True
+        ):
             return {**dict(row), "stages": stages}
     return None
 
@@ -133,6 +138,7 @@ def _item_qa_passed(conn: Any, run_id: str, item_id: int, stages: list) -> bool:
     return True
 
 
+@presentation_operation
 def _moving_members(conn: Any, old: Mapping[str, Any], shared: bool) -> list[dict]:
     moving = []
     for member in _members(conn, str(old["id"])):

@@ -73,6 +73,7 @@ from yoke_core.domain.deployment_run_project_sources import (
     run_source_sha,
 )
 from yoke_core.domain.project_identity import render_item_ref
+from yoke_core.domain.deployment_source_reads import SourcePreparationChanged
 
 
 @dataclass(frozen=True)
@@ -171,6 +172,9 @@ class CustodyResolution:
         self._walked = True
         try:
             self._custody = candidate_custody(self._conn, self._run_id)
+        except SourcePreparationChanged:
+            self._walked = False
+            raise
         except (LookupError, ValueError) as exc:
             self._refusal = str(exc)
 

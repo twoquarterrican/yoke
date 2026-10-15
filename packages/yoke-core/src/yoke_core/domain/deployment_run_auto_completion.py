@@ -13,7 +13,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.db_helpers import utc_now
 from yoke_core.domain.schema_read_scope import composition_operation
 
@@ -170,6 +169,7 @@ def _readiness(conn: Any, run_id: str) -> tuple[dict[str, Any] | None, str]:
         from yoke_core.domain.deployment_run_member_targeting import supplemental_qa_run
         from yoke_core.domain.deployment_run_other_target_members import (
             owes_only_other_targets,
+            member_completion_blocker,
         )
 
         if supplemental_qa_run(conn, run_id=run_id, item_id=item_id):
@@ -181,14 +181,14 @@ def _readiness(conn: Any, run_id: str) -> tuple[dict[str, Any] | None, str]:
             ):
                 return (
                     None,
-                    f"final member {render_item_ref(conn, item_id)} still owes item delivery or QA",
+                    member_completion_blocker(conn, run_id=run_id, item_id=item_id),
                 )
         elif item_status != "done" and not owes_only_other_targets(
             conn, run_id=run_id, item_id=item_id
         ):
             return (
                 None,
-                f"final member {render_item_ref(conn, item_id)} has not independently closed",
+                member_completion_blocker(conn, run_id=run_id, item_id=item_id),
             )
     return {
         "members": [int(_row_value(member, "item_id", 0)) for member in members],

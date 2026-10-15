@@ -22,8 +22,8 @@ from yoke_core.domain.deployment_run_carried_work_source import (
     SOURCE_CHECKOUT,
     CarriedWorkSource,
     CarriedWorkSourceUnavailable,
-    open_carried_work_source,
 )
+from yoke_core.domain.deployment_prepared_source import prepared_carried_work_source
 from yoke_core.domain.deployment_run_carried_work_sources import (
     resolve_carried_items,
 )
@@ -173,7 +173,7 @@ def derive_project_carried_work(
             release_lineage=release_lineage,
         )
     try:
-        source: CarriedWorkSource = open_carried_work_source(
+        source: CarriedWorkSource = prepared_carried_work_source(
             conn, project_id, repo_root=repo_root
         )
     except CarriedWorkSourceUnavailable as exc:

@@ -141,6 +141,10 @@ def cmd_update(
 
     conn = connect(db_path)
     try:
+        if field == "status" and value == "executing":
+            from yoke_core.domain.deployment_run_start import start_run
+
+            return start_run(conn, run_id, candidate_containment)
         if field == "status":
             status, item_ids = lock_run_with_stable_membership(conn, run_id)
             if status is None:
@@ -169,59 +173,6 @@ def cmd_update(
                 )
             ):
                 return refusal
-
-            if value == "executing":
-                from yoke_core.domain.deployment_run_contained_items import (
-                    CandidateContainmentRefusal,
-                    record_attested_candidate_containment,
-                )
-                from yoke_core.domain.deployment_run_composition_freeze import (
-                    freeze_run_composition,
-                )
-                from yoke_core.domain.deploy_target_occupancy import (
-                    DeployTargetOccupiedError,
-                    require_target_unoccupied,
-                )
-
-                try:
-                    # Held through the stamp below: the next start on this
-                    # origin reads this run as executing, not as free.
-                    require_target_unoccupied(conn, run_id)
-                except DeployTargetOccupiedError as exc:
-                    conn.rollback()
-                    return f"Error: {exc}"
-                try:
-                    timed_call(
-                        "composition_freeze", freeze_run_composition, conn, run_id
-                    )
-                except ValueError as exc:
-                    # A composition the freeze refuses names its own repair;
-                    # it reaches the caller as that refusal, not a traceback.
-                    conn.rollback()
-                    return f"Error: {exc}"
-                try:
-                    record_attested_candidate_containment(
-                        conn, run_id, candidate_containment
-                    )
-                except CandidateContainmentRefusal as exc:
-                    conn.rollback()
-                    return f"Error: {exc}"
-
-                def stamp():
-                    if status == "failed":
-                        from yoke_core.domain.qa_deployment_run_settlement import (
-                            restore_retry_obligations,
-                        )
-
-                        restore_retry_obligations(conn, run_id)
-                    conn.execute(
-                        "UPDATE deployment_runs SET status=%s, started_at=%s WHERE id=%s",
-                        (value, instant_parameter(conn, utc_now()), run_id),
-                    )
-                    conn.commit()
-
-                timed_call("executing_stamp", stamp)
-                return None
 
             if value in ("succeeded", "failed", "cancelled"):
                 if value == "succeeded":

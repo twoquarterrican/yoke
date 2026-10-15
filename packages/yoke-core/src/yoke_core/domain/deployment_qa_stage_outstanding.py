@@ -41,7 +41,7 @@ from yoke_core.domain.post_deploy_verification_answer import (
     member_post_deploy_answer,
 )
 from yoke_core.domain.schema_common import _table_exists
-from yoke_core.domain.schema_read_scope import composition_operation
+from yoke_core.domain.deployment_qa_presentation_reads import presentation_operation
 from yoke_core.domain.steering_fleet_report_detectors import marker
 
 
@@ -64,7 +64,7 @@ class QaStageOutstanding:
     blocker_counts: tuple[int, ...] = ()
 
 
-@composition_operation
+@presentation_operation
 def qa_stage_outstanding(
     conn: Any, *, run_id: str, stage_name: str, stop_at_first_waiting: bool = False
 ) -> Optional[QaStageOutstanding]:

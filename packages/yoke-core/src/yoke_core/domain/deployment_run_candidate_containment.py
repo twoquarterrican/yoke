@@ -97,6 +97,7 @@ class CandidateContainment:
         source: Optional[CarriedWorkSource] = None,
         contained_commits: frozenset[str] = frozenset(),
     ) -> None:
+        self._scope = (conn, int(project_id)) if source is None else None
         self._candidate = str(candidate_lineage or "").strip()
         # Commits already known to be on the candidate's line; see
         # :mod:`deployment_run_candidate_range`. Asking a source is skipped.
@@ -124,6 +125,18 @@ class CandidateContainment:
 
     def contains(self, commit_sha: str) -> ContainmentVerdict:
         """Return whether the candidate already carries ``commit_sha``."""
+        from yoke_core.domain.deployment_source_reads import source_read
+
+        if self._scope is None:
+            return self._contains(commit_sha)
+        conn, project_id = self._scope
+        return source_read(
+            conn,
+            ("candidate_containment", project_id, self._candidate, commit_sha),
+            lambda: self._contains(commit_sha),
+        )
+
+    def _contains(self, commit_sha: str) -> ContainmentVerdict:
         merge = str(commit_sha or "").strip()
         if not self._candidate or not merge:
             return _operands_missing()

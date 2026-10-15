@@ -126,3 +126,14 @@ yoke merge item PREFIX-N --result "what shipped" --verification "run evidence"
 Release only if close-out did not already release. Release-wait path claims/
 dependencies remain until done. A run whose driver died needs no release: its
 attachment lapses after ten minutes and the same `watch deploy` re-drives it.
+
+
+For startup or takeover refusal, read the holding run and its exact open item,
+requirement, phase and target. Item QA followed only by gates and final `auto`
+completion allows takeover; remaining execution does not. Recreating the run
+alone is not recovery. Delivered members may still owe another target's manual
+acceptance; leave that requirement unmet and the item open. On
+`deployment_outcome_unknown`, preserve run/receipt state, read the exact
+preparation receipt or existing provider attempt before retrying, and do not
+use `--fresh`. [Deployment start diagnostics](../../../../docs/public/reference/deployment-start.md)
+explains source preparation, bounded locks and the phase timing evidence.
