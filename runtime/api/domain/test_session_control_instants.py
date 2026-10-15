@@ -30,9 +30,10 @@ from yoke_core.domain.session_launch_types import (
 from yoke_core.domain.session_relay_storage import (
     heartbeat_relay,
     mark_relay_batch,
-    require_relay_batch,
+    relay_has_live_batch,
 )
 from yoke_core.domain.session_relay_types import RelayHeartbeat, SessionRelayError
+from yoke_core.domain.session_relay_job_leases import require_job_lease
 
 
 INSTANT = datetime(1969, 12, 31, 23, 59, 59, 123456, timezone.utc)
@@ -87,12 +88,10 @@ def test_relay_lease_edge_is_native_exact_and_half_open(test_db, fleet_identity,
     ).fetchone()
     assert stored == edge
     assert kind == "timestamp with time zone"
-    require_relay_batch(
+    assert relay_has_live_batch(
         test_db, relay_id=relay_id, now=edge - timedelta(microseconds=1)
     )
-    with pytest.raises(SessionRelayError) as caught:
-        require_relay_batch(test_db, relay_id=relay_id, now=edge)
-    assert caught.value.code == "relay_lease_expired"
+    assert not relay_has_live_batch(test_db, relay_id=relay_id, now=edge)
 
 
 @pytest.mark.parametrize("zone", ["UTC", "America/New_York", "Asia/Kolkata"])
@@ -139,6 +138,37 @@ def test_launch_claim_and_terminal_delivery_keep_native_instants(
     assert claim.launch.created_at == INSTANT
     assert claim.launch.launching_at == claim_time
     assert claim.lease_expires_at == claim_time + timedelta(seconds=300)
+    heartbeat_relay(
+        test_db,
+        RelayHeartbeat(
+            relay_id,
+            actor_id,
+            machine_id,
+            "native-host",
+            "0.1.1",
+            {"codex-cli": "0.148.0a15"},
+            (project_id,),
+        ),
+        state="active",
+        next_poll_seconds=1,
+        now=claim_time,
+    )
+    require_job_lease(
+        test_db,
+        relay_id=relay_id,
+        job_kind="launch",
+        job_id=launch_id,
+        now=claim.lease_expires_at - timedelta(microseconds=1),
+    )
+    with pytest.raises(SessionRelayError) as caught:
+        require_job_lease(
+            test_db,
+            relay_id=relay_id,
+            job_kind="launch",
+            job_id=launch_id,
+            now=claim.lease_expires_at,
+        )
+    assert caught.value.code == "relay_lease_expired"
     wire = public_launch_record(claim.launch)
     assert wire["created_at"] == format_instant(INSTANT)
     assert wire["launching_at"] == format_instant(claim_time)
