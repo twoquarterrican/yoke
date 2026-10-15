@@ -217,11 +217,17 @@ def register_session(
         )
 
         episode_clause = f", episode_started_at = {p}" if has_episode_col else ""
-        thread_clause = (
-            f", native_thread_id = COALESCE({p}, native_thread_id)"
-            if has_thread_col
-            else ""
-        )
+        if has_thread_col:
+            from yoke_core.domain.sessions_lifecycle_identity import (
+                trusted_native_thread_id,
+            )
+
+            native_thread_id = trusted_native_thread_id(
+                session_id,
+                existing["native_thread_id"],
+                native_thread_id,
+            )
+        thread_clause = f", native_thread_id = {p}" if has_thread_col else ""
         model_assignments = ", ".join(f"{column} = {p}" for column in MODEL_COLUMNS)
         # fmt: off
         params: List[Any] = [
