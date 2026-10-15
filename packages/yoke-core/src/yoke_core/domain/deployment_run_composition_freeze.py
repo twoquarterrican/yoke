@@ -228,7 +228,7 @@ def _require_schema(conn: Any) -> None:
 def freeze_run_composition(conn: Any, run_id: str) -> dict[str, Any]:
     """Freeze member intent/requirements and candidate evidence once."""
     if not requires_release_admission(conn, run_id):
-        return {"run_id": run_id, "frozen_at": None, "legacy": True}
+        return {"run_id": run_id, "frozen_at": None}
     _require_schema(conn)
     marker = _p(conn)
     row = conn.execute(
