@@ -4,6 +4,6 @@
  "status": "observed",
  "page": "qa-plans",
  "position": 3,
- "summary": "Acceptance and continued execution read saved deployment requirements without importing later reusable-plan revisions. Authorized withdrawals and replacements still apply; source ancestry, review and target checks remain required. A missing or inconsistent historical contract names refusal and operator recovery.",
- "sources": ["packages/yoke-core/src/yoke_core/domain/deployment_qa_frozen_plan_selection.py", "packages/yoke-core/src/yoke_core/domain/deployment_qa_saved_plan_contract.py", "docs/public/reference/db-reference/deployment-run-records.md"]
+ "summary": "Acceptance and execution use complete frozen plan/case selections. Authorized withdrawals, rematerialization and replacements retain source ancestry and target checks. An incomplete historical selection names operator repair recovery; raw historical requirements and results remain viewable without current-definition reinterpretation.",
+ "sources": ["packages/yoke-core/src/yoke_core/domain/deployment_qa_frozen_plan_selection.py", "packages/yoke-core/src/yoke_core/domain/deployment_qa_snapshot_selection.py", "docs/public/reference/db-reference/deployment-run-records.md"]
 }

@@ -11,7 +11,6 @@ from yoke_core.domain.qa_obligation_settlement import unretracted_requirement_sq
 from yoke_core.domain.qa_plan_attachment_reads import retracted_item_plan_ids
 from yoke_core.domain.qa_deployment_member_attached_plans import (
     attached_member_plan_ids,
-    plan_matches_stage_environment,
     stage_environment_id_for_plan_selection,
 )
 
@@ -93,6 +92,14 @@ def _member_plans(
     for value in snapshot.get("plans") or []:
         if not isinstance(value, Mapping):
             continue
+        # A correction keeps its complete contract, but answers the original
+        # group rather than selecting an additional standalone obligation.
+        if value.get("replacement_scopes"):
+            continue
+        from yoke_core.domain.deployment_qa_snapshot_selection import (
+            require_complete_snapshot,
+        )
+
         attachment = value.get("attachment")
         plan = value.get("plan")
         if not isinstance(attachment, Mapping) or not isinstance(plan, Mapping):
@@ -101,14 +108,17 @@ def _member_plans(
             continue
         if int(plan["id"]) in withdrawn_plans:
             continue
+        require_complete_snapshot(value)
         from yoke_core.domain.qa_plan_case_targets import (
             case_applies_to_target,
             case_target_envs,
         )
 
-        default_matches = plan_matches_stage_environment(
-            plan.get("target_environment_id"), stage_environment_id
+        from yoke_core.domain.deployment_qa_snapshot_selection import (
+            plan_matches_target,
         )
+
+        default_matches = plan_matches_target(conn, plan, target, stage_environment_id)
         cases = [
             case
             for case in value.get("cases", ())
@@ -133,7 +143,7 @@ def frozen_stage_plans(
     selected_ids = {int(snapshot["plan"]["id"]) for snapshot in frozen}
     project_id = int(subject.get("member_project_id") or subject["project_id"])
     wanted = {int(r["plan_id"]) for r in admitted if r.get("plan_id") is not None}
-    if not frozen and subject.get("member_item_id") is not None:
+    if subject.get("member_item_id") is not None:
         wanted.update(
             attached_member_plan_ids(
                 conn,
@@ -141,25 +151,30 @@ def frozen_stage_plans(
                 environment_id=stage_environment_id_for_plan_selection(conn, target),
             )
         )
-    from yoke_core.domain.deployment_qa_saved_plan_contract import saved_plan_contract
-    from yoke_core.domain.qa_plan_management import QaPlanError
+    from yoke_core.domain.deployment_qa_snapshot_selection import (
+        incomplete_snapshot,
+        materialized_plan_ids,
+        require_complete_snapshot,
+    )
 
-    for plan_id in sorted(wanted):
-        if plan_id in selected_ids:
-            continue
-        saved = saved_plan_contract(conn, subject, target, plan_id, admitted)
-        if saved is None:
-            if any(r.get("plan_id") == plan_id for r in admitted):
-                raise QaPlanError(
-                    f"qa_saved_plan_contract_missing: plan {plan_id} has admitted "
-                    "requirements but no frozen plan or materialized contract; "
-                    "preserve the run and ask the control-plane operator to "
-                    "reconcile its admission evidence before retrying."
-                )
-            # A newly attached plan with no historical cases is a new selection.
-            saved = _plan_snapshot(
-                conn, plan_id, project_id=project_id, lock_plan=lock_plans
+    for snapshot in frozen:
+        require_complete_snapshot(snapshot)
+    declared = subject["stage"].get("cases")
+    if isinstance(declared, Mapping):
+        wanted.add(int(declared["plan_id"]))
+    historical = None
+    for plan_id in sorted(wanted - selected_ids):
+        if any(r.get("plan_id") == plan_id for r in admitted) or (
+            isinstance(declared, Mapping) and int(declared["plan_id"]) == plan_id
+        ):
+            incomplete_snapshot(plan_id, "admitted selection has no frozen plan")
+        if historical is None:
+            historical = materialized_plan_ids(conn, subject)
+        if plan_id in historical:
+            incomplete_snapshot(
+                plan_id, "previously materialized selection has no frozen plan"
             )
-        frozen.append(saved)
-        selected_ids.add(plan_id)
+        frozen.append(
+            _plan_snapshot(conn, plan_id, project_id=project_id, lock_plan=lock_plans)
+        )
     return frozen
