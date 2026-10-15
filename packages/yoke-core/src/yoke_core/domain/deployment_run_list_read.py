@@ -29,6 +29,7 @@ from yoke_core.domain.actor_project_visibility import actor_visible_project_ids
 from yoke_core.domain.project_identity import resolve_project
 from yoke_core.domain.runs import TERMINAL_RUN_STATUSES
 from yoke_core.domain.workflows_definition_read import _stage_names
+from yoke_core.domain.schema_read_scope import composition_operation
 
 
 OVERVIEW_RUN_WINDOW = timedelta(hours=24)
@@ -232,6 +233,7 @@ def present_deployment_runs(
     return result
 
 
+@composition_operation
 def list_deployment_runs(
     *,
     project: Optional[str],
@@ -242,7 +244,7 @@ def list_deployment_runs(
 ) -> list[dict[str, Any]]:
     """Return authorized runs with member QA, stages, and gates.
 
-    Overview keeps live runs and the last 24 hours of completions before limit.
+    Overview bounds live/recent runs per project, then presents shared runs once.
     """
     conn = connect()
     try:
@@ -278,6 +280,22 @@ def list_deployment_runs(
         if relevance == "overview":
             quoted = ", ".join(f"'{status}'" for status in TERMINAL_RUN_STATUSES)
             priority_order = f"CASE WHEN dr.status IN ({quoted}) THEN 1 ELSE 0 END, "
+        limit_sql = " LIMIT %s"
+        query_params = [*params, limit]
+        if relevance == "overview" and not project:
+            from yoke_core.domain.deployment_run_project_scope import (
+                overview_run_selection,
+            )
+
+            selection, query_params = overview_run_selection(
+                conn,
+                where=where,
+                params=params,
+                priority_order=priority_order,
+                visible_project_ids=visible_project_ids,
+                limit=limit,
+            )
+            where, limit_sql = f"WHERE dr.id IN ({selection}) ", ""
         rows = conn.execute(
             f"SELECT {run_columns}, df.stages "
             "FROM deployment_runs dr "
@@ -285,8 +303,8 @@ def list_deployment_runs(
             "JOIN deployment_flows df ON df.id = dr.flow "
             f"{env_join} "
             f"{where}"
-            f"ORDER BY {priority_order}dr.created_at DESC, dr.id DESC LIMIT %s",
-            (*params, limit),
+            f"ORDER BY {priority_order}dr.created_at DESC, dr.id DESC{limit_sql}",
+            tuple(query_params),
         ).fetchall()
         base = [dict(row) for row in rows]
         return present_deployment_runs(

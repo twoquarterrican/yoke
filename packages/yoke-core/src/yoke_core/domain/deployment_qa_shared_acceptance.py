@@ -1,6 +1,11 @@
 """Member acceptance is the conjunction of its own private and shared subjects."""
 
 from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
+from yoke_core.domain.deployment_qa_presentation_reads import (
+    presentation_active,
+    presentation_read,
+)
+from yoke_core.domain.qa_execution_environment_target import canonical_target
 from yoke_core.domain.deployment_qa_shared_plans import member_plan_subjects
 from yoke_core.domain.deployment_qa_execution_target import (
     deployment_qa_execution_target,
@@ -13,13 +18,27 @@ def acceptance_subjects(conn, subject, target):
     groups = member_plan_subjects(conn, subject, target)
     if not groups:
         return []
-    private = conn.execute(
-        "SELECT 1 FROM qa_requirements WHERE deployment_run_id=%s AND deployment_stage=%s "
-        "AND deployment_member_item_id=%s "
-        f"AND NOT {settled_obligation_sql(conn)} "
-        "AND qa_kind<>'deployment_stage_acceptance' LIMIT 1",
-        (subject["id"], subject["stage"]["name"], subject["member_item_id"]),
-    ).fetchone()
+
+    def private_members():
+        batch = presentation_active()
+        member_filter = "" if batch else "AND deployment_member_item_id=%s "
+        rows = conn.execute(
+            "SELECT DISTINCT deployment_member_item_id FROM qa_requirements "
+            "WHERE deployment_run_id=%s AND deployment_stage=%s "
+            f"{member_filter}AND NOT {settled_obligation_sql(conn)} "
+            "AND qa_kind<>'deployment_stage_acceptance'"
+            + ("" if batch else " LIMIT 1"),
+            (subject["id"], subject["stage"]["name"])
+            if batch
+            else (subject["id"], subject["stage"]["name"], subject["member_item_id"]),
+        ).fetchall()
+        return {row["deployment_member_item_id"] for row in rows}
+
+    private = subject["member_item_id"] in presentation_read(
+        conn,
+        ("qa_private_members", subject["id"], subject["stage"]["name"]),
+        private_members,
+    )
     subjects = [
         (group, deployment_qa_execution_target(conn, group)) for group in groups
     ]
@@ -48,7 +67,18 @@ def shared_member_acceptance(conn, subject, target, acceptance_qa_kind):
             else None
         )
     answers = [
-        stage_acceptance(
+        presentation_read(
+            conn,
+            ("qa_shared_acceptance", canonical_target(part_target), acceptance_qa_kind),
+            lambda: stage_acceptance(
+                conn,
+                subject=part,
+                target=part_target,
+                acceptance_qa_kind=acceptance_qa_kind,
+            ),
+        )
+        if part.get("shared_plan")
+        else stage_acceptance(
             conn,
             subject=part,
             target=part_target,

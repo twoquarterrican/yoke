@@ -41,40 +41,68 @@ def candidate_delivery_items(
     independent. A failed run never satisfies delivery, so its retry remains
     visible until a run succeeds.
     """
-    candidates = {
-        str(run["id"]): _contained_landings(run)
-        for run in runs
-    }
-    environments = sorted({
-        str(run.get("target_environment") or "")
-        for run in runs if candidates[str(run["id"])]
-    } - {""})
-    if (not environments
-            or not _column_exists(conn, "deployment_runs", "candidate_containment")
-            or not _column_exists(conn, "deployment_runs", "target_environment_id")):
+    candidates = {str(run["id"]): _contained_landings(run) for run in runs}
+    environments = sorted(
+        {
+            str(run.get("target_environment") or "")
+            for run in runs
+            if candidates[str(run["id"])]
+        }
+        - {""}
+    )
+    if (
+        not environments
+        or not _column_exists(conn, "deployment_runs", "candidate_containment")
+        or not _column_exists(conn, "deployment_runs", "target_environment_id")
+    ):
         return candidates
 
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
     holes = ", ".join(marker for _ in environments)
+    identities = sorted(
+        {
+            (int(item["project_id"]), int(item["id"]), str(item["merge_sha"]))
+            for entries in candidates.values()
+            for item in entries
+        }
+    )
+    if db_backend.connection_is_postgres(conn):
+        answers = "jsonb_array_elements(dr.candidate_containment::jsonb->'answers') a"
+        project = "CAST(a.value->>'project_id' AS BIGINT)"
+        item = "CAST(a.value->>'id' AS BIGINT)"
+        sha = "a.value->>'merge_sha'"
+        state = "a.value->>'state'"
+    else:
+        answers = "json_each(dr.candidate_containment, '$.answers') a"
+        project = "CAST(json_extract(a.value, '$.project_id') AS INTEGER)"
+        item = "CAST(json_extract(a.value, '$.id') AS INTEGER)"
+        sha = "json_extract(a.value, '$.merge_sha')"
+        state = "json_extract(a.value, '$.state')"
+    values = ",".join(f"({marker},{marker},{marker})" for _ in identities)
     succeeded = conn.execute(
-        "SELECT dr.id, dr.candidate_containment, e.name AS target_environment "
+        f"WITH wanted(project_id,item_id,merge_sha) AS (VALUES {values}) "
+        "SELECT dr.id,e.name AS target_environment,w.project_id,w.item_id,w.merge_sha "
         "FROM deployment_runs dr "
-        "JOIN environments e ON e.id = dr.target_environment_id "
+        "JOIN environments e ON e.id=dr.target_environment_id "
+        f"JOIN {answers} ON TRUE JOIN wanted w ON "
+        f"w.project_id={project} AND w.item_id={item} AND w.merge_sha={sha} "
         f"WHERE dr.status={marker} AND e.name IN ({holes}) "
-        "AND dr.candidate_containment IS NOT NULL "
-        "ORDER BY dr.completed_at, dr.id",
-        ("succeeded", *environments),
+        f"AND {state}='contained' ORDER BY dr.completed_at,dr.id",
+        (
+            *(value for identity in identities for value in identity),
+            "succeeded",
+            *environments,
+        ),
     ).fetchall()
     first_success: dict[tuple[str, int, int, str], str] = {}
     for row in succeeded:
-        record = dict(row)
-        environment = str(record["target_environment"])
-        for item in _contained_landings(record):
-            key = (
-                environment, int(item["project_id"]), int(item["id"]),
-                str(item["merge_sha"]),
-            )
-            first_success.setdefault(key, str(record["id"]))
+        key = (
+            str(row["target_environment"]),
+            int(row["project_id"]),
+            int(row["item_id"]),
+            str(row["merge_sha"]),
+        )
+        first_success.setdefault(key, str(row["id"]))
 
     visible: dict[str, list[dict[str, int | str]]] = {}
     for run in runs:
@@ -83,10 +111,17 @@ def candidate_delivery_items(
         visible[run_id] = [
             {"id": int(item["id"]), "project_id": int(item["project_id"])}
             for item in candidates[run_id]
-            if not (delivered_by := first_success.get((
-                environment, int(item["project_id"]), int(item["id"]),
-                str(item["merge_sha"]),
-            ))) or (run.get("status") == "succeeded" and delivered_by == run_id)
+            if not (
+                delivered_by := first_success.get(
+                    (
+                        environment,
+                        int(item["project_id"]),
+                        int(item["id"]),
+                        str(item["merge_sha"]),
+                    )
+                )
+            )
+            or (run.get("status") == "succeeded" and delivered_by == run_id)
         ]
     return visible
 

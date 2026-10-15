@@ -67,7 +67,21 @@ def plan_matches_stage_environment(
 DEPLOYMENT_ATTACHMENT_PHASE = "post_deploy"
 
 
-def attached_member_plan_ids(
+def attached_member_plan_ids(conn, *, member_item_id, environment_id=None):
+    from yoke_core.domain.deployment_qa_presentation_reads import presentation_read
+
+    return presentation_read(
+        conn,
+        ("qa_live_attached_plans", int(member_item_id), environment_id),
+        lambda: _read_attached_member_plan_ids(
+            conn,
+            member_item_id=member_item_id,
+            environment_id=environment_id,
+        ),
+    )
+
+
+def _read_attached_member_plan_ids(
     conn: Any,
     *,
     member_item_id: int,
@@ -236,17 +250,30 @@ def attached_member_plans(
 
     from yoke_core.domain.deployment_requirement_snapshots import _plan_snapshot
 
+    from yoke_core.domain.deployment_qa_presentation_reads import presentation_read
+
+    project_id = int(subject.get("member_project_id") or subject["project_id"])
+
+    def snapshot(plan_id):
+        def read():
+            return _plan_snapshot(
+                conn, plan_id, project_id=project_id, lock_plan=lock_plans
+            )
+
+        return (
+            read()
+            if lock_plans
+            else presentation_read(
+                conn,
+                ("qa_attached_plan_snapshot", plan_id, project_id),
+                read,
+            )
+        )
+
     return [
         {
             "attachment": {"qa_phase": DEPLOYMENT_ATTACHMENT_PHASE},
-            **_plan_snapshot(
-                conn,
-                int(plan_id),
-                project_id=int(
-                    subject.get("member_project_id") or subject["project_id"]
-                ),
-                lock_plan=lock_plans,
-            ),
+            **snapshot(int(plan_id)),
         }
         for plan_id in plan_ids
     ]

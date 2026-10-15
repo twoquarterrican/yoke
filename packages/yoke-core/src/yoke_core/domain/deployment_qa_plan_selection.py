@@ -13,6 +13,7 @@ from yoke_core.domain.deployment_qa_stage_named_cases import (
 from yoke_core.domain.post_deploy_verification_answer import cases_not_selected_refusal
 from yoke_core.domain.qa_plan_management import QaPlanError
 from yoke_core.domain.qa_plan_source_revision import require_candidate_plan
+from yoke_core.domain.deployment_qa_presentation_reads import presentation_read
 
 
 def selected_plans(
@@ -75,7 +76,18 @@ def selected_plans(
     from yoke_core.domain.qa_plan_case_targets import case_applies_to_target
 
     for snapshot in unique.values():
-        require_candidate_plan(conn, snapshot["plan"], str(subject["id"]))
+        plan = snapshot["plan"]
+        presentation_read(
+            conn,
+            (
+                "qa_candidate_plan",
+                str(subject["id"]),
+                int(plan["id"]),
+                plan.get("source_revision"),
+                int(plan["project_id"]),
+            ),
+            lambda: require_candidate_plan(conn, plan, str(subject["id"])),
+        )
     return [
         {**snapshot, "cases": cases}
         for snapshot in unique.values()
