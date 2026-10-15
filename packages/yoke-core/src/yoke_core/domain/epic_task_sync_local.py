@@ -13,13 +13,13 @@ from yoke_contracts.timestamps import utc_now
 from yoke_core.domain.db_helpers import instant_parameter
 
 from yoke_core.domain import db_backend, project_settings
-from yoke_core.domain.epic_task_sync import _placeholder, _repo_root
+from yoke_core.domain.epic_task_sync import _placeholder
 from yoke_core.domain.worktree_naming import worktree_name_for_item
 from yoke_core.domain.item_worktrees import record_worker_item_worktree
 
 
 def load_task_rows(conn: Any, *, placeholder: str, epic_name: str):
-    """Load the durable task state needed to create or link issues."""
+    """Load durable task and lane state for local queues and issue publication."""
     return conn.execute(
         f"""
         SELECT t.id, t.epic_id, t.task_num, COALESCE(t.title, ''),
@@ -38,7 +38,6 @@ def _generate_dispatch_chains(
     *,
     epic_name: str,
     worktree_map: list[tuple[str, str]],
-    repo_root: str,
     conn: Any,
     stdout: TextIO,
 ) -> None:
@@ -46,8 +45,13 @@ def _generate_dispatch_chains(
     if not worktree_map:
         return
 
-    max_attempts = project_settings.get_project_int(repo_root, "max_attempts")
-    worktrees_dir = project_settings.get_project_str(repo_root, "worktrees_dir")
+    project = conn.execute(
+        f"SELECT project_id FROM items WHERE id={_placeholder(conn)}",
+        (int(epic_name),),
+    ).fetchone()
+    max_attempts = project_settings.get_project_int_for_id(
+        int(project[0]), "max_attempts"
+    )
 
     # Get unique worktree branches in order
     seen: set[str] = set()
@@ -57,27 +61,22 @@ def _generate_dispatch_chains(
             seen.add(wt_branch)
             unique_branches.append(wt_branch)
 
+    p = _placeholder(conn)
+    lane_ids = {
+        str(row[1]): int(row[0])
+        for row in conn.execute(
+            f"SELECT id, branch FROM item_worktrees WHERE item_id={p} AND state='active'",
+            (int(epic_name),),
+        ).fetchall()
+    }
+    missing = [branch for branch in unique_branches if branch not in lane_ids]
+    if missing:
+        raise ValueError(
+            f"dispatch_lane_missing: {', '.join(missing)}; "
+            "restore the task's registered worker lane through /yoke refine"
+        )
     for wt_branch in unique_branches:
-        p = _placeholder(conn)
-        wt_slug = wt_branch.replace("/", "-")
-        chain_path = f"{repo_root}/{worktrees_dir}/{wt_slug}"
-        # Check if chain already exists
-        lane_row = conn.execute(
-            f"SELECT id, path FROM item_worktrees WHERE item_id={p} "
-            f"AND branch={p} AND state='active'",
-            (int(epic_name), wt_branch),
-        ).fetchone()
-        if lane_row is not None and lane_row[1]:
-            lane_id = int(lane_row[0])
-        else:
-            lane_id = int(
-                record_worker_item_worktree(
-                    conn,
-                    item_id=int(epic_name),
-                    branch=wt_branch,
-                    path=chain_path,
-                )["id"]
-            )
+        lane_id = lane_ids[wt_branch]
         existing = conn.execute(
             f"SELECT id FROM epic_dispatch_chains WHERE epic_id = {p} AND item_worktree_id = {p}",
             (epic_name, lane_id),
@@ -129,15 +128,6 @@ def prepare_dispatch_chains(
     rows = load_task_rows(conn, placeholder=_placeholder(conn), epic_name=epic_name)
     if not rows:
         return True
-    try:
-        repo_root = str(_repo_root())
-    except (RuntimeError, FileNotFoundError) as exc:
-        print(
-            f"Error: dispatch_checkout_unavailable: {exc}. "
-            "Restore the project checkout and retry yoke items github-sync.",
-            file=stderr,
-        )
-        return False
     worktree_map = []
     for row in rows:
         task_num, branch = int(row[2]), str(row[4] or "")
@@ -163,7 +153,6 @@ def prepare_dispatch_chains(
         _generate_dispatch_chains(
             epic_name=epic_name,
             worktree_map=worktree_map,
-            repo_root=repo_root,
             conn=conn,
             stdout=stdout,
         )

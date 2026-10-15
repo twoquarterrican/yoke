@@ -157,14 +157,27 @@ def test_remote_auth_failure_keeps_local_chains_for_retry(db):
     assert "project_github_auth_error" in err.getvalue()
 
 
-def test_missing_checkout_refuses_with_recovery_instead_of_success(db):
+def test_packaged_server_generates_chains_without_a_checkout(db):
     _seed(db, "disabled")
-    err = io.StringIO()
     with patch(
-        "yoke_core.domain.epic_task_sync_local._repo_root",
-        side_effect=FileNotFoundError("checkout not mounted"),
+        "yoke_core.domain.epic_task_sync._repo_root",
+        side_effect=AssertionError("API server has no checkout"),
     ):
-        assert epic_task_sync.sync_epic_tasks(10, conn=db, stderr=err) == 1
+        assert epic_task_sync.sync_epic_tasks(10, conn=db) == 0
+    chains = _facts(db)
+    assert len(chains) == 2
+    assert chains[0][3] == "/tmp/custom-worker-a"
+    assert chains[1][3] is None
+
+
+def test_inactive_task_lane_refuses_before_generating_queues(db):
+    _seed(db, "disabled")
+    db.execute(
+        "UPDATE item_worktrees SET state='released' WHERE item_id=10 AND branch='worker-b'"
+    )
+    db.commit()
+    err = io.StringIO()
+    assert epic_task_sync.sync_epic_tasks(10, conn=db, stderr=err) == 1
     assert _facts(db) == []
-    assert "dispatch_checkout_unavailable" in err.getvalue()
-    assert "retry yoke items github-sync" in err.getvalue()
+    assert "dispatch_lane_missing" in err.getvalue()
+    assert "/yoke refine" in err.getvalue()
