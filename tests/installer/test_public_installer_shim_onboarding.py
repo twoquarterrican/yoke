@@ -35,7 +35,7 @@ def test_yes_mode_prints_next_without_launching_onboard(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert (
-        "Run yoke setup to finish setting up your machine & projects." in result.stdout
+        "Run yoke setup in a terminal, or yoke setup --agent from an agent." in result.stdout
     )
     assert "Starting Yoke setup" not in result.stdout
     assert onboard_log.read_text(encoding="utf-8") == ""

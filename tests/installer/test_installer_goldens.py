@@ -150,7 +150,7 @@ _EXIT_REMEDIATION = (
     "To add it later, run:\n"
     "  uv tool update-shell\n"
     "\n"
-    "Run yoke setup to finish setting up your machine & projects.\n"
+    "Run yoke setup in a terminal, or yoke setup --agent from an agent.\n"
 )
 
 
@@ -161,7 +161,7 @@ def test_exit_remediation() -> None:
     # asserted present in the surfaces that produce them so the golden can never
     # drift away from live behavior.
     shim_text = INSTALL_SHIM_PATH.read_text(encoding="utf-8")
-    assert "Run yoke setup to finish setting up your machine & projects." in shim_text
+    assert "Run yoke setup in a terminal, or yoke setup --agent from an agent." in shim_text
     install_py = (INSTALL_SHIM_PATH.parent / "install.py").read_text(encoding="utf-8")
     assert "uv tool update-shell" in install_py
     _assert_golden("exit_remediation.txt", _EXIT_REMEDIATION)
