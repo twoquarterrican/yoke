@@ -11,7 +11,6 @@ from yoke_core.domain.epic_task_membership import (
     stamp_membership_finalized,
 )
 from yoke_core.domain.project_identity import render_item_ref
-from yoke_core.domain.schema_common import _column_exists, _table_exists
 
 
 SCOPE_PENDING = "pending"
@@ -29,18 +28,8 @@ def _p(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
 
 
-def schema_available(conn: Any) -> bool:
-    return (
-        _table_exists(conn, "epic_tasks")
-        and _column_exists(conn, "epic_tasks", "scope_state")
-        and _column_exists(conn, "epic_tasks", "scope_finalized_at")
-    )
-
-
 def lock_task_membership(conn: Any, item_id: int) -> None:
     """Serialize generated-task membership reads and writes for one item."""
-    if not _table_exists(conn, "items"):
-        return
     marker = _p(conn)
     cursor = conn.execute(
         f"UPDATE items SET id=id WHERE id={marker}",
@@ -56,8 +45,6 @@ def ensure_new_task_membership_allowed(
     task_num: int,
 ) -> None:
     """Lock membership and reject inserts after whole-plan finalization."""
-    if not schema_available(conn):
-        return
     lock_task_membership(conn, int(item_id))
     marker = _p(conn)
     exists = conn.execute(
@@ -80,8 +67,6 @@ def reopen_generated_task_scopes(
     commit: bool = True,
 ) -> int:
     """Invalidate the finalized membership snapshot before amendment."""
-    if not schema_available(conn):
-        return 0
     marker = _p(conn)
     if (
         conn.execute(
@@ -104,17 +89,11 @@ def reopen_generated_task_scopes(
 
 
 def _rows(conn: Any, item_id: int | None = None) -> list[dict[str, Any]]:
-    if not all(
-        _table_exists(conn, table) for table in ("epic_tasks", "epic_task_files")
-    ):
-        return []
     marker = _p(conn)
     where = f"WHERE t.epic_id={marker} " if item_id is not None else ""
     params = (int(item_id),) if item_id is not None else ()
-    state_expr = (
-        "COALESCE(t.scope_state, 'pending')" if schema_available(conn) else "'pending'"
-    )
-    finalized_expr = "t.scope_finalized_at" if schema_available(conn) else "NULL"
+    state_expr = "COALESCE(t.scope_state, 'pending')"
+    finalized_expr = "t.scope_finalized_at"
     rows = conn.execute(
         "SELECT t.epic_id, t.task_num, "
         f"{state_expr} AS scope_state, "
@@ -151,16 +130,12 @@ def task_scope_issues(
 ) -> list[str]:
     """Return deterministic task diagnostics without mutating scope."""
     issues: list[str] = []
-    legacy_schema = not schema_available(conn)
     public_ref = render_item_ref(conn, int(item_id))
     for row in _rows(conn, int(item_id)):
         label = f"{public_ref} task {row['task_num']}"
         state = row["state"]
         count = row["file_count"]
-        if legacy_schema:
-            if count == 0:
-                issues.append(f"{label} has no persisted file budget")
-        elif state not in SCOPE_STATES:
+        if state not in SCOPE_STATES:
             issues.append(f"{label} has invalid scope state {state!r}")
         elif state == SCOPE_PENDING:
             issues.append(f"{label} scope is pending")
@@ -170,15 +145,13 @@ def task_scope_issues(
             issues.append(f"{label} declares no_files but has {count} path(s)")
         elif state == SCOPE_LEGACY_DEFERRED:
             issues.append(f"{label} has deferred legacy scope")
-        elif require_finalized and schema_available(conn) and not row["finalized_at"]:
+        elif require_finalized and not row["finalized_at"]:
             issues.append(f"{label} scope is not finalized")
     return issues
 
 
 def set_no_files_scope(conn: Any, item_id: int, task_num: int) -> None:
     """Explicitly declare that one generated task touches no repository files."""
-    if not schema_available(conn):
-        raise TaskScopeIncomplete("epic task scope schema is unavailable")
     lock_task_membership(conn, int(item_id))
     marker = _p(conn)
     has_paths = conn.execute(
@@ -212,14 +185,6 @@ def finalize_generated_task_scopes(
 ) -> None:
     """Atomically finalize every task scope or leave every task unpublished."""
     public_ref = render_item_ref(conn, int(item_id))
-    if not schema_available(conn):
-        issues = task_scope_issues(conn, int(item_id))
-        if issues:
-            raise TaskScopeIncomplete(
-                f"{public_ref} generated task scope cannot finalize: "
-                + "; ".join(issues)
-            )
-        return
     marker = _p(conn)
     conn.execute("SAVEPOINT finalize_generated_task_scopes")
     try:
@@ -248,7 +213,7 @@ def finalize_generated_task_scopes(
             after_membership_read()
         if not rows and not stamp_membership_finalized(conn, int(item_id)):
             raise TaskScopeIncomplete(
-                f"{public_ref} empty task membership cannot be finalized until the item snapshot schema is available"
+                f"{public_ref} empty task membership snapshot could not be finalized"
             )
         conn.execute(
             "UPDATE epic_tasks SET scope_state='paths' "
@@ -285,7 +250,6 @@ __all__ = [
     "ensure_new_task_membership_allowed",
     "lock_task_membership",
     "reopen_generated_task_scopes",
-    "schema_available",
     "set_no_files_scope",
     "task_scope_issues",
 ]

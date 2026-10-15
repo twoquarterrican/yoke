@@ -42,7 +42,10 @@ def workflow_policy_schema_available(conn: Any) -> bool:
     required = {
         "items": ("workflow_id", "workflow_version_id", "workflow_posture"),
         "workflow_versions": (
-            "id", "workflow_id", "version", "definition_json",
+            "id",
+            "workflow_id",
+            "version",
+            "definition_json",
             "definition_digest",
         ),
     }
@@ -61,8 +64,7 @@ def _required_task_budgets(
 ) -> dict[str, object]:
     public_ref = render_item_ref(conn, int(item_id))
     if not all(
-        _table_exists(conn, table)
-        for table in ("epic_tasks", "epic_task_files")
+        _table_exists(conn, table) for table in ("epic_tasks", "epic_task_files")
     ):
         return {
             "verdict": GATE_BLOCK,
@@ -70,7 +72,6 @@ def _required_task_budgets(
             "missing_tasks": [],
         }
     from yoke_core.domain.epic_task_scope import (
-        schema_available as task_scope_schema_available,
         task_scope_issues,
     )
 
@@ -94,53 +95,29 @@ def _required_task_budgets(
             ),
             "missing_tasks": [],
         }
-    if task_scope_schema_available(conn):
-        issues = task_scope_issues(
-            conn,
-            int(item_id),
-            require_finalized=require_finalized,
-        )
-        if issues:
-            missing = [
-                int(row["task_num"] if hasattr(row, "keys") else row[0])
-                for row in rows
-                if int(row["file_count"] if hasattr(row, "keys") else row[1]) == 0
-            ]
-            return {
-                "verdict": GATE_BLOCK,
-                "reason": (
-                    f"item {public_ref} generated task scope is incomplete: "
-                    + "; ".join(issues)
-                ),
-                "missing_tasks": missing,
-            }
-        return {
-            "verdict": GATE_PASS,
-            "reason": (
-                f"item {public_ref} has finalized explicit scope for every "
-                "generated task"
-            ),
-            "missing_tasks": [],
-        }
-    missing = [
-        int(row["task_num"] if hasattr(row, "keys") else row[0])
-        for row in rows
-        if int(row["file_count"] if hasattr(row, "keys") else row[1]) == 0
-    ]
-    if missing:
+    issues = task_scope_issues(
+        conn,
+        int(item_id),
+        require_finalized=require_finalized,
+    )
+    if issues:
+        missing = [
+            int(row["task_num"] if hasattr(row, "keys") else row[0])
+            for row in rows
+            if int(row["file_count"] if hasattr(row, "keys") else row[1]) == 0
+        ]
         return {
             "verdict": GATE_BLOCK,
             "reason": (
-                f"item {public_ref} generated task(s) lack a persisted "
-                "File Budget: " + ", ".join(map(str, missing))
+                f"item {public_ref} generated task scope is incomplete: "
+                + "; ".join(issues)
             ),
             "missing_tasks": missing,
         }
     return {
         "verdict": GATE_PASS,
         "reason": (
-            f"item {public_ref} has a persisted File Budget for every "
-            "generated task"
+            f"item {public_ref} has finalized explicit scope for every generated task"
         ),
         "missing_tasks": [],
     }
@@ -170,9 +147,7 @@ def evaluate_required_budget(
         }
     return {
         "verdict": GATE_BLOCK,
-        "reason": (
-            f"item {public_ref} has no resolved ## File Budget section"
-        ),
+        "reason": (f"item {public_ref} has no resolved ## File Budget section"),
         "missing_tasks": [],
     }
 
@@ -192,8 +167,7 @@ def evaluate(conn: Any, item_id: int) -> dict[str, object]:
         return {
             "verdict": GATE_BLOCK,
             "reason": (
-                f"item {public_ref} has an unreadable pinned File Budget "
-                f"policy: {exc}"
+                f"item {public_ref} has an unreadable pinned File Budget policy: {exc}"
             ),
             "missing_tasks": [],
         }
