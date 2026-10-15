@@ -116,6 +116,7 @@ def project_payload(rows: ProjectRows) -> dict[str, Any]:
                 tuple(entry.unresolved),
                 tuple(entry.no_obligation_lines),
                 tuple(entry.member_lines),
+                entry.completion.lines,
                 tuple(sorted(red.requirement_id for red in entry.red)),
                 tuple(sorted(item.requirement_id for item in entry.pin_qa.unpassable)),
                 tuple(sorted(item.requirement_id for item in entry.pin_qa.unproven)),

@@ -216,6 +216,17 @@ Current-stage resolved approval/rejection shows request/time while run remains
 there; decision_requests.consumed_at is item-lifecycle consumption and cannot
 prove deployment-stage action.
 
+Member closure is a separate population from run-bound QA. Once settlement
+begins, current canonical membership, target deferral, delivery/QA prerequisites,
+landing evidence and closure dependencies explain each independently blocked
+member. Ready siblings are labelled held atomically; they need no separate
+repair. Deferred other-target acceptance stays owed without becoming a run
+blocker. Resolved requirements disappear on the next read and change the report
+fingerprint. A settling run never infers all-clear from zero run-bound QA;
+closed members can still have finalization effects pending. Read
+`yoke deployment-runs get RUN` for the same member diagnostics and recovery.
+Reads never prepare close-out, materialize plans, accept QA or dispatch a driver.
+
 Stage age is deployment_runs.current_stage_entered_at, atomic on stage change
 including complete; same-stage re-drive preserves age. NULL/no source clock is
 unknown, never run-start or source-QA age. Boot adds column without backfill.
