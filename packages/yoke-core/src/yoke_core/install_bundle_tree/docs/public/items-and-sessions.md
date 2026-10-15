@@ -281,6 +281,14 @@ content changed since this session's last pull read, plus an unchanged count.
 permits the full reply without consuming the human checkpoint. Read state belongs to the session and does not spend the
 hook/watcher delivery interval.
 
+The machine relay admits ready wakes and diagnostic reads on each poll while
+unrelated jobs are still running, and continues to admit assigned launches.
+Each job keeps its own lease and report; one job finishing cannot expire or
+release another. Native capacity checks and the bounded supervisor still
+control execution. A session with an outstanding wake or running native turn
+waits for its own custody to settle; other sessions keep moving. Desktop wakes
+still require the surface's declared operator authority.
+
 Only the registered top-level session may send, acknowledge, or cancel Fleet messages or handle Fleet wake requests. In-process subagents receive no Fleet delivery at all; they report through their parent channel. Independently launched workers participate as top-level sessions.
 
 ```text
