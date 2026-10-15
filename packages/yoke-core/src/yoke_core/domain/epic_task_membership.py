@@ -79,22 +79,8 @@ def clear_membership_finalized(conn: Any, item_id: int) -> int:
     return max(int(cursor.rowcount or 0), 0)
 
 
-def backfill_membership_finalized(conn: Any) -> None:
-    """Project legacy per-task finalization into item-level snapshots."""
-    if not snapshot_available(conn):
-        return
-    conn.execute(
-        f"UPDATE items SET {MEMBERSHIP_FINALIZED_COLUMN}=CURRENT_TIMESTAMP "
-        f"WHERE {MEMBERSHIP_FINALIZED_COLUMN} IS NULL "
-        "AND EXISTS (SELECT 1 FROM epic_tasks "
-        "WHERE epic_tasks.epic_id=items.id "
-        "AND epic_tasks.scope_finalized_at IS NOT NULL)"
-    )
-
-
 __all__ = [
     "MEMBERSHIP_FINALIZED_COLUMN",
-    "backfill_membership_finalized",
     "clear_membership_finalized",
     "membership_is_finalized",
     "snapshot_available",
