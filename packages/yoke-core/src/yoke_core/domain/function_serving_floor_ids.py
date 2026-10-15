@@ -41,7 +41,7 @@ ALREADY_SERVED_FUNCTION_IDS: frozenset[str] = frozenset((
     'ephemeral_env.get', 'ephemeral_env.update', 'epic_tasks.list.run', 'events.anomalies.run',
     'events.count.run', 'events.emit', 'events.query.run', 'events.tail.run',
     'frontier.list', 'gate_satisfier.rung.resolve', 'github.merge_queue.apply', 'github.merge_queue.hold',
-    'github.merge_queue.readiness', 'github.pr.create', 'github.release.create_next_tag', 'github_actions.check_ci',
+    'github.merge_queue.readiness', 'github.pr.create', 'github_actions.check_ci',
     'github_actions.commit_runs.list', 'github_actions.failed_log', 'github_actions.run.jobs_count', 'github_actions.runners.status',
     'github_actions.secret.delete', 'github_actions.secret.set', 'github_actions.variable.delete', 'github_actions.variable.get',
     'github_actions.variable.set', 'github_actions.wait_run', 'github_actions.workflow.dispatch', 'github_actions.workflow.dispatch_once',

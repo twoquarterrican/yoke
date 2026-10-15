@@ -246,17 +246,6 @@ CLI_ADAPTERS: List[AdapterEntry] = [
         ),
         notes="bearer-token PR create; repo resolves from project capability.",
     ),
-    AdapterEntry(
-        function_id="github.release.create_next_tag",
-        cli_invocation=(
-            "yoke github release create-next-tag OWNER/REPO SOURCE-SHA "
-            "--summary TEXT --project P"
-        ),
-        notes=(
-            "Creates or recovers the next immutable annotated launch tag "
-            "through the project's scoped GitHub App authority."
-        ),
-    ),
     _read_entry(
         function_id="items.get.run",
         cli_invocation=("python3 -m yoke_core.cli.db_router items get YOK-N <field>"),

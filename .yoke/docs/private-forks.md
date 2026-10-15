@@ -56,7 +56,8 @@ A private relay installs the exact immutable version reported by its server
 handshake, fetching all four product wheels from
 `RECORDED_ORIGIN/dist/releases/VERSION/wheels/` with encoded URL segments.
 Publish that exact PEP 440 version before booting the server that advertises
-it. The relay does not use the channel to choose a different
+it. New publications use `BASE.YYYYMMDDHHMM` for wheels and images.
+The relay does not use the channel to choose a different
 version, derive an index from the API URL, or substitute upstream's Yoke
 index. Public dependencies still resolve from PyPI. Hosted upstream stage
 and production connections use their respective hosted indexes.
