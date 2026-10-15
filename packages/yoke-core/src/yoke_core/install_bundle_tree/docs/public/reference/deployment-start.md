@@ -109,6 +109,10 @@ the request or provider attempt before re-driving the same run; never use
 `--fresh` to recover a lost response. The live attachment's phase and capture
 show preparation even while run status remains `created`.
 
+Whole-run reads project each stored field directly. Shell pipes, newlines and
+quotes in frozen member instructions remain part of the complete receipt;
+they cannot split its fields or displace source identities and timestamps.
+
 Timing records distinguish `start_source_preparation`, `start_item_run_locks`,
 `target_occupancy`, `composition_freeze`, `bound_source_provider`,
 `bound_source_composition`, `bound_source_item_run_locks`, `bound_source_commit`

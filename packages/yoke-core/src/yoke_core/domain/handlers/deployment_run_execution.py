@@ -17,7 +17,6 @@ from pydantic import BaseModel
 from yoke_contracts.api.function_call import FunctionCallRequest, HandlerOutcome
 from yoke_core.domain.handlers.deployment_common import (
     error,
-    pipe_to_dict,
     run_id,
     update_refusal_code,
 )
@@ -215,17 +214,15 @@ def handle_deployment_execution_context(
         CandidateContainmentRefusal,
         candidate_containment_basis,
     )
-    from yoke_core.domain.deployment_runs_crud_query import cmd_get
-    from yoke_core.domain.deployment_runs_schema import RUN_FIELDS
+    from yoke_core.domain.deployment_runs_crud_query import get_run
     from yoke_core.domain.db_helpers import connect
     from yoke_core.domain.deployment_target_identity_config import run_target_identity
     from yoke_core.domain.flow import cmd_stages
     from yoke_core.domain.project_identity import resolve_project_id
 
-    raw = timed_call("context_run_read", cmd_get, resolved_run_id)
-    if raw is None:
+    run = timed_call("context_run_read", get_run, resolved_run_id)
+    if run is None:
         return error("not_found", f"deployment run {resolved_run_id!r} not found")
-    run = pipe_to_dict(raw, RUN_FIELDS)
     run["carried_work"] = parse_carried_work(run.get("carried_work"))
     timing_facts(source_sha=str(run.get("release_lineage") or ""))
     # The resolution above is authoritative for this execution, converged

@@ -11,7 +11,6 @@ from pydantic import BaseModel
 from yoke_contracts.api.function_call import FunctionCallRequest, HandlerOutcome
 from yoke_core.domain.handlers.deployment_common import (
     error,
-    pipe_to_dict,
     require_global,
 )
 from yoke_core.domain import deployment_run_create_idempotency as idempotency
@@ -52,13 +51,11 @@ class DeploymentRunCreateResponse(BaseModel):
 
 
 def _retry_candidate(run_id: str, *, project: str, flow: str) -> tuple[str, str | None]:
-    from yoke_core.domain.deployment_runs_crud_query import cmd_get
-    from yoke_core.domain.deployment_runs_schema import RUN_FIELDS
+    from yoke_core.domain.deployment_runs_crud_query import get_run
 
-    raw = cmd_get(run_id)
-    if raw is None:
+    source = get_run(run_id)
+    if source is None:
         raise LookupError(f"deployment run {run_id!r} not found")
-    source = pipe_to_dict(raw, RUN_FIELDS)
     if source["project"] != project or source["flow"] != flow:
         raise ValueError(
             f"retry source {run_id!r} belongs to project "
@@ -275,12 +272,13 @@ def _created_outcome(
     replayed: bool,
     basis: str | None,
 ) -> HandlerOutcome:
-    from yoke_core.domain.deployment_runs_crud_query import cmd_get
-    from yoke_core.domain.deployment_runs_schema import RUN_FIELDS
+    from yoke_core.domain.deployment_runs_crud_query import get_run
 
     inherited_items = _member_item_ids(run_id) if retry_source else ()
     member_items = _member_item_ids(run_id)
-    created = pipe_to_dict(cmd_get(run_id), RUN_FIELDS)
+    created = get_run(run_id)
+    if created is None:
+        return error("not_found", f"deployment run {run_id!r} not found")
     supersedes = _superseded_run(run_id)
     return HandlerOutcome(
         result_payload={
