@@ -54,8 +54,10 @@ the artifacts immutable and verify them through your own publishing process.
 
 A private relay installs the exact immutable version reported by its server
 handshake, using `RECORDED_ORIGIN/simple/`. Publish that version before
-booting the server that advertises it; it must include a PEP 440 local
-release segment. The relay does not use the channel to choose a different
+booting the server that advertises it. Use the canonical commit-clock
+version, `BASE.YYYYMMDDHHMM`, for its wheels and image. Product wheels are
+selected from explicit distribution URLs; a numeric version alone does not
+prove a package came from that distribution. The relay does not use the channel to choose a different
 version, derive an index from the API URL, or substitute upstream's Yoke
 index. Public dependencies still resolve from PyPI. Hosted upstream stage
 and production connections use their respective hosted indexes.

@@ -12,7 +12,7 @@ from typing import Any
 from urllib.parse import urlsplit
 import uuid
 
-from packaging.version import InvalidVersion, Version
+from yoke_contracts.release_version import release_version
 from yoke_cli import manifest
 from yoke_cli.config import distribution, machine_config
 from yoke_cli.config.session_relay_instance import (
@@ -120,22 +120,14 @@ def relay_package_python(state_dir: Path) -> Path:
 
 def release_version_from_build(build: str) -> str:
     """Normalize a handshake build into the exact PEP 440 wheel version."""
-    raw = str(build or "").strip()
-    if raw.startswith("v"):
-        raw = raw[1:]
     try:
-        version = Version(raw)
-    except InvalidVersion as exc:
+        return release_version(build)
+    except (ValueError, TypeError) as exc:
         raise RelayReleaseError(
             RELAY_RELEASE_FETCH_FAILED,
-            f"served build {build!r} is not a valid Yoke release version",
+            f"served build {build!r} is not a canonical commit-clock release; "
+            "publish matching wheels before retrying relay install",
         ) from exc
-    if version.local is None:
-        raise RelayReleaseError(
-            RELAY_RELEASE_FETCH_FAILED,
-            f"served build {build!r} has no immutable release segment",
-        )
-    return str(version)
 
 
 def distribution_index_for_instance(instance: RelayInstance) -> str:
@@ -212,7 +204,7 @@ def fetch_served_build(
             f"environment {instance.environment!r} did not return its served build",
         )
     release_version_from_build(build)
-    return build if build.startswith("v") else f"v{build}"
+    return build
 
 
 def relay_release_status(

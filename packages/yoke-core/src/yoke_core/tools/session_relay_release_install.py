@@ -203,8 +203,8 @@ def _install_candidate(
         create_venv(candidate)
         python = candidate / "bin" / "python"
         # The environment index owns the immutable product wheels. PyPI supplies
-        # third-party dependencies; release metadata pins every Yoke sibling to
-        # the same unforgeable local version as this exact top-level requirement.
+        # third-party dependencies. Explicit URLs for every product root prevent
+        # a public-index package with the same version from replacing our bytes.
         result = runner(
             [
                 str(python),
@@ -217,9 +217,11 @@ def _install_candidate(
                 "--no-input",
                 "--only-binary",
                 ":all:",
-                "--extra-index-url",
-                index,
-                f"{PRODUCT_REQUIREMENT}=={release}",
+                *[
+                    f"{index.removesuffix('/simple/')}/dist/releases/{release}/wheels/"
+                    f"yoke_{name}-{release}-py3-none-any.whl"
+                    for name in ("contracts", "cli", "harness", "core")
+                ],
             ],
             check=False,
             capture_output=True,
