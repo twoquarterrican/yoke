@@ -38,6 +38,9 @@ Contract for a module here:
   whose bytes every database ledger records. The fleet preflight summary
   reports that skip as its own count and reason, alongside passed and
   failed — not only as a converge-stream line, and not as a pass.
+  A frozen check that is still true except for one supported state the
+  applied bytes reject is reproved from ``CORRECTED_STANDING_INVARIANTS``
+  instead of being skipped.
 - **The body must be safe to re-run.** A database restored from a
   pre-ledger archive replays its history, so guard every statement
   (``IF EXISTS`` / ``IF NOT EXISTS``, or an explicit state check).
