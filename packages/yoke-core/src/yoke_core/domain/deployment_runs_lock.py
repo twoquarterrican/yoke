@@ -12,12 +12,15 @@ minutes while its own watcher had no other progress signal to show.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Optional
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.workflow_item_binding_lock import lock_item_workflow_bindings
 
 _RUN_MEMBERSHIP_LOCK_RETRIES = 5
+_BOUNDED_WRITE = ContextVar("deployment_bounded_write", default=False)
 
 #: How long a non-waiting caller lets the run row settle before skipping. Long
 #: enough to ride out an ordinary concurrent mutation, far short of the
@@ -67,6 +70,11 @@ def lock_run_with_stable_membership(
         if _run_item_ids(conn, run_id) == item_ids:
             return status, item_ids
         conn.rollback()
+        if _BOUNDED_WRITE.get():
+            raise ValueError(
+                f"deployment_membership_changed: run {run_id!r} changed while locking; "
+                "the transaction was rolled back; re-drive the same run after its writer settles"
+            )
     raise RuntimeError(
         f"deployment run '{run_id}' membership changed repeatedly while locking"
     )
@@ -81,7 +89,7 @@ class RunRowLockHolder:
     age_seconds: int
 
 
-class DeploymentRunRowLockBusy(Exception):
+class DeploymentRunRowLockBusy(ValueError):
     """The run row was not writable within the bound, and the caller must not wait."""
 
     def __init__(self, run_id: str, holder: Optional[RunRowLockHolder]) -> None:
@@ -180,6 +188,33 @@ def lock_run_bounded(conn, run_id: str) -> Optional[str]:
         raise DeploymentRunRowLockBusy(run_id, run_row_lock_holder(conn)) from None
     conn.execute(f"RELEASE SAVEPOINT {_LOCK_SAVEPOINT}")
     return status
+
+
+@contextmanager
+def bounded_run_write(conn, run_id: str):
+    """Bound every item/run/target lock in one short admission transaction."""
+    if not db_backend.connection_is_postgres(conn):
+        yield
+        return
+    import psycopg
+
+    conn.execute(
+        "SELECT set_config('lock_timeout', %s, true)",
+        (f"{RUN_ROW_LOCK_TIMEOUT_MS}ms",),
+    )
+    token = _BOUNDED_WRITE.set(True)
+    try:
+        yield
+    except (psycopg.errors.LockNotAvailable, psycopg.errors.QueryCanceled):
+        conn.rollback()
+        raise ValueError(
+            f"deployment_start_lock_busy: run {run_id!r} could not acquire an item, run, "
+            f"or target lock within {RUN_ROW_LOCK_TIMEOUT_MS}ms; this transaction was rolled back. "
+            f"Read `yoke deployment-runs get {run_id}` and the live driver's capture, "
+            "then re-drive the same run after its current writer settles."
+        ) from None
+    finally:
+        _BOUNDED_WRITE.reset(token)
 
 
 __all__ = [

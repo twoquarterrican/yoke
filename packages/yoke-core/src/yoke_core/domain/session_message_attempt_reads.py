@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Any
 
 from yoke_contracts.timestamps import format_instant, parse_instant
@@ -11,6 +13,43 @@ from yoke_core.domain import db_backend, json_helper
 
 
 ATTEMPT_READ_LIMIT = 500
+_READ_BATCH = ContextVar("message_attempt_read_batch", default=None)
+_COLUMNS = (
+    "attempt_id,target_session_id,broker_session_id,attempt_kind,"
+    "adapter_revision,started_at,completed_at,result_code,evidence"
+)
+
+
+@contextmanager
+def message_attempt_read_batch(conn, message_ids):
+    """Prefetch every group's bounded product window without decoding shortcuts."""
+    placeholders = ",".join(_marker(conn) for _ in message_ids)
+    rows = (
+        conn.execute(
+            "SELECT "
+            + _COLUMNS
+            + ",message_id,attempt_count FROM (SELECT "
+            + _COLUMNS
+            + ",message_id,COUNT(*) OVER (PARTITION BY message_id) AS attempt_count,"
+            "ROW_NUMBER() OVER (PARTITION BY message_id ORDER BY started_at,attempt_id) AS position "
+            f"FROM session_message_attempts WHERE message_id IN ({placeholders})) grouped "
+            f"WHERE position <= {ATTEMPT_READ_LIMIT} ORDER BY message_id,position",
+            tuple(message_ids),
+        ).fetchall()
+        if message_ids
+        else []
+    )
+    groups = {str(key): (0, []) for key in message_ids}
+    for row in rows:
+        key = str(row[9])
+        _, attempts = groups[key]
+        attempts.append(tuple(row[index] for index in range(9)))
+        groups[key] = (int(row[10]), attempts)
+    token = _READ_BATCH.set((conn, groups))
+    try:
+        yield
+    finally:
+        _READ_BATCH.reset(token)
 
 
 def _marker(conn: Any) -> str:
@@ -25,20 +64,29 @@ def _evidence(value: Any) -> dict[str, str | int]:
     return redacted_evidence_document(decoded)
 
 
-def message_attempt_evidence(conn: Any, message_id: str) -> dict[str, Any]:
-    """Return bounded attempt facts without leases or native payloads."""
+def _read_rows(conn, message_id):
     marker = _marker(conn)
     total_row = conn.execute(
         f"SELECT COUNT(*) FROM session_message_attempts WHERE message_id={marker}",
         (message_id,),
     ).fetchone()
     rows = conn.execute(
-        "SELECT attempt_id,target_session_id,broker_session_id,attempt_kind,"
-        "adapter_revision,started_at,completed_at,result_code,evidence "
+        "SELECT " + _COLUMNS + " "
         f"FROM session_message_attempts WHERE message_id={marker} "
         "ORDER BY started_at,attempt_id LIMIT " + str(ATTEMPT_READ_LIMIT),
         (message_id,),
     ).fetchall()
+    return int(total_row[0]) if total_row is not None else 0, rows
+
+
+def message_attempt_evidence(conn: Any, message_id: str) -> dict[str, Any]:
+    """Return bounded attempt facts without leases or native payloads."""
+    batch = _READ_BATCH.get()
+    total, rows = (
+        batch[1][message_id]
+        if batch is not None and batch[0] is conn and message_id in batch[1]
+        else _read_rows(conn, message_id)
+    )
     attempts = [
         {
             "attempt_id": str(row[0]),
@@ -55,7 +103,6 @@ def message_attempt_evidence(conn: Any, message_id: str) -> dict[str, Any]:
         }
         for row in rows
     ]
-    total = int(total_row[0]) if total_row is not None else 0
     return {
         "attempts": attempts,
         "attempt_count": total,

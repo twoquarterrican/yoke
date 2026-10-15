@@ -33,6 +33,9 @@ registered, did nothing and ended is excluded by the shared predicate in
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, Sequence
 
 from yoke_contracts.session_control.liveness import (
@@ -48,7 +51,7 @@ from yoke_contracts.session_control.liveness import (
     ended_session_sql,
     live_session_sql,
 )
-from yoke_core.domain import db_helpers
+from yoke_core.domain import db_backend, db_helpers
 from yoke_core.domain.project_identity import resolve_project_id
 from yoke_core.domain.session_list_fields import SESSION_LIST_FIELDS
 from yoke_core.domain.session_probe import not_probe_session_sql
@@ -61,6 +64,28 @@ from yoke_core.domain.sessions_holdings_projection import session_holdings_by_se
 from yoke_core.domain.sessions_list_query import build_sessions_query
 from yoke_core.domain.sessions_list_rows import render_session_roster_rows
 from yoke_core.domain.work_claim_targets import scope_int_sql
+
+
+_READ_BATCH = ContextVar("session_read_batch", default=None)
+
+
+@contextmanager
+def session_read_batch(session_ids):
+    """Reuse canonical roster data only inside one immutable authority batch."""
+    if not db_backend.pg_dsn_is_bound():
+        raise ValueError(
+            "session read batch requires an explicitly bound copy authority"
+        )
+    authority = db_backend.resolve_pg_dsn()
+    rows = list_sessions(session_ids=session_ids, limit=None)
+    by_id = {str(row["session_id"]): [row] for row in rows}
+    token = _READ_BATCH.set(
+        (authority, {str(key): by_id.get(str(key), []) for key in session_ids})
+    )
+    try:
+        yield
+    finally:
+        _READ_BATCH.reset(token)
 
 
 DEFAULT_SESSIONS_LIST_LIMIT = 100
@@ -84,6 +109,7 @@ def list_sessions(
     offset: int = 0,
     per_project: bool = False,
     session_id: Optional[str] = None,
+    session_ids: Optional[Sequence[str]] = None,
     open: bool = False,
 ) -> List[Dict[str, Any]]:
     """List harness sessions, newest activity first.
@@ -151,6 +177,21 @@ def list_sessions(
         per_project and not project and not project_ids and not normalized_session_id
     )
 
+    if offset < 0:
+        raise ValueError("offset must be nonnegative; start at --offset 0")
+    batch = _READ_BATCH.get()
+    if (
+        batch is not None
+        and normalized_session_id
+        and session_ids is None
+        and not any(
+            (project, project_ids, liveness, ended_cause, offset, per_project, open)
+        )
+        and db_backend.pg_dsn_is_bound()
+        and batch[0] == db_backend.resolve_pg_dsn()
+        and normalized_session_id in batch[1]
+    ):
+        return deepcopy(batch[1][normalized_session_id])
     conn = db_helpers.connect()
     try:
         clauses: List[str] = []
@@ -177,6 +218,9 @@ def list_sessions(
         if normalized_session_id:
             clauses.append("s.session_id = %s")
             where_params.append(normalized_session_id)
+        if session_ids is not None:
+            clauses.append("s.session_id = ANY(%s)")
+            where_params.append(list(session_ids))
         clauses.append(not_probe_session_sql("s"))
         if liveness == LIVENESS_ENDED or ended_cause is not None:
             clauses.append(ended_session_sql("s"))
@@ -192,8 +236,6 @@ def list_sessions(
             params = [*where_params, PER_PROJECT_SESSIONS_LIST_CAP, bounded_limit]
         else:
             params = [*where_params, bounded_limit]
-        if offset < 0:
-            raise ValueError("offset must be nonnegative; start at --offset 0")
         rows = conn.execute(query + " OFFSET %s", (*params, offset)).fetchall()
         session_ids = [str(dict(raw)["session_id"]) for raw in rows]
         claims_by_session, roles_by_session = active_claims_by_session(

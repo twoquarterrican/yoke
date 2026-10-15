@@ -113,8 +113,7 @@ def _route_line(
 ) -> Optional[str]:
     """Record and emit one child line; return it when it is a summary.
 
-    Shared by the live read and the post-exit drain so a line arriving in
-    either place is classified, captured, and emitted identically.
+    Live reads and post-exit drains classify, capture and emit identically.
     """
     raw_f.write(line)
     progress_watch.note_output(now)
@@ -132,7 +131,12 @@ def _route_line(
     # so it reaches the reader in every mode rather than only the raw capture.
     designed_wait = cls is not LineClass.URGENT and DESIGNED_WAIT_PREFIX in line
     if outcome_only:
-        if cls is LineClass.URGENT or designed_wait:
+        if (
+            cls is LineClass.URGENT
+            or designed_wait
+            or line.startswith("Deployment start timing: ")
+        ):
+            progress_watch.note_progress_emit(now)
             emit_immediate(line)
         return line if cls is LineClass.SUMMARY else None
     if designed_wait:
@@ -305,9 +309,8 @@ def drain_watched_child(
                 if reader.ended:
                     break
             # A block still arriving is progress in flight: neither report
-            # a stall against it nor tear it open as abandoned. Genuine
-            # abandonment still flushes at child exit, timeout, and the
-            # quiet-period abort above.
+            # a stall against it nor tear it open. Abandonment flushes at
+            # child exit, timeout, and the quiet-period abort above.
             stall_line = (
                 None
                 if _block_still_arriving(classifier)

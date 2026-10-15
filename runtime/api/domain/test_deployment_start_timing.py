@@ -65,3 +65,45 @@ def test_reexec_child_records_launch_completion(capsys, monkeypatch):
     assert [r["phase"] for r in records] == ["start", "end"]
     assert records[1]["elapsed_ms"] == 200
     assert env == {}
+
+
+def test_running_phase_keeps_identity_counts_and_failure(monkeypatch):
+    from threading import Event
+
+    reported = Event()
+    release = Event()
+
+    class PulseEvent:
+        def wait(self, seconds):
+            assert seconds == 30
+            if not reported.is_set():
+                return False
+            return release.wait(1)
+
+        def set(self):
+            release.set()
+
+    emit = timing._emit
+
+    def record(*args, **kwargs):
+        emit(*args, **kwargs)
+        if args[1] == "running":
+            reported.set()
+
+    monkeypatch.setattr(timing, "Event", PulseEvent)
+    monkeypatch.setattr(timing, "_emit", record)
+    with timing.timing_scope("run-copy", collect=True) as records:
+        timing.timing_facts(source_sha="b" * 40)
+        with (
+            pytest.raises(ValueError),
+            timing.start_step(
+                "fleet_readers_items", heartbeat=True, record_count=9
+            ) as progress,
+        ):
+            assert reported.wait(1)
+            progress["completed_count"] = 4
+            raise ValueError("bad record")
+    running = next(row for row in records if row["phase"] == "running")
+    assert running["outcome"] == "pending" and running["record_count"] == 9
+    assert running["run_id"] == "run-copy" and running["source_sha"] == "b" * 40
+    assert records[-1]["outcome"] == "failed" and records[-1]["completed_count"] == 4

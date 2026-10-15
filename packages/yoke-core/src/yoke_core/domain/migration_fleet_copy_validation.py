@@ -6,6 +6,7 @@ from typing import Any, Callable
 
 from yoke_core.domain.migration_restore_point import named_restore_point
 from yoke_core.domain import postgres_cluster
+from yoke_core.domain.deployment_start_timing import timed_preparation as timed
 
 
 def validate_copy(validator: Callable | None, conn: Any, dsn: str) -> str | None:
@@ -38,12 +39,16 @@ def converge_copy(spec, database, copy_name, dump, plan):
 
     copy_dsn = postgres_cluster.dsn(spec, copy_name)
     # Boot-shaped rows (name + index). connect_psycopg stays tuple-only.
-    conn = db_backend._open_native_postgres(copy_dsn)
+    conn = timed(
+        f"fleet_copy_connect:{database}", db_backend._open_native_postgres, copy_dsn
+    )
     try:
-        pending = plan.pending_names(conn, plan.history)
+        pending = timed(
+            f"fleet_pending_history:{database}", plan.pending_names, conn, plan.history
+        )
         with named_restore_point(dump):
             try:
-                plan.converge(conn, copy_dsn)
+                timed(f"fleet_boot_converge:{database}", plan.converge, conn, copy_dsn)
             except BaseException as exc:  # noqa: BLE001 — a verdict, not a crash
                 conn.rollback()
                 return Verdict(database, False, str(exc).strip(), pending)
@@ -51,7 +56,9 @@ def converge_copy(spec, database, copy_name, dump, plan):
         report = (
             AppliedInvariantReport()
             if plan.load_module is None
-            else verify_applied_history_invariants(
+            else timed(
+                f"fleet_invariants:{database}",
+                verify_applied_history_invariants,
                 conn,
                 applied,
                 history=plan.history,
@@ -61,7 +68,13 @@ def converge_copy(spec, database, copy_name, dump, plan):
         )
         failure = report.failure
         if failure is None and plan.post_converge_validator is not None:
-            failure = validate_copy(plan.post_converge_validator, conn, copy_dsn)
+            failure = timed(
+                f"fleet_post_boot:{database}",
+                validate_copy,
+                plan.post_converge_validator,
+                conn,
+                copy_dsn,
+            )
         if failure is not None:
             conn.rollback()
         else:

@@ -7,7 +7,15 @@ from yoke_core.api.service_client_structured_api_adapter import call_dispatcher
 from yoke_core.domain.deployment_run_bound_sources import (
     BOUND_SOURCES_PREPARE_FUNCTION_ID,
 )
-from yoke_core.domain.deployment_run_bound_sources import bound_input_values
+from yoke_core.domain.deployment_run_bound_sources import (
+    bound_input_values,
+    parse_bound_sources,
+)
+from yoke_core.domain.deploy_pipeline_unknown_outcome import (
+    DeploymentOutcomeUnknown,
+    UNKNOWN_CODES,
+)
+from yoke_core.domain.deployment_start_timing import emit_records
 
 
 def bound_inputs_for_dispatch(
@@ -28,7 +36,42 @@ def bound_inputs_for_dispatch(
         target=TargetRef(kind="workflow_run", workflow_run_id=run_id),
         payload={"stage_name": name},
     )
+    emit_records((response.result or {}).get("start_timings"))
     prefix = f"stage {name!r} was not dispatched: "
+    if not response.success and response.error and response.error.code in UNKNOWN_CODES:
+        # Read the existing run owner once. Absence is unknown, never proof
+        # that the server stopped or a reason to issue another mutation.
+        observed = call_dispatcher(
+            function_id="deployment_runs.get",
+            target=TargetRef(kind="workflow_run", workflow_run_id=run_id),
+            payload={},
+        )
+        run = (observed.result or {}).get("run") or {}
+        record = parse_bound_sources(run.get("bound_sources"))
+        receipt = record.get("preparation_receipt") or {}
+        if (
+            observed.success
+            and run.get("status") == "executing"
+            and run.get("current_stage") == name
+            and response.request_id
+            and receipt.get("request_id") == response.request_id
+            and receipt.get("stage_name") == name
+        ):
+            result = {
+                "bound_sources": record,
+                "members": receipt.get("members"),
+                "rebound": receipt.get("rebound", []),
+            }
+            response = response.model_copy(
+                update={"success": True, "result": result, "error": None}
+            )
+        else:
+            raise DeploymentOutcomeUnknown(
+                run_id,
+                BOUND_SOURCES_PREPARE_FUNCTION_ID,
+                response.request_id,
+                response.error.message,
+            )
     if not response.success:
         reason = response.error.message if response.error else "request failed"
         return resolved, (

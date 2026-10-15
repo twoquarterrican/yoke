@@ -1,12 +1,13 @@
 """Flushed deployment-start diagnostics, carried with responses on HTTPS."""
 
 from contextlib import contextmanager
-from contextvars import ContextVar
+from contextvars import ContextVar, copy_context
 from functools import wraps
 import json
 import os
 from pathlib import Path
 from time import monotonic
+from threading import Event, Thread
 
 from yoke_contracts.timestamps import iso8601_now
 
@@ -53,14 +54,14 @@ def emit_records(records):
         print(PREFIX + json.dumps(record, sort_keys=True), flush=True)
 
 
-def _emit(step, phase, elapsed_ms=None, outcome=None):
+def _emit(step, phase, elapsed_ms=None, outcome=None, **facts):
     state = _SCOPE.get()
     if state is None:
         return
     record = {
         key: state[key] for key in ("run_id", "source_sha", "member_count", "transport")
     }
-    record.update(step=step, phase=phase, timestamp=iso8601_now())
+    record.update(step=step, phase=phase, timestamp=iso8601_now(), **facts)
     if elapsed_ms is not None:
         record.update(elapsed_ms=elapsed_ms, outcome=outcome)
     state["records"].append(record)
@@ -76,17 +77,43 @@ def _emit(step, phase, elapsed_ms=None, outcome=None):
 
 
 @contextmanager
-def start_step(step):
+def start_step(step, *, heartbeat=False, record_count=None):
     started = monotonic()
-    _emit(step, "start")
+    progress = (
+        {}
+        if record_count is None
+        else {"record_count": record_count, "completed_count": 0}
+    )
+    _emit(step, "start", **progress)
+    stopped = Event()
+    pulse = None
+    if heartbeat and _SCOPE.get() is not None:
+
+        def report_running():
+            while not stopped.wait(30):
+                _emit(
+                    step,
+                    "running",
+                    round((monotonic() - started) * 1000, 3),
+                    "pending",
+                    **progress,
+                )
+
+        pulse = Thread(target=copy_context().run, args=(report_running,), daemon=True)
+        pulse.start()
     outcome = "ok"
     try:
-        yield
+        yield progress
     except BaseException:
         outcome = "failed"
         raise
     finally:
-        _emit(step, "end", round((monotonic() - started) * 1000, 3), outcome)
+        stopped.set()
+        if pulse is not None:
+            pulse.join()
+        _emit(
+            step, "end", round((monotonic() - started) * 1000, 3), outcome, **progress
+        )
 
 
 def timed_call(step, function, *args, **kwargs):
@@ -147,3 +174,14 @@ def finish_reexec(run_id, *, outcome="ok", environment=None):
             round((monotonic() - float(started)) * 1000, 3),
             outcome,
         )
+
+
+def timed_preparation(step, function, *args, **kwargs):
+    """Report the current database-preparation phase while it is still running."""
+    with start_step(step, heartbeat=True):
+        return function(*args, **kwargs)
+
+
+def current_run_id():
+    state = _SCOPE.get()
+    return state["run_id"] if state else ""

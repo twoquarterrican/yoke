@@ -26,6 +26,11 @@ from yoke_core.domain.deployment_run_create_composition import (
 )
 from yoke_core.domain.project_identity import resolve_project_id
 from yoke_core.domain.schema_read_scope import composition_reads
+from yoke_core.domain.deployment_source_reads import (
+    prepared_sources_only,
+    SourcePreparationChanged,
+)
+from yoke_core.domain.deployment_runs_lock import bounded_run_write
 
 
 class CompositionRefused(DomainRefusal, ValueError):
@@ -181,7 +186,21 @@ def create_run(
         with composition_reads():
             if db_backend.connection_is_postgres(conn):
                 validate_before_lock(conn, project, **request, **run)
-                conn.execute(_CREATE_LOCK_SQL)
+                for attempt in range(8):
+                    try:
+                        with (
+                            bounded_run_write(conn, "new release"),
+                            prepared_sources_only(),
+                        ):
+                            conn.execute(_CREATE_LOCK_SQL)
+                            return _create_locked(conn, project, **request, **run)
+                    except SourcePreparationChanged as exc:
+                        conn.rollback()
+                        if attempt == 7:
+                            raise
+                        # Answer only the new exact source question with every
+                        # write lock released, then revalidate mutable facts.
+                        exc.prepare()
             return _create_locked(conn, project, **request, **run)
     finally:
         conn.close()

@@ -28,6 +28,7 @@ from yoke_core.domain.deployment_run_unheld_candidates import (
 from yoke_core.domain.deployment_runs_validation import cmd_validate_composition
 from yoke_core.domain.deployment_run_contained_items import (
     candidate_containment_basis,
+    CandidateContainmentRefusal,
     record_attested_candidate_containment,
 )
 from yoke_core.domain.deployment_run_candidate_containment import (
@@ -53,6 +54,23 @@ def preview_bound_source_composition(
     conn: Any, run_id: str, record: dict[str, Any], project_ids: frozenset[int]
 ) -> BoundSourceComposition:
     """Resolve network facts before any item/run write lock is taken."""
+    return _read_composition(conn, run_id, record, project_ids)
+
+
+def revalidate_bound_source_composition(conn, run_id, record, project_ids, preview):
+    """Reject raced landings, then reread mutable facts using prepared sources."""
+    if preview.containment is not None:
+        basis = candidate_containment_basis(conn, run_id, bound_sources=record)
+        if basis["basis_digest"] != preview.containment["basis_digest"]:
+            raise CandidateContainmentRefusal(
+                "candidate_containment_attestation_stale",
+                f"candidate attribution changed while preparing {run_id}",
+                f"re-drive {run_id} to prepare the current landing facts",
+            )
+    return _read_composition(conn, run_id, record, project_ids)
+
+
+def _read_composition(conn, run_id, record, project_ids):
     stored = conn.execute(
         "SELECT carried_work FROM deployment_runs WHERE id=%s", (run_id,)
     ).fetchone()[0]

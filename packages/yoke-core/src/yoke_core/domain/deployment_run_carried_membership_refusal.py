@@ -24,7 +24,7 @@ from yoke_core.domain.deployment_run_carried_membership import (
     project_carried_sets,
 )
 from yoke_core.domain.deployment_run_carried_work import (
-    derive_carried_work_safely,
+    carried_work_for_enrollment,
 )
 from yoke_core.domain.deployment_run_composition_freeze import (
     inherited_frozen_membership,
@@ -92,7 +92,7 @@ def carried_membership_refusal(
     resolution = str(_cell(run, "composition_resolution", 1) or "").strip()
     if not lineage:
         return None
-    payload = dict(carried_work or derive_carried_work_safely(conn, run_id))
+    payload = dict(carried_work or carried_work_for_enrollment(conn, run_id))
     project_sets = project_carried_sets(payload)
     if not resolution:
         problems: list[str] = []

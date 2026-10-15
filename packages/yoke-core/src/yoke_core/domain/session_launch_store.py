@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
+
 from datetime import datetime, timedelta
 import hashlib
 from typing import Any, Iterable
@@ -128,15 +131,47 @@ def row_to_launch(row: Any) -> LaunchRecord:
     )
 
 
+_READ_BATCH = ContextVar("launch_read_batch", default=None)
+
+
+@contextmanager
+def launch_read_batch(conn, launch_ids):
+    """Prefetch raw rows for immutable-copy reads; get_launch still decodes each."""
+    placeholders = ",".join(marker(conn) for _ in launch_ids)
+    rows = (
+        conn.execute(
+            f"SELECT {LAUNCH_COLUMNS} FROM session_launches WHERE launch_id IN ({placeholders})",
+            tuple(launch_ids),
+        ).fetchall()
+        if launch_ids
+        else []
+    )
+    token = _READ_BATCH.set(
+        (conn, {str(value(row, "launch_id", 0)): row for row in rows})
+    )
+    try:
+        yield
+    finally:
+        _READ_BATCH.reset(token)
+
+
 def get_launch(conn: Any, launch_id: str, *, for_update: bool = False) -> LaunchRecord:
     suffix = (
         " FOR UPDATE" if for_update and db_backend.connection_is_postgres(conn) else ""
     )
     p = marker(conn)
-    row = conn.execute(
-        f"SELECT {LAUNCH_COLUMNS} FROM session_launches WHERE launch_id = {p}{suffix}",
-        (launch_id,),
-    ).fetchone()
+    batch = _READ_BATCH.get()
+    row = (
+        batch[1].get(launch_id)
+        if batch is not None
+        and batch[0] is conn
+        and not for_update
+        and launch_id in batch[1]
+        else conn.execute(
+            f"SELECT {LAUNCH_COLUMNS} FROM session_launches WHERE launch_id = {p}{suffix}",
+            (launch_id,),
+        ).fetchone()
+    )
     if row is None:
         raise SessionLaunchError("not_found", f"launch {launch_id!r} not found")
     return row_to_launch(row)

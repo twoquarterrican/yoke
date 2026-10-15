@@ -8,9 +8,9 @@ _READS = ContextVar("schema_read_scope", default=None)
 
 
 @contextmanager
-def composition_reads():
+def composition_reads(*, isolated=False):
     """Nested composition helpers share a cache; the outer exit discards it."""
-    if _READS.get() is not None:
+    if _READS.get() is not None and not isolated:
         yield
         return
     token = _READS.set({})

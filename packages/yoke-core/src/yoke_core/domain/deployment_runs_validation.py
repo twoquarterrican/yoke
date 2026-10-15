@@ -2,14 +2,14 @@
 
 Owns: ``cmd_validate_composition`` (provisional and explicit membership check) and
 ``cmd_check_batch_compatibility`` (pre-creation batch check). Both enforce
-project alignment, item-status floor, and
-unsatisfied hard-block dependency detection. Selected flow is completion
+project alignment, item-status floor, and hard-block dependency detection. Selected flow is completion
 authority: a final-delivery release refuses a member it could not close.
 """
 
 from __future__ import annotations
 
 from yoke_core.domain.schema_read_scope import composition_operation
+from yoke_core.domain.deployment_source_reads import SourcePreparationChanged
 
 from typing import Any, List, Optional, Sequence, Tuple
 
@@ -171,6 +171,8 @@ def cmd_validate_composition(
             enrolled = enroll_carried_members(
                 conn, run_id, carried_work=carried, custody=custody
             )
+        except SourcePreparationChanged:
+            raise
         except (LookupError, ValueError) as exc:
             errors.append(str(exc))
         run_project_id = int(run_project_id)
@@ -241,10 +243,8 @@ def cmd_validate_composition(
         if carried_refusal:
             errors.append(carried_refusal)
 
-        # A final release must have authority to close every final member.
         if unclosable := unclosable_final_member_refusal(conn, run_id, custody=custody):
             errors.append(unclosable)
-        # Item QA needs custody; a memberless run must owe no delivery.
         item_qa, no_member = item_qa_membership_verdict(
             conn, run_id, require_members=require_item_qa_members
         )

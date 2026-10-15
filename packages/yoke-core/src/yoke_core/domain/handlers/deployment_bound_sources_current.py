@@ -1,6 +1,8 @@
 """Run-driver authority for bound-source diagnosis and dispatch preparation."""
 
 from pydantic import BaseModel
+from yoke_core.domain.deployment_start_timing import timed_handler, timed_call
+from yoke_core.domain.json_helper import dumps_compact
 from yoke_contracts.api.function_call import HandlerOutcome
 from yoke_core.domain.deployment_run_stale_bound_sources import (
     BOUND_SOURCES_CURRENT_FUNCTION_ID as FUNCTION_ID,
@@ -45,8 +47,10 @@ class PrepareResponse(BaseModel):
     bound_sources: dict
     rebound: list[dict[str, str]]
     members: list[dict]
+    start_timings: list[dict] = []
 
 
+@timed_handler
 def handle_prepare(request):
     from yoke_core.domain.deployment_run_bound_source_prepare import (
         prepare_bound_sources,
@@ -71,7 +75,20 @@ def handle_prepare(request):
             conn.rollback()
             return error("bound_source_preparation_refused", str(exc))
         result["members"] = _member_rows(resolved, connection=conn)
-        conn.commit()
+        # The exact request and its members commit atomically with consumption.
+        # A response-lost client reads this existing run-owned receipt, without
+        # invoking preparation a second time or guessing from status alone.
+        result["bound_sources"]["preparation_receipt"] = {
+            "request_id": request.request_id,
+            "stage_name": request.payload["stage_name"],
+            "members": result["members"],
+            "rebound": result["rebound"],
+        }
+        conn.execute(
+            "UPDATE deployment_runs SET bound_sources=%s WHERE id=%s",
+            (dumps_compact(result["bound_sources"]), resolved),
+        )
+        timed_call("bound_source_commit", conn.commit)
     return HandlerOutcome(result_payload=result, primary_success=True)
 
 

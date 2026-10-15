@@ -84,3 +84,68 @@ def test_unbound_stage_needs_no_preparation():
             {}, name="plain", run_id="run-test", bound_inputs={}, member_items=[]
         ) == ({}, "")
     call.assert_not_called()
+
+
+@pytest.mark.parametrize("committed", [True, False])
+def test_response_loss_reads_exact_receipt_without_retry(committed):
+    from yoke_cli.transport.relay_telemetry import TRANSPORT_FAILED_CODE
+    from yoke_core.domain.deploy_pipeline_unknown_outcome import (
+        DeploymentOutcomeUnknown,
+    )
+
+    lost = FunctionCallResponse(
+        success=False,
+        function=BOUND_SOURCES_PREPARE_FUNCTION_ID,
+        version="v1",
+        request_id="prepare-request",
+        result={},
+        error=FunctionError(code=TRANSPORT_FAILED_CODE, message="response lost"),
+    )
+    receipt = {
+        "request_id": "prepare-request" if committed else "older-request",
+        "stage_name": "hosted-release",
+        "members": [{"public_ref": "CON-2"}],
+    }
+    read = FunctionCallResponse(
+        success=True,
+        function="deployment_runs.get",
+        version="v1",
+        result={
+            "run": {
+                "status": "executing",
+                "current_stage": "hosted-release",
+                "bound_sources": {
+                    "inputs": {"consumer_sha": CURRENT},
+                    "preparation_receipt": receipt,
+                },
+            }
+        },
+    )
+    members = ["YOK-1"]
+    with mock.patch.object(
+        module, "call_dispatcher", side_effect=[lost, read]
+    ) as calls:
+        if committed:
+            values, reason = module.bound_inputs_for_dispatch(
+                CONFIG,
+                name="hosted-release",
+                run_id="run-test",
+                bound_inputs={},
+                member_items=members,
+            )
+            assert values == {"consumer_sha": CURRENT} and not reason
+            assert members == ["CON-2"]
+        else:
+            with pytest.raises(DeploymentOutcomeUnknown, match="prepare-request"):
+                module.bound_inputs_for_dispatch(
+                    CONFIG,
+                    name="hosted-release",
+                    run_id="run-test",
+                    bound_inputs={},
+                    member_items=members,
+                )
+            assert members == ["YOK-1"]
+    assert [c.kwargs["function_id"] for c in calls.call_args_list] == [
+        BOUND_SOURCES_PREPARE_FUNCTION_ID,
+        "deployment_runs.get",
+    ]

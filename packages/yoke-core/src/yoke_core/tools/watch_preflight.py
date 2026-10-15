@@ -67,6 +67,8 @@ PREFLIGHT_PROGRESS_PATTERN = re.compile(
 
 def classify_preflight_line(line: str) -> Classification:
     """Classify one fleet-preflight output line."""
+    if line.startswith("Deployment start timing: "):
+        return Classification(LineClass.METADATA)
     if PREFLIGHT_URGENT_RE.search(line):
         return Classification(LineClass.URGENT)
     if PREFLIGHT_SUMMARY_RE.search(line):

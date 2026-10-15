@@ -278,3 +278,25 @@ def test_a_run_not_yet_at_item_qa_is_left_alone(test_db, monkeypatch):
     assert _take_over(test_db) is None
     assert _members(test_db, OLD) == {PASSED, WAITING}
     assert _run(test_db, NEW)["supersedes_run_id"] is None
+
+
+@pytest.mark.parametrize("tail", ["auto", "command"])
+def test_real_flow_final_completion_tail(test_db, monkeypatch, tail):
+    """The item-QA cursor may precede final auto completion, never execution."""
+    import json
+
+    _seed_old(test_db, run_qa=False)
+    stages = json.loads(
+        test_db.execute(
+            "SELECT stages FROM deployment_flows WHERE id=%s", (f"flow-{OLD}",)
+        ).fetchone()[0]
+    )
+    stages.append({"name": "complete", "step_runner": tail, "stage_kind": "execution"})
+    test_db.execute(
+        "UPDATE deployment_flows SET stages=%s WHERE id=%s",
+        (json.dumps(stages), f"flow-{OLD}"),
+    )
+    _seed_new(test_db)
+    _contains(monkeypatch)
+    assert _take_over(test_db) == (OLD if tail == "auto" else None)
+    assert _members(test_db, NEW) == ({WAITING} if tail == "auto" else set())

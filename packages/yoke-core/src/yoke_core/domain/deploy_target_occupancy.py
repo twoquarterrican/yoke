@@ -120,7 +120,9 @@ def run_target(conn: Any, run_id: str) -> Optional[RunTarget]:
     return _run_target(conn, row) if row is not None else None
 
 
-def _open_qa_lines(conn: Any, target: RunTarget) -> Optional[tuple[str, ...]]:
+def _open_qa_lines(
+    conn: Any, target: RunTarget, *, first_wait: bool = False
+) -> Optional[tuple[str, ...]]:
     """QA lines *target* still waits on; empty once every QA stage settled.
 
     ``None`` means the run has no QA stage, so only a terminal status
@@ -129,6 +131,7 @@ def _open_qa_lines(conn: Any, target: RunTarget) -> Optional[tuple[str, ...]]:
     """
     from yoke_core.domain.deployment_qa_stage_outstanding import (
         qa_stage_outstanding,
+        first_waiting_qa_stage,
     )
 
     qa_stages = [
@@ -141,28 +144,41 @@ def _open_qa_lines(conn: Any, target: RunTarget) -> Optional[tuple[str, ...]]:
         return None
     lines: list[str] = []
     for name in qa_stages:
-        outstanding = qa_stage_outstanding(conn, run_id=target.run_id, stage_name=name)
+        read_stage = first_waiting_qa_stage if first_wait else qa_stage_outstanding
+        outstanding = read_stage(
+            conn,
+            run_id=target.run_id,
+            stage_name=name,
+        )
         if outstanding is None:
             lines.append(f"stage {name}: QA state could not be read")
-            continue
-        lines.extend(f"stage {name}: {line}" for line in outstanding.lines)
+        else:
+            lines.extend(f"stage {name}: {line}" for line in outstanding.lines)
+        if first_wait and lines:
+            break
     return tuple(lines)
 
 
 _NO_QA_STAGE_LINE = "no QA stage: held until the run is terminal"
 
 
-def open_qa_lines(conn: Any, run_id: str) -> tuple[str, ...]:
+def open_qa_lines(
+    conn: Any, run_id: str, *, first_wait: bool = False
+) -> tuple[str, ...]:
     """What still holds *run_id*'s origins; empty once its QA settled."""
     target = run_target(conn, run_id)
     if target is None:
         return ()
-    lines = _open_qa_lines(conn, target)
+    lines = _open_qa_lines(conn, target, first_wait=first_wait)
     return (_NO_QA_STAGE_LINE,) if lines is None else lines
 
 
 def occupancies(
-    conn: Any, origins: Iterable[str], *, excluding_run: str = ""
+    conn: Any,
+    origins: Iterable[str],
+    *,
+    excluding_run: str = "",
+    first_wait: bool = False,
 ) -> list[Occupancy]:
     """Every executing run that still occupies one of *origins*."""
     wanted = set(origins)
@@ -179,7 +195,7 @@ def occupancies(
         shared = wanted.intersection(target.origins)
         if not shared:
             continue
-        open_lines = _open_qa_lines(conn, target)
+        open_lines = _open_qa_lines(conn, target, first_wait=first_wait)
         if open_lines == ():
             continue
         lines = open_lines or (_NO_QA_STAGE_LINE,)
@@ -232,9 +248,11 @@ def occupied_refusal(run_id: str, held: list[Occupancy]) -> str:
         "Recovery: re-run this start once the holder's QA settles "
         f"(`yoke deployment-runs stages {holders[0]}` shows it). A holder on "
         "this run's flow and target that now waits only on item QA is taken "
-        "over by a new `yoke deployment-runs create` whose candidate contains "
-        "the holder's; this run was created before that applied, so terminalize "
-        "it and create again. A holder nobody will finish is released by "
+        "over during creation only when its remaining stages are QA, approval, "
+        "or automatic completion, its candidate is contained, and its live "
+        "driver permits takeover. Inspect those conditions before creating a "
+        "replacement; recreating alone does not clear occupancy. "
+        "A holder nobody will finish is released by "
         f"terminalizing it: `yoke deployment-runs terminalize {holders[0]} "
         '--disposition cancelled --reason "<why it is abandoned>"`.'
     )
@@ -252,7 +270,7 @@ def require_target_unoccupied(conn: Any, run_id: str) -> RunTarget:
     if target is None:
         raise LookupError(f"deployment run {run_id} not found")
     _lock_origins(conn, target.origins)
-    held = occupancies(conn, target.origins, excluding_run=run_id)
+    held = occupancies(conn, target.origins, excluding_run=run_id, first_wait=True)
     if held:
         raise DeployTargetOccupiedError(occupied_refusal(run_id, held))
     return target

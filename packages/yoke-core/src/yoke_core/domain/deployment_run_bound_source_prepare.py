@@ -15,8 +15,15 @@ from yoke_core.domain.deployment_run_project_sources import invalidate_run_sourc
 from yoke_core.domain.deployment_run_bound_source_composition import (
     recompose_bound_sources,
     preview_bound_source_composition,
+    revalidate_bound_source_composition,
 )
-from yoke_core.domain.deployment_runs_lock import lock_run_with_stable_membership
+from yoke_core.domain.deployment_runs_lock import (
+    bounded_run_write,
+    lock_run_with_stable_membership,
+)
+from yoke_core.domain.schema_read_scope import composition_operation
+from yoke_core.domain.deployment_source_reads import prepared_sources_only
+from yoke_core.domain.deployment_start_timing import timed_call
 from yoke_core.domain.json_helper import dumps_compact
 from yoke_core.domain.deployment_run_bound_source_consumption import consumed_stage
 from yoke_core.domain.workflow_item_binding_lock import lock_item_workflow_bindings
@@ -25,6 +32,7 @@ from yoke_core.domain.deployment_run_contained_items import CandidateContainment
 _MAX_PREPARATION_ATTEMPTS = 3
 
 
+@composition_operation
 def prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str, Any]:
     """Retry a racing landing with fresh reads and no retained writes or locks."""
     for attempt in range(_MAX_PREPARATION_ATTEMPTS):
@@ -50,12 +58,12 @@ def _prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str,
             f"bound_source_record_unavailable: {run_id} cannot record consumption; ask the control-plane operator to converge the bound_sources column"
         )
     row = conn.execute(
-        "SELECT dr.bound_sources,df.stages,dr.current_stage,dr.status FROM deployment_runs dr JOIN deployment_flows df ON df.id=dr.flow WHERE dr.id=%s",
+        "SELECT dr.bound_sources,df.stages,dr.current_stage,dr.status,dr.flow,dr.release_lineage FROM deployment_runs dr JOIN deployment_flows df ON df.id=dr.flow WHERE dr.id=%s",
         (run_id,),
     ).fetchone()
     if row is None:
         raise LookupError(f"deployment run {run_id!r} not found")
-    stored, stages_text, current_stage, status = row
+    stored, stages_text, current_stage, status, flow, lineage = row
     if status not in {"created", "executing", "failed"}:
         raise ValueError(
             f"bound_source_run_terminal: {run_id} is {status}; compose a new run"
@@ -77,7 +85,14 @@ def _prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str,
             f"bound_source_record_incomplete: {run_id} is missing {sorted(needed)}; compose a new run"
         )
     selected = [e for e in entries if e["project"] in needed]
-    stale, unverified = _compare_to_branch_heads(conn, run_id, selected, branches)
+    stale, unverified = timed_call(
+        "bound_source_provider",
+        _compare_to_branch_heads,
+        conn,
+        run_id,
+        selected,
+        branches,
+    )
     if unverified:
         raise ValueError(
             f"bound_source_unverified: {unverified}; repair source access, then re-drive {run_id}"
@@ -111,35 +126,59 @@ def _prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str,
         int(e["project_id"]) for e in selected if e["project"] in changes
     )
     preview = (
-        preview_bound_source_composition(conn, run_id, record, project_ids)
+        timed_call(
+            "bound_source_composition",
+            preview_bound_source_composition,
+            conn,
+            run_id,
+            record,
+            project_ids,
+        )
         if changes
         else None
     )
-    if preview is not None:
-        lock_item_workflow_bindings(conn, preview.lock_item_ids)
-    locked_status, _ = lock_run_with_stable_membership(conn, run_id)
-    latest = conn.execute(
-        "SELECT bound_sources FROM deployment_runs WHERE id=%s", (run_id,)
-    ).fetchone()[0]
-    if locked_status != status or parse_bound_sources(latest) != snapshot:
-        raise ValueError(
-            f"bound_source_preparation_changed: {run_id} changed during preparation; re-drive the same run"
+    with bounded_run_write(conn, run_id), prepared_sources_only():
+        if preview is not None:
+            lock_item_workflow_bindings(conn, preview.lock_item_ids)
+        locked_status, _ = timed_call(
+            "bound_source_item_run_locks", lock_run_with_stable_membership, conn, run_id
         )
-    if changes:
+        latest = conn.execute(
+            "SELECT dr.bound_sources,df.stages,dr.current_stage,dr.flow,dr.release_lineage "
+            "FROM deployment_runs dr JOIN deployment_flows df ON df.id=dr.flow WHERE dr.id=%s",
+            (run_id,),
+        ).fetchone()
+        if (
+            locked_status != status
+            or parse_bound_sources(latest[0]) != snapshot
+            or tuple(latest)[1:] != (stages_text, current_stage, flow, lineage)
+        ):
+            raise ValueError(
+                f"bound_source_preparation_changed: {run_id} changed during preparation; re-drive the same run"
+            )
+        if changes:
+            # Preserve the original pins until every mutable input is revalidated.
+            fresh = revalidate_bound_source_composition(
+                conn, run_id, record, project_ids, preview
+            )
+            if set(fresh.lock_item_ids) - set(preview.lock_item_ids):
+                raise ValueError(
+                    f"bound_source_preparation_changed: {run_id} gained members; re-drive the same run"
+                )
+            conn.execute(
+                "UPDATE deployment_runs SET bound_sources=%s WHERE id=%s",
+                (dumps_compact(record), run_id),
+            )
+            invalidate_run_source_facts(conn, run_id)
+            recompose_bound_sources(conn, run_id, project_ids, fresh)
+        for entry in selected:
+            entry.setdefault("consumed_by", stage_name)
+            entry.setdefault("consumed_at", stamp)
         conn.execute(
             "UPDATE deployment_runs SET bound_sources=%s WHERE id=%s",
             (dumps_compact(record), run_id),
         )
         invalidate_run_source_facts(conn, run_id)
-        recompose_bound_sources(conn, run_id, project_ids, preview)
-    for entry in selected:
-        entry.setdefault("consumed_by", stage_name)
-        entry.setdefault("consumed_at", stamp)
-    conn.execute(
-        "UPDATE deployment_runs SET bound_sources=%s WHERE id=%s",
-        (dumps_compact(record), run_id),
-    )
-    invalidate_run_source_facts(conn, run_id)
     return {
         "bound_sources": record,
         "rebound": [

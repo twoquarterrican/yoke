@@ -22,7 +22,7 @@ from yoke_core.domain.deployment_run_carried_work_source import (
     CarriedWorkSourceUnavailable,
     open_carried_work_source,
 )
-from yoke_core.domain.schema_read_scope import shared_read
+from yoke_core.domain.deployment_source_reads import source_read
 
 
 def candidate_range_commits(
@@ -54,7 +54,7 @@ def candidate_range_commits(
         return frozenset(commit.lower() for commit in commits.commits)
 
     key = ("candidate_range_commits", int(project_id), base, candidate)
-    return shared_read(conn, key, read)
+    return source_read(conn, key, read)
 
 
 __all__ = ["candidate_range_commits"]

@@ -1,6 +1,7 @@
 """A run settles on its own target; holding is per target environment."""
 
 import json
+import pytest
 
 from runtime.api.domain.test_dash_post_deploy_done_consumption import (
     _accept_member_qa,
@@ -173,3 +174,55 @@ def test_auto_completion_does_not_wait_on_another_targets_obligation(
 
     assert ready is not None, reason
     assert item_id in ready["members"]
+
+
+@pytest.mark.parametrize(
+    "target,may_settle", [("stage", True), ("prod", False), ("", False)]
+)
+def test_manual_acceptance_remains_open_on_its_own_target(
+    test_db, monkeypatch, target, may_settle
+):
+    from yoke_core.domain.deployment_run_auto_completion import _readiness
+
+    _isolate_status_effects(monkeypatch)
+    item_id = 9756
+    sources = _production_delivered(test_db, item_id)
+    test_db.execute(
+        "UPDATE qa_requirements SET qa_phase='manual_acceptance',execution_target_json=NULL,target_env=%s "
+        "WHERE id=%s",
+        (target, sources["stage"]),
+    )
+    test_db.execute(
+        "UPDATE deployment_runs SET current_stage='member-qa' WHERE id='run-prod'"
+    )
+    test_db.commit()
+    test_db.execute(
+        "UPDATE deployment_run_items SET delivery_intent='final' WHERE run_id='run-prod'"
+    )
+    test_db.commit()
+    release_seeded_driver(test_db, "run-prod")
+    ready, reason = _readiness(test_db, "run-prod")
+    assert (ready is not None) is may_settle, reason
+    assert (
+        owes_only_other_targets(test_db, run_id="run-prod", item_id=item_id)
+        is may_settle
+    )
+    if may_settle:
+        mark_settling(test_db, "run-prod")
+        assert settle_members(test_db, "run-prod") is None
+    else:
+        assert f"requirement {sources['stage']}" in reason
+        assert "manual_acceptance" in reason
+    requirement = test_db.execute(
+        "SELECT waived_at,retracted_at FROM qa_requirements WHERE id=%s",
+        (sources["stage"],),
+    ).fetchone()
+    assert requirement[0] is None and requirement[1] is None
+    assert _item(test_db, item_id)["status"] == "release"
+    assert (
+        test_db.execute(
+            "SELECT count(*) FROM qa_runs WHERE qa_requirement_id=%s AND verdict='pass'",
+            (sources["stage"],),
+        ).fetchone()[0]
+        == 0
+    )

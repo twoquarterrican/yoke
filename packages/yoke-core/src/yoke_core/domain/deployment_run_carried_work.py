@@ -21,8 +21,6 @@ replaces a recorded answer whose comparison could not run.
 
 from __future__ import annotations
 
-from copy import deepcopy
-from functools import partial
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -39,7 +37,7 @@ from yoke_core.domain.deployment_run_project_carried_work import (
 )
 from yoke_core.domain.function_target_row_project import slug_for_project_id
 from yoke_core.domain.json_helper import dumps_compact, loads_text
-from yoke_core.domain.schema_read_scope import shared_read
+from yoke_core.domain.deployment_source_reads import SourcePreparationChanged
 
 
 CARRIED_WORK_FIELD = "carried_work"
@@ -99,27 +97,8 @@ def previous_release_run(conn: Any, run_id: str, project_id: int, environment_id
 def _shared_project_carried_work(
     conn: Any, run_id: str, *, previous: Any, **comparison: Any
 ) -> dict[str, Any]:
-    """Compare one project once per operation, whichever run row asks.
-
-    The comparison reads only the two commits and the preceding run, so run
-    creation's unlocked validation and its locked re-check share one walk.
-    A changed predecessor is a different key and is compared again.
-    """
-    columns = ("id", "project_id", "release_lineage", BOUND_SOURCES_FIELD)
-    basis = (
-        None
-        if previous is None
-        else tuple(
-            str(_cell(previous, key, index) or "") for index, key in enumerate(columns)
-        )
-    )
-    key = ("project_carried_work", basis, *sorted(map(str, comparison.items())))
-    derive = partial(
-        derive_project_carried_work, conn, run_id, previous=previous, **comparison
-    )
-    payload = deepcopy(shared_read(conn, key, derive))
-    payload["derivation"]["run_id"] = run_id
-    return payload
+    """Reuse repository facts while rereading current ownership evidence."""
+    return derive_project_carried_work(conn, run_id, previous=previous, **comparison)
 
 
 def derive_carried_work(
@@ -219,6 +198,10 @@ def derive_carried_work_safely(
         if preserved_work is not None:
             options["preserved_work"] = preserved_work
         payload = derive_carried_work(conn, run_id, **options)
+    except SourcePreparationChanged:
+        conn.execute("ROLLBACK TO SAVEPOINT carried_work_derivation")
+        conn.execute("RELEASE SAVEPOINT carried_work_derivation")
+        raise
     except Exception as exc:  # noqa: BLE001 - callers record named emptiness
         conn.execute("ROLLBACK TO SAVEPOINT carried_work_derivation")
         conn.execute("RELEASE SAVEPOINT carried_work_derivation")

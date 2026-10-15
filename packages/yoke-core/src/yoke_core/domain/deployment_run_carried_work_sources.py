@@ -21,6 +21,7 @@ from yoke_core.domain.commit_evidence_instant import commit_instant as _commit_i
 from yoke_core.domain.dash_execution import DASH_EVIDENCE_SECTION
 from yoke_core.domain.json_helper import loads_text
 from yoke_core.domain.item_merge_receipt_document import merge_identities
+from yoke_core.domain.deployment_source_reads import SourcePreparationChanged
 
 
 LANDING_TIME_TOLERANCE_SECONDS = 600
@@ -55,6 +56,10 @@ def _safe_read(
     conn.execute("SAVEPOINT carried_work_optional_read")
     try:
         rows = list(read())
+    except SourcePreparationChanged:
+        conn.execute("ROLLBACK TO SAVEPOINT carried_work_optional_read")
+        conn.execute("RELEASE SAVEPOINT carried_work_optional_read")
+        raise
     except Exception as exc:  # noqa: BLE001 - optional evidence source
         conn.execute("ROLLBACK TO SAVEPOINT carried_work_optional_read")
         conn.execute("RELEASE SAVEPOINT carried_work_optional_read")

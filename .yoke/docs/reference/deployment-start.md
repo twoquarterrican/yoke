@@ -80,3 +80,56 @@ python3 -m yoke_core.tools.deployment_start_report --run-id RUN-ID --baseline-se
 Pass `--capture PATH` for an exported raw capture. The report refuses incomplete
 markers or more than one context build, and prints the measured total and every
 step’s elapsed time; a slower start still reports its measured difference.
+
+
+Source/provider and containment preparation precede item/run locks. The short
+commit phase rereads membership, workflow, evidence, flow and source pins;
+only an identical repository question reuses its prepared answer. A changed
+source question releases the transaction before new source work. QA occupancy
+uses the first real blocker and shares peer-plan facts within that evaluation;
+full diagnostic reads still report all blockers. Item/run/target lock contention
+refuses as `deployment_start_lock_busy` after two seconds and names same-run
+recovery. It is not a measured diagnosis of which older transaction held a lock.
+
+An item-QA cursor followed by QA/approval gates and the declared final `auto`
+completion step is eligible for takeover. Any remaining execution step is not.
+Containment, same flow/target and driver ownership still apply. Recreating a run
+alone cannot repair those facts. A delivered run can settle while its member
+still owes manual acceptance or post-deploy QA on another named target; that
+requirement stays unmet and the item stays at release until it is accepted.
+Same-target or untargeted acceptance still blocks completion.
+
+A timeout or connection loss is `deployment_outcome_unknown`, not a deployment
+failure. Bound-source preparation commits its exact request receipt beside the
+consumed sources on the run; the driver reads that receipt before proceeding
+after response loss. An absent, mismatched or unreadable receipt leaves the
+attempt pending, with no retry, provider dispatch or failed transition. Inspect
+`yoke deployment-runs get RUN-ID` and the existing driver's capture, and reconcile
+the request or provider attempt before re-driving the same run; never use
+`--fresh` to recover a lost response. The live attachment's phase and capture
+show preparation even while run status remains `created`.
+
+Timing records distinguish `start_source_preparation`, `start_item_run_locks`,
+`target_occupancy`, `composition_freeze`, `bound_source_provider`,
+`bound_source_composition`, `bound_source_item_run_locks`, `bound_source_commit`
+and `executing_stamp`. A lock timeout names the phase, not an invented blocker;
+missing response/timing evidence stays unknown. Real-run verification must name
+the exact deployed source and representative members; a small fixture is a
+regression check, not proof of production startup time.
+
+Fleet preparation reports the actual subphase under the declared deployment
+stage: declarations, receipt authority, admin connection, roster, ownership,
+extensions, copy dump/restore, boot convergence, invariants, product readers,
+cleanup and receipt writing. Long subphases emit `phase=running`,
+`outcome=pending` and elapsed milliseconds every thirty seconds. Restored-copy
+reader diagnostics identify sessions, frontier, board, launch pages/details,
+message attempts and items, with `record_count` and `completed_count` for each
+record family. Every copied record still reaches its existing handler or
+decoder. Bounded batches reuse the canonical session projection and item text
+expressions, and fetch launch and attempt rows in sets; no check is sampled or
+skipped. Batch data is discarded on exit and cannot cross copy authorities.
+Connections opened under a bound copy still physically close.
+These timing lines reach the deployment progress capture even in outcome-only
+mode, so the attached driver's capture identifies preparation before any
+provider dispatch. They carry run/source identity when supplied and no DSNs.
+A missing end marker is unfinished evidence, never a successful receipt.

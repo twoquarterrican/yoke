@@ -1,30 +1,17 @@
 """Rehearse a migration model's pending history against its live databases.
 
-Run this before releasing a build that carries an unapplied history entry. It
-answers the only question that matters about such an entry — does it still
-apply to the databases that are behind? — by running it against a copy of
-each of them, on the local embedded cluster, exactly as a booting server
-would. The live databases are only read.
-
-Which databases, and which boot sequence, is the model's declared ``fleet``
-on the project's ``migration_model`` capability: the engine's own tenant
-databases converged by the engine, or databases the project names converged
-by the project's own boot command from its checkout. A model declaring no
-fleet is refused with the declaration recipe; one declaring ``none`` has
+Run pending history through the declared model's boot sequence on disposable
+copies of every live fleet database. Live databases are read only. Engine
+fleets use engine boot; named fleets use the project's declared boot command.
+A missing fleet declaration refuses with recovery; an explicit ``none`` has
 nothing to rehearse.
 
 A copy installing different extension versions than its source is not evidence
 about that source, so each source's versions are pinned into its copy; a
 version this machine's engine cannot install refuses before anything is dumped.
 
-An engine tenant fleet is what the release must keep serving, which is
-narrower than every engine-schema database on the cluster: the Platform
-catalog, scratch databases a test run abandoned, and the validation database
-governed migration rehearsal applies history into and leaves behind are all
-owned by something other than a tenant, and the latter two have each failed a
-release by being converged as one. Every candidate is rostered before it is
-copied, naming whether it is a member and why, so the capture answers which
-databases this rehearsed without a reader reconstructing the rule.
+Each candidate database is rostered before copying. Engine tenant fleets
+exclude Platform, abandoned test databases and retained validation copies.
 
 Ordinary pre-release rehearsal uses the source tree (no ``--engine-wheel``).
 The release wheel is produced after tag allocation, so it cannot exist at
@@ -50,20 +37,13 @@ Naming databases limits the run to those, as a diagnostic only: a receipt
 covers the model's whole declared fleet, so ``--record-receipt`` refuses a
 narrowed run.
 
-``--record-receipt`` records the pass in the control plane, which is what the
-release gate reads before allocating a tag; a receipt covers exactly the
-environment whose fleet was rehearsed, a release targeting an environment
-requires that environment's receipt, and one environment's receipt never satisfies another.
-The receipt names the history entries covered, the schema-shape digest of
-the boot-converge sources in the selected engine, and whether that engine
-was the source tree or a wheel. It is stored on that project environment's own
-settings document under ``release.fleet_rehearsal.<model>``, so coverage outlives
-telemetry retention and cannot be read for the wrong environment.
+``--record-receipt`` writes only after the entire fleet passes. Coverage names
+the exact project environment, history, schema-shape digest and source artifact.
+A receipt covers one target; one environment's receipt never satisfies another.
 Receipts write to the control plane ``--receipt-env`` (or ``YOKE_ENV``)
-names; one that does not answer the Yoke settings read for the rehearsed
-project environment is refused before anything is copied. The selected
-admin connection changes the covered fleet, not the receipt plane. Receipts are recorded only on passing runs, so they cannot exist for
-fleets this did not clear.
+names, independently of the admin connection used to read the covered fleet.
+Authority is probed before copying. See docs/public/reference/deployment-start.md
+for diagnostics.
 
 ``--engine-wheel`` puts a named already-built artifact at the head of the
 import path before any ``yoke_core`` module loads. Omit it for ordinary
@@ -103,6 +83,7 @@ RECEIPT_PROJECT = "yoke"
 def _parse(args: List[str]) -> argparse.Namespace:
     """Separate the project, model, and receipt flags from the operands."""
     parser = argparse.ArgumentParser(prog="yoke watch preflight --", add_help=False)
+    parser.add_argument("--run-id", default=os.environ.get("DEPLOYMENT_RUN_ID", ""))
     parser.add_argument("--project", default="")
     parser.add_argument("--model", default="")
     parser.add_argument("--checkout", default="")
@@ -132,6 +113,21 @@ def main(argv: Optional[List[str]] = None) -> int:
     except (EngineArtifactError, ValueError) as exc:
         print(f"preflight arguments refused: {exc}", file=sys.stderr)
         return 2
+    # Artifact activation must precede importing any engine timing helpers.
+    from yoke_core.domain.deployment_start_timing import (
+        timing_scope,
+        timing_facts,
+        timed_call,
+    )
+
+    with timing_scope(parsed.run_id):
+        timing_facts(source_sha=parsed.product_sha)
+        return timed_call("fleet_preflight", _execute, parsed, engine_artifact)
+
+
+def _execute(parsed, engine_artifact):
+    from yoke_core.domain.deployment_start_timing import timed_preparation as timed
+
     project, positional = parsed.project.strip(), parsed.operands
     if not project or not positional:
         print(
@@ -165,7 +161,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     from runtime.api.tools import migration_fleet_selection
 
     covered_env = receipt.target_environment_for_admin_env(positional[0])
-    target, unavailable = migration_fleet_selection.resolve(
+    target, unavailable = timed(
+        "fleet_declaration",
+        migration_fleet_selection.resolve,
         project,
         parsed.model.strip() or None,
         checkout=Path(parsed.checkout).expanduser() if parsed.checkout else None,
@@ -173,8 +171,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     if target is None:
         print(unavailable, file=sys.stderr)
         return 2
-    admin_env, admin_error = read_declared_admin_connection(
-        project=project, environment=covered_env
+    admin_env, admin_error = timed(
+        "fleet_admin_declaration",
+        read_declared_admin_connection,
+        project=project,
+        environment=covered_env,
     )
     if admin_error:
         print(admin_error, file=sys.stderr)
@@ -192,8 +193,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     if record:
         # Probed before minutes of copying, so a plane that cannot hold the
         # receipt refuses now rather than after a pass nobody can record.
-        refusal = receipt_write.receipt_plane_refusal(
-            receipt_env=receipt_env, project=project, environment=covered_env
+        refusal = timed(
+            "fleet_receipt_authority",
+            receipt_write.receipt_plane_refusal,
+            receipt_env=receipt_env,
+            project=project,
+            environment=covered_env,
         )
         if refusal:
             print(refusal, file=sys.stderr)
@@ -213,7 +218,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     print(f"engine artifact: {engine_artifact.display()}")
     try:
-        authority = activate_selected_postgres(admin_env)
+        authority = timed(
+            "fleet_admin_connection", activate_selected_postgres, admin_env
+        )
     except SelectedPostgresError as exc:
         print(
             f"fleet rehearsal needs the local-postgres admin connection for "
@@ -224,10 +231,19 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 2
 
     spec = local_universe.cluster_spec(
-        bin_dir=local_universe.ensure_engine_binaries(lambda msg: print(f"  {msg}"))
+        bin_dir=timed(
+            "fleet_copy_engine",
+            local_universe.ensure_engine_binaries,
+            lambda msg: print(f"  {msg}"),
+        )
     )
     try:
-        local_universe_autostart.ensure_running(spec, emit=print)
+        timed(
+            "fleet_copy_cluster",
+            local_universe_autostart.ensure_running,
+            spec,
+            emit=print,
+        )
     except local_universe.LocalUniverseError as exc:
         print(
             f"fleet rehearsal needs the local rehearsal cluster: {exc}", file=sys.stderr
@@ -260,7 +276,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(f"rehearsal cluster: {spec.sock_dir}")
     # Enumerated after the identity lines so the roster the selector emits
     # reads as a fact about this fleet, not a stray preamble.
-    databases = positional[1:] or target.databases(dsn_for)
+    databases = positional[1:] or timed("fleet_roster", target.databases, dsn_for)
 
     # The copies run for minutes through whatever path reaches the fleet. When
     # that path is a shared local forward, the lease is what stops another
@@ -289,7 +305,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     from yoke_core.domain.schema_shape_source import SchemaShapeSourceError
 
     try:
-        schema_digest = target.schema_shape_digest()
+        schema_digest = timed("fleet_receipt_schema", target.schema_shape_digest)
     except SchemaShapeSourceError as exc:
         print(
             "fleet rehearsal passed but its schema-shape digest could not be "
@@ -297,7 +313,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             file=sys.stderr,
         )
         return 1
-    run, unwritten = receipt_write.record_receipt(
+    run, unwritten = timed(
+        "fleet_receipt_write",
+        receipt_write.record_receipt,
         project=project,
         model=target.model_name,
         receipt_env=receipt_env,

@@ -3,9 +3,9 @@
  "title": "Stage dispatch and settlement",
  "status": "observed",
  "audience": "Maintainers",
- "summary": "A run reads succeeded only after every required member closes together. Settlement refuses before writing any member when a required member is not cleared or a prepare refuses, and names each blocker, open done-gate QA requirements included. The refusal carries `run_settlement_blocked`; the driver stops at once with exit 4 and that recovery, retrying only a write that got no answer, and a re-drive does not re-stamp members already done.",
+ "summary": "A run settles its own target after required delivery and gates pass. A member still owing another named target's post-deploy QA or manual acceptance stays open, with no fabricated pass or waiver. Refusals name the item, requirement, phase, target and recovery. Lost responses remain unknown: read the exact preparation receipt or existing provider attempt before retrying or failing; pending attempts are preserved. Fleet preparation exposes current subphases, pending heartbeats, elapsed time and reader counts in the existing driver capture. Copy-scoped batches preserve every canonical reader check and physical connection closure.",
  "functions": ["deployment_runs.execution.update", "deployment_runs.update"],
- "sources": ["packages/yoke-core/src/yoke_core/domain/deployment_run_collective_finalization.py", "packages/yoke-core/src/yoke_core/domain/deployment_run_settlement_refusal.py", "packages/yoke-core/src/yoke_core/domain/deploy_pipeline_run_context.py", "runtime/api/domain/test_run_settlement_refusal.py", "docs/state-management/delivery-internals.md"],
+ "sources": ["packages/yoke-core/src/yoke_core/domain/deployment_run_collective_finalization.py", "packages/yoke-core/src/yoke_core/domain/deployment_run_settlement_refusal.py", "packages/yoke-core/src/yoke_core/domain/deploy_pipeline_run_context.py", "runtime/api/domain/test_run_settlement_refusal.py", "docs/state-management/delivery-internals.md", "packages/yoke-core/src/yoke_core/domain/deploy_pipeline_unknown_outcome.py", "runtime/api/tools/migration_rehearsal_readers.py", "runtime/api/tools/test_migration_reader_batches.py", "packages/yoke-core/src/yoke_core/domain/deployment_start_timing.py"],
  "page": "runtime-evidence",
  "position": 3
 }
