@@ -49,8 +49,7 @@ def test_wizard_bind_step_payload_satisfies_the_registered_contract(
     parsed_binds: list[ProjectGithubBindingBindRequest] = []
 
     def dispatch_through_contract(function_id, payload, _config_path, **_kwargs):
-        if function_id != "projects.github_binding.bind":
-            return {}
+        assert function_id == "projects.github_binding.bind"
         # The registered handler parses this exact payload; a numeric GitHub
         # id refused here is the live wizard failure.
         parsed_binds.append(ProjectGithubBindingBindRequest(**payload))
@@ -72,4 +71,4 @@ def test_wizard_bind_step_payload_satisfies_the_registered_contract(
         for bind in parsed_binds
     ] == [("123", "456", "41")]
     assert outcome["binding"] == "active"
-    assert outcome["mode"] == "enabled"
+    assert outcome["mode"] == "disabled"

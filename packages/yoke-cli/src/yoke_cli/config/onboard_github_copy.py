@@ -29,7 +29,7 @@ PROJECT_GITHUB_ACCESS_SUBTITLE = (
 )
 
 PROJECT_GITHUB_REVIEW = (
-    "Bind this project to a GitHub App repository for Issues, PRs, CI, and Actions"
+    "Bind this project to a GitHub App repository for PRs, CI, and Actions"
 )
 
 PROJECT_GITHUB_REUSE_LABEL = "Use connected repo"
