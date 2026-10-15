@@ -6,6 +6,7 @@ from yoke_contracts.timestamps import parse_instant
 
 from yoke_core.domain.db_helpers import instant_parameter
 
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Any, Mapping
 
@@ -25,6 +26,8 @@ class AttemptView:
     failed_count: int
     last_failed_code: str
     last_failed_evidence: Mapping[str, Any]
+    completed_at: datetime | None = None
+    wake_delivered_at: datetime | None = None
 
 
 def _evidence(raw: Any) -> Mapping[str, Any]:
@@ -44,7 +47,11 @@ def last_attempts(
         f"""SELECT a.message_id AS message_id,
                    a.target_session_id AS target_session_id,
                    a.result_code AS result_code,
-                   a.evidence AS evidence
+                   a.evidence AS evidence,
+                   a.completed_at AS completed_at,
+                   (SELECT MAX(w.completed_at) FROM session_message_attempts w
+                    WHERE w.target_session_id=a.target_session_id
+                    AND w.result_code='wake_delivered') AS wake_delivered_at
               FROM session_message_attempts a
               JOIN session_message_recipients r
                 ON r.message_id = a.message_id
@@ -74,6 +81,12 @@ def last_attempts(
             failed_count=failed_count,
             last_failed_code=last_failed_code,
             last_failed_evidence=last_failed_evidence,
+            completed_at=parse_instant(row["completed_at"])
+            if row["completed_at"]
+            else None,
+            wake_delivered_at=parse_instant(row["wake_delivered_at"])
+            if row["wake_delivered_at"]
+            else None,
         )
     return latest
 

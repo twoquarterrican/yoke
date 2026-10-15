@@ -150,3 +150,9 @@ def test_malicious_diagnostic_reference_never_becomes_a_copyable_command() -> No
     assert durable == {"native_error_class": "process_exit"}
     with pytest.raises(ValueError, match="reference is invalid"):
         native_diagnostic_command(malicious)
+
+
+def test_native_process_start_time_survives_evidence_redaction():
+    assert redacted_evidence_document({"process_start_time": "native-start"}) == {
+        "process_start_time": "native-start"
+    }

@@ -127,3 +127,47 @@ def test_fleet_rechecks_death_identity_instead_of_repeating_the_hold():
     row.pop("last_tool_call_at")
     args["attempt_evidence"] = dict(HELD, running_native_start_time="replacement")
     assert delivery_state(row, **args) == WAKE_HELD_FOR_NATIVE_TURN
+
+
+def test_later_delivered_wake_supersedes_a_hold_without_matching_death():
+    from yoke_core.domain.session_wake_hold_recovery import (
+        held_native_is_gone,
+        recover_dead_native_holds,
+    )
+
+    conn = message_connection()
+    message = _held(conn)
+    delivered_at = DEATH + timedelta(seconds=1)
+    later_message = send_message(
+        conn,
+        actor_id=10,
+        sender_session_id="s1",
+        selector=selector(session_ids=[NATIVE_WAKE_SESSION_ID]),
+        body="A later wake",
+        now=DEATH,
+    )["message_id"]
+    conn.execute(
+        "INSERT INTO session_message_attempts "
+        "(attempt_id,message_id,target_session_id,attempt_kind,started_at,completed_at,"
+        "result_code,evidence) VALUES ('later',?,?,'wake_relay',?,?,'wake_delivered','{}')",
+        (
+            later_message,
+            NATIVE_WAKE_SESSION_ID,
+            DEATH.isoformat(),
+            delivered_at.isoformat(),
+        ),
+    )
+    assert held_native_is_gone(
+        {"held_at": DEATH, "wake_delivered_at": delivered_at}, HELD
+    )
+    assert not held_native_is_gone(
+        {"held_at": delivered_at, "wake_delivered_at": DEATH}, HELD
+    )
+    recover_dead_native_holds(conn, NATIVE_WAKE_SESSION_ID, {}, death_at=delivered_at)
+    assert (
+        conn.execute(
+            "SELECT wake_attempt_count FROM session_message_recipients WHERE message_id=?",
+            (message,),
+        ).fetchone()[0]
+        == 0
+    )

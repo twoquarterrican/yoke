@@ -78,6 +78,13 @@ def test_the_held_row_carries_the_silence_the_machine_measured(fleet):
 
     assert rows[0].delivery_state == WAKE_HELD_FOR_NATIVE_TURN
     assert rows[0].held_native_silent_for_seconds == 1800
+    from yoke_core.domain.steering_fleet_report_render_undelivered import (
+        undelivered_line,
+    )
+
+    observed = rows[0].held_native_observed_at
+    assert observed is not None
+    assert f"silent for 30m as of {observed:%H:%MZ}" in undelivered_line(rows[0])
 
 
 def test_an_unmeasured_silence_leaves_the_row_saying_nothing(fleet):

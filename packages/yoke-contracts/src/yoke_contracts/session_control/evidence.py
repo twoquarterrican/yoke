@@ -84,6 +84,7 @@ _TEXT_FIELDS = frozenset(
         # from one refused for no reason at all.
         "running_native_source",
         "running_native_start_time",
+        "process_start_time",
         # Which requested_* columns the binding filled from this launch. A
         # session that carried its own ask leaves it absent, so the two ways
         # a request reaches the roster stay tellable apart when one breaks.
