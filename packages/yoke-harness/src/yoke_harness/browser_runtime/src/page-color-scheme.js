@@ -13,14 +13,22 @@ function validateColorScheme(value) {
 async function observeColorScheme(page) {
   let observed;
   try {
-    observed = await page.evaluate(() => {
+    const read = () => page.evaluate(() => {
       if (matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
       if (matchMedia('(prefers-color-scheme: light)').matches) return 'light';
       return null;
     });
+    try {
+      observed = await read();
+    } catch (err) {
+      if (!/Execution context was destroyed|Cannot find context with specified id/.test(err.message)) throw err;
+      // A document read may cross native navigation; never repeat its action.
+      await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
+      observed = await read();
+    }
   } catch (err) {
     throw new Error('color_scheme_observation_failed: cannot read page media preference; '
-      + `repair the browser and rerun the case (${err.message}).`);
+      + `inspect the existing page and retained evidence before repair; do not replay a submit blindly (${err.message}).`);
   }
   const requested = preferences.get(page) ?? null;
   const evidence = { requested, observed };
@@ -45,7 +53,7 @@ async function applyColorScheme(page, requested) {
       await page.emulateMedia({ colorScheme: requested });
     } catch (err) {
       throw new Error('color_scheme_emulation_failed: cannot apply page preference; '
-        + `repair the browser and rerun the case (${err.message}).`);
+        + `inspect the existing page and retained evidence before repair; do not replay a submit blindly (${err.message}).`);
     }
   }
   preferences.set(page, requested);

@@ -25,6 +25,8 @@ from yoke_cli.transport.bounded_json_http import (
 )
 from yoke_cli import browser_node_toolchain
 from yoke_cli.transport.response_limits import DEFAULT_JSON_RESPONSE_LIMIT_BYTES
+from yoke_contracts.browser_daemon_api import DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS
+from yoke_harness.browser_client_errors import daemon_failure_message
 from yoke_harness import browser_runtime_home
 from yoke_harness.browser_daemon_profile import canonical_profile, state_file_path
 from yoke_harness.browser_client_readiness import start_daemon
@@ -96,7 +98,7 @@ def daemon_running(state: Optional[DaemonState] = None) -> bool:
 def daemon_request(
     path: str,
     body: Optional[Dict[str, Any]] = None,
-    timeout: int = 30,
+    timeout: float = DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS,
     state: Optional[DaemonState] = None,
 ) -> Dict[str, Any]:
     selected = state or DaemonState.load()
@@ -126,9 +128,7 @@ def daemon_request(
             opener=urlopen,
         )
     except BoundedJsonHttpError as exc:
-        raise RuntimeError(
-            f"daemon request failed (endpoint={request_url}, pid={selected.pid}): {exc}"
-        ) from None
+        raise RuntimeError(daemon_failure_message(exc, token=selected.token)) from None
     payload = response.payload if response.payload is not None else {}
     if not isinstance(payload, dict):
         raise RuntimeError("daemon request failed: response is not a JSON object")

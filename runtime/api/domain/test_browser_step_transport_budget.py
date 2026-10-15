@@ -11,12 +11,18 @@ carries, and that an ordinary step still uses the ordinary timeout.
 from __future__ import annotations
 
 from yoke_core.domain import browser_client
+from yoke_contracts import browser_daemon_api
 
 
 def _timeout_for(step, monkeypatch) -> int:
     seen: dict[str, int] = {}
 
-    def _capture(path, body=None, timeout=browser_client.DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS, **_):
+    def _capture(
+        path,
+        body=None,
+        timeout=browser_client.DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS,
+        **_,
+    ):
         seen["path"] = path
         seen["timeout"] = timeout
         return {"success": True}
@@ -36,11 +42,15 @@ def test_a_long_wait_outlives_the_transport_default(monkeypatch):
     """The failure this prevents: a sixty-second wait against real rows
     reported a request timeout at thirty instead of its own answer."""
     timeout = _timeout_for(
-        {"action": "assert", "check": "visible", "target": ".card",
-         "timeout_ms": 60000},
+        {
+            "action": "assert",
+            "check": "visible",
+            "target": ".card",
+            "timeout_ms": 60000,
+        },
         monkeypatch,
     )
-    assert timeout == 60 + browser_client.STEP_RESPONSE_HEADROOM_SECONDS
+    assert timeout == 60 + browser_daemon_api.STEP_RESPONSE_HEADROOM_SECONDS
     assert timeout > browser_client.DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS
 
 
@@ -48,16 +58,16 @@ def test_a_short_wait_never_shortens_the_transport(monkeypatch):
     """A step may ask for less time than the transport already allows; it
     must not take time away from the response that follows it."""
     timeout = _timeout_for(
-        {"action": "assert", "check": "visible", "target": ".card",
-         "timeout_ms": 2000},
+        {"action": "assert", "check": "visible", "target": ".card", "timeout_ms": 2000},
         monkeypatch,
     )
     assert timeout == browser_client.DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS
 
 
 def test_a_nonsense_budget_is_ignored_rather_than_obeyed(monkeypatch):
-    for declared in (0, -1, "60000", None):
+    for declared in (0, -1, "60000", None, True, float("nan"), float("inf"), 10**400):
         timeout = _timeout_for(
-            {"action": "delay", "duration": 1, "timeout_ms": declared}, monkeypatch,
+            {"action": "delay", "duration": 1, "timeout_ms": declared},
+            monkeypatch,
         )
         assert timeout == browser_client.DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS

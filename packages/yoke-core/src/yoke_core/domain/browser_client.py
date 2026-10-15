@@ -69,7 +69,12 @@ from yoke_cli.transport.bounded_json_http import (
     request_json,
 )
 from yoke_cli.transport.response_limits import DEFAULT_JSON_RESPONSE_LIMIT_BYTES
-from yoke_contracts.browser_daemon_api import EXEC_STEP_PATH
+from yoke_contracts.browser_daemon_api import (
+    DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS,
+    EXEC_STEP_PATH,
+    step_request_timeout_seconds,
+)
+from yoke_harness.browser_client_errors import daemon_failure_message
 from yoke_harness import browser_runtime_home
 from yoke_harness.browser_daemon_profile import state_file_path
 from yoke_core.domain.browser_client_cli import run_cli
@@ -165,15 +170,10 @@ def daemon_running(state: Optional[DaemonState] = None) -> bool:
 # ---------------------------------------------------------------------------
 
 
-#: How long an ordinary daemon call waits. A step carrying its own budget
-#: raises this for that one call; see ``execute_step``.
-DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS = 30
-
-
 def daemon_request(
     path: str,
     body: Optional[Dict[str, Any]] = None,
-    timeout: int = DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS,
+    timeout: float = DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS,
     state: Optional[DaemonState] = None,
 ) -> Dict[str, Any]:
     """Send an authenticated POST to the daemon.  Returns parsed JSON response.
@@ -208,7 +208,7 @@ def daemon_request(
             opener=urlopen,
         )
     except BoundedJsonHttpError as exc:
-        raise RuntimeError(f"daemon request failed: {exc}") from None
+        raise RuntimeError(daemon_failure_message(exc, token=st.token)) from None
     payload = response.payload if response.payload is not None else {}
     if not isinstance(payload, dict):
         raise RuntimeError("daemon request failed: response is not a JSON object")
@@ -268,12 +268,6 @@ def daemon_health(
 # ---------------------------------------------------------------------------
 
 
-#: Room for the daemon to hand back a step's own verdict after that step has
-#: spent its whole budget. Without it the transport gives up first and the
-#: case reports a request timeout in place of the answer the step reached.
-STEP_RESPONSE_HEADROOM_SECONDS = 15
-
-
 def execute_step(
     step_json: Dict[str, Any],
     base_url: str,
@@ -298,14 +292,9 @@ def execute_step(
     }
     if output_dir:
         body["outputDir"] = output_dir
-    declared_ms = step_json.get("timeout_ms")
-    timeout = DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS
-    if isinstance(declared_ms, (int, float)) and declared_ms > 0:
-        timeout = max(
-            timeout,
-            int(declared_ms / 1000) + STEP_RESPONSE_HEADROOM_SECONDS,
-        )
-    return daemon_request(EXEC_STEP_PATH, body, timeout=timeout)
+    return daemon_request(
+        EXEC_STEP_PATH, body, timeout=step_request_timeout_seconds(step_json)
+    )
 
 
 # ---------------------------------------------------------------------------

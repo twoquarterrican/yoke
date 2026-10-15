@@ -1,7 +1,9 @@
 {
  "id": "screenshots-and-framing",
  "title": "Screenshots and framing",
- "status": "draft-copy",
+ "status": "observed",
  "page": "browser-qa",
- "position": 4
+ "position": 4,
+ "text": "Action budgets are shared by harness and core transports; response timeout leaves outcome uncertain. Arm timing and captures before one-shot mutation; missing intermediate evidence stays unknown.",
+ "sources": ["docs/public/reference/browser-action-evidence.md"]
 }

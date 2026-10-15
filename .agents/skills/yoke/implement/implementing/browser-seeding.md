@@ -55,3 +55,7 @@ and expected outcome explain the proof to reviewers.
 If neither a reusable plan nor an explicit Browser case is required by the
 item's verification contract, add nothing. The absence is explicit rather than
 derived from a separate browser-testability field.
+
+For one-shot mutations, arm timing and captures first; follow
+[action budgets and failure evidence](../../../../../.yoke/docs/reference/browser-action-evidence.md)
+before recovering a response timeout or missing capture.

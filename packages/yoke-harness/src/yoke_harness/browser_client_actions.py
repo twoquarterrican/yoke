@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from yoke_contracts.browser_daemon_api import EXEC_PAGE_PATH, EXEC_STEP_PATH
+from yoke_contracts.browser_daemon_api import (
+    EXEC_PAGE_PATH,
+    EXEC_STEP_PATH,
+    step_request_timeout_seconds,
+)
 from yoke_contracts.browser_qa_contract import DEFAULT_BROWSER_VIEWPORT
 
 
@@ -64,7 +68,9 @@ def execute_step(
     }
     if output_dir:
         body["outputDir"] = output_dir
-    return _client().daemon_request(EXEC_STEP_PATH, body)
+    return _client().daemon_request(
+        EXEC_STEP_PATH, body, timeout=step_request_timeout_seconds(step_json)
+    )
 
 
 def parse_viewport(viewport: str) -> tuple[int, int]:
