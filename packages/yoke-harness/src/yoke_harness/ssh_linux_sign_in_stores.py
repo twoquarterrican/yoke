@@ -7,8 +7,8 @@ home is cleared, each store is verified by its sealed real-request probe:
 
 * verified live store: carried forward over the restore;
 * live store changed after the baseline was sealed but not verified: the reset
-  refuses before clearing, because restoring would replace a newer sign-in
-  with an older one;
+  refuses before clearing, because restoring would replace newer credential
+  state. Modification time does not establish who wrote it or prove a login;
 * otherwise (absent, or unchanged since the seal): the golden's copy restores.
 """
 
@@ -46,6 +46,7 @@ def verify_sign_in_stores(control: Any, probes: Sequence[BaselineProbe]) -> dict
             plan["unverified"][relative] = {
                 "probe": probe.name,
                 "probe_reason": proven.evidence.get("reason"),
+                "probe_recovery": proven.evidence["recovery"],
             }
     return plan
 
@@ -65,7 +66,15 @@ def refuse_newer_unverified(plan):
     for relative, failure in plan["unverified"].items():
         path = sign_in_path(relative)
         if path.exists() and path.stat().st_mtime > sealed_at:
-            refuse(__NEWER__, relative, recovery="The live " + failure["probe"] + " sign-in at ~/" + relative + " changed after this baseline was sealed and failed its real request: " + str(failure["probe_reason"]) + " Restoring would replace it with the older sealed sign-in, so the home was not cleared. Sign in again on the machine, then save the sign-in with `" + __SAVE__ + "`, which proves the request and recaptures the baseline.", **failure)
+            recovery = (
+                "The live credential store for " + failure["probe"] + " at ~/" + relative
+                + " changed after this baseline was sealed and failed its real request. "
+                + "Restoring would replace newer credential state, so the home was not cleared. "
+                + failure["probe_recovery"]
+                + " Retry the proof after recovery. Preserve the existing golden; do not use `"
+                + __SAVE__ + "` to bypass a failed request."
+            )
+            refuse(__NEWER__, relative, recovery=recovery, **failure)
 def stash_sign_ins(plan):
     stashes = []
     sealed = {member.name: member for member in members}

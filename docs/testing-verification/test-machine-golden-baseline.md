@@ -111,7 +111,10 @@ clearing, it runs the sealed `Claude real request`, `Codex real request` and
 carried forward over the restore with its own mode. A failing login restores
 from the golden only when it has not changed since the seal; otherwise the
 reset refuses `test_machine_sign_in_newer_than_baseline` before clearing, naming
-the store, the probe and its reason. Linux capture and reset first ask a
+the store, the probe and its diagnosed reason/recovery. The outer refusal
+retains quota or transport recovery instead of substituting sign-in advice.
+The newer-store guard uses file modification time; it does not establish who
+wrote the store or prove a new human login. Linux capture and reset first ask a
 running desktop Chromium to quit and wait for it to exit
 (`yoke_harness.ssh_linux_browser_approval`), the same rule macOS applies to
 Safari, refusing `test_machine_sign_in_app_quit_not_proved` before copying or
