@@ -49,6 +49,25 @@ def test_sequential_calls_reuse_one_connection(pg_authority, socket_opens):
     assert reuse.idle_connection_count() == 1
 
 
+def test_bound_authority_connections_physically_close(pg_authority, socket_opens):
+    with db_backend.bound_pg_dsn(db_backend.resolve_pg_dsn()):
+        native = db_backend.connect()
+        tuple_conn = db_backend.connect_psycopg()
+        pids = [_backend_pid(native), tuple_conn.execute("SELECT pg_backend_pid()").fetchone()[0]]
+        assert not isinstance(native, reuse.ReusableConnection)
+        assert not isinstance(tuple_conn, reuse.ReusableConnection)
+        native.close()
+        tuple_conn.close()
+
+    assert socket_opens == []
+    assert reuse.idle_connection_count() == 0
+    with db_backend.connect() as conn:
+        live = conn.execute(
+            "SELECT count(*) AS n FROM pg_stat_activity WHERE pid = ANY(%s)", (pids,)
+        ).fetchone()["n"]
+    assert live == 0
+
+
 def test_connect_psycopg_reuses_with_tuple_rows(pg_authority, socket_opens):
     with db_backend.connect() as conn:
         native_pid = _backend_pid(conn)

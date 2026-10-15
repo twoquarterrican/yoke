@@ -41,7 +41,8 @@ def bound_pg_dsn(dsn: str) -> Iterator[None]:
     request handlers need different staging authorities in the same process.
     Child calls through :func:`resolve_pg_dsn`, :func:`connect`, and the
     domain init modules inherit the binding; unrelated threads and tasks do
-    not.
+    not. Bound authority is temporary and often connection-limited: its
+    connections close on ``close()``, never retained for reuse.
     """
     if not dsn.strip():
         raise ValueError("the bound Postgres DSN must not be empty")
@@ -202,7 +203,7 @@ def connect(path: Optional[str] = None, *, busy_timeout_ms: Optional[int] = None
     The *path* and *busy_timeout_ms* arguments are ignored compatibility slots.
     Rows are native psycopg values with name and positional access; callers use
     psycopg paramstyle (``%s``) and explicit ``RETURNING`` for generated ids.
-    ``close()`` returns the socket for reuse; see :mod:`postgres_connection_reuse`.
+    Ambient ``close()`` keeps the socket for reuse; :func:`bound_pg_dsn` closes.
 
     Routed through the connected-env readiness layer: when the operator's local
     Aurora SSH forward is down (e.g. after a WiFi change), the failed connect is
@@ -216,7 +217,8 @@ def connect(path: Optional[str] = None, *, busy_timeout_ms: Optional[int] = None
     instead. See :mod:`yoke_contracts.control_plane_locality`.
     """
     control_plane_locality.refuse_direct_connection("db_backend.connect()")
-
+    if pg_dsn_is_bound():
+        return _open_native_postgres(resolve_pg_dsn())
     from yoke_core.domain import connected_env_readiness as _readiness
 
     def _open_resolved():
@@ -225,8 +227,6 @@ def connect(path: Optional[str] = None, *, busy_timeout_ms: Optional[int] = None
             resolve_pg_dsn(),
         )
 
-    if pg_dsn_is_bound():
-        return _open_resolved()
     return _readiness.connect_with_readiness(_open_resolved)
 
 
@@ -240,8 +240,7 @@ def connect_psycopg(dsn: Optional[str] = None, *, autocommit: bool = False):
 
     The no-*dsn* form leases a reused ambient authority connection and carries
     the same remote-control-plane refusal as :func:`connect`. An explicit *dsn*
-    names a specific database — a migration validation surface, a maintenance
-    connection — so it is the caller's to open, and ``close()`` closes it.
+    or a :func:`bound_pg_dsn` scope is the caller's to open; ``close()`` closes it.
     """
     if dsn is None:
         control_plane_locality.refuse_direct_connection("db_backend.connect_psycopg()")
@@ -251,9 +250,9 @@ def connect_psycopg(dsn: Optional[str] = None, *, autocommit: bool = False):
     from psycopg.rows import tuple_row
 
     def _open():
-        if dsn is not None:
+        if dsn is not None or pg_dsn_is_bound():
             return postgres_connection_reuse.track_test_connection(
-                open_guarded_postgres(dsn, autocommit=autocommit)
+                open_guarded_postgres(dsn or resolve_pg_dsn(), autocommit=autocommit)
             )
         return _open_with_managed_rotation_recovery(
             lambda target: _lease_ambient_postgres(
