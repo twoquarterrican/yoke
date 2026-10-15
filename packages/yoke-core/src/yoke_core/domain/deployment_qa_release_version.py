@@ -115,7 +115,13 @@ def _require_published(installer_base_url: str, version: str) -> bool:
 
 
 def _pin_file(conn: Any, project_id: int) -> str:
-    settings = _capability_settings(conn, project_id)
+    from yoke_core.domain.deployment_qa_presentation_reads import presentation_read
+
+    settings = presentation_read(
+        conn,
+        ("qa_release_pin_capability", project_id),
+        lambda: _capability_settings(conn, project_id),
+    )
     if settings is None:
         return ""
     try:

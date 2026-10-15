@@ -187,6 +187,8 @@ CORE_TABLES: dict[str, dict] = {
             "(bare-numeric text — quote in SQL as `'<id>'`, never INTEGER). "
             "`events.query` renders virtual target_kind, target_id, category, "
             "and context_label fields; they are not physical SQL columns. "
+            "Filter function timings with envelope::jsonb->'context'->>'function', "
+            "not a context_label SQL predicate. "
             "Use the columns listed here and `envelope` context in SELECTs. "
             "`$.context.detail.actor_role` is present on subagent-delegated "
             "tool-call events and absent on parent-turn calls. "

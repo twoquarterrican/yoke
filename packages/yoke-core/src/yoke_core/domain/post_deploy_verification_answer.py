@@ -157,6 +157,13 @@ def answer_for_item(conn: Any, item_id: int) -> PostDeployAnswer:
     """Classify from the control plane, for a caller holding a connection."""
     from yoke_core.domain.db_helpers import query_rows
     from yoke_core.domain.schema_common import _column_exists
+    from yoke_core.domain.deployment_qa_acceptance_reads import (
+        presented_item_answer_rows,
+    )
+
+    batch = presented_item_answer_rows(conn, int(item_id))
+    if batch is not None:
+        return classify(attachments=batch[0], requirements=batch[1])
 
     attachment_cols = "qa_phase"
     if _column_exists(conn, "qa_plan_item_attachments", "retracted_at"):

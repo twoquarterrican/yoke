@@ -98,10 +98,27 @@ def require_candidate_plan(conn: Any, plan: Mapping[str, Any], run_id: str) -> N
     revision = plan.get("source_revision")
     if not revision:
         if _column_exists(conn, "qa_plans", "source_revision"):
-            current = query_scalar(
+            from yoke_core.domain.deployment_qa_presentation_reads import (
+                presentation_read,
+            )
+            from yoke_core.domain.deployment_qa_shared_plan_reads import (
+                presented_plan_rows,
+            )
+
+            batch = presented_plan_rows(conn, int(plan["id"]))
+
+            current = presentation_read(
                 conn,
-                "SELECT source_revision FROM qa_plans WHERE id=%s",
-                (int(plan["id"]),),
+                ("qa_current_plan_source", int(plan["id"])),
+                lambda: (
+                    batch[0].get("source_revision")
+                    if batch is not None
+                    else query_scalar(
+                        conn,
+                        "SELECT source_revision FROM qa_plans WHERE id=%s",
+                        (int(plan["id"]),),
+                    )
+                ),
             )
             if current:
                 raise QaPlanError(

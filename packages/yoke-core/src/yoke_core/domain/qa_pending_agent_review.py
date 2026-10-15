@@ -23,6 +23,7 @@ from yoke_core.domain.refusal_recovery import compose_refusal
 
 _PENDING_REVIEW_SQL = (
     "SELECT e.id AS execution_id, e.session_id AS session_id, "
+    "e.deployment_run_id,e.deployment_stage,e.deployment_member_item_id,e.execution_target_digest,"
     "b.id AS bundle_id, b.bundle_json AS bundle_json "
     "FROM qa_plan_executions e "
     "JOIN qa_plan_review_bundles b ON b.execution_id = e.id "
@@ -91,6 +92,13 @@ def pending_review_for_stage(
     execution_target_digest: str,
 ) -> PendingAgentReview | None:
     """The live scoped execution for this stage subject awaiting review."""
+    from yoke_core.domain.deployment_qa_acceptance_reads import presented_pending_review
+
+    row, scoped = presented_pending_review(
+        conn, run_id, stage_name, member_item_id, execution_target_digest
+    )
+    if scoped:
+        return _pending(row) if row is not None else None
     p = marker(conn)
     row = conn.execute(
         f"{_PENDING_REVIEW_SQL} AND e.deployment_run_id = {p} "

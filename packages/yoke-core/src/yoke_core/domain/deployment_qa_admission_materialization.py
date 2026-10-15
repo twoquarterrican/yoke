@@ -229,21 +229,37 @@ def fulfill_admitted_obligations(
     acceptance_qa_kind: str,
 ) -> list[str]:
     """Require evidence-linked verdicts for blocking aggregate obligations."""
-    rows = query_rows(
-        conn,
-        "SELECT id,qa_kind,waived_at FROM qa_requirements "
-        "WHERE deployment_run_id=%s AND deployment_stage=%s "
-        "AND COALESCE(deployment_member_item_id,0)=%s AND method_id IS NULL "
-        "AND blocking_mode='blocking' "
-        "AND qa_kind<>%s AND execution_target_digest=%s ORDER BY id",
-        (
-            run_id,
-            stage_name,
-            member_item_id or 0,
-            acceptance_qa_kind,
-            execution_target_digest,
-        ),
+    from yoke_core.domain.deployment_qa_presentation_facts import (
+        subject_requirement_rows,
     )
+
+    rows = subject_requirement_rows(conn, run_id, stage_name, member_item_id)
+    if rows is not None:
+        rows = [
+            row
+            for row in rows
+            if row["method_id"] is None
+            and row["blocking_mode"] == "blocking"
+            and row["qa_kind"] is not None
+            and row["qa_kind"] != acceptance_qa_kind
+            and row["execution_target_digest"] == execution_target_digest
+        ]
+    else:
+        rows = query_rows(
+            conn,
+            "SELECT id,qa_kind,waived_at FROM qa_requirements "
+            "WHERE deployment_run_id=%s AND deployment_stage=%s "
+            "AND COALESCE(deployment_member_item_id,0)=%s AND method_id IS NULL "
+            "AND blocking_mode='blocking' "
+            "AND qa_kind<>%s AND execution_target_digest=%s ORDER BY id",
+            (
+                run_id,
+                stage_name,
+                member_item_id or 0,
+                acceptance_qa_kind,
+                execution_target_digest,
+            ),
+        )
     failures: list[str] = []
     for row in rows:
         if row["waived_at"]:

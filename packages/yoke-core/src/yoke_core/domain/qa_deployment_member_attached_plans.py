@@ -93,15 +93,27 @@ def _read_attached_member_plan_ids(
     frozen member plan is selected, so an item may keep one plan per
     environment its flow deploys to.
     """
-    rows = query_rows(
-        conn,
-        "SELECT a.plan_id,p.target_environment_id FROM qa_plan_item_attachments a "
-        "JOIN qa_plans p ON p.id=a.plan_id "
-        "WHERE a.item_id=%s AND a.qa_phase=%s AND p.retired_at IS NULL "
-        f"AND {live_item_attachment_sql(conn, 'a')} "
-        "ORDER BY a.plan_id",
-        (int(member_item_id), DEPLOYMENT_ATTACHMENT_PHASE),
-    )
+    from yoke_core.domain.deployment_qa_presentation_facts import attachment_rows
+
+    rows = attachment_rows(conn, int(member_item_id))
+    if rows is not None:
+        rows = [
+            row
+            for row in rows
+            if row["live"]
+            and row["live_plan_id"] is not None
+            and row["retired_at"] is None
+        ]
+    else:
+        rows = query_rows(
+            conn,
+            "SELECT a.plan_id,p.target_environment_id FROM qa_plan_item_attachments a "
+            "JOIN qa_plans p ON p.id=a.plan_id "
+            "WHERE a.item_id=%s AND a.qa_phase=%s AND p.retired_at IS NULL "
+            f"AND {live_item_attachment_sql(conn, 'a')} "
+            "ORDER BY a.plan_id",
+            (int(member_item_id), DEPLOYMENT_ATTACHMENT_PHASE),
+        )
     selected: list[int] = []
     for row in rows:
         if not plan_matches_stage_environment(

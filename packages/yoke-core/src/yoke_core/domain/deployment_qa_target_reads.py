@@ -56,6 +56,19 @@ def first_materialized_execution_target(
     """
 
     def read():
+        from yoke_core.domain.deployment_qa_presentation_facts import (
+            stage_requirement_rows,
+        )
+
+        rows = stage_requirement_rows(conn, str(run_id), str(stage_name))
+        if rows is not None:
+            targets = {}
+            for row in rows:
+                if row["execution_target_json"] is not None:
+                    targets.setdefault(
+                        int(row["deployment_member_item_id"] or 0), dict(row)
+                    )
+            return targets
         batch = presentation_active()
         member_filter = (
             "" if batch else f"AND COALESCE(deployment_member_item_id,0)={_p(conn)} "
@@ -93,6 +106,11 @@ def first_materialized_execution_target(
 def _read_latest_ready_receipt_id(
     conn: Any, *, run_id: str, source_stage: str
 ) -> int | None:
+    from yoke_core.domain.deployment_qa_presentation_facts import producer_receipts
+
+    rows = producer_receipts(conn, run_id, source_stage)
+    if rows is not None:
+        return next((int(row["id"]) for row in rows if row["status"] == "ready"), None)
     cursor = conn.execute(
         f"SELECT id FROM deployment_stage_receipts WHERE run_id={_p(conn)} "
         f"AND stage_name={_p(conn)} AND status='ready' "

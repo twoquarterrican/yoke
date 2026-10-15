@@ -48,13 +48,19 @@ def member_requirements(
         return []
     withdrawn_plans = retracted_item_plan_ids(conn, int(subject["member_item_id"]))
     ids = tuple(int(requirement["id"]) for requirement in requirements)
-    withdrawn = query_rows(
-        conn,
-        f"SELECT id FROM qa_requirements WHERE id IN ({','.join('%s' for _ in ids)}) "
-        f"AND NOT ({unretracted_requirement_sql(conn)})",
-        ids,
+    from yoke_core.domain.deployment_qa_presentation_facts import (
+        withdrawn_requirement_ids,
     )
-    withdrawn_ids = {int(row["id"]) for row in withdrawn}
+
+    withdrawn_ids = withdrawn_requirement_ids(conn, ids)
+    if withdrawn_ids is None:
+        withdrawn = query_rows(
+            conn,
+            f"SELECT id FROM qa_requirements WHERE id IN ({','.join('%s' for _ in ids)}) "
+            f"AND NOT ({unretracted_requirement_sql(conn)})",
+            ids,
+        )
+        withdrawn_ids = {int(row["id"]) for row in withdrawn}
     return [
         requirement
         for requirement in requirements

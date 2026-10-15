@@ -52,6 +52,27 @@ def scoped_cases(
     member_item_id: int | None,
     execution_target_digest: str,
 ) -> list[dict[str, Any]]:
+    from yoke_core.domain.deployment_qa_presentation_facts import (
+        subject_requirement_rows,
+    )
+
+    rows = subject_requirement_rows(conn, run_id, stage_name, member_item_id)
+    if rows is not None:
+        fields = (
+            "id",
+            "plan_case_key",
+            "waived_at",
+            "superseded_by_requirement_id",
+            "replacement_requirement_id",
+            "retracted_at",
+        )
+        return [
+            {key: row.get(key) for key in fields}
+            for row in rows
+            if row["method_id"] is not None
+            and row["blocking_mode"] == "blocking"
+            and row["execution_target_digest"] == execution_target_digest
+        ]
     return [
         dict(row)
         for row in query_rows(
@@ -140,25 +161,41 @@ def case_failures(
     )
     if not rows:
         plan_scope = "" if shared_plan_id is None else "AND plan_id=%s "
-        recorded = [
-            dict(row)
-            for row in query_rows(
-                conn,
-                "SELECT id,plan_case_key FROM qa_requirements "
-                "WHERE deployment_run_id=%s AND deployment_stage=%s "
-                "AND COALESCE(deployment_member_item_id,0)=%s "
-                f"{plan_scope}AND {unretracted_requirement_sql(conn)} "
-                "AND method_id IS NOT NULL AND blocking_mode='blocking' "
-                "AND COALESCE(execution_target_digest,'')<>'' "
-                "ORDER BY id",
-                (
-                    run_id,
-                    stage_name,
-                    member_item_id or 0,
-                    *(() if shared_plan_id is None else (shared_plan_id,)),
-                ),
-            )
-        ]
+        from yoke_core.domain.deployment_qa_presentation_facts import (
+            subject_requirement_rows,
+        )
+
+        recorded = subject_requirement_rows(conn, run_id, stage_name, member_item_id)
+        if recorded is not None:
+            recorded = [
+                row
+                for row in recorded
+                if row["unretracted"]
+                and row["method_id"] is not None
+                and row["blocking_mode"] == "blocking"
+                and str(row["execution_target_digest"] or "") != ""
+                and (shared_plan_id is None or row["plan_id"] == shared_plan_id)
+            ]
+        else:
+            recorded = [
+                dict(row)
+                for row in query_rows(
+                    conn,
+                    "SELECT id,plan_case_key FROM qa_requirements "
+                    "WHERE deployment_run_id=%s AND deployment_stage=%s "
+                    "AND COALESCE(deployment_member_item_id,0)=%s "
+                    f"{plan_scope}AND {unretracted_requirement_sql(conn)} "
+                    "AND method_id IS NOT NULL AND blocking_mode='blocking' "
+                    "AND COALESCE(execution_target_digest,'')<>'' "
+                    "ORDER BY id",
+                    (
+                        run_id,
+                        stage_name,
+                        member_item_id or 0,
+                        *(() if shared_plan_id is None else (shared_plan_id,)),
+                    ),
+                )
+            ]
         if recorded:
             if member_item_id is not None:
                 owner = f"member {render_item_ref(conn, member_item_id)}"

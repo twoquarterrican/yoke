@@ -21,6 +21,11 @@ def live_item_attachment_sql(conn: Any, alias: str = "") -> str:
 
 def retracted_item_plan_ids(conn: Any, item_id: int) -> set[int]:
     """Post-deploy plans withdrawn by this member, including frozen selections."""
+    from yoke_core.domain.deployment_qa_presentation_facts import attachment_rows
+
+    batch = attachment_rows(conn, int(item_id))
+    if batch is not None:
+        return {int(row["plan_id"]) for row in batch if not row["live"]}
     if not _column_exists(conn, "qa_plan_item_attachments", "retracted_at"):
         return set()
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"

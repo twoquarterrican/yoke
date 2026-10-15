@@ -274,12 +274,16 @@ def deployment_stage_receipt_for_qa(
     receipt_id: int | None = None,
 ) -> dict[str, Any]:
     """Return only the newest exact ready attempt for QA target binding."""
-    cursor = conn.execute(
-        "SELECT * FROM deployment_stage_receipts WHERE run_id=%s AND stage_name=%s "
-        "ORDER BY attempt_number DESC LIMIT 2",
-        (run_id, source_stage),
-    )
-    rows = [_row(cursor, value) for value in cursor.fetchall()]
+    from yoke_core.domain.deployment_qa_presentation_facts import producer_receipts
+
+    rows = producer_receipts(conn, run_id, source_stage)
+    if rows is None:
+        cursor = conn.execute(
+            "SELECT * FROM deployment_stage_receipts WHERE run_id=%s AND stage_name=%s "
+            "ORDER BY attempt_number DESC LIMIT 2",
+            (run_id, source_stage),
+        )
+        rows = [_row(cursor, value) for value in cursor.fetchall()]
     latest = rows[0] if rows else None
     if latest is None:
         raise ValueError(

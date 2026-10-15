@@ -166,13 +166,30 @@ def _read_frozen_shared_target(conn: Any, subject: Mapping) -> dict:
     import json
 
     target = dict(subject["shared_target"])
-    rows = query_rows(
-        conn,
-        "SELECT execution_target_json FROM qa_requirements "
-        "WHERE deployment_run_id=%s AND deployment_stage=%s "
-        "AND deployment_member_item_id IS NULL AND plan_id=%s ORDER BY id",
-        (subject["id"], subject["stage"]["name"], subject["shared_plan"]["plan_id"]),
+    from yoke_core.domain.deployment_qa_presentation_facts import (
+        subject_requirement_rows,
     )
+
+    rows = subject_requirement_rows(conn, subject["id"], subject["stage"]["name"], None)
+    if rows is not None:
+        rows = [
+            row
+            for row in rows
+            if row["plan_id"] == subject["shared_plan"]["plan_id"]
+            and row["deployment_member_item_id"] is None
+        ]
+    else:
+        rows = query_rows(
+            conn,
+            "SELECT execution_target_json FROM qa_requirements "
+            "WHERE deployment_run_id=%s AND deployment_stage=%s "
+            "AND deployment_member_item_id IS NULL AND plan_id=%s ORDER BY id",
+            (
+                subject["id"],
+                subject["stage"]["name"],
+                subject["shared_plan"]["plan_id"],
+            ),
+        )
     for row in rows:
         raw = row["execution_target_json"]
         frozen = dict(raw) if isinstance(raw, Mapping) else json.loads(str(raw))

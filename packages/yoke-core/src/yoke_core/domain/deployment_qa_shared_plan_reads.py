@@ -11,6 +11,86 @@ from yoke_core.domain.deployment_qa_presentation_reads import (
 )
 
 
+def presented_plan_rows(conn, plan_id):
+    from yoke_core.domain.deployment_qa_presentation_facts import presented_plan_ids
+
+    ids = presented_plan_ids(conn)
+    if ids is None or int(plan_id) not in ids:
+        return None
+
+    def read():
+        from yoke_core.domain.deployment_requirement_snapshot_format import (
+            PLAN_FIELDS,
+            PLAN_CASE_COLUMNS,
+        )
+        from yoke_core.domain.qa_converging_columns import converged_select
+
+        markers = ",".join("%s" for _ in ids)
+        plans = query_rows(
+            conn,
+            f"SELECT {converged_select(conn, 'qa_plans', (*PLAN_FIELDS, 'retired_at'))} "
+            f"FROM qa_plans WHERE id IN ({markers})",
+            ids,
+        )
+        columns = converged_select(conn, "qa_plan_cases", PLAN_CASE_COLUMNS, "c")
+        cases = query_rows(
+            conn,
+            f"SELECT {columns},m.name AS method_name,m.runner_id,"
+            "m.required_capability_kinds,m.verdict_path,m.config_contract_id "
+            "FROM qa_plan_cases c JOIN qa_methods m ON m.id=c.method_id "
+            f"WHERE c.plan_id IN ({markers}) ORDER BY c.position,c.id",
+            ids,
+        )
+        rows = {int(plan["id"]): (plan, []) for plan in plans}
+        for case in cases:
+            rows[int(case["plan_id"])][1].append(case)
+        return rows
+
+    return presentation_read(conn, ("qa_presented_plans", ids), read).get(int(plan_id))
+
+
+def plan_snapshot_row(conn, plan_id, *, lock_plan):
+    from yoke_core.domain.deployment_requirement_snapshot_format import PLAN_FIELDS
+    from yoke_core.domain.qa_converging_columns import converged_select
+    from yoke_core.domain import db_backend
+    from yoke_core.domain.deployment_requirement_snapshots import _p
+
+    batch = presented_plan_rows(conn, plan_id) if not lock_plan else None
+    if batch is not None:
+        return dict(batch[0])
+    lock = (
+        " FOR UPDATE" if lock_plan and db_backend.connection_is_postgres(conn) else ""
+    )
+    rows = query_rows(
+        conn,
+        f"SELECT {converged_select(conn, 'qa_plans', (*PLAN_FIELDS, 'retired_at'))} "
+        f"FROM qa_plans WHERE id={_p(conn)}{lock}",
+        (int(plan_id),),
+    )
+    return rows[0] if rows else None
+
+
+def plan_snapshot_cases(conn, plan_id, *, lock_plan):
+    from yoke_core.domain.deployment_requirement_snapshot_format import (
+        PLAN_CASE_COLUMNS,
+    )
+    from yoke_core.domain.qa_converging_columns import converged_select
+    from yoke_core.domain.deployment_requirement_snapshots import _p
+
+    batch = presented_plan_rows(conn, plan_id) if not lock_plan else None
+    if batch is not None:
+        return [dict(row) for row in batch[1]]
+    columns = converged_select(conn, "qa_plan_cases", PLAN_CASE_COLUMNS, "c")
+    return query_rows(
+        conn,
+        f"SELECT {columns},m.name AS method_name,m.runner_id,"
+        "m.required_capability_kinds,m.verdict_path,m.config_contract_id "
+        "FROM qa_plan_cases c JOIN qa_methods m ON m.id=c.method_id "
+        f"WHERE c.plan_id={_p(conn)} ORDER BY c.position,c.id",
+        (int(plan_id),),
+    )
+
+
 def _member_attached_plan_ids(conn, member, snapshot, target, environment_id):
     return presentation_read(
         conn,
@@ -61,8 +141,20 @@ def _other_members_plan_ids(
     """Plans any other member of the run attached for the same environment."""
 
     def read():
+        from yoke_core.domain.deployment_qa_presentation_facts import run_member_rows
+
         batch = presentation_active()
         member_filter = "" if batch else " AND item_id<>%s"
+        rows = run_member_rows(conn, run_id)
+        if rows is not None:
+            rows = list(rows.values())
+        else:
+            rows = query_rows(
+                conn,
+                "SELECT item_id,requirement_snapshot FROM deployment_run_items "
+                f"WHERE run_id=%s{member_filter} ORDER BY item_id",
+                (run_id,) if batch else (run_id, member),
+            )
         return {
             int(row["item_id"]): _member_attached_plan_ids(
                 conn,
@@ -73,12 +165,7 @@ def _other_members_plan_ids(
                 target,
                 environment_id,
             )
-            for row in query_rows(
-                conn,
-                "SELECT item_id,requirement_snapshot FROM deployment_run_items "
-                f"WHERE run_id=%s{member_filter} ORDER BY item_id",
-                (run_id,) if batch else (run_id, member),
-            )
+            for row in rows
         }
 
     plans = presentation_read(
@@ -105,6 +192,17 @@ def _formed_group_plan_ids(conn: Any, run_id: str, stage_name: str) -> set[int]:
 def _read_formed_group_plan_ids(conn: Any, run_id: str, stage_name: str) -> set[int]:
     """Plans whose shared group already holds live memberless rows in this stage."""
     from yoke_core.domain.qa_obligation_settlement import unretracted_requirement_sql
+    from yoke_core.domain.deployment_qa_presentation_facts import stage_requirement_rows
+
+    rows = stage_requirement_rows(conn, run_id, stage_name)
+    if rows is not None:
+        return {
+            int(row["plan_id"])
+            for row in rows
+            if row["plan_id"] is not None
+            and row["deployment_member_item_id"] is None
+            and row["unretracted"]
+        }
 
     return {
         int(row["plan_id"])
