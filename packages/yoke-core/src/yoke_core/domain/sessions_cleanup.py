@@ -8,7 +8,16 @@ from typing import Any, Dict, List, Optional
 from . import sessions_analytics as _sa
 from . import db_backend
 from .session_automatic_reclaim import automatic_reclaim, reclaim_facts
-from .session_reclaim_activity import SCOPE_SESSION_CLEANUP, classify_reclaimable
+from .session_reclaim_activity import (
+    SCOPE_SESSION_CLEANUP,
+    classify_reclaimable,
+    read_activity_signals,
+)
+from .session_cleanup_holdings import (
+    active_holding_sessions,
+    active_work_claim_sessions,
+)
+from .schema_common import _get_columns as _schema_get_columns
 from .session_staleness import activity_is_stale
 from .time_parse import age_minutes_since
 from .sessions_analytics import (
@@ -52,7 +61,18 @@ def clean_stale_harness_sessions(
     """
     _sweep_start = _time.monotonic()
 
-    select_cols = "session_id"
+    active_cols = set(_schema_get_columns(conn, "harness_sessions"))
+    select_cols = "session_id, offered_at"
+    for name in (
+        "executor",
+        "last_tool_call_at",
+        "tool_call_count",
+        "episode_started_at",
+        "turn_posture",
+        "terminated_at",
+    ):
+        if name in active_cols:
+            select_cols += f", {name}"
 
     if project_ids is None:
         all_active = conn.execute(
@@ -83,7 +103,18 @@ def clean_stale_harness_sessions(
         progress_threshold_minutes=progress_threshold_minutes,
         executor_ttl_overrides=executor_ttl_overrides,
     )
-    for row in reclaim_facts(conn, all_active):
+    holdings = active_holding_sessions(conn)
+    claims = active_work_claim_sessions(conn)
+    for raw in all_active:
+        row = dict(raw)
+        sid = row["session_id"]
+        signals = read_activity_signals(conn, sid)
+        row["holds_work_claim"] = sid in claims
+        row["has_active_holdings"] = sid in holdings
+        row["last_heartbeat"] = signals.activity_at
+        # A protected holder needs no open-call query interpretation. Its
+        # durable activity still supplies the exact elapsed-age diagnostic.
+        row["open_tool_call_at"] = None if sid in claims else signals.open_tool_call_at
         decision = automatic_reclaim(row, now=now, **options)
         evidence = decision.evidence
         entry = {
@@ -91,9 +122,9 @@ def clean_stale_harness_sessions(
             "executor": evidence.executor,
             "effective_ttl_minutes": evidence.effective_ttl_minutes,
             "has_active_holdings": row["has_active_holdings"],
-            "activity_at": evidence.activity_at,
+            "activity_at": signals.activity_at,
             "last_event_at": evidence.last_event_at,
-            "stale_minutes": age_minutes_since(evidence.activity_at),
+            "stale_minutes": age_minutes_since(signals.activity_at),
             "reason": decision.reason,
         }
         if not decision.is_reclaimable:

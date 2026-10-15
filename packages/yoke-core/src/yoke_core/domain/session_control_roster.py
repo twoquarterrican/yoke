@@ -199,6 +199,7 @@ def _project_row(
     row: dict[str, Any],
     *,
     identity: dict[str, Any],
+    now: datetime | None,
     connected_relays: dict[str, tuple[dict[str, Any], ...]],
     machine_names: Mapping[str, str],
     worktree: str | None,
@@ -215,7 +216,9 @@ def _project_row(
     relay_connected = bool(machine_id and routes)
     # Wake routing keys on activity: a waiting row is parked on its claim, and
     # whether its hooks still run is answered by its activity alone.
-    liveness = activity_liveness(merged)
+    liveness = str(row.get("liveness") or "ended")
+    if liveness == "waiting" or (liveness == "active" and row.get("claims")):
+        liveness = activity_liveness(merged, now=now)
     versions = surface_versions_for(routes, project_id=merged.get("project_id"))
     routing = messageability(
         merged,
@@ -296,6 +299,7 @@ def session_control_roster_result(
             _project_row(
                 row,
                 identity=identities.get(str(row.get("session_id") or ""), {}),
+                now=now,
                 connected_relays=connected,
                 machine_names=names,
                 worktree=worktrees.get(str(row.get("session_id") or "")),

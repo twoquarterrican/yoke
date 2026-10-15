@@ -68,7 +68,7 @@ def test_shared_snapshot_decision(executor, fields, state):
 def test_roster_filters_preview_and_execution_agree(test_db):
     quiet = instant_ago(10_000)
     for executor in ("claude-code", "codex", "cursor"):
-        for kind in ("quiet", "protected", "paused", "fresh", "ended"):
+        for kind in ("quiet", "protected", "paused", "fresh", "ended", "killed"):
             sid = f"{executor}-{kind}"
             _insert_session(
                 test_db,
@@ -76,6 +76,7 @@ def test_roster_filters_preview_and_execution_agree(test_db):
                 executor=executor,
                 last_heartbeat=instant_ago() if kind == "fresh" else quiet,
                 ended_at=quiet if kind == "ended" else None,
+                terminated_at=quiet if kind == "killed" else None,
             )
         for offset, kind in enumerate(("protected", "paused")):
             item_id = (
