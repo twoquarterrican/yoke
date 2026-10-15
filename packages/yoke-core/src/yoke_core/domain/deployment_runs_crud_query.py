@@ -1,12 +1,13 @@
 """Read-side CRUD helpers for deployment runs.
 
-Owns: ``cmd_get``, ``cmd_list``, ``cmd_items``, ``cmd_find_by_item``.
+Owns structured run reads and CLI get/list/item projections.
 No mutation. No state-machine logic. Imports row-shape primitives from
 ``deployment_runs_schema``.
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List, Optional
 from yoke_contracts.timestamps import format_instant
 
@@ -24,6 +25,31 @@ from yoke_core.domain.project_identity import resolve_project_id
 
 DEFAULT_RUN_LIST_LIMIT = 20
 MAX_RUN_LIST_LIMIT = 1000
+
+
+def get_run(run_id: str, db_path: Optional[str] = None) -> dict[str, str | None] | None:
+    """Project a run without serializing field boundaries into its content."""
+    conn = connect(db_path)
+    try:
+        row = query_one(
+            conn,
+            f"SELECT {_run_select(conn)} FROM deployment_runs WHERE id=%s",
+            (run_id,),
+        )
+        if row is None:
+            return None
+        return {
+            name: (
+                None
+                if value is None or value == ""
+                else format_instant(value)
+                if isinstance(value, datetime)
+                else str(value)
+            )
+            for name, value in zip(RUN_FIELDS, row, strict=True)
+        }
+    finally:
+        conn.close()
 
 
 def cmd_get(
