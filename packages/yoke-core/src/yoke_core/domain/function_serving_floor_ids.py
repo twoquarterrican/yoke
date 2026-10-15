@@ -26,7 +26,7 @@ ALREADY_SERVED_FUNCTION_IDS: frozenset[str] = frozenset((
     'deployment_flows.update_stages', 'deployment_flows.validate', 'deployment_flows.version', 'deployment_item_stamp.record',
     'deployment_runs.add_item', 'deployment_runs.approve', 'deployment_runs.carried_work.repair', 'deployment_runs.continue_for_item',
     'deployment_runs.create', 'deployment_runs.execution.context', 'deployment_runs.execution.ephemeral_qa_ready', 'deployment_runs.execution.qa_pending',
-    'deployment_runs.execution.qa_record', 'deployment_runs.execution.qa_seed', 'deployment_runs.execution.stage_receipt_allocate', 'deployment_runs.execution.stage_receipt_complete',
+    'deployment_runs.execution.stage_receipt_allocate', 'deployment_runs.execution.stage_receipt_complete',
     'deployment_runs.execution.stage_receipt_latest', 'deployment_runs.execution.update', 'deployment_runs.failure_trace', 'deployment_runs.find_by_item',
     'deployment_runs.get', 'deployment_runs.list', 'deployment_runs.project_snapshot', 'deployment_runs.qa_stage.dispatch',
     'deployment_runs.qa_stage.resume_refusals', 'deployment_runs.release_output.record', 'deployment_runs.resolve_target', 'deployment_runs.stage_approval.evaluate',

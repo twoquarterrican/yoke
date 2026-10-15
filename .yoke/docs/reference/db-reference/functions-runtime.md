@@ -41,8 +41,6 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `deployment_runs.execution.context` | `none` |
 | `deployment_runs.execution.ephemeral_qa_ready` | `none` |
 | `deployment_runs.execution.qa_pending` | `none` |
-| `deployment_runs.execution.qa_record` | `none` |
-| `deployment_runs.execution.qa_seed` | `none` |
 | `deployment_runs.execution.release_driver` | `none` |
 | `deployment_runs.execution.stage_receipt_allocate` | `none` |
 | `deployment_runs.execution.stage_receipt_complete` | `none` |

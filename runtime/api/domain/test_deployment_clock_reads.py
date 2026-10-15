@@ -11,7 +11,7 @@ from runtime.api.domain.test_deployment_composition_clock_filters import (
     history,
 )
 from yoke_contracts.timestamps import format_instant, parse_instant
-from yoke_core.domain import deploy_qa_recorder, deployment_runs_crud_query
+from yoke_core.domain import deployment_runs_crud_query
 from yoke_core.domain import deployment_run_composition_freeze as composition
 from yoke_core.domain import deployment_run_driver_attachment as driver
 from yoke_core.domain import merge_queue_landing_marker as marker
@@ -79,7 +79,6 @@ def native_clocks(clocks, monkeypatch):
         info=clocks.info,
     )
     monkeypatch.setattr(deployment_runs_crud_query, "connect", lambda *_: proxy)
-    monkeypatch.setattr(deploy_qa_recorder, "connect", lambda *_: proxy)
     monkeypatch.setattr(updates, "connect", lambda *_: proxy)
     history.apply(clocks)
     history.invariants(clocks)
@@ -142,7 +141,6 @@ def test_freeze_replay_reads_its_own_stamp(native_clocks, monkeypatch):
     first = composition.freeze_run_composition(native_clocks, RUN)
     assert first == composition.freeze_run_composition(native_clocks, RUN)
     assert first["frozen_at"] == format_instant(DRIVER_STAMP)
-    assert deploy_qa_recorder.cmd_seed_from_flow(RUN) == 0
 
 
 def test_queue_observation_and_refresh_read_their_own_clocks(native_clocks):
