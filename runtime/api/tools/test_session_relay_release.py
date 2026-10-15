@@ -79,9 +79,10 @@ def test_successful_pin_installs_a_wheel_then_repoints_the_active_release(
         f"#!{status.runtime_python} -I\n"
     )
     install = calls[0]
+    encoded_release = RELEASE.replace("+", "%2B")
     assert install[-4:] == [
-        f"https://wheels.example.test/dist/releases/{RELEASE}/wheels/"
-        f"yoke_{name}-{RELEASE}-py3-none-any.whl"
+        f"https://wheels.example.test/dist/releases/{encoded_release}/wheels/"
+        f"yoke_{name}-{encoded_release}-py3-none-any.whl"
         for name in ("contracts", "cli", "harness", "core")
     ]
     assert "--extra-index-url" not in install
