@@ -54,7 +54,6 @@ Items receive a `deployment_flow` via a two-tiered enforcement model:
 - A failed lookup or unsupported definition is reported; do not swallow it with `|| true`.
 - Do not assign a disabled flow, or a definition whose `yoke deployment-flows validate ... --status active` reports `execution_supported=false`.
 - Intake screenshot/approval requests persist as item QA rows (`qa.requirement.add`, placed by [Where a Browser case runs](../browser-scenarios.md#where-a-browser-case-runs)). Pre-merge gates do not wait for that environment. Explicit "have me approve it" is `required_human` on the requested environment's item-QA stage. They do not rewrite shared defaults, and they never `update-stages` a shared, referenced, or immutable flow.
-- The Yoke control-plane project's configured default is `yoke-internal` (operator-authored `deploy_defaults`, not a seed).
 
 **Hard enforcement at planning gate:**
 - Shepherd's binding-derived final review edge blocks if `deployment_flow` is NULL on an epic
