@@ -161,12 +161,8 @@ def validate_before_lock(
     """
     try:
         project_id = resolve_project_id(conn, project)
-        if (
-            idempotency_key
-            and idempotency.key_columns_converged(conn)
-            and idempotency.existing_run(
-                conn, project_id, idempotency_key, create_request
-            )
+        if idempotency_key and idempotency.existing_run(
+            conn, project_id, idempotency_key, create_request
         ):
             return
         target = run_target(conn, run["flow"], project_id, environment)

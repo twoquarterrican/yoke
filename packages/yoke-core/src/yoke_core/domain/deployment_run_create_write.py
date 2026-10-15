@@ -232,13 +232,7 @@ def _create_locked(
     re-checks the database facts the lock protects.
     """
     project_id = resolve_project_id(conn, project)
-    basis = None
-    if idempotency_key:
-        basis = (
-            idempotency.BASIS_RECORDED_KEY
-            if idempotency.key_columns_converged(conn)
-            else idempotency.BASIS_UNCONVERGED_REQUEST_MATCH
-        )
+    basis = idempotency.BASIS_RECORDED_KEY if idempotency_key else None
     if basis == idempotency.BASIS_RECORDED_KEY:
         existing = idempotency.existing_run(
             conn, project_id, idempotency_key, create_request
@@ -247,21 +241,6 @@ def _create_locked(
             conn.rollback()
             return CreatedRun(existing, True, basis)
     target = run_target(conn, run["flow"], project_id, environment)
-
-    if basis == idempotency.BASIS_UNCONVERGED_REQUEST_MATCH:
-        existing = idempotency.unconverged_match(
-            conn,
-            idempotency_key,
-            project_id=project_id,
-            flow=run["flow"],
-            target_environment_id=target[1],
-            release_lineage=run["release_lineage"],
-            artifact_identity=run["artifact_identity"],
-            created_by=run["created_by"],
-        )
-        if existing is not None:
-            conn.rollback()
-            return CreatedRun(existing, True, basis)
 
     refuse_run_that_cannot_execute(conn, run["flow"], run["release_lineage"])
 
