@@ -29,9 +29,7 @@ class _Response:
         return self.body if size < 0 else self.body[:size]
 
 
-def test_commit_identity_uses_zero_graphql_pages_and_accepts_numeric_messages(
-    monkeypatch,
-):
+def test_release_tag_accepts_commit_and_tag_messages_with_numeric_content(monkeypatch):
     source_sha = "a" * 40
     paths = []
 
@@ -93,7 +91,6 @@ def test_commit_identity_uses_zero_graphql_pages_and_accepts_numeric_messages(
     assert outcome.primary_success is True
     assert outcome.result_payload["tag"] == "0.2.0.202610140941"
     assert outcome.result_payload["created"] is True
-    assert sum(path == "/graphql" for path in paths) == 0
     assert paths == [
         f"/repos/upyoke/yoke/git/commits/{source_sha}",
         "/repos/upyoke/yoke/git/ref/tags/0.2.0.202610140941",

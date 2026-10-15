@@ -106,7 +106,7 @@ def resolve_target(
         return target
     return dataclasses.replace(
         target,
-        version=version.strip(),
+        version=version.strip().removeprefix("v"),
         source_commit="",
         image="",
     )

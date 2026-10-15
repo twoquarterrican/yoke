@@ -19,8 +19,8 @@ from yoke_core.domain.handlers.github_actions_set import (
     _validate_and_resolve,
 )
 from yoke_core.domain.handlers.github_release_tag import (
-    CreateReleaseTagRequest,
-    CreateReleaseTagResponse,
+    CreateNextReleaseTagRequest,
+    CreateNextReleaseTagResponse,
     _create_annotated_tag,
     _failure,
 )
@@ -50,7 +50,7 @@ def _existing(repo: str, tag: str, source: str, token: str) -> bool:
 def handle_create_commit_release_tag(request: FunctionCallRequest) -> HandlerOutcome:
     payload, token, error = _validate_and_resolve(
         request,
-        CreateReleaseTagRequest,
+        CreateNextReleaseTagRequest,
         "github.release.create_commit_tag",
         required_permissions=GITHUB_CONTENTS_WRITE_PERMISSION_LEVELS,
     )
@@ -83,7 +83,7 @@ def handle_create_commit_release_tag(request: FunctionCallRequest) -> HandlerOut
                 if not _existing(payload.repo, tag, payload.source_sha, token):
                     raise
         return HandlerOutcome(
-            result_payload=CreateReleaseTagResponse(
+            result_payload=CreateNextReleaseTagResponse(
                 tag=tag,
                 version=tag,
                 source_sha=payload.source_sha,
@@ -110,8 +110,8 @@ REGISTRATIONS = [
     {
         "function_id": "github.release.create_commit_tag",
         "handler": handle_create_commit_release_tag,
-        "request_model": CreateReleaseTagRequest,
-        "response_model": CreateReleaseTagResponse,
+        "request_model": CreateNextReleaseTagRequest,
+        "response_model": CreateNextReleaseTagResponse,
         "minimum_serving_version": "next-release",
         "stability": "stable",
         "owner_module": __name__,

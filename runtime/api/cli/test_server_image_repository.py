@@ -61,9 +61,7 @@ def test_configured_repository_selects_upgrade_and_initial_image(tmp_path, monke
     repository.save(value, path=path)
     select_machine_config_file(monkeypatch, str(path))
     commit = "a" * 40
-    monkeypatch.setattr(
-        release_target, "local_handshake_version", lambda: "0.2.0.202610140941"
-    )
+    monkeypatch.setattr(release_target, "local_handshake_version", lambda: "1.2.3")
 
     def fetch(url):
         if "channels" in url:
@@ -71,24 +69,19 @@ def test_configured_repository_selects_upgrade_and_initial_image(tmp_path, monke
                 {
                     "schema_version": 3,
                     "channel": "stable",
-                    "version": "0.2.0.202610140941",
+                    "version": "1.2.3",
                     "migration_history": {"source_commit": commit},
                     "installer": {"python_url": "https://dist.example/dist/install.py"},
                 }
             ).encode()
         return json.dumps(
-            {
-                "artifact": {
-                    "engine_version": "0.2.0.202610140941",
-                    "source_commit": commit,
-                }
-            }
+            {"artifact": {"engine_version": "1.2.3", "source_commit": commit}}
         ).encode()
 
     monkeypatch.setattr(release_target, "_FETCH_BYTES", fetch)
     assert (
         release_target.current_release_target(base_url="https://dist.example").image
-        == f"{value}:0.2.0.202610140941"
+        == f"{value}:{commit[:12]}"
     )
     target = tmp_path / "bundle"
     bundle.write_bundle(
@@ -106,7 +99,7 @@ def test_configured_repository_selects_upgrade_and_initial_image(tmp_path, monke
         lambda _value=None: "https://dist.example",
     )
     plan = upgrade.plan_upgrade(directory=str(target))
-    assert plan.target.image == f"{value}:0.2.0.202610140941"
+    assert plan.target.image == f"{value}:{commit[:12]}"
 
 
 def test_wizard_preview_changes_repository_without_writes(tmp_path):

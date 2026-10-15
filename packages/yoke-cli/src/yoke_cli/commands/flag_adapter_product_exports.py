@@ -198,6 +198,7 @@ FLAG_ADAPTER_EXPORT_NAMES = [
     "github_connect",
     "github_disconnect",
     "github_pr_create",
+    "github_release_create_next_tag",
     "github_release_create_commit_tag",
     "github_status",
     "hook_evaluate",

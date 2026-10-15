@@ -91,7 +91,9 @@ def _observed_server_build() -> control_plane_payload.ObservedServerBuild:
 
 
 def _build_differs(pinned_release: str, served_build: str) -> bool:
-    return bool(pinned_release and served_build) and (pinned_release != served_build)
+    return bool(pinned_release and served_build) and (
+        pinned_release.removeprefix("v") != served_build.removeprefix("v")
+    )
 
 
 @dataclass

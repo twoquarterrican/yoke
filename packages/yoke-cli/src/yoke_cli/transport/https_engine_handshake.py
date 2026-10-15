@@ -65,7 +65,7 @@ def observe_server_version(
         if raw_server_version and not local_version
         else None
     )
-    server_build = raw_server_version
+    server_build = f"v{raw_server_version}" if raw_server_version else ""
     control_plane_payload.observe_server_build(server_build, source_comparison)
 
 
@@ -105,7 +105,7 @@ def _source_checkout_comparison(
     checkout = _loaded_source_checkout()
     if checkout is None:
         return None
-    return source_build_skew.compare_to_server_build(checkout, raw_server_version)
+    return source_build_skew.compare_to_server_build(checkout, f"v{raw_server_version}")
 
 
 __all__ = [

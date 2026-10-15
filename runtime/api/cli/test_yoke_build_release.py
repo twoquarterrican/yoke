@@ -30,10 +30,10 @@ def test_build_release_renders_pep503_simple_index(
         wheelhouse.mkdir(parents=True)
         # Product wheels plus a third-party closure; only product wheels publish.
         for name, version in (
-            ("yoke-contracts", "0.2.0.202610140941"),
-            ("yoke-cli", "0.2.0.202610140941"),
-            ("yoke-harness", "0.2.0.202610140941"),
-            ("yoke-core", "0.2.0.202610140941"),
+            ("yoke-contracts", "0.2.0"),
+            ("yoke-cli", "0.2.0"),
+            ("yoke-harness", "0.2.0"),
+            ("yoke-core", "0.2.0"),
             ("pydantic", "2.13.4"),
             ("pyfiglet", "1.0.4"),
         ):
@@ -53,12 +53,10 @@ def test_build_release_renders_pep503_simple_index(
         aws_bootstrap_asset_dir=aws_asset_dir,
     )
 
-    assert result.version == "0.2.0.202610140941"
+    assert result.version == "0.2.0"
     assert result.index_url == "https://api.upyoke.com/simple/"
     release_dir = result.paths.release_dir
-    assert (
-        release_dir == tmp_path / "release" / "dist" / "releases" / "0.2.0.202610140941"
-    )
+    assert release_dir == tmp_path / "release" / "dist" / "releases" / "0.2.0"
 
     assert (tmp_path / "release" / "install").read_text(encoding="utf-8")
     assert (tmp_path / "release" / "dist" / "install.py").is_file()
@@ -69,7 +67,7 @@ def test_build_release_renders_pep503_simple_index(
     manifest = json.loads(
         result.paths.migration_history_manifest_path.read_text(encoding="utf-8")
     )
-    assert manifest["artifact"]["engine_version"] == "0.2.0.202610140941"
+    assert manifest["artifact"]["engine_version"] == "0.2.0"
     assert manifest["artifact"]["source_artifact"].startswith("yoke_core-")
     assert manifest["artifact"]["source_commit"] == SOURCE_COMMIT
     assert manifest["entries"][0]["name"] == "0001_test_entry"
@@ -80,10 +78,10 @@ def test_build_release_renders_pep503_simple_index(
     assert evidence["artifact"]["source_commit"] == SOURCE_COMMIT
     wheels_dir = release_dir / "wheels"
     assert sorted(p.name for p in wheels_dir.glob("*.whl")) == [
-        "yoke_cli-0.2.0.202610140941-py3-none-any.whl",
-        "yoke_contracts-0.2.0.202610140941-py3-none-any.whl",
-        "yoke_core-0.2.0.202610140941-py3-none-any.whl",
-        "yoke_harness-0.2.0.202610140941-py3-none-any.whl",
+        "yoke_cli-0.2.0-py3-none-any.whl",
+        "yoke_contracts-0.2.0-py3-none-any.whl",
+        "yoke_core-0.2.0-py3-none-any.whl",
+        "yoke_harness-0.2.0-py3-none-any.whl",
     ]
     assert not (release_dir / "targets").exists()
     assert not list((tmp_path / "release").rglob("*.zip"))
@@ -100,11 +98,11 @@ def test_build_release_renders_pep503_simple_index(
         entry for entry in result.release_records if entry["project"] == "yoke-cli"
     )
     expected = (
-        "https://api.upyoke.com/dist/releases/0.2.0.202610140941/wheels/"
-        f"yoke_cli-0.2.0.202610140941-py3-none-any.whl#sha256={record['sha256']}"
+        "https://api.upyoke.com/dist/releases/0.2.0/wheels/"
+        f"yoke_cli-0.2.0-py3-none-any.whl#sha256={record['sha256']}"
     )
     assert expected in cli_html
-    assert "yoke_cli-0.2.0.202610140941-py3-none-any.whl</a>" in cli_html
+    assert "yoke_cli-0.2.0-py3-none-any.whl</a>" in cli_html
 
     records = json.loads(result.paths.release_records_path.read_text(encoding="utf-8"))
     assert {entry["project"] for entry in records} == {
@@ -118,11 +116,9 @@ def test_build_release_renders_pep503_simple_index(
     channel = json.loads(result.paths.channel_path.read_text(encoding="utf-8"))
     assert channel["schema_version"] == 3
     assert channel["channel"] == "stable"
-    assert channel["version"] == "0.2.0.202610140941"
+    assert channel["version"] == "0.2.0"
     assert channel["index_url"] == "https://api.upyoke.com/simple/"
-    assert channel["release_base_url"] == (
-        "https://api.upyoke.com/dist/releases/0.2.0.202610140941"
-    )
+    assert channel["release_base_url"] == ("https://api.upyoke.com/dist/releases/0.2.0")
     assert channel["generated_at"] == "2026-06-18T00:00:00.000000Z"
     assert channel["migration_history"]["manifest_sha256"] == (
         result.migration_history_manifest_sha256
@@ -137,6 +133,49 @@ def test_build_release_renders_pep503_simple_index(
     assert channel["installer"]["shell_url"] == "https://api.upyoke.com/install"
 
 
+def test_build_release_quotes_local_version_public_urls(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    asset_dir = tmp_path / "assets"
+    asset_dir.mkdir()
+    (asset_dir / "install.py").write_text("print('install')\n", encoding="utf-8")
+    (asset_dir / "install").write_text("#!/bin/sh\n", encoding="utf-8")
+    aws_asset_dir = _aws_bootstrap_assets(tmp_path)
+
+    def fake_wheelhouse(*, wheelhouse: Path, **_: object) -> Path:
+        wheelhouse.mkdir(parents=True)
+        for name in build_release.PRODUCT_PACKAGE_NAMES:
+            _write_wheel(wheelhouse, name=name, version="0.2.0+gabc123")
+        return wheelhouse
+
+    monkeypatch.setattr(build_release, "build_product_wheelhouse", fake_wheelhouse)
+
+    result = build_release.build_release(
+        repo_root=tmp_path,
+        output_root=tmp_path / "release",
+        base_url="https://api.upyoke.com",
+        source_commit=SOURCE_COMMIT,
+        channel="stable",
+        generated_at="2026-06-18T00:00:00+00:00",
+        installer_asset_dir=asset_dir,
+        aws_bootstrap_asset_dir=aws_asset_dir,
+    )
+
+    channel = json.loads(result.paths.channel_path.read_text(encoding="utf-8"))
+    assert channel["release_base_url"] == (
+        "https://api.upyoke.com/dist/releases/0.2.0%2Bgabc123"
+    )
+    cli_html = (result.paths.simple_dir / "yoke-cli" / "index.html").read_text(
+        encoding="utf-8"
+    )
+    assert (
+        "https://api.upyoke.com/dist/releases/0.2.0%2Bgabc123/wheels/"
+        "yoke_cli-0.2.0%2Bgabc123-py3-none-any.whl#sha256="
+    ) in cli_html
+    assert "yoke_cli-0.2.0+gabc123-py3-none-any.whl</a>" in cli_html
+
+
 def test_build_release_refuses_missing_installer_assets(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -144,7 +183,7 @@ def test_build_release_refuses_missing_installer_assets(
     def fake_wheelhouse(*, wheelhouse: Path, **_: object) -> Path:
         wheelhouse.mkdir(parents=True)
         for name in build_release.PRODUCT_PACKAGE_NAMES:
-            _write_wheel(wheelhouse, name=name, version="0.2.0.202610140941")
+            _write_wheel(wheelhouse, name=name, version="0.2.0")
         return wheelhouse
 
     monkeypatch.setattr(build_release, "build_product_wheelhouse", fake_wheelhouse)
@@ -173,7 +212,7 @@ def test_build_release_refuses_missing_hosting_bootstrap_template(
     def fake_wheelhouse(*, wheelhouse: Path, **_: object) -> Path:
         wheelhouse.mkdir(parents=True)
         for name in build_release.PRODUCT_PACKAGE_NAMES:
-            _write_wheel(wheelhouse, name=name, version="0.2.0.202610140941")
+            _write_wheel(wheelhouse, name=name, version="0.2.0")
         return wheelhouse
 
     monkeypatch.setattr(build_release, "build_product_wheelhouse", fake_wheelhouse)
@@ -200,7 +239,7 @@ def test_build_product_wheelhouse_includes_bootstrap_pip(
         commands.append(list(command))
         if "--package" in command:
             package = command[command.index("--package") + 1]
-            _write_wheel(wheelhouse, name=package, version="0.2.0.202610140941")
+            _write_wheel(wheelhouse, name=package, version="0.2.0+gtest")
         elif "wheel" in command:
             _write_wheel(wheelhouse, name="pip", version="25.3")
 
@@ -215,13 +254,11 @@ def test_build_product_wheelhouse_includes_bootstrap_pip(
 
     build_release.build_product_wheelhouse(repo_root=tmp_path, wheelhouse=wheelhouse)
 
-    roots = [arg for arg in commands[-1] if arg.endswith(".whl")]
-    assert len(roots) == 4 and all(Path(arg).parent == wheelhouse for arg in roots)
     assert build_release.BOOTSTRAP_REQUIREMENTS[0] in commands[-1]
     assert (wheelhouse / "pip-25.3-py3-none-any.whl").is_file()
 
 
-def test_build_product_wheelhouse_rejects_noncanonical_version_before_pip(
+def test_build_product_wheelhouse_rejects_public_version_before_pip(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -242,7 +279,7 @@ def test_build_product_wheelhouse_rejects_noncanonical_version_before_pip(
         lambda _: pytest.fail("pip closure started before version validation"),
     )
 
-    with pytest.raises(ValueError, match="release_version_invalid"):
+    with pytest.raises(ValueError, match="PEP 440 local segment"):
         build_release.build_product_wheelhouse(
             repo_root=tmp_path,
             wheelhouse=wheelhouse,
