@@ -71,17 +71,11 @@ opens the complete link with the code pre-filled. GitHub documents entering
 its code at the device page, so setup offers copy rather than adding an
 unsupported pre-fill parameter.
 
-For agent-led sign-in, run `yoke connect --json` and, if wanted,
-`yoke github connect --json`. These commands never open a browser. Before
-waiting, they flush JSON progress lines to stderr with `browser_action.url`,
-`browser_action.user_code` and `browser_action.instructions`; final stdout
-contains the result JSON. Present that action to the person and continue the
-same running command while they approve. Device codes and credentials stay
-private. Re-run non-interactive setup after approval: saved Yoke credentials
-and valid GitHub authorization are checked and reused. `--replace` explicitly
-requests fresh GitHub authorization; `--add-installation` reuses it to change
-App access. App installation and repository settings are separate browser
-steps; return to setup and check access after finishing them.
+From a coding agent, or anywhere without a terminal, `yoke setup` runs in
+agent mode: it asks these same questions one at a time as JSON lines, and the
+agent relays each one to the person. See [Agent setup](guides/agent-setup.md)
+for the loop, browser steps and refusals. `yoke setup --tui` forces the
+wizard; `yoke setup --agent` forces agent mode.
 
 When a checkout's Yoke files link it to a project that the chosen Yoke install
 doesn't have or that your account can't access — typically left over from an

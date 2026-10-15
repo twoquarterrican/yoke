@@ -81,7 +81,9 @@ Setup's TUI opens the plain `/apps/<app>/installations/new` URL without reposito
 preselection. GitHub documents all repositories as the default when repository
 IDs are omitted ([GitHub installation documentation](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/migrating-oauth-apps-to-github-apps#prompt-users-to-install-your-github-app)).
 
-For agent-led connection, use `yoke github connect --json`. No browser opens;
+Inside agent-mode setup, the GitHub step arrives as a `browser` line; see
+[Agent setup](guides/agent-setup.md#browser-steps). For a standalone
+agent-led connection, use `yoke github connect --json`. No browser opens;
 JSON progress on stderr supplies the link, code and instructions before the
 approval wait, with the final result on stdout. Present the action to the
 person and continue the same command. A valid saved authorization is reused;
