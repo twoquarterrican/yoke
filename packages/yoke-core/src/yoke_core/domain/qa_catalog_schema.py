@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS qa_plan_cases (
     updated_at TIMESTAMPTZ NOT NULL,
     starting_state TEXT,
     starting_state_reason TEXT,
+    stage_reason TEXT,
     UNIQUE(plan_id, case_key),
     UNIQUE(plan_id, position)
 );
@@ -312,6 +313,7 @@ def create_qa_catalog_tables(
     _add_column_if_not_exists(
         conn, "qa_plan_cases", "target_envs", "TEXT NOT NULL DEFAULT '[]'"
     )
+    _add_column_if_not_exists(conn, "qa_plan_cases", "stage_reason", "TEXT")
     for column, definition in _REQUIREMENT_COLUMNS:
         _add_column_if_not_exists(conn, "qa_requirements", column, definition)
     for column, definition in _RUN_COLUMNS:

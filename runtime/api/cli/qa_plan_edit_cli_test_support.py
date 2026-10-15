@@ -40,6 +40,7 @@ PLAN = {
             "starting_state": None,
             "starting_state_reason": None,
             "target_envs": ["stage", "prod"],
+            "stage_reason": "creates_or_destroys_data",
             "entry_surface": None,
             "required_completion": None,
         }

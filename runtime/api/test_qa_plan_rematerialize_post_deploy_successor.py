@@ -136,7 +136,9 @@ def test_case_dropped_from_one_environment_is_waived_there(test_db):
     materialize_for_item(test_db, item_id=item["id"], transition_id="release")
     old = {env: row["id"] for env, row in _requirements(test_db).items()}
 
-    result = _correct(test_db, plan, [{**CORRECTED, "target_envs": ["prod"]}])
+    result = _correct(
+        test_db, plan, [{**CORRECTED, "target_envs": ["prod"], "stage_reason": None}]
+    )
 
     new = _live_by_env(test_db)
     assert set(new) == {"prod"}

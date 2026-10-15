@@ -46,15 +46,20 @@ CASE = {
     "expected_outcome": "The target answers successfully.",
     "method_config": {"command": "true"},
     "target_envs": ["stage", "prod"],
+    "stage_reason": "creates_or_destroys_data",
 }
 ITEM_ID = 28761
+
+
+def _production(case, targets):
+    return {**case, "target_envs": targets, "stage_reason": None}
 
 
 def _setup(conn, *, baselines=()):
     _environment(conn)
     conn.execute(
         "INSERT INTO environments(site,project_id,name,url,settings,created_at) "
-        "SELECT id,1,'prod','https://prod.example.test','{}','2026-09-14T00:00:00Z' "
+        "SELECT id,1,'prod','https://prod.example.test','{\"role\":{\"production\":true}}','2026-09-14T00:00:00Z' "
         "FROM sites WHERE project_id=1 ORDER BY id LIMIT 1 "
         "ON CONFLICT(project_id,name) DO NOTHING"
     )
@@ -162,7 +167,7 @@ def test_source_reads_and_default_case_writes_before_environment_schema_converge
     with pytest.raises(QaPlanError, match="qa_case_environment_schema_unavailable"):
         replace_plan_cases(test_db, plan_id=plan["id"], cases=[case])
     assert len(_current_cases(test_db, plan["id"])) == 1
-    replace_plan_cases(test_db, plan_id=plan["id"], cases=[{**case, "target_envs": []}])
+    replace_plan_cases(test_db, plan_id=plan["id"], cases=[_production(case, [])])
     assert _current_cases(test_db, plan["id"])[0]["target_envs"] == []
 
 
@@ -215,9 +220,7 @@ def test_refresh_waives_only_a_removed_environment(test_db):
     item, plan, case = _setup(test_db)
     materialize_for_item(test_db, item_id=item["id"], transition_id="release")
     before = _requirements(test_db)
-    replace_plan_cases(
-        test_db, plan_id=plan["id"], cases=[{**case, "target_envs": ["prod"]}]
-    )
+    replace_plan_cases(test_db, plan_id=plan["id"], cases=[_production(case, ["prod"])])
     result = rematerialize_for_item(
         test_db, item_id=item["id"], transition_id="release"
     )
@@ -334,7 +337,7 @@ def test_single_target_execution_refuses_to_drop_a_declared_sibling():
 
 def test_empty_case_targets_keep_the_plan_default(test_db):
     item, plan, case = _setup(test_db)
-    replace_plan_cases(test_db, plan_id=plan["id"], cases=[{**case, "target_envs": []}])
+    replace_plan_cases(test_db, plan_id=plan["id"], cases=[_production(case, [])])
     result = materialize_for_item(test_db, item_id=item["id"], transition_id="release")
     assert len(result["created_requirement_ids"]) == 1
     (row,) = _requirements(test_db).values()

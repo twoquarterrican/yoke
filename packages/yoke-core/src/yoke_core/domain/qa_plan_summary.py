@@ -33,6 +33,7 @@ _CASE_FIELDS = (
     "starting_state",
     "starting_state_reason",
     "target_envs",
+    "stage_reason",
     "entry_surface",
     "required_completion",
 )

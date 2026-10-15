@@ -53,11 +53,19 @@ def insert_plan_cases(
     """Replace a plan's stored cases with validated ones."""
     clock = instant_parameter(conn, stamp)
     marker = _placeholder(conn)
-    target_column_present = "target_envs" in present_columns(conn, "qa_plan_cases")
+    columns = present_columns(conn, "qa_plan_cases")
+    target_column_present = "target_envs" in columns
+    reason_column_present = "stage_reason" in columns
     if not target_column_present and any(case["target_envs"] for case in cases):
         raise QaPlanError(
             "qa_case_environment_schema_unavailable: install the release declaring "
             "qa_plan_cases.target_envs and let boot converge it, then retry "
+            "`yoke qa plan-cases replace`"
+        )
+    if not reason_column_present and any(case.get("stage_reason") for case in cases):
+        raise QaPlanError(
+            "qa_case_stage_reason_schema_unavailable: install the release declaring "
+            "qa_plan_cases.stage_reason and let boot converge it, then retry "
             "`yoke qa plan-cases replace`"
         )
     conn.execute(f"DELETE FROM qa_plan_cases WHERE plan_id={marker}", (plan_id,))
@@ -81,6 +89,11 @@ def insert_plan_cases(
                 **(
                     {"target_envs": _json(case["target_envs"])}
                     if target_column_present
+                    else {}
+                ),
+                **(
+                    {"stage_reason": case.get("stage_reason")}
+                    if reason_column_present
                     else {}
                 ),
                 "starting_state": case.get("starting_state"),

@@ -32,6 +32,7 @@ class QaPlanCaseDocument(BaseModel):
     starting_state: Optional[str] = None
     starting_state_reason: Optional[str] = None
     target_envs: List[str] = Field(default_factory=list)
+    stage_reason: Optional[str] = None
     entry_surface: Optional[str] = None
     required_completion: Optional[str] = None
 

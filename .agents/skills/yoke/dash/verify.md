@@ -143,6 +143,9 @@ yoke qa plan get <id> --project P --full
 Missing/ambiguous release stage goes to its workflow owner.
 To recover an existing mistaken review selection, clear it with
 `yoke workflows item-posture amend ITEM --key verification --clear --reason TEXT`.
+Target production by default. Name a stage environment in target_envs only
+with stage_reason creates_or_destroys_data or changes_infrastructure; a
+read-only check that production can prove stays off stage.
 Cases prove this item's AC. Commands read BASE_URL, DEPLOYMENT_RUN_ID and
 DEPLOYMENT_MEMBER_REF from runner exports; never embed one release's IDs.
 Read the cases now: wrong expectations are editable before admission and

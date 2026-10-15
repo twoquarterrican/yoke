@@ -38,6 +38,7 @@ def _case(instructions="Run the admitted command."):
         "expected_outcome": "The command passes.",
         "method_config": {"command": "true"},
         "target_envs": ["stage"],
+        "stage_reason": "creates_or_destroys_data",
     }
 
 

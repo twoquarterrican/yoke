@@ -95,6 +95,13 @@ the run's own candidate, so the run delivers two projects, not one.
 
 ## QA across release targets
 
+Verify on production by default. A plan case names a non-production target
+(an environment without `role.production: true`, such as stage) only with a
+`stage_reason` of `creates_or_destroys_data` or `changes_infrastructure`;
+authoring refuses `stage_reason_required` otherwise. Each such case enrolls its
+item on the stage run, so a read-only check that production can prove belongs
+on production alone.
+
 A release pair can admit the same item to both target runs. A supplemental
 persistent-environment run enrolls only members with explicit post-deploy
 obligations for that environment; untargeted cases remain with final delivery.
