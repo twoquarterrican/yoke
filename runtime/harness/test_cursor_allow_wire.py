@@ -10,7 +10,7 @@ from yoke_contracts.hook_runner.cursor_response import cursor_allow_stdout
 from yoke_contracts.hook_runner.project_scope import HookProjectScope
 from yoke_harness.hooks import local_subset, relay_degrade
 from yoke_harness.hooks.deadline import start_hook_deadline
-from yoke_harness.hooks.decision_render import merge_allow_stdout
+from yoke_harness.hooks.decision_render import merge_allow_stdout, render_context_stdout
 from yoke_harness.hooks.local_policy_common import DENY, PolicyResult
 
 
@@ -127,7 +127,7 @@ def test_permission_advisory_does_not_replace_verdict():
 def test_extra_context_on_permission_gate_keeps_valid_allow_reply():
     merged = merge_allow_stdout(
         cursor_allow_stdout("PreToolUse"),
-        json.dumps({"additional_context": "caller advisory"}),
+        render_context_stdout("caller advisory", "PreToolUse", cursor=True),
         "PreToolUse",
         cursor=True,
     )

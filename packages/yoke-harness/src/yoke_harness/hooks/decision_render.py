@@ -98,9 +98,6 @@ def merge_allow_stdout(
     harness_id: str | None = None,
 ) -> str:
     """Merge two independently rendered allow-stdouts into one."""
-    if cursor:
-        first = cursor_allow_stdout(event_name, first)
-        second = cursor_allow_stdout(event_name, second)
     if not first:
         return second
     if not second:
@@ -115,9 +112,19 @@ def merge_allow_stdout(
             except (ValueError, TypeError):
                 pass
             else:
-                if left == allow:
+                if (
+                    left == allow
+                    and isinstance(right, dict)
+                    and right.get("permission") in {"allow", "deny"}
+                ):
                     return second
-                if right == allow or left == right == {}:
+                if (
+                    right == allow
+                    and isinstance(left, dict)
+                    and left.get("permission") in {"allow", "deny"}
+                ):
+                    return first
+                if left == right == {}:
                     return first
         return f"{first}{second}"
     first_kind, first_body = first_parts
@@ -154,11 +161,12 @@ def render_context_stdout(
     """
     if not context or not context.strip():
         return ""
-    return _render_additional_context_envelope(
+    rendered = _render_additional_context_envelope(
         [context],
         event_name,
         cursor=cursor,
     )
+    return cursor_allow_stdout(event_name, rendered) if cursor else rendered
 
 
 __all__ = [
