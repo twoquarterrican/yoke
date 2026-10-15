@@ -163,7 +163,7 @@ def uninstall(
             root,
             created_file=bool(manifest.get("worktrees_ignore_created_file")),
         )
-        if manifest.get("worktrees_ignore_added")
+        if manifest.get("worktrees_ignore_added") and not shared_scope
         else {"removed": False, "deleted_file": False}
     )
     # A partial cleanup keeps ownership evidence for the same command's retry.
@@ -171,7 +171,7 @@ def uninstall(
     if shared_scope:
         local_cleanup["complete"] = False
         warnings.append(
-            f"project_uninstall_{shared_scope}: Git hooks may serve other checkouts; resolve sharing or checkout identity, then rerun project uninstall."
+            f"project_uninstall_{shared_scope}: Git hooks and the worktree ignore entry may serve other checkouts; resolve sharing or checkout identity, then rerun project uninstall."
         )
     for row in [local_cleanup["registration"], *local_cleanup["trust"]]:
         if row["status"] in {"preserved", "failed"}:

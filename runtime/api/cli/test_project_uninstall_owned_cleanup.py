@@ -172,6 +172,7 @@ def test_shared_checkout_scope_is_preserved(installed, sharing):
         writer.register_project(collision, 9, path=config)
         assert trust.cursor_trust_file(collision) == trust.cursor_trust_file(root)
     hooks = {p: p.read_bytes() for p in (root / ".git/hooks").iterdir() if p.is_file()}
+    ignore_before = (root / ".gitignore").read_bytes()
     before = config.read_bytes(), trust.claude_state_path().read_bytes()
     report = uninstall(root, config_path=config)
     assert report["outcome"] == "partial"
@@ -179,6 +180,7 @@ def test_shared_checkout_scope_is_preserved(installed, sharing):
     assert machine_config.project_id(other, config) == 8
     assert {p: p.read_bytes() for p in hooks} == hooks
     assert report["git_hooks_preserved_reason"]
+    assert (root / ".gitignore").read_bytes() == ignore_before
 
 
 def test_unknown_and_legacy_trust_is_preserved(installed):
