@@ -50,10 +50,9 @@ def mint_browser_sign_in_link(conn: Any, *, actor_id: int) -> str:
     selector = secrets.token_urlsafe(12)
     secret = secrets.token_urlsafe(32)
     p = _p(conn)
-    conn.execute(
-        f"DELETE FROM browser_sign_in_links WHERE expires_at <= {p}",
-        (instant_parameter(conn, now),),
-    )
+    from yoke_core.domain.retention_operational_policy import prune_inline_expired
+
+    prune_inline_expired(conn, "browser_sign_in_links", now)
     conn.execute(
         "INSERT INTO browser_sign_in_links (selector, code_hash, actor_id, expires_at) "
         f"VALUES ({p}, {p}, {p}, {p})",

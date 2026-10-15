@@ -32,6 +32,8 @@ PRODUCT_AUTHZ_BY_ID = {
     # Universe levels label every session and choose every launch in every
     # project that has no override of its own.
     "universe.levels.get": AuthzSpec(ACTOR_SESSION, None),
+    "universe.retention.get": AuthzSpec(ORG, PERM_ORG_ADMIN),
+    "universe.prune.run": AuthzSpec(ORG, PERM_ORG_ADMIN),
     "universe.level_capacity.get": AuthzSpec(ACTOR_SESSION, None),
     "universe.levels.set": AuthzSpec(ORG, PERM_ORG_ADMIN),
     "universe.cursor_quota_order.get": AuthzSpec(ACTOR_SESSION, None),

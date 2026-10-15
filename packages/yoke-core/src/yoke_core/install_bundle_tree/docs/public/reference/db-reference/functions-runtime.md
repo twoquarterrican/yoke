@@ -203,6 +203,8 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `sessions.steering_groups.list` | `none` |
 | `sessions.touch` | `none` |
 | `steering.report.get` | `none` |
+| `universe.retention.get` | `none` |
+| `universe.prune.run` | `none` |
 | `ui_preferences.nav_group.list` | `none` |
 | `ui_preferences.nav_group.set` | `none` |
 | `ui_preferences.screen_selection.list` | `none` |
@@ -211,6 +213,12 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `ui_preferences.search_history.record` | `none` |
 
 ## Runtime authority and output
+
+`yoke universe retention get` and `yoke universe prune --dry-run` require
+organization admin authority and target one connected universe. Both ids
+declare their function serving floor. [Retention](../../universe-retention.md)
+owns apply, permanent protections and the command-output-only audit exception;
+prune stores no replay receipt and a lost pass reply has an unknown count.
 
 The board data read is the server half of explicit board rebuilding: it returns
 the recorded DB plan and the checkout project's VISION identity; the client

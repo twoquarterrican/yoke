@@ -69,14 +69,13 @@ def start(
         conn.execute(
             "SELECT pg_advisory_xact_lock(hashtext('machine_authorization_codes'))"
         )
-    conn.execute(
-        f"DELETE FROM machine_authorization_codes WHERE expires_at <= {p}",
-        (instant_parameter(conn, now),),
-    )
+    from yoke_core.domain.retention_operational_policy import prune_inline_expired
+
+    prune_inline_expired(conn, "machine_authorization_codes", now)
     # The same transaction lock covers both capacity checks and insertion.
     count = conn.execute(
-        f"SELECT count(*) FROM machine_authorization_codes WHERE client_key={p} AND consumed_at IS NULL",
-        (client_key,),
+        f"SELECT count(*) FROM machine_authorization_codes WHERE client_key={p} AND consumed_at IS NULL AND expires_at>{p}",
+        (client_key, instant_parameter(conn, now)),
     ).fetchone()[0]
     if count >= CLIENT_PENDING_CODES:
         raise MachineAuthorizationError(
@@ -85,7 +84,8 @@ def start(
             429,
         )
     count = conn.execute(
-        "SELECT count(*) FROM machine_authorization_codes WHERE consumed_at IS NULL"
+        f"SELECT count(*) FROM machine_authorization_codes WHERE consumed_at IS NULL AND expires_at>{p}",
+        (instant_parameter(conn, now),),
     ).fetchone()[0]
     if count >= SERVER_PENDING_CODES:
         raise MachineAuthorizationError(

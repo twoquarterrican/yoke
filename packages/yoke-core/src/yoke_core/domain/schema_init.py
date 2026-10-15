@@ -31,6 +31,7 @@ from yoke_core.domain.model_reference_store import (
 )
 from yoke_core.domain.org_schema import seed_default_org
 from yoke_core.domain.universe_levels import create_universe_settings_table
+from yoke_core.domain.universe_retention import seed_defaults
 from yoke_core.domain.ouroboros_entry_corrections import (
     ensure_ouroboros_entry_corrections_schema,
 )
@@ -194,6 +195,7 @@ def converge_core_schema(conn, *, backup_target_dsn: str | None = None) -> None:
     create_core_tables(conn)
     create_model_reference_table(conn)
     create_universe_settings_table(conn)
+    seed_defaults(conn)
     apply_work_claim_scope_column(conn)
     create_actor_identity_tables(conn)
     # actor_ui_preferences FKs into actors, so this follows the identity step.

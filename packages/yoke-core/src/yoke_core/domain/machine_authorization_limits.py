@@ -33,9 +33,13 @@ def admit_client(conn, *, client: str, operation: str, now=None) -> tuple[str, i
         "RETURNING request_count",
         (key, operation, window),
     ).fetchone()[0]
-    conn.execute(
-        f"DELETE FROM machine_authorization_rate_limits WHERE window_start < {p}",
-        (window - RATE_WINDOW_SECONDS,),
+    from datetime import datetime, timezone
+    from yoke_core.domain.retention_operational_policy import prune_inline_expired
+
+    prune_inline_expired(
+        conn,
+        "machine_authorization_rate_limits",
+        datetime.fromtimestamp(now, timezone.utc),
     )
     conn.commit()
     return key, RATE_WINDOW_SECONDS - (now - window) if count > limit else 0

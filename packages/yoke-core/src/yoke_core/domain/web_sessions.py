@@ -86,15 +86,10 @@ def hash_web_session_token(raw_token: str) -> str:
 
 
 def _prune_expired(conn: Any, *, now: datetime) -> None:
-    """Best-effort delete of rows already past expiry. Never raises."""
-    p = _p(conn)
-    try:
-        conn.execute(
-            f"DELETE FROM web_sessions WHERE expires_at <= {p}",
-            (instant_parameter(conn, now),),
-        )
-    except Exception:  # noqa: BLE001 - a housekeeping sweep never blocks a mint
-        pass
+    """Keep the shared diagnostic grace without changing token validity."""
+    from yoke_core.domain.retention_operational_policy import prune_inline_expired
+
+    prune_inline_expired(conn, "web_sessions", now)
 
 
 def mint_web_session(

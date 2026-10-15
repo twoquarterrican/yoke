@@ -124,10 +124,9 @@ def handoff(
             "expires_at": format_instant(expires),
             "state": "pending",
         }
-    conn.execute(
-        f"DELETE FROM machine_authorization_codes WHERE expires_at<={p}",
-        (instant_parameter(conn, now),),
-    )
+    from yoke_core.domain.retention_operational_policy import prune_inline_expired
+
+    prune_inline_expired(conn, "machine_authorization_codes", now)
     if conn.execute(
         f"SELECT 1 FROM machine_authorization_codes WHERE user_code={p}", (user_code,)
     ).fetchone():
