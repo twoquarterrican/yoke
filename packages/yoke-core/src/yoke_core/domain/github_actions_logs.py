@@ -23,6 +23,8 @@ hierarchy. No host ``gh`` binary required.
 
 from __future__ import annotations
 
+from contextlib import closing
+
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -269,7 +271,7 @@ def _error_snippet(
     deadline: float,
 ) -> str:
     try:
-        with exc:
+        with closing(exc):
             raw = read_bounded_response(
                 exc,
                 limit_bytes=GITHUB_SMALL_RESPONSE_LIMIT_BYTES,
