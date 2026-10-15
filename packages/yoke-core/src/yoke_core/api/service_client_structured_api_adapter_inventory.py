@@ -10,6 +10,7 @@ installer, qa, packet, and strategy family entries live in sibling modules
 from __future__ import annotations
 
 from typing import Dict, List
+from yoke_core.api.service_client_retention_inventory import RETENTION_ADAPTERS
 
 from yoke_core.api.service_client_structured_api_adapter_inventory_claims import (
     CLAIMS_ADAPTERS,
@@ -69,6 +70,7 @@ from yoke_core.api.service_client_structured_api_adapter_inventory_workflows imp
 )
 
 CLI_ADAPTERS: List[AdapterEntry] = [
+    *RETENTION_ADAPTERS,
     *EPIC_ADAPTERS,
     *DIRECT_WORKFLOW_ADAPTERS,
     AdapterEntry(
