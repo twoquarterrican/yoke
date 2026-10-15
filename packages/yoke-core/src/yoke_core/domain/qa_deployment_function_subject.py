@@ -11,7 +11,7 @@ from yoke_core.domain.function_target_row_project import (
     resolve_deployment_run_project,
     slug_for_project_id,
 )
-from yoke_core.domain.project_identity import resolve_project_id
+from yoke_core.domain.project_identity import render_item_ref, resolve_project_id
 from yoke_core.domain.item_ref_resolution import resolve_item_ref_or_none
 from yoke_core.domain.deployment_run_membership_removals import removed_item_ids
 
@@ -185,7 +185,7 @@ def resolve_run_qa_subject(
             (run_id, member_id),
         ).fetchone():
             raise QaSubjectProjectError(
-                f"deployment member {member_id} is not an attached member of run {run_id!r}"
+                f"{render_item_ref(conn, member_id)} is not an attached member of run {run_id!r}"
             )
         project_id, slug = _checkin_project(conn, execution_id, member_id)
     elif stage:
