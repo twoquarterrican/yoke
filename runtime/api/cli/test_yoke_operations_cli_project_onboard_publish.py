@@ -149,10 +149,7 @@ def test_fresh_create_refreshes_app_access_before_binding(
                 "binding": {"status": "active"},
                 "permission_status": {"ok": True},
             }
-        assert function_id == "projects.update"
-        events.append("sync-policy")
-        assert payload["github_sync_mode"] == "enabled"
-        return {"project": payload}
+        pytest.fail(f"Binding must not update issue sync: {function_id}")
 
     monkeypatch.setattr(project_onboard, "create_and_publish", _create)
     monkeypatch.setattr(
@@ -190,7 +187,7 @@ def test_fresh_create_refreshes_app_access_before_binding(
 
     project_onboard.create_project(publish=_publish(), **kwargs)
 
-    assert events == ["publish", "refresh", "bind", "sync-policy"]
+    assert events == ["publish", "refresh", "bind"]
 
 
 def test_create_project_no_publish_does_not_create_repo(

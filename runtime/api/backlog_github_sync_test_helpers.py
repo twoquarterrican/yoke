@@ -57,7 +57,9 @@ def make_db():
         drop_database_on_close,
     )
 
-    db_name = create_test_database(template=_schema_template_db(_apply_production_schema))
+    db_name = create_test_database(
+        template=_schema_template_db(_apply_production_schema)
+    )
     conn = connect_test_database(db_name)
     conn.execute(
         "INSERT INTO projects "
@@ -86,3 +88,39 @@ __all__ = [
     "completed_process",
     "make_db",
 ]
+
+
+ITEM_DEDUP_PATCH = "yoke_core.domain.github_dedup.github_rest.list_issues"
+ITEM_CREATE_PATCH = (
+    "yoke_core.domain.backlog_github_item_create.github_rest.create_issue"
+)
+
+
+def item_auth_resolver(*args, **kwargs):
+    from yoke_core.domain.project_github_auth import ProjectGithubAuth
+
+    proj = kwargs.get("project") or (args[0] if args else "externalwebapp")
+    return ProjectGithubAuth(
+        project=proj,
+        repo="org/externalwebapp",
+        token="ghs_fake",
+    )
+
+
+def fake_issue(
+    number: int = 999,
+    title: str = "title",
+    html_url: str | None = None,
+):
+    from yoke_core.domain import github_rest
+
+    return github_rest.Issue(
+        number=number,
+        title=title,
+        state="OPEN",
+        html_url=(
+            f"https://github.com/org/externalwebapp/issues/{number}"
+            if html_url is None
+            else html_url
+        ),
+    )

@@ -3,6 +3,7 @@
 from copy import deepcopy
 import shlex
 
+from yoke_core.domain.installer_campaign_issue_sync_cases import issue_sync_cases
 from yoke_core.domain.installer_campaign_install_health_cases import (
     install_health_cases,
 )
@@ -36,7 +37,9 @@ _INSTALL_ONLY = (
 )
 
 
-def _command_case(position, key, command, *, instructions, outcome):
+def _command_case(
+    position, key, command, *, instructions, outcome, execution_mode="ssh-command"
+):
     return terminal_case(
         position,
         key,
@@ -50,7 +53,7 @@ def _command_case(position, key, command, *, instructions, outcome):
             actions=[action(key, capture=False)],
             expected_text=[key],
             capture_checkpoints=[],
-            execution_mode="ssh-command",
+            execution_mode=execution_mode,
             setup_operations=current_release_setup(key, path_ready=True),
             notes="Run only on the leased Test Machine. Restore its declared baseline afterward.",
         ),
@@ -271,13 +274,17 @@ LATE_HARNESS = _command_case(
 
 
 INSTALLER_RECOVERY_CASES = (
-    STALE_REINSTALL,
-    LOCAL_HOSTED_BACKUP,
-    LOCAL_HOSTED_NO_BACKUP,
-    SECOND_MACHINE_JOIN,
-    UNINSTALL,
-    LATE_HARNESS,
-) + install_health_cases(_command_case)
+    (
+        STALE_REINSTALL,
+        LOCAL_HOSTED_BACKUP,
+        LOCAL_HOSTED_NO_BACKUP,
+        SECOND_MACHINE_JOIN,
+        UNINSTALL,
+        LATE_HARNESS,
+    )
+    + install_health_cases(_command_case)
+    + issue_sync_cases(_command_case, _LOCAL_SETUP)
+)
 
 
 def recovery_cases(*, primary_machine: str, joining_machine: str):

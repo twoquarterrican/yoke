@@ -14,7 +14,6 @@ from yoke_cli.config.project_github_adoption import (
     ProjectGithubAdoptionError,
     github_sync_mode,
 )
-from yoke_contracts.project_contract.github_sync_mode import GITHUB_SYNC_ENABLED
 from yoke_cli.config.project_onboard_support import dispatch
 from yoke_cli.config.project_clone_support import (
     CLONE_OUTCOME_FORK,
@@ -72,9 +71,7 @@ def store_github_binding(
         }
 
     github_repo = str(
-        (github_adoption or {}).get("github_repo")
-        or project.get("github_repo")
-        or ""
+        (github_adoption or {}).get("github_repo") or project.get("github_repo") or ""
     ).strip()
     try:
         with github_binding_auth.locked_profile_bound_access_for_binding(
@@ -114,26 +111,13 @@ def store_github_binding(
     binding = result.get("binding") if isinstance(result, Mapping) else None
     binding = binding if isinstance(binding, Mapping) else {}
     binding_status = str(binding.get("status") or "pending_permission")
-    applied_mode = sync_mode
-    if binding_status == "active":
-        dispatch(
-            "projects.update",
-            {
-                "project_id": int(project["id"]),
-                "slug": str(project["slug"]),
-                "name": str(project.get("name") or project["slug"]),
-                "github_sync_mode": GITHUB_SYNC_ENABLED,
-            },
-            config_path,
-        )
-        applied_mode = GITHUB_SYNC_ENABLED
     permission_status = result.get("permission_status")
     permission_status = (
         dict(permission_status) if isinstance(permission_status, Mapping) else {}
     )
     return {
         "cap_type": "github",
-        "mode": applied_mode,
+        "mode": sync_mode,
         "binding": binding_status,
         "permission_status": permission_status,
         "result": dict(result),
@@ -244,9 +228,7 @@ def record_mutated_repository(
         service_api_url=service_api_url,
         local_connection_selected=local_connection_selected,
     )
-    expected_repository_id = _positive_identity(
-        github_adoption.get("repository_id")
-    )
+    expected_repository_id = _positive_identity(github_adoption.get("repository_id"))
     expected_installation_id = _positive_identity(
         github_adoption.get("installation_id")
     )
@@ -270,15 +252,21 @@ def record_mutated_repository(
         )
     github_adoption["repository_id"] = actual_repository_id
     github_adoption["installation_id"] = actual_installation_id
-    binding.update({
-        "repository_id": actual_repository_id,
-        "installation_id": actual_installation_id,
-    })
+    binding.update(
+        {
+            "repository_id": actual_repository_id,
+            "installation_id": actual_installation_id,
+        }
+    )
     github_adoption["binding"] = binding
 
 
 def _positive_identity(value: Any) -> int | None:
-    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
+    return (
+        value
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0
+        else None
+    )
 
 
 def finish_github_binding(
@@ -288,11 +276,7 @@ def finish_github_binding(
 ) -> None:
     binding = (github_adoption or {}).get("binding") or {}
     binding_status = str(binding.get("status") or "")
-    status = (
-        "done"
-        if binding_status == "active"
-        else "skipped"
-    )
+    status = "done" if binding_status == "active" else "skipped"
     onboard_apply_progress.emit(progress, "project-github-auth-choice", target, status)
 
 

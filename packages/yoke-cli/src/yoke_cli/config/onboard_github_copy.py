@@ -9,9 +9,7 @@ MACHINE_GITHUB_SUBTITLE = (
 )
 MACHINE_GITHUB_REVIEW = "Connect this machine through the Yoke GitHub App"
 MACHINE_GITHUB_SKIP_LABEL = "Skip GitHub"
-MACHINE_GITHUB_SKIP_DESC = (
-    "local merge; no Issues, merge queue, or App CI"
-)
+MACHINE_GITHUB_SKIP_DESC = "local merge; no Issues, merge queue, or App CI"
 MACHINE_GITHUB_SKIP_REVIEW = (
     "Skip GitHub — local merge; Issues, merge queue, and App CI stay off"
 )
@@ -31,7 +29,7 @@ PROJECT_GITHUB_ACCESS_SUBTITLE = (
 )
 
 PROJECT_GITHUB_REVIEW = (
-    "Bind this project to a GitHub App repository for Issues, PRs, CI, and Actions"
+    "Bind this project to a GitHub App repository for PRs, CI, and Actions"
 )
 
 PROJECT_GITHUB_REUSE_LABEL = "Use connected repo"
@@ -39,12 +37,9 @@ PROJECT_GITHUB_REUSE_DESC = "bind this repo using existing App access"
 PROJECT_GITHUB_STORE_LABEL = "Add repo access"
 PROJECT_GITHUB_STORE_DESC = "open GitHub to change app access"
 PROJECT_GITHUB_SKIP_LABEL = "Skip GitHub for this project"
-PROJECT_GITHUB_SKIP_DESC = (
-    "local backlog and merge; no Issues, merge queue, or App CI"
-)
+PROJECT_GITHUB_SKIP_DESC = "local backlog and merge; no Issues, merge queue, or App CI"
 PROJECT_GITHUB_SKIP_REVIEW = (
-    "Keep the project local — backlog and merge stay here; GitHub "
-    "automation stays off"
+    "Keep the project local — backlog and merge stay here; GitHub automation stays off"
 )
 
 PROJECT_GITHUB_SETUP_HELP = (
@@ -90,7 +85,7 @@ def machine_github_agent_guidance(project_mode: str | None) -> str:
         "Ask whether the person uses GitHub. With a GitHub account, answer "
         "connect and pass the browser link to the person. With no GitHub "
         "account, explain that setup continues without it and answer skip. "
-        f"With another source-control provider, say \"{OTHER_PROVIDER_SENTENCE}\" "
+        f'With another source-control provider, say "{OTHER_PROVIDER_SENTENCE}" '
         f"then answer skip.{sign_up}"
     )
 
@@ -98,7 +93,12 @@ def machine_github_agent_guidance(project_mode: str | None) -> str:
 PROJECT_GITHUB_AGENT_GUIDANCE = (
     "Answer reuse-machine when the machine GitHub connection is saved and the "
     "person wants this project on it. With no GitHub account or another "
-    f"source-control provider, say \"{OTHER_PROVIDER_SENTENCE}\" then answer skip."
+    f'source-control provider, say "{OTHER_PROVIDER_SENTENCE}" then answer skip. '
+    "Binding leaves issue sync off. Only if mirroring the backlog to GitHub "
+    "Issues is useful for this project, explain it and offer a separate opt-in "
+    "after setup. Enable only with their agreement, using the project update "
+    "recipe in .yoke/docs/reference/github-sync.md; never infer agreement from "
+    "connecting GitHub or approving setup."
 )
 PROJECT_MODE_AGENT_GUIDANCE = (
     "Ask the person where their code lives. Answer machine-only if they have no "

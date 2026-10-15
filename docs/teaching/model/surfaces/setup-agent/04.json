@@ -1,9 +1,9 @@
 {
  "id": "04",
- "title": "During agent-led GitHub adoption, briefly explain optional issue sync, offer opt-in and identify the later configuration route.",
- "status": "draft-copy",
+ "title": "Offer issue mirroring when useful; enable separately after agreement.",
+ "status": "observed",
  "form": "Teach",
- "verification": "No delivery proof attached.",
+ "verification": "Project guidance and agent setup guide teach separate opt-in; installed campaign proof pending.",
  "topics": ["repositories/github", "repositories/sync"],
  "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"],
  "position": 3

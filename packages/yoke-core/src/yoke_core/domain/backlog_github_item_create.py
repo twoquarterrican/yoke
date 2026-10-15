@@ -308,9 +308,7 @@ def sync_item(
             print(f"Error: created issue has no number: {created!r}", file=stderr)
             return 1
 
-        # GitHub normally returns ``html_url``.  A host-neutral reference is
-        # safer than inventing a github.com URL when an enterprise response is
-        # incomplete.
+        # Preserve the returned host; use a number when GitHub omits its URL.
         issue_url = created.html_url or f"#{issue_num}"
 
         # Validate repo (created.html_url is authoritative when present)
@@ -324,7 +322,6 @@ def sync_item(
                 print(f"  Expected repo: {repo}", file=stderr)
                 print(f"  Issue URL: {created.html_url}", file=stderr)
 
-        # Update DB
         p = _p(conn)
         conn.execute(
             f"UPDATE items SET github_issue = {p} WHERE id = {p}",
@@ -333,8 +330,10 @@ def sync_item(
         conn.commit()
         _regenerate_md(item_pk)
 
-        print(issue_url, file=stdout)
-        print(f"Synced: {public_ref} → GitHub issue #{issue_num}", file=stdout)
+        print(
+            f"Synced: {public_ref} → GitHub issue #{issue_num}: {issue_url}",
+            file=stdout,
+        )
         return _bgs()._sync_task_children(
             item_pk,
             enabled=sync_task_children,

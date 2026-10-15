@@ -105,6 +105,16 @@ there is one.
 | `setup_step_failed` (failed) | fix the named cause, then run `yoke setup --agent` |
 | `setup_apply_failed` (failed) | answer the failure question shown with it |
 
+## Optional issue mirroring
+
+When GitHub issue mirroring would help this project, explain that it copies
+backlog items and tasks into the repository’s Issues and offer a separate
+opt-in after setup. Connecting GitHub or approving setup leaves sync off.
+Enable only after the person agrees; otherwise continue with sync off.
+Use the [project setting recipe](../reference/github-sync.md#the-per-project-switch-projectsgithub_sync_mode)
+to check permissions and enable or change it later. Do not add a wizard
+question or ask this during machine-only or no-GitHub setup.
+
 ## After setup
 
 `done` lists the next steps: open a new terminal when shell files changed,
