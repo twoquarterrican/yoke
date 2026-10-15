@@ -1,10 +1,12 @@
 {
  "id": "entry",
  "title": "Setup entry points",
- "status": "draft-copy",
+ "status": "observed",
  "plan_refs": ["FIRST-USER.14", "FIRST-USER.17", "FIRST-USER.19", "FIRST-USER.37", "FIRST-USER.38", "FIRST-USER.7", "FIRST-USER.A", "FIRST-USER.B", "JOURNEYS.situation-1"],
  "surface_refs": ["docs-landing", "setup-agent", "setup-tui"],
  "commands": ["yoke init", "yoke setup"],
  "page": "installation",
- "position": 0
+ "position": 0,
+ "current": "https://upyoke.com/ shows install upyoke.com with Copy and a Claude Code, Codex or Cursor caption in the hero and installer. The installer also retains the curl command, Copy command and console.",
+ "desired": "Prove a real agent follows the public first-turn fetch → correct install action; the shipped visible entry alone does not prove that journey."
 }
