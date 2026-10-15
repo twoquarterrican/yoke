@@ -47,7 +47,17 @@ the holder automatically. Operator-driven surfaces need the operator to
 re-enter the session. If the holder is gone, the notice routes to the project's
 steering seat for restaffing.
 
-Before recording a landing, the merge boundary fetches the remote default
+The observer saves the current PR's head branch, target, head SHA and merge
+SHA in the item's existing Merge Receipts document in the same transaction as
+its landing stamps, before sending the completion notice. Missing identity
+leaves the landing unstamped and records `merge_landing_identity_missing` in
+the project refresh error; retry with a complete GitHub PR readback. Release
+containment can use this identity while worker closeout is still pending.
+The worker still records results and verification and enriches that exact
+receipt with changed files and contributed commits. Re-observation is
+idempotent; a later landing preserves the earlier receipt's identity.
+
+During worker closeout, the merge boundary fetches the remote default
 branch and requires it to contain the exact candidate commit. The recorded
 merge SHA is the merge on that fetched branch's first-parent history that
 first carried the candidate: the item's own pull request merge. A merge-queue
