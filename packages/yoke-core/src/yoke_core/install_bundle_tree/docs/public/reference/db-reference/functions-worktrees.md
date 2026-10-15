@@ -92,3 +92,18 @@ entry and merge-when-ready cleared, correct and rerun QA, then re-arm through th
 merge boundary. A hold that observes landing returns the actual merge commit.
 Pending landing records are durable; clearing one does not fabricate completion.
 Release pins retain exact lineage; [deployment contracts](deployment-run-records.md).
+
+## Prepare local registered lanes
+
+```text
+yoke worktree prepare --item PREFIX-N --project PROJECT
+yoke worktree paths main
+```
+
+Preparation runs on the installed Yoke interpreter from the item's mapped main
+checkout, before any task lane exists. It reuses the shared preflight and creator
+for every registered task and integration lane. Work ownership, path claims,
+upstream freshness and lane identity still gate preparation; reruns reuse lanes.
+Read the named refusal, repair its cause and rerun the same command. List
+`yoke item-worktrees list PREFIX-N` if preparation stopped after recording paths.
+Use `yoke dev run -- <command>` only after a claimed source lane exists.
