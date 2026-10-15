@@ -22,7 +22,10 @@ recovery still see every real connect failure.
 
 Only idle sockets are retained, at most :data:`MAX_IDLE_CONNECTIONS` per
 process and none older than :data:`MAX_IDLE_SECONDS`; in-use connections are
-bounded by the caller's own concurrency, as before.
+bounded by the caller's own concurrency, as before. Only the unbound ambient
+authority is reused: an explicit DSN or a ``db_backend.bound_pg_dsn`` scope
+names temporary, often connection-limited authority, and its connections
+close on ``close()``.
 """
 
 from __future__ import annotations
