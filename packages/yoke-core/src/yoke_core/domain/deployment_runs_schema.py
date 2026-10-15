@@ -6,7 +6,7 @@ Contains:
   ``env_type`` column add-if-missing.
 - Row-shape constants: ``RUN_FIELDS``, ``UPDATABLE_FIELDS``, ``_RUN_SELECT``.
 - Window-tolerant readers: ``_run_select``, ``_run_named_columns``.
-- Status enums: ``VALID_STATUSES``, ``VALID_QA_STATUSES``, ``VALID_ENV_TYPES``.
+- Status enums: ``VALID_STATUSES``, ``VALID_ENV_TYPES``.
 - Pipe-delimited formatters: ``_pipe_row``, ``_pipe_rows``.
 
 These primitives are consumed directly by every deployment_runs sibling and by
@@ -66,7 +66,6 @@ UPDATABLE_FIELDS = (
 
 VALID_STATUSES = tuple(s.value for s in RunStatus)
 
-VALID_QA_STATUSES = ("pending", "passed", "failed", "waived")
 
 VALID_ENV_TYPES = ("shared", "adhoc")
 
