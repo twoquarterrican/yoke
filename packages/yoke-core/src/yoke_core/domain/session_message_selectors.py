@@ -50,7 +50,9 @@ def _session_rows(conn: Any) -> dict[str, dict[str, Any]]:
         f"{holds_work_claim_sql('harness_sessions')} AS holds_work_claim "
         "FROM harness_sessions ORDER BY session_id"
     ).fetchall()
-    return {str(row["session_id"]): row_dict(row) for row in rows}
+    from .session_automatic_reclaim import reclaim_facts
+
+    return {str(row["session_id"]): row for row in reclaim_facts(conn, rows)}
 
 
 def _claim_rows(conn: Any) -> list[dict[str, Any]]:

@@ -11,6 +11,7 @@ from yoke_contracts.board.project_scope import (
 )
 from yoke_contracts.board.sections_sessions_levels import board_levels
 from yoke_contracts.levels import level_presentation
+from yoke_contracts.session_queue_posture import session_pause_mode_sql
 from yoke_contracts.coordination_claim_keys import (
     COORDINATION_TARGET_KINDS,
 )
@@ -83,7 +84,7 @@ def _session_rows_sql(
     return f"""
         SELECT hs.session_id, hs.executor{surface_col}, hs.model,
                hs.requested_model, hs.usage_totals,
-               hs.mode, hs.execution_level, hs.offered_at, hs.last_heartbeat,
+               {session_pause_mode_sql("hs")}, hs.execution_level, hs.offered_at, hs.last_heartbeat,
                hs.workspace, hs.project_id
                {ended_col}
         FROM harness_sessions hs
