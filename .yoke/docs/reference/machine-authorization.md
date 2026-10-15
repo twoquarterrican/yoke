@@ -168,3 +168,42 @@ for occurrence and expiry. Numeric epochs, naive dates and empty supplied clocks
 refuse. Stored decision clocks are native; owned occurrence, expiry and end
 context fields and audit receipts use fixed-six UTC RFC3339Z or null. Expiry is
 an inclusive comparison of instants, independent of database session timezone.
+
+
+## Hosted code handoff
+
+After sign-in and organization selection, the hosted service calls registered
+`machine_authorization.handoff` in that organization's engine. This function
+requires the `hosted_service` system identity with `hosted_service.deliver` on
+the exact target organization; human members and admins cannot call it.
+Its registry serving floor is `next-release` until a release carries it. An older
+engine must be upgraded before Platform enables handoff; the service operator
+owns that rollout. Existing hosted routing remains until the consumer adopts
+this contract.
+
+The payload is `{device_hash, user_code, machine_id, machine_name, platform,
+expires_at, org_id}`. `device_hash` is the lowercase hex SHA-256 of the original
+secret device code; never send the raw secret. `user_code` is exactly four
+uppercase ASCII letters or digits, such as `K7F2`. `machine_id` is a UUID;
+name and platform are nonempty (at most 150 and 80 characters). `expires_at`
+is a qualified RFC3339 instant and `org_id` is the positive engine organization
+ID. The response is `{authorization: {code, org_id, expires_at}}`; expiry is
+canonical UTC. The engine stores the code in `machine_authorization_codes`,
+without issuing credentials or deciding approval.
+
+The existing inspect, resolve and poll operations consume that same record.
+The signed-in member still approves personally; the original device secret
+polls for one credential bound to that member and the selected organization.
+The hosted consumer must route those operations to this engine after handoff;
+its own route adoption requires integration proof against the exact candidate.
+
+`authorization_device_code_collision` and `authorization_match_code_collision`
+refuse with no replacement, including an identical replay. Issue a new secret
+and match code, then retry handoff. `authorization_expired` requires a new code;
+`authorization_org_unknown` requires selecting an existing engine organization.
+`permission_denied` requires that organization's hosted service identity.
+`authorization_handoff_invalid` or `authorization_refused` requires correcting
+the payload and retrying. `authorization_capacity` requires finishing an approval
+or waiting for expiry; handoff shares the server's 128 pending-code limit.
+`authorization_store_unavailable` requires the operator to restore database
+health before retrying. No parallel pending or credential store is created.
