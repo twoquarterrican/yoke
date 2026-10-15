@@ -100,7 +100,6 @@ def _member_plans(
             require_complete_snapshot,
         )
 
-        require_complete_snapshot(value)
         attachment = value.get("attachment")
         plan = value.get("plan")
         if not isinstance(attachment, Mapping) or not isinstance(plan, Mapping):
@@ -109,6 +108,7 @@ def _member_plans(
             continue
         if int(plan["id"]) in withdrawn_plans:
             continue
+        require_complete_snapshot(value)
         from yoke_core.domain.qa_plan_case_targets import (
             case_applies_to_target,
             case_target_envs,

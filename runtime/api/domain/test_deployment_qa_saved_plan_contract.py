@@ -258,3 +258,21 @@ def test_frozen_hosted_bridge_selects_original_cases_without_repointing(test_db)
         )
         == []
     )
+
+
+def test_authorized_withdrawal_excludes_incomplete_selection_before_validation(
+    test_db, monkeypatch
+):
+    from yoke_core.domain import deployment_qa_frozen_plan_selection as selection
+
+    monkeypatch.setattr(selection, "retracted_item_plan_ids", lambda conn, member: {71})
+    subject = {
+        "member_item_id": MEMBERS[0],
+        "member_snapshot": {
+            "plans": [{"attachment": {"qa_phase": "post_deploy"}, "plan": {"id": 71}}]
+        },
+    }
+    assert (
+        selection._member_plans(test_db, subject, target={"environment": {"id": 1}})
+        == []
+    )
