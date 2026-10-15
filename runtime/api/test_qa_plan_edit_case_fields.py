@@ -29,6 +29,7 @@ def _case(key: str, command: str) -> dict:
         "expected_outcome": "The route answers successfully.",
         "method_config": _route(command),
         "target_envs": ["stage", "prod"],
+        "stage_reason": "changes_infrastructure",
     }
 
 
@@ -36,7 +37,7 @@ def _plan(conn) -> dict:
     _environment(conn)
     conn.execute(
         "INSERT INTO environments(site,project_id,name,url,settings,created_at) "
-        "SELECT id,1,'prod','https://prod.example.test','{}','2026-09-14T00:00:00Z' "
+        "SELECT id,1,'prod','https://prod.example.test','{\"role\":{\"production\":true}}','2026-09-14T00:00:00Z' "
         "FROM sites WHERE project_id=1 ORDER BY id LIMIT 1 "
         "ON CONFLICT(project_id,name) DO NOTHING"
     )
@@ -107,7 +108,11 @@ def test_a_save_that_would_reset_an_unedited_field_is_refused() -> None:
         before = _current_cases(conn, plan["id"])
         # The document an edit client without target_envs would send.
         edited = [
-            {key: value for key, value in case.items() if key != "target_envs"}
+            {
+                key: value
+                for key, value in case.items()
+                if key not in {"target_envs", "stage_reason"}
+            }
             for case in before
         ]
         edited[0]["method_config"] = _route("/orgs/a")
@@ -121,6 +126,7 @@ def test_a_save_that_would_reset_an_unedited_field_is_refused() -> None:
     assert message.startswith("qa_plan_edit_unedited_field_changed:")
     assert "case 'dashboard' target_envs" in message
     assert "case 'health' target_envs" in message
+    assert "case 'dashboard' stage_reason" in message
     assert "Nothing was saved" in message
     assert "yoke qa plan edit routes --project yoke" in message
     assert after == before and after_base == base

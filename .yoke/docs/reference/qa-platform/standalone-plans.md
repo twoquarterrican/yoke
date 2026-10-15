@@ -58,13 +58,32 @@ Standalone execution uses existing QA records and never credits item or deployme
 
 ## Case environment obligations
 
-A case can declare `"target_envs": ["stage", "prod"]` in the JSON supplied to
+A case can declare `"target_envs": ["prod"]` in the JSON supplied to
 `yoke qa plan-cases replace` or `yoke qa plan edit`. These are unique registered
 environment names on the plan's project, each with a reviewable URL. Use `[]`
 to keep the plan's default target. `qa plan edit` puts every case field in its
-document, `target_envs` included; a save that leaves out a field of an existing
-case and would reset its stored value is refused as
+document, `target_envs` and `stage_reason` included; a save that leaves out a
+field of an existing case and would reset its stored value is refused as
 `qa_plan_edit_unedited_field_changed`, naming each case and field.
+
+Verify on production by default. A case may name an environment that does not
+declare `role.production: true` (stage) only when the check cannot safely run
+on production, and must say why in `stage_reason`:
+
+| `stage_reason` | When |
+|---|---|
+| `creates_or_destroys_data` | The check creates or destroys real data, such as founding a tenant or approving a fresh-install machine |
+| `changes_infrastructure` | The check changes infrastructure, such as renewing a TLS certificate |
+
+```json
+{"case_key": "new-founder-tenant", "target_envs": ["stage"], "stage_reason": "creates_or_destroys_data"}
+```
+
+A stage target without a reason refuses as `stage_reason_required`; retarget a
+read-only check to production. An unknown value refuses as
+`stage_reason_invalid`, and a reason on a case with no stage target refuses as
+`stage_reason_without_stage_target`. Declare the production environment with
+`yoke projects environment-settings merge --project P --environment prod --set role.production=true`.
 
 Item materialization creates one requirement per environment and host baseline,
 with `target_env` and an immutable execution target on each row. Rematerializing

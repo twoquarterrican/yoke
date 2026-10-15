@@ -73,7 +73,9 @@ ARCHIVE_OMITTABLE_TARGET_COLUMNS = {
             "starting_state_reason",
         }
     ),
-    "qa_plan_cases": frozenset({"starting_state", "starting_state_reason"}),
+    "qa_plan_cases": frozenset(
+        {"starting_state", "starting_state_reason", "stage_reason"}
+    ),
     "qa_plan_item_attachments": frozenset(
         {
             "retracted_at",

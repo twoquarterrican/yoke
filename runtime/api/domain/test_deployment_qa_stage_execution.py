@@ -37,7 +37,8 @@ from yoke_core.domain.qa_plan_management import create_plan, replace_plan_cases
 def _environment(conn: Any) -> None:
     conn.execute(
         "INSERT INTO environments(site,project_id,name,url,settings,created_at) "
-        "SELECT id,1,'stage','https://preview.example.test','{}',%s FROM sites "
+        "SELECT id,1,'stage','https://preview.example.test',"
+        '\'{"role":{"production":false}}\',%s FROM sites '
         "WHERE project_id=1 ORDER BY id LIMIT 1 "
         "ON CONFLICT(project_id,name) DO UPDATE SET url=EXCLUDED.url",
         ("2026-09-14T00:00:00Z",),
@@ -66,6 +67,7 @@ def _plan(
                 "expected_outcome": "the command passes",
                 "method_config": {"command": "true"},
                 "target_envs": target_envs or [],
+                **({"stage_reason": "creates_or_destroys_data"} if target_envs else {}),
             }
         ],
     )

@@ -56,6 +56,7 @@ def test_edit_opens_only_authorable_fields_and_dispatches_full_cas() -> None:
             "starting_state",
             "starting_state_reason",
             "target_envs",
+            "stage_reason",
             "entry_surface",
             "required_completion",
         }

@@ -125,6 +125,7 @@ def get_plan(
             "starting_state": case["starting_state"],
             "starting_state_reason": case["starting_state_reason"],
             "target_envs": _decode(case["target_envs"], []),
+            "stage_reason": case.get("stage_reason"),
             "entry_surface": case["entry_surface"],
             "required_completion": case["required_completion"],
             "proofs": case_proofs,

@@ -52,6 +52,11 @@ CAS and recovery:
 Every case field is in the document, target_envs included. A field left out
 of an existing case is refused when saving would reset its stored value.
 
+Verify on production by default. A case naming an environment that does not
+declare role.production true (stage) sets stage_reason to
+creates_or_destroys_data or changes_infrastructure; otherwise the save refuses
+with stage_reason_required.
+
 Machine-run cases declare host_baselines, starting_state "inherit" (never the
 first case), or "as_is" with a starting_state_reason.
 
