@@ -16,6 +16,7 @@ from .session_reclaim_activity import (
 from .session_cleanup_holdings import (
     active_holding_sessions,
     active_work_claim_sessions,
+    session_has_active_work_claim,
 )
 from .schema_common import _get_columns as _schema_get_columns
 from .session_staleness import activity_is_stale
@@ -159,14 +160,18 @@ def clean_stale_harness_sessions(
         lock_session_rows_for_claim_lifecycle(conn, (sid,))
         row = reclaim_facts(conn, [{"session_id": sid}])[0]
         has_active_holdings = row["has_active_holdings"]
-        recheck = classify_reclaimable(
-            conn,
-            sid,
-            scope=SCOPE_SESSION_CLEANUP,
-            base_ttl_minutes=stale_threshold_minutes,
-            overrides=executor_ttl_overrides,
-            progress_threshold_minutes=progress_threshold_minutes,
-        )
+        row["holds_work_claim"] = session_has_active_work_claim(conn, sid)
+        if row["holds_work_claim"]:
+            recheck = automatic_reclaim(row, **options)
+        else:
+            recheck = classify_reclaimable(
+                conn,
+                sid,
+                scope=SCOPE_SESSION_CLEANUP,
+                base_ttl_minutes=stale_threshold_minutes,
+                overrides=executor_ttl_overrides,
+                progress_threshold_minutes=progress_threshold_minutes,
+            )
         if not recheck.is_reclaimable:
             skipped_between_turns.append(
                 {**entry, "reason": recheck.reason, "recheck": True}
