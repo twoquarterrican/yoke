@@ -133,7 +133,10 @@ Serving-API self-deploy refusal routes to the control-plane operator with the
 named recovery. Follow the project's executor/watcher to actual success.
 Next: [close-out.md](close-out.md).
 
-Before recording a landing, the merge boundary fetches the remote default
+The observer atomically saves current PR identity with landing stamps before
+notifying the holder. Worker closeout still records results and verification
+and enriches that same receipt; see [landing ownership](../../../../.yoke/docs/reference/merge-queue-landings.md).
+During worker closeout, the merge boundary fetches the remote default
 branch and requires it to contain the exact candidate commit. The recorded
 merge SHA is the item's own PR merge on that fetched branch's first-parent
 history, never a queue batch's train tip. Local merges record the first carrying merge or the
