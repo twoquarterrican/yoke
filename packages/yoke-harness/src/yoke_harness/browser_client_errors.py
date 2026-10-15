@@ -1,6 +1,7 @@
 """Action-safe, bounded browser daemon failure diagnostics."""
 
 import json
+from urllib.parse import urlsplit
 
 from yoke_cli.transport.bounded_json_http import (
     BoundedJsonHttpDeadlineError,
@@ -9,8 +10,20 @@ from yoke_cli.transport.bounded_json_http import (
 )
 
 
-def daemon_failure_message(error: Exception, *, token: str) -> str:
+def daemon_failure_message(
+    error: Exception, *, token: str, endpoint: str, pid: int
+) -> str:
     """Keep the scrubbed daemon reason without replaying an uncertain action."""
+    try:
+        url = urlsplit(endpoint)
+        endpoint = url._replace(
+            netloc=url.netloc.rsplit("@", 1)[-1], query="", fragment=""
+        ).geturl()
+    except ValueError:
+        endpoint = "<invalid endpoint>"
+    context = safe_diagnostic_text(
+        f"endpoint={endpoint}, pid={pid}", sensitive_values=(token,), limit_chars=160
+    )
     detail = str(error)
     reason = "browser_daemon_request_failed"
     if isinstance(error, BoundedJsonHttpStatusError):
@@ -21,7 +34,7 @@ def daemon_failure_message(error: Exception, *, token: str) -> str:
         reason = "browser_daemon_response_timeout"
     detail = safe_diagnostic_text(detail, sensitive_values=(token,))
     return (
-        f"{reason}: daemon request failed: {detail}. "
+        f"{reason}: daemon request failed ({context}): {detail}. "
         "The action may have completed; inspect the existing page and retained "
         "evidence before recovery. Do not replay a submit blindly. "
         "Check `yoke qa browser status` for daemon health."

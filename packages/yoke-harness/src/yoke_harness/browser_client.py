@@ -128,7 +128,11 @@ def daemon_request(
             opener=urlopen,
         )
     except BoundedJsonHttpError as exc:
-        raise RuntimeError(daemon_failure_message(exc, token=selected.token)) from None
+        raise RuntimeError(
+            daemon_failure_message(
+                exc, token=selected.token, endpoint=request_url, pid=selected.pid
+            )
+        ) from None
     payload = response.payload if response.payload is not None else {}
     if not isinstance(payload, dict):
         raise RuntimeError("daemon request failed: response is not a JSON object")
