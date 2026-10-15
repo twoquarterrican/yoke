@@ -141,7 +141,9 @@ def test_unproven_registration_stays(installed, evidence):
     if evidence == "missing":
         del manifest[owned_cleanup.REGISTRATION_KEY]
     elif evidence == "edited":
-        manifest[owned_cleanup.REGISTRATION_KEY]["entry"]["project_id"] = 99
+        payload = read_json(config)
+        payload["projects"][0]["checkout"] += " "
+        config.write_text(json.dumps(payload))
     else:
         manifest[owned_cleanup.REGISTRATION_KEY]["config"] += ".other"
     files.write_manifest(root, manifest)

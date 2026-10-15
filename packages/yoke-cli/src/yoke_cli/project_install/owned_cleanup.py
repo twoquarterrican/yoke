@@ -73,8 +73,8 @@ def _cleanup(root: Path, manifest: dict, *, path=None) -> dict:
     record = manifest.get(REGISTRATION_KEY)
     exact = [
         entry
-        for entry in payload.get("projects", [])
-        if Path(entry["checkout"]).expanduser().resolve() == root
+        for entry, normalized in zip(payload.get("projects", []), projects, strict=True)
+        if Path(normalized["checkout"]).expanduser().resolve() == root
     ]
     if reason:
         registration = _result("preserved", reason)
