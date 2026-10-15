@@ -36,6 +36,7 @@ def failure_handoff_message(
     return (
         f"Deployment run {run_id} stage {stage!r} has failed item QA "
         f"requirement(s) {failed} for {item_ref}; recovery: `yoke qa plan run --help`."
+        " Classify the failure and start rework or record its blocker."
     )
 
 

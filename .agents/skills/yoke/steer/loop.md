@@ -166,6 +166,8 @@ Unheld rework follows worker-launch's acquire/transition recipe, fixes the
 same item, re-verifies/re-lands/re-enters release. Read
 [release-batches.md](release-batches.md) before composition/execution.
 
+After a QA failure, verify the owner started rework or recorded a concrete blocker.
+
 ## 5. Preserve current snapshot and verified reminders
 
 On cold-start refresh, do not copy historical status sections into the current

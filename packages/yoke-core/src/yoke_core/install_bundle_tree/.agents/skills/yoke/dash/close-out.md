@@ -106,7 +106,7 @@ and fresh selected-flow delivery. No prescribed stage reset or discard.
 Already-closed/no-release-wait mismatch preserves the lane and names refusal;
 the command does not clean or declare corrections delivered.
 
-For steering-requested rework, refresh the exact pin. Verify REWORK_STAGE
+For required rework, refresh the exact pin. Verify REWORK_STAGE
 exists, precedes LIVE_STAGE and belongs to Dash's interval.
 Landing released the item-owned path claims. Before the rework transition or
 any lane edits, register the complete fresh touch set through
@@ -116,7 +116,7 @@ Backward rework need not have a forward transition edge; ordinary claim,
 frozen-item, source and target checks remain:
 
 ```text
-yoke lifecycle transition ITEM --from LIVE_STAGE --to REWORK_STAGE --reason "steering rework: <correction>"
+yoke lifecycle transition ITEM --from LIVE_STAGE --to REWORK_STAGE --reason "required rework: <correction>"
 ```
 
 Correct the same item, rerun evidence, re-land, reenter wait. Old proof does not

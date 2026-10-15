@@ -18,6 +18,8 @@ original scoped command plus `--resume-execution-id ID`; follow
 [check-in recovery](../qa-platform/standalone-plans.md#recover-a-lost-check-in-response)
 before any host reset or one-shot action replay. An unknown reply is not failure.
 
+After failed QA, classify and act: product defect -> return to implementation; setup failure -> record the blocker; unclear cause -> investigate now.
+
 ## Testing
 
 - **No hardcoded drifting IDs in tests.** Tests must never contain literal `PREFIX-N`-style work item IDs that drift over time. Use variables, dynamically generated values, or pattern matchers instead.
