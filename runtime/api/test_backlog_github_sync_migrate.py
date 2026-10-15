@@ -1,8 +1,4 @@
-"""Coverage for ``migrate_issue_to_repo`` — cross-repo issue migration.
-
-Tests mock the typed REST surface directly:
-``yoke_core.domain.backlog_github_repo_migration.github_rest.*``.
-"""
+"""Cross-repo issue migration coverage through the typed GitHub REST surface."""
 
 from __future__ import annotations
 
@@ -16,7 +12,6 @@ from runtime.api.backlog_github_sync_test_helpers import (
 from runtime.api.conftest import insert_item
 from yoke_core.domain import backlog_github_sync, github_rest
 from yoke_core.domain.project_github_auth import ProjectGithubAuth
-
 
 _REPO_MIG = "yoke_core.domain.backlog_github_repo_migration.github_rest"
 _AUTH = "yoke_core.domain.backlog_github_repo_migration.resolve_project_github_auth"
@@ -119,12 +114,14 @@ class TestMigrateIssueToRepo:
 
         assert rc == 0
         output = stdout.getvalue()
-        assert "[migrate] Created #555 in org/externalwebapp" in output
+        assert "Created #555 in org/externalwebapp: https://" in output
         assert "[migrate] Updated DB: YOK-90 github_issue = #555" in output
         assert "[migrate] Deleted #200 from org/archive" in output
         assert "[migrate] YOK-90: migration complete" in output
 
-        gh_issue = db.execute("SELECT github_issue FROM items WHERE id = 90").fetchone()[0]
+        gh_issue = db.execute(
+            "SELECT github_issue FROM items WHERE id = 90"
+        ).fetchone()[0]
         assert gh_issue == "#555"
 
         create.assert_called_once()
@@ -133,14 +130,17 @@ class TestMigrateIssueToRepo:
         assert list_comments.call_args.kwargs["project"] == "archive"
         # Source open → new state stays open (no close-after-create call);
         # only the close-source step closes the source issue.
-        close_calls = [c for c in set_state.call_args_list if c.kwargs.get("state") == "closed"]
+        close_calls = [
+            c for c in set_state.call_args_list if c.kwargs.get("state") == "closed"
+        ]
         assert len(close_calls) == 1
         assert close_calls[0].kwargs["project"] == "archive"
         delete_issue.assert_called_once()
         assert delete_issue.call_args.kwargs["project"] == "archive"
         # Forward comment on source.
         assert any(
-            c.kwargs.get("project") == "archive" and "Migrated to" in c.kwargs.get("body", "")
+            c.kwargs.get("project") == "archive"
+            and "Migrated to" in c.kwargs.get("body", "")
             for c in post_comment.call_args_list
         )
         db.close()
@@ -253,7 +253,9 @@ class TestMigrateIssueToRepo:
         assert rc == 0
         assert "[migrate] Closed #557 (matching source state)" in stdout.getvalue()
         # Two set_issue_state(state="closed") calls: one for new, one for source.
-        close_calls = [c for c in set_state.call_args_list if c.kwargs.get("state") == "closed"]
+        close_calls = [
+            c for c in set_state.call_args_list if c.kwargs.get("state") == "closed"
+        ]
         assert len(close_calls) == 2
         db.close()
 
@@ -305,7 +307,9 @@ class TestMigrateIssueToRepo:
             ),
             patch(
                 f"{_REPO_MIG}.create_issue",
-                side_effect=github_rest.RestTransportError("permission denied", status=403),
+                side_effect=github_rest.RestTransportError(
+                    "permission denied", status=403
+                ),
             ),
         ):
             rc = backlog_github_sync.migrate_issue_to_repo(

@@ -185,7 +185,11 @@ def migrate_issue_to_repo(
             file=stderr,
         )
         return 1
-    print(f"[migrate] Created #{new_issue_num} in {target_repo}", file=stdout)
+    print(
+        f"[migrate] Created #{new_issue_num} in {target_repo}: "
+        f"{created.html_url or f'#{new_issue_num}'}",
+        file=stdout,
+    )
 
     # 3. Copy comments in chronological order.
     comments = _list_issue_comments(project=source_project, number=old_number)

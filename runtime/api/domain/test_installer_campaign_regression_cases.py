@@ -231,3 +231,43 @@ def test_install_health_scripted_failures_remain_diagnosed(
         {"scenario": scenario},
     )
     assert "diagnosed recovery verified" in capsys.readouterr().out
+
+
+def test_issue_sync_probe_checks_installed_value_and_permission_refusal(
+    monkeypatch, capsys
+):
+    import json
+    from yoke_core.domain.installer_campaign_issue_sync_cases import (
+        ISSUE_SYNC_DEFAULT_SCRIPT,
+    )
+
+    calls = []
+
+    def run(argv, **kwargs):
+        calls.append(argv)
+        assert argv[0] == "fixture-yoke"
+        if "create" in argv:
+            return CompletedProcess(argv, 0, stdout=json.dumps({"success": True}))
+        if "update" in argv:
+            return CompletedProcess(
+                argv,
+                1,
+                stdout=json.dumps(
+                    {
+                        "success": False,
+                        "error": {"message": "active, verified binding required"},
+                    }
+                ),
+            )
+        assert argv[-3:] == ["--field", "github_sync_mode", "--json"]
+        return CompletedProcess(
+            argv,
+            0,
+            stdout=json.dumps({"success": True, "result": {"value": "disabled"}}),
+        )
+
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.setattr(sys, "argv", ["probe", "fixture-yoke"])
+    exec(compile(ISSUE_SYNC_DEFAULT_SCRIPT, "issue-sync-probe", "exec"), {})
+    assert len(calls) == 4
+    assert "deliberate unbound enable refused" in capsys.readouterr().out

@@ -18,55 +18,42 @@ from runtime.api.backlog_github_sync_test_helpers import (
     make_db as _make_db,
 )
 from runtime.api.conftest import insert_epic_task, insert_item
+
 # Import the umbrella module FIRST so its transitive re-export chain
 # completes before any sibling-specific submodule attempts to import it.
 from yoke_core.domain import backlog_github_sync  # noqa: I001
-from yoke_core.domain import (
-    backlog_github_body_budget as body_budget,
-    backlog_github_item_create as item_create,
-    github_rest,
+from yoke_core.domain import backlog_github_item_create as item_create
+
+
+from runtime.api.backlog_github_sync_test_helpers import (
+    ITEM_CREATE_PATCH as _CREATE_PATCH,
+    ITEM_DEDUP_PATCH as _DEDUP_PATCH,
+    fake_issue as _fake_issue,
+    item_auth_resolver as _ok_resolver,
 )
-from yoke_core.domain.project_github_auth import (
-    MissingRepoBinding,
-    ProjectGithubAuth,
-)
-
-
-_DEDUP_PATCH = "yoke_core.domain.github_dedup.github_rest.list_issues"
-_CREATE_PATCH = "yoke_core.domain.backlog_github_item_create.github_rest.create_issue"
-
-
-def _ok_resolver(*args, **kwargs):
-    proj = kwargs.get("project") or (args[0] if args else "externalwebapp")
-    return ProjectGithubAuth(
-        project=proj, repo="org/externalwebapp", token="ghs_fake",
-    )
-
-
-def _fake_issue(
-    number: int = 999,
-    title: str = "title",
-    html_url: str | None = None,
-) -> github_rest.Issue:
-    return github_rest.Issue(
-        number=number, title=title, state="OPEN",
-        html_url=(
-            f"https://github.com/org/externalwebapp/issues/{number}"
-            if html_url is None else html_url
-        ),
-    )
 
 
 class TestSyncItem:
     def test_already_synced_updates_labels_and_body(self):
         db = _make_db()
-        insert_item(db, id=20, workflow_id="issue", status="idea", project="externalwebapp", github_issue="#100")
+        insert_item(
+            db,
+            id=20,
+            workflow_id="issue",
+            status="idea",
+            project="externalwebapp",
+            github_issue="#100",
+        )
         stdout = io.StringIO()
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch(f"{GH_PATCH}.sync_labels", return_value=0) as mock_labels, patch(
-            f"{GH_PATCH}.sync_body", return_value=0
-        ) as mock_body:
+        with (
+            patch.object(
+                item_create,
+                "resolve_project_github_auth",
+                side_effect=_ok_resolver,
+            ),
+            patch(f"{GH_PATCH}.sync_labels", return_value=0) as mock_labels,
+            patch(f"{GH_PATCH}.sync_body", return_value=0) as mock_body,
+        ):
             rc = backlog_github_sync.sync_item("EXT-20", conn=db, stdout=stdout)
         assert rc == 0
         mock_labels.assert_called_once()
@@ -76,21 +63,35 @@ class TestSyncItem:
 
     def test_already_synced_epic_also_syncs_child_tasks(self):
         db = _make_db()
-        insert_item(db, id=21, workflow_id="epic", status="implementing", project="externalwebapp", github_issue="#100")
+        insert_item(
+            db,
+            id=21,
+            workflow_id="epic",
+            status="implementing",
+            project="externalwebapp",
+            github_issue="#100",
+        )
         insert_epic_task(db, epic_id=21, task_num=1, title="Task 1", status="planned")
         stdout = io.StringIO()
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch(f"{GH_PATCH}.sync_labels", return_value=0) as mock_labels, patch(
-            f"{GH_PATCH}.sync_body", return_value=0
-        ) as mock_body, patch(
-            f"{GH_PATCH}.epic_task_sync.sync_epic_tasks", return_value=0
-        ) as mock_task_sync:
+        with (
+            patch.object(
+                item_create,
+                "resolve_project_github_auth",
+                side_effect=_ok_resolver,
+            ),
+            patch(f"{GH_PATCH}.sync_labels", return_value=0) as mock_labels,
+            patch(f"{GH_PATCH}.sync_body", return_value=0) as mock_body,
+            patch(
+                f"{GH_PATCH}.epic_task_sync.sync_epic_tasks", return_value=0
+            ) as mock_task_sync,
+        ):
             rc = backlog_github_sync.sync_item("EXT-21", conn=db, stdout=stdout)
         assert rc == 0
         mock_labels.assert_called_once()
         mock_body.assert_called_once()
-        mock_task_sync.assert_called_once_with("EXT-21", conn=db, stdout=stdout, stderr=ANY)
+        mock_task_sync.assert_called_once_with(
+            "EXT-21", conn=db, stdout=stdout, stderr=ANY
+        )
         db.close()
 
     def test_creates_new_issue(self):
@@ -106,23 +107,37 @@ class TestSyncItem:
         )
         stdout = io.StringIO()
 
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch(f"{GH_PATCH}._github_auth_available", return_value=True), patch(
-            _DEDUP_PATCH, return_value=[],
-        ), patch(
-            _CREATE_PATCH, return_value=_fake_issue(number=999),
-        ), patch(
-            "yoke_core.domain.backlog_github_item_create._regenerate_md",
-        ), patch(
-            "yoke_core.domain.backlog_github_item_create._ensure_label",
+        with (
+            patch.object(
+                item_create,
+                "resolve_project_github_auth",
+                side_effect=_ok_resolver,
+            ),
+            patch(f"{GH_PATCH}._github_auth_available", return_value=True),
+            patch(
+                _DEDUP_PATCH,
+                return_value=[],
+            ),
+            patch(
+                _CREATE_PATCH,
+                return_value=_fake_issue(number=999),
+            ),
+            patch(
+                "yoke_core.domain.backlog_github_item_create._regenerate_md",
+            ),
+            patch(
+                "yoke_core.domain.backlog_github_item_create._ensure_label",
+            ),
         ):
             rc = backlog_github_sync.sync_item("EXT-20", conn=db, stdout=stdout)
 
         assert rc == 0
-        gh_issue = db.execute("SELECT github_issue FROM items WHERE id = 20").fetchone()[0]
+        gh_issue = db.execute(
+            "SELECT github_issue FROM items WHERE id = 20"
+        ).fetchone()[0]
         assert gh_issue == "#999"
-        assert "Synced: EXT-20 → GitHub issue #999" in stdout.getvalue()
+        notice = "Synced: EXT-20 → GitHub issue #999: "
+        assert notice + _fake_issue(number=999).html_url in stdout.getvalue()
         db.close()
 
     def test_create_without_html_url_prints_host_neutral_reference(self):
@@ -137,17 +152,27 @@ class TestSyncItem:
         )
         stdout = io.StringIO()
 
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch(f"{GH_PATCH}._github_auth_available", return_value=True), patch(
-            _DEDUP_PATCH, return_value=[],
-        ), patch(
-            _CREATE_PATCH,
-            return_value=_fake_issue(number=999, html_url=""),
-        ), patch(
-            "yoke_core.domain.backlog_github_item_create._regenerate_md",
-        ), patch(
-            "yoke_core.domain.backlog_github_item_create._ensure_label",
+        with (
+            patch.object(
+                item_create,
+                "resolve_project_github_auth",
+                side_effect=_ok_resolver,
+            ),
+            patch(f"{GH_PATCH}._github_auth_available", return_value=True),
+            patch(
+                _DEDUP_PATCH,
+                return_value=[],
+            ),
+            patch(
+                _CREATE_PATCH,
+                return_value=_fake_issue(number=999, html_url=""),
+            ),
+            patch(
+                "yoke_core.domain.backlog_github_item_create._regenerate_md",
+            ),
+            patch(
+                "yoke_core.domain.backlog_github_item_create._ensure_label",
+            ),
         ):
             rc = backlog_github_sync.sync_item("EXT-20", conn=db, stdout=stdout)
         assert rc == 0
@@ -170,25 +195,41 @@ class TestSyncItem:
         insert_epic_task(db, epic_id=22, task_num=1, title="Task 1", status="planned")
         stdout = io.StringIO()
 
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch(f"{GH_PATCH}._github_auth_available", return_value=True), patch(
-            _DEDUP_PATCH, return_value=[],
-        ), patch(
-            _CREATE_PATCH, return_value=_fake_issue(number=1001),
-        ), patch(
-            "yoke_core.domain.backlog_github_item_create._regenerate_md",
-        ), patch(
-            "yoke_core.domain.backlog_github_item_create._ensure_label",
-        ), patch(
-            f"{GH_PATCH}.epic_task_sync.sync_epic_tasks", return_value=0
-        ) as mock_task_sync:
+        with (
+            patch.object(
+                item_create,
+                "resolve_project_github_auth",
+                side_effect=_ok_resolver,
+            ),
+            patch(f"{GH_PATCH}._github_auth_available", return_value=True),
+            patch(
+                _DEDUP_PATCH,
+                return_value=[],
+            ),
+            patch(
+                _CREATE_PATCH,
+                return_value=_fake_issue(number=1001),
+            ),
+            patch(
+                "yoke_core.domain.backlog_github_item_create._regenerate_md",
+            ),
+            patch(
+                "yoke_core.domain.backlog_github_item_create._ensure_label",
+            ),
+            patch(
+                f"{GH_PATCH}.epic_task_sync.sync_epic_tasks", return_value=0
+            ) as mock_task_sync,
+        ):
             rc = backlog_github_sync.sync_item("EXT-22", conn=db, stdout=stdout)
 
         assert rc == 0
-        gh_issue = db.execute("SELECT github_issue FROM items WHERE id = 22").fetchone()[0]
+        gh_issue = db.execute(
+            "SELECT github_issue FROM items WHERE id = 22"
+        ).fetchone()[0]
         assert gh_issue == "#1001"
-        mock_task_sync.assert_called_once_with("EXT-22", conn=db, stdout=stdout, stderr=ANY)
+        mock_task_sync.assert_called_once_with(
+            "EXT-22", conn=db, stdout=stdout, stderr=ANY
+        )
         db.close()
 
     # Dedup behavior — exact-prefix reuse, fuzzy non-reuse, malformed-JSON
@@ -196,11 +237,18 @@ class TestSyncItem:
 
     def test_dry_run_skips(self):
         db = _make_db()
-        insert_item(db, id=20, workflow_id="issue", status="idea", project="externalwebapp")
+        insert_item(
+            db, id=20, workflow_id="issue", status="idea", project="externalwebapp"
+        )
         stdout = io.StringIO()
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch.object(backlog_github_sync, "_dry_run", return_value=True):
+        with (
+            patch.object(
+                item_create,
+                "resolve_project_github_auth",
+                side_effect=_ok_resolver,
+            ),
+            patch.object(backlog_github_sync, "_dry_run", return_value=True),
+        ):
             rc = backlog_github_sync.sync_item("EXT-20", conn=db, stdout=stdout)
         assert rc == 0
         assert "DRY-RUN" in stdout.getvalue()
@@ -238,16 +286,27 @@ class TestSyncItem:
         )
         stdout = io.StringIO()
 
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch(f"{GH_PATCH}._github_auth_available", return_value=True), patch(
-            _DEDUP_PATCH, return_value=[],
-        ), patch(
-            _CREATE_PATCH, return_value=_fake_issue(number=777),
-        ) as create_issue, patch(
-            "yoke_core.domain.backlog_github_item_create._regenerate_md",
-        ), patch(
-            "yoke_core.domain.backlog_github_item_create._ensure_label",
+        with (
+            patch.object(
+                item_create,
+                "resolve_project_github_auth",
+                side_effect=_ok_resolver,
+            ),
+            patch(f"{GH_PATCH}._github_auth_available", return_value=True),
+            patch(
+                _DEDUP_PATCH,
+                return_value=[],
+            ),
+            patch(
+                _CREATE_PATCH,
+                return_value=_fake_issue(number=777),
+            ) as create_issue,
+            patch(
+                "yoke_core.domain.backlog_github_item_create._regenerate_md",
+            ),
+            patch(
+                "yoke_core.domain.backlog_github_item_create._ensure_label",
+            ),
         ):
             rc = backlog_github_sync.sync_item("EXT-23", conn=db, stdout=stdout)
 
@@ -258,91 +317,4 @@ class TestSyncItem:
         assert "owner:sync-worker" in labels
         assert f"source:{local_human}" not in labels
         assert f"owner:{sync_worker}" not in labels
-        db.close()
-
-
-# ---------------------------------------------------------------------------
-# Regressions: create + reuse paths share compact-mirror contract
-# ---------------------------------------------------------------------------
-
-
-class TestSyncItemCompactMirror:
-    def test_create_uses_compact_mirror_for_oversized(self):
-        """Create path picks compact mirror when full body is
-        oversized; the body string passed to ``create_issue`` fits under the
-        budget."""
-        db = _make_db()
-        huge_spec = "a" * (body_budget.GITHUB_BODY_BUDGET_BYTES + 100)
-        insert_item(
-            db, id=30, workflow_id="issue", status="idea", project="externalwebapp",
-            priority="medium", spec=huge_spec,
-        )
-        stdout = io.StringIO()
-
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch(f"{GH_PATCH}._github_auth_available", return_value=True), patch(
-            _DEDUP_PATCH, return_value=[],
-        ), patch(
-            _CREATE_PATCH, return_value=_fake_issue(number=901),
-        ) as create_issue, patch(
-            "yoke_core.domain.backlog_github_item_create._regenerate_md",
-        ), patch(
-            "yoke_core.domain.backlog_github_item_create._ensure_label",
-        ):
-            rc = backlog_github_sync.sync_item("EXT-30", conn=db, stdout=stdout)
-
-        assert rc == 0
-        create_issue.assert_called_once()
-        body = create_issue.call_args.kwargs["body"]
-        assert len(body.encode("utf-8")) <= body_budget.GITHUB_BODY_BUDGET_BYTES
-        db.close()
-
-    def test_reuse_inherits_compact_mirror(self):
-        """Reuse path delegates body sync to ``sync_body`` which
-        owns the same body-budget contract."""
-        db = _make_db()
-        huge_spec = "a" * (body_budget.GITHUB_BODY_BUDGET_BYTES + 100)
-        insert_item(
-            db, id=31, workflow_id="issue", status="idea", project="externalwebapp",
-            github_issue="#205", spec=huge_spec,
-        )
-        stdout = io.StringIO()
-        # Mock sync_body so we only assert that the reuse path delegated
-        # to it; the compact-mirror behavior of sync_body is exercised in
-        # test_backlog_github_sync_body_title.
-        with patch.object(
-            item_create, "resolve_project_github_auth", side_effect=_ok_resolver,
-        ), patch(f"{GH_PATCH}.sync_labels", return_value=0), patch(
-            f"{GH_PATCH}.sync_body", return_value=0,
-        ) as mock_body:
-            rc = backlog_github_sync.sync_item("EXT-31", conn=db, stdout=stdout)
-
-        assert rc == 0
-        mock_body.assert_called_once()
-        db.close()
-
-    def test_auth_failure_short_circuits_create(self):
-        """``sync_item`` short-circuits on resolver error
-        before any dedup search, label seeding, or REST call."""
-        db = _make_db()
-        insert_item(
-            db, id=32, workflow_id="issue", status="idea", project="externalwebapp",
-            spec="body",
-        )
-        stderr = io.StringIO()
-
-        def raise_missing_binding(*a, **kw):
-            raise MissingRepoBinding("externalwebapp", "repository is not bound")
-
-        with patch.object(
-            item_create, "resolve_project_github_auth",
-            side_effect=raise_missing_binding,
-        ), patch(_DEDUP_PATCH) as dedup, patch(_CREATE_PATCH) as create_issue:
-            rc = backlog_github_sync.sync_item("EXT-32", conn=db, stderr=stderr)
-
-        assert rc == 1
-        dedup.assert_not_called()
-        create_issue.assert_not_called()
-        assert "MissingRepoBinding" in stderr.getvalue()
         db.close()

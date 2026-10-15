@@ -107,7 +107,7 @@ def should_store_project_github_binding(
 
 
 def github_sync_mode(github_adoption: Mapping[str, Any] | None) -> str:
-    """Stage onboarding safely; verified binding enables sync transactionally."""
+    """Leave issue mirroring off; repository adoption is a separate choice."""
     return GITHUB_SYNC_DISABLED
 
 

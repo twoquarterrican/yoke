@@ -58,21 +58,36 @@ GitHub issues at all:
 | `enabled`      | Backlog items and epic tasks mirror to GitHub issues. An explicit enable requires an active, verified GitHub App repository binding. |
 | `disabled`     | The backlog lives only in the Yoke DB. Every GitHub issue sync surface skips or refuses for the project. |
 
-New projects default to `disabled`. A legacy `NULL`, empty, or unrecognized
+New projects default to `disabled`. Terminal setup silently leaves issue sync
+off, with no issue-sync question. Connecting GitHub, binding a repository,
+publishing code and approving setup do not enable mirroring. Existing projects
+keep their saved mode when setup reuses their binding. A legacy `NULL`, empty, or unrecognized
 stored value also resolves to `disabled` and is normalized during schema
 initialization or by the repair command.
 
 Reader: `yoke_core.domain.projects_github_sync_mode`. The mode vocabulary
 is single-sourced in `yoke_contracts.project_contract.github_sync_mode`.
 
-Read and flip through the registered projects surface:
+Enable only when the person deliberately chooses to mirror backlog content.
+The App binding must be active and verified, with its required repository
+permissions (including Issues write); missing permissions refuse the update.
+Grant the missing App access and rebind before retrying. Public repositories
+also require `--allow-public-github-sync`.
+
+Read and change the project setting through the registered projects surface:
 
 ```bash
 yoke projects get --project <slug> --field github_sync_mode
+yoke projects update --slug <slug> --name <Name> --github-sync-mode enabled
 yoke projects update --slug <slug> --name <Name> --github-sync-mode disabled
 yoke projects github-sync-mode repair
 yoke projects github-sync-mode repair --apply
 ```
+
+Enabling permits subsequent syncs to file backlog items and tasks as issues;
+it does not file an issue itself. Each issue creation, including the first,
+returns a short notice and the GitHub issue link. A response without a URL
+reports the issue number instead of inventing a host.
 
 The repair command is a dry-run unless `--apply` is explicit. It finds
 projects with a legacy, empty, or unrecognized stored mode, enabled projects

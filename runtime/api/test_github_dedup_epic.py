@@ -232,6 +232,7 @@ class TestSyncEpicTasksDedup:
         assert row[0] == "#4001"
         assert "found existing github issue" not in stdout.getvalue().lower()
         assert "#3543" not in stdout.getvalue()
+        assert "GitHub issue filed: https://" in stdout.getvalue()
 
     def test_parent_path_reuses_full_content_match(self, epic_db):
         """Epic parent path, full-content reuse: when the parent epic has

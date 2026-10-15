@@ -162,3 +162,25 @@ These injected cases preserve personal sign-in and host configuration; the
 exploration mission separately proves real readiness and received context.
 Refresh the saved plan from this source as above, then rerun the campaign after
 the candidate is released. Keep unperformed live cases marked unproven.
+
+## Issue-sync opt-in proof
+
+The scripted `issue-sync-default` case creates an isolated local project and
+proves that enabling without verified App access refuses and leaves sync off.
+After a fresh operator GO, the existing installer exploration must also use
+its approved disposable repository to prove these installed paths:
+
+- Complete terminal setup with active App binding; observe no issue-sync
+  question, disabled mode and no filed issues.
+- In agent-led project setup, observe the relevant explanation and separate
+  opt-in offer; declining keeps sync off. Machine-only and no-GitHub setup
+  make no offer.
+- Deliberately enable with missing Issues write permission; retain the refusal
+  and recovery. Grant access, rebind and enable explicitly through each project
+  update entry point. A public repository also needs its explicit override.
+- Sync one item; retain its short creation notice and returned issue link.
+  Repeating sync updates the saved issue. Preserve existing matching behavior.
+
+Keep these obligations with the current campaign/exploration owners and saved
+execution. Source sync prepares future definitions; it never starts a fresh run
+or supplies the operator GO. Retain missing fixture or approval as unproven.

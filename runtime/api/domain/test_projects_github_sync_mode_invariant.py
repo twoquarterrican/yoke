@@ -171,3 +171,35 @@ def test_omitted_update_does_not_silently_repair_existing_mode(project_db):
     result = cmd_upsert(slug="yoke", name="Yoke Renamed", mode="update")
 
     assert result["project"]["github_sync_mode"] == "enabled"
+
+
+@pytest.mark.parametrize("writer", ["upsert", "update"])
+@pytest.mark.parametrize("permission", ["issues", "contents", "pull_requests"])
+def test_deliberate_enable_refuses_missing_app_permissions(
+    project_db, writer, permission
+):
+    _bind_externalwebapp()
+    from yoke_core.domain import json_helper
+
+    permissions = dict(_verified().permissions)
+    permissions[permission] = "read"
+    conn = pg_testdb.connect_test_database(project_db)
+    try:
+        conn.execute(
+            "UPDATE github_app_installations SET permissions=%s WHERE installation_id=%s",
+            (json_helper.dumps_compact(permissions), "8801"),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    with pytest.raises(GithubSyncModeError, match="active, verified"):
+        if writer == "upsert":
+            cmd_upsert(
+                slug="externalwebapp",
+                name="ExternalWebapp",
+                github_sync_mode="enabled",
+                mode="update",
+            )
+        else:
+            cmd_update("externalwebapp", "github_sync_mode", "enabled")
+    assert cmd_get("externalwebapp", "github_sync_mode") == "disabled"

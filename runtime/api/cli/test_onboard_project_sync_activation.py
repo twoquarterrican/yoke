@@ -14,18 +14,20 @@ from yoke_cli.config import project_onboard_progress
     [
         (
             "active",
-            ["projects.github_binding.bind", "projects.update"],
-            "enabled",
+            ["projects.github_binding.bind"],
+            "disabled",
         ),
         ("pending", ["projects.github_binding.bind"], "disabled"),
     ],
 )
-def test_app_binding_enables_issue_sync_only_after_active_verification(
+@pytest.mark.parametrize("persist_sync_mode", [True, False])
+def test_app_binding_never_opts_into_issue_sync(
     tmp_path: Path,
     monkeypatch,
     binding_status: str,
     expected_functions: list[str],
     expected_mode: str,
+    persist_sync_mode: bool,
 ) -> None:
     calls: list[tuple[str, dict]] = []
     monkeypatch.setattr(
@@ -67,14 +69,8 @@ def test_app_binding_enables_issue_sync_only_after_active_verification(
         {"id": 41, "slug": "demo", "name": "Demo"},
         {"choice": "app-binding", "github_repo": "owner/demo"},
         tmp_path / "config.json",
+        persist_sync_mode=persist_sync_mode,
     )
 
     assert [function_id for function_id, _payload in calls] == expected_functions
-    if binding_status == "active":
-        assert calls[1][1] == {
-            "project_id": 41,
-            "slug": "demo",
-            "name": "Demo",
-            "github_sync_mode": "enabled",
-        }
     assert report["mode"] == expected_mode

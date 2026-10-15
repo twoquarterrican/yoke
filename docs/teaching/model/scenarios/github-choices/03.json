@@ -1,15 +1,15 @@
 {
  "id": "03",
  "title": "Issue mirroring stays quietly off in the TUI",
- "status": "draft-copy",
+ "status": "observed",
  "audience": "both",
  "when": "No TUI question; agent-led explanation only when relevant",
- "need": "GitHub issue synchronization is another independent setting. The interactive installer silently leaves it off; it can be changed later. In agent-led setup, explain the effect and ask before enabling issue sync.",
- "disclosure": "planned cue",
- "surface": "Accepted review amendment to FIRST-USER 10",
- "gap": "The saved plan still contains the older TUI question. This map applies the accepted conversation correction. Exact title/body adoption and explicit link repair have candidate implementation; broader duplicate detection remains deferred.",
- "review": "Pending exact recipe proof.",
+ "need": "Issue mirroring is independent of GitHub access. Setup binds repositories without enabling sync and preserves saved modes. Terminal setup adds no sync question. Agents offer a separate opt-in only when useful, using the project setting after setup. Deliberate enables require verified App permissions; creation returns a short notice and issue link.",
+ "disclosure": "Before deliberate enable; after successful issue creation",
+ "surface": "Agent project GitHub guidance and GitHub sync reference",
+ "gap": "Installed campaign proof is held pending operator approval; stronger duplicate detection remains deferred.",
+ "review": "Source regression coverage; installed candidate proof remains pending.",
  "plan_notes": ["FIRST-USER 10", "FIRST-USER 2"],
- "sources": ["docs/public/reference/github-sync.md"],
+ "sources": ["docs/public/reference/github-sync.md", "docs/public/guides/agent-setup.md", "packages/yoke-cli/src/yoke_cli/config/project_onboard_progress.py", "runtime/api/cli/test_onboard_project_sync_activation.py", "runtime/api/domain/test_projects_github_sync_mode_invariant.py"],
  "position": 3
 }
