@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yoke_core.domain.qa_plan_management import QaPlanError
+from yoke_core.domain.schema_read_scope import composition_operation
 
 
 class QaCasesNotSelectedError(QaPlanError):
@@ -22,6 +23,7 @@ class QaCasesNotSelectedError(QaPlanError):
     """
 
 
+@composition_operation
 def materialize_deployment_qa_stage(
     conn: Any,
     *,
@@ -78,7 +80,16 @@ def materialize_deployment_qa_stage(
             "SELECT id FROM deployment_runs WHERE id=%s FOR UPDATE",
             (deployment_run_id,),
         )
-        shared = shareable_snapshots(conn, subject, target, snapshots)
+        from yoke_core.domain.deployment_qa_materialization_projection import (
+            MaterializationProjection,
+        )
+
+        projection = MaterializationProjection(
+            conn, deployment_run_id, deployment_stage
+        )
+        shared = shareable_snapshots(
+            conn, subject, target, snapshots, projection=projection
+        )
         if not shared:
             result = materialize_subject(
                 conn,
@@ -116,6 +127,7 @@ def materialize_deployment_qa_stage(
                         *results[-1]["created_requirement_ids"],
                         *results[-1]["existing_requirement_ids"],
                     ],
+                    projection=projection,
                 )
             private = [r for r in admitted if r.get("plan_id") is None]
             private_snapshots = [

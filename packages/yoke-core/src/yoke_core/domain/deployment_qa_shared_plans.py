@@ -97,17 +97,16 @@ def _formed_group_plan_ids(conn: Any, run_id: str, stage_name: str) -> set[int]:
 
 
 def shareable_snapshots(
-    conn: Any, subject: Mapping, target: Mapping, snapshots: list[dict]
+    conn: Any,
+    subject: Mapping,
+    target: Mapping,
+    snapshots: list[dict],
+    *,
+    projection=None,
 ) -> list[dict]:
-    """Share a member attachment only when another run member attaches it too.
-
-    Members of one run and stage resolve the same candidate source and stage
-    environment, so a plan two members attach here is one plan, revision and
-    target. A plan only this member attaches stays its private copy and keeps
-    its member, unless its shared group already formed: that group stays
-    shared until its last attaching member leaves. Flow-defined plans keep
-    their declared scope.
-    """
+    """Share attached plans with peers, or keep an already formed group shared."""
+    if projection is not None:
+        return projection.shareable(subject, target, snapshots)
     from yoke_core.domain.qa_deployment_member_attached_plans import (
         stage_environment_id_for_plan_selection,
     )
@@ -129,7 +128,9 @@ def shareable_snapshots(
     return [snapshot for snapshot in snapshots if int(snapshot["plan"]["id"]) in ids]
 
 
-def member_plan_subjects(conn: Any, subject: Mapping, target: Mapping) -> list[dict]:
+def member_plan_subjects(
+    conn: Any, subject: Mapping, target: Mapping, *, projection=None
+) -> list[dict]:
     """The plan verdicts this member owes, without other members' plans."""
     if subject.get("member_item_id") is None:
         return []
@@ -148,7 +149,9 @@ def member_plan_subjects(conn: Any, subject: Mapping, target: Mapping) -> list[d
     )
     return [
         shared_subject(subject, target, snapshot)
-        for snapshot in shareable_snapshots(conn, subject, target, snapshots)
+        for snapshot in shareable_snapshots(
+            conn, subject, target, snapshots, projection=projection
+        )
     ]
 
 
