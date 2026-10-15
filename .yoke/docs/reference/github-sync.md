@@ -110,9 +110,27 @@ yoke merge item PREFIX-N --result "<result>" --verification "<passing proof>"
 The receipt preserves the landing identity and records the observed push
 workflow URL, conclusion and evaluated head SHA in its check evidence.
 
+Local task graphs and dispatch chains do not depend on issue mirroring. The
+planning sync and its registered retry generate local queues in either mode,
+before optional GitHub publication. A disabled project needs no GitHub auth
+and makes no remote issue writes.
+
+```text
+yoke items github-sync PREFIX-N
+yoke workflow-item epic-dispatch-chain list --epic PREFIX-N --json
+```
+
+The work holder retries this command for an already-planned graph with missing
+chains, then checks the recorded queues. Existing chains, lane assignments and
+queue progress remain intact; another live holder must run its own retry.
+Scope finalization, dependency gates, lane activation and delivery gates still
+apply. Repair requires a serving build carrying local chain generation; if a
+retry reports success but chains stay absent, ask the control-plane operator to
+admit that build before retrying. Do not change the project's sync mode.
+
 ## Disabled semantics
 
-- **Item flows skip silently-and-logged.** Sync helpers invoked from item
+- **GitHub work skips with a mode notice.** GitHub helpers invoked from item
   lifecycle flows (create, body/title sync, status comments, labels,
   close/reopen, done closeout, epic-task sync, progress notes) return
   success and print one canonical mode-language line
@@ -120,6 +138,7 @@ workflow URL, conclusion and evaluated head SHA in its check evidence.
   github_sync_mode=disabled ...`). The flow continues; nothing
   reaches GitHub. A disabled project resolves no GitHub App token — the
   skip fires before auth resolution and is never reported as an auth failure.
+  Local task-scope and lane validation can still refuse chain generation.
 - **Structured-field writes with `options.sync_github_body=true` no-op
   cleanly.** The body-sync step reports success (no `sync_warning`); the
   DB write proceeds as normal.

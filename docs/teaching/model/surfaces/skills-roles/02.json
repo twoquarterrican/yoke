@@ -3,7 +3,7 @@
  "title": "An assigned worker gets the exact project/item/task, lane, dependencies and interfaces.",
  "status": "draft-copy",
  "form": "State",
- "verification": "No delivery proof attached.",
+ "verification": "Source teaching separates local task/chain readiness from optional GitHub issues; exact deployed recipe and delivery proof remain required.",
  "topics": ["agents/roles", "planning/tasks", "coordination/lanes", "planning/dependencies"],
  "plan_refs": ["FIRST-USER.24", "FIRST-USER.40", "FIRST-USER.41"],
  "position": 1

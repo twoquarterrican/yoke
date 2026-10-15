@@ -11,7 +11,7 @@ from yoke_contracts.github_app_installation_permissions import (
 from yoke_core.domain.epic_task_sync_github_orchestrator_body import (
     scope_finalization_error,
 )
-from yoke_core.domain.epic_task_sync_local import _generate_dispatch_chains
+from yoke_core.domain.epic_task_sync_local import prepare_dispatch_chains
 from yoke_core.domain.project_github_auth import (
     ProjectGithubAuthError,
     repair_command_hint,
@@ -35,6 +35,10 @@ def preflight_sync(
     """Return an exit code when sync cannot proceed, otherwise ``None``."""
     if scope_finalization_error(conn, int(epic_name), stderr):
         return 1
+    if not prepare_dispatch_chains(
+        conn, epic_name=epic_name, stdout=stdout, stderr=stderr
+    ):
+        return 1
     if not github_sync_enabled(project, conn=conn):
         print(github_sync_disabled_notice(project, "epic-task-sync"), file=stdout)
         return 0
@@ -52,22 +56,6 @@ def preflight_sync(
     return None
 
 
-def load_task_rows(conn: Any, *, placeholder: str, epic_name: str):
-    """Load the durable task state needed to create or link issues."""
-    return conn.execute(
-        f"""
-        SELECT t.id, t.epic_id, t.task_num, COALESCE(t.title, ''),
-               COALESCE(iw.branch, ''), COALESCE(t.context_estimate, ''),
-               COALESCE(t.dependencies, ''), COALESCE(t.status, ''),
-               COALESCE(t.dispatch_attempts, 0)
-        FROM epic_tasks t LEFT JOIN item_worktrees iw ON iw.id=t.item_worktree_id
-        WHERE t.epic_id = {placeholder}
-        ORDER BY t.task_num ASC
-        """,
-        (epic_name,),
-    ).fetchall()
-
-
 def finalize_sync(
     *,
     dry_run: bool,
@@ -78,16 +66,14 @@ def finalize_sync(
     parent_item_id: int | None,
     conn: Any,
     stderr: TextIO,
-    repo_root: str,
     epic_name: str,
-    worktree_map: list[tuple[str, str]],
     stdout: TextIO,
     created: int,
     skipped: int,
     failed_tasks: list[str],
     body_writer,
 ) -> int:
-    """Write fallback links, local dispatch chains, and the terminal summary."""
+    """Write fallback links and the terminal publication summary."""
     if not dry_run and not has_sub_issue and task_list_lines:
         body_writer(
             epic_issue_num=epic_issue_num,
@@ -96,14 +82,6 @@ def finalize_sync(
             parent_item_id=parent_item_id,
             conn=conn,
             stderr=stderr,
-        )
-    if repo_root:
-        _generate_dispatch_chains(
-            epic_name=epic_name,
-            worktree_map=worktree_map,
-            repo_root=repo_root,
-            conn=conn,
-            stdout=stdout,
         )
     print("", file=stdout)
     summary = (
