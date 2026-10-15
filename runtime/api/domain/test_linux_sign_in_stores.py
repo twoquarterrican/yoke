@@ -215,3 +215,59 @@ def test_chromium_that_does_not_quit_refuses_before_clearing(signed_in_home):
     assert result.evidence["recovery"] == "Close Chromium."
     assert host.archive_runs == 0
     assert (home / "settings").read_text() == "live"
+
+
+def test_quota_refusal_retains_probe_recovery_without_clearing_newer_store(
+    signed_in_home,
+):
+    from yoke_harness.baseline_harness_requests import harness_request
+
+    home, golden = signed_in_home
+    host = sealed_host(home, set(SIGN_IN_STORES))
+    run_other = host.run_command
+    record = harness_request(["/bin/claude"]).reply_rejection(
+        json.dumps(
+            {
+                "type": "assistant",
+                "error": "rate_limit",
+                "message": {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "You've hit your weekly limit private-account@example.com",
+                        }
+                    ]
+                },
+            }
+        ),
+        exit_code=1,
+    )
+    record["harness_exit_code"] = 1
+    claude_argv = next(
+        p["argv"] for p in SEALED_PROBES if p["name"] == "Claude real request"
+    )
+
+    def run_command(argv, timeout=None):
+        if argv == claude_argv:
+            return subprocess.CompletedProcess(
+                argv, PROBE_EXIT_CODES["probe_quota_exhausted"], json.dumps(record), ""
+            )
+        return run_other(argv, timeout=timeout)
+
+    host.run_command = run_command
+    before = {
+        relative: ((home / relative).read_bytes(), (home / relative).stat().st_mode)
+        for relative in (*SIGN_IN_STORES.values(), "settings")
+    }
+    result = archive_operation(host, "reset", str(golden))
+    assert not result.ok and result.error_code == SIGN_IN_NEWER_THAN_BASELINE
+    assert result.evidence["refused_entry"] == CLAUDE
+    assert "quota window" in result.evidence["probe_recovery"]
+    assert result.evidence["probe_recovery"] in result.evidence["recovery"]
+    assert "Sign in again" not in result.evidence["recovery"]
+    assert "private-account" not in json.dumps(result.evidence)
+    for relative, expected in before.items():
+        assert (
+            (home / relative).read_bytes(),
+            (home / relative).stat().st_mode,
+        ) == expected
