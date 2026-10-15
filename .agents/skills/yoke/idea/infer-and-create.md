@@ -33,7 +33,7 @@ route by id vocabulary.
 Initial Dash binding: read and follow [Dash's procedure](../dash/SKILL.md)
 internally so direct filing/execution is atomic. A served worktrees:none,
 delivery:merge_free definition supports the complete laneless shortcut
-`yoke task TITLE SPEC --execution-instructions-considered`.
+`yoke task TITLE SPEC --entry-surface harness_skill --execution-instructions-considered`.
 A refine-to-Blitz boundary links exactly one execution strategy document
 through strategy.execution.link; intake never copies its plan into body.
 
@@ -114,7 +114,10 @@ yoke items create "<title>" "$_workflow" --spec-file "$_spec_file" --entry-surfa
 ```
 
 `--stdin` reads the spec from a pipe instead; `--title-file PATH` reads the
-title only.
+title only. Skills own and pass `--entry-surface harness_skill`;
+Task/Dash commands default to `cli`. The flag does not authorize planned
+intake: this skill first sets session mode `idea`, and the pinned workflow
+must allow the surface.
 
 Include --deployment-flow only for a valid nonempty assignment; never none.
 Dry-run adds --dry-run and performs no later writes. Read the original receipt

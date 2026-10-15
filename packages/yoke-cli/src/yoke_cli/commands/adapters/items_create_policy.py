@@ -11,11 +11,7 @@ from yoke_cli.commands._helpers import usage_error
 from yoke_contracts.api.function_call import TargetRef
 
 IDEA_SESSION_MODE = "idea"
-ITEMS_CREATE_SKILL_SCAFFOLDING_REFUSAL = (
-    "ITEM_SCAFFOLDING_REQUIRED: use /yoke idea for planned work; "
-    "for direct work use yoke items create TITLE task --spec-file PATH "
-    "or yoke items create TITLE dash --spec-file PATH."
-)
+ITEMS_CREATE_SKILL_SCAFFOLDING_REFUSAL = "ITEM_SCAFFOLDING_REQUIRED"
 
 
 def allow_low_level_items_create(
@@ -72,7 +68,7 @@ def _session_mode(session_id: str) -> Tuple[Optional[str], Optional[str]]:
 def refuse_unscaffolded_create(
     *, dry_run: bool, workflow: str, entry_surface: str | None = None
 ) -> Optional[int]:
-    if workflow in ("task", "dash") and entry_surface in (None, "cli"):
+    if workflow in ("task", "dash") and entry_surface in (None, "cli", "harness_skill"):
         return None
     test_isolated = _is_test_isolation()
     ambient = None if (dry_run or test_isolated) else _ambient_session_id()
@@ -88,7 +84,22 @@ def refuse_unscaffolded_create(
         session_mode=mode,
     ):
         return None
-    return usage_error(ITEMS_CREATE_SKILL_SCAFFOLDING_REFUSAL)
+    context = (
+        f"workflow={workflow!r}, caller=session mode {mode!r}, "
+        f"entry_surface={entry_surface!r}. "
+    )
+    if workflow in ("task", "dash"):
+        recovery = (
+            "Use the registered web form or promotion operation for that surface; "
+            "direct CLI/skill filing accepts cli/harness_skill. "
+            "The workflow still checks its allowed entry surfaces."
+        )
+    else:
+        recovery = (
+            "Use /yoke idea to scaffold planned work; it sets session mode idea "
+            "and files with entry_surface=harness_skill."
+        )
+    return usage_error(f"{ITEMS_CREATE_SKILL_SCAFFOLDING_REFUSAL}: {context}{recovery}")
 
 
 TASK_VERIFICATION_REFUSAL = (

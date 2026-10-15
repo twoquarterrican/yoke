@@ -93,7 +93,10 @@ def items_create(args: list[str], *, shortcut: str | None = None) -> int:
         help="Link the item to this project strategy document at creation.",
     )
     parser.add_argument(
-        "--entry-surface", choices=("cli", "harness_skill", "promotion", "web_form")
+        "--entry-surface",
+        choices=("cli", "harness_skill", "promotion", "web_form"),
+        help="Filer-owned provenance: skills pass harness_skill; Task/Dash default "
+        "to cli. This flag grants no caller or workflow authority.",
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="Preview without a row or GitHub mirror."
