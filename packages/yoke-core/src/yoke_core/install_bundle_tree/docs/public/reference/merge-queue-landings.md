@@ -31,7 +31,15 @@ observation. A merged pull request receives the normal completion notice.
 Recovery belongs to the holder: address the named check or protection rule
 and re-run the same governed `yoke merge item` command. If the lane or base
 moved, rebase onto the base, re-run verification, and re-enter that command.
-The observer never re-arms a pull request. Repeated observation reuses the
+The observer never re-arms a pull request. A governed retry recovers cancelled
+or never-started required checks even when the open PR is already armed but
+unadmitted; it never sends a duplicate arming request. It verifies current
+head, newest workflow run and job evidence before one rerun POST. Active,
+successful, superseded and enqueued attempts are protected. After three
+cancelled attempts, inspect job annotations and fix the runner or workflow
+limit before starting a fresh declared attempt. An accepted rerun is not a
+pass: required checks must be replaced on the exact candidate. A new
+`workflow_dispatch` is a fresh attempt whose head and replacement need proof. Repeated observation reuses the
 same stop notice; a new governed arming starts a new episode.
 
 The harness manifest determines whether the existing wake route can resume

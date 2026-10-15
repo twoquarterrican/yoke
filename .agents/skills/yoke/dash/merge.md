@@ -148,3 +148,11 @@ For transient CI infrastructure failures, use
 wait. The registered mutation checks current PR head and newest workflow run
 and records the rerun in the item Progress Log; inspect a named stale or
 superseded refusal instead of rerunning an older run.
+
+Cancelled required checks recover on the same governed merge retry, including
+an open already-armed PR that has not entered the queue. Never-started jobs
+use a full rerun; started jobs use failed-job recovery. No duplicate arming
+occurs. Current head, newest run and at most three total cancelled attempts
+are enforced; inspect a named refusal and repair runner or workflow limits.
+An accepted rerun is not passing proof. A fresh declared `workflow_dispatch`
+is a new attempt: verify its exact head and required-check replacement.
