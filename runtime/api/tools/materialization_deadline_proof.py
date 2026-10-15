@@ -147,7 +147,9 @@ def main():
                 "materialization_proof_idempotency: repeated materialization changed rows or identity; inspect both captures before running QA"
             )
         previous = current
-    requirements, _ = call("qa", "requirement", "list", "--deployment-run-id", run)
+    requirements, _ = call(
+        "qa", "requirement", "list", "--deployment-run-id", run, "--full"
+    )
     admitted = {int(row["id"]): row for row in requirements["rows"]}
     if not all(requirement_id in admitted for requirement_id in previous[0]):
         raise RuntimeError(
