@@ -209,8 +209,6 @@ def latest_qa_member_run(
         stage_target_admits,
     )
 
-    from yoke_core.domain.deployment_qa_member_scope import legacy_run_credits_run_wide
-
     finals = completion_runs(conn, item_id)
     current_final = current_final_run(finals)
     credited = (
@@ -228,10 +226,7 @@ def latest_qa_member_run(
             continue
         if run["status"] in {"failed", "cancelled"}:
             continue
-        if not target_env or (
-            run in finals
-            and legacy_run_credits_run_wide(conn, run_id=run["id"], item_id=item_id)
-        ):
+        if not target_env:
             return run
         environments, dynamic = run_qa_stage_targets(conn, run["id"])
         if stage_target_admits(target_env, environments=environments, dynamic=dynamic):

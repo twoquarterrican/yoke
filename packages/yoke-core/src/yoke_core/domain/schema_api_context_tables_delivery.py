@@ -91,7 +91,8 @@ DELIVERY_TABLES: dict[str, dict] = {
             ("supersedes_run_id", "TEXT"),
         ],
         "notes": (
-            "One row per deployment-flow execution. Primary key is the "
+            "One row per deployment-flow execution. There is no `updated_at`; "
+            "use `created_at` for creation age. Primary key is the "
             "TEXT `id` (run identifier like 'run-YYYYMMDD-NNN'); "
             "`current_stage_entered_at` dates the current stage, including "
             "complete; NULL means age unknown, never the run age or receipt age. The "
