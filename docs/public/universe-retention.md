@@ -39,9 +39,9 @@ never resends that mutating pass automatically.
 
 ## Settings and defaults
 
-The existing `universe_settings` store holds one versioned `retention`
-document. Normal initialization inserts it only when absent; existing values
-are preserved. Reads and prune passes never seed. An absent document resolves
+The existing `universe_settings` store may hold one versioned `retention`
+document; existing values are preserved. Boot, reads and prune passes never
+seed retention settings. An absent document resolves
 the shipped defaults read-only. Invalid settings refuse as
 `retention_policy_invalid`; ask the universe administrator to restore a valid
 document. A policy change during the command stops with
