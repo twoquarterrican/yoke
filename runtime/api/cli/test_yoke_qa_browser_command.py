@@ -157,6 +157,46 @@ class TestStepAdapter:
         assert rc == 2
         assert "invalid step JSON" in err
 
+    @pytest.mark.parametrize(
+        "declared,expected",
+        [
+            (120000, 135),
+            (60001, 75.001),
+            (0, 30),
+            (-1, 30),
+            (True, 30),
+            (None, 30),
+            (float("inf"), 30),
+            (float("nan"), 30),
+        ],
+    )
+    def test_public_step_transport_honors_action_budget(self, declared, expected):
+        calls = []
+
+        def request(path, body, **kwargs):
+            calls.append((path, body, kwargs))
+            return {"data": {"pageId": "exploratory"}, "success": True}
+
+        with (
+            patch(
+                "yoke_harness.browser_qa_daemon.ensure_daemon_running",
+                return_value=None,
+            ),
+            patch("yoke_harness.browser_client.daemon_request", side_effect=request),
+        ):
+            rc, out, _err = self._run(
+                "--base-url",
+                "https://x.example",
+                "--step-json",
+                json.dumps(
+                    {"action": "click", "target": "#submit", "timeout_ms": declared}
+                ),
+            )
+        assert rc == 0
+        assert json.loads(out)["success"] is True
+        assert [call[0] for call in calls] == ["/api/exec/page", "/api/exec/step"]
+        assert calls[1][2]["timeout"] == expected
+
     def test_step_passes_agent_selected_payload_and_prints_json(self):
         captured = {}
 

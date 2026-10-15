@@ -112,7 +112,8 @@ repair the named failure and rerun the case after restoring external state.
 
 Shared optional fields include `timeout_ms`, `source_ac`, `refined`, and
 `viewport`. `timeout_ms` is the wait budget every waiting action and
-assertion honours. A step that sets a key its action does not define is
+assertion honours; see [action budgets and failure evidence](browser-action-evidence.md).
+A step that sets a key its action does not define is
 refused; the refusal names the unrecognised key and the keys that action
 defines. Authored plan cases should use verified selectors and set
 `refined: true` when they include that field.

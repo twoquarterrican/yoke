@@ -13,14 +13,27 @@ function validateColorScheme(value) {
 async function observeColorScheme(page) {
   let observed;
   try {
-    observed = await page.evaluate(() => {
+    const read = () => page.evaluate(() => {
       if (matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
       if (matchMedia('(prefers-color-scheme: light)').matches) return 'light';
       return null;
     });
+    const deadline = performance.now() + 5000;
+    for (;;) {
+      try {
+        observed = await read();
+        break;
+      } catch (err) {
+        const remaining = deadline - performance.now();
+        if (remaining <= 0 || !/Execution context was destroyed|Cannot find context with specified id/.test(err.message)) throw err;
+        // Load state may still describe the old document during replacement.
+        // Re-read only the media preference, under the same deadline.
+        await page.waitForLoadState('domcontentloaded', { timeout: remaining });
+      }
+    }
   } catch (err) {
     throw new Error('color_scheme_observation_failed: cannot read page media preference; '
-      + `repair the browser and rerun the case (${err.message}).`);
+      + `inspect the existing page and retained evidence before repair; do not replay a submit blindly (${err.message}).`);
   }
   const requested = preferences.get(page) ?? null;
   const evidence = { requested, observed };
@@ -45,7 +58,7 @@ async function applyColorScheme(page, requested) {
       await page.emulateMedia({ colorScheme: requested });
     } catch (err) {
       throw new Error('color_scheme_emulation_failed: cannot apply page preference; '
-        + `repair the browser and rerun the case (${err.message}).`);
+        + `inspect the existing page and retained evidence before repair; do not replay a submit blindly (${err.message}).`);
     }
   }
   preferences.set(page, requested);

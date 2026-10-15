@@ -75,6 +75,47 @@ async function main() {
       /color_scheme_mismatch/);
     await assert.rejects(applyColorScheme({ emulateMedia: async () => {}, evaluate: async () => { throw Error('gone'); } }, 'dark'),
       /color_scheme_observation_failed.*repair/);
+    let reads = 0;
+    let waits = 0;
+    const settling = {
+      emulateMedia: async () => {},
+      evaluate: async () => {
+        if (++reads <= 2) throw Error('Execution context was destroyed');
+        return 'dark';
+      },
+      waitForLoadState: async (state, options) => {
+        assert.equal(state, 'domcontentloaded');
+        assert.ok(options.timeout > 0 && options.timeout <= 5000);
+        waits++;
+      },
+    };
+    assert.deepEqual(await applyColorScheme(settling, 'dark'),
+      { requested: 'dark', observed: 'dark' });
+    assert.equal(reads, 3);
+    assert.equal(waits, 2);
+    // Native navigation destroys a document while its media read is pending.
+    // Only this diagnostic read may be repeated; no action is replayed.
+    const page = manager.ownedPage(light.pageId);
+    const evaluate = page.evaluate.bind(page);
+    let navigation;
+    let first = true;
+    page.evaluate = async (...args) => {
+      if (!first) return evaluate(...args);
+      first = false;
+      const pending = evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)));
+      navigation = page.goto(`${url}/fixture`).catch(error => ({ error }));
+      return pending;
+    };
+    const reused = await manager.openOwnedPage(viewport, light.pageId, 'light');
+    assert.equal((await navigation).url(), `${url}/fixture`);
+    page.evaluate = evaluate;
+    assert.equal(reused.opened, false);
+    assert.deepEqual(reused.color_scheme, { requested: 'light', observed: 'light' });
+    const { executeStep } = require('../src/step-runner');
+    const capture = await executeStep(page,
+      { action: 'screenshot', target: 'h1', capture: true }, { baseUrl: url });
+    assert.equal(capture.success, true);
+    assert.ok(capture.artifacts.length);
     console.log('PASS: page scheme isolation, navigation/reload, ownership, observation and failure boundaries');
   } finally {
     await fixture.close();

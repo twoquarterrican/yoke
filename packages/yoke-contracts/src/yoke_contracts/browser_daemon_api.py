@@ -8,6 +8,10 @@ share are stated here rather than spelled twice.
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping
+from typing import Any
+
 #: Run one step against a page the caller names.
 EXEC_STEP_PATH = "/api/exec/step"
 
@@ -18,7 +22,34 @@ EXEC_PAGE_PATH = "/api/exec/page"
 EXEC_PAGE_CLOSE_PATH = "/api/exec/page/close"
 
 
+DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS = 30
+STEP_RESPONSE_HEADROOM_SECONDS = 15
+
+
+def step_request_timeout_seconds(step: Mapping[str, Any]) -> float:
+    """Give a finite positive action budget room to return its own verdict."""
+    declared_ms = step.get("timeout_ms")
+    if (
+        isinstance(declared_ms, bool)
+        or not isinstance(declared_ms, (int, float))
+        or declared_ms <= 0
+    ):
+        return DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS
+    try:
+        seconds = declared_ms / 1000
+    except OverflowError:
+        return DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS
+    if not math.isfinite(seconds):
+        return DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS
+    return max(
+        DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS,
+        seconds + STEP_RESPONSE_HEADROOM_SECONDS,
+    )
+
+
 __all__ = [
+    "DEFAULT_DAEMON_REQUEST_TIMEOUT_SECONDS",
+    "step_request_timeout_seconds",
     "EXEC_PAGE_CLOSE_PATH",
     "EXEC_PAGE_PATH",
     "EXEC_STEP_PATH",
