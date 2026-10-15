@@ -141,6 +141,10 @@ def resolve_shared_subject(
                 resolved
             ) != canonical_target(expected_target):
                 continue
+            # An exact frozen target names one equivalence class. Finding an
+            # attaching member proves it; unrelated peers add no authority.
+            if expected_target is not None:
+                return group
             matches[canonical_target(resolved)] = group
     if len(matches) != 1:
         raise ValueError(

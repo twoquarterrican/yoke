@@ -36,6 +36,7 @@ scope, priority, order and constraints; the DB wins on live item status,
 claims, dependencies and runnable eligibility. A runnable item absent from
 or differently ordered by the doc does not silently become next. Reconcile
 through registered authority; DB-gated work waits and updates the doc.
+Always encode item blockers as proper dependency edges so that the system knows when things move to ready.
 charge.schedule is a frontier read, never dispatch or feed.
 
 ### Negative-space checks — first, every periodic pass
@@ -165,6 +166,8 @@ holder; lifecycle transition needs its claim. No takeover of a live lane.
 Unheld rework follows worker-launch's acquire/transition recipe, fixes the
 same item, re-verifies/re-lands/re-enters release. Read
 [release-batches.md](release-batches.md) before composition/execution.
+
+After a QA failure, verify the owner started rework or recorded a concrete blocker.
 
 ## 5. Preserve current snapshot and verified reminders
 

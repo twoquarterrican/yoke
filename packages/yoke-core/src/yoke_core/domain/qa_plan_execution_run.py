@@ -34,6 +34,12 @@ def execute_begun_plan(
     machine_options = (
         {"machine": begun.selected_machine} if begun.selected_machine else {}
     )
+    from yoke_core.domain.qa_plan_execution_checkin import (
+        communication_unknown,
+        paused_result,
+    )
+
+    deliveries = []
     recorded_results = begun.recorded_results
     results = [dict(result) for result in recorded_results]
     state = "passed"
@@ -45,13 +51,17 @@ def execute_begun_plan(
         requirement = requirements[ordinal]
         requirement_id = int(requirement["requirement_id"])
         order = _plan_order(requirement)
+        phase = "checkin"
         try:
-            _call_plan_function(
+            checked = _call_plan_function(
                 function_id="qa.plan_execution.heartbeat",
                 target=target,
                 payload={"execution_id": execution_id},
                 actor=resolved_actor,
             )
+            if checked.get("delivery"):
+                deliveries.append(checked["delivery"])
+            phase = "case"
             if requirement.get("runner_id") == "host_control":
                 from yoke_core.domain.machine_qa_plan_case_execution import (
                     execute_plan_machine_case,
@@ -95,6 +105,7 @@ def execute_begun_plan(
                     f"case runner returned the wrong requirement for {requirement_id}"
                 )
             normalized = {**order, **result}
+            phase = "recording"
             if advance_result:
                 _call_plan_function(
                     function_id="qa.plan_execution.advance",
@@ -108,6 +119,25 @@ def execute_begun_plan(
                     actor=resolved_actor,
                 )
         except BaseException as exc:
+            if unknown := communication_unknown(exc):
+                return paused_result(
+                    error=unknown,
+                    call=_call_plan_function,
+                    execution=execution,
+                    target=target,
+                    actor=resolved_actor,
+                    phase=phase,
+                    cursor=ordinal,
+                    results=results,
+                )
+            if phase == "checkin" and isinstance(exc, QaPlanExecutionError):
+                return {
+                    "execution_id": execution_id,
+                    "state": "blocked_on_precondition",
+                    "reason": "qa_checkin_refused",
+                    "results": results,
+                    "recovery": str(exc),
+                }
             failed = {
                 "requirement_id": requirement_id,
                 **order,
@@ -170,24 +200,40 @@ def execute_begun_plan(
         "error",
         "waiting",
     }:
-        review = _call_plan_function(
-            function_id="qa.plan_review.begin",
-            target=target,
-            payload={"execution_id": execution_id},
-            actor=resolved_actor,
-        )
-        review_bundle = review.get("review_bundle")
-        if review_bundle is not None:
-            state = "awaiting_agent_review"
-        else:
-            _call_plan_function(
-                function_id="qa.plan_execution.complete",
+        try:
+            review = _call_plan_function(
+                function_id="qa.plan_review.begin",
                 target=target,
                 payload={"execution_id": execution_id},
                 actor=resolved_actor,
             )
+            review_bundle = review.get("review_bundle")
+            if review_bundle is not None:
+                state = "awaiting_agent_review"
+            else:
+                _call_plan_function(
+                    function_id="qa.plan_execution.complete",
+                    target=target,
+                    payload={"execution_id": execution_id},
+                    actor=resolved_actor,
+                )
+        except QaPlanExecutionError as exc:
+            if unknown := communication_unknown(exc):
+                return paused_result(
+                    error=unknown,
+                    call=_call_plan_function,
+                    execution=execution,
+                    target=target,
+                    actor=resolved_actor,
+                    phase="review",
+                    cursor=len(requirements),
+                    results=results,
+                )
+            raise
+
     return {
         "execution_id": execution_id,
+        "checkin_delivery": deliveries,
         "remaining_requirement_count": execution.get("remaining_requirement_count"),
         "item_id": (
             int(execution["item_id"]) if execution.get("item_id") is not None else None

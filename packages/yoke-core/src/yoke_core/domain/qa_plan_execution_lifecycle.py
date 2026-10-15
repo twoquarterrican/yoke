@@ -51,13 +51,21 @@ def heartbeat_plan_execution(
     if execution["state"] not in {"active", "awaiting_agent_review"}:
         raise QaPlanExecutionStateError("QA plan execution cannot heartbeat")
     require_execution_target(execution)
+    from yoke_core.domain.qa_plan_execution_reentry import (
+        require_execution_custody,
+        inflight_checkpoint,
+    )
+
+    require_execution_custody(conn, execution)
     placeholder = marker(conn)
     now = utc_now()
+    checkpoint = inflight_checkpoint(execution)
     conn.execute(
         "UPDATE qa_plan_executions SET heartbeat_at="
-        f"{placeholder} WHERE id={placeholder}",
-        (instant_parameter(conn, now), str(execution["id"])),
+        f"{placeholder},release_reason={placeholder} WHERE id={placeholder}",
+        (instant_parameter(conn, now), checkpoint, str(execution["id"])),
     )
+    execution["release_reason"] = checkpoint
     from yoke_core.domain.qa_plan_host_leases import heartbeat_execution_hosts
 
     heartbeat_execution_hosts(conn, execution, now=now)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoke_core.domain.qa_plan_execution_checkin import communication_unknown
+
 import time
 from collections.abc import Callable
 from typing import Any
@@ -192,6 +194,8 @@ def execute_machine_case_contract(
         else:
             result = execute_case_with_fixture_lifecycle(execution, case)
     except BaseException as exc:
+        if communication_unknown(exc):
+            raise
         restore = restore_chain_start(case, execution.reach_baseline, machine=machine)
         exc.add_note(restore_summary(restore))
         raise

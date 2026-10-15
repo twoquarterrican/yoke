@@ -129,6 +129,10 @@ yoke deployment-runs approve RUN-ID --note "operator decision" --json
 yoke claims work release --item PREFIX-N --reason usher-halt-deploy-stage-failure --json
 ```
 
+A QA plan `outcome_unknown` preserves its execution and custody; follow
+[check-in recovery](../../../../.yoke/docs/reference/qa-platform/standalone-plans.md#recover-a-lost-check-in-response)
+with the same scoped command plus `--resume-execution-id ID` before proceeding.
+
 Own-flow close-out never uses done-transition skip-deploy. Unsatisfied member QA
 must name BOTH run stage and member; an unscoped run-wide pass cannot credit it.
 Approval is operator action, not agent self-approval. For infra failure use its

@@ -99,20 +99,34 @@ def record_command_run(
         stamp_executed_method_config,
     )
 
+    from yoke_core.domain.qa_plan_execution_checkin import (
+        QaPlanCommunicationUnknown,
+        communication_unknown,
+    )
+
+    def retain_capture(error):
+        error.capture_path = str(stage_recovery_copy(output.encode("utf-8"), filename))
+        error.args = (f"{error}. Command capture: {error.capture_path}",)
+
     raw_result = stamp_executed_method_config(
         raw_result,
         case.get("method_config"),
         execution_target_digest=case.get("execution_target_digest"),
     )
     call_qa = recording_leg(case, actor=actor)
-    run = call_qa(
-        "qa.run.add",
-        {
-            "performed_by": performed_by,
-            "raw_result": raw_result,
-            "duration_ms": duration_ms,
-        },
-    )
+    try:
+        run = call_qa(
+            "qa.run.add",
+            {
+                "performed_by": performed_by,
+                "raw_result": raw_result,
+                "duration_ms": duration_ms,
+            },
+        )
+    except QaPlanCommunicationUnknown as error:
+        retain_capture(error)
+        raise
+
     run_id = int(run["qa_run_id"])
     requirement_id = int(case["requirement_id"])
     output_path = artifact_file_path(
@@ -125,15 +139,19 @@ def record_command_run(
     output_path.write_bytes(output_bytes)
 
     def complete() -> None:
-        call_qa(
-            "qa.run.complete",
-            {
-                "run_id": run_id,
-                "verdict": verdict,
-                "raw_result": raw_result,
-                "duration_ms": duration_ms,
-            },
-        )
+        try:
+            call_qa(
+                "qa.run.complete",
+                {
+                    "run_id": run_id,
+                    "verdict": verdict,
+                    "raw_result": raw_result,
+                    "duration_ms": duration_ms,
+                },
+            )
+        except QaPlanCommunicationUnknown as error:
+            retain_capture(error)
+            raise
 
     try:
         artifact = call_qa(
@@ -148,6 +166,9 @@ def record_command_run(
             },
         )
     except QaCaseExecutionError as exc:
+        if unknown := communication_unknown(exc):
+            retain_capture(unknown)
+            raise
         raise QaCaseExecutionError(
             _upload_failure_refusal(
                 complete,

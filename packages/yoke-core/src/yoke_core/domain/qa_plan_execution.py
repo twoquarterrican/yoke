@@ -46,6 +46,8 @@ def execute_plan(
     checkout_path: Optional[str | Path] = None,
     allow_tree_mismatch: bool = False,
     continue_mission: bool = False,
+    resume_execution_id: Optional[str] = None,
+    recovery_file: Optional[str] = None,
     replacements: Optional[list[dict[str, Any]]] = None,
     actor: Optional[ActorContext] = None,
 ) -> dict[str, Any]:
@@ -66,7 +68,7 @@ def execute_plan(
             source_ref=expected_branch,
             checkout_path=str(checkout_path) if checkout_path else None,
         )
-    if deployment_run_id:
+    if deployment_run_id and not resume_execution_id:
         materialize_payload = {"plan": plan, "project": project}
         if deployment_stage:
             materialize_payload["deployment_stage"] = deployment_stage
@@ -83,11 +85,29 @@ def execute_plan(
     for key, value in (("machine", machine), ("continue_mission", continue_mission)):
         if value:
             begin_payload[key] = value
+    if recovery_file:
+        from yoke_core.domain.qa_plan_execution_checkin import restore_confirmed_pause
+
+        restore_confirmed_pause(
+            recovery_file,
+            call=_call_plan_function,
+            target=target,
+            actor=resolved_actor,
+            execution_id=resume_execution_id,
+        )
     try:
         execution = _call_plan_function(
-            function_id="qa.plan_execution.begin",
+            function_id=(
+                "qa.plan_execution.resume"
+                if resume_execution_id
+                else "qa.plan_execution.begin"
+            ),
             target=target,
-            payload=begin_payload,
+            payload=(
+                {**begin_payload, "execution_id": resume_execution_id}
+                if resume_execution_id
+                else begin_payload
+            ),
             actor=resolved_actor,
         )
     except QaPlanExecutionError as exc:
@@ -106,6 +126,10 @@ def execute_plan(
 
         return completed_member_result(execution)
     execution_id = begun_execution_id(execution)
+    if resume_execution_id and execution_id != resume_execution_id:
+        raise QaPlanExecutionError(
+            "qa_resume_identity_mismatch: preserve both receipts and report to the control-plane operator"
+        )
     try:
         begun = validate_begun_execution(
             execution, machine=machine, base_url=base_url, public_ref=public_ref

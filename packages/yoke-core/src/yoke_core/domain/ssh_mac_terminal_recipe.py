@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import sys
+
+from yoke_core.domain.qa_plan_execution_checkin import communication_unknown
+
 from pathlib import Path
 import shlex
 import time
@@ -296,13 +300,14 @@ def _run_interactive_recipe(
             None if not failures else "terminal_recipe_assertion_failed",
         )
     finally:
-        close_terminal_session(
-            run,
-            backend=backend,
-            session=session,
-        )
-        close_terminal_window(run, window_id=terminal_window_id)
-        run(f"rm -f {shlex.quote(status_path)}", timeout=10)
+        if not communication_unknown(sys.exception()):
+            close_terminal_session(
+                run,
+                backend=backend,
+                session=session,
+            )
+            close_terminal_window(run, window_id=terminal_window_id)
+            run(f"rm -f {shlex.quote(status_path)}", timeout=10)
 
 
 def execute_terminal_recipe(*args: Any, **kwargs: Any) -> HostActionResult:

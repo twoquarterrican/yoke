@@ -4,14 +4,14 @@
  "status": "draft-copy",
  "audience": "both",
  "when": "When a QA execution starts or the user first inspects Activity alongside a deployment run.",
- "need": "A deployment run ships a candidate. A QA plan execution coordinates cases; individual QA runs are attempts on their requirements, producing artifacts and verdicts. A screenshot or completed capture may still await review.",
+ "need": "A deployment run ships a candidate. A QA plan execution coordinates cases; individual QA runs are attempts on their requirements, producing artifacts and verdicts. A screenshot or completed capture may still await review. A lost response leaves an unknown outcome. Keep the exact execution and live custody, reconcile its saved request/cursor, and re-enter by execution id without resetting or replaying a one-shot action.",
  "disclosure": "current cue",
  "surface": "QA Activity/case page; plan execution output; reference records",
  "gap": "Review question: should JOURNEYS give the first QA activity view this short vocabulary instead of calling every layer a run?",
- "review": "Pending exact recipe proof.",
+ "review": "Observed source recovery contract; focused regression evidence is required before release. Live campaign behavior remains unverified.",
  "recipes": ["yoke qa plan get --help", "yoke qa requirement list --help"],
  "plan_notes": ["JOURNEYS row 13", "outside both"],
- "surface_notes": ["QA execution / attempt output → evidence and verdict: Continuation state names what happens next. The saved attempt/artifacts/verdict establish only the declared subject, target and candidate; a capture may still await review."],
- "sources": ["docs/public/qa.md", "docs/testing-verification.md", "docs/public/reference/qa-platform.md", "docs/public/reference/qa-platform/standalone-plans.md"],
+ "surface_notes": ["QA execution / attempt output → evidence and verdict: Continuation state names what happens next. The saved attempt/artifacts/verdict establish only the declared subject, target and candidate; a capture may still await review.", "Plan communication pause → exact execution re-entry: compact check-ins retry only the same request; permission, custody loss and unadvanced action outcomes stay blocked. Terminal history remains terminal.", "After failed QA, classify and act: product defect -> return to implementation; setup failure -> record the blocker; unclear cause -> investigate now."],
+ "sources": ["docs/public/qa.md", "docs/testing-verification.md", "docs/public/reference/qa-platform.md", "docs/public/reference/qa-platform/standalone-plans.md", "packages/yoke-core/src/yoke_core/domain/qa_plan_execution_reentry.py", "docs/public/reference/agent-rules/verification.md", ".agents/skills/yoke/steer/loop.md", ".agents/skills/yoke/dash/close-out.md", "packages/yoke-core/src/yoke_core/domain/deployment_qa_failure_handoff.py"],
  "position": 0
 }

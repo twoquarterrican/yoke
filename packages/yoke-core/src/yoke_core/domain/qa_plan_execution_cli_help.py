@@ -78,6 +78,27 @@ Completed scoped cases with passing evidence are retained. The member is
 accepted only when every required case passes. Omit --machine for this
 multi-machine form: a single host pin cannot satisfy conflicting constraints.
 
+Recover an unknown response on the same execution
+------------------------------------------------
+  yoke qa plan run --plan PLAN --project P --resume-execution-id EXECUTION_ID
+
+For item or deployment QA, keep its original subject, stage/member, source and
+machine flags and add --resume-execution-id. A lost reply is an unknown outcome,
+not a failed action. Only a check-in retries briefly with the same request id;
+it uses the durable request ledger to recover a late success. Other operations
+never replay automatically. outcome_unknown exits with the waiting status and
+names the execution, phase, request, attempts and saved evidence.
+A confirmed pause retains the cursor, results and machine custody without
+renewing leases. An unconfirmed pause retains the last known state; keep its
+owner parked. For an unconfirmed pre-case pause, add the returned
+--recovery-file PATH to reapply that receipt once connectivity returns.
+A consumed receipt or changed cursor refuses. Re-entry revalidates the frozen target, actor/session and live
+custody. A case that has not durably advanced refuses automatic re-entry until
+its captured outcome is reconciled. Do not reset hosts, replay one-shot actions,
+create a new campaign or revive terminal history to recover communication.
+Pause/resume requires a serving release carrying those registered functions;
+a version-skew refusal names that floor and the control-plane operator.
+
 Who runs it, and what follows
 -----------------------------
 The item owner parked at its release wait runs its own stage when the

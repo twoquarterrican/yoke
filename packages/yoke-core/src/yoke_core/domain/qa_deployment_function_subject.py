@@ -11,7 +11,7 @@ from yoke_core.domain.function_target_row_project import (
     resolve_deployment_run_project,
     slug_for_project_id,
 )
-from yoke_core.domain.project_identity import resolve_project_id
+from yoke_core.domain.project_identity import render_item_ref, resolve_project_id
 from yoke_core.domain.item_ref_resolution import resolve_item_ref_or_none
 from yoke_core.domain.deployment_run_membership_removals import removed_item_ids
 
@@ -28,6 +28,8 @@ SCOPED_RUN_FUNCTIONS = frozenset(
         "qa.plan.rematerialize",
         "qa.plan_execution.begin",
         "qa.plan_execution.heartbeat",
+        "qa.plan_execution.pause",
+        "qa.plan_execution.resume",
         "qa.plan_execution.advance",
         "qa.plan_execution.complete",
         "qa.plan_execution.abort",
@@ -52,6 +54,42 @@ def _execution_subject(
             "execution again before recording its result"
         )
     return str(row[0] or ""), row[1], int(row[2]) if row[2] is not None else None
+
+
+def _checkin_project(conn, execution_id, member_id):
+    """Resolve permission scope from durable identity; the handler validates liveness."""
+    from yoke_core.domain.qa_plan_execution_target_snapshot import (
+        decode_execution_target,
+    )
+    from yoke_core.domain.db_helpers import query_one
+
+    row = query_one(
+        conn,
+        "SELECT execution_target_json,execution_target_digest FROM qa_plan_executions WHERE id=%s",
+        (execution_id,),
+    )
+    target = decode_execution_target(row) if row else None
+    if target is None:
+        raise QaSubjectProjectError(
+            "QA check-in lacks a frozen target; inspect the execution"
+        )
+    shared = (target.get("deployment") or {}).get("shared_plan")
+    if shared:
+        row = conn.execute(
+            "SELECT project_id FROM qa_plans WHERE id=%s", (int(shared["plan_id"]),)
+        ).fetchone()
+    elif member_id is not None:
+        row = conn.execute(
+            "SELECT project_id FROM items WHERE id=%s", (member_id,)
+        ).fetchone()
+    else:
+        row = (int(target["project"]["id"]),)
+    if row is None:
+        raise QaSubjectProjectError(
+            "QA check-in subject was removed; preserve its execution and inspect the owner"
+        )
+    project_id = int(row[0])
+    return project_id, slug_for_project_id(conn, project_id)
 
 
 def resolve_run_qa_subject(
@@ -137,6 +175,19 @@ def resolve_run_qa_subject(
             )
         project_id = int(row[0])
         slug = slug_for_project_id(conn, project_id)
+    elif execution_id and request.function in {
+        "qa.plan_execution.heartbeat",
+        "qa.plan_execution.pause",
+        "qa.plan_execution.resume",
+    }:
+        if member_id is not None and not conn.execute(
+            "SELECT 1 FROM deployment_run_items WHERE run_id=%s AND item_id=%s",
+            (run_id, member_id),
+        ).fetchone():
+            raise QaSubjectProjectError(
+                f"{render_item_ref(conn, member_id)} is not an attached member of run {run_id!r}"
+            )
+        project_id, slug = _checkin_project(conn, execution_id, member_id)
     elif stage:
         reviewing_terminal = False
         if execution_id and request.function in {

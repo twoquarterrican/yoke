@@ -63,6 +63,8 @@ FUNCTION_MINIMUM_SERVING_VERSIONS: dict[str, str] = {
     "projects.unretire": "next-release",
     "qa.artifact.get": "next-release",
     "qa.artifact.rehome": "next-release",
+    "qa.plan_execution.pause": "next-release",
+    "qa.plan_execution.resume": "next-release",
     "qa.item_plan.retract": "next-release",
     "qa.browser_context.get": "next-release",
     "qa.case_execution.begin": "next-release",

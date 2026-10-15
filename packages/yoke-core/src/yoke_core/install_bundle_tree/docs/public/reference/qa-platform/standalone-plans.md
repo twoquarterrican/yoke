@@ -104,3 +104,39 @@ A standalone execution has one immutable target. A plan requiring other
 environments refuses with `qa_plan_requires_environment_scopes` before writing
 cases. Use each item requirement or matching deployment QA stage to collect
 those separate proofs; a standalone plan run never completes an item gate.
+
+
+## Recover a lost check-in response
+
+```text
+yoke qa plan run --plan PLAN --project P --resume-execution-id EXECUTION_ID
+```
+
+Keep the original source and machine arguments. A response timeout leaves the
+action's outcome unknown: it does not cancel a server success. The check-in
+retries once with its exact request id, allowing the existing request ledger
+to replay a late success. It returns only cursor, target/roster identity,
+custody and liveness timing; it does not rebuild a full resume response.
+
+If communication stays unavailable, `outcome_unknown` names the execution,
+phase, request, attempts and saved request evidence. A confirmed pause keeps
+its cursor, results and machine leases; it does not renew them. When the pause
+cannot be confirmed, preserve the command capture and last known custody.
+Park the owning session with `yoke sessions touch --mode parked --reason
+"QA communication pause"` while restoring communication. When a pause was
+unconfirmed, add the returned `--recovery-file PATH` to exact-ID re-entry: it
+reapplies only that saved pre-case check-in pause. A consumed receipt or changed
+cursor refuses; inspect the current outcome instead of reusing an old receipt.
+
+Exact-ID re-entry validates the actor/session, subject, frozen source/target
+and live host custody before another case can start. Completed cases stay
+recorded. An unadvanced action or recording outcome remains blocked until its
+saved capture/result is reconciled; it cannot authorize action replay. Lost
+custody, permission refusals and terminal executions refuse with recovery.
+Use the original captured submission to reconcile recording; never reset a
+host, spend another one-shot approval, or create a fresh campaign to repair a
+lost reply. Actual case failures and intentional aborts keep their own outcomes.
+Pause/resume needs a serving release carrying `qa.plan_execution.pause` and
+`qa.plan_execution.resume`; a serving-floor refusal names the control-plane
+operator who must supply it. Older heartbeat responses may contain a full
+resume contract; the client needs only the accepted check-in receipt.

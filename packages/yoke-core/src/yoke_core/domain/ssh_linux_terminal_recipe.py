@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import sys
+
+from yoke_core.domain.qa_plan_execution_checkin import communication_unknown
+
 import time
 from typing import Any
 from yoke_core.domain.machine_qa_result_safety import redact_machine_qa_value
@@ -206,7 +210,7 @@ def _interactive(
         )
         return result
     finally:
-        if not terminal.close():
+        if not communication_unknown(sys.exception()) and not terminal.close():
             return HostActionResult(
                 False,
                 {
@@ -272,7 +276,9 @@ def execute_linux_recipe(
             result.error_code,
         )
         return with_staged_cleanup(control._run, safe, staged)
-    except Exception:
+    except Exception as error:
+        if communication_unknown(error):
+            raise
         with_staged_cleanup(
             control._run,
             HostActionResult(False, {}, "linux_terminal_recipe_failed"),
