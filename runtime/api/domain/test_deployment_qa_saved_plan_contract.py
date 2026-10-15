@@ -59,23 +59,13 @@ def published(test_db, source_checkout, monkeypatch):
     for member in MEMBERS:
         _attach(test_db, member, pid)
     ids = _materialize(test_db)["created_requirement_ids"]
-    # Older admission stored individual requirements, but no whole-plan array.
+    _materialize(test_db, MEMBERS[1])
+    # Preserve the complete selection frozen before its original execution.
     row = dict(
         test_db.execute(
             "SELECT * FROM qa_requirements WHERE id=%s", (ids[0],)
         ).fetchone()
     )
-    for member in MEMBERS:
-        test_db.execute(
-            "UPDATE deployment_run_items SET requirement_snapshot=%s WHERE run_id=%s AND item_id=%s",
-            (
-                json.dumps(
-                    {"schema": 1, "plans": [], "requirements": [row]}, default=str
-                ),
-                RUN,
-                member,
-            ),
-        )
     test_db.commit()
     (root / "cases.json").write_text('["new definitions"]\n')
     assert git(root, "commit", "-am", "Publish new definitions").returncode == 0
@@ -205,70 +195,66 @@ def test_takeover_and_manual_removal_read_saved_contract(test_db, published):
     )
 
 
-def test_baseline_variants_remain_distinct_and_ordered(test_db, published):
-    from yoke_core.domain.deployment_qa_saved_plan_contract import saved_plan_contract
-    from yoke_core.domain.deployment_qa_stage_contract import (
-        deployment_qa_stage_subject,
-    )
-    from yoke_core.domain.deployment_qa_execution_target import (
-        deployment_qa_execution_target,
-    )
-
+@pytest.mark.parametrize("shape", ["admitted", "materialized"])
+def test_incomplete_historical_selection_refuses_without_writes(
+    test_db, published, shape
+):
     pid, ids, old, new, before = published
-    columns = [
-        key for key in before if key not in ("id", "host_baseline", "baseline_position")
-    ]
-    listed = ",".join(columns)
-    test_db.execute(
-        "UPDATE qa_requirements SET host_baseline='fresh-host',baseline_position=1 WHERE id=%s",
-        (ids[0],),
-    )
-    test_db.execute(
-        f"INSERT INTO qa_requirements ({listed},host_baseline,baseline_position) "
-        f"SELECT {listed},'shell-preconfigured',2 FROM qa_requirements WHERE id=%s",
-        (ids[0],),
-    )
-    subject = deployment_qa_stage_subject(
-        test_db, run_id=RUN, stage_name="item-qa", member_item_id=MEMBERS[0]
-    )
-    snapshot = saved_plan_contract(
-        test_db, subject, deployment_qa_execution_target(test_db, subject), pid, []
-    )
-    assert [r["host_baseline"] for r in snapshot["materialized_requirements"]] == [
-        "fresh-host",
-        "shell-preconfigured",
-    ]
-    assert [c["case_key"] for c in snapshot["cases"]] == [
-        "command-smoke",
-        "command-smoke",
-    ]
-
-
-@pytest.mark.parametrize("damage", ["digest", "source", "missing"])
-def test_invalid_historical_contract_refuses(test_db, published, damage):
-    pid, ids, old, new, row = published
-    if damage == "missing":
-        test_db.execute("DELETE FROM qa_requirements WHERE id=%s", (ids[0],))
-        reason = "qa_saved_plan_contract_missing"
-    elif damage == "digest":
+    for member in MEMBERS:
+        snapshot = {
+            "schema": 1,
+            "plans": [],
+            "requirements": [before] if shape == "admitted" else [],
+        }
         test_db.execute(
-            "UPDATE qa_requirements SET execution_target_digest='invalid' WHERE id=%s",
-            (ids[0],),
+            "UPDATE deployment_run_items SET requirement_snapshot=%s WHERE run_id=%s AND item_id=%s",
+            (json.dumps(snapshot, default=str), RUN, member),
         )
-        reason = "qa_saved_plan_contract_invalid"
-    else:
-        from yoke_core.domain.qa_execution_environment_target import (
-            canonical_target,
-            target_digest,
-        )
-
-        target = json.loads(row["execution_target_json"])
-        target["deployment"]["shared_plan"]["source_revision"] = new
+    # Exercise both historical private and shared shapes without reconstructing either.
+    if shape == "materialized":
         test_db.execute(
-            "UPDATE qa_requirements SET execution_target_json=%s,execution_target_digest=%s WHERE id=%s",
-            (canonical_target(target), target_digest(target), ids[0]),
+            "UPDATE qa_requirements SET deployment_member_item_id=%s WHERE id=%s",
+            (MEMBERS[0], ids[0]),
         )
-        reason = "qa_plan_source_candidate_mismatch"
     test_db.commit()
-    with pytest.raises(QaPlanError, match=reason):
+    with pytest.raises(QaPlanError, match="qa_frozen_plan_snapshot_incomplete"):
         _materialize(test_db)
+    after = dict(
+        test_db.execute(
+            "SELECT * FROM qa_requirements WHERE id=%s", (ids[0],)
+        ).fetchone()
+    )
+    if shape == "materialized":
+        before = {**before, "deployment_member_item_id": MEMBERS[0]}
+    assert after == before
+
+
+def test_frozen_hosted_bridge_selects_original_cases_without_repointing(test_db):
+    from runtime.api.domain.test_qa_requirement_target_rebind import _hosted_prod_pair
+    from yoke_core.domain.deployment_qa_frozen_plan_selection import _member_plans
+    from yoke_core.domain.deployment_requirement_snapshots import _plan_snapshot
+
+    hosted, own = _hosted_prod_pair(test_db)
+    pid = _plan(test_db, "bridge-selection")
+    test_db.execute(
+        "UPDATE qa_plans SET target_environment_id=%s WHERE id=%s", (hosted, pid)
+    )
+    snapshot = _plan_snapshot(test_db, pid, project_id=1)
+    snapshot["attachment"] = {"transition_id": "release", "qa_phase": "post_deploy"}
+    snapshot["cases"][0]["id"] = (
+        None  # Unavailable descriptive identity is not an executable key.
+    )
+    subject = {"member_item_id": MEMBERS[0], "member_snapshot": {"plans": [snapshot]}}
+    target = {"project": {"id": 1}, "environment": {"id": own, "name": "prod"}}
+    selected = _member_plans(test_db, subject, target=target)
+    assert selected == [snapshot]
+    assert selected[0]["plan"]["target_environment_id"] == hosted
+    assert selected[0]["cases"][0]["target_envs"] == []
+    assert (
+        _member_plans(
+            test_db,
+            subject,
+            target={**target, "environment": {"id": own + 100, "name": "other"}},
+        )
+        == []
+    )

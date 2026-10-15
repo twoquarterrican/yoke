@@ -72,18 +72,22 @@ start. Cancellation preserves the frozen evidence. Schema-v1 runs retain their
 legacy start behavior.
 
 QA acceptance, target occupancy, takeover selection and audited member removal
-read the run's saved obligations, never a later standing-plan publication.
+read complete frozen plan/case selections, never a later standing publication.
 Admission freezes attached post-deploy plans and plans named by admitted
-requirements. When an older snapshot has empty plan arrays but already holds
-materialized shared requirements, those rows retain the original source,
-target, case order, method configuration, effective policies and every host
-baseline variant. Reading or reusing them creates no new cases and rewrites
-no history. Candidate ancestry checks still apply to the saved source; a new
-run selects its own definitions. Missing or inconsistent historical identity
-refuses as `qa_saved_plan_contract_missing` or
-`qa_saved_plan_contract_invalid`: preserve the evidence and ask the
-control-plane operator to reconcile the saved admission contract. Authorized
-attachment withdrawals and declared case replacements keep their usual effect.
+requirements. A newly selected plan freezes its complete definition before
+its first executable requirements, in the same transaction. Explicit
+rematerialization owns authorized updates; withdrawals and replacements retain
+their usual effect. Candidate ancestry checks still apply to frozen sources.
+
+An admitted or already materialized selection missing its complete frozen
+contract refuses as `qa_frozen_plan_snapshot_incomplete`. Preserve the run and
+ask the control-plane operator to prepare a reviewed repair from original
+admission evidence through `operator.data_repair.run` before resuming an active
+run. Do not import current cases as historical acceptance. Historical requirement
+and result records remain viewable without reconstructing an executable plan;
+terminal history requires no rewrite. Missing original descriptive metadata
+must be recorded truthfully; method configuration contracts, effective policies,
+source/target identity, case order and baseline variants require original proof.
 
 **Composition completes candidate membership.** Run creation and item-bound composition (`deployment_runs.start_for_item`, `deployment_runs.validate_composition`) enroll every delivery-ready item the pinned candidate carries and the run does not hold, through the same admission validation `add_item` uses. Creation validates provisionally in its insertion transaction and rolls back on refusal. It runs that validation twice in one read scope: first before the creation lock, on a provisional `run-unlocked-*` row that is always rolled back and whose verdict decides nothing, so the repository reads (bound branch heads, commit comparisons, containment) happen outside the lock; then under the lock on the real row, re-checking database facts against those same reads and re-deriving any comparison whose preceding release changed meanwhile. `deployment_runs.execution.context` revalidates before dispatch. Its driver reuses that context once; [start diagnostics](../deployment-start.md) explain containment-only refresh, batched reads, and flushed timing records.
 

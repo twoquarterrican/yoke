@@ -126,6 +126,8 @@ def _read_member_attached_plan_ids(
         )
     )
     for value in (snapshot or {}).get("plans") or []:
+        if value.get("selected_by_agent"):
+            continue
         if (value.get("attachment") or {}).get("qa_phase") == "post_deploy":
             ids.add(int(value["plan"]["id"]))
     admitted = {"member_item_id": member, "member_snapshot": snapshot}
