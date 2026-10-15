@@ -65,7 +65,7 @@ resolution_comment TEXT -- free-text resolution notes
 Structured item mutations use the registered [function surfaces](functions.md).
 Read `yoke items structured-field --help` before replacing or transforming fields.
 
-> **Blocked is a flag on items.** Columns `items.blocked INTEGER DEFAULT 0` and `items.blocked_reason TEXT` carry the operator-set block; lifecycle status is preserved. The flag is for waits with no blocking item: `items.block` refuses when a live activation/integration/closure edge already carries the wait (`yoke items dependency add`). Legacy `status='blocked'` is retired (`HC-blocked-status-drift`). Operators use `yoke items block PREFIX-N --reason TEXT` / `yoke items unblock PREFIX-N`. Epic-task `blocked` is unchanged. View column `item_progress_view.blocked_reason` is `pipeline_blocked_reason`. Architectural-why: `docs/archive/decisions/blocked-flag-retirement.md`.
+> **Blocked is a flag on items.** Columns `items.blocked INTEGER DEFAULT 0` and `items.blocked_reason TEXT` carry the operator-set block; lifecycle status is preserved. The flag is for waits with no blocking item: `items.block` refuses when a live activation/integration/closure edge already carries the wait (`yoke items dependency add`). Operators use `yoke items block PREFIX-N --reason TEXT` / `yoke items unblock PREFIX-N`. Epic-task `blocked` is unchanged. View column `item_progress_view.blocked_reason` is `pipeline_blocked_reason`. Architectural-why: `docs/archive/decisions/blocked-flag-retirement.md`.
 
 ### DB Claim — the unified amendment workflow
 

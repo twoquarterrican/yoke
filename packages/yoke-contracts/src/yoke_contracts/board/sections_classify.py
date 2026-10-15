@@ -98,8 +98,7 @@ def priority_rank(priority: str) -> int:
 # Maps board-domain buckets to section names.
 # Maps current board-domain buckets into rendered board sections.
 # Blocked items render in their own section instead of being folded
-# into Active. Blocked-flag rows (and any legacy status='blocked' drift)
-# both end up in `_BUCKET_TO_SECTION["blocked"] == "blocked"`.
+# into Active. Blocked-flag rows end up in `_BUCKET_TO_SECTION["blocked"] == "blocked"`.
 _BUCKET_TO_SECTION: Dict[str, str] = {
     "done": "done",
     "frozen": "freezer",

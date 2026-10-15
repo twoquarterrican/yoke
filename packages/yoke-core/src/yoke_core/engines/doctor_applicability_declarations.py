@@ -82,7 +82,6 @@ _SHAPES = (
             "backlog-quality",
             "blocked-flag-consistency",
             "blocked-items",
-            "blocked-status-drift",
             "branch-protection-required-check",
             "cancelled-blocker-dependencies",
             "claim-boundary-audit",
