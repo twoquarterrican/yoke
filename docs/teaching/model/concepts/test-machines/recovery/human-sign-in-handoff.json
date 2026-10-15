@@ -4,5 +4,6 @@
  "status": "observed",
  "page": "test-machines",
  "position": 3,
- "summary": "After the operator completes a sign-in on a test machine, save it at once with golden-capture, which proves the real requests and recaptures the baseline. Every standard probe failure's recovery names that command."
+ "summary": "After the operator completes a sign-in on a test machine, save it with golden-capture, which proves real requests before recapturing. Diagnose native probe failures first: quota waits for provider capacity, transport waits for recovery, and sign-in advice requires actual authentication evidence. Unknown nonzero failures preserve the golden and direct local diagnosis.",
+ "sources": ["docs/testing-verification/test-machine-golden-baseline.md"]
 }
