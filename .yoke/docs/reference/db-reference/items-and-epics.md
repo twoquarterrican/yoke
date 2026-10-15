@@ -239,7 +239,7 @@ gate evaluation, batched frontier evaluation and topologically ordered
 candidate planning. Registered readers return structured blockers; internal
 Python service clients are not an agent recipe.
 
-**Enforcement:** `evaluate_blockers` (`python3 -m yoke_core.domain.check_hard_blocks`, optional `--gate-point`) is the one evaluator. `implement` / `conduct` / `usher` share it. The authoritative status write runs it for listed `check_hard_blocks` at `activation`, and on every write to `done` at `closure` (not skippable by force or QA bypass). `items.block` refuses a wait a live activation/integration/closure edge already carries — use `yoke items dependency add`. The frontier uses `evaluate_batch_gates()` for activation.
+**Enforcement:** `advance.preflight.hard_blocks` exposes the shared `evaluate_blockers` evaluator through `yoke advance preflight hard-blocks PREFIX-N --gate-point activation`. It evaluates on the selected control plane over HTTPS or local Postgres. `implement` / `conduct` / `usher` share it. The authoritative status write runs it for listed `check_hard_blocks` at `activation`, and on every write to `done` at `closure` (not skippable by force or QA bypass). `items.block` refuses a wait a live activation/integration/closure edge already carries — use `yoke items dependency add`. The frontier uses `evaluate_batch_gates()` for activation.
 
 ## Table: ouroboros_entries
 

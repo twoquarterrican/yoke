@@ -33,6 +33,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `item_worktrees.path_record` | `item` |
 | `item_worktrees.release` | `item` |
 | `item_worktrees.release_merged_lane` | `none` |
+| `merge.audit.snapshot` | `none` |
 | `merge.lock.acquire` | `none` |
 | `merge.lock.list` | `none` |
 | `merge.lock.release` | `none` |
