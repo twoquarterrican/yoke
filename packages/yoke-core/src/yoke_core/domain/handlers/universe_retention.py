@@ -44,12 +44,18 @@ def _handle(request, prune):
                 message=message.strip(),
             ),
         )
-    except Exception:
+    except Exception as exc:
         return HandlerOutcome(
             primary_success=False,
             error=FunctionError(
-                code="retention_read_failed",
-                message="The selected universe's retention/identity could not be read. Recovery: restore its database connection and retry; no prune pass began.",
+                code="retention_pass_outcome_unknown"
+                if prune
+                else "retention_read_failed",
+                message=(
+                    f"The prune pass could not be acknowledged ({type(exc).__name__}); its outcome/count is unknown and any commits remain committed. Recovery: restore the database connection and rerun universe prune."
+                    if prune
+                    else f"The selected universe's retention/identity could not be read ({type(exc).__name__}). Recovery: restore its database connection and retry."
+                ),
             ),
         )
     failure = result.get("failure")

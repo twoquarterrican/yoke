@@ -1,4 +1,4 @@
-"""Tests for yoke_core.domain.events_crud — init, insert, queries, prune,
+"""Tests for yoke_core.domain.events_crud — init, insert, queries,
 severity config, and event-name validation."""
 
 from __future__ import annotations
