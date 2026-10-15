@@ -62,6 +62,8 @@ then resolves canonical shared groups once if private copies need retirement.
 New and existing cases use the same projection; a later call reads fresh facts,
 including withdrawals. Requirement writes, correction admission, producer
 receipts and source/target identities retain their existing checks and run lock.
+Production proof commands resolve the attaching member's project and pass it
+explicitly as `--project`; wire member identities use the current public ref.
 
 All concrete blocking cases must pass with evidence attached to the exact
 execution capture, or carry an explicit discharge, before stage acceptance.
