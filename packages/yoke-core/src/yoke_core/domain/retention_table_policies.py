@@ -120,13 +120,13 @@ def policies(policy, cutoff):
         ("merge_locks", ("id",)),
     ):
         rules.append(Cleanup(table, keys, "t.expires_at<%s", (expiry,)))
-    # Admission windows retain a full diagnostic grace after their real window.
+    # Machine admission expires promptly; frontend windows retain diagnostic grace.
     rules += [
         Cleanup(
             "machine_authorization_rate_limits",
             ("client_key", "operation"),
             "t.window_start<%s",
-            (int(expiry.timestamp()) - 60,),
+            (int(cutoff.timestamp()) - 60,),
         ),
         Cleanup(
             "frontend_event_rate_limits",

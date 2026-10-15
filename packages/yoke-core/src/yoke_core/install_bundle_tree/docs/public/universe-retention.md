@@ -62,7 +62,8 @@ document. A policy change during the command stops with
 | Terminal completed evidence-fetch detail | 7 days |
 | Completed successful reaps and notified/owner-settled waits | 30 days |
 | Expired sign-in links, device codes, web sessions and attribution redemptions | Authoritative expiry plus 1 day |
-| Finished admission windows and expired merge locks | Authoritative expiry plus 1 day |
+| Finished frontend admission windows and expired merge locks | Authoritative expiry plus 1 day |
+| Finished machine authorization admission windows | Prompt expired-window cleanup; no diagnostic grace |
 | Unfinished snapshot uploads | Maximum 7 days from creation |
 
 Protection wins over age. Event-name overrides precede severity windows;

@@ -32,7 +32,8 @@ def prune_inline_expired(conn, table, now):
     if table.endswith("rate_limits"):
         column, cutoff = "window_start", cutoff - timedelta(seconds=60)
         if table == "machine_authorization_rate_limits":
-            cutoff = int(cutoff.timestamp())
+            # Machine admission retains its prompt expired-window cleanup.
+            cutoff = int(parse_instant(now).timestamp()) - 60
     from yoke_core.domain.db_helpers import instant_parameter
 
     p = "%s" if db_backend.connection_is_postgres(conn) else "?"
