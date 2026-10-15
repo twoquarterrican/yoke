@@ -10,6 +10,7 @@ import pytest
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import iso8601_now
+from yoke_core.domain.postgres_connection_reuse import ReusableConnection
 from yoke_core.domain.sql_json import json_get
 from yoke_core.domain.time_sql import now_sql
 from runtime.api.fixtures.pg_testdb import test_database as pg_test_database
@@ -19,14 +20,6 @@ from runtime.api.fixtures.pg_testdb import test_database as pg_test_database
 def pg_authority():
     with pg_test_database():
         yield
-
-
-class _DummyConn:
-    def __init__(self):
-        self.closed = 0
-
-    def close(self):
-        self.closed += 1
 
 
 def test_postgres_is_the_only_runtime_backend():
@@ -52,6 +45,7 @@ def test_sqlite_to_postgres_bridge_modules_are_removed():
 def test_connect_returns_native_psycopg_rows(pg_authority):
     conn = db_backend.connect()
     try:
+        assert isinstance(conn, ReusableConnection)
         assert isinstance(conn, psycopg.Connection)
         assert db_backend.connection_is_postgres(conn)
         assert not hasattr(conn, "executescript")
@@ -66,49 +60,6 @@ def test_connect_returns_native_psycopg_rows(pg_authority):
         assert row["label"] == "native"
     finally:
         conn.close()
-
-
-def test_test_connection_tracker_disabled_by_default(monkeypatch):
-    db_backend.close_tracked_test_connections()
-    monkeypatch.delenv(db_backend.TEST_TRACK_CONNECTIONS_ENV, raising=False)
-    conn = _DummyConn()
-
-    assert db_backend._track_test_connection(conn) is conn
-    db_backend.close_tracked_test_connections()
-
-    assert conn.closed == 0
-
-
-def test_test_connection_tracker_closes_enabled_connections(monkeypatch):
-    db_backend.close_tracked_test_connections()
-    monkeypatch.setenv(db_backend.TEST_TRACK_CONNECTIONS_ENV, "1")
-    first = _DummyConn()
-    second = _DummyConn()
-
-    db_backend._track_test_connection(first)
-    db_backend._track_test_connection(second)
-    db_backend.close_tracked_test_connections()
-    db_backend.close_tracked_test_connections()
-
-    assert first.closed == 1
-    assert second.closed == 1
-
-
-def test_test_connection_tracker_closes_only_connections_after_snapshot(monkeypatch):
-    db_backend.close_tracked_test_connections()
-    monkeypatch.setenv(db_backend.TEST_TRACK_CONNECTIONS_ENV, "1")
-    fixture_conn = _DummyConn()
-    test_conn = _DummyConn()
-
-    db_backend._track_test_connection(fixture_conn)
-    baseline = db_backend.tracked_test_connection_count()
-    db_backend._track_test_connection(test_conn)
-    db_backend.close_tracked_test_connections_since(baseline)
-
-    assert fixture_conn.closed == 0
-    assert test_conn.closed == 1
-    db_backend.close_tracked_test_connections()
-    assert fixture_conn.closed == 1
 
 
 def test_native_connection_rejects_sqlite_paramstyle(pg_authority):

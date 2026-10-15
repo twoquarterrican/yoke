@@ -78,13 +78,14 @@ def guarded_conninfo(dsn: str) -> str:
     return conninfo.make_conninfo(dsn, **overrides)
 
 
-def open_guarded_postgres(dsn: str, **connect_kwargs: Any):
-    """Open one psycopg connection to *dsn* under the control-plane guards.
+def connect_guarded_socket(dsn: str, *, connection_class=None, **connect_kwargs: Any):
+    """Open one raw psycopg connection to *dsn* under the control-plane guards.
 
     The single place a control-plane Postgres socket is created, so a guard
     added here reaches every mode -- local, self-hosted, hosted -- every
     environment, and every role, including the admin roles no boot converge
-    writes a default for.
+    writes a default for. *connection_class* is a ``psycopg.Connection``
+    subclass to open instead of the plain class.
     """
     import psycopg
 
@@ -99,23 +100,41 @@ def open_guarded_postgres(dsn: str, **connect_kwargs: Any):
         connect_kwargs["connect_timeout"] = max(
             1, int(remaining_seconds(FUNCTION_RESPONSE_TIMEOUT_SECONDS))
         )
-    conn = psycopg.connect(guarded_conninfo(dsn), **connect_kwargs)
-    if active():
-        from yoke_core.domain.bounded_database import BudgetConnection
-        from yoke_core.domain.function_read_deadline import driver_call
+    opener = connection_class.connect if connection_class else psycopg.connect
+    return opener(guarded_conninfo(dsn), **connect_kwargs)
 
-        return BudgetConnection(
-            conn,
-            remaining=lambda: remaining_seconds(FUNCTION_RESPONSE_TIMEOUT_SECONDS),
-            driver_call=driver_call,
-        )
-    return conn
+
+def bind_read_deadline(conn):
+    """Bound *conn*'s statements by the active function read deadline, if any."""
+    from yoke_contracts.read_deadline import (
+        FUNCTION_RESPONSE_TIMEOUT_SECONDS,
+        active,
+        remaining_seconds,
+    )
+
+    if not active():
+        return conn
+    from yoke_core.domain.bounded_database import BudgetConnection
+    from yoke_core.domain.function_read_deadline import driver_call
+
+    return BudgetConnection(
+        conn,
+        remaining=lambda: remaining_seconds(FUNCTION_RESPONSE_TIMEOUT_SECONDS),
+        driver_call=driver_call,
+    )
+
+
+def open_guarded_postgres(dsn: str, **connect_kwargs: Any):
+    """Open one guarded psycopg connection to *dsn* that closes on ``close()``."""
+    return bind_read_deadline(connect_guarded_socket(dsn, **connect_kwargs))
 
 
 __all__ = [
     "IDLE_IN_TRANSACTION_SESSION_TIMEOUT",
     "IDLE_IN_TRANSACTION_SETTING",
     "KEEPALIVE_PARAMS",
+    "bind_read_deadline",
+    "connect_guarded_socket",
     "guarded_conninfo",
     "open_guarded_postgres",
 ]

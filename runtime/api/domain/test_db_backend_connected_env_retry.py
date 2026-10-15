@@ -164,7 +164,7 @@ def test_db_backend_connect_self_heals_and_retries(monkeypatch):
             raise _refused()
         return "NATIVE"
 
-    monkeypatch.setattr(db_backend, "_open_native_postgres", fake_native_connect)
+    monkeypatch.setattr(db_backend, "_lease_ambient_postgres", fake_native_connect)
     monkeypatch.setattr(
         db_backend,
         "resolve_pg_dsn",
@@ -297,7 +297,7 @@ def test_managed_secret_invalid_password_refreshes_then_uses_previous(monkeypatc
             raise psycopg.errors.InvalidPassword("password rejected")
         return "PREVIOUS-CONN"
 
-    monkeypatch.setattr(db_backend, "_open_native_postgres", fake_native_connect)
+    monkeypatch.setattr(db_backend, "_lease_ambient_postgres", fake_native_connect)
 
     assert db_backend.connect() == "PREVIOUS-CONN"
     assert attempts == [
@@ -358,7 +358,7 @@ def test_managed_secret_does_not_fallback_for_other_connection_errors(monkeypatc
     )
     monkeypatch.setattr(
         db_backend,
-        "_open_native_postgres",
+        "_lease_ambient_postgres",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(_refused()),
     )
     monkeypatch.setattr(cer, "is_local_tunnel_connection_error", lambda exc: False)
