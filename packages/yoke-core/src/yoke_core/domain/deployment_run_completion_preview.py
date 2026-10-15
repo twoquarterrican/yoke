@@ -80,14 +80,20 @@ class CompletionPreview:
         return ""
 
 
-def completion_preview(conn: Any, run_id: str) -> CompletionPreview:
+def completion_preview(
+    conn: Any, run_id: str, *, run: dict[str, Any] | None = None
+) -> CompletionPreview:
     """Share final membership, target deferral, and readiness with settlement."""
-    if not _column_exists(conn, "deployment_runs", "settling_at"):
-        return CompletionPreview()
-    run = conn.execute(
-        "SELECT status,settling_at FROM deployment_runs WHERE id=%s", (run_id,)
-    ).fetchone()
-    if run is None or run[0] != "executing" or not run[1]:
+    if run is None:
+        if not _column_exists(conn, "deployment_runs", "settling_at"):
+            return CompletionPreview()
+        row = conn.execute(
+            "SELECT status,settling_at FROM deployment_runs WHERE id=%s", (run_id,)
+        ).fetchone()
+        if row is None:
+            return CompletionPreview()
+        run = dict(row)
+    if run["status"] != "executing" or not run["settling_at"]:
         return CompletionPreview()
     try:
         return _read_members(conn, run_id)

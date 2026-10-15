@@ -303,7 +303,7 @@ def run_progress(
                 ),
                 driver_phase=driver_phase,
                 member_lines=member_lines,
-                completion=completion_preview(conn, run_id),
+                completion=completion_preview(conn, run_id, run=run),
             )
         )
     return tuple(rows)

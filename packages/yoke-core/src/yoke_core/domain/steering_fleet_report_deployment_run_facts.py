@@ -74,9 +74,15 @@ def live_deployment_runs(conn: Any, *, project_id: int) -> list[dict[str, Any]]:
         if _column_exists(conn, "deployment_runs", "current_stage_entered_at")
         else "NULL"
     )
+    settling = (
+        "settling_at"
+        if _column_exists(conn, "deployment_runs", "settling_at")
+        else "NULL"
+    )
     rows = conn.execute(
         f"""SELECT id, flow, status, COALESCE(current_stage, '') AS current_stage,
-                   {entered} AS current_stage_entered_at, driver_attachment
+                   {entered} AS current_stage_entered_at, driver_attachment,
+                   {settling} AS settling_at
               FROM deployment_runs
              WHERE project_id = {p}
                AND status NOT IN ({holes})
