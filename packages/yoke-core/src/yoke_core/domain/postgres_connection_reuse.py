@@ -83,7 +83,13 @@ class ReusedConnection:
         return getattr(self._leased(), name)
 
     def __setattr__(self, name, value):
-        setattr(self._leased(), name, value)
+        # Only psycopg connection properties reach the shared socket; any other
+        # assignment (a patched method, say) must not outlive this lease.
+        conn = object.__getattribute__(self, "_conn")
+        if conn is not None and isinstance(getattr(type(conn), name, None), property):
+            setattr(conn, name, value)
+        else:
+            object.__setattr__(self, name, value)
 
     @property
     def closed(self) -> bool:

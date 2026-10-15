@@ -70,6 +70,22 @@ def test_returned_connection_is_detached(pg_authority):
         conn.execute("SELECT 1")
 
 
+def test_assigned_attributes_stay_on_the_lease(pg_authority, monkeypatch):
+    conn = db_backend.connect()
+    first_pid = _backend_pid(conn)
+    monkeypatch.setattr(conn, "close", lambda: None)
+    monkeypatch.setattr(conn, "commit", lambda: None)
+    conn.close()
+    assert _backend_pid(conn) == first_pid
+    monkeypatch.undo()
+    conn.close()
+    monkeypatch.undo()
+
+    with db_backend.connect() as reused:
+        assert _backend_pid(reused) == first_pid
+        assert "commit" not in vars(reused._conn)
+
+
 def test_open_transaction_is_rolled_back_on_close(pg_authority):
     conn = db_backend.connect()
     conn.execute("CREATE TABLE reuse_uncommitted_probe (n int)")
