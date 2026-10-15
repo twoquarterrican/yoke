@@ -150,14 +150,26 @@ authorization likewise prove through that paired HTTPS plane.
 
 If run creation itself needs a merged correction that the serving API predates,
 the control-plane operator can bootstrap creation from that verified source
-checkout through the existing paired authority:
+checkout through the existing explicit operator launcher and paired authority.
+This launcher requires no item lane:
 
 ```text
-yoke --env prod-db-admin dev run -- yoke deployment-runs create yoke FLOW --environment prod --source-ref FULL_SHA --idempotency-key KEY
+source_checkout=/absolute/source/checkout
+env YOKE_SOURCE_DEV=1 YOKE_HOME="$source_checkout" \
+  "$source_checkout/.venv/bin/python3" \
+  "$source_checkout/packages/yoke-core/src/yoke_core/tools/yoke_launcher.py" \
+  --env prod-db-admin deployment-runs create yoke FLOW --environment prod \
+  --source-ref FULL_SHA --idempotency-key KEY
 ```
 
-Use the exact reviewed, merged commit with its own successful branch CI run;
-the registered creation command retains candidate, source, membership, target,
+Use a clean checkout at the exact reviewed, merged commit with its own
+successful branch CI run and its locked source environment. First use this
+same launcher prefix with `deployment-runs create --help`; it must print
+`source authority: explicit operator opt-in` naming that checkout. A uv console
+entrypoint named `yoke` may ignore the opt-in, so use the explicit script.
+`dev run` selects a claimed lane and is not this itemless operator route.
+Pass this checkout's full verified commit as `FULL_SHA`. The registered
+creation command retains candidate, source, membership, target,
 lineage, custody and live-driver checks. Review its named recovery and receipt
 before driving anything. Creation runs before the normal driver's candidate
 re-exec, so the driver's re-exec alone cannot repair a creation-time reader.
