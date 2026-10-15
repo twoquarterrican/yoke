@@ -1,8 +1,28 @@
-"""Refresh selected deployment cases on their original target.
+"""Refresh an already-materialized deployment stage's cases from its plan.
 
-Unjudged rows refresh in place; changed failed cases get declared replacements.
-Passed rows retain acceptance evidence, and removed cases are discharged.
-The frozen selection updates atomically through explicit rematerialization.
+:mod:`qa_plan_rematerialize` does this for an item transition. A deployment
+run, stage and member subject had no equivalent, and one unique index is why
+it mattered: a materialized case is unique on
+``(run, stage, member, plan_id, plan_case_key, host_baseline, target)``, so a
+corrected plan case could never arrive as a second row. Correcting a case
+meant publishing a whole new plan, or giving up and waiving the broken one.
+
+Rematerializing converges the subject on its plans in one pass, case by
+case, so one answered sibling never holds the rest of the roster hostage:
+
+* a case added to the plan gets its first row;
+* a row nobody has judged is refreshed in place from the plan;
+* a case whose rows all failed or were discharged, and whose content has
+  since changed, gets one corrected row under a distinct key, declared the
+  replacement of the failed attempts (:mod:`qa_requirement_replacement`) --
+  the failed rows keep their evidence and are superseded once it passes;
+* a case already passed stays an acceptance record and is not rewritten;
+* a row whose case left the plan is waived.
+
+The subject's target is never moved. A deployment row is pinned to the target
+its stage receipt observed, so every refresh re-uses the digest already on the
+rows rather than re-resolving the plan's own environment -- re-resolving would
+silently re-point a frozen run at whatever the plan points at today.
 """
 
 from __future__ import annotations
@@ -246,18 +266,6 @@ def rematerialize_for_deployment_stage(
         cases = [
             case for case in cases if case_applies_to_target(case, execution_target)
         ]
-        from yoke_core.domain.deployment_qa_snapshot_selection import (
-            refresh_selected_plan,
-        )
-
-        refresh_selected_plan(
-            conn,
-            deployment_run_id,
-            deployment_stage,
-            deployment_member_item_id,
-            plan_row,
-            cases,
-        )
         for case in cases:
             for baseline_position, baseline in enumerate(case_baselines(case), start=1):
                 group = groups.get((str(case["case_key"]), baseline), [])

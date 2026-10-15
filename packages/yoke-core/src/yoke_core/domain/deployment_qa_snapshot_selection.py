@@ -8,7 +8,6 @@ from yoke_core.domain.deployment_requirement_snapshot_format import (
     CASE_FIELDS,
     PLAN_FIELDS,
 )
-from yoke_core.domain.deployment_requirement_snapshot_format import semantic_row
 from yoke_core.domain.deployment_requirement_snapshots import _canonical
 from yoke_core.domain.qa_plan_management import QaPlanError
 
@@ -112,6 +111,20 @@ def freeze_selected_plans(conn, subject, snapshots):
     if not snapshots or subject.get("shared_plan"):
         return
     member = subject.get("member_item_id")
+    if member is not None:
+        flow_ids = {
+            int(value["plan"]["id"])
+            for value in subject["flow_snapshot"].get("selections", [])
+            if value.get("stage") == subject["stage"]["name"]
+        }
+        snapshots = [
+            value
+            for value in snapshots
+            if int(value["plan"]["id"]) not in flow_ids
+            or value.get("selected_by_agent")
+        ]
+        if not snapshots:
+            return
     if member is None:
         table, where, params, field = (
             "deployment_runs",
@@ -165,56 +178,3 @@ def freeze_selected_plans(conn, subject, snapshots):
             f"UPDATE {table} SET requirement_snapshot=%s WHERE {where}",
             (_canonical(payload), *params),
         )
-
-
-def refresh_selected_plan(conn, run_id, stage, member, plan, cases):
-    """Explicit rematerialization updates its existing complete selection."""
-    snapshot = {
-        "plan": semantic_row(plan, PLAN_FIELDS),
-        "cases": [semantic_row(case, CASE_FIELDS) for case in cases],
-    }
-    require_complete_snapshot(snapshot)
-    conn.execute("SELECT id FROM deployment_runs WHERE id=%s FOR UPDATE", (run_id,))
-    owners = query_rows(
-        conn,
-        "SELECT item_id,requirement_snapshot FROM deployment_run_items "
-        "WHERE run_id=%s" + (" AND item_id=%s" if member is not None else ""),
-        (run_id, member) if member is not None else (run_id,),
-    )
-    if member is None:
-        row = conn.execute(
-            "SELECT requirement_snapshot FROM deployment_runs WHERE id=%s", (run_id,)
-        ).fetchone()
-        owners.append(
-            {"item_id": None, "requirement_snapshot": row["requirement_snapshot"]}
-        )
-    writes = []
-    for owner in owners:
-        payload = json.loads(str(owner["requirement_snapshot"]))
-        field = "plans" if owner["item_id"] is not None else "selections"
-        changed = False
-        for value in payload.get(field, []):
-            if int(value["plan"]["id"]) != int(plan["id"]):
-                continue
-            if field == "selections" and value.get("stage") != stage:
-                continue
-            require_complete_snapshot(value)
-            value.update(snapshot)
-            changed = True
-        if changed:
-            writes.append((owner["item_id"], _canonical(payload)))
-    if not writes:
-        incomplete_snapshot(
-            plan["id"], "materialized selection has no complete frozen owner"
-        )
-    for item_id, payload in writes:
-        if item_id is None:
-            conn.execute(
-                "UPDATE deployment_runs SET requirement_snapshot=%s WHERE id=%s",
-                (payload, run_id),
-            )
-        else:
-            conn.execute(
-                "UPDATE deployment_run_items SET requirement_snapshot=%s WHERE run_id=%s AND item_id=%s",
-                (payload, run_id, item_id),
-            )
