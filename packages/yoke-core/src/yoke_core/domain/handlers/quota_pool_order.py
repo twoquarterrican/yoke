@@ -49,12 +49,14 @@ def handle_get(request):
 def handle_set(request):
     try:
         parsed = SetRequest.model_validate(request.payload)
-        with connect() as conn:
-            ordered = set_pool_order(
-                conn, pools=parsed.pools, actor_id=caller_actor_id(conn, request)
-            )
-        return HandlerOutcome(result_payload={"pools": list(ordered)})
     except ValidationError as exc:
         return _failure("payload_invalid", safe_validation_message(exc))
+    actor_id, actor_error = caller_actor_id(request)
+    if actor_error is not None:
+        return HandlerOutcome(primary_success=False, error=actor_error)
+    try:
+        with connect() as conn:
+            ordered = set_pool_order(conn, pools=parsed.pools, actor_id=actor_id)
+        return HandlerOutcome(result_payload={"pools": list(ordered)})
     except QuotaPoolOrderError as exc:
         return _failure(exc.code, str(exc))

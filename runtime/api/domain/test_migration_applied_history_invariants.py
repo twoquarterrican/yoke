@@ -197,3 +197,48 @@ def _register_session_with_no_recorded_request(conn: Any) -> None:
         ),
     )
     conn.commit()
+
+
+def test_model_effort_levels_reproof_accepts_a_missing_quota_order_row() -> None:
+    """A missing quota-order row is valid; a present row must be the two pools."""
+    import importlib
+    import json
+    import sqlite3
+
+    name = "0071_model_effort_levels"
+    module = importlib.import_module(
+        "yoke_core.domain.migrations.0071_model_effort_levels"
+    )
+    conn = sqlite3.connect(":memory:")
+    conn.execute(
+        "CREATE TABLE universe_settings ("
+        "key TEXT PRIMARY KEY, value TEXT, updated_at TEXT, "
+        "updated_by_actor_id INTEGER)"
+    )
+
+    def load(loaded: str) -> Any:
+        assert loaded == name
+        return module
+
+    def reprove() -> Any:
+        return verify_applied_history_invariants(
+            conn,
+            (name,),
+            history=(name,),
+            load_module=load,
+        )
+
+    assert reprove().failure is None
+    conn.execute(
+        "INSERT INTO universe_settings (key, value) VALUES ('cursor_quota_order', ?)",
+        (json.dumps(["Cursor Models", "Other Models"]),),
+    )
+    assert reprove().failure is None
+    conn.execute(
+        "UPDATE universe_settings SET value = ? WHERE key = 'cursor_quota_order'",
+        (json.dumps(["Cursor Models"]),),
+    )
+    failure = reprove().failure
+    assert failure is not None
+    assert failure.startswith(f"{name} invariants failed --")
+    assert "Recovery:" in failure
