@@ -59,7 +59,7 @@ is labeled separately. Empty windows do not assert health or zero latency.
 To inspect Shipping's authorized overview through the same registered read:
 
 ```text
-yoke deployment-runs list --relevance overview --full
+yoke deployment-runs list --relevance overview
 ```
 
 This includes current member QA and delivery facts, with a bounded live/recent
