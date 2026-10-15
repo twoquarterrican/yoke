@@ -13,7 +13,6 @@ from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import query_rows
 from yoke_core.domain.deployment_qa_shared_plan_reads import read_plan_rows
 from yoke_core.domain.deployment_requirement_snapshot_format import REQUIREMENT_FIELDS
-from yoke_core.domain.qa_converging_columns import converged_select
 from yoke_core.domain.qa_obligation_settlement import requirement_retracted_at_select
 from yoke_core.domain.qa_plan_attachment_reads import live_item_attachment_sql
 from yoke_core.domain.schema_common import _table_exists
@@ -71,7 +70,7 @@ def read_snapshot_inputs(conn, *, item_ids, requirement_ids, plan_ids=()):
             raise LookupError("QA requirement catalog is not installed")
         rows = query_rows(
             conn,
-            f"SELECT {converged_select(conn, 'qa_requirements', REQUIREMENT_FIELDS)},"
+            f"SELECT {','.join(REQUIREMENT_FIELDS)},"
             f"waived_at,{requirement_retracted_at_select(conn)} FROM qa_requirements "
             f"WHERE id IN ({','.join(marker for _ in selected)}) ORDER BY id{lock}",
             selected,
