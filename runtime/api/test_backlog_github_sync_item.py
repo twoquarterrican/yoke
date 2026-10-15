@@ -177,7 +177,7 @@ class TestSyncItem:
             rc = backlog_github_sync.sync_item("EXT-20", conn=db, stdout=stdout)
         assert rc == 0
         output = stdout.getvalue()
-        assert "\n#999\n" in output
+        assert "GitHub issue #999: #999\n" in output
         assert "https://github.com/org/externalwebapp/issues/999" not in output
         db.close()
 

@@ -165,6 +165,9 @@ the candidate is released. Keep unperformed live cases marked unproven.
 
 ## Issue-sync opt-in proof
 
+The host adapter expands braces in `entry_surface` as placeholders, including
+inside quoted scripts. Use `dict()` for empty mappings in embedded Python.
+
 The scripted `issue-sync-default` case creates an isolated local project and
 proves that enabling without verified App access refuses and leaves sync off.
 After a fresh operator GO, the existing installer exploration must also use

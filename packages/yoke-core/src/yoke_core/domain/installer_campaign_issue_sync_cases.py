@@ -19,13 +19,13 @@ result, payload = call('projects', 'create', '--slug', 'mirror-proof', '--name',
 if result.returncode or not payload.get('success'):
     sys.exit('issue_sync_fixture_create_failed: restore the declared baseline and inspect projects create before retrying')
 result, payload = call('projects', 'get', '--project', 'mirror-proof', '--field', 'github_sync_mode')
-if result.returncode or payload.get('result', {}).get('value') != 'disabled':
+if result.returncode or payload.get('result', dict()).get('value') != 'disabled':
     sys.exit('issue_sync_default_enabled: retain the project response and repair the project default before retrying')
 result, payload = call('projects', 'update', '--slug', 'mirror-proof', '--name', 'Mirror proof', '--github-sync-mode', 'enabled')
 if not result.returncode or 'active, verified' not in json.dumps(payload):
     sys.exit('issue_sync_permission_gate_missing: retain the update refusal and repair verified App admission before retrying')
 result, payload = call('projects', 'get', '--project', 'mirror-proof', '--field', 'github_sync_mode')
-if result.returncode or payload.get('result', {}).get('value') != 'disabled':
+if result.returncode or payload.get('result', dict()).get('value') != 'disabled':
     sys.exit('issue_sync_refusal_changed_mode: retain the project response and restore disabled mode before retrying')
 print('issue mirroring remained disabled; deliberate unbound enable refused')
 """
