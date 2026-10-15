@@ -170,7 +170,8 @@ inside quoted scripts. Use `dict()` for empty mappings in embedded Python.
 
 The scripted `issue-sync-default` case creates an isolated local project and
 proves that enabling without verified App access refuses and leaves sync off.
-After a fresh operator GO, the existing installer exploration must also use
+When the existing campaign owner admits this candidate for execution, the
+installer exploration must also use
 its approved disposable repository to prove these installed paths:
 
 - Complete terminal setup with active App binding; observe no issue-sync
@@ -186,4 +187,6 @@ its approved disposable repository to prove these installed paths:
 
 Keep these obligations with the current campaign/exploration owners and saved
 execution. Source sync prepares future definitions; it never starts a fresh run
-or supplies the operator GO. Retain missing fixture or approval as unproven.
+or grants execution authority. Preserve existing approval and readiness holds;
+credit this candidate only through its own legitimately admitted execution.
+Retain missing fixture or approval as unproven.
