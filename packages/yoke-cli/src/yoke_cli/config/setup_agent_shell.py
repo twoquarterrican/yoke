@@ -26,15 +26,8 @@ from yoke_cli.config import setup_agent_answers as answers
 from yoke_cli.config import setup_agent_response as responses
 from yoke_cli.config.onboard_wizard_flows import SETUP_FLOWS, init_setup_state
 from yoke_cli.config.onboard_wizard_state import CopyTarget, _View
-from yoke_cli.config.setup_agent_answering import (
-    INVOCATION_ONLY_KEYS,
-    REVIEW_KEY,
-    AnswerFlow,
-    SetupRefusal,
-)
+from yoke_cli.config.setup_agent_answering import REVIEW_KEY, AnswerFlow, SetupRefusal
 from yoke_cli.config.setup_prompt import SetupHuman, SetupPrompt
-
-APPLY_CHOICE = "apply"
 
 
 class _StepFailed(RuntimeError):
@@ -175,7 +168,8 @@ class AgentSetup(AgentShell, *SETUP_FLOWS):
         self._answers = store
         self._cli = dict(cli_answers)
         self._pending_refusal = refusal
-        if any(not _belongs(key, store.waiting_key) for key in self._cli):
+        waiting = store.waiting_key
+        if waiting and any(not _belongs(key, waiting) for key in self._cli):
             self._cli = {}
             self._pending_refusal = refusal or (
                 "setup_answer_not_current",
@@ -233,39 +227,9 @@ class AgentSetup(AgentShell, *SETUP_FLOWS):
             view.on_select(prompt.choices[0].value)
             return
         if not prompt.answerable:
-            raise _StepFailed(f"setup reached {prompt.key!r}, which asks nothing")
+            said = [responses.plain(prompt.title), prompt.message, *prompt.detail_lines]
+            raise _StepFailed(" ".join(text for text in said if text) or prompt.key)
         self._stop_at(prompt)
-
-    def _answer_from_sources(self, view: _View) -> bool:
-        prompt = view.prompt
-        given = self._cli_for(prompt.key)
-        if given:
-            self._answer(view, given)
-            return True
-        if prompt.key in self._auto_answered or prompt.key in INVOCATION_ONLY_KEYS:
-            return self._answer_preset(view)
-        stored = self._answers.values_for(prompt.key)
-        if not stored:
-            return self._answer_preset(view)
-        self._auto_answered.add(prompt.key)
-        try:
-            self._answer(view, stored)
-        except SetupRefusal:
-            self._answers.drop(prompt.key)
-            return False
-        return True
-
-    def _answer_preset(self, view: _View) -> bool:
-        prompt = view.prompt
-        if prompt.key != REVIEW_KEY or not self._apply_preset:
-            return False
-        if prompt.key in self._auto_answered:
-            return False
-        if APPLY_CHOICE not in {row.value for row in prompt.choices}:
-            return False
-        self._auto_answered.add(prompt.key)
-        self._answer(view, {prompt.key: APPLY_CHOICE})
-        return True
 
     def _divert_to_apply_failure(self) -> bool:
         failure = self._answers.apply_failure
@@ -326,17 +290,18 @@ class AgentSetup(AgentShell, *SETUP_FLOWS):
 
     def _step_failed(self, exc: BaseException, prompt: SetupPrompt | None) -> dict[str, Any]:
         report = f" The run report is {self.report_path}." if self.report_path else ""
+        cause = str(exc) if isinstance(exc, _StepFailed) else f"{type(exc).__name__}: {exc}"
         return responses.failed(
             "setup_step_failed",
-            f"{type(exc).__name__}: {exc}.{report} Fix the named cause, then run "
+            f"{cause.rstrip('.')}.{report} Fix the named cause, then run "
             "`yoke setup --agent` again to continue from the last answered question.",
             key=prompt.key if prompt else None,
             report_path=self.report_path,
         )
 
 
-def _belongs(key: str, waiting_key: str | None) -> bool:
-    return bool(waiting_key) and (key == waiting_key or key.startswith(f"{waiting_key}."))
+def _belongs(key: str, waiting_key: str) -> bool:
+    return key == waiting_key or key.startswith(f"{waiting_key}.")
 
 
 def _progress(line: str) -> None:

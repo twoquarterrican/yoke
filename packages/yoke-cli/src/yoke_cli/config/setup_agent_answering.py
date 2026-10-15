@@ -21,6 +21,7 @@ from yoke_cli.config.setup_prompt import (
 )
 
 REVIEW_KEY = "review.confirm"
+APPLY_CHOICE = "apply"
 # Answers that run or redirect Apply count only in the invocation that gives
 # them, so replaying stored answers never starts Apply on its own.
 INVOCATION_ONLY_KEYS = frozenset({
@@ -42,6 +43,45 @@ class SetupRefusal(Exception):
 
 class AnswerFlow:
     """Validate and apply one screen's answers; stage them for the store."""
+
+    def _answer_from_sources(self, view: _View) -> bool:
+        """Answer from this command line, then the store, then ``--yes``."""
+        prompt = view.prompt
+        given = self._cli_for(prompt.key)
+        if given:
+            mode = self._answers.value(prompt.key)
+            if prompt.fields and prompt.key not in given and mode is not None:
+                given = {prompt.key: mode, **given}
+            self._answer(view, given)
+            return True
+        # A form's mode switch redraws it, so a stored answer counts once per mode.
+        marker = prompt.key if prompt.selected is None else f"{prompt.key}@{prompt.selected}"
+        if marker in self._auto_answered or prompt.key in INVOCATION_ONLY_KEYS:
+            return self._answer_preset(view)
+        stored = self._answers.values_for(prompt.key)
+        if not stored:
+            return self._answer_preset(view)
+        if prompt.fields and stored == {prompt.key: prompt.selected}:
+            return False
+        self._auto_answered.add(marker)
+        try:
+            self._answer(view, stored)
+        except SetupRefusal:
+            self._answers.drop(prompt.key)
+            return False
+        return True
+
+    def _answer_preset(self, view: _View) -> bool:
+        prompt = view.prompt
+        if prompt.key != REVIEW_KEY or not self._apply_preset:
+            return False
+        if prompt.key in self._auto_answered:
+            return False
+        if APPLY_CHOICE not in {row.value for row in prompt.choices}:
+            return False
+        self._auto_answered.add(prompt.key)
+        self._answer(view, {prompt.key: APPLY_CHOICE})
+        return True
 
     def _cli_for(self, key: str) -> dict[str, str]:
         prefix = f"{key}."
@@ -171,4 +211,4 @@ def _not_current(prompt: SetupPrompt) -> SetupRefusal:
     )
 
 
-__all__ = ["AnswerFlow", "INVOCATION_ONLY_KEYS", "REVIEW_KEY", "SetupRefusal"]
+__all__ = ["APPLY_CHOICE", "AnswerFlow", "INVOCATION_ONLY_KEYS", "REVIEW_KEY", "SetupRefusal"]
