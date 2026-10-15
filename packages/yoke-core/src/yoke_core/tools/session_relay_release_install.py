@@ -73,8 +73,6 @@ def pin_relay_release(
             selected, fetch_manifest=fetch_manifest
         )
         observed = str(observed)
-        if not observed.startswith("v"):
-            observed = f"v{observed}"
         release = release_version_from_build(observed)
         index = distribution_index_for_instance(selected)
     except RelayReleaseError as exc:

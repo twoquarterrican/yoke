@@ -66,3 +66,53 @@ def test_relay_install_binds_every_product_to_declared_origin(tmp_path):
         for name in ("contracts", "cli", "harness", "core")
     }
     assert "--extra-index-url" not in calls[0]
+
+
+def test_public_relay_pin_preserves_the_numeric_handshake(tmp_path):
+    from runtime.api.tools.session_relay_release_test_support import (
+        fake_venv,
+        relay_instance,
+        runner_for,
+    )
+
+    version = "0.2.0.202610140941"
+    calls = []
+
+    def runtime(path):
+        fake_venv(path)
+        (path / "bin/python").chmod(0o700)
+
+    status = session_relay_release_install.pin_relay_release(
+        instance=relay_instance(tmp_path),
+        served_build=version,
+        create_venv=fake_venv,
+        create_runtime=runtime,
+        runner=runner_for(version, calls),
+    )
+    assert status.current
+    assert status.served_build == status.pinned_release == version
+    assert len([cmd for cmd in calls if "pip" in cmd]) == 1
+
+
+def test_response_and_source_comparison_keep_exact_numeric_tag(monkeypatch):
+    from yoke_cli.transport import https_engine_handshake as handshake
+
+    version = "0.2.0.202610140941"
+    observed, comparisons = [], []
+    monkeypatch.setattr(handshake, "local_handshake_version", lambda: "")
+    monkeypatch.setattr(handshake, "_loaded_source_checkout", lambda: "/source")
+    monkeypatch.setattr(
+        handshake.source_build_skew,
+        "compare_to_server_build",
+        lambda root, build: comparisons.append((root, build)),
+    )
+    monkeypatch.setattr(
+        handshake.control_plane_payload,
+        "observe_server_build",
+        lambda build, comparison: observed.append(build),
+    )
+    state = handshake.ServerHandshake()
+    handshake.observe_server_version({handshake.ENGINE_VERSION_HEADER: version}, state)
+    assert state.engine_version == version
+    assert observed == [version]
+    assert comparisons == [("/source", version)]
