@@ -340,9 +340,7 @@ def freeze_run_composition(conn: Any, run_id: str) -> dict[str, Any]:
         f"UPDATE deployment_runs SET composition_frozen_at={marker},"
         f"requirement_snapshot={marker} WHERE id={marker}",
         (
-            instant_parameter(
-                conn, frozen_at, table="deployment_runs", column="composition_frozen_at"
-            ),
+            instant_parameter(conn, frozen_at),
             flow_snapshot,
             run_id,
         ),

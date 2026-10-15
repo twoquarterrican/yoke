@@ -6,9 +6,8 @@ the release-train shape, the flag matrices, and the incidents that
 produced them. Repo-internal — it is not part of the install bundle,
 because none of it is true of a project that merely uses Yoke.
 
-The [native instant boot boundary](native-instant-preboot.md) traces the
-release driver's pre-boot clock reads and the temporary, declared TEXT-write
-serialization that must be removed after fleet-wide history convergence.
+[Native instant storage](native-instant-storage.md) describes timestamp
+binding, strict decoding and relevance filtering for release evidence.
 
 ## Worktree cleanup
 
