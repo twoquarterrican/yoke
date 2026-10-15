@@ -3,8 +3,8 @@
 Classify undelivered project receipts through steering_fleet_report_delivery_states
 and group their reasons for the steering report.
 
-Terminal receipts are excluded; ended recipients stay visible so lost
-envelopes remain actionable.
+Settled receipts are excluded; ended recipients include injected but
+unacknowledged envelopes so unresolved work remains visible.
 
 Grouping stays per recipient, split by state. The action is per recipient:
 one session with four stuck envelopes is one worker to wake, not four
@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from yoke_core.domain.steering_fleet_report_detectors import parse_stamp
 
-from yoke_core.domain.db_helpers import instant_parameter
+from yoke_core.domain.steering_fleet_report_receipts import report_receipts
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -31,7 +31,6 @@ from yoke_contracts.session_control.wake_delivery import (
 )
 from yoke_core.domain.session_tool_call_projections import (
     OPEN_TOOL_CALL_COLUMN,
-    open_tool_call_select,
 )
 from yoke_core.domain.session_message_authorization import project_policy
 from yoke_core.domain.session_relay_policy import relay_policy
@@ -50,7 +49,6 @@ from yoke_core.domain.steering_fleet_report_delivery_states import (
     RECIPIENT_TERMINATED,
     SEAT_ACTION_STATES,
     TURN_IN_FLIGHT,
-    deliverable_receipt,
     delivery_state,
 )
 
@@ -69,6 +67,10 @@ class UndeliveredMessages:
     delivery_state: str
     envelope_count: int
     oldest_seconds: int
+    #: Confirmed session item, retained after its work claim ends.
+    item_id: int | None = None
+    public_ref: str = ""
+    item_project: str = ""
     #: Up to :data:`MESSAGE_REFERENCE_LIMIT` ids, oldest first, so the seat
     #: can read the envelope itself rather than infer it from the row.
     message_ids: tuple[str, ...] = ()
@@ -122,6 +124,9 @@ class UndeliveredMessages:
 class _Group:
     """Mutable accumulator for one (recipient, state) row."""
 
+    item_id: int | None = None
+    public_ref: str = ""
+    item_project: str = ""
     oldest_seconds: int = 0
     envelope_count: int = 0
     message_ids: list[str] = None  # type: ignore[assignment]
@@ -151,6 +156,10 @@ class _Group:
         current: datetime,
     ) -> None:
         """Fold one receipt's facts into this row."""
+        self.item_id = record.get("item_id")
+        if self.item_id is not None:
+            self.public_ref = f"{record['item_prefix']}-{record['project_sequence']}"
+            self.item_project = str(record["item_project"])
         self.envelope_count += 1
         self.oldest_seconds = max(self.oldest_seconds, waited)
         if len(self.message_ids) < MESSAGE_REFERENCE_LIMIT:
@@ -216,6 +225,7 @@ def undelivered_messages(
     *,
     project_id: int,
     now: str,
+    session_id: str | None = None,
 ) -> tuple[UndeliveredMessages, ...]:
     """Every undelivered envelope in one project, grouped by recipient and state.
 
@@ -235,33 +245,7 @@ def undelivered_messages(
     )
     sla = timedelta(seconds=int(relay_policy().poll_seconds))
     attempts = last_attempts(conn, project_id=project_id, marker=placeholder, now=now)
-    open_call = open_tool_call_select(conn, session_alias="s")
-    rows = conn.execute(
-        f"""SELECT r.message_id AS message_id,
-                   r.session_id AS session_id,
-                   r.created_at AS created_at,
-                   r.wake_escalation AS wake_escalation,
-                   r.wake_attempt_count AS wake_attempt_count,
-                   r.routing_snapshot AS routing_snapshot,
-                   s.executor_surface AS executor_surface,
-                   s.last_tool_call_at AS last_tool_call_at,
-                   s.last_heartbeat AS last_heartbeat,
-                   s.episode_started_at AS episode_started_at,
-                   s.turn_posture AS turn_posture,
-                   s.turn_posture_at AS turn_posture_at,
-                   s.mode AS mode,
-                   s.native_process_gone_at AS native_process_gone_at,
-                   s.native_process_gone_evidence AS native_process_gone_evidence,
-                   s.ended_at AS ended_at,
-                   s.terminated_at AS terminated_at
-                   {open_call}
-              FROM session_message_recipients r
-              JOIN session_messages m ON m.message_id = r.message_id
-              JOIN harness_sessions s ON s.session_id = r.session_id
-             WHERE {deliverable_receipt(placeholder)}
-             ORDER BY r.created_at, r.message_id""",
-        (int(project_id), instant_parameter(conn, parse_stamp(now))),
-    ).fetchall()
+    rows = report_receipts(conn, project_id=project_id, now=now, session_id=session_id)
     current = parse_stamp(now)
     records = [dict(raw) for raw in rows]
     wake_release_at = wake_release_times(records, grace=grace)
@@ -313,6 +297,9 @@ def undelivered_messages(
     return tuple(
         UndeliveredMessages(
             session_id=session_id,
+            item_id=group.item_id,
+            public_ref=group.public_ref,
+            item_project=group.item_project,
             delivery_state=state,
             envelope_count=group.envelope_count,
             oldest_seconds=group.oldest_seconds,
