@@ -87,6 +87,7 @@ async def _assert_first_tilde_reaches_new_input() -> None:
     app._start_front = lambda: None  # Exercise input independently of startup.
     async with app.run_test() as pilot:
         app._goto_input(
+            "project.folder",
             STEP_PROJECT,
             "Point at your project folder.",
             "Where's the code on this machine?",
@@ -110,6 +111,7 @@ async def _assert_plain_glyph_body_accepts_input_focus_handoff() -> None:
     app._start_front = lambda: None  # Exercise input independently of startup.
     async with app.run_test() as pilot:
         app._goto_input(
+            "project.clone_url",
             STEP_PROJECT,
             "Clone a project from GitHub.",
             "Paste a public GitHub repo URL.",

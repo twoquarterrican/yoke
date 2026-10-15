@@ -43,7 +43,7 @@ def apply_with_durable_report(
             kwargs,
             report_kwargs,
             tui_progress,
-            install_health=tui_progress is None if install_health is None else install_health,
+            install_health=install_health,
         )
 
 
@@ -53,8 +53,10 @@ def _run_locked_apply(
     report_kwargs: dict,
     tui_progress=None,
     *,
-    install_health: bool,
+    install_health: bool | None = None,
 ) -> dict:
+    if install_health is None:
+        install_health = tui_progress is None
     writer = onboard_apply_report.ApplyReportWriter.start(preview, kwargs)
 
     def progress(action: str, target: str, status: str) -> None:
