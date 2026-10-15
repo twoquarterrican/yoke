@@ -73,8 +73,6 @@ def pin_relay_release(
             selected, fetch_manifest=fetch_manifest
         )
         observed = str(observed)
-        if not observed.startswith("v"):
-            observed = f"v{observed}"
         release = release_version_from_build(observed)
         index = distribution_index_for_instance(selected)
     except RelayReleaseError as exc:
@@ -202,9 +200,8 @@ def _install_candidate(
     try:
         create_venv(candidate)
         python = candidate / "bin" / "python"
-        # The environment index owns the immutable product wheels. PyPI supplies
-        # third-party dependencies; release metadata pins every Yoke sibling to
-        # the same unforgeable local version as this exact top-level requirement.
+        # Explicit product roots keep same-version public-index packages from
+        # replacing the environment's bytes. PyPI supplies third-party dependencies.
         result = runner(
             [
                 str(python),
@@ -217,9 +214,11 @@ def _install_candidate(
                 "--no-input",
                 "--only-binary",
                 ":all:",
-                "--extra-index-url",
-                index,
-                f"{PRODUCT_REQUIREMENT}=={release}",
+                *[
+                    f"{index.removesuffix('/simple/')}/dist/releases/{release}/wheels/"
+                    f"yoke_{name}-{release}-py3-none-any.whl"
+                    for name in ("contracts", "cli", "harness", "core")
+                ],
             ],
             check=False,
             capture_output=True,

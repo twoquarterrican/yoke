@@ -31,13 +31,15 @@ def _request() -> FunctionCallRequest:
 
 
 def _ok_envelope() -> bytes:
-    return json.dumps({
-        "success": True,
-        "function": "events.query.run",
-        "version": "v1",
-        "request_id": "req-1",
-        "result": {"events": []},
-    }).encode()
+    return json.dumps(
+        {
+            "success": True,
+            "function": "events.query.run",
+            "version": "v1",
+            "request_id": "req-1",
+            "result": {"events": []},
+        }
+    ).encode()
 
 
 class _FakeResponse:
@@ -65,25 +67,19 @@ class TestEngineVersionHandshakeStaysQuiet:
 
     _CONN = HttpsConnection(api_url="https://api.example", token="tok-123")
 
-    def _relay_with_header(
-        self, monkeypatch, headers: dict
-    ) -> FunctionCallResponse:
+    def _relay_with_header(self, monkeypatch, headers: dict) -> FunctionCallResponse:
         def fake_urlopen(req, timeout=None):
             resp = _FakeResponse(_ok_envelope())
             resp.headers = dict(headers)
             return resp
 
-        monkeypatch.setattr(
-            yoke_transport, "open_no_redirect", fake_urlopen
-        )
+        monkeypatch.setattr(yoke_transport, "open_no_redirect", fake_urlopen)
         response = relay_https(_request(), self._CONN)
         assert response.success is True
         return response
 
     def test_version_mismatch_prints_nothing(self, monkeypatch, capsys):
-        monkeypatch.setattr(
-            yoke_handshake, "local_handshake_version", lambda: "1.0.0"
-        )
+        monkeypatch.setattr(yoke_handshake, "local_handshake_version", lambda: "1.0.0")
         header = {yoke_handshake.ENGINE_VERSION_HEADER: "2.0.0"}
 
         self._relay_with_header(monkeypatch, header)
@@ -94,22 +90,21 @@ class TestEngineVersionHandshakeStaysQuiet:
         assert captured.out == ""
 
     def test_mismatch_is_still_recorded_for_refusal_readers(
-        self, monkeypatch,
+        self,
+        monkeypatch,
     ):
-        monkeypatch.setattr(
-            yoke_handshake, "local_handshake_version", lambda: "1.0.0"
-        )
+        monkeypatch.setattr(yoke_handshake, "local_handshake_version", lambda: "1.0.0")
         self._relay_with_header(
             monkeypatch, {yoke_handshake.ENGINE_VERSION_HEADER: "2.0.0"}
         )
-        assert control_plane_payload.current_server_build().name == "v2.0.0"
+        assert control_plane_payload.current_server_build().name == "2.0.0"
 
     def test_json_emission_carries_no_advisory_on_either_stream(
-        self, monkeypatch, capsys,
+        self,
+        monkeypatch,
+        capsys,
     ):
-        monkeypatch.setattr(
-            yoke_handshake, "local_handshake_version", lambda: "1.0.0"
-        )
+        monkeypatch.setattr(yoke_handshake, "local_handshake_version", lambda: "1.0.0")
 
         response = self._relay_with_header(
             monkeypatch,
@@ -123,23 +118,21 @@ class TestEngineVersionHandshakeStaysQuiet:
         assert captured.err == ""
 
     def test_matching_versions_stay_silent(self, monkeypatch, capsys):
-        monkeypatch.setattr(
-            yoke_handshake, "local_handshake_version", lambda: "2.0.0"
-        )
+        monkeypatch.setattr(yoke_handshake, "local_handshake_version", lambda: "2.0.0")
         self._relay_with_header(
             monkeypatch, {yoke_handshake.ENGINE_VERSION_HEADER: "2.0.0"}
         )
         assert capsys.readouterr().err == ""
 
     def test_absent_header_stays_silent(self, monkeypatch, capsys):
-        monkeypatch.setattr(
-            yoke_handshake, "local_handshake_version", lambda: "1.0.0"
-        )
+        monkeypatch.setattr(yoke_handshake, "local_handshake_version", lambda: "1.0.0")
         self._relay_with_header(monkeypatch, {})
         assert capsys.readouterr().err == ""
 
     def test_source_checkout_ahead_records_without_printing(
-        self, monkeypatch, capsys,
+        self,
+        monkeypatch,
+        capsys,
     ):
         from yoke_cli.transport import source_build_skew as skew
 
@@ -157,31 +150,33 @@ class TestEngineVersionHandshakeStaysQuiet:
         assert observed.comparison.relationship == skew.AHEAD
 
     def test_error_response_headers_also_feed_the_handshake(
-        self, monkeypatch, capsys,
+        self,
+        monkeypatch,
+        capsys,
     ):
         """A 401 denial still advertises the server version; still no banner."""
-        monkeypatch.setattr(
-            yoke_handshake, "local_handshake_version", lambda: "1.0.0"
-        )
-        denial = json.dumps({
-            "success": False,
-            "error": {"code": "authentication_unknown", "message": "nope"},
-        }).encode()
+        monkeypatch.setattr(yoke_handshake, "local_handshake_version", lambda: "1.0.0")
+        denial = json.dumps(
+            {
+                "success": False,
+                "error": {"code": "authentication_unknown", "message": "nope"},
+            }
+        ).encode()
 
         def fake_urlopen(req, timeout=None):
             raise urllib.error.HTTPError(
-                req.full_url, 401, "Unauthorized",
+                req.full_url,
+                401,
+                "Unauthorized",
                 {yoke_handshake.ENGINE_VERSION_HEADER: "2.0.0"},
                 io.BytesIO(denial),
             )
 
-        monkeypatch.setattr(
-            yoke_transport, "open_no_redirect", fake_urlopen
-        )
+        monkeypatch.setattr(yoke_transport, "open_no_redirect", fake_urlopen)
         response = relay_https(_request(), self._CONN)
         assert response.success is False
         assert capsys.readouterr().err == ""
-        assert control_plane_payload.current_server_build().name == "v2.0.0"
+        assert control_plane_payload.current_server_build().name == "2.0.0"
 
 
 class TestLocalHandshakeVersion:
@@ -192,8 +187,8 @@ class TestLocalHandshakeVersion:
         monkeypatch.setattr(
             ev,
             "_module_origin",
-            lambda package: origins.append(package) or (
-                f"/site-packages/{package}/__init__.py"
+            lambda package: (
+                origins.append(package) or (f"/site-packages/{package}/__init__.py")
             ),
         )
         monkeypatch.setattr(
@@ -244,7 +239,8 @@ class TestLocalHandshakeVersion:
         from yoke_contracts import engine_version as ev
 
         monkeypatch.setattr(
-            ev, "installed_engine_version",
+            ev,
+            "installed_engine_version",
             lambda: ev.UNRESOLVED_SCM_FALLBACK_VERSION,
         )
         assert ev.advertised_engine_version(build="abc123def456") == ""
@@ -261,11 +257,13 @@ class TestServerHandshakeObservation:
             headers = {yoke_handshake.ENGINE_VERSION_HEADER: "2.0.0"}
 
             def read(self, *_args, **_kwargs):
-                return json.dumps({
-                    "success": True,
-                    "function": "events.query.run",
-                    "version": "v1",
-                }).encode()
+                return json.dumps(
+                    {
+                        "success": True,
+                        "function": "events.query.run",
+                        "version": "v1",
+                    }
+                ).encode()
 
             def __enter__(self):
                 return self
@@ -281,10 +279,12 @@ class TestServerHandshakeObservation:
         assert handshake.engine_version == "2.0.0"
 
     def test_error_response_records_advertised_version(self, monkeypatch):
-        denial = json.dumps({
-            "success": False,
-            "error": {"code": "function_not_registered", "message": "nope"},
-        }).encode()
+        denial = json.dumps(
+            {
+                "success": False,
+                "error": {"code": "function_not_registered", "message": "nope"},
+            }
+        ).encode()
 
         def fake_urlopen(req, timeout=None):
             raise urllib.error.HTTPError(
@@ -305,11 +305,13 @@ class TestServerHandshakeObservation:
             headers = {}
 
             def read(self, *_args, **_kwargs):
-                return json.dumps({
-                    "success": True,
-                    "function": "events.query.run",
-                    "version": "v1",
-                }).encode()
+                return json.dumps(
+                    {
+                        "success": True,
+                        "function": "events.query.run",
+                        "version": "v1",
+                    }
+                ).encode()
 
             def __enter__(self):
                 return self

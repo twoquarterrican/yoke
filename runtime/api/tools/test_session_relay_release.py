@@ -22,16 +22,9 @@ from yoke_core.tools.session_relay_release import (
     RelayReleaseError,
     distribution_index_for_instance,
     relay_release_status,
-    release_version_from_build,
     write_release_json,
 )
 from yoke_core.tools.session_relay_release_install import pin_relay_release
-
-
-def test_handshake_build_is_an_exact_immutable_wheel_version() -> None:
-    assert release_version_from_build(f"v{RELEASE}") == RELEASE
-    with pytest.raises(RelayReleaseError, match="immutable release segment"):
-        release_version_from_build("v0.1.1")
 
 
 @pytest.mark.parametrize(
@@ -86,10 +79,12 @@ def test_successful_pin_installs_a_wheel_then_repoints_the_active_release(
         f"#!{status.runtime_python} -I\n"
     )
     install = calls[0]
-    assert install[-1] == f"yoke-core=={RELEASE}"
-    assert install[install.index("--extra-index-url") + 1] == (
-        "https://wheels.example.test/simple/"
-    )
+    assert install[-4:] == [
+        f"https://wheels.example.test/dist/releases/{RELEASE}/wheels/"
+        f"yoke_{name}-{RELEASE}-py3-none-any.whl"
+        for name in ("contracts", "cli", "harness", "core")
+    ]
+    assert "--extra-index-url" not in install
     assert install[install.index("--only-binary") + 1] == ":all:"
 
 
@@ -248,7 +243,7 @@ def test_status_compares_the_pinned_release_with_a_fresh_handshake(
     )
 
     assert current.pinned_release == RELEASE
-    assert current.served_build == f"v{NEXT_RELEASE}"
+    assert current.served_build == NEXT_RELEASE
     assert not current.current
 
 

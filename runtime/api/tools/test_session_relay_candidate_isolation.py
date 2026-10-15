@@ -28,7 +28,7 @@ from yoke_core.tools.session_relay_release import (
 from yoke_core.tools.session_relay_release_install import pin_relay_release
 
 
-CANDIDATE_RELEASE = "0.1.1+launch.365"
+CANDIDATE_RELEASE = "0.2.0.202610150430"
 RUNNING_RELEASE = "0.1.1+launch.300"
 
 
