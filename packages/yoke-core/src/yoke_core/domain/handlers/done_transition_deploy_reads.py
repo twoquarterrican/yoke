@@ -222,9 +222,7 @@ def handle_run_stage_qa_acceptance(request: FunctionCallRequest) -> HandlerOutco
 
     Wraps :func:`yoke_core.domain.deployment_qa_run_acceptance.item_qa_acceptance_blockers`
     unchanged; the engine prints the reasons and blocks when the list is
-    non-empty. A legacy flow definition has no scoped stages and returns
-    an empty list, so the legacy ``deployment_run_qa`` projection stays
-    the only QA authority for those runs.
+    non-empty.
     """
     item_id = _require_item_id(request)
     if item_id is None:
