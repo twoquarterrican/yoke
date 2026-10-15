@@ -56,6 +56,13 @@ frozen receipt and refuses if it was superseded, failed, cancelled, changed
 target, or changed candidate. Historical evidence stays attached to the old
 execution and cannot settle a replacement or satisfy a later-stage prerequisite.
 
+One materialization call reuses schema metadata and one run/stage membership
+projection. It inspects each member's plan selections once per destination,
+then resolves canonical shared groups once if private copies need retirement.
+New and existing cases use the same projection; a later call reads fresh facts,
+including withdrawals. Requirement writes, correction admission, producer
+receipts and source/target identities retain their existing checks and run lock.
+
 All concrete blocking cases must pass with evidence attached to the exact
 execution capture, or carry an explicit discharge, before stage acceptance.
 Admitted aggregate obligations require their own explicit passing result linked

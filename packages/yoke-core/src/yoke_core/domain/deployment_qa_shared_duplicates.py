@@ -11,9 +11,8 @@ from yoke_core.domain.qa_plan_execution_schema import LIVE_PLAN_EXECUTION_SQL
 from yoke_core.domain.qa_plan_management import QaPlanError
 
 
-def retire_member_copies(conn, subject, target, shared_ids):
+def retire_member_copies(conn, subject, target, shared_ids, *, projection=None):
     """Keep captures as history; never rewrite a roster somebody is executing."""
-    members = set(group_members(conn, subject, target))
     rows = query_rows(
         conn,
         "SELECT q.id,q.deployment_member_item_id,q.execution_target_json "
@@ -21,6 +20,13 @@ def retire_member_copies(conn, subject, target, shared_ids):
         "AND q.plan_id=%s AND q.deployment_member_item_id IS NOT NULL "
         f"AND NOT {settled_obligation_sql(conn, 'q')}",
         (subject["id"], subject["stage"]["name"], subject["shared_plan"]["plan_id"]),
+    )
+    if not rows:
+        return
+    members = set(
+        group_members(conn, subject, target)
+        if projection is None
+        else projection.group_members(subject, target)
     )
     redundant = []
     owners = set()
