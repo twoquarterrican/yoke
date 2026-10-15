@@ -81,11 +81,13 @@ export async function loadDelivery(context, host, getScope) {
       return;
     }
     const chosen = new Set(selectedProjects(projects, getScope()).map((p) => Number(p.id)));
-    const rows = (result.rows || []).filter((row) => (
-      getScope() === "all"
-      || (row.member_items || []).some((member) => chosen.has(Number(member.project_id)))
-      || (!(row.member_items || []).length && chosen.has(Number(row.project_id)))
-    ));
+    const rows = (result.rows || []).filter((row) => {
+      if (getScope() === "all") return true;
+      const members = row.member_items?.length ? row.member_items : [row];
+      return members.some((member) => chosen.has(Number(
+        member.project_id ?? runProjectId(context, member.project ? member : row, "all"),
+      )));
+    });
     rows.sort((left, right) => (
       Number(left.overview_priority ?? 1) - Number(right.overview_priority ?? 1)
       || String(right.created_at || "").localeCompare(String(left.created_at || ""))

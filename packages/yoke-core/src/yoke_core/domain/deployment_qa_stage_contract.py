@@ -196,10 +196,14 @@ def deployment_qa_stage_subject(
             raise ValueError(
                 "deployment member belongs to a project this run ships no source for"
             )
-        snapshot = _object(
-            member.get("requirement_snapshot"),
-            subject=f"member {render_item_ref(conn, member_item_id)} requirement snapshot",
-        )
+        try:
+            snapshot = _object(
+                member.get("requirement_snapshot"), subject="requirement snapshot"
+            )
+        except ValueError as exc:
+            raise ValueError(
+                f"member {render_item_ref(conn, member_item_id)} {exc}"
+            ) from exc
         if snapshot.get("schema") != 1:
             raise ValueError(
                 f"member {render_item_ref(conn, member_item_id)} lacks a schema-1 frozen QA snapshot"

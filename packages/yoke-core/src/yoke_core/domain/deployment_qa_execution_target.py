@@ -185,15 +185,28 @@ def deployment_qa_execution_target(
         if kind == "persistent_environment"
         else None
     )
-    receipt = deployment_stage_receipt_for_qa(
+    receipt = presentation_read(
         conn,
-        run_id=str(subject["id"]),
-        source_stage=source_stage,
-        expected_target_kind=kind,
-        expected_target_name=expected_name,
-        expected_release_lineage=str(subject["release_lineage"]),
-        expected_artifact_identity=subject.get("artifact_identity"),
-        receipt_id=receipt_id,
+        (
+            "qa_producer_receipt",
+            str(subject["id"]),
+            source_stage,
+            kind,
+            expected_name,
+            str(subject["release_lineage"]),
+            str(subject.get("artifact_identity")),
+            receipt_id,
+        ),
+        lambda: deployment_stage_receipt_for_qa(
+            conn,
+            run_id=str(subject["id"]),
+            source_stage=source_stage,
+            expected_target_kind=kind,
+            expected_target_name=expected_name,
+            expected_release_lineage=str(subject["release_lineage"]),
+            expected_artifact_identity=subject.get("artifact_identity"),
+            receipt_id=receipt_id,
+        ),
     )
     identity = {
         "tenant": {
