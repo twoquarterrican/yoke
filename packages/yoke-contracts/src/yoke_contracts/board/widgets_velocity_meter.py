@@ -49,9 +49,9 @@ _COMPASS = E.VELOCITY_STRATEGY
 # ---------------------------------------------------------------------------
 
 
-def render_velocity_meter(
+def collect_velocity_series(
     db: BoardDBLike, config: BoardConfig, scope: str, repo_root: Optional[str] = None
-) -> Optional[List[str]]:
+) -> dict:
     """Render the 120-day velocity meter (4 sparkline rows).
 
     Returns a list of 4 lines, or ``None`` if disabled or no data.
@@ -75,10 +75,20 @@ def render_velocity_meter(
             db, scope, project_ids, days, dates
         )
 
+    return dict(
+        dates=dates,
+        activity=act_counts,
+        code=effort_counts,
+        issues=del_counts,
+        strategy=sml_counts,
+    )
+
+
+def render_velocity_meter(db, config, scope, repo_root=None):
     from yoke_contracts.board.widget_data import render_velocity_series
 
     return render_velocity_series(
-        dates, act_counts, effort_counts, del_counts, sml_counts
+        **collect_velocity_series(db, config, scope, repo_root)
     )
 
 

@@ -7,7 +7,7 @@ achievement-streak helper.
 from __future__ import annotations
 
 from datetime import date
-from typing import List, Optional
+from typing import List
 
 from yoke_contracts.board.widget_data import _allocate_proportional  # noqa: F401
 from yoke_contracts.board.config import BoardConfig
@@ -40,9 +40,7 @@ _AGE_ANCIENT = E.AGE_ANCIENT
 # ---------------------------------------------------------------------------
 
 
-def render_age_heatmap(
-    db: BoardDBLike, config: BoardConfig, scope: str
-) -> Optional[str]:
+def collect_age_counts(db: BoardDBLike, config: BoardConfig, scope: str) -> dict | None:
     """Render the age heatmap bar with legend.
 
     Returns ``None`` if there are no active (non-done, non-frozen) items.
@@ -72,14 +70,11 @@ def render_age_heatmap(
     if not row or not row[0]:
         return None
 
-    r = row[0]
-    from yoke_contracts.board.widget_data import render_age_counts
-
-    return render_age_counts(
-        dict(
-            zip(
-                ("fresh", "week", "biweek", "month", "ancient", "total"), r, strict=True
-            )
+    return dict(
+        zip(
+            ("fresh", "week", "biweek", "month", "ancient", "total"),
+            row[0],
+            strict=True,
         )
     )
 
@@ -89,11 +84,11 @@ def render_age_heatmap(
 # ---------------------------------------------------------------------------
 
 
-def render_workflow_badges(
+def collect_workflow_counts(
     db: BoardDBLike,
     config: BoardConfig,
     scope: str,
-) -> Optional[str]:
+) -> list:
     """Render workflow distribution badges.
 
     Returns ``None`` if there are no active (non-done, non-frozen) items.
@@ -107,9 +102,7 @@ def render_workflow_badges(
         " GROUP BY workflow_id ORDER BY COUNT(*) DESC"
     )
     rows = db.query_quiet(sql, params)
-    from yoke_contracts.board.widget_data import render_workflow_counts
-
-    return render_workflow_counts(rows)
+    return rows
 
 
 # ---------------------------------------------------------------------------
@@ -117,12 +110,10 @@ def render_workflow_badges(
 # ---------------------------------------------------------------------------
 
 
-def render_achievement_badges(
+def collect_achievement_counts(
     db: BoardDBLike, config: BoardConfig, scope: str, tex_done: int = 0
-) -> Optional[str]:
+) -> dict:
     """Collect achievement counts and render their earned badges."""
-    from yoke_contracts.board.widget_data import render_achievement_counts
-
     pf, params = _project_filter(scope)
     streak = _compute_achievement_streak(db, scope)
     bug_count = db.scalar(
@@ -141,7 +132,9 @@ def render_achievement_badges(
         params,
     )
     idea_count = int(idea_count or 0)
-    return render_achievement_counts(tex_done, streak, bug_count, idea_count)
+    return dict(
+        done=tex_done, streak=streak, bug_count=bug_count, idea_count=idea_count
+    )
 
 
 def _streak_tier(streak: int) -> int:
@@ -193,3 +186,24 @@ def _compute_achievement_streak(db: BoardDBLike, scope: str) -> int:
             best = current_run
 
     return best
+
+
+def render_age_heatmap(db, config, scope):
+    from yoke_contracts.board.widget_data import render_age_counts
+
+    counts = collect_age_counts(db, config, scope)
+    return render_age_counts(counts) if counts is not None else None
+
+
+def render_workflow_badges(db, config, scope):
+    from yoke_contracts.board.widget_data import render_workflow_counts
+
+    return render_workflow_counts(collect_workflow_counts(db, config, scope))
+
+
+def render_achievement_badges(db, config, scope, tex_done=0):
+    from yoke_contracts.board.widget_data import render_achievement_counts
+
+    return render_achievement_counts(
+        **collect_achievement_counts(db, config, scope, tex_done)
+    )
