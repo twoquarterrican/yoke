@@ -254,7 +254,9 @@ def apply_verified_process_death_reports(
             ):
                 status = "process_death_superseded"
         if status is None and row is not None:
-            holdings = session_holdings_by_session(conn, previous_limit=0)
+            holdings = session_holdings_by_session(
+                conn, previous_limit=0, session_ids=(session_id,)
+            )
             status = _retention_reason(
                 conn,
                 row,
