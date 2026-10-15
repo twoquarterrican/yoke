@@ -1,4 +1,4 @@
-"""Shared ephemeral expiry and snapshot upload custody without stored leases."""
+"""Snapshot upload expiry and custody without stored leases."""
 
 from contextlib import contextmanager
 from datetime import timedelta
@@ -7,42 +7,6 @@ import hashlib
 from yoke_contracts.timestamps import parse_instant, utc_now
 from yoke_core.domain import db_backend
 from yoke_core.domain.retention_table_policies import Cleanup
-
-
-def expiry_cutoff(conn, now):
-    from yoke_core.domain.universe_retention import read_policy
-
-    policy, _ = read_policy(conn)
-    return parse_instant(now) - timedelta(days=policy.windows["expiry_grace"])
-
-
-def prune_inline_expired(conn, table, now):
-    """Bound existing security housekeeping by the same universe policy."""
-    keys = {
-        "browser_sign_in_links": ("selector",),
-        "web_sessions": ("id",),
-        "machine_authorization_codes": ("device_hash",),
-        "merge_locks": ("id",),
-        "frontend_attribution_redemptions": ("org_id", "nonce"),
-        "frontend_event_rate_limits": ("client_key",),
-        "machine_authorization_rate_limits": ("client_key", "operation"),
-    }[table]
-    cutoff = expiry_cutoff(conn, now)
-    column = "expires_at"
-    if table.endswith("rate_limits"):
-        column, cutoff = "window_start", cutoff - timedelta(seconds=60)
-        if table == "machine_authorization_rate_limits":
-            # Machine admission retains its prompt expired-window cleanup.
-            cutoff = int(parse_instant(now).timestamp()) - 60
-    from yoke_core.domain.db_helpers import instant_parameter
-
-    p = "%s" if db_backend.connection_is_postgres(conn) else "?"
-    columns = "(" + ",".join(keys) + ")"
-    value = instant_parameter(conn, cutoff) if not isinstance(cutoff, int) else cutoff
-    conn.execute(
-        f"DELETE FROM {table} WHERE {columns} IN (SELECT {','.join(keys)} FROM {table} WHERE {column}<{p} LIMIT 5000)",
-        (value,),
-    )
 
 
 def upload_lock_key(upload_id):

@@ -57,9 +57,10 @@ def admit_client(conn, *, org_id, client, now=None):
         "RETURNING request_count",
         (key, db_helpers.instant_parameter(conn, window)),
     ).fetchone()[0]
-    from yoke_core.domain.retention_operational_policy import prune_inline_expired
-
-    prune_inline_expired(conn, "frontend_event_rate_limits", current)
+    conn.execute(
+        "DELETE FROM frontend_event_rate_limits WHERE window_start < %s",
+        (db_helpers.instant_parameter(conn, window - width),),
+    )
     conn.commit()
     remaining = window + width - current
     return (
@@ -152,9 +153,11 @@ def consume_attribution_handoff(org_id, nonce, expires):
         # Validation may precede expiry while storage follows it. Preserve the
         # attempted nonce and check expiry again in the atomic insert, so another
         # request's cleanup cannot make a delayed replay insertable either.
-        from yoke_core.domain.retention_operational_policy import prune_inline_expired
-
-        prune_inline_expired(conn, "frontend_attribution_redemptions", utc_now())
+        conn.execute(
+            "DELETE FROM frontend_attribution_redemptions WHERE expires_at <= %s "
+            "AND NOT (org_id = %s AND nonce = %s)",
+            (db_helpers.instant_parameter(conn, utc_now()), org_id, nonce),
+        )
         inserted = conn.execute(
             "INSERT INTO frontend_attribution_redemptions (org_id, nonce, expires_at) "
             "SELECT %s,%s,%s WHERE %s > clock_timestamp() "

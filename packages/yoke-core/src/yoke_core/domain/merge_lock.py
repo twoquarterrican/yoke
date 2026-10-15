@@ -91,7 +91,7 @@ def _rows_over_transport(now: datetime) -> list[dict]:
 
 
 def _rows_over_connection(conn: Any, now: datetime | str) -> list[dict]:
-    """Retain the diagnostic grace, reading only locks still valid now.
+    """Drop expired rows, then read whatever still holds the lock.
 
     Rows carry the epic as its public ref, the same shape the control plane
     serves a relayed caller.
@@ -99,14 +99,14 @@ def _rows_over_connection(conn: Any, now: datetime | str) -> list[dict]:
     from yoke_core.domain.item_ref_render import render_item_refs
 
     p = _p(conn)
-    from yoke_core.domain.retention_operational_policy import prune_inline_expired
-
-    prune_inline_expired(conn, "merge_locks", now)
+    conn.execute(
+        f"DELETE FROM merge_locks WHERE expires_at < {p}",
+        (instant_parameter(conn, parse_instant(now)),),
+    )
     conn.commit()
     rows = conn.execute(
         "SELECT id, session_id, branch, epic_id, "
-        f"project_slug, target_branch FROM merge_locks WHERE expires_at>={p}",
-        (instant_parameter(conn, parse_instant(now)),),
+        "project_slug, target_branch FROM merge_locks"
     ).fetchall()
     epic_ids = {int(row[3]) for row in rows if str(row[3] or "").isdigit()}
     refs = render_item_refs(conn, sorted(epic_ids)) if epic_ids else {}

@@ -61,17 +61,18 @@ document. A policy change during the command stops with
 | Unreferenced succeeded/cancelled launch graphs | 30 days after completion/settlement |
 | Terminal completed evidence-fetch detail | 7 days |
 | Completed successful reaps and notified/owner-settled waits | 30 days |
-| Expired sign-in links, device codes, web sessions and attribution redemptions | Authoritative expiry plus 1 day |
-| Finished frontend admission windows and expired merge locks | Authoritative expiry plus 1 day |
-| Finished machine authorization admission windows | Prompt expired-window cleanup; no diagnostic grace |
+| Remaining expired sign-in links, device codes, web sessions, attribution redemptions and merge locks | Eligible for manual cleanup 1 day after expiry |
+| Remaining finished admission windows | Eligible for manual cleanup 1 day after the window |
 | Unfinished snapshot uploads | Maximum 7 days from creation |
 
 Protection wins over age. Event-name overrides precede severity windows;
 unknown severities stay protected. Boundaries use strictly older-than UTC
 elapsed days, including fractional-second precision. Security validity,
 authorization, request identity and rate-limit decisions use their existing
-owners; diagnostic retention never extends validity or resets a live budget.
-Existing bounded inline security housekeeping uses the same retention owner.
+owners. Existing faster cleanup continues at its original boundaries and cadence,
+including immediate expired-session and device-code cleanup. The one-day cutoff
+selects remaining old rows; it never creates a minimum hold, delays existing
+cleanup, extends validity or resets a live budget.
 
 ## What stays protected
 

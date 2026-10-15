@@ -111,7 +111,7 @@ def policies(policy, cutoff):
             locks=("qa_plan_executions",),
         ),
     ]
-    expiry = before("expiry_grace")
+    expiry = before("expired_security")
     for table, keys in (
         ("browser_sign_in_links", ("selector",)),
         ("machine_authorization_codes", ("device_hash",)),
@@ -120,13 +120,13 @@ def policies(policy, cutoff):
         ("merge_locks", ("id",)),
     ):
         rules.append(Cleanup(table, keys, "t.expires_at<%s", (expiry,)))
-    # Machine admission expires promptly; frontend windows retain diagnostic grace.
+    # Existing inline cleanup stays faster; this selects remaining old windows.
     rules += [
         Cleanup(
             "machine_authorization_rate_limits",
             ("client_key", "operation"),
             "t.window_start<%s",
-            (int(cutoff.timestamp()) - 60,),
+            (int(expiry.timestamp()) - 60,),
         ),
         Cleanup(
             "frontend_event_rate_limits",

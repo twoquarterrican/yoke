@@ -26,6 +26,6 @@ DEFAULT_WINDOWS = {
     "launches": 30,
     "evidence_fetches": 7,
     "settled_waits": 30,
-    "expiry_grace": 1,
+    "expired_security": 1,
     "snapshot_uploads": 7,
 }
