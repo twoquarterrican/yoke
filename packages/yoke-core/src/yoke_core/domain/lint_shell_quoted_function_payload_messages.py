@@ -168,7 +168,7 @@ def build_choreography_remediation(adapter_key: str, function_id: str) -> str:
         "status probes, pipes, heredocs, tee, or shell-variable capture) "
         "is unnecessary terminal soup -- the adapter already supports "
         "``--json`` returning a typed FunctionCallResponse envelope, and "
-        "the function-call surface is the cheaper escape hatch for "
+        "the registered command preserves the selected connection for "
         "machine callers.\n\n"
         + REMEDIATION_API_FIRST
         + lane_renderer

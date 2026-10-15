@@ -100,3 +100,10 @@ def test_invalid_gate_filter_never_dispatches(relayed):
     requests, _ = relayed
     assert hard_blocks([f"EXT-{42}", "--gate-point", "typo"]) == 2
     assert requests == []
+
+
+@pytest.mark.parametrize("options", [[], ["--gate-point", "all"]])
+def test_unfiltered_gate_preserves_complete_evaluation(relayed, options):
+    requests, _ = relayed
+    assert hard_blocks([f"EXT-{42}", *options]) == 0
+    assert requests[-1]["payload"] == {"gate_filter": ""}

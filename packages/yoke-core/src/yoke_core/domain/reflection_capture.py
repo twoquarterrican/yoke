@@ -19,7 +19,7 @@ from yoke_core.domain.reflection_capture_shape_parsers import (
 from yoke_core.domain.reflection_capture_shapes import CaptureResult, parse_text
 
 
-# Canonical entry template surfaced inline so the CLI ``--help`` (and
+# Canonical entry template surfaced inline so the capture handler (and
 # any caller that imports the constant) renders the expected canonical
 # shape without grepping for the regex.
 CANONICAL_ENTRY_TEMPLATE = (

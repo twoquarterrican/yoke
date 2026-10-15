@@ -237,7 +237,7 @@ def _blocker_lines(
 if __name__ == "__main__":
     print(
         "direct_database_entrypoint_retired: use yoke advance preflight "
-        "hard-blocks PREFIX-N --gate-point activation on your selected connection.",
+        "hard-blocks PREFIX-N on your selected connection.",
         file=sys.stderr,
     )
     sys.exit(2)

@@ -66,7 +66,8 @@ def merge_audit(args: List[str]) -> int:
         return 1
 
     try:
-        print(engine.generate_report(epic_filter, project=parsed.project), end="")
+        context = {"project": parsed.project} if parsed.project else {}
+        print(engine.generate_report(epic_filter, **context), end="")
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1
