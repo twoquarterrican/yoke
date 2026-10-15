@@ -17,6 +17,7 @@ from yoke_contracts.hook_runner.hook_ordering import (
     ordered_pipeline_for,
 )
 from yoke_contracts.hook_runner import lint_policy
+from yoke_contracts.hook_runner.cursor_response import cursor_allow_stdout
 from yoke_contracts.hook_runner.project_scope import (
     HookProjectScope,
     resolve_hook_project_scope,
@@ -325,6 +326,8 @@ def evaluate_local_subset(
         if result.outcome == ADVISORY and result.additional_context:
             contexts.append(result.additional_context)
     stdout = advisory_stdout(contexts, event_name) if contexts else ""
+    if executor.startswith("cursor"):
+        stdout = cursor_allow_stdout(event_name, stdout)
     return LocalSubsetEvaluation(
         stdout=stdout,
         exit_code=0,

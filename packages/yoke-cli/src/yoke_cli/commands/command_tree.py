@@ -63,6 +63,7 @@ def render_root_help() -> str:
             "",
             "Global options: --env NAME selects a connection; --version prints the release.",
             "Structured replies: add --json. Complete read detail: add --full when offered.",
-            "Project skills: /yoke help; installed reference: .yoke/docs/index.md.",
+            "Installed project: /yoke help; reference: .yoke/docs/index.md.",
+            "Without a project: https://upyoke.com/docs; command help works from any directory.",
         ]
     )

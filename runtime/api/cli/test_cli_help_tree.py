@@ -83,3 +83,14 @@ def test_root_contains_convenience_routes(capsys):
     assert "yoke dash " in text
     assert "yoke task " in text
     assert "yoke items create" not in text
+
+
+def test_no_project_help_has_a_reference_without_installing(
+    tmp_path, monkeypatch, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    assert main(["--help"]) == 0
+    text = capsys.readouterr().out
+    assert "Without a project: https://upyoke.com/docs" in text
+    assert "Installed project: /yoke help" in text
+    assert not (tmp_path / ".yoke").exists()

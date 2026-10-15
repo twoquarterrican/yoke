@@ -15,9 +15,11 @@ yoke project-structure get --project P --family context_routing --json
 yoke machine detail --json
 ```
 
-Read each command's `--help` for its projection. The family's `entries`
-map `entry_key` to `payload.docs`: `always` is the reserved project-wide
-list; other keys are topic names. The machine's project mapping supplies the
+Read each command's `--help` for its projection. The family's `entries` is
+a list of records: each record's `entry_key` names its `payload.docs` list.
+`always` is the reserved project-wide key; other keys are topic names.
+Do not index `entries` as a map or treat an unfamiliar reply shape as empty.
+The machine's project mapping supplies the
 registered checkout; the project row does not store a path. Use the claimed
 lane for this item's project rather than reading main then editing a lane.
 

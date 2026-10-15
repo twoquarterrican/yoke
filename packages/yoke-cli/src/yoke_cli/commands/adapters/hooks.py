@@ -21,7 +21,7 @@ from yoke_cli.commands.adapters.hook_config_dedup import (
     should_skip_config_duplicate,
 )
 from yoke_contracts.hook_runner.config_owner import CONFIG_OWNER_ENV_VAR
-from yoke_contracts.hook_runner.cursor_response import cursor_lifecycle_allow_stdout
+from yoke_contracts.hook_runner.cursor_response import cursor_allow_stdout
 
 
 __all__ = ["HOOK_EVALUATE_USAGE", "hook_evaluate"]
@@ -129,7 +129,7 @@ def hook_evaluate(args: List[str]) -> int:
             stdin_data,
         )
     ):
-        stdout = cursor_lifecycle_allow_stdout(parsed.event_name)
+        stdout = cursor_allow_stdout(parsed.event_name)
         if stdout:
             sys.stdout.write(stdout)
         return 0

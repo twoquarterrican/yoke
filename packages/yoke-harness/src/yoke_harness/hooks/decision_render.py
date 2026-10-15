@@ -8,6 +8,7 @@ import sys
 from yoke_contracts.executor_labels import canonical_harness_id
 from yoke_contracts.hook_diagnostics import format_hook_diagnostic
 from yoke_contracts.hook_context_compose import compose_context_list
+from yoke_contracts.hook_runner.cursor_response import cursor_allow_stdout
 
 
 HOOK_SPECIFIC_OUTPUT_KEY = "hookSpecificOutput"
@@ -104,6 +105,27 @@ def merge_allow_stdout(
     first_parts = _context_envelope_kind(first)
     second_parts = _context_envelope_kind(second)
     if first_parts is None or second_parts is None:
+        if cursor:
+            allow = {"permission": "allow"}
+            try:
+                left, right = json.loads(first), json.loads(second)
+            except (ValueError, TypeError):
+                pass
+            else:
+                if (
+                    left == allow
+                    and isinstance(right, dict)
+                    and right.get("permission") in {"allow", "deny"}
+                ):
+                    return second
+                if (
+                    right == allow
+                    and isinstance(left, dict)
+                    and left.get("permission") in {"allow", "deny"}
+                ):
+                    return first
+                if left == right == {}:
+                    return first
         return f"{first}{second}"
     first_kind, first_body = first_parts
     second_kind, second_body = second_parts
@@ -139,11 +161,12 @@ def render_context_stdout(
     """
     if not context or not context.strip():
         return ""
-    return _render_additional_context_envelope(
+    rendered = _render_additional_context_envelope(
         [context],
         event_name,
         cursor=cursor,
     )
+    return cursor_allow_stdout(event_name, rendered) if cursor else rendered
 
 
 __all__ = [
