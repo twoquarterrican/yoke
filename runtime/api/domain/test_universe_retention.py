@@ -274,7 +274,9 @@ def test_human_live_reference_snapshot_and_upload_protections(test_db):
     from yoke_core.domain.path_snapshot_content_rows import find_content_snapshot_id
 
     assert find_content_snapshot_id(test_db, 1, "4" * 40) == snapshots[4]
-    with psycopg.connect(test_db.info.dsn) as other:
+    from runtime.api.fixtures.pg_testdb import connect_test_database
+
+    with connect_test_database(test_db.info.dbname) as other:
         with pytest.raises(psycopg.errors.LockNotAvailable):
             other.execute("LOCK TABLE path_snapshots IN ACCESS EXCLUSIVE MODE NOWAIT")
         other.rollback()

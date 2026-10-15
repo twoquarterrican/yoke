@@ -105,7 +105,7 @@ def _rows_over_connection(conn: Any, now: datetime | str) -> list[dict]:
     conn.commit()
     rows = conn.execute(
         "SELECT id, session_id, branch, epic_id, "
-        f"project_slug, target_branch FROM merge_locks WHERE expires_at>{p}",
+        f"project_slug, target_branch FROM merge_locks WHERE expires_at>={p}",
         (instant_parameter(conn, parse_instant(now)),),
     ).fetchall()
     epic_ids = {int(row[3]) for row in rows if str(row[3] or "").isdigit()}
