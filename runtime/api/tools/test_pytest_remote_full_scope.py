@@ -111,6 +111,11 @@ def test_complete_coverage_refuses_before_git_publication(
         [*ROOTS, "-mslow"],
         [*ROOTS, "--collect-only"],
         [*ROOTS, "--co"],
+        [*ROOTS, "--ignore-glob=*_slow.py"],
+        [*ROOTS, "--deselect", "specs/unit/test_a.py::test_one"],
+        [*ROOTS, "--lf"],
+        [*ROOTS, "--stepwise"],
+        [*ROOTS, "--splits=2", "--group=1"],
         ["-q"],
     ],
 )

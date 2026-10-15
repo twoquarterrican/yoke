@@ -38,6 +38,7 @@ _PYTEST_VALUE_FLAGS = frozenset(
         "--maxfail",
         "--deselect",
         "--ignore",
+        "--ignore-glob",
         "--basetemp",
         "--confcutdir",
         "--import-mode",

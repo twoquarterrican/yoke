@@ -95,8 +95,24 @@ def full_scope_refusal(root: Path, project: str, args: Sequence[str]) -> str | N
     from yoke_core.tools._watch_pytest_selection_diagnostics import selection_filters
 
     if any(
-        arg in {"--collect-only", "--co", "--deselect", "--ignore"}
-        or arg.startswith(("--deselect=", "--ignore="))
+        arg
+        in {
+            "--collect-only",
+            "--co",
+            "--deselect",
+            "--ignore",
+            "--ignore-glob",
+            "--lf",
+            "--last-failed",
+            "--sw",
+            "--stepwise",
+            "--sw-skip",
+            "--stepwise-skip",
+            "--sw-reset",
+            "--stepwise-reset",
+            "--splits",
+        }
+        or arg.startswith(("--deselect=", "--ignore=", "--ignore-glob=", "--splits="))
         for arg in args
     ):
         return None
