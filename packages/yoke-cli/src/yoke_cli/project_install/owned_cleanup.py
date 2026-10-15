@@ -21,13 +21,13 @@ from yoke_cli.project_install import files
 REGISTRATION_KEY = "local_registration"
 
 
-def scope_reason(root: Path, config_path) -> str:
+def scope_reason(root: Path, manifest: dict, config_path) -> str:
     """Check shared Git-hook scope before any installed files are removed."""
     try:
         projects = normalize_projects(
             machine_config.load_config(config_path).get("projects")
         )
-        return _shared_reason(root, projects)
+        return _shared_reason(root, projects, manifest.get("project_id"))
     except (OSError, ValueError, RuntimeError, TypeError, subprocess.SubprocessError):
         return "checkout_scope_unavailable"
 
@@ -64,7 +64,7 @@ def cleanup(root: Path, manifest: dict, config_path) -> dict:
 def _cleanup(root: Path, manifest: dict, *, path=None) -> dict:
     payload, cfg = load_payload(path)
     projects = normalize_projects(payload.get("projects"))
-    reason = _shared_reason(root, projects)
+    reason = _shared_reason(root, projects, manifest.get("project_id"))
     trust = revert_folder_trust(root, exclusive_reason=reason)
     record = manifest.get(REGISTRATION_KEY)
     exact = [
@@ -88,20 +88,26 @@ def _cleanup(root: Path, manifest: dict, *, path=None) -> dict:
         registration = _result("preserved", "trust_cleanup_unresolved")
     else:
         payload["projects"].remove(exact[0])
-        errors = [
-            issue.code
-            for issue in contract.validate_payload(payload)
-            if issue.severity == "error"
-        ]
-        if errors:
-            raise ValueError(
-                "machine_config_invalid: repair machine config before cleanup: "
-                + ", ".join(errors)
+        try:
+            errors = [
+                issue.code
+                for issue in contract.validate_payload(payload)
+                if issue.severity == "error"
+            ]
+            if errors:
+                raise ValueError(
+                    "machine_config_invalid: repair machine config: "
+                    + ", ".join(errors)
+                )
+            # The general writer also seeds identity and strips retired keys.
+            # Here only the selected entry may change, under its existing lock.
+            machine_config_file.atomic_write_text(
+                cfg, json.dumps(payload, indent=2) + "\n"
             )
-        # The general writer also seeds identity and strips retired keys. Here
-        # only the selected project entry may change, under its existing lock.
-        machine_config_file.atomic_write_text(cfg, json.dumps(payload, indent=2) + "\n")
-        registration = _result("removed", "owned_exact_entry")
+        except (OSError, ValueError, RuntimeError) as exc:
+            registration = _result("failed", "registration_cleanup_failed", str(exc))
+        else:
+            registration = _result("removed", "owned_exact_entry")
     return {
         "registration": registration,
         "trust": trust,
@@ -110,18 +116,23 @@ def _cleanup(root: Path, manifest: dict, *, path=None) -> dict:
     }
 
 
-def _shared_reason(root: Path, projects: list[dict]) -> str:
+def _shared_reason(root: Path, projects: list[dict], project_id) -> str:
     if main_checkout(root) != root:
         return "linked_checkout_uses_main_registration"
     for entry in projects:
         other = Path(entry["checkout"]).expanduser().resolve()
+        if other == root and entry["project_id"] != project_id:
+            return "registration_project_identity_changed"
         if other != root and (
             other.is_relative_to(root)
             or root.is_relative_to(other)
             or main_checkout(other) == root
         ):
             return "registration_covers_other_checkout"
-        if other != root and cursor_trust_file(other) == cursor_trust_file(root):
+        if (
+            other != root
+            and cursor_trust_file(other).resolve() == cursor_trust_file(root).resolve()
+        ):
             return "folder_trust_shared_with_other_checkout"
     if (root / ".git").exists():
         result = subprocess.run(

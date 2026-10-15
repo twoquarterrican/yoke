@@ -31,7 +31,9 @@ def revert_folder_trust(checkout: Path, *, exclusive_reason: str = "") -> list[d
                 owner, family = scope
                 if Path(owner).expanduser().resolve() != checkout.resolve():
                     continue
-                matched.add((family, str(Path(entry["file"]).expanduser().resolve())))
+                matched.add(
+                    (family, str(Path(entry["file"]).expanduser().resolve()), owner)
+                )
                 if exclusive_reason:
                     results.append(_result(family, "preserved", exclusive_reason, root))
                     continue
@@ -72,9 +74,9 @@ def revert_folder_trust(checkout: Path, *, exclusive_reason: str = "") -> list[d
                         _result(family, "failed", "trust_unreadable", root, str(exc))
                     )
             for family, owner, target in _current(root):
-                if owner != root:
+                if Path(owner).expanduser().resolve() != checkout.resolve():
                     results.append(_result(family, "preserved", "broader_trust", owner))
-                elif (family, str(target.expanduser().resolve())) not in matched:
+                elif (family, str(target.expanduser().resolve()), owner) not in matched:
                     results.append(
                         _result(family, "preserved", "trust_ownership_unknown", root)
                     )
@@ -139,7 +141,7 @@ def _current(root: str):
             if Path(owner).is_absolute() and Path(root).is_relative_to(
                 Path(owner).resolve()
             ):
-                yield family, str(Path(owner).resolve()), target
+                yield family, owner, target
     for parent in Path(root).parents:
         if trust.cursor_trust_file(parent).is_file():
             yield "cursor", str(parent), trust.cursor_trust_file(parent)

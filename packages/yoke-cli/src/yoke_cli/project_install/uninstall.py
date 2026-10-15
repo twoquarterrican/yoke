@@ -93,7 +93,7 @@ def uninstall(
     commit_paths, commit_warnings = uninstall_commit.prepare(
         root, manifest, config_path
     )
-    shared_scope = owned_cleanup.scope_reason(root, config_path)
+    shared_scope = owned_cleanup.scope_reason(root, manifest, config_path)
     file_records = dict(manifest.get("files") or {})
     discovery_removed = skill_discovery.remove(
         root, manifest.get("skill_discovery_links")
@@ -167,6 +167,7 @@ def uninstall(
         else {"removed": False, "deleted_file": False}
     )
     # A partial cleanup keeps ownership evidence for the same command's retry.
+    commit_report = uninstall_commit.commit(root, commit_paths)
     local_cleanup = owned_cleanup.cleanup(root, manifest, config_path)
     if shared_scope:
         local_cleanup["complete"] = False
@@ -180,6 +181,9 @@ def uninstall(
     if local_cleanup["complete"]:
         files_layer.manifest_path(root).unlink()
         files_layer.remove_empty_parents(root, files_layer.MANIFEST_REL)
+        manifest_commit = uninstall_commit.commit(root, [files_layer.MANIFEST_REL])
+        if manifest_commit["status"] == "created":
+            commit_report = manifest_commit
     report = {
         "operation": "uninstall",
         MODE_KEY: MODE_COPY,
@@ -215,7 +219,7 @@ def uninstall(
         "manifest_removed": local_cleanup["complete"],
         "warnings": warnings,
     }
-    report["commit"] = uninstall_commit.commit(root, commit_paths)
+    report["commit"] = commit_report
     return report
 
 

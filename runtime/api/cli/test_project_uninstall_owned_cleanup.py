@@ -254,3 +254,73 @@ def test_later_harness_home_keeps_unowned_trust(installed, monkeypatch):
         row["harness"] == "codex" and row["reason"] == "trust_ownership_unknown"
         for row in report["local_cleanup"]["trust"]
     )
+
+
+def test_unowned_symlink_alias_trust_is_preserved_and_reported(installed):
+    root, _, config = installed
+    alias = root.parent / "alias"
+    alias.symlink_to(root, target_is_directory=True)
+    target = Path.home() / ".codex/config.toml"
+    target.write_text(
+        target.read_text()
+        + f'\n[projects.{json.dumps(str(alias))}]\ntrust_level = "trusted"\n'
+    )
+    report = uninstall(root, config_path=config)
+    assert str(alias) in parse_config(target.read_text())["projects"]
+    assert report["outcome"] == "partial"
+    assert any(
+        row["reason"] == "trust_ownership_unknown"
+        for row in report["local_cleanup"]["trust"]
+    )
+
+
+def test_reassigned_checkout_preserves_trust_for_its_current_project(installed):
+    root, _, config = installed
+    writer.register_project(root, 99, reassign=True, path=config)
+    before = trust.claude_state_path().read_bytes()
+    report = uninstall(root, config_path=config)
+    assert report["outcome"] == "partial"
+    assert machine_config.project_id(root, config) == 99
+    assert trust.claude_state_path().read_bytes() == before
+    assert (
+        report["local_cleanup"]["registration"]["reason"]
+        == "registration_project_identity_changed"
+    )
+
+
+def test_registration_write_failure_retains_truthful_trust_results(
+    installed, monkeypatch
+):
+    root, _, config = installed
+    from yoke_cli.config import machine_config_file
+
+    before = config.read_bytes()
+    with monkeypatch.context() as patch:
+
+        def fail(*args):
+            raise OSError("fixture write unavailable")
+
+        patch.setattr(machine_config_file, "atomic_write_text", fail)
+        report = uninstall(root, config_path=config)
+    assert report["outcome"] == "partial"
+    assert report["local_cleanup"]["registration"]["status"] == "failed"
+    assert {row["status"] for row in report["local_cleanup"]["trust"]} == {"removed"}
+    assert config.read_bytes() == before
+    assert files.load_manifest(root)
+    assert uninstall(root, config_path=config)["outcome"] == "complete"
+
+
+def test_commit_failure_keeps_local_ownership_for_recovery(installed, monkeypatch):
+    root, _, config = installed
+    before = config.read_bytes(), trust.claude_state_path().read_bytes()
+
+    def fail(*args):
+        raise files.ProjectInstallError("project_uninstall_commit_failed: fixture")
+
+    monkeypatch.setattr(uninstall_commit, "commit", fail)
+    with pytest.raises(
+        files.ProjectInstallError, match="project_uninstall_commit_failed"
+    ):
+        uninstall(root, config_path=config)
+    assert files.load_manifest(root)
+    assert (config.read_bytes(), trust.claude_state_path().read_bytes()) == before
