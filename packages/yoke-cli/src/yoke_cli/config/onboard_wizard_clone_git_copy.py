@@ -1,10 +1,11 @@
-"""Selection rows for clone-source Git prerequisite and retry screens."""
+"""Rows and prompts for clone-source Git prerequisite and retry screens."""
 
 from __future__ import annotations
 
 from yoke_cli.config import onboard_github_copy
 from yoke_cli.config import project_git_prerequisite
-from yoke_cli.config.onboard_wizard_widgets import SelectionRow
+from yoke_cli.config.onboard_wizard_step_ids import STEP_PROJECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, TONE_OK, SelectionRow, SetupPrompt
 
 UNREACHABLE_RECOVERY_LINES = [onboard_github_copy.CLONE_CONNECT_RECOVERY]
 
@@ -106,12 +107,51 @@ def handoff_rows() -> list[SelectionRow]:
     ]
 
 
+def missing_git_prompt() -> SetupPrompt:
+    return SetupPrompt(
+        key="project.clone_git_missing",
+        step=STEP_PROJECT,
+        title="Git is required for project setup.",
+        message=project_git_prerequisite.required_summary(),
+        detail_lines=tuple(project_git_prerequisite.missing_git_detail_lines()),
+        choices=tuple(missing_rows()),
+        tone=TONE_ERROR,
+    )
+
+
+def install_handoff_prompt(advice) -> SetupPrompt:
+    return SetupPrompt(
+        key="project.clone_git_install_handoff",
+        step=STEP_PROJECT,
+        title="Finish Apple's installer.",
+        message="The Command Line Tools installer should be open.",
+        detail_lines=tuple(project_git_prerequisite.install_handoff_detail_lines(advice)),
+        choices=tuple(handoff_rows()),
+        tone=TONE_OK,
+    )
+
+
+def install_error_prompt(message: str) -> SetupPrompt:
+    return SetupPrompt(
+        key="project.clone_git_install_error",
+        step=STEP_PROJECT,
+        title="Couldn't install Git automatically.",
+        message=message,
+        detail_lines=tuple(project_git_prerequisite.missing_git_detail_lines()),
+        choices=tuple(install_error_rows()),
+        tone=TONE_ERROR,
+    )
+
+
 __all__ = [
     "CLONE_REMOTE_ERROR_ROWS",
     "PRIVATE_REMOTE_ERROR_ROWS",
     "UNREACHABLE_RECOVERY_LINES",
     "handoff_rows",
+    "install_error_prompt",
     "install_error_rows",
+    "install_handoff_prompt",
+    "missing_git_prompt",
     "missing_rows",
     "unreachable_source_reason",
 ]

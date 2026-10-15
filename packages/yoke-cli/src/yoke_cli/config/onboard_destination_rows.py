@@ -19,7 +19,8 @@ from yoke_cli.config.onboard_destinations import (
     DESTINATION_SERVER,
     ENV_PRODUCTION,
 )
-from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT_LABEL, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT_LABEL
+from yoke_cli.config.setup_prompt import SelectionRow
 
 #: Picker-only route. The completed connection is the existing durable
 #: team-server destination; this value never enters reports or machine config.

@@ -12,10 +12,10 @@ from yoke_cli.config.onboard_destination_rows import (
     SELF_HOST_SERVER_ROW,
 )
 from yoke_cli.config.onboard_wizard_widgets import (
-    SelectionRow,
     _OptionRow,
     _option_row_text,
 )
+from yoke_cli.config.setup_prompt import SelectionRow
 
 SELF_HOST_ROW = next(
     row for row in DESTINATION_ROWS if row.value == SELF_HOST_SERVER_ROW

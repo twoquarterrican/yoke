@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import project_git_prerequisite
-from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, TONE_OK, SelectionRow, SetupPrompt
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from yoke_cli.config.onboard_wizard_state import _View
@@ -96,13 +96,14 @@ class ProjectGitFlow:
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Git is required for project setup.",
-                    project_git_prerequisite.required_summary(),
-                    project_git_prerequisite.missing_git_detail_lines(),
-                    _git_missing_rows(),
-                    ok=False,
+                SetupPrompt(
+                    key="project.project_git_missing",
+                    step=STEP_PROJECT,
+                    title="Git is required for project setup.",
+                    message=project_git_prerequisite.required_summary(),
+                    detail_lines=tuple(project_git_prerequisite.missing_git_detail_lines()),
+                    choices=tuple(_git_missing_rows()),
+                    tone=TONE_ERROR,
                 ),
                 lambda choice: self._on_project_git_missing(choice, mode),
             )
@@ -152,13 +153,14 @@ class ProjectGitFlow:
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Finish Apple's installer.",
-                    "The Command Line Tools installer should be open.",
-                    project_git_prerequisite.install_handoff_detail_lines(advice),
-                    _git_handoff_rows(),
-                    ok=True,
+                SetupPrompt(
+                    key="project.project_git_install_handoff",
+                    step=STEP_PROJECT,
+                    title="Finish Apple's installer.",
+                    message="The Command Line Tools installer should be open.",
+                    detail_lines=tuple(project_git_prerequisite.install_handoff_detail_lines(advice)),
+                    choices=tuple(_git_handoff_rows()),
+                    tone=TONE_OK,
                 ),
                 lambda choice: self._on_project_git_handoff(choice, mode),
             )
@@ -192,13 +194,14 @@ class ProjectGitFlow:
         detail_lines = project_git_prerequisite.missing_git_detail_lines()
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Couldn't install Git automatically.",
-                    str(exc),
-                    detail_lines,
-                    _git_install_error_rows(),
-                    ok=False,
+                SetupPrompt(
+                    key="project.project_git_install_error",
+                    step=STEP_PROJECT,
+                    title="Couldn't install Git automatically.",
+                    message=str(exc),
+                    detail_lines=tuple(detail_lines),
+                    choices=tuple(_git_install_error_rows()),
+                    tone=TONE_ERROR,
                 ),
                 lambda choice: self._on_project_git_missing(choice, mode),
             )

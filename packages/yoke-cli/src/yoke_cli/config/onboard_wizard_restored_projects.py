@@ -4,7 +4,8 @@ from yoke_cli.config import existing_project_lookup, onboard_project
 from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import onboard_input_validation as validation
 from yoke_cli.config.onboard_destinations import DESTINATION_LOCAL
-from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
+from yoke_cli.config.setup_prompt import SelectionRow
 
 
 def offer(shell) -> None:
@@ -25,6 +26,7 @@ def offer(shell) -> None:
     )
     shell._goto(
         shell._selection_view(
+            "project.restored",
             STEP_PROJECT,
             "Your backup's projects are ready.",
             "Choose a project to connect its code on this machine. The backup carries "
@@ -85,6 +87,7 @@ def _checkout(shell, project) -> None:
         )
 
     shell._goto_input(
+        "project.restored_checkout",
         STEP_PROJECT,
         f"Where is {project.name}'s code?",
         "Choose its local checkout. Your restored project data stays in Yoke.",

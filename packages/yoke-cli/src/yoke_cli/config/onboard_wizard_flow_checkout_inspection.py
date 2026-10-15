@@ -19,15 +19,15 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from yoke_cli.config import onboard_wizard_github_state as github_state
 from yoke_cli.config import onboard_wizard_checkout_inspection_screen as screen
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import project_installed_layer as layer
 from yoke_cli.config import project_onboard_clone
 from yoke_cli.config.onboard_wizard import github_connected
 from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
 from yoke_cli.config.project_clone_support import ClonePlan
+from yoke_cli.config.setup_prompt import TONE_ERROR, SetupPrompt
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 
 class _Shell(Protocol):  # pragma: no cover - structural typing only
@@ -81,37 +81,36 @@ class CheckoutInspectionFlow:
         would be a click with one answer. The fetch itself was visible, and
         Review reports the clean scan, so nothing is hidden by moving on.
         """
-        from yoke_cli.config.onboard_wizard_app import _View
-
         if not scan.present:
             self._after_checkout_inspected()
             return
         self._checkout_layer_scan = scan
         self._checkout_layer_details = False
-        self._goto(
-            _View(
-                STEP_PROJECT,
-                lambda: screen.inspection_body(
-                    scan,
-                    show_details=getattr(self, "_checkout_layer_details", False),
-                ),
-                self._on_checkout_inspection,
-            )
+        self._goto(self._checkout_inspection_view())
+
+    def _checkout_inspection_view(self: _Shell):
+        from yoke_cli.config.onboard_wizard_state import _View
+
+        return _View(
+            screen.inspection_prompt(
+                self._checkout_layer_scan,
+                show_details=getattr(self, "_checkout_layer_details", False),
+            ),
+            self._on_checkout_inspection,
         )
 
     def _on_checkout_inspection(self: _Shell, choice: str) -> None:
         if choice == "details":
             self._checkout_layer_details = not self._checkout_layer_details
-            self._render_current()
+            self._replace_current(self._checkout_inspection_view())
             return
         if choice == layer.LAYER_DECISION_REMOVE:
-            from yoke_cli.config.onboard_wizard_app import _View
+            from yoke_cli.config.onboard_wizard_state import _View
 
             scan = self._checkout_layer_scan
             self._goto(
                 _View(
-                    STEP_PROJECT,
-                    lambda: screen.removal_confirmation_body(scan),
+                    screen.removal_confirmation_prompt(scan),
                     self._on_checkout_removal_confirmation,
                 )
             )
@@ -137,21 +136,22 @@ class CheckoutInspectionFlow:
         self._goto_clone_outcome()
 
     def _goto_checkout_fetch_error(self: _Shell, exc: BaseException) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Couldn't fetch the repository.",
-                    str(exc),
-                    [
+                SetupPrompt(
+                    key="project.checkout_fetch_error",
+                    step=STEP_PROJECT,
+                    title="Couldn't fetch the repository.",
+                    message=str(exc),
+                    detail_lines=tuple([
                         "Check the repository URL, your GitHub access, and the "
                         "network connection.",
                         "Choosing a different folder starts the fetch again.",
-                    ],
-                    screen.FETCH_ERROR_ROWS,
-                    ok=False,
+                    ]),
+                    choices=tuple(screen.FETCH_ERROR_ROWS),
+                    tone=TONE_ERROR,
                 ),
                 self._on_checkout_fetch_error,
             )

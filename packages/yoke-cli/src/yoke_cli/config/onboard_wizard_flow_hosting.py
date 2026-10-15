@@ -22,11 +22,12 @@ from yoke_contracts import hosting_posture
 from yoke_cli.config import aws_admin_capability as hosting
 from yoke_cli.config import onboard_project_modes as project_modes
 from yoke_cli.config import onboard_wizard_hosting_steps as hosting_steps
-from yoke_cli.config.onboard_wizard_state import CopyTarget, _FormField
+from yoke_cli.config.onboard_wizard_state import CopyTarget
+from yoke_cli.config.setup_prompt import SetupField
 from yoke_cli.config.onboard_wizard_step_ids import STEP_HOSTING
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 STACK_LINK_LABEL = "AWS setup page"
 
@@ -37,14 +38,14 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
     def _goto(self, view: "_View") -> None: ...
     def _begin_form(
         self,
-        fields: tuple[_FormField, ...],
+        fields: tuple[SetupField, ...],
         *,
         on_done: Callable[[dict[str, str]], None],
     ) -> None: ...
     def _submit_pending_form(self) -> bool: ...
     def _goto_finish(self) -> None: ...
     def _run_checking(self, **kwargs) -> None: ...
-    async def action_back(self) -> None: ...
+    def _step_back(self) -> None: ...
 
 
 class HostingFlow:
@@ -60,14 +61,10 @@ class HostingFlow:
             # No project Yoke deploys for means no owner for a credential.
             self._goto_finish()
             return
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         self._goto(
-            _View(
-                STEP_HOSTING,
-                hosting_steps.hosting_provider_body,
-                self._on_hosting_provider_choice,
-            )
+            _View(hosting_steps.HOSTING_PROVIDER_PROMPT, self._on_hosting_provider_choice)
         )
 
     def _on_hosting_provider_choice(self: _Shell, choice: str) -> None:
@@ -85,12 +82,11 @@ class HostingFlow:
     # ── AWS sign-in choice ─────────────────────────────────
 
     def _goto_hosting_aws_sign_in(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         self._goto(
             _View(
-                STEP_HOSTING,
-                hosting_steps.hosting_aws_sign_in_body,
+                hosting_steps.HOSTING_AWS_SIGN_IN_PROMPT,
                 self._on_hosting_aws_sign_in_choice,
             )
         )
@@ -105,34 +101,32 @@ class HostingFlow:
         self._skip_hosting()
 
     def _goto_hosting_credentials(self: _Shell, *, guided: bool) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         quick_create_url = (
             hosting.quick_create_url(region=self._hosting_region()) if guided else None
         )
+        prompt = hosting_steps.hosting_credentials_prompt(
+            guided=guided,
+            quick_create_url=quick_create_url,
+            credential_dir=self._hosting_credential_dir(),
+        )
+
+        def on_form(values: dict[str, str]) -> None:
+            self._after_hosting_credentials(values, guided=guided)
 
         def builder():
-            self._begin_form(
-                hosting_steps.HOSTING_CREDENTIAL_FIELDS,
-                on_done=lambda values: self._after_hosting_credentials(
-                    values,
-                    guided=guided,
-                ),
-            )
-            if guided:
-                return hosting_steps.hosting_guided_key_body(
-                    quick_create_url=quick_create_url,
-                    credential_dir=self._hosting_credential_dir(),
-                )
-            return hosting_steps.hosting_existing_key_body(
-                credential_dir=self._hosting_credential_dir(),
+            self._begin_form(prompt.fields, on_done=on_form)
+            return hosting_steps.hosting_credential_body(
+                prompt, guided=guided, credential_dir=self._hosting_credential_dir()
             )
 
         self._goto(
             _View(
-                STEP_HOSTING,
-                builder,
+                prompt,
                 self._on_hosting_credential_choice,
+                builder,
+                on_form=on_form,
                 # The stack link is the longest string onboarding shows, and
                 # this screen's text boxes hold focus, so the copy and open
                 # chords are how it leaves the terminal intact.
@@ -219,7 +213,7 @@ class HostingFlow:
         *,
         guided: bool,
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         if isinstance(exc, hosting.HostingVerificationError):
             title = "Yoke couldn't verify the AWS credential."
@@ -237,13 +231,7 @@ class HostingFlow:
         self.result.hosting_verification = None
         self._goto(
             _View(
-                STEP_HOSTING,
-                lambda: hosting_steps.hosting_error_body(
-                    title,
-                    str(exc),
-                    details,
-                    hosting_steps.HOSTING_RETRY_ROWS,
-                ),
+                hosting_steps.hosting_error_prompt(title, str(exc), details),
                 lambda choice: self._on_hosting_error_choice(
                     choice,
                     guided=guided,

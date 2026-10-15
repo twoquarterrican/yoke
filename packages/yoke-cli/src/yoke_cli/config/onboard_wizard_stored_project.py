@@ -8,11 +8,12 @@ from typing import TYPE_CHECKING, Any, Protocol
 from yoke_cli.config import machine_config
 from yoke_cli.config import onboard_project
 from yoke_cli.config import onboard_wizard_steps as steps
-from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
+from yoke_cli.config.setup_prompt import SelectionRow
 from yoke_cli.project_install import source_dev
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 
 def _is_yoke_source_checkout(path: Path) -> bool:
@@ -29,7 +30,7 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
     _stored_project_checkouts: list[machine_config.ConfiguredProject]
 
     def _goto(self, view: "_View") -> None: ...
-    def _selection_view(self, step, title, subtitle, rows, on_select) -> "_View": ...
+    def _selection_view(self, key, step, title, subtitle, rows, on_select) -> "_View": ...
     def _goto_project_mode(self) -> None: ...
     def _on_project_mode(self, mode: str) -> None: ...
     def _check_project_git(self, mode: str) -> None: ...
@@ -79,6 +80,7 @@ class StoredProjectFlow:
         noun = "project" if saved == 1 else "projects"
         self._goto(
             self._selection_view(
+                "project.stored_checkout",
                 STEP_PROJECT,
                 f"{saved} Yoke {noun} already set up on this machine.",
                 "Yoke will use the selected checkout as it stands. Choosing "

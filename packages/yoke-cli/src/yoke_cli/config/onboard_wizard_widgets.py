@@ -9,8 +9,6 @@ set :func:`yoke_cli.config.onboard.build_report` consumes. All color lives in
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from rich.cells import cell_len
 from rich.text import Text
 from textual.app import ComposeResult
@@ -20,6 +18,7 @@ from textual.reactive import reactive
 from textual.widgets import Input, Static
 
 from yoke_cli.config.onboard_terminal import glyphs, plain_glyphs, plain_text
+from yoke_cli.config.setup_prompt import SelectionRow
 from yoke_cli.config.onboard_wizard_step_ids import (
     STEP_CONNECT,
     STEP_FINISH,
@@ -52,15 +51,6 @@ STEPPER_ORDER = (
     (STEP_HOSTING, "Hosting"),
     (STEP_FINISH, "Review"),
 )
-
-
-@dataclass(frozen=True)
-class SelectionRow:
-    """One arrow-key option: a stable value, a label, and a dim right hint."""
-
-    value: str
-    label: str
-    hint: str
 
 
 class Stepper(Static):
@@ -280,7 +270,6 @@ __all__ = [
     "STEP_INSTALL",
     "STEP_PROJECT",
     "SelectionList",
-    "SelectionRow",
     "Stepper",
     "stepper_mark",
 ]

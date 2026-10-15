@@ -22,47 +22,14 @@ from yoke_cli.config.onboard_wizard_plan_review import (
     _MACHINE_ACTIONS,
     _REPO_ACTIONS,
 )
-from yoke_cli.config.onboard_wizard_widgets import SelectionList, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import SelectionList
+from yoke_cli.config.onboard_wizard_apply_prompts import (
+    APPLY_DIFFERENT_FOLDER_CONFIRM_ROWS,
+    APPLY_FAILURE_GUIDANCE_LINE,
+    APPLY_SUCCESS_ROWS,
+    apply_failure_rows,
+)
 from yoke_cli.project_install import hook_trust_report
-
-APPLY_FAILURE_ROWS = [
-    SelectionRow("back", "Change answers", "go back and adjust setup"),
-    SelectionRow("exit", "Exit", "leave report on disk"),
-]
-
-# Offered when re-running the same apply could plausibly succeed (transient /
-# network / TOCTOU). A repo name that already exists with content is excluded —
-# retrying the same name just fails again — so that case uses APPLY_FAILURE_ROWS.
-APPLY_FAILURE_ROWS_RETRYABLE = [
-    SelectionRow("retry", "Try again", "re-run apply"),
-    SelectionRow("back", "Change answers", "go back and adjust setup"),
-    SelectionRow("exit", "Exit", "leave report on disk"),
-]
-
-APPLY_FAILURE_RESUME_ROW = SelectionRow(
-    "resume",
-    "Resume from cloned folder",
-    "keep completed work",
-)
-APPLY_FAILURE_DIFFERENT_FOLDER_ROW = SelectionRow(
-    "different-folder",
-    "Use a different folder",
-    "preserve this partial checkout",
-)
-
-APPLY_DIFFERENT_FOLDER_CONFIRM_ROWS = [
-    SelectionRow(
-        "confirm-different-folder",
-        "Preserve checkout and go back",
-        "choose a new empty folder next",
-    ),
-    SelectionRow("cancel", "Cancel", "back to recovery"),
-]
-
-APPLY_SUCCESS_ROWS = [
-    SelectionRow("exit", "Exit", ""),
-    SelectionRow("show-report", "Show report", "leave setup open"),
-]
 
 APPLY_STATUS_GLYPHS = {
     "pending": RICH_GLYPHS.apply_pending,
@@ -175,10 +142,7 @@ def apply_failure_body(
         Static("", classes="onboard-spacer"),
         Static(f"Cause: {escape(message)}", classes="onboard-plan-line"),
         Static("What to do", classes="onboard-title"),
-        Static(
-            "Choose the first recovery action below that applies. Completed work and the durable report are preserved.",
-            classes="onboard-plan-line",
-        ),
+        Static(APPLY_FAILURE_GUIDANCE_LINE, classes="onboard-plan-line"),
     ]
     if show_details and failed_step:
         widgets.append(
@@ -193,19 +157,13 @@ def apply_failure_body(
             Static(f"Resume: {escape(resume_command)}", classes="onboard-note")
         )
     widgets.append(Static("", classes="onboard-spacer"))
-    rows = _apply_failure_rows(
+    rows = apply_failure_rows(
         retryable=retryable,
         can_resume=can_resume,
         can_use_different_folder=can_use_different_folder,
+        has_details=bool(failed_step or report_path or resume_command),
+        show_details=show_details,
     )
-    if failed_step or report_path or resume_command:
-        rows.append(
-            SelectionRow(
-                "technical-details",
-                "Hide technical details" if show_details else "Show technical details",
-                "step id, report path, and resume command",
-            )
-        )
     widgets.append(SelectionList(rows))
     return widgets
 
@@ -314,31 +272,9 @@ def apply_success_body(
     return widgets
 
 
-def _apply_failure_rows(
-    *,
-    retryable: bool,
-    can_resume: bool,
-    can_use_different_folder: bool,
-) -> list[SelectionRow]:
-    base = list(APPLY_FAILURE_ROWS_RETRYABLE if retryable else APPLY_FAILURE_ROWS)
-    insert_at = 1 if retryable else 0
-    recovery: list[SelectionRow] = []
-    if can_resume:
-        recovery.append(APPLY_FAILURE_RESUME_ROW)
-    if can_use_different_folder:
-        recovery.append(APPLY_FAILURE_DIFFERENT_FOLDER_ROW)
-    return base[:insert_at] + recovery + base[insert_at:]
-
-
 __all__ = [
     "BOARD_ART_COMMITTED_LINE",
-    "APPLY_FAILURE_ROWS",
-    "APPLY_FAILURE_RESUME_ROW",
-    "APPLY_FAILURE_ROWS_RETRYABLE",
-    "APPLY_FAILURE_DIFFERENT_FOLDER_ROW",
-    "APPLY_DIFFERENT_FOLDER_CONFIRM_ROWS",
     "APPLY_STATUS_GLYPHS",
-    "APPLY_SUCCESS_ROWS",
     "apply_failure_body",
     "apply_progress_body",
     "apply_different_folder_body",

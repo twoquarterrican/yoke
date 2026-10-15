@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from yoke_cli.config import onboard_wizard_review_steps as review_steps
 from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import yoke_token_verify
 from yoke_cli.config.onboard_path_plan import shell_change_lines
@@ -12,6 +13,7 @@ from yoke_cli.config.onboard_wizard_machine_finish import (
     machine_finish_widgets,
 )
 from yoke_cli.config.onboard_wizard_plan_review import _PLAN_GROUPS, classify_plan
+from yoke_cli.config.onboard_wizard_step_ids import STEP_FINISH
 
 
 class FinishBodyFlow:
@@ -34,6 +36,17 @@ class FinishBodyFlow:
             for line in shell_change_lines(self.result.path_repair)
         ]
         return widgets
+
+    def _finish_prompt(self):
+        return review_steps.review_prompt(
+            self._review_plan,
+            step=STEP_FINISH,
+            problems=getattr(self, "_review_problems", []),
+            notes=getattr(self, "_review_notes", []),
+            machine_github_saved=self.result.machine_github_saved,
+            show_all=getattr(self, "_review_show_all", False),
+            status_lines=self._review_status_lines(),
+        )
 
     def _review_status_lines(self) -> list[str]:
         lines: list[str] = shell_change_lines(self.result.path_repair)

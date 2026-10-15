@@ -72,7 +72,52 @@ CLONE_MISSING_AUTHORIZATION = (
 )
 
 
+OTHER_PROVIDER_SENTENCE = (
+    "Yoke supports GitHub only for now; it works without the GitHub connection,"
+)
+GITHUB_SIGN_UP_MODES = ("create-repo", "clone-remote", "import-remote")
+
+
+def machine_github_agent_guidance(project_mode: str | None) -> str:
+    """How an agent answers the machine GitHub question for this run."""
+    sign_up = (
+        " This work uses GitHub, so if the person has no account, offer signing "
+        "up at github.com before answering connect."
+        if project_mode in GITHUB_SIGN_UP_MODES
+        else ""
+    )
+    return (
+        "Ask whether the person uses GitHub. With a GitHub account, answer "
+        "connect and pass the browser link to the person. With no GitHub "
+        "account, explain that setup continues without it and answer skip. "
+        f"With another source-control provider, say \"{OTHER_PROVIDER_SENTENCE}\" "
+        f"then answer skip.{sign_up}"
+    )
+
+
+PROJECT_GITHUB_AGENT_GUIDANCE = (
+    "Answer reuse-machine when the machine GitHub connection is saved and the "
+    "person wants this project on it. With no GitHub account or another "
+    f"source-control provider, say \"{OTHER_PROVIDER_SENTENCE}\" then answer skip."
+)
+PROJECT_MODE_AGENT_GUIDANCE = (
+    "Ask the person where their code lives. Answer machine-only if they have no "
+    "project yet; clone-remote clones from GitHub, which needs a GitHub "
+    "account."
+)
+DESTINATION_AGENT_GUIDANCE = (
+    "Ask where the person's Yoke data should live. Answer local for one person "
+    "on this machine, server when their team runs a Yoke server and they have "
+    "its URL, and hosted only when they have upyoke.com access."
+)
+
 __all__ = [
+    "DESTINATION_AGENT_GUIDANCE",
+    "GITHUB_SIGN_UP_MODES",
+    "OTHER_PROVIDER_SENTENCE",
+    "PROJECT_GITHUB_AGENT_GUIDANCE",
+    "PROJECT_MODE_AGENT_GUIDANCE",
+    "machine_github_agent_guidance",
     "MACHINE_GITHUB_TITLE",
     "MACHINE_GITHUB_SUBTITLE",
     "MACHINE_GITHUB_REVIEW",

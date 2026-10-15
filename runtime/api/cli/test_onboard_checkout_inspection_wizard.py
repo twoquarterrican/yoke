@@ -13,8 +13,8 @@ from yoke_cli.config import project_installed_layer as layer
 from yoke_cli.config import project_onboard_clone
 from yoke_cli.config.onboard_wizard_checkout_inspection_screen import (
     LAYER_ROWS,
-    inspection_body,
     inspection_lines,
+    inspection_prompt,
 )
 from yoke_cli.config.project_onboard_support import ProjectOnboardError
 
@@ -72,7 +72,7 @@ def test_inspection_screen_names_every_group_and_both_choices(
         *layer.LAYER_DECISIONS,
         "details",
     }
-    assert inspection_body(scan)
+    assert inspection_prompt(scan).choices
 
 
 def test_inspection_lines_count_a_single_file_in_the_singular(

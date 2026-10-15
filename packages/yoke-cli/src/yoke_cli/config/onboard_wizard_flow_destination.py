@@ -14,11 +14,10 @@ Every lane rejoins the destination-independent flow at ``_goto_machine_github``.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import Any, Protocol
 
 from yoke_cli.config import local_universe_setup
 from yoke_cli.config import onboard_wizard_admin_name as admin_name
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config.local_universe_setup import LOCAL_ENV
 from yoke_cli.config.onboard_destinations import (
     DEFAULT_SIGN_IN_ENV,
@@ -43,11 +42,11 @@ from yoke_cli.config.onboard_wizard_self_host import goto_self_host_server
 from yoke_cli.config.onboard_wizard_widgets import (
     STEP_CONNECT,
     STEP_CONNECT_LABEL,
-    SelectionRow,
 )
-
-if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+from yoke_cli.config.onboard_github_copy import DESTINATION_AGENT_GUIDANCE
+from yoke_cli.config.onboard_wizard_state import _View
+from yoke_cli.config.setup_prompt import TONE_ERROR, TONE_OK, SelectionRow, SetupPrompt
+from yoke_cli.config.setup_prompt_render import render
 
 _STORED_DESTINATION = "stored"
 
@@ -62,10 +61,11 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
 
     def _goto(self, view: "_View") -> None: ...
     def _selection_view(
-        self, step, title, subtitle, rows, on_select, *, initial: int = 0
+        self, key, step, title, subtitle, rows, on_select, *, initial: int = 0
     ) -> "_View": ...
     def _goto_input(
         self,
+        key,
         step,
         title,
         subtitle,
@@ -102,29 +102,33 @@ class DestinationFlow:
         self._goto_destination_picker()
 
     def _goto_destination_picker(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        prompt = SetupPrompt(
+            key="connect.destination",
+            step=STEP_CONNECT,
+            title="Where should this Yoke universe live?",
+            subtitle="Keep the engine and database on your machine, or use a "
+            "server for team collab.",
+            choices=tuple(DESTINATION_ROWS),
+            initial=DEFAULT_DESTINATION_INDEX,
+            guidance=DESTINATION_AGENT_GUIDANCE,
+        )
+        view = _View(prompt, self._after_destination_select,
+                     self._account_picker_builder(prompt))
+        self._destination_picker_view = view
+        self._goto(view)
 
+    def _account_picker_builder(self: _Shell, prompt: SetupPrompt):
         def builder() -> list:
             # Runs on every render of this view — including an Esc-back from
             # a destination lane — so the rail label always reads as the
             # undecided Account step while the picker is on screen.
             self._account_step_label = STEP_CONNECT_LABEL
-            return steps.selection_body(
-                "Where should this Yoke universe live?",
-                "Keep the engine and database on your machine, or use a server "
-                "for team collab.",
-                DESTINATION_ROWS,
-                initial=DEFAULT_DESTINATION_INDEX,
-            )
+            return render(prompt)
 
         self._account_step_label = STEP_CONNECT_LABEL
-        view = _View(STEP_CONNECT, builder, self._after_destination_select)
-        self._destination_picker_view = view
-        self._goto(view)
+        return builder
 
     def _goto_stored_destination_picker(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         stored_destination = (
             DESTINATION_HOSTED
             if is_hosted_url(self.result.api_url)
@@ -139,29 +143,26 @@ class DestinationFlow:
         # The URL names the connection in the subtitle, where it can wrap; a
         # row hint is cut to the room beside its label, which would hide the
         # organization at the end of a hosted URL on an 80-column terminal.
-        rows = [
+        rows = (
             SelectionRow(_STORED_DESTINATION, label, "saved in machine config"),
             *DESTINATION_ROWS,
-        ]
-        api_url = self.result.api_url
-
-        def builder() -> list:
-            self._account_step_label = STEP_CONNECT_LABEL
-            return steps.selection_body(
-                "Use this saved Yoke connection?",
-                f"Yoke found {api_url} in machine config. Reuse it, or choose "
-                "another home.",
-                rows,
-            )
-
-        self._account_step_label = STEP_CONNECT_LABEL
+        )
+        prompt = SetupPrompt(
+            key="connect.saved_destination",
+            step=STEP_CONNECT,
+            title="Use this saved Yoke connection?",
+            subtitle=f"Yoke found {self.result.api_url} in machine config. "
+            "Reuse it, or choose another home.",
+            choices=rows,
+            guidance=DESTINATION_AGENT_GUIDANCE,
+        )
         view = _View(
-            STEP_CONNECT,
-            builder,
+            prompt,
             lambda choice: self._after_stored_destination_select(
                 choice,
                 stored_destination,
             ),
+            self._account_picker_builder(prompt),
         )
         self._destination_picker_view = view
         self._goto(view)
@@ -259,21 +260,18 @@ class DestinationFlow:
         self.result.yoke_token_verification = None
 
     def _goto_local_universe_summary(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         state = local_universe_setup.inspect_local_state(self.result.config_path)
-        rows = local_universe_summary_rows(state)
-
+        ok = state.get("state") != local_universe_setup.LOCAL_UNIVERSE_UNAVAILABLE
         self._goto(
             _View(
-                STEP_CONNECT,
-                lambda: steps.verification_body(
-                    "Your Yoke lives on this machine.",
-                    "Free, no account — everything stays on this computer.",
-                    local_universe_summary_lines(state),
-                    rows,
-                    ok=state.get("state")
-                    != local_universe_setup.LOCAL_UNIVERSE_UNAVAILABLE,
+                SetupPrompt(
+                    key="connect.local_universe",
+                    step=STEP_CONNECT,
+                    title="Your Yoke lives on this machine.",
+                    message="Free, no account — everything stays on this computer.",
+                    detail_lines=tuple(local_universe_summary_lines(state)),
+                    choices=tuple(local_universe_summary_rows(state)),
+                    tone=TONE_OK if ok else TONE_ERROR,
                 ),
                 lambda choice: self._on_local_universe_summary(choice, state),
             )

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from yoke_cli.config import onboard_backup as backup
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config.onboard_wizard_state import _View
-from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, TONE_OK, SelectionRow, SetupPrompt
 
 START_ROWS = [
     SelectionRow("fresh", "Start fresh", "create a new universe"),
@@ -31,11 +31,13 @@ def choose_server_start(shell, setup, fresh) -> None:
 
     shell._goto(
         _View(
-            STEP_CONNECT,
-            lambda: steps.selection_body(
-                "How should this server start?",
-                "A backup carries your account, projects, items, and strategy docs.",
-                START_ROWS,
+            SetupPrompt(
+                key="connect.server_start",
+                step=STEP_CONNECT,
+                title="How should this server start?",
+                subtitle="A backup carries your account, projects, items, and "
+                "strategy docs.",
+                choices=tuple(START_ROWS),
             ),
             selected,
         )
@@ -44,6 +46,7 @@ def choose_server_start(shell, setup, fresh) -> None:
 
 def prompt(shell, *, setup=None) -> None:
     shell._goto_input(
+        "connect.backup_path",
         STEP_CONNECT,
         "Where is your backup?",
         "Use the portable .tar from uninstall with backup or the web export panel.",
@@ -73,22 +76,26 @@ def _confirm(shell, report, setup) -> None:
     )
     shell._goto(
         _View(
-            STEP_CONNECT,
-            lambda: steps.verification_body(
-                "Start from this backup?",
-                "Apply restores the account before project setup. No name is needed.",
-                [
+            SetupPrompt(
+                key="connect.backup_confirm",
+                step=STEP_CONNECT,
+                title="Start from this backup?",
+                message="Apply restores the account before project setup. No name "
+                "is needed.",
+                detail_lines=(
                     f"Backup: {archive}",
                     f"Account: {report['receipt']['org']}",
                     f"Destination: {target}",
                     "Apply replaces the destination database and revokes imported credentials.",
                     "Your projects, items, and strategy docs come with the backup.",
-                ],
-                [
+                ),
+                choices=(
                     SelectionRow("apply", "Apply", "restore, then choose a project"),
                     SelectionRow("back", "Back", "choose a different backup"),
-                ],
-                ok=True,
+                ),
+                tone=TONE_OK,
+                guidance="Confirm with the person before restoring; it replaces "
+                "the destination database.",
             ),
             lambda choice: (
                 _apply(shell, archive, setup)
@@ -146,18 +153,19 @@ def _failure(shell, exc, retry) -> None:
 
     shell._goto(
         _View(
-            STEP_CONNECT,
-            lambda: steps.verification_body(
-                "Backup setup needs attention.",
-                redact_api_tokens(str(exc)),
-                [
-                    "The backup file is preserved. Correct the named problem, then retry."
-                ],
-                [
+            SetupPrompt(
+                key="connect.backup_failed",
+                step=STEP_CONNECT,
+                title="Backup setup needs attention.",
+                message=redact_api_tokens(str(exc)),
+                detail_lines=(
+                    "The backup file is preserved. Correct the named problem, then retry.",
+                ),
+                choices=(
                     SelectionRow("retry", "Try again", "resume this step"),
                     SelectionRow("back", "Back", "choose another Yoke home"),
-                ],
-                ok=False,
+                ),
+                tone=TONE_ERROR,
             ),
             lambda choice: (
                 retry() if choice == "retry" else shell._return_to_destination_picker()

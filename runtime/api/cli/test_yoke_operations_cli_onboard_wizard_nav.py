@@ -21,15 +21,19 @@ from yoke_cli.config import onboard_wizard_self_host as self_host  # noqa: E402
 from yoke_cli.config.onboard_wizard_widgets import (  # noqa: E402
     STEP_PROJECT,
     SelectionList,
-    SelectionRow,
     Stepper,
 )
+from yoke_cli.config.setup_prompt import SelectionRow, SetupPrompt  # noqa: E402
 
 from runtime.api.cli.onboard_wizard_test_helpers import (  # noqa: E402
     advance_past_path,
     make_app,
     stub_path_doctor,
 )
+
+
+def _prompt() -> SetupPrompt:
+    return SetupPrompt(key="test.screen", step=STEP_PROJECT, title="Test screen")
 
 
 @pytest.fixture(autouse=True)
@@ -112,13 +116,13 @@ def test_back_returns_to_exact_previous_view(route: str, key: str) -> None:
     async def scenario() -> None:
         async with app.run_test() as pilot:
             await pilot.pause()
-            previous = _View(STEP_PROJECT, lambda: [Static("Previous screen")])
+            previous = _View(_prompt(), builder=lambda: [Static("Previous screen")])
             app._goto(previous)
             app._goto(
                 _View(
-                    STEP_PROJECT,
-                    lambda: [SelectionList([SelectionRow("back", "Back", "")])],
+                    _prompt(),
                     choose,
+                    lambda: [SelectionList([SelectionRow("back", "Back", "")])],
                 )
             )
             await pilot.pause()
@@ -143,7 +147,7 @@ def test_back_stays_at_first_screen_and_during_apply() -> None:
             first = app._history[-1]
             await pilot.press("escape")
             assert app._history == [first]
-            applying = _View(STEP_PROJECT, lambda: [Static("Applying")])
+            applying = _View(_prompt(), builder=lambda: [Static("Applying")])
             app._goto(applying)
             await pilot.pause()
             app._applying = True
@@ -177,7 +181,7 @@ def test_error_back_keeps_the_screen_that_requested_the_check(
     async def scenario() -> None:
         async with app.run_test() as pilot:
             await pilot.pause()
-            previous = _View(STEP_PROJECT, lambda: [Static("Requested check here")])
+            previous = _View(_prompt(), builder=lambda: [Static("Requested check here")])
             app._goto(previous)
             if error == "source-checkout":
                 app._goto_dev_error("source_checkout_invalid: choose a source checkout")
@@ -199,16 +203,16 @@ def test_apply_outcome_back_returns_to_the_preceding_interactive_view(key: str) 
     async def scenario() -> None:
         async with app.run_test() as pilot:
             await pilot.pause()
-            review = _View(STEP_PROJECT, lambda: [Static("Review setup")])
+            review = _View(_prompt(), builder=lambda: [Static("Review setup")])
             app._goto(review)
             app._goto_applying()
             app._replace_current(
                 _View(
-                    STEP_PROJECT,
+                    _prompt(),
+                    app._on_apply_failure,
                     lambda: [
                         SelectionList([SelectionRow("back", "Change answers", "")])
                     ],
-                    app._on_apply_failure,
                 )
             )
             await pilot.pause()

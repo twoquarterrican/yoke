@@ -34,13 +34,13 @@ from runtime.api.cli.onboard_wizard_golden_support import (  # noqa: E402
     make_app,
     render,
 )
-from yoke_cli.config import onboard_wizard_steps as steps  # noqa: E402
 from yoke_cli.config.onboard_destinations import (  # noqa: E402
     DESTINATION_LOCAL,
     DESTINATION_SERVER,
 )
 from yoke_cli.config.onboard_wizard_app import OnboardWizardApp  # noqa: E402
 from yoke_cli.config.onboard_wizard_state import _View  # noqa: E402
+from yoke_cli.config.setup_prompt import SetupPrompt  # noqa: E402
 
 _GITHUB_CONNECTED = {
     "ok": True,
@@ -216,12 +216,13 @@ def test_github_app_connect_pending(monkeypatch: pytest.MonkeyPatch) -> None:
             a._checking = True
             a._goto(
                 _View(
-                    kwargs["step"],
-                    lambda: steps.checking_body(
-                        kwargs["title"],
-                        kwargs["message"],
-                        kwargs["detail_lines"],
-                    ),
+                    SetupPrompt(
+                        key="check.test",
+                        step=kwargs["step"],
+                        title=kwargs["title"],
+                        message=kwargs["message"],
+                        detail_lines=tuple(kwargs["detail_lines"]),
+                    )
                 )
             )
 

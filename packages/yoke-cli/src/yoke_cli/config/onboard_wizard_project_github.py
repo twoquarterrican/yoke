@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 from yoke_cli.config import setup_browser
@@ -27,6 +26,7 @@ from yoke_cli.config.project_github_adoption import (
 from yoke_cli.config.project_clone_support import CLONE_OUTCOME_FORK
 from yoke_cli.config.project_clone_support import CLONE_OUTCOME_MAKE_IT_MINE
 from yoke_cli.config.onboard_project import PROJECT_MODE_CLONE_REMOTE
+from yoke_cli.config.setup_prompt import TONE_ERROR, SetupPrompt
 
 
 class ProjectGithubAccessFlow:
@@ -98,7 +98,7 @@ class ProjectGithubAccessFlow:
         setup_browser.open_in_wizard(self, url, step=STEP_PROJECT, on_success=completed)
 
     def _goto_project_github_access(self) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         url = ""
         details = [f"Repository: {self.result.project_github_repo}"]
@@ -121,13 +121,14 @@ class ProjectGithubAccessFlow:
                 )
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Give the Yoke GitHub App access to this repo.",
-                    onboard_github_copy.PROJECT_GITHUB_ACCESS_SUBTITLE,
-                    details,
-                    steps.PROJECT_GITHUB_ACCESS_ROWS,
-                    ok=False,
+                SetupPrompt(
+                    key="project.project_github_access",
+                    step=STEP_PROJECT,
+                    title="Give the Yoke GitHub App access to this repo.",
+                    message=onboard_github_copy.PROJECT_GITHUB_ACCESS_SUBTITLE,
+                    detail_lines=tuple(details),
+                    choices=tuple(steps.PROJECT_GITHUB_ACCESS_ROWS),
+                    tone=TONE_ERROR,
                 ),
                 self._on_project_github_access,
                 copy_targets=(CopyTarget("the App access link", url, is_url=True),)
@@ -164,7 +165,7 @@ class ProjectGithubAccessFlow:
             self.result.project_github_installation_id = None
             self._prepare_board_art_and_continue()
             return
-        asyncio.ensure_future(self.action_back())
+        self._step_back()
 
     def _after_project_github_access_refresh(self, report: Any) -> None:
         identity = report.get("identity") if isinstance(report, dict) else None

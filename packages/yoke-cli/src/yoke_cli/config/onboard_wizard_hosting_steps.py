@@ -1,4 +1,4 @@
-"""Body builders and option rows for the wizard's Hosting step.
+"""Prompts, option rows and the credential body for the wizard's Hosting step.
 
 Provider choice and AWS sign-in choice are deliberately separate. Credential
 entry then shares one field pair, custody explanation, verification action,
@@ -14,8 +14,15 @@ from textual.widgets import Static
 from yoke_cli.config import onboard_input_validation as input_validation
 from yoke_cli.config.onboard_wizard_input_entry import form_field_widgets
 from yoke_cli.config.onboard_wizard_palette import ACCENT
-from yoke_cli.config.onboard_wizard_state import _FormField
-from yoke_cli.config.onboard_wizard_widgets import SelectionList, SelectionRow
+from yoke_cli.config.onboard_wizard_step_ids import STEP_HOSTING
+from yoke_cli.config.setup_prompt import (
+    TONE_ERROR,
+    SelectionRow,
+    SetupField,
+    SetupHuman,
+    SetupPrompt,
+)
+from yoke_cli.config.onboard_wizard_widgets import SelectionList
 
 HOSTING_PROVIDER_TITLE = "Connect your hosting provider?"
 HOSTING_PROVIDER_SUBTITLE = (
@@ -47,13 +54,13 @@ HOSTING_AWS_SIGN_IN_ROWS = [
     SelectionRow("skip", "Not now", "Continue without AWS credentials"),
 ]
 
-HOSTING_ACCESS_KEY_FIELD = _FormField(
+HOSTING_ACCESS_KEY_FIELD = SetupField(
     key="access-key-id",
     label="Access key ID",
     placeholder="AKIA...",
     validate=input_validation.validate_access_key_id,
 )
-HOSTING_SECRET_KEY_FIELD = _FormField(
+HOSTING_SECRET_KEY_FIELD = SetupField(
     key="secret-access-key",
     label="Secret access key",
     placeholder="the secret value from the stack",
@@ -87,48 +94,81 @@ NO_LINK_RECOVERY_LINE = (
 )
 
 
-def hosting_provider_body() -> list[Static]:
-    """The provider-level truth: AWS, self-hosted, or undecided."""
-    return [
-        Static(HOSTING_PROVIDER_TITLE, classes="onboard-title"),
-        Static(HOSTING_PROVIDER_SUBTITLE, classes="onboard-subtitle"),
-        Static("", classes="onboard-spacer"),
-        SelectionList(HOSTING_PROVIDER_ROWS),
-    ]
+HOSTING_AGENT_GUIDANCE = (
+    "Ask the person which answer fits. AWS access keys are secrets: the person "
+    "enters them in the wizard (`yoke setup --tui`), never in chat."
+)
+
+HOSTING_PROVIDER_PROMPT = SetupPrompt(
+    key="hosting.provider",
+    step=STEP_HOSTING,
+    title=HOSTING_PROVIDER_TITLE,
+    subtitle=HOSTING_PROVIDER_SUBTITLE,
+    choices=tuple(HOSTING_PROVIDER_ROWS),
+    guidance=HOSTING_AGENT_GUIDANCE,
+)
+HOSTING_AWS_SIGN_IN_PROMPT = SetupPrompt(
+    key="hosting.aws_sign_in",
+    step=STEP_HOSTING,
+    title=HOSTING_AWS_SIGN_IN_TITLE,
+    subtitle=HOSTING_AWS_SIGN_IN_SUBTITLE,
+    choices=tuple(HOSTING_AWS_SIGN_IN_ROWS),
+    guidance=HOSTING_AGENT_GUIDANCE,
+)
 
 
-def hosting_aws_sign_in_body() -> list[Static]:
-    """The AWS-only choice between guided, existing, and deferred access."""
-    return [
-        Static(HOSTING_AWS_SIGN_IN_TITLE, classes="onboard-title"),
-        Static(HOSTING_AWS_SIGN_IN_SUBTITLE, classes="onboard-subtitle"),
-        Static("", classes="onboard-spacer"),
-        SelectionList(HOSTING_AWS_SIGN_IN_ROWS),
-    ]
-
-
-def hosting_guided_key_body(
+def hosting_credentials_prompt(
     *,
+    guided: bool,
     quick_create_url: str | None,
     credential_dir: str,
-) -> list[Static]:
-    """Credential entry with the one-click dedicated-key route."""
-    setup_line = quick_create_url or NO_LINK_RECOVERY_LINE
-    return _hosting_credential_body(
-        title=HOSTING_GUIDED_KEY_TITLE,
-        subtitle=HOSTING_GUIDED_KEY_SUBTITLE,
-        credential_dir=credential_dir,
-        creation_link=setup_line,
+) -> SetupPrompt:
+    """Credential entry, with the one-click dedicated-key route when guided."""
+    return SetupPrompt(
+        key="hosting.aws_credentials",
+        step=STEP_HOSTING,
+        title=HOSTING_GUIDED_KEY_TITLE if guided else HOSTING_EXISTING_KEY_TITLE,
+        subtitle=HOSTING_GUIDED_KEY_SUBTITLE if guided else HOSTING_EXISTING_KEY_SUBTITLE,
+        detail_lines=(f"The key stays on this machine ({credential_dir}).",),
+        choices=tuple(HOSTING_CREDENTIAL_ROWS),
+        fields=HOSTING_CREDENTIAL_FIELDS,
+        selected="connect",
+        human=SetupHuman(
+            "Open the AWS setup page and create the deploy key; then enter "
+            "both values in the wizard.",
+            url=quick_create_url,
+        ) if guided and quick_create_url else None,
+        guidance=HOSTING_AGENT_GUIDANCE,
     )
 
 
-def hosting_existing_key_body(*, credential_dir: str) -> list[Static]:
-    """Credential entry for an access key the operator already manages."""
+def hosting_error_prompt(title: str, message: str, details: list[str]) -> SetupPrompt:
+    """The plain cause and every required recovery action."""
+    return SetupPrompt(
+        key="hosting.aws_error",
+        step=STEP_HOSTING,
+        title=title,
+        message=message,
+        detail_lines=tuple(details),
+        choices=tuple(HOSTING_RETRY_ROWS),
+        tone=TONE_ERROR,
+    )
+
+
+def hosting_credential_body(
+    prompt: SetupPrompt,
+    *,
+    guided: bool,
+    credential_dir: str,
+) -> list[Static]:
+    creation_link = None
+    if guided:
+        creation_link = prompt.human.url if prompt.human else NO_LINK_RECOVERY_LINE
     return _hosting_credential_body(
-        title=HOSTING_EXISTING_KEY_TITLE,
-        subtitle=HOSTING_EXISTING_KEY_SUBTITLE,
+        title=prompt.title,
+        subtitle=prompt.subtitle or "",
         credential_dir=credential_dir,
-        creation_link=None,
+        creation_link=creation_link,
     )
 
 
@@ -194,28 +234,6 @@ def _hosting_credential_body(
     return widgets
 
 
-def hosting_error_body(
-    title: str,
-    message: str,
-    detail_lines: list[str],
-    rows: list[SelectionRow],
-) -> list[Static]:
-    """Show the plain cause and every required recovery action inline."""
-    widgets = [
-        Static(f"✗ {escape(title)}", classes="onboard-title-error"),
-        Static("", classes="onboard-spacer"),
-        Static(f"Cause: {escape(message)}", classes="onboard-plan-line"),
-        Static("What to do", classes="onboard-title"),
-    ]
-    widgets.extend(
-        Static(f"  • {escape(line)}", classes="onboard-plan-line")
-        for line in detail_lines
-    )
-    widgets.append(Static("", classes="onboard-spacer"))
-    widgets.append(SelectionList(rows))
-    return widgets
-
-
 __all__ = [
     "HOSTING_ACCESS_KEY_FIELD",
     "HOSTING_AWS_SIGN_IN_ROWS",
@@ -233,9 +251,10 @@ __all__ = [
     "HOSTING_RETRY_ROWS",
     "HOSTING_SECRET_KEY_FIELD",
     "NO_LINK_RECOVERY_LINE",
-    "hosting_aws_sign_in_body",
-    "hosting_error_body",
-    "hosting_existing_key_body",
-    "hosting_guided_key_body",
-    "hosting_provider_body",
+    "HOSTING_AGENT_GUIDANCE",
+    "HOSTING_AWS_SIGN_IN_PROMPT",
+    "HOSTING_PROVIDER_PROMPT",
+    "hosting_credential_body",
+    "hosting_credentials_prompt",
+    "hosting_error_prompt",
 ]

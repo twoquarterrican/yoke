@@ -19,6 +19,7 @@ def prompt(
 ) -> None:
     """Open the shared input screen and hand back a validated name."""
     shell._goto_input(
+        "connect.admin_name",
         step,
         TITLE,
         SUBTITLE,
@@ -27,6 +28,7 @@ def prompt(
         allow_placeholder=False,
         validate=input_error,
         on_done=lambda value: on_done(validate_admin_name(value)),
+        guidance="Ask the person for their name; do not invent one.",
     )
 
 

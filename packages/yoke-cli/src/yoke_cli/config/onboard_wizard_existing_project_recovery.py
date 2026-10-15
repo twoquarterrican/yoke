@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, Protocol
 
 from yoke_cli.config import onboard_existing_project
-from yoke_cli.config import onboard_wizard_steps as steps
-from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, SelectionRow, SetupPrompt
 
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 
 class _Shell(Protocol):  # pragma: no cover - structural typing only
@@ -29,7 +29,7 @@ class ExistingProjectLookupRecoveryFlow:
         retry: Callable[[], None],
         local_destination: bool = False,
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         rows = [
             SelectionRow("retry", "Try again", "rerun the project check"),
@@ -40,13 +40,14 @@ class ExistingProjectLookupRecoveryFlow:
         )
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Can't use that Yoke project.",
-                    str(exc),
-                    [hint],
-                    rows,
-                    ok=False,
+                SetupPrompt(
+                    key="project.existing_project_lookup_error",
+                    step=STEP_PROJECT,
+                    title="Can't use that Yoke project.",
+                    message=str(exc),
+                    detail_lines=tuple([hint]),
+                    choices=tuple(rows),
+                    tone=TONE_ERROR,
                 ),
                 lambda choice: self._on_existing_project_lookup_error(
                     choice,
@@ -63,7 +64,7 @@ class ExistingProjectLookupRecoveryFlow:
         retry: Callable[[], None],
         unlink: Callable[[], None],
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         title, lines = onboard_existing_project.stale_link_copy(
             self.result, exc, local_ref
@@ -86,8 +87,15 @@ class ExistingProjectLookupRecoveryFlow:
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(title, str(exc), lines, rows, ok=False),
+                SetupPrompt(
+                    key="project.stale_project_link",
+                    step=STEP_PROJECT,
+                    title=title,
+                    message=str(exc),
+                    detail_lines=tuple(lines),
+                    choices=tuple(rows),
+                    tone=TONE_ERROR,
+                ),
                 choose,
             )
         )

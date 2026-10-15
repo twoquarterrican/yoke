@@ -25,7 +25,7 @@ class Flow(access.ProjectGithubAccessFlow):
         self.checking = kwargs
 
     def _goto(self, view):
-        self.details = view.builder()
+        self.details = list(view.prompt.detail_lines)
 
     def _prepare_board_art_and_continue(self):
         self.bound = True
@@ -49,11 +49,6 @@ def setup(monkeypatch):
     }
     monkeypatch.setattr(access.machine_config, "github_config", lambda _: config)
     monkeypatch.setattr(access, "github_connected", lambda _: True)
-    monkeypatch.setattr(
-        access.steps,
-        "verification_body",
-        lambda _title, _subtitle, details, *_args, **_kwargs: details,
-    )
     monkeypatch.setattr(
         access.setup_browser,
         "open_url",

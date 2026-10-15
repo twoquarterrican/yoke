@@ -17,7 +17,13 @@ OPENING_NOTICE = "Opening your browser…"
 def open_after_notice(
     shell: Any, url: str, *, opener: Callable[[str], BrowserOpenResult] | None = None
 ) -> BrowserOpenResult:
-    """A browser worker waits until the terminal has painted its notice."""
+    """A browser worker waits until the terminal has painted its notice.
+
+    A shell without a terminal (agent mode) never opens a browser: the person
+    opens the link the agent shows them.
+    """
+    if not getattr(shell, "opens_browser", True):
+        return open_requested(url, None)
     painted = threading.Event()
     shell.call_from_thread(shell.call_after_refresh, painted.set)
     if not painted.wait(10):
