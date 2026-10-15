@@ -149,9 +149,7 @@ def uninstall(
     # Strategy files are planning content that outlives the tooling —
     # uninstall never removes them, tracked or not.
     strategy_preserved = sorted(dict(manifest.get("strategy_files") or {}))
-    owned_git_hooks = (
-        dict(manifest["git_hook_hashes"]) if "git_hook_hashes" in manifest else None
-    )
+    owned_git_hooks = dict(manifest.get("git_hook_hashes") or {})
     git_hooks_removed = (
         []
         if shared_scope
