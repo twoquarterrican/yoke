@@ -105,6 +105,7 @@ def test_every_job_is_github_hosted_and_operator_credentials_are_absent():
     assert re.findall(r"^\s+runs-on:\s*(.+)$", text, re.MULTILINE) == [
         "ubuntu-latest",
         "${{ matrix.runner }}",
+        "${{ matrix.runner }}",
         "ubuntu-latest",
         "ubuntu-latest",
         "ubuntu-latest",
@@ -150,7 +151,7 @@ def test_build_uses_native_runners_and_pushes_only_by_digest():
     assert "platforms: ${{ matrix.platform }}" in build
     assert "python -m setuptools_scm" not in build
     assert 'pip install "setuptools-scm' not in build
-    assert text.count("uses: docker/build-push-action@") == 1
+    assert build.count("uses: docker/build-push-action@") == 1
     assert "push-by-digest=true" in build
     assert "name-canonical=true" in build
     assert "provenance: false" in build
@@ -169,6 +170,19 @@ def test_build_uses_native_runners_and_pushes_only_by_digest():
     assert "sed -n '1p'" not in build
     assert "sed -n '2p'" not in build
     assert "uses: actions/upload-artifact@" in build
+
+
+def test_queue_checks_both_architectures_without_registry_or_signing_authority():
+    text = _text()
+    check = text.split("  check-build:\n", 1)[1].split("  build:\n", 1)[0]
+    assert "if: github.event_name == 'merge_group'" in check
+    assert "permissions: {contents: read}" in check
+    assert "push: false" in check
+    assert "linux/amd64" in check and "linux/arm64" in check
+    assert "ubuntu-latest" in check and "ubuntu-24.04-arm" in check
+    assert "persist-credentials: false" in check
+    for forbidden in ("packages: write", "id-token", "attestations:", "login-action"):
+        assert forbidden not in check
 
 
 def test_metadata_parser_ignores_output_before_the_marked_envelope():

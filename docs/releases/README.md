@@ -21,7 +21,8 @@ before activating callers; the hosted bridge uses this operation directly.
 2. The hosted bridge reuses the passed proof of that exact product/consumer pair
    across stage and production. A different commit pair needs its own proof.
    The bridge passes the registered `stage` or `prod` environment unchanged.
-3. The scoped GitHub App creates the annotated tag and immutable release note.
+3. Treat release tags as immutable. The scoped GitHub App creates the annotated
+   tag and immutable release note.
    `0.2.0.202610140941` is an example of the canonical spelling: base version
    `0.2.0` plus the source commit's UTC committer minute, without a `v` prefix.
    Tag, wheel metadata, image reference and displayed release version agree.
@@ -32,7 +33,8 @@ before activating callers; the hosted bridge uses this operation directly.
    as GitHub Release assets. Missing, expired or failed factory output refuses
    with a recovery; publication never rebuilds it or substitutes another SHA.
 
-The `main` wheel factory uses `yoke_core.tools.build_release`, pins all product
+The `main` wheel factory uses `uv run python -m yoke_core.tools.build_release`,
+pins all product
 siblings to the shared version and resolves its product roots from explicit
 local wheel paths. Numeric version spelling alone does not establish origin;
 installers and relay installs select product bytes from the declared distribution.
@@ -45,6 +47,8 @@ attestation before promoting the same digest to `:VERSION`. It refuses a
 conflicting immutable version reference. Serialized publication advances `latest`
 only for the highest canonical annotated release, so retrying an older release
 cannot roll it back. Main pushes never update release pointers.
+Merge-queue candidates check both native image builds with read-only permissions,
+without registry publication or signing.
 
 Both main factory artifacts retain their provenance records for 14 days. If
 those workflow artifacts expire, rerun the exact main factory and then retry

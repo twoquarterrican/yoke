@@ -24,8 +24,9 @@ from __future__ import annotations
 import importlib.util
 from typing import Optional
 
+from packaging.version import InvalidVersion, Version
+
 from yoke_contracts.install_binding import distribution_version_for_module
-from yoke_contracts.release_version import version_order
 
 #: Response header carrying the server's engine version on API responses.
 ENGINE_VERSION_HEADER = "X-Yoke-Engine-Version"
@@ -44,11 +45,17 @@ UNRESOLVED_SCM_FALLBACK_VERSION = "0.1.0"
 
 
 def compare_engine_versions(left: str, right: str) -> Optional[int]:
-    """Compare canonical commit-clock releases, returning None for unknown metadata."""
+    """Compare package metadata; publication validates release spelling separately.
+
+    Different development builds on the same base do not establish Git ancestry.
+    """
     try:
-        a, b = version_order(left), version_order(right)
-    except (ValueError, TypeError):
+        a, b = Version(left), Version(right)
+    except (InvalidVersion, TypeError):
         return None
+    if a != b and Version(a.base_version) == Version(b.base_version):
+        if a.is_devrelease or b.is_devrelease:
+            return None
     return (a > b) - (a < b)
 
 

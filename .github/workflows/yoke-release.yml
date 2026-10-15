@@ -36,8 +36,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
+          PYTHONPATH: packages/yoke-contracts/src
         run: |
-          PYTHONPATH=packages/yoke-contracts/src python3 packages/yoke-core/src/yoke_core/tools/release_tag_validation.py --require-note-heading
+          python3 packages/yoke-core/src/yoke_core/tools/release_tag_validation.py --require-note-heading
 
   release:
     timeout-minutes: 10

@@ -4,6 +4,7 @@ name: yoke-server-image
 # Main builds and attests native images; release tags promote those exact digests.
 # Signing runs without checkout or run steps and never publishes release pointers.
 on:
+  merge_group:
   push:
     branches: [main]
     tags: ["[0-9]*"]
@@ -19,11 +20,11 @@ jobs:
     permissions: {contents: read}
     outputs:
       latest_ref: ${{ steps.tag.outputs.latest_ref }}
-      repository: ${{ steps.tag.outputs.repository }}
-      release_version: ${{ steps.tag.outputs.release_version }}
+      repository: ${{ steps.commit.outputs.repository || steps.tag.outputs.repository }}
+      release_version: ${{ steps.commit.outputs.release_version || steps.tag.outputs.release_version }}
       version_ref: ${{ steps.tag.outputs.version_ref }}
       image_tag: ${{ steps.tag.outputs.image_tag }}
-      source_sha: ${{ steps.tag.outputs.source_sha }}
+      source_sha: ${{ steps.commit.outputs.source_sha || steps.tag.outputs.source_sha }}
       tag_object_sha: ${{ steps.tag.outputs.tag_object_sha }}
     steps:
       - name: Check out the exact workflow commit for read-only tag validation
@@ -32,20 +33,47 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Resolve the exact main or queue commit clock
+        id: commit
+        if: github.ref == 'refs/heads/main' || github.event_name == 'merge_group'
+        env:
+          PYTHONPATH: packages/yoke-contracts/src
+        run: |
+          python3 packages/yoke-core/src/yoke_core/tools/commit_release_identity.py \
+            --source-sha "$GITHUB_SHA" --github-output
+          echo "repository=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/yoke-server" >> "$GITHUB_OUTPUT"
       - name: Require an immutable annotated release tag
         id: tag
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
-        run: |
-          export PYTHONPATH=packages/yoke-contracts/src
-          if [[ "$GITHUB_REF" = "refs/heads/main" ]]; then
-            python3 packages/yoke-core/src/yoke_core/tools/commit_release_identity.py \
-              --source-sha "$GITHUB_SHA" --github-output
-            echo "repository=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/yoke-server" >> "$GITHUB_OUTPUT"
-          else
-            python3 packages/yoke-core/src/yoke_core/tools/release_tag_validation.py
-          fi
+          PYTHONPATH: packages/yoke-contracts/src
+        run: python3 packages/yoke-core/src/yoke_core/tools/release_tag_validation.py
+  check-build:
+    if: github.event_name == 'merge_group'
+    timeout-minutes: 10
+    needs: validate-tag
+    runs-on: ${{ matrix.runner }}
+    permissions: {contents: read}
+    strategy:
+      matrix:
+        include:
+          - {platform: linux/amd64, runner: ubuntu-latest}
+          - {platform: linux/arm64, runner: ubuntu-24.04-arm}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with: {persist-credentials: false}
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c
+      - name: Check both native image builds without registry or signing authority
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        with:
+          context: .
+          push: false
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            YOKE_BUILD_SHA=${{ needs.validate-tag.outputs.source_sha }}
+            YOKE_ENGINE_VERSION=${{ needs.validate-tag.outputs.release_version }}
   build:
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 10
