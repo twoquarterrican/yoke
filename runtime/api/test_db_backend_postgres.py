@@ -10,7 +10,7 @@ import pytest
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.db_helpers import iso8601_now
-from yoke_core.domain.postgres_connection_reuse import ReusedConnection
+from yoke_core.domain.postgres_connection_reuse import ReusableConnection
 from yoke_core.domain.sql_json import json_get
 from yoke_core.domain.time_sql import now_sql
 from runtime.api.fixtures.pg_testdb import test_database as pg_test_database
@@ -45,8 +45,8 @@ def test_sqlite_to_postgres_bridge_modules_are_removed():
 def test_connect_returns_native_psycopg_rows(pg_authority):
     conn = db_backend.connect()
     try:
-        assert isinstance(conn, ReusedConnection)
-        assert isinstance(conn._conn, psycopg.Connection)
+        assert isinstance(conn, ReusableConnection)
+        assert isinstance(conn, psycopg.Connection)
         assert db_backend.connection_is_postgres(conn)
         assert not hasattr(conn, "executescript")
 

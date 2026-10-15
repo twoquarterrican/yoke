@@ -5,18 +5,20 @@ an operator's SSH forward to Aurora, TLS plus password authentication costs
 about three seconds, against milliseconds for the statements that follow. A
 process that makes many registered calls or event writes -- the API server,
 a deployment driver on the local-postgres transport -- therefore keeps a
-few authenticated connections and hands them out again.
+few authenticated sockets and hands them out again.
 
-Each lease is still one unit of work. :class:`ReusedConnection` behaves like
-the psycopg connection it wraps, but ``close()`` (and leaving a ``with``
-block) returns the socket here instead of closing it, and detaches the lease
-so a stale reference cannot touch the next holder's session. Returning rolls
-back any open transaction -- exactly what closing did -- and resets session
-state (settings, advisory locks, cursors, listens, temp tables), so nothing
-one lease set is visible to the next. A returned socket that fails its reset
-or its liveness check on the next checkout is closed and a fresh one opened
-through the caller's normal connect path, so readiness self-heal and managed
-secret rotation recovery still see every real connect failure.
+Each lease is still one unit of work, and a real ``psycopg.Connection``: a
+:class:`ReusableConnection` built fresh around a retained libpq socket, so
+its adapters, prepared-statement cache and attributes start clean. Its
+``close()`` (and leaving a ``with`` block) returns the socket here instead of
+closing it and leaves the handle closed, so a stale reference cannot touch
+the next holder's session. Returning rolls back any open transaction --
+exactly what closing did -- and runs ``DISCARD ALL``, so no setting, advisory
+lock, cursor, listen, temp table or prepared statement one lease left is
+visible to the next. A socket that fails its reset, or its liveness check on
+the next checkout, is closed and a fresh one opened through the caller's
+normal connect path, so readiness self-heal and managed secret rotation
+recovery still see every real connect failure.
 
 Only idle sockets are retained, at most :data:`MAX_IDLE_CONNECTIONS` per
 process and none older than :data:`MAX_IDLE_SECONDS`; in-use connections are
@@ -30,19 +32,15 @@ import threading
 import time
 from typing import Any, Callable
 
+import psycopg
+from psycopg import pq
+
 MAX_IDLE_CONNECTIONS = 4
 MAX_IDLE_SECONDS = 60.0
 
 TEST_TRACK_CONNECTIONS_ENV = "YOKE_TEST_TRACK_PG_CONNECTIONS"
 
-# Same order and coverage as DISCARD ALL, minus DEALLOCATE ALL and DISCARD
-# PLANS: psycopg keeps its own record of server-side prepared statements and
-# does not notice a DEALLOCATE it did not issue, so those statements must
-# survive the reset.
-SESSION_RESET_SQL = (
-    "CLOSE ALL; UNLISTEN *; RESET ALL; SELECT pg_advisory_unlock_all(); "
-    "DISCARD TEMP; DISCARD SEQUENCES"
-)
+SESSION_RESET_SQL = "DISCARD ALL"
 
 _LOCK = threading.Lock()
 _IDLE: list[tuple[str, Any, float]] = []
@@ -61,118 +59,67 @@ if hasattr(os, "register_at_fork"):
     os.register_at_fork(after_in_child=_forget_parent_connections)
 
 
-class ReusedConnection:
-    """A leased psycopg connection whose ``close()`` returns it for reuse."""
+class _ReturnedSocket:
+    """Stands in for the libpq socket of a handle that returned it for reuse."""
 
-    def __init__(self, conn, dsn: str):
-        object.__setattr__(self, "_conn", conn)
-        object.__setattr__(self, "_dsn", dsn)
-
-    def _leased(self):
-        conn = object.__getattribute__(self, "_conn")
-        if conn is None:
-            import psycopg
-
-            raise psycopg.OperationalError(
-                "the connection is closed: it was returned for reuse; "
-                "open a new one with db_backend.connect()"
-            )
-        return conn
+    status = pq.ConnStatus.BAD
+    transaction_status = pq.TransactionStatus.UNKNOWN
 
     def __getattr__(self, name):
-        return getattr(self._leased(), name)
+        raise psycopg.OperationalError(
+            "the connection is closed: it was returned for reuse; "
+            "open a new one with db_backend.connect()"
+        )
 
-    def __setattr__(self, name, value):
-        # Only psycopg connection properties reach the shared socket; any other
-        # assignment (a patched method, say) must not outlive this lease.
-        conn = object.__getattribute__(self, "_conn")
-        if conn is not None and isinstance(getattr(type(conn), name, None), property):
-            setattr(conn, name, value)
-        else:
-            object.__setattr__(self, name, value)
 
-    @property
-    def closed(self) -> bool:
-        return self._conn is None or self._conn.closed
+class ReusableConnection(psycopg.Connection):
+    """A leased psycopg connection whose ``close()`` returns its socket for reuse."""
 
-    @property
-    def broken(self) -> bool:
-        return self._conn is not None and self._conn.broken
+    _reuse_dsn: str = ""
 
     def close(self) -> None:
-        conn = self._conn
-        if conn is None:
+        if self.closed:
             return
-        object.__setattr__(self, "_conn", None)
-        _return(self._dsn, conn)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> None:
-        conn = self._conn
-        if conn is None or conn.closed:
-            return
-        try:
-            if exc_type is None:
-                conn.commit()
-            else:
-                try:
-                    conn.rollback()
-                except Exception:  # noqa: BLE001 -- keep the caller's error
-                    pass
-        finally:
-            self.close()
+        pgconn = self.pgconn
+        reset = _reset_for_reuse(self)
+        self.pgconn = _ReturnedSocket()
+        self._closed = True
+        if reset:
+            _retain(self._reuse_dsn, pgconn)
+        else:
+            _finish_quietly(pgconn)
 
 
-def _close_quietly(conn) -> None:
+def _finish_quietly(pgconn) -> None:
     try:
-        conn.close()
+        pgconn.finish()
     except Exception:  # noqa: BLE001 -- the socket is being discarded anyway
         pass
 
 
-def _reset_for_reuse(conn) -> bool:
-    import psycopg
-    from psycopg.pq import TransactionStatus
-
-    if conn.closed or conn.broken:
+def _reset_for_reuse(conn: ReusableConnection) -> bool:
+    if conn.broken or conn._num_transactions:
         return False
     try:
-        if conn.info.transaction_status != TransactionStatus.IDLE:
+        if conn.info.transaction_status != pq.TransactionStatus.IDLE:
             conn.rollback()
         conn.autocommit = True
         conn.execute(SESSION_RESET_SQL)
     except psycopg.Error:
         return False
-    return True
+    return conn.info.transaction_status == pq.TransactionStatus.IDLE
 
 
-def _return(dsn: str, conn) -> None:
-    if not _reset_for_reuse(conn):
-        _close_quietly(conn)
-        return
+def _retain(dsn: str, pgconn) -> None:
     with _LOCK:
-        _IDLE.append((dsn, conn, time.monotonic()))
+        _IDLE.append((dsn, pgconn, time.monotonic()))
         evicted = [entry[1] for entry in _IDLE[:-MAX_IDLE_CONNECTIONS]]
         del _IDLE[:-MAX_IDLE_CONNECTIONS]
     for stale in evicted:
-        _close_quietly(stale)
+        _finish_quietly(stale)
 
 
-def _is_alive(conn) -> bool:
-    import psycopg
-
-    if conn.closed or conn.broken:
-        return False
-    try:
-        conn.execute("")
-    except psycopg.Error:
-        return False
-    return True
-
-
-def _take_idle(dsn: str):
+def _checkout_idle(dsn: str, row_factory: Callable) -> ReusableConnection | None:
     while True:
         with _LOCK:
             index = next(
@@ -181,10 +128,19 @@ def _take_idle(dsn: str):
             )
             if index is None:
                 return None
-            _, conn, returned_at = _IDLE.pop(index)
-        if time.monotonic() - returned_at <= MAX_IDLE_SECONDS and _is_alive(conn):
-            return conn
-        _close_quietly(conn)
+            _, pgconn, returned_at = _IDLE.pop(index)
+        if (
+            time.monotonic() - returned_at <= MAX_IDLE_SECONDS
+            and pgconn.status == pq.ConnStatus.OK
+        ):
+            conn = ReusableConnection(pgconn, row_factory=row_factory)
+            try:
+                conn.autocommit = True
+                conn.execute("")
+                return conn
+            except psycopg.Error:
+                pass
+        _finish_quietly(pgconn)
 
 
 def lease(
@@ -192,19 +148,21 @@ def lease(
     *,
     autocommit: bool,
     row_factory: Callable,
-    connect: Callable[[str], Any],
-):
-    """Return a connection to *dsn*: an idle authenticated one, or ``connect(dsn)``.
+    connect: Callable[..., Any],
+) -> ReusableConnection:
+    """Return a connection to *dsn* on an idle authenticated socket, or a new one.
 
-    *connect* opens a raw guarded psycopg connection; its failures propagate
+    *connect* is ``connect_guarded_socket``; it is called with
+    ``connection_class=ReusableConnection`` and its failures propagate
     unchanged. The caller applies the read-deadline wrapper to the result.
     """
-    conn = _take_idle(dsn)
+    conn = _checkout_idle(dsn, row_factory)
     if conn is None:
-        conn = connect(dsn)
+        conn = connect(dsn, connection_class=ReusableConnection)
+        conn.row_factory = row_factory
+    conn._reuse_dsn = dsn
     conn.autocommit = autocommit
-    conn.row_factory = row_factory
-    return ReusedConnection(conn, dsn)
+    return conn
 
 
 def idle_connection_count() -> int:
@@ -213,12 +171,12 @@ def idle_connection_count() -> int:
 
 
 def close_idle_connections() -> None:
-    """Close every retained idle connection in this process."""
+    """Close every retained idle socket in this process."""
     with _LOCK:
         idle = [entry[1] for entry in _IDLE]
         _IDLE.clear()
-    for conn in idle:
-        _close_quietly(conn)
+    for pgconn in idle:
+        _finish_quietly(pgconn)
 
 
 def track_test_connection(conn):
@@ -243,14 +201,17 @@ def close_test_connections_since(index: int) -> None:
     connections = list(reversed(_TRACKED_TEST_CONNECTIONS[index:]))
     del _TRACKED_TEST_CONNECTIONS[index:]
     for conn in connections:
-        _close_quietly(conn)
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001 -- teardown keeps closing the rest
+            pass
     close_idle_connections()
 
 
 __all__ = [
     "MAX_IDLE_CONNECTIONS",
     "MAX_IDLE_SECONDS",
-    "ReusedConnection",
+    "ReusableConnection",
     "SESSION_RESET_SQL",
     "TEST_TRACK_CONNECTIONS_ENV",
     "close_idle_connections",

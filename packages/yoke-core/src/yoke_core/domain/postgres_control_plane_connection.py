@@ -78,13 +78,14 @@ def guarded_conninfo(dsn: str) -> str:
     return conninfo.make_conninfo(dsn, **overrides)
 
 
-def connect_guarded_socket(dsn: str, **connect_kwargs: Any):
+def connect_guarded_socket(dsn: str, *, connection_class=None, **connect_kwargs: Any):
     """Open one raw psycopg connection to *dsn* under the control-plane guards.
 
     The single place a control-plane Postgres socket is created, so a guard
     added here reaches every mode -- local, self-hosted, hosted -- every
     environment, and every role, including the admin roles no boot converge
-    writes a default for.
+    writes a default for. *connection_class* is a ``psycopg.Connection``
+    subclass to open instead of the plain class.
     """
     import psycopg
 
@@ -99,7 +100,8 @@ def connect_guarded_socket(dsn: str, **connect_kwargs: Any):
         connect_kwargs["connect_timeout"] = max(
             1, int(remaining_seconds(FUNCTION_RESPONSE_TIMEOUT_SECONDS))
         )
-    return psycopg.connect(guarded_conninfo(dsn), **connect_kwargs)
+    opener = connection_class.connect if connection_class else psycopg.connect
+    return opener(guarded_conninfo(dsn), **connect_kwargs)
 
 
 def bind_read_deadline(conn):

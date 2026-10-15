@@ -66,24 +66,36 @@ def test_returned_connection_is_detached(pg_authority):
     conn.close()
 
     assert conn.closed
-    with pytest.raises(psycopg.OperationalError, match="returned for reuse"):
+    assert not conn.broken
+    with pytest.raises(psycopg.OperationalError, match="the connection is closed"):
         conn.execute("SELECT 1")
+    with pytest.raises(psycopg.OperationalError, match="returned for reuse"):
+        conn.pgconn.exec_(b"SELECT 1")
 
 
-def test_assigned_attributes_stay_on_the_lease(pg_authority, monkeypatch):
+def test_each_lease_is_a_fresh_psycopg_connection(pg_authority, monkeypatch):
     conn = db_backend.connect()
     first_pid = _backend_pid(conn)
     monkeypatch.setattr(conn, "close", lambda: None)
-    monkeypatch.setattr(conn, "commit", lambda: None)
     conn.close()
     assert _backend_pid(conn) == first_pid
     monkeypatch.undo()
     conn.close()
-    monkeypatch.undo()
 
+    committed = []
+    real_commit = psycopg.Connection.commit
+
+    def recording_commit(self):
+        committed.append(self)
+        return real_commit(self)
+
+    monkeypatch.setattr(psycopg.Connection, "commit", recording_commit)
     with db_backend.connect() as reused:
         assert _backend_pid(reused) == first_pid
-        assert "commit" not in vars(reused._conn)
+        assert reused is not conn
+        assert isinstance(reused, psycopg.Connection)
+        assert "close" not in vars(reused)
+    assert committed == [reused]
 
 
 def test_open_transaction_is_rolled_back_on_close(pg_authority):
@@ -141,7 +153,7 @@ def test_session_state_does_not_leak_to_the_next_lease(pg_authority):
     assert settings["listens"] == 0
 
 
-def test_prepared_statements_survive_reuse(pg_authority):
+def test_prepared_statements_work_across_leases(pg_authority):
     for _ in range(2):
         with db_backend.connect() as conn:
             for n in range(conn.prepare_threshold + 2):
