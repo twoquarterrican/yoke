@@ -255,21 +255,19 @@ supersedes_flow_id TEXT REFERENCES deployment_flows(id)
 UNIQUE(project_id, name)
 ```
 
-Every stage object requires `name` (string) and `step_runner` (string, closed set). Valid step runner types: `auto`, `health-check`, `warm-up`, `environment-activate`, `core-container-deploy`, `ephemeral-deploy`, `ephemeral-teardown`, `ephemeral-verify`, `human-approval`, `github-actions-workflow`, `qa`. A database is brought up to its code by the boot converge that starts the container, so applying a migration is not a deployment stage and there is no stage `kind` vocabulary.
+Every stage object requires `name` (string), `step_runner` (string, closed set), and `stage_kind` (`execution` or `qa`). Valid step runner types: `auto`, `health-check`, `warm-up`, `environment-activate`, `core-container-deploy`, `ephemeral-deploy`, `ephemeral-teardown`, `ephemeral-verify`, `human-approval`, `github-actions-workflow`, `qa`. A database is brought up to its code by the boot converge that starts the container, so applying a migration is not a deployment stage and there is no stage `kind` vocabulary.
 
 Every stage declares its runner fields at the top level, beside `name` and `step_runner`; a stage carrying a nested `config` object is refused on write, because the pipeline builds a stage's runner config from the stage itself and nested fields would never reach the runner. Normalization for execution keeps the stage the definition declared, so `target`, `stage_kind`, and `scope` are readable by the receipt layer and the preview producer. Python owner: `yoke_core.domain.flow_validation`.
 
-Definition schema v2 adds release-policy configuration without changing the
-schema-v1 executor: every v2 stage declares `stage_kind` (`execution` or `qa`)
-and scope. QA stages use `step_runner: "qa"`, target a persistent environment
-or an earlier preview, may select reusable QA cases, and declare verdict
-authority separately from informational notification. The current source runtime executes v2. Validate against the serving runtime
-before activation. Schema support and supported QA target kinds are separate
-admission checks; a schema floor does not promise an unsupported target.
-Delivery custody is `takes_delivery_custody`, not a side effect of that
-version: a v2 flow can take none, and adding `stage_kind` changes no
-enrollment. Create accepts `--takes-delivery-custody true|false`; omitting it
-stores `true` for schema version 2 or later and `false` for version 1.
+Definition schema v2 declares execution and QA stages. QA stages declare
+scope, use `step_runner: "qa"`, target a persistent environment or an earlier
+preview, may select reusable QA cases, and declare verdict authority separately
+from informational notification. Validate against the serving runtime before
+activation. Schema support and supported QA target kinds are separate admission
+checks; a schema floor does not promise an unsupported target. Delivery custody
+is the independent `takes_delivery_custody` declaration. Create accepts
+`--takes-delivery-custody true|false`; omitting it stores `true`. Editing stages
+does not change custody.
 
 **`human-approval`:** the driver asks the serving control plane to evaluate the
 exact run/stage through `deployment_runs.stage_approval.evaluate` (`yoke
