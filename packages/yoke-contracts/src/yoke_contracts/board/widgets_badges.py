@@ -120,46 +120,11 @@ def render_workflow_badges(
 def render_achievement_badges(
     db: BoardDBLike, config: BoardConfig, scope: str, tex_done: int = 0
 ) -> Optional[str]:
-    """Render achievement badges based on done count, streak, and DB heuristics.
+    """Collect achievement counts and render their earned badges."""
+    from yoke_contracts.board.widget_data import render_achievement_counts
 
-    Parameters
-    ----------
-    tex_done : int
-        Task-expanded done count from section-derived stats.
-
-    Returns ``None`` if no badges earned.
-    """
-    badges: List[str] = []
     pf, params = _project_filter(scope)
-
-    done = max(0, int(tex_done))
-
-    # --- Milestone badges ---
-    half_k = done // 500
-    if half_k >= 20:
-        k = done // 1000
-        badges.append(f"{_MEDAL} {k}kdone")
-    elif half_k >= 2:
-        k = half_k // 2
-        half = half_k % 2
-        if half == 1:
-            badges.append(f"{_MEDAL} {k}.5kdone")
-        else:
-            badges.append(f"{_MEDAL} {k}kdone")
-    elif done >= 500:
-        badges.append(f"{_MEDAL} 500done")
-    elif done >= 100:
-        badges.append(f"{_MEDAL} 100done")
-    elif done >= 50:
-        badges.append(f"{_MEDAL} 50done")
-
-    # --- Streak badges ---
     streak = _compute_achievement_streak(db, scope)
-    tier = _streak_tier(streak)
-    if tier > 0:
-        badges.append(f"{_TARGET} streak{tier}")
-
-    # --- Zero-bugs badge ---
     bug_count = db.scalar(
         "SELECT COUNT(*) FROM items"
         " WHERE status NOT IN ('done','cancelled')"
@@ -168,10 +133,6 @@ def render_achievement_badges(
         params,
     )
     bug_count = int(bug_count or 0)
-    if bug_count == 0:
-        badges.append(f"{_SHIELD} zero-bugs")
-
-    # --- Inbox-zero badge ---
     idea_count = db.scalar(
         "SELECT COUNT(*) FROM items"
         " WHERE status = 'idea'"
@@ -180,13 +141,7 @@ def render_achievement_badges(
         params,
     )
     idea_count = int(idea_count or 0)
-    if idea_count == 0:
-        badges.append(f"{_MAILBOX} inbox-zero")
-
-    if not badges:
-        return None
-
-    return "  ".join(badges)
+    return render_achievement_counts(tex_done, streak, bug_count, idea_count)
 
 
 def _streak_tier(streak: int) -> int:

@@ -122,3 +122,82 @@ def render_velocity_series(dates, activity, code, issues, strategy) -> list[str]
         f"{E.VELOCITY_DELIVERY} {del_spark} 120d issues",
         f"{E.VELOCITY_STRATEGY} {sml_spark} 120d strategy",
     ]
+
+
+def render_activity_series(dates, day_counts, streak, active_days, project_days) -> str:
+    """Render activity and streak facts collected in the same server response."""
+    from yoke_contracts.board.widgets_activity import (
+        _CHART,
+        _FIRE,
+        _build_sparkline,
+        _merge_counts,
+    )
+
+    merged = _merge_counts(day_counts, dates)
+    values = [c for _, c in merged]
+
+    sparkline = _build_sparkline(values)
+
+    output = f"{_CHART} {sparkline} 14d activity"
+
+    if streak > 0:
+        fire_cap = min(streak, 14)
+        fires = _FIRE * fire_cap
+        if project_days > 0:
+            # Cap at 100%: active_days can exceed project_days (append-only
+            # events survive deletion; backdated seeds predate the anchor).
+            pct = min((active_days * 10000 + project_days // 2) // project_days, 10000)
+            lifetime = f" ({pct // 100}.{pct % 100:02d}%)"
+        else:
+            lifetime = ""
+        output = f"{output} | {fires} {streak}d streak{lifetime}"
+
+    return output
+
+
+def render_achievement_counts(
+    done: int, streak: int, bug_count: int, idea_count: int
+) -> str | None:
+    """Render milestones and status badges from named counts."""
+    from yoke_contracts.board.widgets_badges import _streak_tier
+
+    badges: List[str] = []
+
+    done = max(0, int(done))
+
+    # --- Milestone badges ---
+    half_k = done // 500
+    if half_k >= 20:
+        k = done // 1000
+        badges.append(f"{_MEDAL} {k}kdone")
+    elif half_k >= 2:
+        k = half_k // 2
+        half = half_k % 2
+        if half == 1:
+            badges.append(f"{_MEDAL} {k}.5kdone")
+        else:
+            badges.append(f"{_MEDAL} {k}kdone")
+    elif done >= 500:
+        badges.append(f"{_MEDAL} 500done")
+    elif done >= 100:
+        badges.append(f"{_MEDAL} 100done")
+    elif done >= 50:
+        badges.append(f"{_MEDAL} 50done")
+
+    # --- Streak badges ---
+    tier = _streak_tier(streak)
+    if tier > 0:
+        badges.append(f"{_TARGET} streak{tier}")
+
+    # --- Zero-bugs badge ---
+    if bug_count == 0:
+        badges.append(f"{_SHIELD} zero-bugs")
+
+    # --- Inbox-zero badge ---
+    if idea_count == 0:
+        badges.append(f"{_MAILBOX} inbox-zero")
+
+    if not badges:
+        return None
+
+    return "  ".join(badges)

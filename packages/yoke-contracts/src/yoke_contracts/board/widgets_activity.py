@@ -222,34 +222,18 @@ def render_velocity_sparkline(
         if n > 0:
             day_counts[day] = day_counts.get(day, 0) + n
 
-    merged = _merge_counts(day_counts, dates)
-    values = [c for _, c in merged]
-
-    sparkline = _build_sparkline(values)
+    from yoke_contracts.board.widget_data import render_activity_series
 
     streak = _compute_streak(db, scope, 365, commits=commits)
-
-    output = f"{_CHART} {sparkline} 14d activity"
-
+    active_days = 0
     if streak > 0:
-        fire_cap = min(streak, 14)
-        fires = _FIRE * fire_cap
         active_days, project_days = _compute_lifetime_activity(
             db,
             scope,
             commits=commits,
             project_age=(first_iso, project_days),
         )
-        if project_days > 0:
-            # Cap at 100%: active_days can exceed project_days (append-only
-            # events survive deletion; backdated seeds predate the anchor).
-            pct = min((active_days * 10000 + project_days // 2) // project_days, 10000)
-            lifetime = f" ({pct // 100}.{pct % 100:02d}%)"
-        else:
-            lifetime = ""
-        output = f"{output} | {fires} {streak}d streak{lifetime}"
-
-    return output
+    return render_activity_series(dates, day_counts, streak, active_days, project_days)
 
 
 def _active_day_set(
