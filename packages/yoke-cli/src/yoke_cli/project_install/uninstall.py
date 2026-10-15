@@ -5,6 +5,8 @@ and removes Yoke-marked git hook shims. Source-link checkouts (the
 Yoke source repo) refuse entirely: the dev layer there is the repo's
 own tracked content, not an installed copy. Split from
 :mod:`project_install`, which owns install/refresh and the apply core.
+After the removal commit, retire only exclusive installer-owned checkout
+registration and folder trust; preserve unresolved ownership for retry.
 """
 
 from __future__ import annotations
@@ -45,7 +47,7 @@ def uninstall(
     repo_root: str | Path | None = None,
     config_path: str | Path | None = None,
 ) -> Dict[str, Any]:
-    """Remove manifest-tracked files and de-merge Yoke hook entries.
+    """Remove the installed layer and exclusive owned registration/folder trust.
 
     Copy-mode only. The source-checkout detection guard backstops the
     manifest mode so a legacy or hand-edited manifest can never

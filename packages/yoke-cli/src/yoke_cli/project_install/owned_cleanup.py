@@ -27,7 +27,9 @@ def scope_reason(root: Path, manifest: dict, config_path) -> str:
         projects = normalize_projects(
             machine_config.load_config(config_path).get("projects")
         )
-        return _shared_reason(root, projects, manifest.get("project_id"))
+        return _config_reason(
+            manifest, machine_config.config_path(config_path)
+        ) or _shared_reason(root, projects, manifest.get("project_id"))
     except (OSError, ValueError, RuntimeError, TypeError, subprocess.SubprocessError):
         return "checkout_scope_unavailable"
 
@@ -64,7 +66,9 @@ def cleanup(root: Path, manifest: dict, config_path) -> dict:
 def _cleanup(root: Path, manifest: dict, *, path=None) -> dict:
     payload, cfg = load_payload(path)
     projects = normalize_projects(payload.get("projects"))
-    reason = _shared_reason(root, projects, manifest.get("project_id"))
+    reason = _config_reason(manifest, cfg) or _shared_reason(
+        root, projects, manifest.get("project_id")
+    )
     trust = revert_folder_trust(root, exclusive_reason=reason)
     record = manifest.get(REGISTRATION_KEY)
     exact = [
@@ -72,10 +76,10 @@ def _cleanup(root: Path, manifest: dict, *, path=None) -> dict:
         for entry in payload.get("projects", [])
         if Path(entry["checkout"]).expanduser().resolve() == root
     ]
-    if not exact:
-        registration = _result("absent", "no_exact_registration")
-    elif reason:
+    if reason:
         registration = _result("preserved", reason)
+    elif not exact:
+        registration = _result("absent", "no_exact_registration")
     elif not isinstance(record, dict) or record.get("config") != str(cfg.resolve()):
         registration = _result("preserved", "registration_ownership_unknown")
     elif (
@@ -114,6 +118,15 @@ def _cleanup(root: Path, manifest: dict, *, path=None) -> dict:
         "complete": registration["status"] in {"removed", "absent"}
         and all(row["status"] in {"removed", "absent"} for row in trust),
     }
+
+
+def _config_reason(manifest: dict, cfg: Path) -> str:
+    record = manifest.get(REGISTRATION_KEY)
+    return (
+        "registration_config_changed"
+        if isinstance(record, dict) and record.get("config") != str(cfg.resolve())
+        else ""
+    )
 
 
 def _shared_reason(root: Path, projects: list[dict], project_id) -> str:

@@ -324,3 +324,20 @@ def test_commit_failure_keeps_local_ownership_for_recovery(installed, monkeypatc
         uninstall(root, config_path=config)
     assert files.load_manifest(root)
     assert (config.read_bytes(), trust.claude_state_path().read_bytes()) == before
+
+
+def test_different_empty_config_does_not_hide_the_recorded_registration(installed):
+    root, _, config = installed
+    other_config = config.with_name("other.json")
+    payload = read_json(config)
+    payload["projects"] = []
+    other_config.write_text(json.dumps(payload))
+    before = config.read_bytes(), trust.claude_state_path().read_bytes()
+    report = uninstall(root, config_path=other_config)
+    assert report["outcome"] == "partial"
+    assert (
+        report["local_cleanup"]["registration"]["reason"]
+        == "registration_config_changed"
+    )
+    assert files.load_manifest(root)
+    assert (config.read_bytes(), trust.claude_state_path().read_bytes()) == before
