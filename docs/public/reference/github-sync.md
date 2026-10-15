@@ -130,7 +130,7 @@ admit that build before retrying. Do not change the project's sync mode.
 
 ## Disabled semantics
 
-- **Item flows skip silently-and-logged.** Sync helpers invoked from item
+- **GitHub work skips with a mode notice.** GitHub helpers invoked from item
   lifecycle flows (create, body/title sync, status comments, labels,
   close/reopen, done closeout, epic-task sync, progress notes) return
   success and print one canonical mode-language line
@@ -138,6 +138,7 @@ admit that build before retrying. Do not change the project's sync mode.
   github_sync_mode=disabled ...`). The flow continues; nothing
   reaches GitHub. A disabled project resolves no GitHub App token — the
   skip fires before auth resolution and is never reported as an auth failure.
+  Local task-scope and lane validation can still refuse chain generation.
 - **Structured-field writes with `options.sync_github_body=true` no-op
   cleanly.** The body-sync step reports success (no `sync_warning`); the
   DB write proceeds as normal.

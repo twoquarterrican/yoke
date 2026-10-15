@@ -18,8 +18,8 @@ items.github_sync. If chains are absent, first require a task graph;
 task_graph_missing routes the exact pin back to authoring. Auto-sync, then
 re-read tasks and chains. Missing afterward halts with sync failure and the
 same recovery command. The current holder runs this idempotent repair; another
-live holder keeps ownership. Dependencies and lane activation still gate work. Advance only the next declared
-stage inside Conduct's binding. A DB-only sync with no tracked changes succeeds;
+live holder keeps ownership. Dependencies and lane activation still gate work.
+Advance only the next declared stage inside Conduct's binding. A DB-only sync with no tracked changes succeeds;
 commit actual tracked changes only, never BOARD. Legacy root DB files stop.
 
 Resolve LIVE_STAGE and IMPLEMENTING_STAGE from the immutable pin and verify
@@ -106,8 +106,9 @@ Refresh current_task/current_attempt/last_updated. Re-read each task: require
 implementing/reviewing-implementation before Engineer; planned stops for this
 activation repair. Continue this session, no relaunch or parent stop.
 
-Cold context carries parent ref/title/project, local task number and optional GitHub
-issue, exact lane/branch/MAIN_ROOT, spec reads, registered progress/review writes,
+Cold context carries parent ref/title/project, local task number and optional
+GitHub issue, exact lane/branch/MAIN_ROOT, spec reads, registered progress/review
+writes,
 QA roster and dependencies. [dispatch-context.md](dispatch-context.md) owns
 assembly. Run capability-based ephemeral preparation once per branch/dispatch
 cycle through [dispatch-context-ephemeral.md](dispatch-context-ephemeral.md).
