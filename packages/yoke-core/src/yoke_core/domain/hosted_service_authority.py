@@ -1,7 +1,7 @@
 """Least-privilege identity the hosted service uses to call a universe.
 
 The hosted service (Platform, at upyoke.com) delivers a few facts only it
-observes — GitHub App lifecycle, machine-authorization expiry — into each
+observes — GitHub App lifecycle, machine codes and their expiry — into each
 tenant universe. It does so as one system actor holding one org role that
 carries one permission. No human role carries that permission (the org
 ``admin`` wildcard excludes it), and the role is not offered by any member
@@ -27,15 +27,18 @@ HOSTED_SERVICE_MINT_COMMAND = (
 # Everything the hosted service identity may call. It inherits no signed-in
 # baseline: no token minting, sessions, decision requests, or models.
 HOSTED_SERVICE_FUNCTIONS = frozenset(
-    {"projects.github_binding.lifecycle", "machine_approval.lifecycle.apply"}
+    {
+        "projects.github_binding.lifecycle",
+        "machine_approval.lifecycle.apply",
+        "machine_authorization.handoff",
+        "machine_authorization.handoff_poll",
+    }
 )
 
-ROLE_HOSTED_SERVICE_DESCRIPTION = (
-    "The hosted service's own identity: deliver hosted lifecycle facts."
-)
+ROLE_HOSTED_SERVICE_DESCRIPTION = "The hosted service's own identity: deliver hosted lifecycle facts and machine codes."
 PERM_HOSTED_SERVICE_DELIVER_DESCRIPTION = (
     "Deliver hosted-service lifecycle facts (GitHub App binding lifecycle, "
-    "machine-authorization expiry and withdrawal) into this org."
+    "machine-code handoff, expiry and withdrawal) into this org."
 )
 
 

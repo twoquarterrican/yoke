@@ -109,6 +109,8 @@ def detailed_capture_context(
     per dispatch, because a true answer consumes one unit of the
     campaign's record budget.
     """
+    if "one_time_secret_result" in entry.guardrails:
+        return {}
     if not debug_detail_allowed(
         {
             "function": entry.function_id,
