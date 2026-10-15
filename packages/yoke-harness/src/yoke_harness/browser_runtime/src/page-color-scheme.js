@@ -18,13 +18,18 @@ async function observeColorScheme(page) {
       if (matchMedia('(prefers-color-scheme: light)').matches) return 'light';
       return null;
     });
-    try {
-      observed = await read();
-    } catch (err) {
-      if (!/Execution context was destroyed|Cannot find context with specified id/.test(err.message)) throw err;
-      // A document read may cross native navigation; never repeat its action.
-      await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
-      observed = await read();
+    const deadline = performance.now() + 5000;
+    for (;;) {
+      try {
+        observed = await read();
+        break;
+      } catch (err) {
+        const remaining = deadline - performance.now();
+        if (remaining <= 0 || !/Execution context was destroyed|Cannot find context with specified id/.test(err.message)) throw err;
+        // Load state may still describe the old document during replacement.
+        // Re-read only the media preference, under the same deadline.
+        await page.waitForLoadState('domcontentloaded', { timeout: remaining });
+      }
     }
   } catch (err) {
     throw new Error('color_scheme_observation_failed: cannot read page media preference; '

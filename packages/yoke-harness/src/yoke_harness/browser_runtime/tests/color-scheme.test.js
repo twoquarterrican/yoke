@@ -75,6 +75,24 @@ async function main() {
       /color_scheme_mismatch/);
     await assert.rejects(applyColorScheme({ emulateMedia: async () => {}, evaluate: async () => { throw Error('gone'); } }, 'dark'),
       /color_scheme_observation_failed.*repair/);
+    let reads = 0;
+    let waits = 0;
+    const settling = {
+      emulateMedia: async () => {},
+      evaluate: async () => {
+        if (++reads <= 2) throw Error('Execution context was destroyed');
+        return 'dark';
+      },
+      waitForLoadState: async (state, options) => {
+        assert.equal(state, 'domcontentloaded');
+        assert.ok(options.timeout > 0 && options.timeout <= 5000);
+        waits++;
+      },
+    };
+    assert.deepEqual(await applyColorScheme(settling, 'dark'),
+      { requested: 'dark', observed: 'dark' });
+    assert.equal(reads, 3);
+    assert.equal(waits, 2);
     // Native navigation destroys a document while its media read is pending.
     // Only this diagnostic read may be repeated; no action is replayed.
     const page = manager.ownedPage(light.pageId);
