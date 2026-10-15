@@ -246,7 +246,21 @@ def snapshot_member_requirements(
         item_row["project_id"] if hasattr(item_row, "keys") else item_row[0]
     )
     plans: list[dict[str, Any]] = []
-    for plan_id in selected["plan_ids"]:
+    plan_ids = set(selected["plan_ids"])
+    plan_ids.update(
+        int(r["plan_id"]) for r in requirements if r.get("plan_id") is not None
+    )
+    if _table_exists(conn, "qa_plan_item_attachments"):
+        plan_ids.update(
+            int(row[0])
+            for row in conn.execute(
+                "SELECT a.plan_id FROM qa_plan_item_attachments a JOIN qa_plans p ON p.id=a.plan_id "
+                "WHERE a.item_id=%s AND a.qa_phase='post_deploy' AND p.retired_at IS NULL "
+                f"AND {live_item_attachment_sql(conn, 'a')}",
+                (item_id,),
+            ).fetchall()
+        )
+    for plan_id in sorted(plan_ids):
         if plan_id in withdrawn_plans:
             continue
         attached = conn.execute(
@@ -255,6 +269,12 @@ def snapshot_member_requirements(
             f"AND {live_item_attachment_sql(conn)}",
             (int(item_id), int(plan_id)),
         ).fetchone()
+        if attached is None and plan_id not in selected["plan_ids"]:
+            phases = {
+                r["qa_phase"] for r in requirements if r.get("plan_id") == plan_id
+            }
+            if len(phases) == 1:
+                attached = {"transition_id": "", "qa_phase": phases.pop()}
         if attached is None:
             raise ValueError(
                 f"QA plan {plan_id} is not attached to {render_item_ref(conn, item_id)}; attach it "

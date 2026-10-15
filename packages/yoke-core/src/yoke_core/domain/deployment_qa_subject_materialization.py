@@ -128,6 +128,16 @@ def materialize_subject(
             )
             (created if was_created else existing).append(requirement_id)
         for snapshot in snapshots:
+            if "materialized_requirements" in snapshot:
+                existing.extend(
+                    require_existing_target(
+                        snapshot["materialized_requirements"],
+                        execution_target=target,
+                        subject=f"deployment run {deployment_run_id!r} saved plan contract",
+                        conn=conn,
+                    )
+                )
+                continue
             plan = dict(snapshot["plan"])
             plan_id = int(plan["id"])
             rows = _existing_rows(

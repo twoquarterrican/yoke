@@ -1,7 +1,9 @@
 {
  "id": "qa-admission",
  "title": "QA admission",
- "status": "draft-copy",
+ "status": "observed",
  "page": "deployments",
- "position": 4
+ "position": 4,
+ "summary": "Admission freezes attached post-deploy plans and plans named by admitted requirements. New runs select definitions supported by their candidate. Older empty plan arrays use existing materialized requirements as the executable contract, preserving case order, baseline variants, effective policies and original source/target identity.",
+ "sources": ["packages/yoke-core/src/yoke_core/domain/deployment_requirement_snapshots.py", "packages/yoke-core/src/yoke_core/domain/deployment_qa_saved_plan_contract.py", "docs/public/reference/db-reference/deployment-run-records.md"]
 }

@@ -10,7 +10,7 @@ from yoke_core.domain.db_helpers import query_rows
 from yoke_core.domain.qa_obligation_settlement import unretracted_requirement_sql
 from yoke_core.domain.qa_plan_attachment_reads import retracted_item_plan_ids
 from yoke_core.domain.qa_deployment_member_attached_plans import (
-    attached_member_plans,
+    attached_member_plan_ids,
     plan_matches_stage_environment,
     stage_environment_id_for_plan_selection,
 )
@@ -130,20 +130,36 @@ def frozen_stage_plans(
 ) -> list[dict[str, Any]]:
     """Keep plan-owned obligations on their plan's ordered snapshot path."""
     frozen = [*_flow_plan(subject), *_member_plans(conn, subject, target=target)]
-    if not frozen:
-        frozen = attached_member_plans(
-            conn, subject, target=target, lock_plans=lock_plans
-        )
     selected_ids = {int(snapshot["plan"]["id"]) for snapshot in frozen}
     project_id = int(subject.get("member_project_id") or subject["project_id"])
-    for requirement in admitted:
-        plan_id = requirement.get("plan_id")
-        if plan_id is None or int(plan_id) in selected_ids:
-            continue
-        frozen.append(
-            _plan_snapshot(
-                conn, int(plan_id), project_id=project_id, lock_plan=lock_plans
+    wanted = {int(r["plan_id"]) for r in admitted if r.get("plan_id") is not None}
+    if not frozen and subject.get("member_item_id") is not None:
+        wanted.update(
+            attached_member_plan_ids(
+                conn,
+                member_item_id=int(subject["member_item_id"]),
+                environment_id=stage_environment_id_for_plan_selection(conn, target),
             )
         )
-        selected_ids.add(int(plan_id))
+    from yoke_core.domain.deployment_qa_saved_plan_contract import saved_plan_contract
+    from yoke_core.domain.qa_plan_management import QaPlanError
+
+    for plan_id in sorted(wanted):
+        if plan_id in selected_ids:
+            continue
+        saved = saved_plan_contract(conn, subject, target, plan_id, admitted)
+        if saved is None:
+            if any(r.get("plan_id") == plan_id for r in admitted):
+                raise QaPlanError(
+                    f"qa_saved_plan_contract_missing: plan {plan_id} has admitted "
+                    "requirements but no frozen plan or materialized contract; "
+                    "preserve the run and ask the control-plane operator to "
+                    "reconcile its admission evidence before retrying."
+                )
+            # A newly attached plan with no historical cases is a new selection.
+            saved = _plan_snapshot(
+                conn, plan_id, project_id=project_id, lock_plan=lock_plans
+            )
+        frozen.append(saved)
+        selected_ids.add(plan_id)
     return frozen
