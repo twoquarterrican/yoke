@@ -33,7 +33,7 @@ from yoke_core.domain.item_merge_receipt_document import (
     newest_first,
 )
 from yoke_core.domain.runs import ACTIVE_RUN_STATUSES, RunStatus
-from yoke_core.domain.schema_common import _column_exists, _table_exists
+from yoke_core.domain.schema_common import _table_exists
 
 
 #: A live or succeeded member run's candidate carries this landing. The
@@ -94,25 +94,9 @@ def _p(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
 
 
-def landing_stamp_columns(conn: Any) -> tuple[str, ...]:
-    """The landing stamps this database actually has.
-
-    ``merge_queue_landed_at`` arrives with the merge-queue schema, so a
-    control plane that has not converged it still answers the question from
-    ``merged_at`` alone rather than failing the whole read.
-    """
-    return tuple(
-        column
-        for column in LANDING_STAMP_COLUMNS
-        if _column_exists(conn, "items", column)
-    )
-
-
 def merged_open_items(conn: Any, project_id: int) -> tuple[dict[str, Any], ...]:
     """Landed nonterminal items and their pinned close-out workflows."""
-    columns = landing_stamp_columns(conn)
-    if not columns:
-        return ()
+    columns = LANDING_STAMP_COLUMNS
     marker = _p(conn)
     terminal = sorted(TERMINAL_STATUSES)
     holes = ", ".join(marker for _ in terminal)
@@ -329,6 +313,5 @@ __all__ = [
     "UNHELD",
     "landed_at",
     "landing_custody",
-    "landing_stamp_columns",
     "merged_open_items",
 ]

@@ -20,7 +20,7 @@ from yoke_core.domain.deployment_run_stage_entry import (
 )
 from yoke_core.domain.qa_obligation_settlement import settled_obligation_sql
 from yoke_core.domain.runs import TERMINAL_RUN_STATUSES
-from yoke_core.domain.schema_common import _column_exists, _table_exists
+from yoke_core.domain.schema_common import _table_exists
 from yoke_core.domain.session_message_types import row_dict
 from yoke_core.domain.steering_fleet_report_detectors import marker
 
@@ -65,20 +65,10 @@ def live_deployment_runs(conn: Any, *, project_id: int) -> list[dict[str, Any]]:
     p = marker(conn)
     terminal = sorted(TERMINAL_RUN_STATUSES)
     holes = ", ".join(p for _ in terminal)
-    entered = (
-        "current_stage_entered_at"
-        if _column_exists(conn, "deployment_runs", "current_stage_entered_at")
-        else "NULL"
-    )
-    settling = (
-        "settling_at"
-        if _column_exists(conn, "deployment_runs", "settling_at")
-        else "NULL"
-    )
     rows = conn.execute(
         f"""SELECT id, flow, status, COALESCE(current_stage, '') AS current_stage,
-                   {entered} AS current_stage_entered_at, driver_attachment,
-                   {settling} AS settling_at
+                   current_stage_entered_at, driver_attachment,
+                   settling_at
               FROM deployment_runs
              WHERE project_id = {p}
                AND status NOT IN ({holes})
