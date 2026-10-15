@@ -180,6 +180,13 @@ def resolve_run_qa_subject(
         "qa.plan_execution.pause",
         "qa.plan_execution.resume",
     }:
+        if member_id is not None and not conn.execute(
+            "SELECT 1 FROM deployment_run_items WHERE run_id=%s AND item_id=%s",
+            (run_id, member_id),
+        ).fetchone():
+            raise QaSubjectProjectError(
+                f"deployment member {member_id} is not an attached member of run {run_id!r}"
+            )
         project_id, slug = _checkin_project(conn, execution_id, member_id)
     elif stage:
         reviewing_terminal = False
