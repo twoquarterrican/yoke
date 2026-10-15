@@ -152,7 +152,6 @@ _SHAPES = (
             "run-item-status-consistency",
             "run-qa-unsatisfied",
             "schema-drift",
-            "session-actor-binding",
             "session-checkpoint-integrity",
             "session-cwd-binding",
             "session-pre-implementing-activity",
