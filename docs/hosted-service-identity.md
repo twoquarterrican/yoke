@@ -2,8 +2,8 @@
 
 The hosted service (Platform, at upyoke.com) delivers a few facts into each
 tenant universe that only it observes: GitHub App installation and repository
-lifecycle (`projects.github_binding.lifecycle`) and machine-authorization
-expiry or withdrawal (`machine_approval.lifecycle.apply` with state `expired`
+lifecycle (`projects.github_binding.lifecycle`), preissued machine codes
+(`machine_authorization.handoff`), and machine-authorization expiry or withdrawal (`machine_approval.lifecycle.apply` with state `expired`
 or `withdrawn`). It calls as its own least-privilege identity, never as a
 person.
 
@@ -93,8 +93,13 @@ holds the swapped credential. Keep it to the repin step itself.
 
 ## What the service may reach
 
-The identity calls only `projects.github_binding.lifecycle` and
-`machine_approval.lifecycle.apply`, and only through `/v1/functions/call`.
+The identity calls only `projects.github_binding.lifecycle`,
+`machine_approval.lifecycle.apply` and `machine_authorization.handoff`,
+and only through `/v1/functions/call`. Handoff checks the exact target
+`payload.org_id` against the identity's own org grant before writing the shared
+code store. It never approves a code or issues a credential. See the
+[hosted handoff contract](public/reference/machine-authorization.md#hosted-code-handoff)
+for its payload, serving floor and named refusals.
 
 - Any other function is refused at dispatch, including the baseline every
   signed-in actor gets: minting its own tokens, sessions, decision requests,
