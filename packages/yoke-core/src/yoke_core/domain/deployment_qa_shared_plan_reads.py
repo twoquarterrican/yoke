@@ -67,7 +67,6 @@ def presented_plan_rows(conn, plan_id):
 
 def plan_snapshot_row(conn, plan_id, *, lock_plan):
     from yoke_core.domain.deployment_requirement_snapshot_format import PLAN_FIELDS
-    from yoke_core.domain.qa_converging_columns import converged_select
     from yoke_core.domain import db_backend
     from yoke_core.domain.deployment_requirement_snapshots import _p
 
@@ -79,7 +78,7 @@ def plan_snapshot_row(conn, plan_id, *, lock_plan):
     )
     rows = query_rows(
         conn,
-        f"SELECT {converged_select(conn, 'qa_plans', (*PLAN_FIELDS, 'retired_at'))} "
+        f"SELECT {','.join((*PLAN_FIELDS, 'retired_at'))} "
         f"FROM qa_plans WHERE id={_p(conn)}{lock}",
         (int(plan_id),),
     )
@@ -90,13 +89,12 @@ def plan_snapshot_cases(conn, plan_id, *, lock_plan):
     from yoke_core.domain.deployment_requirement_snapshot_format import (
         PLAN_CASE_COLUMNS,
     )
-    from yoke_core.domain.qa_converging_columns import converged_select
     from yoke_core.domain.deployment_requirement_snapshots import _p
 
     batch = presented_plan_rows(conn, plan_id) if not lock_plan else None
     if batch is not None:
         return [dict(row) for row in batch[1]]
-    columns = converged_select(conn, "qa_plan_cases", PLAN_CASE_COLUMNS, "c")
+    columns = ",".join("c." + field for field in PLAN_CASE_COLUMNS)
     return query_rows(
         conn,
         f"SELECT {columns},m.name AS method_name,m.runner_id,"
