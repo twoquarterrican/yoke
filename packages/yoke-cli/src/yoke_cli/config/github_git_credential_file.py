@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 if __package__:
-    from yoke_contracts import platform_file_lock
-    from yoke_contracts import platform_file_sync
+    from yoke_contracts import platform_file_lock, platform_file_sync
     from yoke_contracts import windows_private_directory
     from yoke_contracts.designed_wait import announce_designed_wait
     from yoke_contracts.machine_config.directories import create_private_directory
@@ -26,7 +25,6 @@ from typing import Any, Iterator, Mapping
 
 
 MAX_CREDENTIAL_DOCUMENT_BYTES = 64 * 1024
-# One refresh exchange per holder; a bounded wait reports retryable contention.
 CREDENTIAL_LOCK_WAIT_SECONDS = 20.0
 _LOCK_POLL_SECONDS = 0.05
 _LOCK_POLL_MAX_SECONDS = 0.5

@@ -73,7 +73,7 @@ def default_startup_file(shell: str, home: Path) -> Path:
             (
                 home / name
                 for name in (".bash_profile", ".bash_login", ".profile")
-                if (home / name).exists()
+                if isinstance(home / name, Path) and (home / name).exists()
             ),
             home / ".profile",
         )
@@ -127,7 +127,9 @@ def resolve_path_state_contract(
     posix_contract = home is None and requested_home.startswith("/") and environ.get(
         "SHELL", ""
     ).startswith("/")
-    home_path = home or Path(requested_home)
+    home_path = home or (
+        PurePosixPath(requested_home) if posix_contract else Path(requested_home)
+    )
     environ["HOME"] = str(home_path)
 
     def contract_path(path: str | Path) -> str:
