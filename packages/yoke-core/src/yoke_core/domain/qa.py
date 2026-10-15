@@ -82,7 +82,6 @@ from yoke_core.domain.qa_reporting import (  # noqa: F401
 
 from yoke_core.domain.qa_schema import (  # noqa: F401
     _QA_SCHEMA,
-    _migrate_qa_vocab,
     cmd_init,
 )
 

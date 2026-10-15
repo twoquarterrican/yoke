@@ -12,7 +12,6 @@ from typing import Any
 
 from yoke_core.domain import db_backend
 from yoke_core.domain.epic_task_membership import MEMBERSHIP_FINALIZED_COLUMN
-from yoke_core.domain.qa_schema import _migrate_qa_vocab
 from yoke_core.domain.schema_checks import (
     _validate_epic_task_statuses,
     _validate_item_workflow_stages,
@@ -260,7 +259,7 @@ def apply_legacy_data_migrations(conn: Any) -> None:
     and the schema fixtures — never on the boot converge path — because it
     performs the operations that are unsafe to run on every deploy: guarded
     destructive drops of retired surfaces, data backfills that normalize legacy
-    NULL/'' rows, the qa-vocabulary table rebuild, and the canonical-status
+    NULL/'' rows, the canonical-status
     validators. Assumes :func:`apply_additive_schema` has already added every
     column these statements touch.
     """
@@ -318,8 +317,6 @@ def apply_legacy_data_migrations(conn: Any) -> None:
         conn.execute("ALTER TABLE items DROP COLUMN prd")
         conn.commit()
         print("Dropped deprecated 'prd' column from items table.")
-
-    _migrate_qa_vocab(conn)
 
     # Split browser capture from inspection verdict
     _migrate_qa_execution_status(conn)
