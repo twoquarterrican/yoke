@@ -25,7 +25,6 @@ from yoke_core.domain.deployment_run_candidate_containment import (
 )
 from yoke_core.domain.deployment_run_bound_sources import (
     BOUND_SOURCES_FIELD,
-    bound_sources_recorded,
 )
 from yoke_core.domain.deployment_run_project_sources import recorded_source_sha
 from yoke_core.domain.item_json_sections import read_json_sections
@@ -95,17 +94,6 @@ def _p(conn: Any) -> str:
     return "%s" if db_backend.connection_is_postgres(conn) else "?"
 
 
-def _bound_sources_column(conn: Any) -> str:
-    """Name the stored bound-source record, or a constant before converge.
-
-    The column arrives on a boot converge this very code may be driving, so
-    the read cannot assume it and cannot refuse without it.
-    """
-    if bound_sources_recorded(conn):
-        return f"COALESCE(dr.{BOUND_SOURCES_FIELD},'')"
-    return "''"
-
-
 def landing_stamp_columns(conn: Any) -> tuple[str, ...]:
     """The landing stamps this database actually has.
 
@@ -172,7 +160,7 @@ def _member_runs(
         f"SELECT dri.item_id AS item_id, dr.id AS run_id, dr.status AS status, "
         f"dr.project_id AS project_id, "
         f"COALESCE(dr.release_lineage,'') AS release_lineage, "
-        f"{_bound_sources_column(conn)} AS {BOUND_SOURCES_FIELD} "
+        f"COALESCE(dr.{BOUND_SOURCES_FIELD},'') AS {BOUND_SOURCES_FIELD} "
         f"FROM deployment_run_items dri "
         f"JOIN deployment_runs dr ON dr.id = dri.run_id "
         f"WHERE dri.item_id IN ({item_holes}) AND dr.status IN ({status_holes}) "
