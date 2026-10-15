@@ -56,6 +56,9 @@ def installed(tmp_path, monkeypatch):
     for index, root in enumerate(roots, 7):
         root.mkdir()
         git(root, "init", "-b", "main")
+        # Keep asynchronous Git maintenance out of exact preservation snapshots.
+        git(root, "config", "maintenance.auto", "false")
+        git(root, "config", "gc.auto", "0")
         git(root, "config", "user.name", "Fixture")
         git(root, "config", "user.email", "fixture@example.com")
         bundle = make_bundle()
