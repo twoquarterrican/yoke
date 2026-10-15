@@ -15,12 +15,15 @@ from `yoke workflows definition get --project PROJECT`.
 Keep supplied spec content intact and file through `items.create`:
 
 ```text
-yoke dash "<specific title>" --project PROJECT --spec-file /tmp/dash-spec.txt --execution-instructions-considered --json
+yoke dash "<specific title>" --project PROJECT --spec-file /tmp/dash-spec.txt --execution-instructions-considered --json --entry-surface harness_skill
 ```
 
 Author that file first; stdin is also valid. Commands/backticks/$() belong in
 file/stdin, never shell-interpolated positional prose. The attestation is
-required and no adapter supplies it for you. Read `yoke dash --help`.
+required and no adapter supplies it for you. Skills own and pass
+`--entry-surface harness_skill`; Task/Dash commands default to `cli`.
+The surface records provenance; authenticated caller and workflow checks
+still apply. Read `yoke dash --help`.
 
 For requested screenshot/deployed evidence, apply the posture selected by
 [Browser placement](../../../../.yoke/docs/reference/browser-scenarios.md#where-a-browser-case-runs):

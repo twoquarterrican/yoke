@@ -102,6 +102,17 @@ writes the spec or cancels the item. `yoke_core.domain.item_spec_completeness`
 owns the title-only test, and the doctor check `HC-items-needing-spec` lists
 those items.
 
+The filer owns `entry_surface`: skills pass `harness_skill`; Task/Dash
+commands default to `cli`. For direct skill intake after reading the target
+workflow's execution instructions (`items.create`):
+```text
+yoke dash "<title>" --spec-file /tmp/dash-spec.txt --entry-surface harness_skill --execution-instructions-considered
+```
+Task uses `yoke task` with the same flags; planned intake uses `/yoke idea`,
+which sets session mode `idea` before filing with `harness_skill`.
+Authenticated caller, allowed workflow surfaces, spec acceptance and
+execution-instruction attestation remain required; a surface grants no authority.
+
 ### Implementation and review
 
 - `implementing` means work is actively being built.

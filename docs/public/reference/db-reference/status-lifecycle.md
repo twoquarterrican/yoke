@@ -35,6 +35,10 @@ catalog. `yoke workflows item get PREFIX-N` plus
 an existing item. Board buckets are a projection over item stage and workflow
 context; they do not define valid transitions.
 
+The filer supplies `entry_surface`; Task/Dash adapters default to `cli`,
+while skills explicitly pass `harness_skill`. See the
+[canonical intake recipe](../lifecycle.md#items-are-created-with-their-spec).
+
 **Transition enforcement:** `yoke lifecycle transition` loads the item's pinned
 definition, validates target-stage membership, evaluates the gate references
 attached to that target, and dispatches policy behavior through the canonical
