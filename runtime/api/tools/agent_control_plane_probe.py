@@ -7,6 +7,29 @@ import os
 import subprocess
 import sys
 
+from yoke_cli.config.machine_config import active_connection
+from yoke_contracts.machine_config.schema import MachineConfigContractError
+
+
+def require_target() -> None:
+    base_url = os.environ.get("BASE_URL", "").strip().rstrip("/")
+    try:
+        connection = active_connection()
+    except MachineConfigContractError as exc:
+        raise RuntimeError(
+            "agent_route_connection_unavailable: restore the authenticated HTTPS "
+            "connection for BASE_URL, then rerun this member case"
+        ) from exc
+    if (
+        not base_url
+        or connection.get("transport") != "https"
+        or str(connection.get("api_url") or "").rstrip("/") != base_url
+    ):
+        raise RuntimeError(
+            "agent_route_target_mismatch: select the authenticated HTTPS connection "
+            "for the runner's BASE_URL, then rerun this member case"
+        )
+
 
 def call(*args: str, stdin: str | None = None) -> dict:
     completed = subprocess.run(
@@ -42,6 +65,7 @@ def main() -> int:
         )
         return 2
     try:
+        require_target()
         detail = call("items", "detail", "get", member, "--include", "")
         project = detail["item"]["project"]["slug"]
         gate = call(
