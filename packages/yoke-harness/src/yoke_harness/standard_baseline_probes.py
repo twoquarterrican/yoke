@@ -6,10 +6,9 @@ import json
 import shlex
 from pathlib import Path
 
-from yoke_harness import baseline_harness_requests
+from yoke_harness import baseline_harness_requests, baseline_native_failures
 from yoke_harness.baseline_probe_failure_causes import (
     CHECK_UNMET,
-    HARNESS_EXIT_NONZERO,
     PROBE_EXIT_CODES,
     PROBE_FAILURE_CAUSES,
     UNDECLARED_EXIT,
@@ -52,7 +51,7 @@ def standard_probe_failure(name: str, exit_code: int) -> dict[str, str] | None:
     failure = PROBE_FAILURE_CAUSES.get(exit_code, UNDECLARED_EXIT)
     # The named step is the fix only when the program ran and reported the
     # state absent; a missing executable or a timeout has its own fix.
-    if failure in (HARNESS_EXIT_NONZERO, CHECK_UNMET):
+    if failure == CHECK_UNMET:
         recovery = (
             f"{step} Follow {CHECKLIST}, then save it at once with "
             f"`{SAVE_BASELINE_COMMAND}`, which proves it and recaptures the baseline."
@@ -74,6 +73,19 @@ def standard_probes(os_name: str) -> list[dict]:
         Path(baseline_harness_requests.__file__)
         .read_text(encoding="utf-8")
         .replace(_FUTURE, "", 1)
+    )
+    native_source = (
+        Path(baseline_native_failures.__file__)
+        .read_text(encoding="utf-8")
+        .replace(_FUTURE, "", 1)
+    )
+    source = (
+        native_source
+        + "\n"
+        + source.replace(
+            "from yoke_harness.baseline_native_failures import NATIVE_FAILURES, native_failure_cause",
+            "",
+        )
     )
     probes = []
     for name, executables in (
@@ -99,7 +111,12 @@ except subprocess.TimeoutExpired:
     sys.exit(EXIT['probe_request_timed_out'])
 except OSError:
     sys.exit(EXIT['probe_launch_failed'])
-if result.returncode != 0: sys.exit(EXIT['probe_harness_exit_nonzero'])
+if result.returncode != 0:
+    refusal = request.native_refusal(result.stdout, result.stderr)
+    rejection = request.reply_rejection(result.stdout, exit_code=result.returncode)
+    if rejection is not None:
+        print(json.dumps({{**rejection, 'harness_exit_code': result.returncode}}))
+    sys.exit(EXIT[refusal['cause'] if refusal else 'probe_harness_exit_nonzero'])
 rejection = request.reply_rejection(result.stdout)
 if rejection is None: sys.exit(0)
 # Only the sanitized rejection record leaves the host; the reply stays here.

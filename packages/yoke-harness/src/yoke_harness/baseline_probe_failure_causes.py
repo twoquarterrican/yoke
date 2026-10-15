@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from yoke_harness.baseline_native_failures import NATIVE_FAILURES
 from yoke_harness.baseline_harness_requests import (
     HarnessRequest,
     read_rejection_record,
@@ -46,8 +47,8 @@ LAUNCH_FAILED = ProbeFailureCause(
 HARNESS_EXIT_NONZERO = ProbeFailureCause(
     "probe_harness_exit_nonzero",
     "the harness ran the request and exited non-zero",
-    "Run the harness by hand in the test user's GUI session to read its error; "
-    "if it reports a missing or expired login, sign it in again, then retry.",
+    "Run the same request in the test user's session and inspect its local "
+    "diagnostics, then repair the reported failure and retry; preserve the golden.",
 )
 REPLY_UNANSWERED = ProbeFailureCause(
     "probe_reply_unanswered",
@@ -72,9 +73,33 @@ PROBE_FAILURE_CAUSES: dict[int, ProbeFailureCause] = {
     14: REPLY_UNANSWERED,
     15: CHECK_UNMET,
 }
+# Sealed exit codes carry native diagnoses; receipts retain the execution category.
 PROBE_EXIT_CODES: dict[str, int] = {
     failure.cause: code for code, failure in PROBE_FAILURE_CAUSES.items()
 }
+PROBE_EXIT_CODES.update(
+    {
+        "probe_quota_exhausted": 16,
+        "probe_auth_rejected": 17,
+        "probe_model_rejected": 18,
+        "probe_transport_failed": 19,
+        "probe_rate_limited": 20,
+        "cursor_workspace_trust_required": 21,
+    }
+)
+PROBE_FAILURE_CAUSES.update(
+    {
+        PROBE_EXIT_CODES[diagnosis]: ProbeFailureCause(
+            diagnosis
+            if diagnosis == "cursor_workspace_trust_required"
+            else HARNESS_EXIT_NONZERO.cause,
+            reason,
+            recovery,
+        )
+        for diagnosis, (reason, recovery) in NATIVE_FAILURES.items()
+    }
+)
+
 
 # A sealed standard probe exiting outside the table predates it or crashed.
 UNDECLARED_EXIT = ProbeFailureCause(
@@ -122,10 +147,15 @@ def classify_declared_failure(
     if request is not None:
         refusal = request.native_refusal(stdout, stderr)
         if refusal is not None:
-            return refusal
+            return {
+                **refusal,
+                "cause": refusal["cause"]
+                if refusal["cause"] == "cursor_workspace_trust_required"
+                else HARNESS_EXIT_NONZERO.cause,
+            }
         subject = f"{request.name} real request"
         if exit_code:
-            return failure_evidence(HARNESS_EXIT_NONZERO, subject, request.recovery)
+            return failure_evidence(HARNESS_EXIT_NONZERO, subject)
         return failure_evidence(REPLY_UNANSWERED, subject)
     if exit_code:
         return failure_evidence(DECLARED_PROBE_EXIT_NONZERO, name)
@@ -134,9 +164,8 @@ def classify_declared_failure(
 
 #: A sealed probe that printed no valid record was sealed before records existed.
 REJECTION_RECORD_MISSING = (
-    "No sanitized rejection record came back, so the rejected reply cannot be "
-    "diagnosed; a golden sealed before rejection records keeps none. Capture a "
-    "new golden so its sealed probes return one."
+    "No sanitized rejection record came back; inspect the native diagnostics "
+    "locally on the host. Preserve the existing golden until the request passes."
 )
 
 
@@ -152,10 +181,14 @@ def with_reply_rejection(
     A declared harness probe's reply is parsed here; a sealed standard probe
     parses on the host and prints only its record, which is re-validated.
     """
-    if failure["cause"] != REPLY_UNANSWERED.cause:
+    if failure["cause"] not in {
+        REPLY_UNANSWERED.cause,
+        HARNESS_EXIT_NONZERO.cause,
+        "cursor_workspace_trust_required",
+    }:
         return failure
     if request is not None:
-        record = request.reply_rejection(stdout)
+        record = request.reply_rejection(stdout, exit_code=exit_code)
         if record is not None:
             record["harness_exit_code"] = exit_code
     else:
