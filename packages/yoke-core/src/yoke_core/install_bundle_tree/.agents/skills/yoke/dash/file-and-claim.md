@@ -15,7 +15,7 @@ from `yoke workflows definition get --project PROJECT`.
 Keep supplied spec content intact and file through `items.create`:
 
 ```text
-yoke dash "<specific title>" --project PROJECT --spec-file /tmp/dash-spec.txt --entry-surface harness_skill --execution-instructions-considered --json
+yoke dash "<specific title>" --project PROJECT --spec-file /tmp/dash-spec.txt --execution-instructions-considered --json --entry-surface harness_skill
 ```
 
 Author that file first; stdin is also valid. Commands/backticks/$() belong in
