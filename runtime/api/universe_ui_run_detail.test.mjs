@@ -201,7 +201,7 @@ test("the run page reads the run by id and draws it in the page's shape", async 
   const items = byClass(decision, "run-items")[0].children;
   assert.equal(items[0].textContent, "YOK-2228");
   assert.equal(items[1].textContent, "Ship the release");
-  assert.equal(byClass(decision, "carried-item-evidence").length, 1);
+  assert.equal(byClass(decision, "carried-item-evidence").length, 0);
   assert.match(decision.textContent, /item_qa_requirements_unavailable/);
   assert.equal(byClass(decision, "run-request-kind")[0].textContent, "Release approval");
   assert.deepEqual(

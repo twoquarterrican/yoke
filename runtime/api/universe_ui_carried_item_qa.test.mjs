@@ -172,7 +172,7 @@ test("a card reports unavailable requirements without borrowing other-run histor
   ] });
   const prefix = "SAMPLE";
   const { card } = await cardFor(new FakeDocument(), [member(1896, `${prefix}-1`)], client);
-  assert.equal(byClass(memberEntry(card), "item-qa-section").length, 1);
+  assert.equal(byClass(memberEntry(card), "item-qa-section").length, 0);
   assert.match(memberEntry(card).textContent, /item_qa_requirements_unavailable/);
   assert.equal(byClass(memberEntry(card), "run-qa-check").length, 0);
 });

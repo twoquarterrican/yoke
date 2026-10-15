@@ -263,6 +263,14 @@ export function appendCarriedItemEvidence(context, host, options = {}) {
   if (!projection && !options.requireProjection && !hasQa && !noObligation
     && !gates.length && !readError) return null;
   const documentNode = context.document;
+  if (!hasQa && !noObligation && !gates.length) {
+    const note = el(documentNode, "p", "carried-item-qa-diagnostic",
+      `Item QA: ${readError || (facts?.loading ? "Loading earlier item QA and decisions…"
+        : "No applicable item QA obligations for this release.")}`);
+    if (readError) note.classList.add("error");
+    host.appendChild(note);
+    return { node: note, requestIds: new Set() };
+  }
   const wrap = el(
     documentNode,
     "div",
@@ -299,10 +307,6 @@ export function appendCarriedItemEvidence(context, host, options = {}) {
   if (facts?.loading) section.appendChild(el(documentNode, "p",
     "carried-item-evidence-note", "Loading earlier item QA and decisions…"));
   if (readError) section.appendChild(el(documentNode, "p", "error", readError));
-  else if (!hasQa && !noObligation && !gates.length) {
-    section.appendChild(el(documentNode, "p", "carried-item-evidence-note",
-      "No applicable item QA obligations for this release."));
-  }
   wrap.appendChild(section);
   if (hasQa) appendTruncationNote(documentNode, section, facts, itemId, runId);
   const decisions = decisionList(context, gates, onDecide || null, {

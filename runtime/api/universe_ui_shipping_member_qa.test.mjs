@@ -209,7 +209,8 @@ test("carried items show required QA and recorded no-obligation reasons", async 
   assert.equal(members.length, 20);
   const byRef = Object.fromEntries(MEMBERS.map((item, index) => {
     const evidence = byClass(members[index], "carried-item-evidence")[0];
-    return [item.ref, evidence ? evidence.textContent : ""];
+    return [item.ref, evidence?.textContent
+      || byClass(members[index], "carried-item-qa-diagnostic")[0]?.textContent || ""];
   }));
   // The check this release recorded leads the entry's Item QA.
   const lead = byClass(byClass(members[0], "item-qa-section")[0], "run-qa-check")[0];

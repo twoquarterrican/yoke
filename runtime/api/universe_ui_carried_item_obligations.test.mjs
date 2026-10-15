@@ -45,4 +45,7 @@ test("an empty projection and a failed read are distinguishable", () => {
   const failed = paint({ current: [], history: [], error: "item_qa_requirements_read_failed: Reload this run." });
   assert.match(failed.textContent, /item_qa_requirements_read_failed.*Reload/);
   assert.doesNotMatch(failed.textContent, /No applicable/);
+  assert.equal(byClass(failed, "carried-item-evidence").length, 0);
+  assert.equal(byClass(failed, "run-qa-section").length, 0);
+  assert.equal(byClass(failed, "carried-item-qa-diagnostic").length, 1);
 });
