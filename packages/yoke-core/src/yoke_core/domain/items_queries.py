@@ -8,7 +8,11 @@ lazily inside the query functions to avoid a circular import.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Any, List, Optional
+
+from yoke_core.domain import db_backend
 
 from yoke_core.domain.db_helpers import connect, query_one, query_rows, query_scalar
 from yoke_core.domain.items_constants import (
@@ -19,6 +23,68 @@ from yoke_core.domain.items_constants import (
 )
 from yoke_core.domain.project_identity import item_project_join_select
 from yoke_core.domain.items_projection import item_text_expression
+
+
+_FIELD_BATCH = ContextVar("item_field_read_batch", default=None)
+
+
+def _text_value(field, value):
+    if value is None:
+        return ""
+    return _map_frozen_read(value) if field == "frozen" else str(value)
+
+
+@contextmanager
+def item_field_read_batch(conn, item_ids, fields):
+    """Read scalar fields together; each handler still owns its full validation."""
+    if not db_backend.pg_dsn_is_bound():
+        raise ValueError("item field batch requires an explicitly bound copy authority")
+    from yoke_contracts.merge_queue_status import render_merge_queue_status
+
+    columns = tuple(
+        dict.fromkeys(
+            field
+            for field in fields
+            if field not in {"id", "deployment_flow", "body", "merge_queue_status"}
+        )
+    )
+    expressions = [
+        "COALESCE(p.slug, '')"
+        if field == "project"
+        else item_text_expression(field, column=f"i.{field}")
+        for field in columns
+    ]
+    rows = conn.execute(
+        "SELECT "
+        + ", ".join(
+            [
+                "i.id",
+                *expressions,
+                "i.status",
+                "i.merge_queue_enqueued_at",
+                "i.merge_queue_landed_at",
+            ]
+        )
+        + " "
+        "FROM items i JOIN projects p ON p.id=i.project_id WHERE i.id = ANY(%s)",
+        (list(item_ids),),
+    ).fetchall()
+    values = {}
+    for row in rows:
+        item_id = int(row[0])
+        for index, field in enumerate(columns, 1):
+            values[item_id, field] = _text_value(field, row[index])
+        if "merge_queue_status" in fields:
+            values[item_id, "merge_queue_status"] = render_merge_queue_status(
+                row[len(columns) + 2],
+                row[len(columns) + 3],
+                item_status=row[len(columns) + 1],
+            )
+    token = _FIELD_BATCH.set((db_backend.resolve_pg_dsn(), values))
+    try:
+        yield
+    finally:
+        _FIELD_BATCH.reset(token)
 
 
 def query_item(
@@ -38,6 +104,15 @@ def query_item(
 
     Returns the field value as a string (empty string if NULL or not found).
     """
+    batch = _FIELD_BATCH.get()
+    if (
+        batch is not None
+        and db_path is None
+        and db_backend.pg_dsn_is_bound()
+        and batch[0] == db_backend.resolve_pg_dsn()
+        and (item_id, field) in batch[1]
+    ):
+        return batch[1][item_id, field]
     conn = connect(db_path)
     try:
         # body is a virtual field rendered on demand
@@ -75,14 +150,7 @@ def query_item(
                 f"SELECT {item_text_expression(field)} FROM items WHERE id = %s",
                 (item_id,),
             )
-        if val is None:
-            return ""
-
-        # Map frozen integer to boolean string
-        if field == "frozen":
-            return _map_frozen_read(val)
-
-        return str(val)
+        return _text_value(field, val)
     finally:
         conn.close()
 

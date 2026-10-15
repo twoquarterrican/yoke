@@ -15,6 +15,7 @@ from yoke_core.domain.deployment_run_project_sources import invalidate_run_sourc
 from yoke_core.domain.deployment_run_bound_source_composition import (
     recompose_bound_sources,
     preview_bound_source_composition,
+    revalidate_bound_source_composition,
 )
 from yoke_core.domain.deployment_runs_lock import (
     bounded_run_write,
@@ -156,18 +157,19 @@ def _prepare_bound_sources(conn: Any, run_id: str, stage_name: str) -> dict[str,
                 f"bound_source_preparation_changed: {run_id} changed during preparation; re-drive the same run"
             )
         if changes:
+            # Preserve the original pins until every mutable input is revalidated.
+            fresh = revalidate_bound_source_composition(
+                conn, run_id, record, project_ids, preview
+            )
+            if set(fresh.lock_item_ids) - set(preview.lock_item_ids):
+                raise ValueError(
+                    f"bound_source_preparation_changed: {run_id} gained members; re-drive the same run"
+                )
             conn.execute(
                 "UPDATE deployment_runs SET bound_sources=%s WHERE id=%s",
                 (dumps_compact(record), run_id),
             )
             invalidate_run_source_facts(conn, run_id)
-            # Re-read mutable attribution, membership and obligation facts under
-            # the locks; only immutable source answers may cross this boundary.
-            fresh = preview_bound_source_composition(conn, run_id, record, project_ids)
-            if set(fresh.lock_item_ids) - set(preview.lock_item_ids):
-                raise ValueError(
-                    f"bound_source_preparation_changed: {run_id} gained members; re-drive the same run"
-                )
             recompose_bound_sources(conn, run_id, project_ids, fresh)
         for entry in selected:
             entry.setdefault("consumed_by", stage_name)

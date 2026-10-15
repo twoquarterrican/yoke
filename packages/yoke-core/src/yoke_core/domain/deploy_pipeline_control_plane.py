@@ -6,6 +6,7 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from yoke_core.domain.deployment_start_timing import emit_records
+from yoke_core.domain.function_connection_loss import CONNECTION_LOST_CODE
 from yoke_core.domain.deploy_pipeline_unknown_outcome import (
     DeploymentOutcomeUnknown,
     UNKNOWN_CODES,
@@ -22,6 +23,17 @@ class DeploymentControlPlaneError(RuntimeError):
         self.code = code
 
 
+_READ_ONLY = frozenset(
+    {
+        "deployment_runs.get",
+        "deployment_runs.execution.containment_basis",
+        "deployment_runs.execution.qa_pending",
+        "deployment_runs.execution.ephemeral_qa_ready",
+        "deployment_runs.execution.stage_receipt_latest",
+    }
+)
+
+
 def _call(function_id: str, run_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     response = call_dispatcher(
         function_id=function_id,
@@ -34,10 +46,12 @@ def _call(function_id: str, run_id: str, payload: Dict[str, Any]) -> Dict[str, A
         message = error.message if error else "request failed"
         if error and error.recovery_hint:
             message = f"{message} Recovery: {error.recovery_hint}"
-        if error and error.code in UNKNOWN_CODES:
+        if error and error.code in UNKNOWN_CODES and function_id not in _READ_ONLY:
             raise DeploymentOutcomeUnknown(
                 run_id, function_id, response.request_id, message
             )
+        if error and error.code == CONNECTION_LOST_CODE:
+            message = f"{message} The read can be resumed: rerun `yoke watch deploy -- {run_id}`."
         raise DeploymentControlPlaneError(
             f"{function_id} failed: {message}",
             code=error.code if error else "",

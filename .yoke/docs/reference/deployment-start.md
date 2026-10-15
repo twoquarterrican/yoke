@@ -116,3 +116,20 @@ and `executing_stamp`. A lock timeout names the phase, not an invented blocker;
 missing response/timing evidence stays unknown. Real-run verification must name
 the exact deployed source and representative members; a small fixture is a
 regression check, not proof of production startup time.
+
+Fleet preparation reports the actual subphase under the declared deployment
+stage: declarations, receipt authority, admin connection, roster, ownership,
+extensions, copy dump/restore, boot convergence, invariants, product readers,
+cleanup and receipt writing. Long subphases emit `phase=running`,
+`outcome=pending` and elapsed milliseconds every thirty seconds. Restored-copy
+reader diagnostics identify sessions, frontier, board, launch pages/details,
+message attempts and items, with `record_count` and `completed_count` for each
+record family. Every copied record still reaches its existing handler or
+decoder. Bounded batches reuse the canonical session projection and item text
+expressions, and fetch launch and attempt rows in sets; no check is sampled or
+skipped. Batch data is discarded on exit and cannot cross copy authorities.
+Connections opened under a bound copy still physically close.
+These timing lines reach the deployment progress capture even in outcome-only
+mode, so the attached driver's capture identifies preparation before any
+provider dispatch. They carry run/source identity when supplied and no DSNs.
+A missing end marker is unfinished evidence, never a successful receipt.

@@ -23,6 +23,10 @@ from yoke_core.domain.migration_fleet_applied_invariants import (
     format_fleet_summary,
 )
 from yoke_core.domain.postgres_cluster import ClusterSpec
+from yoke_core.domain.deployment_start_timing import (
+    timed_preparation as timed,
+    start_step,
+)
 
 #: Throwaway copy prefix; a leftover name is visibly disposable.
 REHEARSAL_PREFIX = "migration_rehearsal_"
@@ -120,8 +124,11 @@ def rehearse(
 ) -> Verdict:
     """Admit one copy through cleanup; read serving privileges on its live database source."""
     try:
-        with migration_rehearsal_copy_lock.copy_lock(
-            spec, f"{REHEARSAL_PREFIX}{database}"
+        with (
+            start_step(f"fleet_copy_lifecycle:{database}"),
+            migration_rehearsal_copy_lock.copy_lock(
+                spec, f"{REHEARSAL_PREFIX}{database}"
+            ),
         ):
             return _rehearse_owned(
                 source_dsn,
@@ -155,7 +162,9 @@ def _rehearse_owned(
     emit: Optional[Callable[[str], None]] = None,
 ) -> Verdict:
     """Copy and converge under admission; read serving privileges live."""
-    refusal = _live_ownership_verdict(
+    refusal = timed(
+        f"fleet_ownership:{database}",
+        _live_ownership_verdict,
         source_dsn,
         database,
         plan.live_ownership_validator,
@@ -167,7 +176,11 @@ def _rehearse_owned(
     try:
         pins = migration_fleet_preflight_extensions.extension_pins(
             spec,
-            migration_fleet_preflight_extensions.source_extensions(source_dsn),
+            timed(
+                f"fleet_extensions:{database}",
+                migration_fleet_preflight_extensions.source_extensions,
+                source_dsn,
+            ),
         )
     except Exception as exc:  # noqa: BLE001 — a verdict, not a crash
         detail = str(exc).replace(source_dsn, "<dsn>")
@@ -188,7 +201,9 @@ def _rehearse_owned(
         if plan.copy_observer:
             plan.copy_observer("start", dump)
         try:
-            migration_fleet_preflight_transfer.dump_database(
+            timed(
+                f"fleet_copy_dump:{database}",
+                migration_fleet_preflight_transfer.dump_database,
                 spec,
                 source_dsn,
                 dump,
@@ -205,16 +220,30 @@ def _rehearse_owned(
                 f"could not copy: {exc}; correct the failure and retry preflight",
             )
         copy_started = True
-        migration_fleet_preflight_transfer.drop_copy(spec, copy_name)
-        migration_fleet_preflight_transfer.create_copy(spec, copy_name)
-        use_list = migration_fleet_preflight_extensions.stage_pinned_extensions(
+        timed(
+            f"fleet_copy_cleanup:{database}",
+            migration_fleet_preflight_transfer.drop_copy,
+            spec,
+            copy_name,
+        )
+        timed(
+            f"fleet_copy_create:{database}",
+            migration_fleet_preflight_transfer.create_copy,
+            spec,
+            copy_name,
+        )
+        use_list = timed(
+            f"fleet_copy_extensions:{database}",
+            migration_fleet_preflight_extensions.stage_pinned_extensions,
             spec,
             copy_name,
             pins,
             dump=dump,
             list_path=work_dir / f"{database}.restore-list",
         )
-        migration_fleet_preflight_transfer.restore_copy(
+        timed(
+            f"fleet_copy_restore:{database}",
+            migration_fleet_preflight_transfer.restore_copy,
             spec,
             copy_name,
             dump,
@@ -231,7 +260,12 @@ def _rehearse_owned(
         finally:
             try:
                 if copy_started:
-                    migration_fleet_preflight_transfer.drop_copy(spec, copy_name)
+                    timed(
+                        f"fleet_copy_cleanup:{database}",
+                        migration_fleet_preflight_transfer.drop_copy,
+                        spec,
+                        copy_name,
+                    )
             finally:
                 dump.unlink(missing_ok=True)
 

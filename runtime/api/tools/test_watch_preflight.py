@@ -17,6 +17,7 @@ from yoke_core.tools.watch_entrypoints import WRAPPER_MAINS
 @pytest.mark.parametrize(
     ("line", "expected"),
     [
+        ('Deployment start timing: {"phase":"running"}', LineClass.METADATA),
         ("engine artifact: wheel yoke_core.whl sha256:abc", LineClass.PROGRESS),
         ("COPY/CONVERGE yoke_alpha: starting rehearsal", LineClass.PROGRESS),
         ("converging yoke_alpha", LineClass.PROGRESS),

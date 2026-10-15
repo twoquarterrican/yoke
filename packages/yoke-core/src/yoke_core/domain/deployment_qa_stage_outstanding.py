@@ -12,6 +12,7 @@ disagree about whether anything is outstanding.
 from __future__ import annotations
 
 import json
+from contextvars import ContextVar
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -43,6 +44,18 @@ from yoke_core.domain.post_deploy_verification_answer import (
 from yoke_core.domain.schema_common import _table_exists
 from yoke_core.domain.deployment_qa_presentation_reads import presentation_operation
 from yoke_core.domain.steering_fleet_report_detectors import marker
+
+
+_FIRST_WAITING = ContextVar("qa_first_waiting", default=False)
+
+
+def first_waiting_qa_stage(conn, *, run_id, stage_name):
+    """Ask the canonical stage reader only for the first real blocker."""
+    token = _FIRST_WAITING.set(True)
+    try:
+        return qa_stage_outstanding(conn, run_id=run_id, stage_name=stage_name)
+    finally:
+        _FIRST_WAITING.reset(token)
 
 
 @dataclass(frozen=True)
@@ -85,7 +98,7 @@ def qa_stage_outstanding(
             conn,
             run_id=run_id,
             stage=stage,
-            stop_at_first_waiting=stop_at_first_waiting,
+            stop_at_first_waiting=stop_at_first_waiting or _FIRST_WAITING.get(),
         )
     except (LookupError, ValueError, TypeError, json.JSONDecodeError):
         return None

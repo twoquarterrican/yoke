@@ -131,6 +131,7 @@ def _open_qa_lines(
     """
     from yoke_core.domain.deployment_qa_stage_outstanding import (
         qa_stage_outstanding,
+        first_waiting_qa_stage,
     )
 
     qa_stages = [
@@ -143,11 +144,11 @@ def _open_qa_lines(
         return None
     lines: list[str] = []
     for name in qa_stages:
-        outstanding = qa_stage_outstanding(
+        read_stage = first_waiting_qa_stage if first_wait else qa_stage_outstanding
+        outstanding = read_stage(
             conn,
             run_id=target.run_id,
             stage_name=name,
-            stop_at_first_waiting=first_wait,
         )
         if outstanding is None:
             lines.append(f"stage {name}: QA state could not be read")

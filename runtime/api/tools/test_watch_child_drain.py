@@ -210,3 +210,26 @@ class TestDesignedWaitAnnouncementsReachTheReader:
 
     def test_an_outcome_only_watcher_still_emits_it(self, tmp_path) -> None:
         assert self._route(tmp_path, outcome_only=True) == [self._LINE]
+
+
+def test_outcome_only_forwards_preflight_timing_and_marks_progress():
+    import io
+    from yoke_core.tools.watch_preflight import classify_preflight_line
+
+    emitted = []
+    raw = io.StringIO()
+    watch = watch_progress_stall.ProgressEmitWatch.start("preflight", now=0)
+    line = 'Deployment start timing: {"step":"fleet_restore","phase":"running"}\n'
+    watch_child_drain._route_line(
+        line,
+        now=301,
+        classifier=classify_preflight_line,
+        gate=ProgressGate(ThrottlePolicy()),
+        digest=ProgressDigest(kind="preflight"),
+        raw_f=raw,
+        progress_watch=watch,
+        emit_immediate=emitted.append,
+        outcome_only=True,
+    )
+    assert emitted == [line] and raw.getvalue() == line
+    assert watch.report_if_stalled(302) is None

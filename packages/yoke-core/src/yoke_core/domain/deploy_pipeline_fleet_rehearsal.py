@@ -304,7 +304,11 @@ def _run_preflight(args: list[str]) -> int:
     """Execute through the same raw/progress watcher operators use directly."""
     from yoke_core.tools import watch_preflight
 
-    return watch_preflight.main(["--", *args])
+    from yoke_core.domain.deployment_start_timing import current_run_id
+
+    run_id = current_run_id()
+    identity = ["--run-id", run_id] if run_id else []
+    return watch_preflight.main(["--", *identity, *args])
 
 
 __all__ = ["ensure_before_dispatch"]
