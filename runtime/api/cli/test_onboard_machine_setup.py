@@ -115,7 +115,9 @@ def test_interactive_permission_choice_reaches_preview_and_apply(
     monkeypatch.setattr(
         onboard_interactive, "require_foreground_terminal", lambda: None
     )
-    monkeypatch.setattr(adapter, "_should_prompt", lambda *_: True)
+    monkeypatch.setattr(
+        onboard_interactive.onboard_wizard, "is_interactive", lambda *_: True
+    )
     monkeypatch.setattr(
         onboard_interactive, "finish_pending_source_install", lambda _: None
     )

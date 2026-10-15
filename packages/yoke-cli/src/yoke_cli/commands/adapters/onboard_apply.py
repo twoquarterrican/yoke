@@ -11,7 +11,17 @@ from yoke_cli.config import path_repair_plan
 from yoke_cli.config.onboard_error_friendly import friendly_permission_error
 
 
-def apply_with_durable_report(kwargs: dict, tui_progress=None) -> dict:
+def apply_with_durable_report(
+    kwargs: dict,
+    tui_progress=None,
+    *,
+    install_health: bool | None = None,
+) -> dict:
+    """Run setup's report or Apply under the durable run report.
+
+    ``install_health`` runs the install readiness checks after Apply; by
+    default they run exactly when no wizard renders its own progress.
+    """
     if not isinstance(kwargs.get("path_repair"), dict):
         kwargs = {
             **kwargs,
@@ -28,7 +38,13 @@ def apply_with_durable_report(kwargs: dict, tui_progress=None) -> dict:
     preview_kwargs = {**report_kwargs, "apply": False, "check_identity": False}
     preview = onboard_config.build_report(**preview_kwargs)
     with onboard_apply_lock.acquire(str(kwargs.get("resume_run_id") or "")):
-        return _run_locked_apply(preview, kwargs, report_kwargs, tui_progress)
+        return _run_locked_apply(
+            preview,
+            kwargs,
+            report_kwargs,
+            tui_progress,
+            install_health=tui_progress is None if install_health is None else install_health,
+        )
 
 
 def _run_locked_apply(
@@ -36,6 +52,8 @@ def _run_locked_apply(
     kwargs: dict,
     report_kwargs: dict,
     tui_progress=None,
+    *,
+    install_health: bool,
 ) -> dict:
     writer = onboard_apply_report.ApplyReportWriter.start(preview, kwargs)
 
@@ -60,7 +78,7 @@ def _run_locked_apply(
             report_path=summary.get("path"),
             resume_command=summary.get("resume_command"),
         ) from exc
-    if tui_progress is None:
+    if install_health:
         from yoke_cli.commands.adapters.doctor_install import setup_readiness
 
         report["install_health"] = setup_readiness(report, kwargs)

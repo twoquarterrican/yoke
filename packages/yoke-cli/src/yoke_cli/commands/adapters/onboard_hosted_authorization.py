@@ -77,13 +77,15 @@ def usage_error(
     if explicit_token_source:
         return (
             "Yoke Cloud uses browser approval; remove TOKEN, --token-file, or "
-            "--token-stdin; use `yoke connect --json` for agent-led approval, then rerun setup"
+            "--token-stdin. From an agent, run `yoke setup --agent --connect "
+            "https://app.upyoke.com` and show the person its browser step."
         )
     if not resuming and not should_prompt:
         return (
             "browser_approval_required: Yoke Cloud onboarding requires browser approval; "
-            "run `yoke connect --json`, present its link and code, then rerun setup. "
-            "For the TUI, run `yoke setup --connect https://app.upyoke.com`."
+            "from an agent, run `yoke setup --agent --connect https://app.upyoke.com` "
+            "and show the person its browser step. In a terminal, run "
+            "`yoke setup --connect https://app.upyoke.com`."
         )
     return None
 

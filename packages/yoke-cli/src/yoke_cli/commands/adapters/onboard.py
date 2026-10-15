@@ -7,6 +7,7 @@ import sys
 from typing import List
 
 from yoke_cli.commands._helpers import parse_or_usage_error
+from yoke_cli.commands.adapters import onboard_agent
 from yoke_cli.commands.adapters import onboard_apply
 from yoke_cli.commands.adapters import onboard_destination_args
 from yoke_cli.commands.adapters import onboard_hosted_authorization as hosted_auth
@@ -27,12 +28,13 @@ from yoke_cli.commands.adapters.onboard_build_report import (
 )
 from yoke_cli.config import onboard as onboard_config
 from yoke_cli.config import onboard_destinations
-from yoke_cli.config import onboard_apply_resume
-from yoke_cli.config import onboard_wizard
 from yoke_cli.config import github_user_tokens
+from yoke_cli.config import setup_agent_response
 
 
 ONBOARD_USAGE = (
+    "yoke setup [--agent [--answer KEY=VALUE ...] | --tui] | "
+    "yoke setup --agent --discard | "
     "yoke setup [--quick | --advanced] [--local | --connect URL] [--json] "
     "[--non-interactive] [--config PATH] --env ENV --api-url URL "
     "[TOKEN | --token-file PATH | --token-stdin] [--yes] "
@@ -47,6 +49,23 @@ ONBOARD_USAGE = (
 
 
 def onboard(args: List[str]) -> int:
+    parsed = parse_or_usage_error(_parser(), args, ONBOARD_USAGE)
+    if parsed is None:
+        return 2
+    shell = onboard_agent.select_shell(parsed)
+    if shell.error:
+        print(f"error: {shell.error}", file=sys.stderr)
+        print(f"Usage: {ONBOARD_USAGE}", file=sys.stderr)
+        return 2
+    if shell.refusal:
+        setup_agent_response.emit(shell.refusal)
+        return 2
+    if shell.name == onboard_agent.SHELL_AGENT:
+        return onboard_agent.run(parsed, defaults=_parser().parse_args([]))
+    return _run_flags_or_wizard(parsed, force_wizard=shell.name == onboard_agent.SHELL_WIZARD)
+
+
+def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter, prog="yoke setup"
     )
@@ -96,9 +115,11 @@ def onboard(args: List[str]) -> int:
         ),
     )
     onboard_project_args.add_project_args(parser)
-    parsed = parse_or_usage_error(parser, args, ONBOARD_USAGE)
-    if parsed is None:
-        return 2
+    onboard_agent.add_agent_args(parser)
+    return parser
+
+
+def _run_flags_or_wizard(parsed: argparse.Namespace, *, force_wizard: bool) -> int:
     explicit_token_source = hosted_auth.has_explicit_token_source(parsed)
     if parsed.resume_run_id and parsed.different_folder_run_id:
         print(
@@ -112,26 +133,12 @@ def onboard(args: List[str]) -> int:
             confirmed=parsed.apply,
             json_mode=parsed.json_mode,
         )
-    parsed.resume_payload = None
-    if parsed.resume_run_id:
-        try:
-            parsed.resume_payload = onboard_apply_resume.load_payload(
-                parsed.resume_run_id
-            )
-            snapshot = onboard_apply_resume.load_snapshot(parsed.resume_run_id)
-            onboard_apply_resume.apply_defaults(parsed, snapshot)
-        except onboard_apply_resume.OnboardApplyResumeError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 2
-    choice = onboard_destination_args.resolve_destination(parsed)
-    if choice.error:
-        print(f"error: {choice.error}", file=sys.stderr)
+    prepared = onboard_resume.prepare_run(parsed)
+    if prepared.error:
+        print(f"error: {prepared.error}", file=sys.stderr)
         return 2
-    destination = choice.destination
-    env_name = choice.env_name
-    reused_connection = hosted_auth.hydrate_saved(parsed, destination)
-    if reused_connection:
-        env_name = parsed.env_name or env_name
+    destination, env_name = prepared.destination, prepared.env_name
+    reused_connection = prepared.reused_connection
     local_destination = destination == onboard_destinations.DESTINATION_LOCAL
     selected_mode = "advanced" if parsed.advanced else "quick"
     config_path = str(machine_config.config_path(parsed.config_path))
@@ -141,7 +148,9 @@ def onboard(args: List[str]) -> int:
         local_destination=local_destination,
     )
     token_sources = onboard_destination_args.token_sources(parsed)
-    should_prompt = _should_prompt(parsed, env_name, token_sources, destination)
+    should_prompt = force_wizard or onboard_agent.wizard_wanted(
+        parsed, env_name, token_sources, destination
+    )
     hosted_usage_error = hosted_auth.usage_error(
         destination,
         explicit_token_source,
@@ -162,7 +171,8 @@ def onboard(args: List[str]) -> int:
         return _run_wizard(parsed, env_name, selected_mode, destination)
     if missing:
         print(
-            f"error: missing required onboarding flags: {', '.join(missing)}",
+            f"error: missing required onboarding flags: {', '.join(missing)}; "
+            "run `yoke setup --agent` to be asked for each missing answer",
             file=sys.stderr,
         )
         print(f"Usage: {ONBOARD_USAGE}", file=sys.stderr)
@@ -291,33 +301,6 @@ def onboard(args: List[str]) -> int:
             stream=sys.stderr if parsed.json_mode else sys.stdout,
         )
     return 0
-
-
-def _should_prompt(
-    parsed: argparse.Namespace,
-    env_name: str,
-    token_sources: list[bool],
-    destination: str | None,
-) -> bool:
-    if parsed.non_interactive or parsed.json_mode:
-        return False
-    if not onboard_wizard.is_interactive(sys.stdin, sys.stdout):
-        return False
-    if parsed.token_stdin:
-        return False
-    if destination == onboard_destinations.DESTINATION_LOCAL:
-        # Local runs have no API URL or token to collect; only the project
-        # answers can still be missing.
-        return not parsed.project_mode or onboard_project_args.project_prompt_missing(
-            parsed
-        )
-    return (
-        not env_name
-        or not parsed.api_url
-        or not any(token_sources)
-        or not parsed.project_mode
-        or onboard_project_args.project_prompt_missing(parsed)
-    )
 
 
 def _run_wizard(

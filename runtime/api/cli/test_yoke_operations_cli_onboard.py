@@ -261,15 +261,17 @@ def test_onboard_non_tty_does_not_launch_wizard(
     monkeypatch,
     capsys,
 ) -> None:
-    """A non-TTY interactive request must not start Textual; it errors out."""
+    """Without a terminal, setup asks its first question as one JSON line."""
     monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(sys, "stdin", io.StringIO(""))
-    monkeypatch.setattr(sys, "stdout", io.StringIO())
+    out = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", out)
 
     rc = yoke_operations_cli.main(["setup"])
 
-    assert rc == 2
-    assert "--api-url" in capsys.readouterr().err
+    assert rc == 0
+    line = json.loads(out.getvalue().splitlines()[-1])
+    assert (line["setup"], line["state"]) == ("agent", "question")
 
 
 class _RegistryServer:
