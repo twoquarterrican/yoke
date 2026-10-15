@@ -117,10 +117,11 @@ def present_deployment_runs(
         ]
     from yoke_core.domain.deployment_member_qa_projection import member_qa_obligations
 
-    obligations = member_qa_obligations(conn, base, members)
-    for run_id, entries in members.items():
-        for member in entries:
-            member["qa_obligations"] = obligations.get((run_id, int(member["id"])))
+    if include_carried_work:
+        obligations = member_qa_obligations(conn, base, members)
+        for run_id, entries in members.items():
+            for member in entries:
+                member["qa_obligations"] = obligations.get((run_id, int(member["id"])))
 
     from yoke_core.domain.deployment_qa_run_acceptance import member_qa_standings
 
