@@ -37,7 +37,9 @@ _INSTALL_ONLY = (
 )
 
 
-def _command_case(position, key, command, *, instructions, outcome):
+def _command_case(
+    position, key, command, *, instructions, outcome, execution_mode="ssh-command"
+):
     return terminal_case(
         position,
         key,
@@ -51,7 +53,7 @@ def _command_case(position, key, command, *, instructions, outcome):
             actions=[action(key, capture=False)],
             expected_text=[key],
             capture_checkpoints=[],
-            execution_mode="ssh-command",
+            execution_mode=execution_mode,
             setup_operations=current_release_setup(key, path_ready=True),
             notes="Run only on the leased Test Machine. Restore its declared baseline afterward.",
         ),

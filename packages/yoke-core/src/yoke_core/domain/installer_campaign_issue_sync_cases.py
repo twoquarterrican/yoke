@@ -41,6 +41,7 @@ def issue_sync_cases(command_case, local_setup):
             + '; "$(uv tool dir)/yoke-cli/bin/python3" -c '
             + shlex.quote(ISSUE_SYNC_DEFAULT_SCRIPT)
             + f" {YOKE_BIN}",
+            execution_mode="terminal",
             instructions=(
                 "Create an isolated local project using the installed candidate. "
                 "Verify disabled mode before and after a deliberate enable without App access. "
