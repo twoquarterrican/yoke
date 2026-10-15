@@ -26,7 +26,8 @@ def acceptance_subjects(conn, subject, target):
             "SELECT DISTINCT deployment_member_item_id FROM qa_requirements "
             "WHERE deployment_run_id=%s AND deployment_stage=%s "
             f"{member_filter}AND NOT {settled_obligation_sql(conn)} "
-            "AND qa_kind<>'deployment_stage_acceptance'" + ("" if batch else " LIMIT 1"),
+            "AND qa_kind<>'deployment_stage_acceptance'"
+            + ("" if batch else " LIMIT 1"),
             (subject["id"], subject["stage"]["name"])
             if batch
             else (subject["id"], subject["stage"]["name"], subject["member_item_id"]),
