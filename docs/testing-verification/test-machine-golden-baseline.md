@@ -121,7 +121,8 @@ outside the Linux home.
 A completed sign-in on any test machine is saved at once with
 `yoke test-machine golden-capture`: it proves the real requests, quits Safari
 on macOS or the desktop Chromium on Linux and seals a new baseline, so no later reset rolls the sign-in back.
-Every standard probe failure names this command as its recovery.
+Only a diagnosed authentication failure or an unmet baseline setting calls for
+repairing that state; a generic native failure does not establish a login problem.
 
 A reset or capture receipt names what failed. Each check row's `name` and `ok`
 belong to the operation, never to nested evidence. When the server still
@@ -138,20 +139,37 @@ output and credential-file presence are insufficient. Output stays on the
 host, while readiness records retain classified cause, reason and recovery.
 Each sealed standard probe exits with a code from one table
 (`yoke_harness.baseline_probe_failure_causes`) that the classifier reads back:
-executable missing, request timed out, launch failed, harness non-zero exit,
-unanswered reply, or check unmet. No failure defaults to "not signed in", and
+executable missing, request timed out, launch failed, unknown harness non-zero
+exit, unanswered reply, check unmet, or a diagnosed native refusal. Explicit
+native error envelopes and fixed error phrases distinguish exhausted quota,
+authentication rejection, model rejection, transient transport failure and
+request throttling. A Claude weekly-limit error remains quota exhaustion even
+when the native exits nonzero and also reports `rate_limit`. Quota recovery
+waits for the provider window or restored plan capacity; transport and throttling
+recovery checks the service and retries after recovery. These causes never
+advise sign-in, resetting credentials or recapturing a baseline. Authentication
+advice requires native authentication evidence. Unknown failures remain unknown
+and direct the operator to local diagnostics while preserving the golden.
+No failure defaults to "not signed in", and
 `expectation_met` is null when nothing was expected.
 An unanswered reply is one the shared reply parser rejected while the harness
-exited 0. The parser prints only a sanitized `reply_rejection` record, and that
-record is the only output that leaves the host. It holds the rejection branch,
+exited 0. Nonzero native exits also keep a sanitized `reply_rejection` record,
+including the original native exit code; the sealed exit code retains the
+native diagnosis. Receipt `cause` stays `probe_harness_exit_nonzero` for these
+execution failures; `reason` and `recovery` retain the specific diagnosis.
+Cursor workspace trust keeps its distinct existing refusal cause.
+The parser prints only this record; raw native output stays on the host.
+It holds the rejection branch,
 the stream's event types in order, the final event's shape, the booleans
 `exact_ok_reply`, `tool_use` and `degraded_context` (lines that were not JSON
 events), and the harness exit code. It never holds reply text, account output
 or a transcript. The failed probe row keeps the record, so an operator-run
 reset or verify returns it in its result. A QA run whose baseline rejected a
 reply stores each record as a `probe_reply_rejection` JSON artifact and names
-the branch in its verdict reason. A golden sealed before these records returns
-none; its reason says so and asks for a recapture.
+the branch, diagnosed reason and recovery in its verdict reason. A golden sealed
+before these records returns none; its reason says so and directs inspection
+of native diagnostics on the host. Preserve failed captures and retry only after
+the diagnosed cause is repaired; failed probes never seal or pass.
 An undeclared nonzero exit is retried exactly once before `baseline_probe_failed`;
 evidence retains the first attempt as `retrying`. Declared causes, unmet
 expectations and unavailable bridges fail immediately. A repeated

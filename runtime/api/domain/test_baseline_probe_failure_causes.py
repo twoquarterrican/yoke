@@ -44,7 +44,9 @@ def _raise(exc: BaseException):
 
 
 def _returns(returncode: int, stdout: str = ""):
-    return lambda *a, **k: SimpleNamespace(returncode=returncode, stdout=stdout)
+    return lambda *a, **k: SimpleNamespace(
+        returncode=returncode, stdout=stdout, stderr=""
+    )
 
 
 _ANSWER = '{"type":"result","subtype":"success","result":"OK"}'

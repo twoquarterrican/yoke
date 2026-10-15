@@ -57,6 +57,7 @@ def rejection_verdict_reason(rejections: list[dict[str, Any]]) -> str | None:
             f"`{record.get('rejection')}` (harness exit "
             f"{record.get('harness_exit_code')}; events: {events or 'none'}); "
             f"see the {ARTIFACT_TYPE} artifact"
+            + (f"; {rejection['reason']}" if rejection.get("reason") else "")
         )
     return " | ".join(reasons) or None
 

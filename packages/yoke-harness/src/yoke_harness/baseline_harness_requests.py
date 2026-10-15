@@ -9,6 +9,8 @@ import re
 import shlex
 from typing import Any, Sequence
 
+from yoke_harness.baseline_native_failures import NATIVE_FAILURES, native_failure_cause
+
 PROBE_REPLY = "OK"
 PROBE_PROMPT = f"Reply exactly {PROBE_REPLY}. Do not use any tools."
 REQUEST_WORKSPACE = "/tmp"
@@ -41,22 +43,23 @@ class HarnessRequest:
 
     def native_refusal(self, stdout: str, stderr: str) -> dict[str, str] | None:
         """Classify fixed native refusals without recording account output."""
-        if (
-            self.name == "Cursor"
-            and "workspace trust required" in (stdout + "\n" + stderr).casefold()
+        cause = native_failure_cause(stdout, stderr)
+        if cause is None or (
+            cause == "cursor_workspace_trust_required" and self.name != "Cursor"
         ):
-            recovery = (
-                f"Retry the Cursor probe with `--trust --workspace {REQUEST_WORKSPACE}`; "
-                "if refused again, repair Cursor's scratch-workspace trust."
-            )
-            return {
-                "cause": "cursor_workspace_trust_required",
-                "reason": f"Cursor refused: Workspace Trust Required. {recovery}",
-                "recovery": recovery,
-            }
-        return None
+            return None
+        reason, recovery = NATIVE_FAILURES[cause]
+        if cause == "probe_auth_rejected":
+            recovery = self.recovery
+        return {
+            "cause": cause,
+            "reason": f"{self.name} real request failed: {reason}. {recovery}",
+            "recovery": recovery,
+        }
 
-    def reply_rejection(self, stdout: str) -> dict[str, Any] | None:
+    def reply_rejection(
+        self, stdout: str, *, exit_code: int = 0
+    ) -> dict[str, Any] | None:
         """Accept a successful native reply with no tool calls, or describe why not.
 
         The returned record is sanitized: event types, the final event's shape
@@ -123,6 +126,8 @@ class HarnessRequest:
             reject("no_completion_event")
         elif not exact:
             reject("reply_not_exact")
+        if exit_code:
+            reject("native_exit_nonzero")
         if rejection is None:
             return None
         return {
