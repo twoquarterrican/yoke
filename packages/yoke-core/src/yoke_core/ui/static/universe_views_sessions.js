@@ -301,7 +301,7 @@ export function renderSessionsView(context, main, scope, chrome = {}) {
       (result.envelope.result || {}).total_reclaimed,
     ) || 0;
     const skipped = (result.envelope.result?.skipped_between_turns || [])
-      .filter((entry) => entry.recheck)
+      .filter((entry) => entry.recheck || entry.reason === "active_work_claim")
       .map((entry) => `${entry.session_id}: ${entry.reason}; refresh the roster before retrying`);
     actionStatus.textContent =
       `${reclaimed} stale session${reclaimed === 1 ? "" : "s"} reclaimed`
