@@ -87,6 +87,10 @@ QA_TABLES: dict[str, dict] = {
             ("created_at", "TIMESTAMPTZ"),
         ],
         "notes": (
+            "A partial fixture adding item_sections must also supply "
+            "qa_requirements.qa_kind/item_id and qa_runs.case_outcome/raw_result: "
+            "assuming the receipt table alone is enough makes "
+            "qa_simulation_triage.triage_discharge_sql reference missing columns. "
             "Deployment QA test fixtures use "
             "runtime.api.fixtures.completed_delivery.seed_selected_requirement_run; "
             "the stage environment fixture is "

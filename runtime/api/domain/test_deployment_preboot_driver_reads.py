@@ -46,12 +46,12 @@ def preboot(clocks, monkeypatch):
         "CREATE TABLE deployment_run_items (run_id text,item_id integer,delivery_intent text,requirement_selection text,requirement_snapshot text)"
     )
     clocks.execute(
-        "CREATE TABLE qa_requirements (id integer,deployment_run_id text,method_id integer,waived_at text,execution_target_digest text,plan_case_key text,"
+        "CREATE TABLE qa_requirements (id integer,item_id integer,qa_kind text,deployment_run_id text,method_id integer,waived_at text,execution_target_digest text,plan_case_key text,"
         "superseded_by_requirement_id integer,replacement_requirement_id integer,retracted_at text,retraction_rationale text,retraction_source text,"
         "waiver_rationale text,waiver_source text,superseded_at text,supersession_rationale text,supersession_source text)"
     )
     clocks.execute(
-        "CREATE TABLE qa_runs (id integer,qa_requirement_id integer,started_at text,completed_at text,created_at text,verdict text)"
+        "CREATE TABLE qa_runs (id integer,qa_requirement_id integer,started_at text,completed_at text,created_at text,verdict text,case_outcome text,raw_result text)"
     )
     clocks.execute(
         "CREATE TABLE qa_plan_review_verdicts (capture_run_id integer,review_run_id integer,requirement_id integer)"
