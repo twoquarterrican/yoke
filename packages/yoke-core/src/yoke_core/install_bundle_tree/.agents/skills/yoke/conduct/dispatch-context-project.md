@@ -10,7 +10,8 @@ yoke project-structure get --project {PROJECT} --family context_routing --json
 ```
 
 Read and follow [the shared project-context recipe](../implement/implementing/project-context.md).
-Its `entries` map `entry_key` to `payload.docs`: read always plus every
+Its `entries` is a list of records with `entry_key` and `payload.docs`:
+read always plus every
 configured topic matched to title/spec/ACs using that recipe's keywords.
 Read this project's documents from its selected claimed lane and registered
 machine checkout. Empty configuration is an advisory; failed reads stop with

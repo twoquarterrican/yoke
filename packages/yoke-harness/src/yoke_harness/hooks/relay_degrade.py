@@ -19,7 +19,7 @@ from yoke_contracts.hook_context_compose import (
 )
 
 from yoke_contracts.hook_runner.chain_registry import SESSION_START_EVENT
-from yoke_contracts.hook_runner.cursor_response import cursor_lifecycle_allow_stdout
+from yoke_contracts.hook_runner.cursor_response import cursor_allow_stdout
 
 from yoke_harness.hooks.identity import detect_executor, is_cursor
 from yoke_harness.hooks.relay_identity_guard import print_execution_provenance
@@ -34,7 +34,7 @@ def _cursor_degradation_stdout(
 ) -> str:
     if not is_cursor(detect_executor()):
         return preserved_stdout
-    preserved_stdout = cursor_lifecycle_allow_stdout(event_name, preserved_stdout)
+    preserved_stdout = cursor_allow_stdout(event_name, preserved_stdout)
     if event_name not in _CURSOR_CONTEXT_EVENTS or not preserved_stdout:
         return preserved_stdout
     warning = format_hook_diagnostic(

@@ -8,6 +8,7 @@ import sys
 from yoke_contracts.executor_labels import canonical_harness_id
 from yoke_contracts.hook_diagnostics import format_hook_diagnostic
 from yoke_contracts.hook_context_compose import compose_context_list
+from yoke_contracts.hook_runner.cursor_response import cursor_allow_stdout
 
 
 HOOK_SPECIFIC_OUTPUT_KEY = "hookSpecificOutput"
@@ -97,6 +98,9 @@ def merge_allow_stdout(
     harness_id: str | None = None,
 ) -> str:
     """Merge two independently rendered allow-stdouts into one."""
+    if cursor:
+        first = cursor_allow_stdout(event_name, first)
+        second = cursor_allow_stdout(event_name, second)
     if not first:
         return second
     if not second:
@@ -104,6 +108,17 @@ def merge_allow_stdout(
     first_parts = _context_envelope_kind(first)
     second_parts = _context_envelope_kind(second)
     if first_parts is None or second_parts is None:
+        if cursor:
+            allow = {"permission": "allow"}
+            try:
+                left, right = json.loads(first), json.loads(second)
+            except (ValueError, TypeError):
+                pass
+            else:
+                if left == allow:
+                    return second
+                if right == allow or left == right == {}:
+                    return first
         return f"{first}{second}"
     first_kind, first_body = first_parts
     second_kind, second_body = second_parts

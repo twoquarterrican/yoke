@@ -14,7 +14,7 @@ from yoke_contracts.hook_runner.chain_registry import (
     session_orientation_redelivery_event,
 )
 from yoke_contracts.hook_runner.cursor_response import (
-    cursor_lifecycle_allow_stdout,
+    cursor_allow_stdout,
 )
 
 
@@ -42,7 +42,7 @@ def _degrade_to_noop(
         f"degraded to no-op allow ({detail})\n"
     )
     if cursor_invocation:
-        stdout = cursor_lifecycle_allow_stdout(event_name)
+        stdout = cursor_allow_stdout(event_name)
         if stdout:
             sys.stdout.write(stdout)
     return 0
