@@ -166,7 +166,7 @@ def test_protected_message_uses_existing_visibility(fleet, monkeypatch):
         at=LONG_AGO,
         state="injected",
     )
-    from yoke_core.domain import steering_fleet_report_receipts as receipts
+    from yoke_core.domain import steering_fleet_report_undelivered as receipts
 
     monkeypatch.setattr(receipts, "visible_clause", lambda *args, **kwargs: ("1=0", []))
     assert compose(fleet).undelivered == ()

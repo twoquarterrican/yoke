@@ -72,7 +72,10 @@ def read_seat_items(
             for row in source.undelivered
             if members is None
             or row.session_id in sessions
-            or (row.recipient_gone_at is not None and row.item_id in members)
+            or (
+                getattr(row, "recipient_gone_at", None) is not None
+                and row.item_id in members
+            )
         ),
         landed_open=item_rows("landed_open"),
         vendor_errors=session_rows("vendor_errors"),
