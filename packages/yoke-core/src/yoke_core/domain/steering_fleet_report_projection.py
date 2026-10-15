@@ -68,6 +68,9 @@ def _holder_dict(holder: ClaimHolder) -> dict[str, Any]:
 def _undelivered_dict(entry: UndeliveredMessages) -> dict[str, Any]:
     return {
         "session_id": entry.session_id,
+        "item_id": entry.item_id,
+        "public_ref": entry.public_ref,
+        "item_project": entry.item_project,
         "delivery_state": entry.delivery_state,
         "needs_seat_action": entry.needs_seat_action,
         "envelope_count": entry.envelope_count,

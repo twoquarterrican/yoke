@@ -88,7 +88,13 @@ def project_payload(rows: ProjectRows) -> dict[str, Any]:
         # on every ordinary send, and hashing that would report the fleet as
         # changed for mail that is about to arrive by itself.
         "undelivered": sorted(
-            (entry.session_id, entry.delivery_state)
+            (
+                entry.session_id,
+                entry.delivery_state,
+                (entry.message_ids, entry.envelope_count)
+                if entry.recipient_gone_at is not None
+                else (),
+            )
             for entry in rows.undelivered
             if not entry.in_delivery
         ),
