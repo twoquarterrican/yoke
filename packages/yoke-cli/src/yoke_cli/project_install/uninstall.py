@@ -15,6 +15,7 @@ from typing import Any, Dict, List
 from yoke_cli.config import project_worktrees_ignore
 from yoke_cli.project_install import files as files_layer
 from yoke_cli.project_install import uninstall_commit
+from yoke_cli.project_install import owned_cleanup
 from yoke_cli.project_install import skill_discovery
 from yoke_cli.project_install import git_hooks as git_hooks_layer
 from yoke_cli.project_install import hooks as hooks_layer
@@ -160,9 +161,15 @@ def uninstall(
         if manifest.get("worktrees_ignore_added")
         else {"removed": False, "deleted_file": False}
     )
+    # A partial cleanup keeps ownership evidence for the same command's retry.
+    local_cleanup = owned_cleanup.cleanup(root, manifest, config_path)
+    for row in [local_cleanup["registration"], *local_cleanup["trust"]]:
+        if row["status"] in {"preserved", "failed"}:
+            warnings.append(f"project_uninstall_{row['reason']}: {row['recovery']}")
     (root / PENDING_REL).unlink(missing_ok=True)
-    files_layer.manifest_path(root).unlink()
-    files_layer.remove_empty_parents(root, files_layer.MANIFEST_REL)
+    if local_cleanup["complete"]:
+        files_layer.manifest_path(root).unlink()
+        files_layer.remove_empty_parents(root, files_layer.MANIFEST_REL)
     report = {
         "operation": "uninstall",
         MODE_KEY: MODE_COPY,
@@ -192,7 +199,9 @@ def uninstall(
         ),
         "worktrees_ignore": worktrees_ignore,
         "settings_files_deleted": settings_deleted,
-        "manifest_removed": True,
+        "local_cleanup": local_cleanup,
+        "outcome": "complete" if local_cleanup["complete"] else "partial",
+        "manifest_removed": local_cleanup["complete"],
         "warnings": warnings,
     }
     report["commit"] = uninstall_commit.commit(root, commit_paths)
