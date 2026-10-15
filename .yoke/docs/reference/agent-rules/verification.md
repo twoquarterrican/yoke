@@ -13,6 +13,11 @@ target, lease, capture, and review contracts.
 Abort with `yoke qa plan abort --project P --execution-id ID --reason TEXT`.
 Read `yoke qa plan run --help` before selecting source and continuation options.
 
+For a lost plan response, keep its execution and custody. Re-enter with the
+original scoped command plus `--resume-execution-id ID`; follow
+[check-in recovery](../qa-platform/standalone-plans.md#recover-a-lost-check-in-response)
+before any host reset or one-shot action replay. An unknown reply is not failure.
+
 ## Testing
 
 - **No hardcoded drifting IDs in tests.** Tests must never contain literal `PREFIX-N`-style work item IDs that drift over time. Use variables, dynamically generated values, or pattern matchers instead.

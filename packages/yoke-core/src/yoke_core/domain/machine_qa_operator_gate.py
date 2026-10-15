@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoke_core.domain.qa_plan_execution_checkin import communication_unknown
+
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 import json
@@ -202,7 +204,9 @@ def run_machine_browser_approval_with_io(
         if progress_callback is not None and now >= next_heartbeat:
             try:
                 progress_callback()
-            except Exception:
+            except Exception as error:
+                if communication_unknown(error):
+                    raise
                 return OperatorGateResult(
                     False,
                     transcript,

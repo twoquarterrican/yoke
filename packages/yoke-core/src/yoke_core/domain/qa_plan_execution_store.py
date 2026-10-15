@@ -218,6 +218,10 @@ def resume_owned_plan_execution(
         raise QaPlanExecutionStateError(
             "materialized QA roster changed during execution"
         )
+    from yoke_core.domain.qa_plan_execution_reentry import resume_if_paused
+
+    if resume_if_paused(conn, execution):
+        return execution
     if execution["state"] == "waiting":
         placeholder = marker(conn)
         now = utc_now()
@@ -228,9 +232,6 @@ def resume_owned_plan_execution(
         )
         conn.commit()
         return select_plan_execution(conn, str(execution["id"]), lock=False)
-    if execution["state"] == "awaiting_agent_review":
-        conn.commit()
-        return execution
     conn.commit()
     return execution
 

@@ -128,3 +128,18 @@ inventory after restore. Missing attribution refuses before package mutation.
 Restoring missing or changed packages requires the recorded versions to remain
 available; a failed restore names apt access and journal reconciliation and
 blocks execution. Continuations preserve the existing walk and journal.
+
+
+## Recover communication on the frozen execution
+
+```text
+yoke qa plan run --deployment-run-id RUN --stage STAGE --member PREFIX-N \
+    --project P --resume-execution-id EXECUTION_ID
+```
+
+Keep the original scope and source arguments; omit `--member` for a run-scoped
+stage. This re-enters the exact live cursor with frozen candidate and custody
+validation, without rematerializing cases or allocating another campaign.
+A lost reply is an unknown outcome, not permission to abort or replay an action.
+Follow the [check-in recovery contract](standalone-plans.md#recover-a-lost-check-in-response)
+for pause receipts, saved recording evidence and refusal recovery.

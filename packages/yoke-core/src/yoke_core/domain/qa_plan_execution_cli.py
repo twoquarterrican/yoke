@@ -211,9 +211,23 @@ def run(args: List[str]) -> int:
             "refused unless the subject's most recent execution ended that way."
         ),
     )
+    parser.add_argument(
+        "--resume-execution-id",
+        help="Re-enter this exact live execution after a communication pause; validate custody without creating a campaign.",
+    )
+    parser.add_argument(
+        "--recovery-file",
+        help="Saved unknown-check-in receipt used to confirm a safe pause after connectivity returns.",
+    )
     add_replaces_argument(parser)
     parser.add_argument("--session-id")
     parsed = parser.parse_args(args)
+    if parsed.resume_execution_id and (parsed.continue_mission or parsed.replaces):
+        parser.error(
+            "--resume-execution-id cannot continue terminal history or replace cases"
+        )
+    if parsed.recovery_file and not parsed.resume_execution_id:
+        parser.error("--recovery-file requires --resume-execution-id")
     standalone = not parsed.item and not parsed.deployment_run_id
     if standalone and (not parsed.plan or not parsed.project):
         parser.error("standalone run requires --plan PLAN --project P")
@@ -263,6 +277,8 @@ def run(args: List[str]) -> int:
             checkout_path=parsed.checkout_path,
             allow_tree_mismatch=parsed.allow_tree_mismatch,
             continue_mission=parsed.continue_mission,
+            resume_execution_id=parsed.resume_execution_id,
+            recovery_file=parsed.recovery_file,
             replacements=parsed.replaces,
             actor=actor,
         )
@@ -278,7 +294,7 @@ def run(args: List[str]) -> int:
     _report_case_failures(result)
     print(dumps_compact(result))
     state = result.get("state")
-    if state == "waiting":
+    if state in {"waiting", "outcome_unknown"}:
         return WAITING_RETRY_EXIT
     if state == "awaiting_agent_review":
         print(

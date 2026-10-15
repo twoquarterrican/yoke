@@ -57,3 +57,14 @@ class PlanExecutionStateResponse(BaseModel):
     remaining_requirement_count: int | None = None
     requirements: list[dict[str, Any]]
     results: list[dict[str, Any]]
+
+
+class PlanExecutionCheckinResponse(BaseModel):
+    execution_id: str
+    state: str
+    cursor_ordinal: int
+    roster_digest: str
+    execution_target_digest: str | None = None
+    machine_lease_id: int | None = None
+    heartbeat_at: Any
+    timings_ms: dict[str, float] = Field(default_factory=dict)

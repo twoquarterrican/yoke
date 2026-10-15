@@ -59,24 +59,25 @@ def _dispatch(
     *,
     actor: Optional[ActorContext] = None,
 ) -> dict:
-    from yoke_core.domain.qa_composed_dispatch import (
-        call_qa_function,
+    from yoke_core.domain.qa_plan_execution_checkin import (
+        QaPlanCommunicationUnknown,
+        deliver_plan_function,
     )
+    from yoke_core.domain.qa_plan_execution_result_state import QaPlanExecutionError
 
-    response = call_qa_function(
-        function_id=function_id,
-        target=TargetRef(
-            kind="qa_requirement",
-            qa_requirement_id=int(requirement_id),
-        ),
-        payload=payload,
-        actor=actor,
-    )
-    if not response.success:
-        code = response.error.code if response.error else "unknown"
-        message = response.error.message if response.error else ""
-        raise QaCaseExecutionError(f"{function_id} failed ({code}): {message}")
-    return response.result or {}
+    try:
+        return deliver_plan_function(
+            function_id=function_id,
+            target=TargetRef(
+                kind="qa_requirement", qa_requirement_id=int(requirement_id)
+            ),
+            payload=payload,
+            actor=actor,
+        )
+    except QaPlanCommunicationUnknown:
+        raise
+    except QaPlanExecutionError as exc:
+        raise QaCaseExecutionError(str(exc)) from exc
 
 
 def recording_leg(

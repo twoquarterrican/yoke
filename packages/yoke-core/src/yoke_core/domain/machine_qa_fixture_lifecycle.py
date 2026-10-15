@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoke_core.domain.qa_plan_execution_checkin import communication_unknown
+
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import Any
@@ -224,6 +226,8 @@ def execute_case_with_fixture_lifecycle(
             except Exception as exc:
                 primary_failed = True
                 primary_error = exc
+                if communication_unknown(exc):
+                    raise
             if not primary_failed:
                 try:
                     post_state = fixture.execute_post_state_assertions(
@@ -235,7 +239,8 @@ def execute_case_with_fixture_lifecycle(
                         error_code="fixture_post_state_failed",
                     )
     finally:
-        cleanup_attempts = _close_with_retry(fixture)
+        if not communication_unknown(primary_error):
+            cleanup_attempts = _close_with_retry(fixture)
 
     lifecycle = _lifecycle_evidence(
         setup=setup,

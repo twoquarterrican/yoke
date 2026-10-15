@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Optional
 
 from yoke_contracts.api.function_call import ActorContext, TargetRef
-from yoke_core.domain.qa_plan_execution_result_state import QaPlanExecutionError
 
 
 def call_plan_function(
@@ -15,19 +14,11 @@ def call_plan_function(
     payload: dict,
     actor: ActorContext,
 ) -> dict:
-    from yoke_core.domain.qa_composed_dispatch import call_qa_function
+    from yoke_core.domain.qa_plan_execution_checkin import deliver_plan_function
 
-    response = call_qa_function(
-        function_id=function_id,
-        target=target,
-        payload=payload,
-        actor=actor,
+    return deliver_plan_function(
+        function_id=function_id, target=target, payload=payload, actor=actor
     )
-    if not response.success:
-        code = response.error.code if response.error else "unknown"
-        message = response.error.message if response.error else ""
-        raise QaPlanExecutionError(f"{function_id} failed ({code}): {message}")
-    return dict(response.result or {})
 
 
 def execution_actor(actor: Optional[ActorContext]) -> ActorContext:

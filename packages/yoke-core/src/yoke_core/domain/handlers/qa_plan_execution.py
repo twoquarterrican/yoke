@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel, ValidationError
+from psycopg.errors import LockNotAvailable, QueryCanceled
 
 from yoke_contracts.api.function_call import (
     FunctionCallRequest,
@@ -162,6 +163,10 @@ def _owned_execution(
 
     conn = connect()
     try:
+        if request.function == "qa.plan_execution.heartbeat":
+            from yoke_core.domain.qa_plan_execution_reentry import bound_checkin_queries
+
+            bound_checkin_queries(conn)
         execution = lock_plan_execution(conn, parsed.execution_id)
         if request.target.kind == "global":
             from yoke_core.domain.qa_standalone_execution import (
@@ -188,35 +193,54 @@ def _owned_execution(
                 **subject,
             )
 
-    except ValueError as exc:
+    except (ValueError, LockNotAvailable, QueryCanceled) as exc:
         conn.rollback()
         conn.close()
-        return _error("plan_execution_invalid", str(exc), "$.payload.execution_id")
+        message = (
+            str(exc)
+            if isinstance(exc, ValueError)
+            else (
+                "qa_checkin_busy: bounded execution validation could not finish; preserve "
+                "the cursor and custody, inspect contention, then retry the same execution"
+            )
+        )
+        return _error("plan_execution_invalid", message, "$.payload.execution_id")
     return conn, execution
 
 
 def handle_plan_execution_heartbeat(
     request: FunctionCallRequest,
 ) -> HandlerOutcome:
+    from time import monotonic
+    from yoke_core.domain.qa_plan_execution_reentry import checkin_view
+
+    started = monotonic()
     parsed = _parse(PlanExecutionStateRequest, request.payload)
     if isinstance(parsed, HandlerOutcome):
         return parsed
-    assert isinstance(parsed, PlanExecutionStateRequest)
     owned = _owned_execution(request, parsed)
     if isinstance(owned, HandlerOutcome):
         return owned
     conn, execution = owned
+    validated = monotonic()
     try:
-        from yoke_core.domain.qa_plan_execution_state import (
-            heartbeat_plan_execution,
-            plan_execution_view,
-        )
+        from yoke_core.domain.qa_plan_execution_state import heartbeat_plan_execution
 
         heartbeat_plan_execution(conn, execution)
-        result = plan_execution_view(conn, execution)
-    except ValueError as exc:
+        result = checkin_view(execution)
+        result["timings_ms"] = {
+            "validation": (validated - started) * 1000,
+            "liveness_write": (monotonic() - validated) * 1000,
+        }
+    except (ValueError, LockNotAvailable, QueryCanceled) as exc:
         conn.rollback()
-        return _error("plan_execution_heartbeat_failed", str(exc), "$.payload")
+        return _error(
+            "plan_execution_heartbeat_failed",
+            str(exc)
+            if isinstance(exc, ValueError)
+            else "qa_checkin_busy: liveness write exceeded its query budget; preserve custody and retry the same execution",
+            "$.payload",
+        )
     finally:
         conn.close()
     return HandlerOutcome(primary_success=True, result_payload=result)

@@ -45,22 +45,26 @@ def _dispatch(
     payload: dict[str, Any],
     host_contact_possible: bool = True,
 ) -> dict[str, Any]:
-    from yoke_core.domain.qa_composed_dispatch import call_qa_function
-
-    response = call_qa_function(
-        function_id=function_id,
-        target=target,
-        payload=payload,
-        actor=actor,
+    from yoke_core.domain.qa_plan_execution_checkin import (
+        QaPlanCommunicationUnknown,
+        deliver_plan_function,
     )
-    if not response.success:
-        code = response.error.code if response.error else "unknown"
-        message = response.error.message if response.error else ""
-        raise MachinePlanCaseDispatchError(
-            f"{function_id} failed ({code}): {message}",
-            host_contact_possible=host_contact_possible,
+    from yoke_core.domain.qa_plan_execution_result_state import QaPlanExecutionError
+
+    try:
+        return deliver_plan_function(
+            function_id=function_id,
+            target=target,
+            payload=payload,
+            actor=actor,
         )
-    return dict(response.result or {})
+    except QaPlanCommunicationUnknown:
+        raise
+    except QaPlanExecutionError as exc:
+        raise MachinePlanCaseDispatchError(
+            str(exc),
+            host_contact_possible=host_contact_possible,
+        ) from exc
 
 
 def execute_plan_machine_case(
@@ -122,6 +126,7 @@ def execute_plan_machine_case(
         )
     _report_selection(begun, execution)
     submission = None
+    uncertain = False
     try:
         from yoke_core.domain.machine_qa_local_execution import (
             execute_machine_case_contract,
@@ -147,6 +152,9 @@ def execute_plan_machine_case(
             payload={**request, **submission.payload},
         )
     except Exception as exc:
+        from yoke_core.domain.qa_plan_execution_checkin import communication_unknown
+
+        uncertain = communication_unknown(exc) is not None
         code, message, recovery = host_control_failure(
             exc,
             phase="plan_case_local_execution",
@@ -158,7 +166,7 @@ def execute_plan_machine_case(
             recovery_hint=recovery,
         ) from exc
     finally:
-        if submission is not None:
+        if submission is not None and not uncertain:
             submission.cleanup_artifacts()
     result = submitted.get("result")
     if not isinstance(result, dict):

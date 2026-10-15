@@ -35,6 +35,8 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `qa.plan_execution.begin` | `qa_subject` |
 | `qa.plan_execution.complete` | `qa_subject` |
 | `qa.plan_execution.heartbeat` | `qa_subject` |
+| `qa.plan_execution.pause` | `qa_subject` |
+| `qa.plan_execution.resume` | `qa_subject` |
 | `qa.plan_review.begin` | `qa_subject` |
 | `qa.plan_review.submit` | `qa_subject` |
 | `qa.post_deploy.declare_none` | `qa_subject` |

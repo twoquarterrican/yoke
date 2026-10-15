@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoke_core.domain.qa_plan_execution_checkin import communication_unknown
+
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -90,7 +92,9 @@ def execute_terminal_recipe(
                 progress_callback=progress_callback,
                 allowed_operator_urls=allowed_operator_urls,
             )
-    except Exception:
+    except Exception as error:
+        if communication_unknown(error):
+            raise
         remove_staged_files(run, staged)
         raise
     safe_result = HostActionResult(

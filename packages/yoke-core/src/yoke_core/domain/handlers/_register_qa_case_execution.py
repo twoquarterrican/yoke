@@ -5,9 +5,50 @@ from __future__ import annotations
 from yoke_core.domain.handlers import qa_case_execution as _case
 from yoke_core.domain.handlers import qa_plan_execution as _plan
 from yoke_core.domain.handlers import qa_plan_review as _review
+from yoke_core.domain.handlers.qa_plan_execution_models import (
+    PlanExecutionCheckinResponse,
+)
 
 
 def register(registry) -> None:
+    from yoke_core.domain.handlers.qa_plan_execution_reentry import (
+        PlanExecutionPauseRequest,
+        PlanExecutionResumeRequest,
+        handle_execution_reentry,
+    )
+
+    for function_id, model, response in (
+        (
+            "qa.plan_execution.pause",
+            PlanExecutionPauseRequest,
+            PlanExecutionCheckinResponse,
+        ),
+        (
+            "qa.plan_execution.resume",
+            PlanExecutionResumeRequest,
+            _plan.PlanExecutionStateResponse,
+        ),
+    ):
+        registry.register(
+            function_id,
+            handle_execution_reentry,
+            model,
+            response,
+            stability="stable",
+            owner_module="yoke_core.domain.handlers.qa_plan_execution_reentry",
+            target_kinds=["item", "deployment_run", "global"],
+            minimum_serving_version="next-release",
+            side_effects=["qa_plan_execution_write"],
+            emitted_event_names=["YokeFunctionCalled"],
+            guardrails=[
+                "qa_subject_authority",
+                "actor_session_bound",
+                "immutable_snapshot_order",
+            ],
+            adapter_status="internal",
+            claim_required_kind="qa_subject",
+            ambient_session_required=True,
+        )
     for function_id, handler, request_model in (
         (
             "qa.plan_execution.begin",
@@ -39,7 +80,11 @@ def register(registry) -> None:
             function_id,
             handler,
             request_model,
-            _plan.PlanExecutionStateResponse,
+            (
+                PlanExecutionCheckinResponse
+                if function_id == "qa.plan_execution.heartbeat"
+                else _plan.PlanExecutionStateResponse
+            ),
             stability="stable",
             owner_module="yoke_core.domain.handlers.qa_plan_execution",
             target_kinds=["item", "deployment_run", "global"],
