@@ -93,6 +93,7 @@ def uninstall(
     commit_paths, commit_warnings = uninstall_commit.prepare(
         root, manifest, config_path
     )
+    shared_scope = owned_cleanup.scope_reason(root, config_path)
     file_records = dict(manifest.get("files") or {})
     discovery_removed = skill_discovery.remove(
         root, manifest.get("skill_discovery_links")
@@ -149,9 +150,13 @@ def uninstall(
     owned_git_hooks = (
         dict(manifest["git_hook_hashes"]) if "git_hook_hashes" in manifest else None
     )
-    git_hooks_removed = git_hooks_layer.remove_yoke_git_hooks(
-        root,
-        owned_git_hooks,
+    git_hooks_removed = (
+        []
+        if shared_scope
+        else git_hooks_layer.remove_yoke_git_hooks(
+            root,
+            owned_git_hooks,
+        )
     )
     worktrees_ignore = (
         project_worktrees_ignore.remove_owned_entry(
@@ -163,6 +168,11 @@ def uninstall(
     )
     # A partial cleanup keeps ownership evidence for the same command's retry.
     local_cleanup = owned_cleanup.cleanup(root, manifest, config_path)
+    if shared_scope:
+        local_cleanup["complete"] = False
+        warnings.append(
+            f"project_uninstall_{shared_scope}: Git hooks may serve other checkouts; resolve sharing or checkout identity, then rerun project uninstall."
+        )
     for row in [local_cleanup["registration"], *local_cleanup["trust"]]:
         if row["status"] in {"preserved", "failed"}:
             warnings.append(f"project_uninstall_{row['reason']}: {row['recovery']}")
@@ -190,6 +200,7 @@ def uninstall(
         "strategy_files_preserved": strategy_preserved,
         "hooks_removed": hooks_removed,
         "git_hooks_removed": git_hooks_removed,
+        "git_hooks_preserved_reason": shared_scope,
         "settings_permissions_removed": settings_permissions_removed,
         "settings_status_line_removed": settings_status_line_removed,
         "cursor_permissions_removed": cursor_permissions_removed,

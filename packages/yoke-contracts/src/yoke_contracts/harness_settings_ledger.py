@@ -130,6 +130,7 @@ __all__ = [
     "existing_depth",
     "json_entry",
     "ledger_path",
+    "mutation",
     "read",
     "record",
 ]

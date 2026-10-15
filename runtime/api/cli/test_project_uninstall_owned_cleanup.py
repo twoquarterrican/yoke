@@ -1,6 +1,7 @@
 """Project retirement uses disposable checkouts, machine config and harness state."""
 
 import json
+import os
 from pathlib import Path
 import subprocess
 
@@ -33,6 +34,11 @@ def installed(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("CODEX_HOME", str(home / ".codex"))
     monkeypatch.setenv("YOKE_MACHINE_HOME", str(tmp_path / "machine"))
+    launcher = home / "bin/yoke"
+    launcher.parent.mkdir()
+    launcher.write_text("#!/bin/sh\nexit 0\n")
+    launcher.chmod(0o700)
+    monkeypatch.setenv("PATH", str(launcher.parent) + os.pathsep + os.environ["PATH"])
     monkeypatch.setattr(uninstall_commit, "dispatch", lambda *a: {"value": "main"})
     config = tmp_path / "machine/config.json"
     writer.set_connection(
@@ -149,7 +155,7 @@ def test_unproven_registration_stays(installed, evidence):
     assert report["local_cleanup"]["registration"]["status"] == "preserved"
 
 
-@pytest.mark.parametrize("sharing", ["nested", "worktree", "broader"])
+@pytest.mark.parametrize("sharing", ["nested", "worktree", "broader", "trust_slug"])
 def test_shared_checkout_scope_is_preserved(installed, sharing):
     root, other, config = installed
     if sharing == "nested":
@@ -158,13 +164,21 @@ def test_shared_checkout_scope_is_preserved(installed, sharing):
         writer.register_project(nested, 9, path=config)
     elif sharing == "worktree":
         git(root, "worktree", "add", "-b", "feature", str(root.parent / "lane"))
-    else:
+    elif sharing == "broader":
         writer.register_project(root.parent, 9, path=config)
+    else:
+        collision = root.parent / "select.ed"
+        collision.mkdir()
+        writer.register_project(collision, 9, path=config)
+        assert trust.cursor_trust_file(collision) == trust.cursor_trust_file(root)
+    hooks = {p: p.read_bytes() for p in (root / ".git/hooks").iterdir() if p.is_file()}
     before = config.read_bytes(), trust.claude_state_path().read_bytes()
     report = uninstall(root, config_path=config)
     assert report["outcome"] == "partial"
     assert (config.read_bytes(), trust.claude_state_path().read_bytes()) == before
     assert machine_config.project_id(other, config) == 8
+    assert {p: p.read_bytes() for p in hooks} == hooks
+    assert report["git_hooks_preserved_reason"]
 
 
 def test_unknown_and_legacy_trust_is_preserved(installed):
@@ -184,6 +198,8 @@ def test_unknown_and_legacy_trust_is_preserved(installed):
 
 
 def test_broader_trust_is_not_removed(installed):
+    from yoke_contracts.harness_folder_trust_revert import revert_folder_trust
+
     root, _, config = installed
     grant_folder_trust(root.parent)
     report = uninstall(root, config_path=config)
@@ -192,6 +208,8 @@ def test_broader_trust_is_not_removed(installed):
         row["reason"] == "broader_trust" for row in report["local_cleanup"]["trust"]
     )
     assert str(root.parent) in read_json(trust.claude_state_path())["projects"]
+    revert_folder_trust(root.parent)
+    assert uninstall(root, config_path=config)["outcome"] == "complete"
 
 
 def test_cleanup_failure_keeps_manifest_for_retry(installed, monkeypatch):
@@ -207,3 +225,30 @@ def test_cleanup_failure_keeps_manifest_for_retry(installed, monkeypatch):
     assert files.load_manifest(root)
     assert config.read_bytes() == before
     assert "project_uninstall_local_cleanup_unavailable" in " ".join(report["warnings"])
+
+
+def test_partial_cleanup_returns_nonzero_from_existing_command(installed, capsys):
+    from yoke_cli.commands.adapters.install import project_uninstall
+
+    root, _, config = installed
+    with ledger.mutation() as entries:
+        entries.clear()
+    assert project_uninstall([str(root), "--config", str(config), "--json"]) == 1
+    assert json.loads(capsys.readouterr().out)["outcome"] == "partial"
+
+
+def test_later_harness_home_keeps_unowned_trust(installed, monkeypatch):
+    root, _, config = installed
+    later = Path.home() / "later-codex"
+    later.mkdir()
+    target = later / "config.toml"
+    content = f'[projects.{json.dumps(str(root))}]\ntrust_level = "trusted"\n'
+    target.write_text(content)
+    monkeypatch.setenv("CODEX_HOME", str(later))
+    report = uninstall(root, config_path=config)
+    assert target.read_text() == content
+    assert report["outcome"] == "partial"
+    assert any(
+        row["harness"] == "codex" and row["reason"] == "trust_ownership_unknown"
+        for row in report["local_cleanup"]["trust"]
+    )

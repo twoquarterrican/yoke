@@ -7,6 +7,7 @@ import subprocess
 import json
 
 from yoke_contracts.harness_folder_trust_revert import revert_folder_trust
+from yoke_contracts.harness_folder_trust import cursor_trust_file
 from yoke_contracts.machine_config.checkout import main_checkout
 from yoke_contracts.machine_config.schema_projects import normalize_projects
 from yoke_contracts.machine_config import schema as contract
@@ -18,6 +19,17 @@ from yoke_cli.config.machine_config_mutation import (
 from yoke_cli.project_install import files
 
 REGISTRATION_KEY = "local_registration"
+
+
+def scope_reason(root: Path, config_path) -> str:
+    """Check shared Git-hook scope before any installed files are removed."""
+    try:
+        projects = normalize_projects(
+            machine_config.load_config(config_path).get("projects")
+        )
+        return _shared_reason(root, projects)
+    except (OSError, ValueError, RuntimeError, TypeError, subprocess.SubprocessError):
+        return "checkout_scope_unavailable"
 
 
 def record_registration(root: Path, project_id: int, config_path) -> None:
@@ -109,6 +121,8 @@ def _shared_reason(root: Path, projects: list[dict]) -> str:
             or main_checkout(other) == root
         ):
             return "registration_covers_other_checkout"
+        if other != root and cursor_trust_file(other) == cursor_trust_file(root):
+            return "folder_trust_shared_with_other_checkout"
     if (root / ".git").exists():
         result = subprocess.run(
             ["git", "-C", str(root), "worktree", "list", "--porcelain", "-z"],

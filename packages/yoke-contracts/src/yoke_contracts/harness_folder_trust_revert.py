@@ -30,14 +30,8 @@ def revert_folder_trust(checkout: Path, *, exclusive_reason: str = "") -> list[d
                     continue
                 owner, family = scope
                 if Path(owner).expanduser().resolve() != checkout.resolve():
-                    if checkout.resolve().is_relative_to(
-                        Path(owner).expanduser().resolve()
-                    ):
-                        results.append(
-                            _result(family, "preserved", "broader_trust", owner)
-                        )
                     continue
-                matched.add(family)
+                matched.add((family, str(Path(entry["file"]).expanduser().resolve())))
                 if exclusive_reason:
                     results.append(_result(family, "preserved", exclusive_reason, root))
                     continue
@@ -77,18 +71,10 @@ def revert_folder_trust(checkout: Path, *, exclusive_reason: str = "") -> list[d
                     results.append(
                         _result(family, "failed", "trust_unreadable", root, str(exc))
                     )
-            for family, owner in _current(root):
+            for family, owner, target in _current(root):
                 if owner != root:
-                    if not any(
-                        row["harness"] == family
-                        and row["reason"] == "broader_trust"
-                        and row["checkout"] == owner
-                        for row in results
-                    ):
-                        results.append(
-                            _result(family, "preserved", "broader_trust", owner)
-                        )
-                elif family not in matched:
+                    results.append(_result(family, "preserved", "broader_trust", owner))
+                elif (family, str(target.expanduser().resolve())) not in matched:
                     results.append(
                         _result(family, "preserved", "trust_ownership_unknown", root)
                     )
@@ -120,7 +106,7 @@ def _scope(entry: dict) -> tuple[str, str] | None:
         if target.is_file():
             payload = json.loads(target.read_text(encoding="utf-8"))
             owner = payload.get("workspacePath") if isinstance(payload, dict) else None
-            if isinstance(owner, str) and target == trust.cursor_trust_file(owner):
+            if isinstance(owner, str):
                 return owner, "cursor"
     return None
 
@@ -137,9 +123,13 @@ def _current(root: str):
             continue
         text = target.read_text(encoding="utf-8")
         if family == "cursor":
-            yield family, root
+            yield family, root, target
             continue
         payload = parse_config(text) if family == "codex" else json.loads(text)
+        if not isinstance(payload, dict):
+            raise ValueError(
+                f"{target}: configuration is not an object; repair it and retry"
+            )
         projects = payload.get("projects") or {}
         if not isinstance(projects, dict):
             raise ValueError(
@@ -149,10 +139,10 @@ def _current(root: str):
             if Path(owner).is_absolute() and Path(root).is_relative_to(
                 Path(owner).resolve()
             ):
-                yield family, owner
+                yield family, str(Path(owner).resolve()), target
     for parent in Path(root).parents:
         if trust.cursor_trust_file(parent).is_file():
-            yield "cursor", str(parent)
+            yield "cursor", str(parent), trust.cursor_trust_file(parent)
 
 
 def _result(
