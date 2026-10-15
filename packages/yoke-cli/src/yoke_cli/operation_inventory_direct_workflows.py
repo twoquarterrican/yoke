@@ -17,8 +17,6 @@ WRAPPED_ROWS: tuple[_Row, ...] = (
 )
 
 PERMANENT_ROWS: tuple[_Row, ...] = (
-    _p("yoke worktree prepare", "worktree", REASON_TOOL_SHAPED),
-    _p("yoke worktree paths", "worktree", REASON_TOOL_SHAPED),
     _p(
         "yoke direct-workflow worktree prepare",
         "direct_workflow.worktree",

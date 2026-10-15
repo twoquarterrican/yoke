@@ -68,6 +68,14 @@ def worktree_prepare(args: List[str]) -> int:
 
 def worktree_paths(args: List[str]) -> int:
     """Resolve paths on the installed runtime, without a source lane."""
+    if show_delegate_help(
+        args,
+        WORKTREE_PATHS_USAGE,
+        "Resolve the registered main checkout before task lanes exist. "
+        "Run from the owning project checkout; preparation resolves the "
+        "item's own project mapping independently.",
+    ):
+        return 0
     return subprocess.run(
         [sys.executable, "-m", "yoke_core.domain.worktree", "paths", *args],
         check=False,
