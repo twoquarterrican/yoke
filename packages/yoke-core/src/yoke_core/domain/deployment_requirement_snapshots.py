@@ -250,15 +250,16 @@ def snapshot_member_requirements(
     plan_ids.update(
         int(r["plan_id"]) for r in requirements if r.get("plan_id") is not None
     )
-    plan_ids.update(
-        int(row[0])
-        for row in conn.execute(
-            "SELECT a.plan_id FROM qa_plan_item_attachments a JOIN qa_plans p ON p.id=a.plan_id "
-            "WHERE a.item_id=%s AND a.qa_phase='post_deploy' AND p.retired_at IS NULL "
-            f"AND {live_item_attachment_sql(conn, 'a')}",
-            (item_id,),
-        ).fetchall()
-    )
+    if _table_exists(conn, "qa_plan_item_attachments"):
+        plan_ids.update(
+            int(row[0])
+            for row in conn.execute(
+                "SELECT a.plan_id FROM qa_plan_item_attachments a JOIN qa_plans p ON p.id=a.plan_id "
+                "WHERE a.item_id=%s AND a.qa_phase='post_deploy' AND p.retired_at IS NULL "
+                f"AND {live_item_attachment_sql(conn, 'a')}",
+                (item_id,),
+            ).fetchall()
+        )
     for plan_id in sorted(plan_ids):
         if plan_id in withdrawn_plans:
             continue
