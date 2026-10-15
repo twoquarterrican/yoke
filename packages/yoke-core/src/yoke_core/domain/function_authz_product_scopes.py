@@ -49,6 +49,7 @@ PRODUCT_AUTHZ_BY_ID = {
     "machine_approval.lifecycle.apply": AuthzSpec(ACTOR_SESSION, None),
     # The handler requires the hosted service identity on the exact payload org.
     "machine_authorization.handoff": AuthzSpec(ACTOR_SESSION, None),
+    "machine_authorization.handoff_poll": AuthzSpec(ACTOR_SESSION, None),
     "machine_authorization.get": AuthzSpec(ACTOR_SESSION, None),
     "machine_authorization.resolve": AuthzSpec(ACTOR_SESSION, None),
     "decision_requests.create": AuthzSpec(ACTOR_SESSION, None),

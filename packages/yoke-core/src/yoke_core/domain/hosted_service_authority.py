@@ -31,6 +31,7 @@ HOSTED_SERVICE_FUNCTIONS = frozenset(
         "projects.github_binding.lifecycle",
         "machine_approval.lifecycle.apply",
         "machine_authorization.handoff",
+        "machine_authorization.handoff_poll",
     }
 )
 

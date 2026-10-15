@@ -50,7 +50,7 @@ def registry():
 
 def payload(**updates):
     return {
-        "device_hash": hashlib.sha256(b"hosted-device-secret").hexdigest(),
+        "device_code_sha256": hashlib.sha256(b"hosted-device-secret").hexdigest(),
         "user_code": "K7F2",
         "machine_id": MACHINE_ID,
         "machine_name": "Laptop",
@@ -91,7 +91,7 @@ def test_registered_handoff_then_approval_and_poll_uses_selected_org(
     assert check_dispatch_permission(conn, entry, request(body)).error is None
     result = handle_handoff(request(body))
     assert result.primary_success
-    assert result.result_payload["authorization"]["code"] == "K7F2"
+    assert result.result_payload["authorization"]["user_code"] == "K7F2"
     assert codes.inspect(conn, code="K7F2", actor_id=1)["machine"] == "Laptop"
     with pytest.raises(codes.MachineAuthorizationError, match="authorization_pending"):
         codes.poll(
@@ -127,9 +127,8 @@ def test_registered_handoff_then_approval_and_poll_uses_selected_org(
 @pytest.mark.parametrize(
     ("updates", "reason"),
     [
-        ({"device_hash": "a" * 64}, "authorization_match_code_collision"),
-        ({"user_code": "Z9Q1"}, "authorization_device_code_collision"),
-        ({}, "authorization_device_code_collision"),
+        ({"device_code_sha256": "a" * 64}, "match_code_taken"),
+        ({"user_code": "Z9Q2"}, "device_code_taken"),
     ],
 )
 def test_collisions_refuse_without_replacing_original(conn, updates, reason):
@@ -149,7 +148,7 @@ def test_collisions_refuse_without_replacing_original(conn, updates, reason):
     ("updates", "reason"),
     [
         ({"expires_at": "2000-01-01T00:00:00Z"}, "authorization_expired"),
-        ({"expires_at": "2026-01-01"}, "authorization_handoff_invalid"),
+        ({"expires_at": "2026-01-01"}, "authorization_expiry_invalid"),
         ({"machine_id": "invalid"}, "authorization_handoff_invalid"),
         ({"org_id": 999}, "authorization_org_unknown"),
     ],
@@ -197,10 +196,74 @@ def test_handoff_shares_pending_capacity(conn, monkeypatch):
     )
     handoff(conn, **payload(), actor_id=6)
     with pytest.raises(codes.MachineAuthorizationError, match="authorization_capacity"):
-        handoff(conn, **payload(device_hash="a" * 64, user_code="Z9Q1"), actor_id=6)
+        handoff(
+            conn, **payload(device_code_sha256="a" * 64, user_code="Z9Q2"), actor_id=6
+        )
 
 
 def test_disabled_service_cannot_handoff(conn):
     conn.execute("UPDATE actors SET status='disabled' WHERE id=6")
     with pytest.raises(codes.MachineAuthorizationError, match="permission_denied"):
         handoff(conn, **payload(), actor_id=6)
+
+
+def test_identical_pending_handoff_replay_returns_the_existing_row(conn):
+    body = payload()
+    first = handoff(conn, **body, actor_id=6)
+    assert handoff(conn, **body, actor_id=6) == first
+    assert (
+        conn.execute("SELECT count(*) FROM machine_authorization_codes").fetchone()[0]
+        == 1
+    )
+    codes.resolve(conn, code=body["user_code"], actor_id=1, action="approve")
+    with pytest.raises(codes.MachineAuthorizationError, match="device_code_taken"):
+        handoff(conn, **body, actor_id=6)
+
+
+@pytest.mark.parametrize(
+    "change", [{"org_id": 1}, {"machine_name": "Changed"}, {"platform": "Other"}]
+)
+def test_digest_replay_cannot_change_org_or_machine_facts(conn, change):
+    body = payload()
+    handoff(conn, **body, actor_id=6)
+    with pytest.raises(codes.MachineAuthorizationError, match="device_code_taken"):
+        handoff(conn, **{**body, **change}, actor_id=6)
+
+
+def test_expiry_cannot_exceed_engine_code_ttl(conn):
+    with pytest.raises(
+        codes.MachineAuthorizationError, match="authorization_expiry_invalid"
+    ):
+        handoff(
+            conn,
+            **payload(expires_at=format_instant(utc_now() + timedelta(hours=1))),
+            actor_id=6,
+        )
+
+
+def test_handoff_expires_old_rows_and_has_no_public_client_budget(conn):
+    handoff(conn, **payload(), actor_id=6)
+    conn.execute(
+        "UPDATE machine_authorization_codes SET expires_at='2000-01-01T00:00:00Z'"
+    )
+    for number in range(codes.CLIENT_PENDING_CODES + 1):
+        # Four characters in the shared alphabet, unique across this small set.
+        code = "K7F" + "23456789A"[number]
+        handoff(
+            conn,
+            **payload(
+                device_code_sha256=hashlib.sha256(str(number).encode()).hexdigest(),
+                user_code=code,
+            ),
+            actor_id=6,
+        )
+    assert (
+        conn.execute("SELECT count(*) FROM machine_authorization_codes").fetchone()[0]
+        == codes.CLIENT_PENDING_CODES + 1
+    )
+    assert (
+        conn.execute(
+            "SELECT count(*) FROM machine_authorization_codes WHERE client_key IS NOT NULL"
+        ).fetchone()[0]
+        == 0
+    )

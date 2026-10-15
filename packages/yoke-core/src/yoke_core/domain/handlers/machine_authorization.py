@@ -1,7 +1,7 @@
 """Signed-in workbench reads and personal approval of a device code."""
 
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from yoke_contracts.api.function_call import (
     FunctionCallRequest,
     FunctionError,
@@ -44,6 +44,14 @@ def _handle(request: FunctionCallRequest, model: Any, operation: Any) -> Handler
     except MachineAuthorizationError as exc:
         return HandlerOutcome(
             primary_success=False, error=FunctionError(code=exc.code, message=str(exc))
+        )
+    except ValidationError:
+        return HandlerOutcome(
+            primary_success=False,
+            error=FunctionError(
+                code="authorization_refused",
+                message="send the documented machine-authorization payload with valid field types and limits",
+            ),
         )
     except (ValueError, PermissionError) as exc:
         return HandlerOutcome(

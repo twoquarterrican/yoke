@@ -172,38 +172,72 @@ an inclusive comparison of instants, independent of database session timezone.
 
 ## Hosted code handoff
 
-After sign-in and organization selection, the hosted service calls registered
-`machine_authorization.handoff` in that organization's engine. This function
-requires the `hosted_service` system identity with `hosted_service.deliver` on
-the exact target organization; human members and admins cannot call it.
-Its registry serving floor is `next-release` until a release carries it. An older
-engine must be upgraded before Platform enables handoff; the service operator
-owns that rollout. Existing hosted routing remains until the consumer adopts
-this contract.
+After sign-in and organization selection, Platform calls registered
+`machine_authorization.handoff` in the selected organization's engine. Only
+an active `hosted_service` identity holding `hosted_service.deliver` on the
+explicit engine `org_id` may call handoff or `machine_authorization.handoff_poll`.
+Human members and admins cannot call either function. Both registry and
+client-readable floors are `next-release` until a release carries them; roll
+the engine forward before enabling these calls in the hosted consumer.
 
-The payload is `{device_hash, user_code, machine_id, machine_name, platform,
-expires_at, org_id}`. `device_hash` is the lowercase hex SHA-256 of the original
-secret device code; never send the raw secret. `user_code` is exactly four
-uppercase ASCII letters or digits, such as `K7F2`. `machine_id` is a UUID;
-name and platform are nonempty (at most 150 and 80 characters). `expires_at`
-is a qualified RFC3339 instant and `org_id` is the positive engine organization
-ID. The response is `{authorization: {code, org_id, expires_at}}`; expiry is
-canonical UTC. The engine stores the code in `machine_authorization_codes`,
-without issuing credentials or deciding approval.
+Handoff takes `{device_code_sha256, user_code, machine_id, machine_name,
+platform, expires_at, org_id}`. The digest is lowercase hex SHA-256 of the
+original device secret; never send the raw secret to handoff. `user_code` is
+four characters from `23456789ABCDEFGHJKLMNPQRSTUVWXYZ`, such as `K7F2`.
+Machine ID is a UUID; name and platform are nonempty, at most 150 and 80
+characters. Expiry is qualified RFC3339, after now and within the engine's
+ten-minute code TTL. Org ID is the positive **engine** organization ID,
+never Platform's registry ID or an inferred default.
 
-The existing inspect, resolve and poll operations consume that same record.
-The signed-in member still approves personally; the original device secret
-polls for one credential bound to that member and the selected organization.
-The hosted consumer must route those operations to this engine after handoff;
-its own route adoption requires integration proof against the exact candidate.
+Success returns `{authorization: {user_code, expires_at, state: "pending"}}`
+with canonical UTC expiry. Identical pending replay returns the same row;
+a changed or closed request under its digest refuses `device_code_taken`.
+Another row holding the match code refuses `match_code_taken`. Issue a new
+secret and match code on either collision. Expired input refuses
+`authorization_expired`; malformed or excessive expiry refuses
+`authorization_expiry_invalid`. An unknown engine org refuses
+`authorization_org_unknown`; a wrong identity or org grant refuses
+`permission_denied`. Correct malformed fields after `authorization_refused`
+or `authorization_handoff_invalid`; no request is replaced on refusal.
 
-`authorization_device_code_collision` and `authorization_match_code_collision`
-refuse with no replacement, including an identical replay. Issue a new secret
-and match code, then retry handoff. `authorization_expired` requires a new code;
-`authorization_org_unknown` requires selecting an existing engine organization.
-`permission_denied` requires that organization's hosted service identity.
-`authorization_handoff_invalid` or `authorization_refused` requires correcting
-the payload and retrying. `authorization_capacity` requires finishing an approval
-or waiting for expiry; handoff shares the server's 128 pending-code limit.
-`authorization_store_unavailable` requires the operator to restore database
-health before retrying. No parallel pending or credential store is created.
+Handoff uses `machine_authorization_codes`, with no requester actor until
+a signed-in member decides. Inspect and resolve still use this record and
+personal approval. Handed-off rows have no per-client capacity key; they
+count toward the same 128 pending-code server limit. `authorization_capacity`
+requires finishing an approval or waiting for expiry. Expired rows are pruned
+by the existing expiry rule during another start or handoff.
+
+### Hosted polling
+
+Platform's public route rate-limits each terminal, then calls authenticated
+`machine_authorization.handoff_poll` with `{device_code, machine_id,
+machine_name, org_id}`. Poll takes the **original raw device secret**, plus the
+same engine org ID used at handoff. The function checks the service's grant
+and the stored code's exact org before calling the existing domain poll.
+It bypasses the engine's public route admission, so many hosted terminals do
+not share Platform's proxy-address bucket. Public self-host admission is
+unchanged; this is no new public endpoint or credential store.
+
+The result is `{authorization: {state, machine_id, token?}}`. State is
+`pending`, `approved`, `denied`, `expired` or `consumed`, projected from the
+existing poll outcome. Only `approved` includes `token`, once. The approving
+member's live membership and machine ownership still gate delivery, and
+consumption and issuance commit together. Concurrent polls yield at most one
+raw token. A failed mint rolls consumption back. Network loss after delivery
+requires a new terminal connection; the token cannot be replayed.
+
+Both functions use handler-managed idempotency. The dispatcher neither caches
+nor replays polling credentials; the one-time-result guard also excludes them
+from detailed debug captures. A reused request ID polls current durable state.
+`authorization_unknown` requires a fresh connection; `machine_identity_mismatch`
+requires the original machine and consumes nothing. Credential and actor
+refusals retain their named code and recovery. Platform maps the result to
+its public status, org slug and API URL; an engine function envelope itself
+uses the normal function-call transport. Database failures refuse as
+`authorization_store_unavailable`; restore database health before retrying.
+
+The hosted consumer must adopt both explicit-org payloads and prove its real
+routing against the exact merged engine candidate. Engine source tests do
+not prove hosted route adoption. Existing hosted routing remains until that
+consumer cutover; the consumer keeps Members panels until the pinned Team
+destination is available.

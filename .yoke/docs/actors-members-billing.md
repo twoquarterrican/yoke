@@ -77,7 +77,7 @@ The existing org-admin approval path on Cloud retains its authority.
 
 On Cloud the roster also shows the hosted service's own system actor,
 `hosted_service`, holding only the `hosted_service` org role. It delivers
-GitHub App lifecycle changes, machine-code handoff after organization selection,
+GitHub App lifecycle changes, machine-code handoff and polling after organization selection,
 and machine-authorization expiry or withdrawal. See the
 [hosted handoff contract](reference/machine-authorization.md#hosted-code-handoff). No member or admin token can stand in for it, including the
 universe's first `initial-admin` token.
