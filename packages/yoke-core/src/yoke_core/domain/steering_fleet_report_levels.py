@@ -30,7 +30,11 @@ from yoke_core.domain.session_launch_level_placement import (
     LevelPlacement,
     place_level,
 )
-from yoke_core.domain.session_launch_level_pools import PoolCheck, live_workers
+from yoke_core.domain.session_launch_level_pools import (
+    PoolCheck,
+    live_workers,
+    surface_workers,
+)
 from yoke_core.domain.steering_fleet_plan_capacity import format_reset_utc
 from yoke_core.domain.steering_fleet_report_detectors import marker
 from yoke_core.domain.universe_levels import effective_levels
@@ -76,7 +80,7 @@ def read_level_readout(
     """Dry-run a launch at every level the project reads, as this seat."""
     levels, source = effective_levels(conn, int(project_id))
     surfaces = set(CLI_PLAN_LIMIT_SURFACES)
-    counts = live_workers(conn)
+    counts = surface_workers(live_workers(conn))
     workers = tuple((surface, counts.get(surface, 0)) for surface in sorted(surfaces))
     actor_id = _session_actor(conn, session_id)
     if actor_id is None:
@@ -140,6 +144,8 @@ def _pool(pool: PoolCheck) -> str:
     text = f"{pool.window} {int(round(pool.remaining_percent))}% left"
     if pool.headroom_percent is not None:
         text += f", headroom {int(round(pool.headroom_percent))}%"
+    if pool.workers and pool.share_percent is not None:
+        text += f" split {pool.workers + 1} ways = {int(round(pool.share_percent))}%"
     if pool.resets_at:
         text += f", resets {format_reset_utc(pool.resets_at)}"
     return text

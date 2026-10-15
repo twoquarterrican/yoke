@@ -6,7 +6,8 @@ monthly pool is preferred among available Cursor candidates.
 
 Empty and blocked candidates are skipped. Cursor pool order filters Cursor
 candidates first; spread, headroom and configuration position then select from
-all surfaces without adding an order to other vendors.
+all surfaces without adding an order to other vendors. Headroom is per worker:
+the binding pool's headroom split among its live workers and this launch.
 
 When no option can launch anywhere, the launch is refused with every option
 and the pool or eligibility rule that blocked it. Launch previews use the same
@@ -40,6 +41,7 @@ from yoke_core.domain.session_launch_level_candidate import (
     LevelPlacement,
 )
 from yoke_core.domain.session_launch_level_pools import (
+    WorkerCounts,
     binding_pool,
     exhausted_pool,
     live_workers,
@@ -91,7 +93,7 @@ def _weigh(
     relay: EligibleRelay,
     names: dict[str, str],
     limits: Sequence[Any],
-    workers: dict[str, int],
+    workers: WorkerCounts,
     now: datetime,
 ) -> LevelCandidate:
     pools = option_pools(
@@ -100,6 +102,7 @@ def _weigh(
         surface=option.surface,
         model=option.model,
         now=now,
+        workers=workers,
     )
     empty = exhausted_pool(pools)
     binding = binding_pool(pools)
@@ -112,9 +115,9 @@ def _weigh(
         machine_id=relay.machine_id,
         machine_name=display_name(names, relay.machine_id),
         pools=pools,
-        headroom_percent=binding.headroom_percent if binding else None,
+        headroom_percent=binding.share_percent if binding else None,
         headroom_window=binding.window if binding else None,
-        live_workers=workers.get(option.surface, 0),
+        live_workers=binding.workers if binding else 0,
         blocked=(
             f"{empty.window} pool exhausted (resets {empty.to_dict()['resets_at'] or 'unknown'})"
             if empty
@@ -246,12 +249,13 @@ def _choose(
 
 def _reason(chosen: LevelCandidate, rule: str, open_: list[LevelCandidate]) -> str:
     headroom = _percent(chosen.headroom_percent)
-    window = f" ({chosen.headroom_window})" if chosen.headroom_window else ""
+    shared = f", split {chosen.live_workers + 1} ways" if chosen.live_workers else ""
+    window = f" ({chosen.headroom_window}{shared})" if chosen.headroom_window else ""
     if len(open_) == 1:
         return f"only option with capacity: {chosen.label}, headroom {headroom}{window}"
     if rule == RULE_SPREAD:
-        return f"spread rule: no live worker on {chosen.surface}; {chosen.label}, headroom {headroom}{window} above {int(SPREAD_HEADROOM_PERCENT)}%"
-    return f"most headroom: {chosen.label} at {headroom}{window}"
+        return f"spread rule: no live worker draws on this pool; {chosen.label}, headroom {headroom}{window} above {int(SPREAD_HEADROOM_PERCENT)}%"
+    return f"most headroom per worker: {chosen.label} at {headroom}{window}"
 
 
 def _refusal(level: Level, weighed: list[LevelCandidate]) -> str:

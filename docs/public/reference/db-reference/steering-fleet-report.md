@@ -247,9 +247,11 @@ credentials/cookies/body. Retry-After is evidence, not changed four-minute caden
 Levels dry-run actual launch-create --level under seat actor authority, lowest
 first with glyph/source project/universe/default. Each option/machine weighed
 shows → chosen, ✓ launchable, ✗ blocker/reset/eligibility reason. Pools show
-share/headroom/reset, unreadable or no-published-meter. Summary says next
-placement/rule/why or no-capacity refusal. Live worker count includes assigned
-launches; missing actor shows unavailable/preview command. JSON levels retains
+share/headroom/per-worker split/reset, unreadable or no-published-meter.
+Summary says next placement/rule/why or no-capacity refusal. Live worker count
+includes assigned launches; placement splits each pool among the workers on
+that machine whose model it covers. Missing actor shows unavailable/preview
+command. JSON levels retains
 source/live_workers/glyph/chosen/rule/reason/candidates. Item posture level
 shift/min/max/reason overrides show once per item; JSON level_overrides retains.
 

@@ -16,6 +16,7 @@ from dataclasses import replace
 from typing import Any
 
 from yoke_contracts.timestamps import as_utc
+from yoke_core.domain import db_backend
 from yoke_core.domain import session_relay_managed_presentation as presentation
 from yoke_core.domain.session_launch_level_placement import (
     LEVEL_NO_CAPACITY,
@@ -28,6 +29,12 @@ from yoke_core.domain.session_launch_types import (
     LaunchEligibilityPort,
     LaunchPreview,
     LaunchRequest,
+)
+
+#: Held until the launch transaction ends, so concurrent level launches place
+#: one at a time and each counts the earlier ones as workers in flight.
+_PLACEMENT_LOCK_SQL = (
+    "SELECT pg_advisory_xact_lock(hashtext('session_launches.level_placement'))"
 )
 
 
@@ -62,6 +69,8 @@ def preview_level_launch(
     ``level_no_capacity`` preview naming every blocked option.
     """
     now = as_utc(now)
+    if db_backend.connection_is_postgres(conn):
+        conn.execute(_PLACEMENT_LOCK_SQL)
     placement = place_level(
         conn,
         auth=auth,

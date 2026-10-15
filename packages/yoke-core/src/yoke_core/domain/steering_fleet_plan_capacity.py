@@ -35,9 +35,10 @@ PLAN_LIMIT_HEADING = (
     "with the operator, do not gate launches"
 )
 HEADROOM_LEGEND = (
-    "headroom is remaining full-rate runway ÷ time-to-reset; ≥100% cannot "
-    "exhaust before reset (level placement ranks options by it; only a "
-    "pool at zero blocks an option). rolling "
+    "headroom is one worker's remaining full-rate runway ÷ time-to-reset; "
+    "≥100% cannot exhaust before reset (level placement ranks options by it "
+    "divided among the live workers sharing the pool; only a pool at zero "
+    "blocks an option). rolling "
     "windows understate because they replenish continuously. every window a "
     "surface publishes is listed; compare headroom across surfaces and "
     "windows — under 100% can hit a wall before its reset"

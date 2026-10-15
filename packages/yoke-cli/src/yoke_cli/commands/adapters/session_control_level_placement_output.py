@@ -40,6 +40,9 @@ def _pool(pool: Mapping[str, Any]) -> str:
         f"{pool.get('window')} {_percent(pool.get('remaining_percent'))} left, "
         f"headroom {_percent(pool.get('headroom_percent'))}"
     )
+    workers = pool.get("workers")
+    if workers and pool.get("share_percent") is not None:
+        text += f" split {int(workers) + 1} ways = {_percent(pool['share_percent'])}"
     resets = pool.get("resets_utc")
     if resets:
         text += f", resets {resets} UTC"
