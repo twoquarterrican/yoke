@@ -165,7 +165,7 @@ def run_setup(ctx: BootstrapContext) -> int:
         )
         print(
             "  To let Yoke create GitHub environments, reconnect the App with "
-            "Administration: write, then rerun setup."
+            "Administration: write, then run `yoke setup` again."
         )
         print(
             "  Or create the prod environment under the repository's "

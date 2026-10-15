@@ -5,16 +5,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 
 class CloneFlowShell(Protocol):  # pragma: no cover - structural typing only
     result: Any
 
     def _goto(self, view: "_View") -> None: ...
-    def _selection_view(self, step, title, subtitle, rows, on_select) -> "_View": ...
+    def _selection_view(self, key, step, title, subtitle, rows, on_select) -> "_View": ...
     def _goto_input(
         self,
+        key,
         step,
         title,
         subtitle,
@@ -33,7 +34,7 @@ class CloneFlowShell(Protocol):  # pragma: no cover - structural typing only
     def _run_checking(self, **kwargs) -> None: ...
     def _after_existing_project_ready(self) -> None: ...
     def _materialize_and_inspect_checkout(self) -> None: ...
-    async def action_back(self) -> None: ...
+    def _step_back(self) -> None: ...
 
 
 class ConnectFlowShell(Protocol):  # pragma: no cover - structural typing only
@@ -44,10 +45,11 @@ class ConnectFlowShell(Protocol):  # pragma: no cover - structural typing only
 
     def _goto(self, view: "_View") -> None: ...
     def _selection_view(
-        self, step, title, subtitle, rows, on_select, *, initial: int = 0
+        self, key, step, title, subtitle, rows, on_select, *, initial: int = 0
     ) -> "_View": ...
     def _goto_input(
         self,
+        key,
         step,
         title,
         subtitle,

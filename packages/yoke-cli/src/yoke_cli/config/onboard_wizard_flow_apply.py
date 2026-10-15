@@ -22,7 +22,8 @@ from yoke_cli.config.onboard_error_friendly import (
     friendly_publish_error,
 )
 from yoke_cli.config.onboard_wizard import WizardApplyError
-from yoke_cli.config.onboard_wizard_widgets import STEP_FINISH
+from yoke_cli.config import onboard_wizard_apply_prompts as prompts
+from yoke_cli.config.onboard_wizard_state import _View
 
 
 class ApplyFlow:
@@ -63,11 +64,9 @@ class ApplyFlow:
         ]
 
     def _goto_applying(self) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         # Keep the preceding interactive view. Completion replaces Applying,
         # so Back can return there without ever revisiting the worker screen.
-        self._goto(_View(STEP_FINISH, self._build_applying, None))
+        self._goto(_View(prompts.applying_prompt(), None, self._build_applying))
 
     def _build_applying(self) -> list:
         return steps.apply_progress_body(self._apply_steps)
@@ -159,17 +158,12 @@ class ApplyFlow:
         self._goto_apply_failure()
 
     def _goto_apply_failure(self) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         self._apply_failure_details = False
-        self._replace_current(
-            _View(STEP_FINISH, self._build_apply_failure, self._on_apply_failure)
-        )
+        self._replace_current(self._apply_failure_view())
 
-    def _build_apply_failure(self) -> list:
+    def _apply_failure_view(self) -> _View:
         run_id = _apply_report_run_id(self.report_path)
-        return steps.apply_failure_body(
-            self.last_error or "Onboarding did not finish.",
+        state = dict(
             failed_step=self.failed_step,
             report_path=self.report_path,
             resume_command=self.resume_command,
@@ -178,11 +172,17 @@ class ApplyFlow:
             can_use_different_folder=(_preservable_checkout_path(run_id) is not None),
             show_details=getattr(self, "_apply_failure_details", False),
         )
+        message = self.last_error or "Onboarding did not finish."
+        return _View(
+            prompts.apply_failure_prompt(message, **state),
+            self._on_apply_failure,
+            lambda: steps.apply_failure_body(message, **state),
+        )
 
     def _on_apply_failure(self, choice: str) -> None:
         if choice == "technical-details":
             self._apply_failure_details = not self._apply_failure_details
-            self._render_current()
+            self._replace_current(self._apply_failure_view())
             return
         if choice == "retry":
             self._start_apply()
@@ -196,9 +196,7 @@ class ApplyFlow:
         if choice == "back":
             self._resume_run_id = None
             self._resume_payload = None
-            import asyncio
-
-            asyncio.ensure_future(self.action_back())
+            self._step_back()
             return
         self.exit_code = 1
         self.exit()
@@ -221,28 +219,20 @@ class ApplyFlow:
         self._start_apply()
 
     def _goto_apply_different_folder(self) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
-        self._goto(
-            _View(
-                STEP_FINISH,
-                self._build_apply_different_folder,
-                self._on_apply_different_folder,
-            )
-        )
-
-    def _build_apply_different_folder(self) -> list:
         run_id = _apply_report_run_id(self.report_path)
-        return steps.apply_different_folder_body(
+        state = dict(
             report_path=self.report_path,
             checkout_path=_preservable_checkout_path(run_id),
         )
+        self._goto(_View(
+            prompts.apply_different_folder_prompt(**state),
+            self._on_apply_different_folder,
+            lambda: steps.apply_different_folder_body(**state),
+        ))
 
     def _on_apply_different_folder(self, choice: str) -> None:
         if choice == "cancel":
-            import asyncio
-
-            asyncio.ensure_future(self.action_back())
+            self._step_back()
             return
         if choice != "confirm-different-folder":
             return
@@ -265,20 +255,18 @@ class ApplyFlow:
         self._resume_payload = None
         if len(self._history) > 1:
             self._history.pop()
-        import asyncio
-
-        asyncio.ensure_future(self.action_back())
+        self._step_back()
 
     def _show_apply_recovery_error(self, exc: BaseException | str) -> None:
         self.last_error = friendly_publish_error(friendly_permission_error(str(exc)))
         self._goto_apply_failure()
 
     def _goto_apply_success(self) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
-        self._replace_current(
-            _View(STEP_FINISH, self._build_apply_success, self._on_apply_success)
-        )
+        self._replace_current(_View(
+            prompts.apply_success_prompt(self.report_path),
+            self._on_apply_success,
+            self._build_apply_success,
+        ))
 
     def _on_apply_success(self, choice: str) -> None:
         if choice == "show-report":

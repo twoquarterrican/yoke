@@ -217,7 +217,7 @@ onboard_disabled() {
 }
 
 print_onboard_next() {
-  printf '%sRun yoke setup to finish setting up your machine & projects.\n' "$(gutter)"
+  printf '%sRun yoke setup in a terminal, or yoke setup --agent from an agent.\n' "$(gutter)"
 }
 
 onboard_terminal_ready() {
@@ -300,9 +300,10 @@ print_path_guidance_after_onboard() {
 # On a successful interactive install, hand straight off into the onboarding
 # wizard by absolute path so the launch does not depend on a not-yet-reloaded
 # shell — no extra consent prompt; the wizard leads with the PATH step, so
-# quitting it is always safe. A --yes / noninteractive run prints the exact next
-# command instead (the wizard is interactive-only); --no-setup suppresses the
-# launch entirely.
+# quitting it is always safe. Without a terminal (an agent ran the installer),
+# setup starts in agent mode: its first JSON question goes straight to the
+# agent and the install exits with setup's status. A --yes run prints the next
+# command instead; --no-setup suppresses the launch entirely.
 offer_onboard() {
   [ -n "$dry_run" ] && return 0
   onboard_disabled && return 0
@@ -314,11 +315,13 @@ offer_onboard() {
     print_onboard_next
     return 0
   fi
+  yoke_bin=$(command -v yoke)
   if ! onboard_terminal_ready; then
-    print_onboard_next
+    agent_status=0
+    "$yoke_bin" setup --agent --post-install < /dev/null || agent_status=$?
+    [ "$agent_status" -eq 0 ] || exit "$agent_status"
     return 0
   fi
-  yoke_bin=$(command -v yoke)
   if plain_glyphs; then
     printf '%sStarting Yoke setup...\n' "$(gutter)"
   else

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config.onboard_wizard_state import CopyTarget, _View
+from yoke_cli.config.setup_prompt import SetupHuman, SetupPrompt
 
 
 class CheckingFlow:
@@ -29,6 +29,7 @@ class CheckingFlow:
         blocks_quit: bool = False,
         on_cancel: Callable[[], None] | None = None,
         copy_targets: tuple[CopyTarget, ...] = (),
+        human: SetupHuman | None = None,
     ) -> None:
         """Show a checking view while ``work`` runs on a thread.
 
@@ -38,6 +39,7 @@ class CheckingFlow:
 
         ``copy_targets`` are the URLs and codes this waiting screen shows, so
         the copy and open keys work while the check is still running.
+        ``human`` is the same browser step as data for agent mode.
         """
         self._checking = True
         self._checking_blocks_quit = blocks_quit
@@ -47,8 +49,14 @@ class CheckingFlow:
         if replace_current and self._history:
             self._history.pop()
         self._goto(_View(
-            step,
-            lambda: steps.checking_body(title, message, detail_lines),
+            SetupPrompt(
+                key=f"check.{group}",
+                step=step,
+                title=title,
+                message=message,
+                detail_lines=tuple(detail_lines or ()),
+                human=human,
+            ),
             copy_targets=copy_targets,
         ))
         self.run_worker(

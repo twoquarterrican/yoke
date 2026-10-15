@@ -39,9 +39,14 @@ from yoke_cli.config.onboard_wizard_stored_project import StoredProjectFlow
 from yoke_cli.config.onboard_wizard_widgets import STEP_FINISH, STEP_PROJECT
 from yoke_cli.config.project_publish_support import is_existing_project_dir
 from yoke_cli.config.onboard_wizard_flow_support import WizardShell as _Shell
+from yoke_cli.config.onboard_wizard_state import _View
+from yoke_cli.config.setup_prompt import TONE_OK, SetupPrompt
 from yoke_cli.config.onboard_wizard_flow_support import (
     fetch_repo_owners as _fetch_repo_owners,
 )
+
+
+REVIEW_ERROR_RECOVERY = "Go back, correct the affected answer, then return to Review."
 
 
 def fetch_repo_owners(api_url: str, token: str) -> list:
@@ -60,8 +65,6 @@ class WizardFlow(
     # ── Project step ────────────────────────────────────────
 
     def _goto_project_mode(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         if getattr(self, "_restored_projects", None) and not getattr(
             self, "_restored_projects_offered", False
         ):
@@ -78,8 +81,15 @@ class WizardFlow(
             self._stored_project_attempted = True
             self._goto_stored_project_picker()
             return
-        view = _View(STEP_PROJECT, steps.project_mode_body, self._on_project_mode)
-        self._goto(view)
+        self._goto(self._selection_view(
+            "project.mode",
+            STEP_PROJECT,
+            "Set up a project.",
+            "Where's the code? You can change this later.",
+            steps.MODE_ROWS,
+            self._on_project_mode,
+            guidance=onboard_github_copy.PROJECT_MODE_AGENT_GUIDANCE,
+        ))
 
     def _on_project_mode(self: _Shell, mode: str) -> None:
         if not getattr(self, "_preserve_project_fields_once", False):
@@ -127,6 +137,7 @@ class WizardFlow(
         # not at Apply. An existing non-empty dir is fine — create-new redirects
         # it to adopt-the-existing-folder in _after_checkout.
         self._goto_input(
+            "project.folder",
             STEP_PROJECT,
             title,
             subtitle,
@@ -154,18 +165,16 @@ class WizardFlow(
         self._after_local_checkout_source(value)
 
     def _goto_existing_dir_redirect(self: _Shell, path: str) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "That folder already exists.",
-                    f"Yoke will set up {path} as an existing project instead of "
-                    "creating a new one.",
-                    [],
-                    steps.VERIFY_OK_ROWS,
-                    ok=True,
+                SetupPrompt(
+                    key="project.folder_exists",
+                    step=STEP_PROJECT,
+                    title="That folder already exists.",
+                    message=f"Yoke will set up {path} as an existing project "
+                    "instead of creating a new one.",
+                    choices=tuple(steps.VERIFY_OK_ROWS),
+                    tone=TONE_OK,
                 ),
                 lambda _choice: self._after_local_checkout_source(path),
             )
@@ -187,11 +196,13 @@ class WizardFlow(
             rows = steps.PROJECT_GITHUB_ROWS_NO_MACHINE
         self._goto(
             self._selection_view(
+                "project.github",
                 STEP_PROJECT,
                 onboard_github_copy.PROJECT_GITHUB_PROMPT_TITLE,
                 onboard_github_copy.PROJECT_GITHUB_PROMPT_SUBTITLE,
                 rows,
                 self._on_project_github,
+                guidance=onboard_github_copy.PROJECT_GITHUB_AGENT_GUIDANCE,
             )
         )
 
@@ -226,22 +237,26 @@ class WizardFlow(
         return {"plan": plan if isinstance(plan, dict) else {}, "checks": checks}
 
     def _show_finish(self: _Shell, model: Any) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         checks = model.get("checks") if isinstance(model, dict) else None
         self._review_plan = model.get("plan") if isinstance(model, dict) else {}
         self._review_show_all = False
         self._review_problems = list(getattr(checks, "problems", []) or [])
         self._review_notes = list(getattr(checks, "notes", []) or [])
-        self._goto(_View(STEP_FINISH, self._build_finish, self._on_confirm))
+        self._goto(_View(
+            self._finish_prompt(), self._on_confirm, self._build_finish
+        ))
 
     def _goto_finish_error(self: _Shell, exc: BaseException) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         self._goto(
             _View(
-                STEP_FINISH,
-                lambda: steps.error_body(str(exc)),
+                SetupPrompt(
+                    key="review.error",
+                    step=STEP_FINISH,
+                    title="Couldn't build your setup plan.",
+                    message=str(exc),
+                    detail_lines=(REVIEW_ERROR_RECOVERY,),
+                ),
+                builder=lambda: steps.error_body(str(exc)),
             )
         )
 
@@ -260,14 +275,14 @@ class WizardFlow(
     def _on_confirm(self, choice: str) -> None:
         if choice == "show-all":
             self._review_show_all = not getattr(self, "_review_show_all", False)
-            self._render_current()
+            self._replace_current(_View(
+                self._finish_prompt(), self._on_confirm, self._build_finish
+            ))
             return
         if choice == "back":
             # Pre-flight blocked Apply: step back to the offending step so the
             # user can correct it, rather than quitting the wizard.
-            import asyncio
-
-            asyncio.ensure_future(self.action_back())
+            self._step_back()
             return
         if choice != "apply":
             self.cancelled = True

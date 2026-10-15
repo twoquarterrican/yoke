@@ -19,8 +19,9 @@ from yoke_cli.config.onboard_wizard_state import CopyTarget
 from yoke_cli.config.onboard_wizard_step_ids import STEP_GITHUB
 from yoke_cli.config.onboard_wizard_github_presentation import (
     MachineGithubShell as _Shell,
-    success_body as _success_body,
+    success_prompt as _success_prompt,
 )
+from yoke_cli.config.setup_prompt import TONE_ERROR, SetupPrompt
 
 
 def _wizard_steps():
@@ -44,6 +45,7 @@ class MachineGithubFlow:
         status = str(getattr(self, "_connection_status_line", "") or "")
         self._goto(
             self._selection_view(
+                "github.machine",
                 STEP_GITHUB,
                 onboard_github_copy.MACHINE_GITHUB_TITLE,
                 onboard_github_copy.MACHINE_GITHUB_SUBTITLE
@@ -56,6 +58,9 @@ class MachineGithubFlow:
                 ),
                 steps.MACHINE_GITHUB_ROWS,
                 self._on_machine_github,
+                guidance=onboard_github_copy.machine_github_agent_guidance(
+                    self.result.project_mode
+                ),
             )
         )
         saved_github.auto_recheck_authorized(self)
@@ -157,33 +162,27 @@ class MachineGithubFlow:
         self: _Shell,
         report: Mapping[str, Any],
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         self._github_success_report = dict(report)
         self._github_success_details = False
-        self._goto(
-            _View(
-                STEP_GITHUB,
-                self._build_machine_github_success,
-                self._on_machine_github_success,
-            )
-        )
+        self._goto(self._machine_github_success_view())
 
-    def _build_machine_github_success(self: _Shell) -> list:
-        return _success_body(
+    def _machine_github_success_view(self: _Shell):
+        from yoke_cli.config.onboard_wizard_state import _View
+
+        return _View(_success_prompt(
             getattr(self, "_github_success_report", {}),
             show_details=getattr(self, "_github_success_details", False),
-        )
+        ), self._on_machine_github_success)
 
     def _on_machine_github_success(self: _Shell, choice: str) -> None:
         if choice == "details":
             self._github_success_details = not self._github_success_details
-            self._render_current()
+            self._replace_current(self._machine_github_success_view())
             return
         self._goto_project_mode()
 
     def _goto_machine_github_pending(self: _Shell, report: dict[str, Any]) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         steps = _wizard_steps()
         repair = onboard_wizard_github_repair.needs_installation_repair(report)
@@ -210,21 +209,18 @@ class MachineGithubFlow:
             details.insert(0, f"Install or configure the App: {install_url}")
         self._goto(
             _View(
-                STEP_GITHUB,
-                lambda: steps.verification_body(
-                    (
-                        "GitHub App access needs repair."
+                SetupPrompt(
+                    key="github.machine_github_pending",
+                    step=STEP_GITHUB,
+                    title="GitHub App access needs repair."
                         if repair
-                        else "GitHub authorization is waiting for App access."
-                    ),
-                    (
-                        "The authorization is saved, but every App installation is suspended or missing required permissions."
+                        else "GitHub authorization is waiting for App access.",
+                    message="The authorization is saved, but every App installation is suspended or missing required permissions."
                         if repair
-                        else "The GitHub user is authorized, but no usable App installation is ready yet."
-                    ),
-                    details,
-                    steps.GITHUB_APP_PENDING_ROWS,
-                    ok=False,
+                        else "The GitHub user is authorized, but no usable App installation is ready yet.",
+                    detail_lines=tuple(details),
+                    choices=tuple(steps.GITHUB_APP_PENDING_ROWS),
+                    tone=TONE_ERROR,
                 ),
                 self._on_machine_github_pending,
                 copy_targets=_install_url_targets(install_url),
@@ -235,7 +231,7 @@ class MachineGithubFlow:
         self: _Shell,
         report: dict[str, Any],
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         steps = _wizard_steps()
         issue = next(
@@ -249,16 +245,17 @@ class MachineGithubFlow:
         )
         self._goto(
             _View(
-                STEP_GITHUB,
-                lambda: steps.verification_body(
-                    "GitHub authorization was saved.",
-                    issue,
-                    [
+                SetupPrompt(
+                    key="github.machine_github_live_check_retry",
+                    step=STEP_GITHUB,
+                    title="GitHub authorization was saved.",
+                    message=issue,
+                    detail_lines=tuple([
                         "Choose Check access to retry without repeating browser authorization.",
                         "Reconnect only if GitHub reports that authorization was revoked.",
-                    ],
-                    steps.GITHUB_APP_PENDING_ROWS,
-                    ok=False,
+                    ]),
+                    choices=tuple(steps.GITHUB_APP_PENDING_ROWS),
+                    tone=TONE_ERROR,
                 ),
                 self._on_machine_github_pending,
             )
@@ -280,7 +277,7 @@ class MachineGithubFlow:
         *,
         install_url: str | None = None,
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         steps = _wizard_steps()
         details = [
@@ -296,13 +293,14 @@ class MachineGithubFlow:
             details.insert(0, f"Install or configure the App: {install_url}")
         self._goto(
             _View(
-                STEP_GITHUB,
-                lambda: steps.verification_body(
-                    "GitHub App connection is not ready.",
-                    str(exc),
-                    details,
-                    steps.GITHUB_APP_UNAVAILABLE_ROWS,
-                    ok=False,
+                SetupPrompt(
+                    key="github.machine_github_error",
+                    step=STEP_GITHUB,
+                    title="GitHub App connection is not ready.",
+                    message=str(exc),
+                    detail_lines=tuple(details),
+                    choices=tuple(steps.GITHUB_APP_UNAVAILABLE_ROWS),
+                    tone=TONE_ERROR,
                 ),
                 self._on_machine_github_error,
                 copy_targets=_install_url_targets(install_url),

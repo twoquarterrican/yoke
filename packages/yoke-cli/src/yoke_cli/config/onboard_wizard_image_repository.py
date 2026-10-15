@@ -2,6 +2,7 @@
 
 from yoke_cli.config import server_image_repository as repository
 from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, SelectionRow, SetupPrompt
 
 
 def preview_lines(setup) -> list[str]:
@@ -33,6 +34,7 @@ def prompt(shell, setup) -> None:
         goto_self_host_server(shell)
 
     shell._goto_input(
+        "connect.image_repository",
         STEP_CONNECT,
         "Choose the server image repository.",
         "Use a fork, mirror, or private registry that carries the release's commit tags.",
@@ -53,9 +55,7 @@ def _input_error(value: str) -> str | None:
 
 def load_setup(shell):
     from yoke_cli.config import onboard_self_host_server as server
-    from yoke_cli.config import onboard_wizard_steps as steps
     from yoke_cli.config.onboard_wizard_state import _View
-    from yoke_cli.config.onboard_wizard_widgets import SelectionRow
 
     try:
         return server.new_setup(config_path=shell.result.config_path)
@@ -63,13 +63,13 @@ def load_setup(shell):
         message = str(exc)
         shell._goto(
             _View(
-                STEP_CONNECT,
-                lambda: steps.verification_body(
-                    "Self-host image configuration needs attention.",
-                    message,
-                    [],
-                    [SelectionRow("back", "Back", "repair the named machine setting")],
-                    ok=False,
+                SetupPrompt(
+                    key="connect.load_setup",
+                    step=STEP_CONNECT,
+                    title="Self-host image configuration needs attention.",
+                    message=message,
+                    choices=tuple([SelectionRow("back", "Back", "repair the named machine setting")]),
+                    tone=TONE_ERROR,
                 ),
                 lambda _choice: shell._step_back(),
             )

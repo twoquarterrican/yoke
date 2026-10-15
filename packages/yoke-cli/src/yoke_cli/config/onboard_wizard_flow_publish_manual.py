@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Mapping
 
 from yoke_contracts import github_app_snapshot
@@ -19,8 +18,8 @@ from yoke_cli.config.onboard_wizard_manual_access import (
 )
 from yoke_cli.config.onboard_wizard_widgets import (
     STEP_PROJECT,
-    SelectionRow,
 )
+from yoke_cli.config.setup_prompt import TONE_ERROR, SelectionRow, SetupPrompt
 
 
 CHECK_REPOSITORIES = "manual-check-repositories"
@@ -32,7 +31,7 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
     """Refresh, select, and attach one exact manually created repository."""
 
     def _goto_publish_cannot_create(self) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         self._manual_publish_expected_repository = ""
         self._manual_publish_access_missing = False
@@ -46,11 +45,12 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
         opened = bool(getattr(self, "_manual_repository_opened", False))
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Create the repository in GitHub.",
-                    self._cannot_publish_reason(),
-                    [
+                SetupPrompt(
+                    key="project.publish_cannot_create",
+                    step=STEP_PROJECT,
+                    title="Create the repository in GitHub.",
+                    message=self._cannot_publish_reason(),
+                    detail_lines=tuple([
                         setup_browser.status_line(self),
                         (
                             "GitHub opened the repository page."
@@ -60,8 +60,8 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
                         f"Repository URL: {url}",
                         "After creating it, check live GitHub App access here.",
                         "Return here and choose Check repositories.",
-                    ],
-                    [
+                    ]),
+                    choices=tuple([
                         SelectionRow(
                             CHECK_REPOSITORIES,
                             "Check repositories",
@@ -73,8 +73,8 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
                             onboard_github_copy.MACHINE_GITHUB_SKIP_DESC,
                         ),
                         SelectionRow(BACK, "Back", "change the publish choice"),
-                    ],
-                    ok=False,
+                    ]),
+                    tone=TONE_ERROR,
                 ),
                 self._on_manual_publish_guidance,
                 copy_targets=(CopyTarget("the repository link", url, is_url=True),),
@@ -83,7 +83,7 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
 
     def _on_manual_publish_guidance(self, choice: str) -> None:
         if choice == BACK:
-            asyncio.ensure_future(self.action_back())
+            self._step_back()
             return
         if choice == CHECK_REPOSITORIES:
             self._check_manual_publish_repositories(replace_current=False)
@@ -109,7 +109,7 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
             return
         if choice == BACK:
             self._manual_publish_access_missing = False
-            asyncio.ensure_future(self.action_back())
+            self._step_back()
             return
         self._goto_publish_cannot_create()
 
@@ -170,7 +170,7 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
         self,
         repositories: list[dict[str, Any]],
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         rows = [
             SelectionRow(
@@ -209,11 +209,12 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
         )
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.selection_body(
-                    "Select the repository you created.",
-                    subtitle,
-                    rows,
+                SetupPrompt(
+                    key="project.manual_publish_repositories",
+                    step=STEP_PROJECT,
+                    title="Select the repository you created.",
+                    subtitle=subtitle,
+                    choices=tuple(rows),
                 ),
                 self._on_manual_publish_repository,
             )
@@ -254,21 +255,22 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
         self._after_repo(full_name)
 
     def _manual_publish_refresh_error(self, exc: BaseException) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         self._manual_publish_access_missing = False
         self._manual_publish_live_report = None
         self._manual_publish_repositories = {}
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Couldn't verify the new repository.",
-                    str(exc),
-                    [
+                SetupPrompt(
+                    key="project.manual_publish_refresh_error",
+                    step=STEP_PROJECT,
+                    title="Couldn't verify the new repository.",
+                    message=str(exc),
+                    detail_lines=tuple([
                         "Live access check failed; retry Check repositories. Access is unknown."
-                    ],
-                    [
+                    ]),
+                    choices=tuple([
                         SelectionRow(
                             CHECK_REPOSITORIES, "Check again", "retry live access"
                         ),
@@ -278,8 +280,8 @@ class ManualPublishFlow(ManualRepositoryAccessFlow):
                             onboard_github_copy.MACHINE_GITHUB_SKIP_DESC,
                         ),
                         SelectionRow(BACK, "Back", "return to the prior screen"),
-                    ],
-                    ok=False,
+                    ]),
+                    tone=TONE_ERROR,
                 ),
                 self._on_manual_publish_recovery,
             )

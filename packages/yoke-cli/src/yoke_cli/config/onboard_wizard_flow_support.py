@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from yoke_cli.config import github_publish
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 
 def fetch_repo_owners(api_url: str, token: str) -> list:
@@ -24,9 +24,10 @@ class WizardShell(Protocol):  # pragma: no cover - structural typing only
     _stored_project_checkouts: list[Any]
 
     def _goto(self, view: _View) -> None: ...
-    def _selection_view(self, step, title, subtitle, rows, on_select) -> _View: ...
+    def _selection_view(self, key, step, title, subtitle, rows, on_select) -> _View: ...
     def _goto_input(
         self,
+        key,
         step,
         title,
         subtitle,

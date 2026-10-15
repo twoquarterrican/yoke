@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from textual.widgets import Input, Static
 from yoke_cli.config.onboard_wizard_flow_team_server import TeamServerConnectFlow
+from yoke_cli.config.onboard_wizard_server_form import ServerConnectionForm
 
 from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import yoke_token_verify
 from yoke_cli.config.onboard_wizard_palette import BRAND
-from yoke_cli.config.onboard_wizard_input_entry import form_field_widgets
-from yoke_cli.config.onboard_wizard_state import _FormField
-from yoke_cli.config.onboard_wizard_widgets import SelectionList, SelectionRow
+from yoke_cli.config.setup_prompt import (
+    TONE_ERROR,
+    SetupPrompt,
+)
 from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT
 from yoke_cli.config.onboard_wizard_flow_hosted_machine import HostedMachineConnectFlow
 from yoke_cli.config.onboard_wizard_flow_protocols import ConnectFlowShell as _Shell
@@ -24,95 +25,10 @@ def verify_yoke_token(api_url: str, token: str) -> dict[str, Any]:
     return yoke_token_verify.verify(api_url, token)
 
 
-class ConnectFlow(TeamServerConnectFlow):
+class ConnectFlow(TeamServerConnectFlow, ServerConnectionForm):
     def _after_api_url(self: _Shell, value: str) -> None:
         self.result.api_url = value
         self._discover_team_server(value)
-
-    def _goto_server_connection_form(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
-        values = getattr(self, "_server_connection_values", {})
-        source = getattr(self, "_server_token_source", "paste")
-        fields = (
-            _FormField(
-                "server_url",
-                "Server URL",
-                "https://api.mycompany.com",
-                validate=_validate_server_url,
-                initial_value=str(
-                    values.get("server_url") or self.result.api_url or ""
-                ),
-            ),
-            _FormField(
-                "credential",
-                "API token" if source == "paste" else "Token file path",
-                "paste token" if source == "paste" else "~/.yoke/secrets/team.token",
-                password=True,
-                initial_value=str(values.get("credential") or ""),
-            ),
-        )
-
-        def builder() -> list[Static]:
-            self._begin_form(fields, on_done=self._after_server_connection_form)
-            url_widgets = form_field_widgets(fields[:1])
-            credential_widgets = form_field_widgets(fields[1:])
-            return [
-                Static(
-                    f"Connect to your {BRAND} team server.", classes="onboard-title"
-                ),
-                Static(
-                    "Enter the server and choose exactly where its token comes from.",
-                    classes="onboard-subtitle",
-                ),
-                Static(NO_SERVER_GUIDANCE, classes="onboard-plan-line"),
-                *url_widgets,
-                Static("  Token source", classes="onboard-plan-line"),
-                SelectionList(
-                    [
-                        SelectionRow(
-                            "paste", "Paste token", "saved owner-only on this machine"
-                        ),
-                        SelectionRow(
-                            "file", "Token file", "read from an existing path"
-                        ),
-                    ],
-                    initial=0 if source == "paste" else 1,
-                ),
-                *credential_widgets,
-            ]
-
-        self._goto(_View(STEP_CONNECT, builder, self._on_server_token_source))
-
-    def _on_server_token_source(self: _Shell, choice: str) -> None:
-        if choice not in {"paste", "file"}:
-            return
-        values = {}
-        for key in ("server_url", "credential"):
-            try:
-                values[key] = self.query_one(f"#onboard-input-{key}", Input).value
-            except Exception:
-                values[key] = ""
-        self._server_connection_values = values
-        self._server_token_source = choice
-        self._render_current()
-        try:
-            self.set_focus(self.query_one("#onboard-input-credential", Input))
-        except Exception:
-            pass
-
-    def _after_server_connection_form(self: _Shell, values: dict[str, str]) -> None:
-        self._server_connection_values = dict(values)
-        self.result.api_url = values["server_url"]
-        source = getattr(self, "_server_token_source", "paste")
-        credential = values["credential"]
-        self._verify_yoke_token_value(
-            token=credential if source == "paste" else None,
-            token_file=credential if source == "file" else None,
-            token_source_kind="prompt" if source == "paste" else "token_file",
-            retry_source="server-form",
-            replace_current=True,
-        )
 
     # ── explicit team-server token entry + verification ─────
 
@@ -136,6 +52,7 @@ class ConnectFlow(TeamServerConnectFlow):
             return
         self._goto(
             self._selection_view(
+                "connect.token_source",
                 STEP_CONNECT,
                 f"Provide your {BRAND} API token.",
                 "How do you want to give Yoke your token?",
@@ -147,6 +64,7 @@ class ConnectFlow(TeamServerConnectFlow):
     def _after_token_source(self: _Shell, choice: str) -> None:
         if choice == "file":
             self._goto_input(
+                "connect.token_file",
                 STEP_CONNECT,
                 "Point at your token file.",
                 "Yoke reads your token from this file — it stays where it is.",
@@ -156,6 +74,7 @@ class ConnectFlow(TeamServerConnectFlow):
             )
             return
         self._goto_input(
+            "connect.token",
             STEP_CONNECT,
             f"Paste your {BRAND} API token.",
             f"Never shown on screen. Saved to ~/.yoke/secrets/{self.result.env_name}.token, owner-only.",
@@ -265,7 +184,7 @@ class ConnectFlow(TeamServerConnectFlow):
         retry_source: str,
         detail_lines: list[str] | None = None,
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         details = list(
             detail_lines
@@ -280,15 +199,16 @@ class ConnectFlow(TeamServerConnectFlow):
         rows = self._connection_verify_error_rows(retry_source)
         self._goto(
             _View(
-                STEP_CONNECT,
-                lambda: steps.verification_body(
-                    "Company sign-in could not be checked."
+                SetupPrompt(
+                    key="connect.yoke_verify_error",
+                    step=STEP_CONNECT,
+                    title="Company sign-in could not be checked."
                     if retry_source == "team-server"
                     else "Yoke token could not be verified.",
-                    message,
-                    details,
-                    rows,
-                    ok=False,
+                    message=message,
+                    detail_lines=tuple(details),
+                    choices=tuple(rows),
+                    tone=TONE_ERROR,
                 ),
                 lambda choice: self._on_yoke_verify_error(choice, retry_source),
             )
@@ -319,15 +239,6 @@ class ConnectFlow(TeamServerConnectFlow):
             self._render_current()
         else:
             self._goto_token_source()
-
-
-def _validate_server_url(value: str) -> str | None:
-    from urllib.parse import urlsplit
-
-    parsed = urlsplit(value.strip())
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        return "Enter a complete http:// or https:// server URL."
-    return None
 
 
 __all__ = [

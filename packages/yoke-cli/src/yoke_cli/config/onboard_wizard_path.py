@@ -6,7 +6,10 @@ import asyncio
 from typing import Any
 
 from yoke_cli.config import onboard_apply_path, path_doctor, path_repair_plan
-from yoke_cli.config.onboard_wizard_path_screens import path_apply_error_body
+from yoke_cli.config.onboard_wizard_path_screens import (
+    path_apply_error_body,
+    path_apply_error_prompt,
+)
 from yoke_cli.config.onboard_wizard_widgets import STEP_INSTALL
 
 
@@ -71,14 +74,11 @@ class PathFlow:
             )
 
     def _goto_path_apply_error(self, message: str) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
+        prompt = path_apply_error_prompt(message, self.result.path_repair)
         self._goto(
-            _View(
-                STEP_INSTALL,
-                lambda: path_apply_error_body(message, self.result.path_repair),
-                self._retry_install,
-            )
+            _View(prompt, self._retry_install, lambda: path_apply_error_body(prompt))
         )
 
     def _retry_install(self, choice: str) -> None:

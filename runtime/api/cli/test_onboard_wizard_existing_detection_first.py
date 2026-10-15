@@ -17,7 +17,7 @@ from yoke_cli.config import onboard_existing_project
 from yoke_cli.config import project_installed_layer as layer
 from yoke_cli.config.onboard_wizard_checkout_inspection_screen import (
     LAYER_ROWS,
-    inspection_body,
+    inspection_prompt,
 )
 from yoke_cli.config.onboard_wizard_existing_project_detected import (
     CHOICE_CONNECT,
@@ -28,6 +28,7 @@ from yoke_cli.config.onboard_wizard_existing_project_detected import (
 )
 from yoke_cli.config.onboard_wizard_stored_project import StoredProjectFlow
 from yoke_cli.config.onboard_wizard_widgets import SelectionList
+from yoke_cli.config.setup_prompt import TONE_ERROR
 
 from runtime.api.cli.onboard_checkout_inspection_fixtures import (
     repo_with_layer as _repo_with_layer,
@@ -38,19 +39,15 @@ def _first_row_value(rows) -> str:
     return rows[0].value
 
 
-def _title_of(widgets) -> str:
-    return str(widgets[0].render())
-
-
 def test_an_existing_layer_is_announced_and_kept_by_default(tmp_path: Path) -> None:
     scan = layer.scan(_repo_with_layer(tmp_path))
 
-    widgets = inspection_body(scan)
+    prompt = inspection_prompt(scan)
 
-    assert "already has Yoke files" in _title_of(widgets)
+    assert "already has Yoke files" in prompt.title
     # The headline is a finding, not a failure: the error styling would read
     # as something having gone wrong with the repository.
-    assert "✗" not in _title_of(widgets)
+    assert prompt.tone != TONE_ERROR
     assert _first_row_value(LAYER_ROWS) == layer.LAYER_DECISION_KEEP
 
 
@@ -161,7 +158,7 @@ class _StoredProjectShell(StoredProjectFlow):
     def _goto(self, view) -> None:
         self.views.append(view)
 
-    def _selection_view(self, step, title, subtitle, rows, on_select):
+    def _selection_view(self, _key, step, title, subtitle, rows, on_select, **_kwargs):
         return (step, title, subtitle, rows, on_select)
 
 

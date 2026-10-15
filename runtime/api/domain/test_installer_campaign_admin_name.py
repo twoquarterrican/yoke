@@ -43,7 +43,7 @@ def test_local_birth_action_satisfies_the_live_admin_name_prompt():
     assert validate_admin_name(name) == name
 
     class Shell:
-        def _goto_input(self, step, title, subtitle, **kwargs):
+        def _goto_input(self, key, step, title, subtitle, **kwargs):
             assert title in name_action["ready_text"]
             assert subtitle in name_action["ready_text"]
             assert kwargs["allow_placeholder"] is False

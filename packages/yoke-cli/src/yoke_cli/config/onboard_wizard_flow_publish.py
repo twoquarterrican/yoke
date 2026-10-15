@@ -16,7 +16,6 @@ clone re-home paths.
 
 from __future__ import annotations
 
-import asyncio
 
 from yoke_cli.config import setup_browser
 from pathlib import Path
@@ -35,18 +34,20 @@ from yoke_cli.config.onboard_wizard_github_state import (
 )
 from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
 from yoke_cli.config.project_publish_support import has_remote
+from yoke_cli.config.setup_prompt import TONE_ERROR, SetupPrompt
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 
 class _Shell(Protocol):  # pragma: no cover - structural typing only
     result: Any
 
     def _goto(self, view: "_View") -> None: ...
-    def _selection_view(self, step, title, subtitle, rows, on_select) -> "_View": ...
+    def _selection_view(self, key, step, title, subtitle, rows, on_select) -> "_View": ...
     def _goto_input(
         self,
+        key,
         step,
         title,
         subtitle,
@@ -60,7 +61,7 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
     ) -> None: ...
     def _after_prefix(self, value: str) -> None: ...
     def _run_checking(self, **kwargs) -> None: ...
-    async def action_back(self) -> None: ...
+    def _step_back(self) -> None: ...
 
 
 class PublishFlow:
@@ -90,6 +91,7 @@ class PublishFlow:
             return
         self._goto(
             self._selection_view(
+                "project.publish",
                 STEP_PROJECT,
                 "Also publish to GitHub?",
                 "Yoke creates the repo through the Yoke GitHub App and connects it as your remote.",
@@ -99,17 +101,18 @@ class PublishFlow:
         )
 
     def _goto_publish_origin_mismatch(self: _Shell, exc: BaseException) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Checkout origin changed.",
-                    str(exc),
-                    ["Repair the checkout origin, then retry the check."],
-                    steps.PROBE_RETRY_ROWS,
-                    ok=False,
+                SetupPrompt(
+                    key="project.publish_origin_mismatch",
+                    step=STEP_PROJECT,
+                    title="Checkout origin changed.",
+                    message=str(exc),
+                    detail_lines=tuple(["Repair the checkout origin, then retry the check."]),
+                    choices=tuple(steps.PROBE_RETRY_ROWS),
+                    tone=TONE_ERROR,
                 ),
                 self._on_publish_origin_mismatch,
             )
@@ -121,7 +124,7 @@ class PublishFlow:
                 self._history.pop()
             self._goto_publish_prompt()
             return
-        asyncio.ensure_future(self.action_back())
+        self._step_back()
 
     def _on_publish_choice(self: _Shell, choice: str) -> None:
         if choice != project_screens.PUBLISH_YES:
@@ -225,7 +228,7 @@ class PublishFlow:
         return [owner for owner in owners if owner.login.casefold() in allowed]
 
     def _show_owner_picker(self: _Shell, owners: Any) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         if not owners:
             self._open_repository_creation_page()
@@ -237,26 +240,26 @@ class PublishFlow:
         if authenticated:
             self._authenticated_github_login = authenticated
         self._owner_lookup = {o.login.casefold(): o for o in owners}
-        self._goto(
-            _View(
-                STEP_PROJECT,
-                lambda: project_screens.owner_picker_body(owners),
-                self._on_owner_pick,
-            )
-        )
+        prompt = project_screens.owner_picker_prompt(owners)
+        self._goto(_View(
+            prompt,
+            self._on_owner_pick,
+            lambda: project_screens.searchable_picker_body(prompt),
+        ))
 
     def _goto_owner_picker_error(self: _Shell, exc: BaseException) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Couldn't load GitHub owners.",
-                    str(exc),
-                    ["Check GitHub App access, GitHub availability, and the network."],
-                    steps.PROBE_RETRY_ROWS,
-                    ok=False,
+                SetupPrompt(
+                    key="project.owner_picker_error",
+                    step=STEP_PROJECT,
+                    title="Couldn't load GitHub owners.",
+                    message=str(exc),
+                    detail_lines=tuple(["Check GitHub App access, GitHub availability, and the network."]),
+                    choices=tuple(steps.PROBE_RETRY_ROWS),
+                    tone=TONE_ERROR,
                 ),
                 self._on_owner_picker_error,
             )
@@ -266,7 +269,7 @@ class PublishFlow:
         if choice == "retry":
             self._goto_owner_picker(replace_current=True)
             return
-        asyncio.ensure_future(self.action_back())
+        self._step_back()
 
     def _on_owner_pick(self: _Shell, login: str) -> None:
         selected = self._owner_lookup.get(login.casefold())
@@ -280,6 +283,7 @@ class PublishFlow:
         self.result.project_publish_owner_login = authenticated
         visibility = "private" if self.result.project_publish_private else "public"
         self._goto_input(
+            "project.publish_repo_name",
             STEP_PROJECT,
             "Name the repo.",
             f"Created as {selected.login}/… · {visibility}.",

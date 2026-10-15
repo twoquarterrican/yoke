@@ -1,4 +1,4 @@
-"""Selection and single-input view constructors shared by every wizard flow."""
+"""Selection and single-input view constructors shared by every setup flow."""
 
 from __future__ import annotations
 
@@ -6,8 +6,9 @@ from typing import Protocol
 
 from textual.widgets import Static
 
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config.onboard_wizard_state import _PendingInput, _View
+from yoke_cli.config.setup_prompt import SetupInput, SetupPrompt
+from yoke_cli.config.setup_prompt_render import render
 
 
 class _Shell(Protocol):  # pragma: no cover - structural typing only
@@ -17,19 +18,41 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
 
 
 class ViewHelpers:
-    def _selection_view(self: _Shell, step, title, subtitle, rows, on_select,
-                        *, initial: int = 0) -> _View:
+    def _selection_view(self: _Shell, key, step, title, subtitle, rows, on_select,
+                        *, initial: int = 0, guidance: str = "") -> _View:
         return _View(
-            step,
-            lambda: steps.selection_body(title, subtitle, rows, initial=initial),
+            SetupPrompt(
+                key=key,
+                step=step,
+                title=title,
+                subtitle=subtitle,
+                choices=tuple(rows),
+                initial=initial,
+                guidance=guidance,
+            ),
             on_select,
         )
 
     def _input_view(
-        self: _Shell, step, title, subtitle, *, placeholder, on_done,
+        self: _Shell, key, step, title, subtitle, *, placeholder, on_done,
         password=False, allow_placeholder=True, validate=None,
-        initial_value: str = "",
+        initial_value: str = "", guidance: str = "",
     ) -> _View:
+        prompt = SetupPrompt(
+            key=key,
+            step=step,
+            title=title,
+            subtitle=subtitle,
+            input=SetupInput(
+                placeholder=placeholder,
+                password=password,
+                allow_placeholder=allow_placeholder,
+                validate=validate,
+                initial_value=initial_value,
+            ),
+            guidance=guidance,
+        )
+
         def builder() -> list[Static]:
             self._pending_input = _PendingInput(
                 on_done=on_done,
@@ -37,23 +60,18 @@ class ViewHelpers:
                 allow_placeholder=allow_placeholder,
                 validate=validate,
             )
-            return steps.input_body(
-                title,
-                subtitle,
-                placeholder,
-                password,
-                initial_value=initial_value,
-            )
-        return _View(step, builder)
+            return render(prompt)
 
-    def _goto_input(self: _Shell, step, title, subtitle, *, placeholder, on_done,
+        return _View(prompt, on_done, builder)
+
+    def _goto_input(self: _Shell, key, step, title, subtitle, *, placeholder, on_done,
                     password=False, allow_placeholder=True, validate=None,
-                    initial_value: str = "") -> None:
+                    initial_value: str = "", guidance: str = "") -> None:
         self._goto(self._input_view(
-            step, title, subtitle, placeholder=placeholder,
+            key, step, title, subtitle, placeholder=placeholder,
             on_done=on_done, password=password,
             allow_placeholder=allow_placeholder, validate=validate,
-            initial_value=initial_value,
+            initial_value=initial_value, guidance=guidance,
         ))
 
 

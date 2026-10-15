@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 from yoke_contracts import github_app_snapshot
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config.onboard_wizard_state import CopyTarget
-from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, SelectionRow, SetupPrompt
 
 
 MISSING_REPOSITORY = "manual-missing-repository"
@@ -27,6 +27,7 @@ class ManualRepositoryAccessFlow:
 
     def _identify_manual_repository(self) -> None:
         self._goto_input(
+            "project.manual_repository",
             STEP_PROJECT,
             "Which repository did you create?",
             "Enter its exact owner/repo so Yoke checks only that repository.",
@@ -75,7 +76,7 @@ class ManualRepositoryAccessFlow:
         )
 
     def _show_manual_repository_access(self, *, opened: bool = False) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
         from yoke_cli.config.onboard_wizard_flow_publish_manual import (
             BACK,
             CHECK_REPOSITORIES,
@@ -103,12 +104,13 @@ class ManualRepositoryAccessFlow:
             )
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Give the Yoke GitHub App access to the new repository.",
-                    self._manual_publish_expected_repository,
-                    details,
-                    [
+                SetupPrompt(
+                    key="project.manual_repository_access",
+                    step=STEP_PROJECT,
+                    title="Give the Yoke GitHub App access to the new repository.",
+                    message=self._manual_publish_expected_repository,
+                    detail_lines=tuple(details),
+                    choices=tuple([
                         SelectionRow(
                             CHECK_REPOSITORIES,
                             "Check repositories",
@@ -125,8 +127,8 @@ class ManualRepositoryAccessFlow:
                             onboard_github_copy.MACHINE_GITHUB_SKIP_DESC,
                         ),
                         SelectionRow(BACK, "Back", "return to the prior screen"),
-                    ],
-                    ok=False,
+                    ]),
+                    tone=TONE_ERROR,
                 ),
                 self._on_manual_publish_recovery,
                 copy_targets=(

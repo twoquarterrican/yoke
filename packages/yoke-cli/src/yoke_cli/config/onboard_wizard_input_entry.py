@@ -20,11 +20,12 @@ from typing import Any, Callable, Sequence
 
 from textual.widgets import Input, Static
 
-from yoke_cli.config.onboard_wizard_state import _FormField, _PendingForm
+from yoke_cli.config.onboard_wizard_state import _PendingForm
+from yoke_cli.config.setup_prompt import SetupField
 from yoke_cli.config.onboard_wizard_widgets import FocusInput, SelectionList
 
 
-def form_field_widgets(fields: Sequence[_FormField]) -> list[Static]:
+def form_field_widgets(fields: Sequence[SetupField]) -> list[Static]:
     """Label, box, and inline error slot for each field, in order.
 
     The error slots stay collapsed until something is written into one, so a
@@ -131,7 +132,7 @@ class InputEntry:
 
     def _begin_form(
         self,
-        fields: tuple[_FormField, ...],
+        fields: tuple[SetupField, ...],
         *,
         on_done: Callable[[dict[str, str]], None],
     ) -> None:
@@ -212,7 +213,7 @@ class InputEntry:
         form.on_done(values)
         return True
 
-    def _check_form_field(self, field: _FormField, box: Input) -> bool:
+    def _check_form_field(self, field: SetupField, box: Input) -> bool:
         value = (box.value or "").strip()
         error = field.validate(value) if field.validate is not None else None
         if error is None and not value:
@@ -220,7 +221,7 @@ class InputEntry:
         self._show_field_error(field, error or "")
         return error is None
 
-    def _show_field_error(self, field: _FormField, text: str) -> None:
+    def _show_field_error(self, field: SetupField, text: str) -> None:
         """Write an inline error into one field's slot, leaving its neighbours be."""
         slot = self.query_one(f"#{field.error_id}", Static)
         slot.update(text)

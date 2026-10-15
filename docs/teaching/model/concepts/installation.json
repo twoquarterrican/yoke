@@ -2,7 +2,7 @@
  "id": "installation",
  "title": "Installation and setup",
  "status": "draft-copy",
- "sources": ["docs/public/install.md", "docs/public/guides/terminal-onboarding.md", "docs/public/windows-wsl.md", "runtime/harness/manifest-schema.md"],
+ "sources": ["docs/public/install.md", "docs/public/guides/terminal-onboarding.md", "docs/public/guides/agent-setup.md", "docs/public/windows-wsl.md", "runtime/harness/manifest-schema.md"],
  "page": "installation",
  "position": 17
 }

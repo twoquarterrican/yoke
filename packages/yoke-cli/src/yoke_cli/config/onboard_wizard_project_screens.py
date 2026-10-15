@@ -2,10 +2,8 @@
 
 Body builders and option rows for the project-step screens that branch off the
 source-select: the "Also publish to GitHub?" follow-up, the GitHub owner picker,
-and the clone-outcome / keep-upstream choices. They sit alongside the core step
-builders in :mod:`onboard_wizard_steps` and reuse its ``selection_body``
-primitive; splitting them out keeps each module under the authored-file line
-budget. These are presentation-only — the decision graph lives in
+and the clone-outcome / keep-upstream choices, as the prompts those screens
+declare. These are presentation-only — the decision graph lives in
 :mod:`onboard_wizard_flow` and :mod:`onboard_wizard_flow_clone`.
 """
 
@@ -15,9 +13,9 @@ from textual.widgets import Static
 
 from yoke_contracts import github_origin
 from yoke_cli.config import onboard_github_copy
-from yoke_cli.config.onboard_wizard_steps import selection_body
+from yoke_cli.config.onboard_wizard_step_ids import STEP_PROJECT
 from yoke_cli.config.onboard_wizard_searchable_picker import SearchableSelectionList
-from yoke_cli.config.onboard_wizard_widgets import SelectionRow
+from yoke_cli.config.setup_prompt import SelectionRow, SetupPrompt
 from yoke_cli.config.project_clone_support import (
     CLONE_OUTCOME_FORK,
     CLONE_OUTCOME_JUST_CLONE,
@@ -149,23 +147,25 @@ def clone_outcome_rows(
     ]
 
 
-def clone_outcome_body(
+def clone_outcome_prompt(
     remote_url: str | None,
     *,
     has_token: bool = True,
     push_access: bool | None = None,
     web_url: str | None = None,
-) -> list[Static]:
+) -> SetupPrompt:
     repo = default_repo(remote_url, web_url=web_url) or "the source"
-    return selection_body(
-        f"How do you want to copy {repo}?",
-        None,
-        clone_outcome_rows(
+    return SetupPrompt(
+        key="project.clone_outcome",
+        step=STEP_PROJECT,
+        title=f"How do you want to copy {repo}?",
+        choices=tuple(clone_outcome_rows(
             remote_url,
             has_token=has_token,
             push_access=push_access,
             web_url=web_url,
-        ),
+        )),
+        guidance="Ask the person; clone it is the choice with no side effects.",
     )
 
 
@@ -192,51 +192,40 @@ def repo_rows(repos: list) -> list[SelectionRow]:
     return [SelectionRow(repo.clone_url, repo.full_name, "private") for repo in repos]
 
 
-def publish_prompt_body() -> list[Static]:
-    return selection_body(
-        "Also publish to GitHub?",
-        "Yoke creates the repo with GitHub authorization and connects it as your remote.",
-        PUBLISH_ROWS,
+NEW_REPO_VISIBILITY_PROMPT = SetupPrompt(
+    key="project.new_repo_visibility",
+    step=STEP_PROJECT,
+    title="Make the new repo public or private?",
+    choices=tuple(NEW_REPO_VISIBILITY_ROWS),
+)
+
+
+def owner_picker_prompt(owners: list) -> SetupPrompt:
+    return SetupPrompt(
+        key="project.publish_owner",
+        step=STEP_PROJECT,
+        title="Where on GitHub?",
+        subtitle="Type to filter accounts and organizations, or use Up/Down immediately.",
+        choices=tuple(owner_rows(owners)),
     )
 
 
-def clone_visibility_body() -> list[Static]:
-    return selection_body(
-        "Is the repo public or private?",
-        "Public repos clone from a URL; private ones come from your GitHub account.",
-        CLONE_VISIBILITY_ROWS,
+def repo_picker_prompt(repos: list) -> SetupPrompt:
+    return SetupPrompt(
+        key="project.private_repo",
+        step=STEP_PROJECT,
+        title="Which private repo?",
+        subtitle="Type an owner or repository name to filter, or use Up/Down immediately.",
+        choices=tuple(repo_rows(repos)),
     )
 
 
-def new_repo_visibility_body() -> list[Static]:
-    return selection_body(
-        "Make the new repo public or private?",
-        None,
-        NEW_REPO_VISIBILITY_ROWS,
-    )
-
-
-def owner_picker_body(owners: list) -> list[Static]:
+def searchable_picker_body(prompt: SetupPrompt) -> list[Static]:
     return [
-        Static("Where on GitHub?", classes="onboard-title"),
-        Static(
-            "Type to filter accounts and organizations, or use Up/Down immediately.",
-            classes="onboard-subtitle",
-        ),
+        Static(prompt.title, classes="onboard-title"),
+        Static(prompt.subtitle or "", classes="onboard-subtitle"),
         Static("", classes="onboard-spacer"),
-        SearchableSelectionList(owner_rows(owners)),
-    ]
-
-
-def repo_picker_body(repos: list) -> list[Static]:
-    return [
-        Static("Which private repo?", classes="onboard-title"),
-        Static(
-            "Type an owner or repository name to filter, or use Up/Down immediately.",
-            classes="onboard-subtitle",
-        ),
-        Static("", classes="onboard-spacer"),
-        SearchableSelectionList(repo_rows(repos)),
+        SearchableSelectionList(list(prompt.choices)),
     ]
 
 
@@ -250,12 +239,14 @@ RESUME_ROWS = [
 ]
 
 
-def resume_existing_clone_body(checkout: str) -> list[Static]:
-    return selection_body(
-        "That folder already has this repo.",
-        f"{checkout} is the exact root of a matching clone. Resume from it, "
-        "or choose another folder; Yoke will not delete this folder.",
-        RESUME_ROWS,
+def resume_existing_clone_prompt(checkout: str) -> SetupPrompt:
+    return SetupPrompt(
+        key="project.clone_resume",
+        step=STEP_PROJECT,
+        title="That folder already has this repo.",
+        subtitle=f"{checkout} is the exact root of a matching clone. Resume from "
+        "it, or choose another folder; Yoke will not delete this folder.",
+        choices=tuple(RESUME_ROWS),
     )
 
 
@@ -267,20 +258,19 @@ __all__ = [
     "CLONE_VISIBILITY_ROWS",
     "NEW_REPO_PRIVATE",
     "NEW_REPO_PUBLIC",
+    "NEW_REPO_VISIBILITY_PROMPT",
     "NEW_REPO_VISIBILITY_ROWS",
     "PUBLISH_NO",
     "PUBLISH_ROWS",
     "PUBLISH_YES",
     "RESUME_ROWS",
-    "clone_outcome_body",
+    "clone_outcome_prompt",
     "clone_outcome_rows",
-    "clone_visibility_body",
     "default_repo",
-    "new_repo_visibility_body",
-    "owner_picker_body",
+    "owner_picker_prompt",
     "owner_rows",
-    "publish_prompt_body",
-    "repo_picker_body",
+    "repo_picker_prompt",
     "repo_rows",
-    "resume_existing_clone_body",
+    "resume_existing_clone_prompt",
+    "searchable_picker_body",
 ]

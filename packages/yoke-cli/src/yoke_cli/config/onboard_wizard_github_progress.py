@@ -86,6 +86,10 @@ def notify_from_worker(shell: Any, event: Any) -> None:
 
 
 def _report(shell: Any, line: str, targets: tuple[CopyTarget, ...]) -> None:
+    show_browser_step = getattr(shell, "show_browser_step", None)
+    if show_browser_step is not None:
+        show_browser_step(line, targets)
+        return
     try:
         body = shell.query_one(f"#{BODY_ID}")
         plan_lines = [

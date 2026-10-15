@@ -184,7 +184,7 @@ class ProjectIdentityFlow:
         self._after_local_checkout_source(value)
 
     def _goto_project_details(self: _Shell) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         suggested_slug = steps.slug_from_checkout(self.result.project_checkout)
         branch = self.result.project_source_default_branch
@@ -193,15 +193,18 @@ class ProjectIdentityFlow:
             branch_from_source=branch,
         )
 
+        details = project_details.prompt(fields, branch_from_source=branch)
+
         def builder():
             self._begin_form(fields, on_done=self._after_project_details)
-            return project_details.body(fields, branch_from_source=branch)
+            return project_details.body(details)
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                builder,
+                details,
                 lambda _choice: self._submit_pending_form(),
+                builder,
+                on_form=self._after_project_details,
             )
         )
 

@@ -15,7 +15,8 @@ from yoke_cli.config.onboard_wizard_plan_review import (
     render_reuse_summary,
     render_write_plan,
 )
-from yoke_cli.config.onboard_wizard_widgets import SelectionList, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import SelectionList
+from yoke_cli.config.setup_prompt import SelectionRow, SetupPrompt
 
 
 CONFIRM_ROWS = [
@@ -89,7 +90,7 @@ def finish_body(
         widgets.extend(render_reuse_summary(plan))
         if len(widgets) > 2:
             widgets.append(Static("", classes="onboard-spacer"))
-        widgets.append(SelectionList(FINISH_EMPTY_ROWS))
+        widgets.append(SelectionList(review_rows(plan, problems, machine_github_saved, show_all)))
         return widgets
     if problems:
         widgets = [
@@ -105,11 +106,7 @@ def finish_body(
         )
         widgets.append(Static("", classes="onboard-spacer"))
         widgets.append(
-            SelectionList(
-                REVIEW_BLOCKED_ROWS_AFTER_GITHUB
-                if machine_github_saved
-                else REVIEW_BLOCKED_ROWS
-            )
+            SelectionList(review_rows(plan, problems, machine_github_saved, show_all))
         )
         return widgets
     widgets = heading(REVIEW_TITLE, _review_subtitle(plan, machine_github_saved))
@@ -131,11 +128,87 @@ def finish_body(
     for line in notes or []:
         widgets.append(Static(f"Note: {escape(line)}", classes="onboard-note"))
     widgets.append(Static("", classes="onboard-spacer"))
+    widgets.append(
+        SelectionList(review_rows(plan, problems, machine_github_saved, show_all))
+    )
+    return widgets
+
+
+def review_rows(
+    plan: dict,
+    problems: list[str] | None,
+    machine_github_saved: bool,
+    show_all: bool,
+) -> list[SelectionRow]:
+    """The Review screen's answers for its empty, blocked or ready state."""
+    grouped = classify_plan(plan)
+    if not any(grouped.get(key) for _label, _css, key in _PLAN_GROUPS):
+        return list(FINISH_EMPTY_ROWS)
+    if problems:
+        return list(
+            REVIEW_BLOCKED_ROWS_AFTER_GITHUB
+            if machine_github_saved
+            else REVIEW_BLOCKED_ROWS
+        )
     rows = list(CONFIRM_ROWS_AFTER_GITHUB if machine_github_saved else CONFIRM_ROWS)
     if show_all:
         rows[1] = SelectionRow("show-all", "Show summary", "hide exact plan")
-    widgets.append(SelectionList(rows))
-    return widgets
+    return rows
+
+
+def review_prompt(
+    plan: dict,
+    *,
+    step: str,
+    problems: list[str] | None,
+    notes: list[str] | None,
+    machine_github_saved: bool,
+    show_all: bool,
+    status_lines: list[str] | None,
+) -> SetupPrompt:
+    """The Review question: the plan as text lines and the same answers."""
+    grouped = classify_plan(plan)
+    rows = tuple(review_rows(plan, problems, machine_github_saved, show_all))
+    if not any(grouped.get(key) for _label, _css, key in _PLAN_GROUPS):
+        return SetupPrompt(
+            key="review.confirm",
+            step=step,
+            title="You're connected.",
+            subtitle="Nothing new to save — the selected setup is already in place.",
+            choices=rows,
+            guidance="Nothing will be written; answer apply to finish.",
+        )
+    if problems:
+        return SetupPrompt(
+            key="review.confirm",
+            step=step,
+            title="A few things to fix before applying.",
+            detail_lines=tuple(problems),
+            choices=rows,
+            guidance=(
+                "Tell the person what must change; answer back to correct the "
+                "earlier answer, or cancel to stop without saving."
+            ),
+        )
+    detail = [
+        f"{label}: {line}"
+        for label, _css, key in _PLAN_GROUPS
+        for line in grouped.get(key, [])
+    ]
+    detail.extend(status_lines or [])
+    detail.extend(f"Note: {line}" for line in notes or [])
+    return SetupPrompt(
+        key="review.confirm",
+        step=step,
+        title=REVIEW_TITLE,
+        subtitle=_review_subtitle(plan, machine_github_saved),
+        detail_lines=tuple(detail),
+        choices=rows,
+        guidance=(
+            "Show the person this plan and get their approval before answering "
+            "apply; nothing in the plan is written until then."
+        ),
+    )
 
 
 def _review_subtitle(plan: dict, machine_github_saved: bool) -> str:
@@ -161,4 +234,6 @@ __all__ = [
     "REVIEW_SUBTITLE",
     "REVIEW_TITLE",
     "finish_body",
+    "review_prompt",
+    "review_rows",
 ]

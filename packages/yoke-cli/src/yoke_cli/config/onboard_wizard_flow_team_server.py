@@ -2,12 +2,14 @@
 
 from yoke_cli.config import team_server_authorization, onboard_wizard_steps as steps
 from yoke_cli.config.onboard_wizard_self_host import NO_SERVER_GUIDANCE
-from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT
+from yoke_cli.config.setup_prompt import SelectionRow
 
 
 class TeamServerConnectFlow:
     def _goto_team_server(self):
         self._goto_input(
+            "connect.team_server_url",
             STEP_CONNECT,
             "Connect to your team server.",
             "Enter its URL. Yoke checks whether your team uses company sign-in or API tokens. "

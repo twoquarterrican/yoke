@@ -49,6 +49,7 @@ from yoke_contracts.field_note_text import FOOTER as FIELD_NOTE_FOOTER
 
 
 _BARE_SETUP_COMMAND = "yoke setup"
+_AGENT_SETUP_COMMAND = "yoke setup --agent"
 _NONINTERACTIVE_SETUP_COMMAND = (
     "yoke setup --non-interactive --local --yes   (machine-local universe)\n"
     "  yoke setup --non-interactive --env <env> --api-url <url> "
@@ -79,7 +80,8 @@ def _emit_bare_setup_route(problem: str, *, interactive: bool) -> int:
         print(f"Start setup with `{_BARE_SETUP_COMMAND}`.", file=sys.stderr)
     else:
         print(
-            "Run setup explicitly. For automation:",
+            f"From a coding agent, run `{_AGENT_SETUP_COMMAND}` and answer "
+            "its questions one at a time. For automation:",
             file=sys.stderr,
         )
         print(f"  {_NONINTERACTIVE_SETUP_COMMAND}", file=sys.stderr)

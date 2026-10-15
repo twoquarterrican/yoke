@@ -17,69 +17,26 @@ from yoke_cli.config.onboard_terminal import (
     plain_text,
     screen_compat_terminal,
 )
-from yoke_cli.config import machine_config
-from yoke_cli.config import onboard_destinations
-from yoke_cli.config import onboard_project
 from yoke_cli.config import onboard_wizard_chrome as chrome
-from yoke_cli.config.onboard_wizard import (
-    WizardDefaults,
-    WizardResult,
-    default_config_path,
-)
+from yoke_cli.config.onboard_wizard import WizardDefaults
 from yoke_cli.config.onboard_wizard_body_scroll import BODY_ID, BodyScrollFlow
 from yoke_cli.config.onboard_wizard_body_swap import BodySwap
 from yoke_cli.config.onboard_wizard_checking import CheckingFlow
 from yoke_cli.config.onboard_wizard_copy_open import CopyOpenFlow
-from yoke_cli.config.onboard_wizard_flow import WizardFlow
-from yoke_cli.config.onboard_wizard_flow_apply import ApplyFlow
-from yoke_cli.config.onboard_wizard_flow_board_art import BoardArtFlow
-from yoke_cli.config.onboard_wizard_flow_clone import CloneFlow
-from yoke_cli.config.onboard_wizard_flow_connect import (
-    ConnectFlow,
-    HostedMachineConnectFlow,
-)
-from yoke_cli.config.onboard_wizard_flow_destination import DestinationFlow
-from yoke_cli.config.onboard_wizard_flow_dev import DevFlow
-from yoke_cli.config.onboard_wizard_flow_github import MachineGithubFlow
-from yoke_cli.config.onboard_wizard_flow_hosting import HostingFlow
-from yoke_cli.config.onboard_wizard_flow_project_git import ProjectGitFlow
-from yoke_cli.config.onboard_wizard_flow_publish import PublishFlow
-from yoke_cli.config.onboard_wizard_flow_publish_manual import ManualPublishFlow
-from yoke_cli.config.onboard_wizard_path import PathFlow
+from yoke_cli.config.onboard_wizard_flows import SETUP_FLOWS, init_setup_state
 from yoke_cli.config.onboard_wizard_input_entry import InputEntry
 from yoke_cli.config.onboard_wizard_redraw import FullFrameRedraw
 from yoke_cli.config.onboard_wizard_state import _PendingForm, _PendingInput, _View
-from yoke_cli.config.onboard_wizard_stored_connection import StoredConnectionHydration
-from yoke_cli.config.onboard_wizard_view_helpers import ViewHelpers
-from yoke_cli.config.onboard_wizard_widgets import (
-    STEP_CONNECT_LABEL,
-    SelectionList,
-    Stepper,
-)
+from yoke_cli.config.onboard_wizard_widgets import SelectionList, Stepper
 
 
 class OnboardWizardApp(
     CheckingFlow,
-    PathFlow,
-    DestinationFlow,
-    HostedMachineConnectFlow,
-    ConnectFlow,
-    MachineGithubFlow,
-    ProjectGitFlow,
-    WizardFlow,
-    ApplyFlow,
-    CloneFlow,
-    DevFlow,
-    ManualPublishFlow,
-    PublishFlow,
-    HostingFlow,
-    BoardArtFlow,
+    *SETUP_FLOWS,
     InputEntry,
     BodyScrollFlow,
     BodySwap,
     CopyOpenFlow,
-    StoredConnectionHydration,
-    ViewHelpers,
     FullFrameRedraw,
     App[None],
 ):
@@ -109,75 +66,12 @@ class OnboardWizardApp(
         apply_report: Callable[..., Any],
     ) -> None:
         super().__init__()
-        self._apply_report = apply_report
-        self.cancelled = False
-        self.exit_code = 0
-        self.last_error: str | None = None
-        self.failed_step: str | None = None
-        self.report_path: str | None = None
-        self.resume_command: str | None = None
-        self._stored_yoke_token_available = False
-        self._stored_yoke_attempted = False
-        self._stored_github_attempted = False
-        self._stored_machine_github_api_url: str | None = None
-        self._api_url_preset = bool(defaults.api_url)
-        self._stored_project_attempted = False
-        self._connection_status_line: str | None = None
-        self._github_success_details = False
-        self._apply_failure_details = False
-        self._stored_project_checkouts: list[machine_config.ConfiguredProject] = []
-        self._pending_stored_project_checkout: str | None = None
-        self._project_mode_preset = defaults.project_mode is not None
-        self._project_preset_attempted = False
-        self._preset_dev_checkout: str | None = (
-            defaults.project_checkout
-            if defaults.project_mode == onboard_project.PROJECT_MODE_EDIT_YOKE_SOURCE
-            else None
-        )
-        # Apply runs in a worker thread (ApplyFlow): ``_applying`` guards ctrl-C
-        # from a mid-mutation teardown; ``_apply_steps`` is the live step model;
-        # ``_review_plan`` is the previewed plan the Applying screen renders from.
-        self._applying = False
-        self._apply_steps: list[dict[str, Any]] = []
-        self._review_plan: dict[str, Any] = {}
-        self._review_problems: list[str] = []
-        self._review_notes: list[str] = []
-        self._resume_run_id: str | None = None
-        self._resume_payload: dict[str, Any] | None = None
-        # A destination preset (CLI flags, the destination env override, or a
-        # resumed run) skips the picker; the Account rail label follows the
-        # routed destination on every body swap.
-        self._destination_preset = defaults.destination is not None
-        self._account_step_label = STEP_CONNECT_LABEL
-        self.result = WizardResult(
-            config_path=default_config_path(defaults.config_path),
-            env_name=(defaults.env_name or onboard_destinations.DEFAULT_SIGN_IN_ENV),
-            api_url=(defaults.api_url or ""),
-            destination=(
-                defaults.destination or onboard_destinations.DEFAULT_DESTINATION
-            ),
-            token=defaults.token,
-            token_file=defaults.token_file,
-            mode=(defaults.mode or "quick"),
-            apply=defaults.apply,
-            harness_posture=defaults.harness_posture,
-            project_mode=(
-                defaults.project_mode or onboard_project.PROJECT_MODE_MACHINE_ONLY
-            ),
-            project_checkout=defaults.project_checkout,
-        )
-        self._hydrate_stored_credentials(defaults)
-        self._post_install = defaults.post_install
-        self._history: list[_View] = []
+        init_setup_state(self, defaults=defaults, apply_report=apply_report)
         self._pending_input: _PendingInput | None = None
         self._pending_form: _PendingForm | None = None
-        self._checking = False
-        self._checking_blocks_quit = False
         # Set by ``_render_current`` and drained by the async message handlers so
         # the body swap runs in the same handler turn as the transition keypress.
         self._swap_pending = False
-        # login -> github_publish.RepoOwner for the chosen publish owner picker.
-        self._owner_lookup: dict[str, Any] = {}
         self._screen_compat = screen_compat_terminal()
         self._plain_glyphs = plain_glyphs()
 

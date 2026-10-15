@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yoke_cli.config import local_universe_setup
-from yoke_cli.config.onboard_wizard_widgets import SelectionRow
+from yoke_cli.config.setup_prompt import SelectionRow
 
 
 def local_universe_summary_lines(state: dict[str, Any]) -> list[str]:

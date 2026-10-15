@@ -5,10 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping, Protocol
 
 from yoke_cli.config.github_machine_report import repository_scope_recommendations
-from yoke_cli.config.onboard_wizard_widgets import SelectionRow
+from yoke_cli.config.onboard_wizard_step_ids import STEP_GITHUB
+from yoke_cli.config.setup_prompt import TONE_OK, SelectionRow, SetupPrompt
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 
 def bounded_summary(values: list[str], *, total: int | None = None) -> str:
@@ -140,10 +141,8 @@ def success_summary_lines(report: Mapping[str, Any]) -> list[str]:
     ]
 
 
-def success_body(report: Mapping[str, Any], *, show_details: bool) -> list:
-    from yoke_cli.config import onboard_wizard_steps as steps
-
-    rows = [
+def success_prompt(report: Mapping[str, Any], *, show_details: bool) -> SetupPrompt:
+    rows = (
         SelectionRow("continue", "Continue", "go to project setup"),
         SelectionRow(
             "details",
@@ -152,13 +151,17 @@ def success_body(report: Mapping[str, Any], *, show_details: bool) -> list:
             if show_details
             else "exact installations and repositories",
         ),
-    ]
-    return steps.verification_body(
-        "GitHub connected.",
-        success_message(report),
-        success_details(report) if show_details else success_summary_lines(report),
-        rows,
-        ok=True,
+    )
+    return SetupPrompt(
+        key="github.connected",
+        step=STEP_GITHUB,
+        title="GitHub connected.",
+        message=success_message(report),
+        detail_lines=tuple(
+            success_details(report) if show_details else success_summary_lines(report)
+        ),
+        choices=rows,
+        tone=TONE_OK,
     )
 
 
@@ -169,9 +172,10 @@ class MachineGithubShell(Protocol):  # pragma: no cover - structural typing only
     _history: list[Any]
 
     def _goto(self, view: _View) -> None: ...
-    def _selection_view(self, step, title, subtitle, rows, on_select) -> _View: ...
+    def _selection_view(self, key, step, title, subtitle, rows, on_select) -> _View: ...
     def _goto_input(
         self,
+        key,
         step,
         title,
         subtitle,
@@ -184,5 +188,5 @@ class MachineGithubShell(Protocol):  # pragma: no cover - structural typing only
     ) -> None: ...
     def _goto_project_mode(self) -> None: ...
     def _run_checking(self, **kwargs) -> None: ...
-    async def action_back(self) -> None: ...
+    def _step_back(self) -> None: ...
     def _render_current(self) -> None: ...

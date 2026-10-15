@@ -7,10 +7,10 @@ from textual.widgets import Static
 
 from yoke_cli.config.onboard_wizard_widgets import (
     SelectionList,
-    SelectionRow,
     _OptionRow,
     _SelectionDescription,
 )
+from yoke_cli.config.setup_prompt import SelectionRow
 
 
 class SearchableSelectionList(SelectionList):

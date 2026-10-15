@@ -1,15 +1,15 @@
 {
  "id": "02",
  "title": "One setup decision at a time",
- "status": "draft-copy",
+ "status": "observed",
  "audience": "both",
  "when": "At each setup step",
- "need": "The TUI teaches the human directly. Agent mode must provide a structured question, allowed answers, links and guidance, which the agent translates for the human.",
- "disclosure": "planned cue",
- "surface": "Current TUI/noninteractive setup; FIRST-USER A structured agent steps",
- "gap": "The audited adapter does not yet expose the planned --agent / --answer contract. A noninteractive flag alone is not the proposed context chain.",
- "review": "Pending exact recipe proof.",
+ "need": "The TUI teaches the human directly. Agent mode provides a structured question, allowed answers, links and guidance, which the agent translates for the human.",
+ "disclosure": "current cue",
+ "surface": "TUI setup; yoke setup --agent JSON questions answered with --answer KEY=VALUE",
+ "gap": "Live harness proof that an agent relays each question to a person through install and first-work remains pending.",
+ "review": "Source and focused regression tests; no live pass asserted.",
  "plan_notes": ["FIRST-USER A", "FIRST-USER 8", "FIRST-USER 35", "JOURNEYS 1"],
- "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard.py", "docs/public/guides/terminal-onboarding.md"],
+ "sources": ["packages/yoke-cli/src/yoke_cli/commands/adapters/onboard_agent.py", "docs/public/guides/agent-setup.md", "docs/public/guides/terminal-onboarding.md"],
  "position": 1
 }

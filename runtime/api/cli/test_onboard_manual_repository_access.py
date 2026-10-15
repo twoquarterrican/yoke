@@ -57,7 +57,7 @@ class Flow(manual.ManualPublishFlow, project_access.ProjectGithubAccessFlow):
 
     def _goto(self, view):
         self.view = view
-        self.body = view.builder()
+        self.body = (list(view.prompt.detail_lines), list(view.prompt.choices))
 
     def _goto_input(self, *args, **kwargs):
         self.input = kwargs
@@ -74,21 +74,12 @@ class Flow(manual.ManualPublishFlow, project_access.ProjectGithubAccessFlow):
     def _after_repo(self, name):
         self.attached = name
 
-    async def action_back(self):
+    def _step_back(self):
         self.backs += 1
 
 
 @pytest.fixture
-def flow(monkeypatch):
-    # Preserve all row/callback behavior without mounting Textual for each case.
-    monkeypatch.setattr(
-        manual.steps,
-        "verification_body",
-        lambda title, subtitle, details, rows, **_: (details, rows),
-    )
-    monkeypatch.setattr(
-        manual.steps, "selection_body", lambda title, subtitle, rows: ([], rows)
-    )
+def flow():
     return Flow()
 
 

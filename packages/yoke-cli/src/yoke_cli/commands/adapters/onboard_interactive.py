@@ -30,32 +30,8 @@ def run_wizard(
         print(f"error: {exc}", file=sys.stderr)
         return 2
     onboard_machine_setup.prepare(machine_config.config_path(parsed.config_path))
-    defaults = onboard_wizard.WizardDefaults(
-        config_path=str(machine_config.config_path(parsed.config_path)),
-        env_name=env_name or None,
-        api_url=parsed.api_url,
-        destination=destination,
-        token=parsed.token,
-        token_file=parsed.token_file,
-        mode=selected_mode if (parsed.quick or parsed.advanced) else None,
-        project_mode=parsed.project_mode,
-        project_checkout=parsed.project_checkout,
-        apply=parsed.apply,
-        harness_posture=parsed.harness_posture,
-        post_install=parsed.post_install,
-    )
-
-    def apply_report(kwargs: dict, tui_progress=None) -> dict:
-        if parsed.skip_identity_check:
-            kwargs = {**kwargs, "check_identity": False}
-        if parsed.resume_run_id:
-            kwargs = {
-                **kwargs,
-                "resume_run_id": parsed.resume_run_id,
-                "resume_payload": parsed.resume_payload,
-            }
-        return apply_with_report(kwargs, tui_progress=tui_progress)
-
+    defaults = wizard_defaults(parsed, env_name, selected_mode, destination)
+    apply_report = report_runner(parsed, apply_with_report)
     try:
         result = onboard_wizard.run_wizard(defaults, apply_report=apply_report)
     except (onboard_wizard.WizardCancelled, SetupTerminalError) as exc:
@@ -72,6 +48,50 @@ def run_wizard(
         )
     finish_pending_source_install(parsed.config_path)
     return result.exit_code
+
+
+def wizard_defaults(
+    parsed: Any,
+    env_name: str,
+    selected_mode: str,
+    destination: str | None,
+) -> onboard_wizard.WizardDefaults:
+    """The presets every setup shell starts from, taken from the command line."""
+    return onboard_wizard.WizardDefaults(
+        config_path=str(machine_config.config_path(parsed.config_path)),
+        env_name=env_name or None,
+        api_url=parsed.api_url,
+        destination=destination,
+        token=parsed.token,
+        token_file=parsed.token_file,
+        mode=selected_mode if (parsed.quick or parsed.advanced) else None,
+        project_mode=parsed.project_mode,
+        project_checkout=parsed.project_checkout,
+        apply=parsed.apply,
+        harness_posture=parsed.harness_posture,
+        post_install=parsed.post_install,
+    )
+
+
+def report_runner(
+    parsed: Any,
+    apply_with_report: Callable[..., dict],
+    **apply_options: Any,
+) -> Callable[..., dict]:
+    """The apply callable a setup shell hands its confirmed answers to."""
+
+    def apply_report(kwargs: dict, tui_progress=None) -> dict:
+        if parsed.skip_identity_check:
+            kwargs = {**kwargs, "check_identity": False}
+        if parsed.resume_run_id:
+            kwargs = {
+                **kwargs,
+                "resume_run_id": parsed.resume_run_id,
+                "resume_payload": parsed.resume_payload,
+            }
+        return apply_with_report(kwargs, tui_progress=tui_progress, **apply_options)
+
+    return apply_report
 
 
 def finish_pending_source_install(config_path: str | None, *, stream=None) -> None:
@@ -95,4 +115,9 @@ def finish_pending_source_install(config_path: str | None, *, stream=None) -> No
     )
 
 
-__all__ = ["finish_pending_source_install", "run_wizard"]
+__all__ = [
+    "finish_pending_source_install",
+    "report_runner",
+    "run_wizard",
+    "wizard_defaults",
+]

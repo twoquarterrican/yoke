@@ -17,14 +17,16 @@ from yoke_cli.config.onboard_wizard_project_fields import (
     slug_from_checkout,
 )
 
-from yoke_cli.config.onboard_wizard_apply_steps import (  # noqa: F401
+from yoke_cli.config.onboard_wizard_apply_prompts import (  # noqa: F401
     APPLY_FAILURE_ROWS,
     APPLY_FAILURE_RESUME_ROW,
     APPLY_FAILURE_ROWS_RETRYABLE,
     APPLY_FAILURE_DIFFERENT_FOLDER_ROW,
     APPLY_DIFFERENT_FOLDER_CONFIRM_ROWS,
-    APPLY_STATUS_GLYPHS,
     APPLY_SUCCESS_ROWS,
+)
+from yoke_cli.config.onboard_wizard_apply_steps import (  # noqa: F401
+    APPLY_STATUS_GLYPHS,
     apply_failure_body,
     apply_progress_body,
     apply_progress_lines,
@@ -35,7 +37,6 @@ from yoke_cli.config.onboard_wizard_apply_steps import (  # noqa: F401
     apply_success_body_from_report,
 )
 from yoke_cli.config.onboard_wizard import PROJECT_GITHUB_REUSE_MACHINE
-from yoke_cli.config.onboard_wizard_palette import ACCENT
 from yoke_cli.config.onboard_wizard_plan_review import (
     _friendly_line,  # noqa: F401 - re-exported for steps.* callers and tests
     classify_plan,
@@ -50,11 +51,8 @@ from yoke_cli.config.onboard_wizard_review_steps import (
     REVIEW_SUBTITLE,
     REVIEW_TITLE,
 )
-from yoke_cli.config.onboard_wizard_widgets import (
-    FocusInput,
-    SelectionList,
-    SelectionRow,
-)
+from yoke_cli.config.setup_prompt import SelectionRow
+from yoke_cli.config.setup_prompt_render import heading
 
 
 def _github_skip_row(value: str) -> SelectionRow:
@@ -169,72 +167,6 @@ PROJECT_GITHUB_ROWS = [
 PROJECT_GITHUB_ROWS_NO_MACHINE = [PROJECT_GITHUB_ROWS[-1]]
 
 
-def _heading(title: str, subtitle: str | None) -> list[Static]:
-    widgets = [Static(title, classes="onboard-title")]
-    if subtitle is not None:
-        widgets.append(Static(subtitle, classes="onboard-subtitle"))
-    widgets.append(Static("", classes="onboard-spacer"))
-    return widgets
-
-
-def selection_body(
-    title: str,
-    subtitle: str | None,
-    rows: list[SelectionRow],
-    *,
-    initial: int = 0,
-) -> list[Static]:
-    return [*_heading(title, subtitle), SelectionList(rows, initial=initial)]
-
-
-def input_body(
-    title: str,
-    subtitle: str,
-    placeholder: str,
-    password: bool,
-    *,
-    initial_value: str = "",
-) -> list[Static]:
-    return [
-        *_heading(title, subtitle),
-        FocusInput(
-            value=initial_value,
-            placeholder=placeholder,
-            password=password,
-            id="onboard-input",
-            classes="onboard-input",
-        ),
-        Static("", classes="onboard-input-error"),
-    ]
-
-
-def checking_body(
-    title: str,
-    message: str,
-    detail_lines: list[str] | None = None,
-) -> list[Static]:
-    widgets = [
-        Static(title, classes="onboard-title"),
-        Static("", classes="onboard-spacer"),
-        Static(escape(message), classes="onboard-plan-line"),
-    ]
-    widgets.extend(
-        Static(f"  • {escape(line)}", classes="onboard-plan-line")
-        for line in detail_lines or []
-    )
-    widgets.append(Static("", classes="onboard-spacer"))
-    widgets.append(Static("Checking...", classes="onboard-note"))
-    return widgets
-
-
-def project_mode_body() -> list[Static]:
-    return selection_body(
-        "Set up a project.",
-        "Where's the code? You can change this later.",
-        MODE_ROWS,
-    )
-
-
 def error_body(message: str) -> list[Static]:
     return [
         Static("✗ Couldn't build your setup plan.", classes="onboard-title-error"),
@@ -246,36 +178,6 @@ def error_body(message: str) -> list[Static]:
             classes="onboard-plan-line",
         ),
     ]
-
-
-def verification_body(
-    title: str,
-    message: str,
-    detail_lines: list[str],
-    rows: list[SelectionRow],
-    *,
-    ok: bool,
-) -> list[Static]:
-    if ok:
-        widgets = [
-            Static(title, classes="onboard-title"),
-            Static("", classes="onboard-spacer"),
-            Static(f"[{ACCENT}]{escape(message)}[/]", classes="onboard-plan-line"),
-        ]
-    else:
-        widgets = [
-            Static(f"✗ {escape(title)}", classes="onboard-title-error"),
-            Static("", classes="onboard-spacer"),
-            Static(f"Cause: {escape(message)}", classes="onboard-plan-line"),
-            Static("What to do", classes="onboard-title"),
-        ]
-    widgets.extend(
-        Static(f"  • {escape(line)}", classes="onboard-plan-line")
-        for line in detail_lines
-    )
-    widgets.append(Static("", classes="onboard-spacer"))
-    widgets.append(SelectionList(rows))
-    return widgets
 
 
 def finish_body(
@@ -294,7 +196,7 @@ def finish_body(
         machine_github_saved=machine_github_saved,
         show_all=show_all,
         status_lines=status_lines,
-        heading=_heading,
+        heading=heading,
     )
 
 
@@ -331,16 +233,11 @@ __all__ = [
     "apply_success_body",
     "apply_success_body_from_report",
     "classify_plan",
-    "checking_body",
     "error_body",
     "finish_body",
-    "input_body",
-    "project_mode_body",
     "render_write_plan",
     "render_reuse_summary",
     "reset_project_fields",
     "reset_project_publish_fields",
-    "selection_body",
     "slug_from_checkout",
-    "verification_body",
 ]

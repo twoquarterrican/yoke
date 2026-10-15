@@ -1,9 +1,9 @@
 {
  "id": "desired-02",
- "title": "Resume the same setup engine with the planned --agent/--answer contract; do not treat it as shipped.",
- "status": "candidate",
+ "title": "Resume the same setup engine with yoke setup --agent --answer KEY=VALUE.",
+ "status": "observed",
  "form": "Do",
- "verification": "Desired outline; exact recipe and live delivery still need proof.",
+ "verification": "Source and focused regression tests; deployed campaign proof remains pending.",
  "topics": ["installation/entry", "sessions/continuity"],
  "plan_refs": ["FIRST-USER.A", "FIRST-USER.C", "FIRST-USER.24", "FIRST-USER.26", "FIRST-USER.42"],
  "position": 8

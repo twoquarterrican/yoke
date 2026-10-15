@@ -40,8 +40,9 @@ Routing distinctions:
 
 - `/yoke onboard [--project P] [--run-id RUN]` adopts a wired project's existing
   work: strategy and CURRENT-PLAN, only the setup the first work needs, then
-  `/yoke steer` until the first item is done. Terminal `yoke setup` owns
-  machine/project wire-up.
+  `/yoke steer` until the first item is done. `yoke setup` owns
+  machine/project wire-up; from an agent session run `yoke setup --agent` and
+  relay each question (`.yoke/docs/guides/agent-setup.md`).
 - `/yoke simulate PREFIX-N` and `/yoke simulate --system` are a harness slash
   skill only — there is no terminal `yoke simulate` adapter.
 - `/yoke steer [STRATEGY-DOC-SLUG]` defaults an omitted slug to `CURRENT-PLAN`

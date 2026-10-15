@@ -8,11 +8,9 @@ in :mod:`onboard_wizard_flow_checkout_inspection`.
 
 from __future__ import annotations
 
-from textual.widgets import Static
-
 from yoke_cli.config import project_installed_layer as installed_layer
-from yoke_cli.config.onboard_wizard_steps import verification_body
-from yoke_cli.config.onboard_wizard_widgets import SelectionRow
+from yoke_cli.config.onboard_wizard_step_ids import STEP_PROJECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, TONE_OK, SelectionRow, SetupPrompt
 
 # Connecting to what is already there is the default; replacing it is the rare
 # answer, so it sits below rather than under the cursor.
@@ -73,11 +71,11 @@ def inspection_lines(scan: installed_layer.InstalledLayerScan) -> list[str]:
     ]
 
 
-def inspection_body(
+def inspection_prompt(
     scan: installed_layer.InstalledLayerScan,
     *,
     show_details: bool = False,
-) -> list[Static]:
+) -> SetupPrompt:
     """Announce the layer already there, then ask what to do with it.
 
     Finding an existing operating layer is a discovery, not a fault, so the
@@ -103,29 +101,35 @@ def inspection_body(
     rows = list(LAYER_ROWS)
     if show_details:
         rows[1] = SelectionRow("details", "Hide exact locations", "return to summary")
-    return verification_body(
-        "This repository already has Yoke files in it.",
-        f"{scan.root} carries a Yoke operating layer{release} — "
+    return SetupPrompt(
+        key="project.checkout_layer",
+        step=STEP_PROJECT,
+        title="This repository already has Yoke files in it.",
+        message=f"{scan.root} carries a Yoke operating layer{release} — "
         f"{_file_phrase(scan.file_count)}. Yoke will keep them and install over "
         "what is there. Removing them instead commits the deletion first, so "
         "the install that follows starts from a clean repository.",
-        details,
-        rows,
-        ok=True,
+        detail_lines=tuple(details),
+        choices=tuple(rows),
+        tone=TONE_OK,
+        guidance="Keep/update unless the person asks to remove the existing layer.",
     )
 
 
-def removal_confirmation_body(scan: installed_layer.InstalledLayerScan) -> list[Static]:
-    return verification_body(
-        "Remove the existing Yoke layer?",
-        "This deletes only the detected Yoke-owned files or entries, commits those deletions, and then installs a fresh layer.",
-        [
+def removal_confirmation_prompt(scan: installed_layer.InstalledLayerScan) -> SetupPrompt:
+    return SetupPrompt(
+        key="project.checkout_layer_remove",
+        step=STEP_PROJECT,
+        title="Remove the existing Yoke layer?",
+        message="This deletes only the detected Yoke-owned files or entries, "
+        "commits those deletions, and then installs a fresh layer.",
+        detail_lines=(
             f"Checkout: {scan.root}",
             f"Affected: {_file_phrase(scan.file_count)} across {len(scan.groups)} groups.",
             "Your non-Yoke files and non-Yoke hook/settings entries are preserved.",
-        ],
-        REMOVE_CONFIRM_ROWS,
-        ok=False,
+        ),
+        choices=tuple(REMOVE_CONFIRM_ROWS),
+        tone=TONE_ERROR,
     )
 
 
@@ -140,7 +144,7 @@ def _entry_phrase(count: int) -> str:
 __all__ = [
     "FETCH_ERROR_ROWS",
     "LAYER_ROWS",
-    "inspection_body",
     "inspection_lines",
-    "removal_confirmation_body",
+    "inspection_prompt",
+    "removal_confirmation_prompt",
 ]

@@ -175,14 +175,11 @@ def test_writable_variant_drops_fork_even_when_forkable() -> None:
     assert clone.CLONE_OUTCOME_FORK not in [row.value for row in rows]
 
 
-def test_clone_outcome_body_title_only_no_subtitle() -> None:
-    """The clone-outcome screen renders the title and drops the subtitle."""
-    bodies = screens.clone_outcome_body("https://github.com/acme/widgets.git")
-    text = " ".join(str(w.render()) for w in bodies)
-    assert "How do you want to copy acme/widgets?" in text
-    # No "onboard-subtitle" Static is built when the subtitle is None.
-    classes = [cls for w in bodies for cls in (getattr(w, "classes", set()) or set())]
-    assert "onboard-subtitle" not in classes
+def test_clone_outcome_prompt_title_only_no_subtitle() -> None:
+    """The clone-outcome screen asks with a title and no subtitle."""
+    prompt = screens.clone_outcome_prompt("https://github.com/acme/widgets.git")
+    assert prompt.title == "How do you want to copy acme/widgets?"
+    assert prompt.subtitle is None
 
 
 def test_clone_outcome_screen_writable_variant_drops_fork(monkeypatch) -> None:
@@ -229,13 +226,12 @@ def test_clone_outcome_rows_omit_fork_without_token_even_for_github() -> None:
     assert clone.CLONE_OUTCOME_MAKE_IT_MINE in values
 
 
-def test_clone_outcome_body_threads_has_token_flag() -> None:
-    """clone_outcome_body forwards has_token so the fork row is hidden."""
-    bodies = screens.clone_outcome_body(
+def test_clone_outcome_prompt_threads_has_token_flag() -> None:
+    """clone_outcome_prompt forwards has_token so the fork row is hidden."""
+    prompt = screens.clone_outcome_prompt(
         "https://github.com/acme/widgets.git", has_token=False
     )
-    text = " ".join(str(w.render()) for w in bodies)
-    assert "Fork it" not in text
+    assert "Fork it" not in [row.label for row in prompt.choices]
 
 
 def test_empty_private_repo_picker_requires_app_access(monkeypatch) -> None:

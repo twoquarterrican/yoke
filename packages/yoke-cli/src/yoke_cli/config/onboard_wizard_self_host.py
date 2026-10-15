@@ -9,14 +9,14 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from yoke_cli.config import onboard_docker_prerequisites as docker
 from yoke_cli.config import onboard_wizard_image_repository as images
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import onboard_self_host_server as server
 from yoke_cli.config.onboard_destinations import DESTINATION_SERVER
-from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_CONNECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, TONE_OK, SelectionRow, SetupPrompt
 from yoke_cli.self_host import first_boot_token
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 
 NO_SERVER_GUIDANCE = (
@@ -76,7 +76,7 @@ class _Shell(Protocol):  # pragma: no cover - structural typing only
 
 def goto_self_host_server(shell: _Shell) -> None:
     """Open the preview without performing any prerequisite or write."""
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
     setup = getattr(shell, "_self_host_setup", None)
     if setup is None:
@@ -86,13 +86,14 @@ def goto_self_host_server(shell: _Shell) -> None:
         shell._self_host_setup = setup
     shell._goto(
         _View(
-            STEP_CONNECT,
-            lambda: steps.verification_body(
-                "Set up this machine as a self-hosting server?",
-                "Review the local server plan before Yoke changes anything.",
-                images.preview_lines(setup),
-                PREVIEW_ROWS,
-                ok=True,
+            SetupPrompt(
+                key="connect.self_host_server",
+                step=STEP_CONNECT,
+                title="Set up this machine as a self-hosting server?",
+                message="Review the local server plan before Yoke changes anything.",
+                detail_lines=tuple(images.preview_lines(setup)),
+                choices=tuple(PREVIEW_ROWS),
+                tone=TONE_OK,
             ),
             lambda choice: _on_preview(shell, setup, choice),
         )
@@ -179,7 +180,7 @@ def _goto_failure(
     setup: server.SelfHostSetup,
     error: server.SelfHostSetupError,
 ) -> None:
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
     connect_failure = error.code == "connect" and bool(setup.raw_token)
     details = list(error.detail_lines)
@@ -192,13 +193,14 @@ def _goto_failure(
     rows = CONNECT_RETRY_ROWS if connect_failure else RETRY_ROWS
     shell._goto(
         _View(
-            STEP_CONNECT,
-            lambda: steps.verification_body(
-                "Self-host server setup needs attention.",
-                str(error),
-                details,
-                rows,
-                ok=False,
+            SetupPrompt(
+                key="connect.failure",
+                step=STEP_CONNECT,
+                title="Self-host server setup needs attention.",
+                message=str(error),
+                detail_lines=tuple(details),
+                choices=tuple(rows),
+                tone=TONE_ERROR,
             ),
             lambda choice: _on_failure(shell, setup, choice, connect_failure),
         )
@@ -221,18 +223,19 @@ def _on_failure(
 
 
 def _goto_complete(shell: _Shell, setup: server.SelfHostSetup) -> None:
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
     _select_connection(shell, setup)
     shell._goto(
         _View(
-            STEP_CONNECT,
-            lambda: steps.verification_body(
-                "Your self-hosting Yoke server is ready.",
-                "This machine is connected to the loopback server.",
-                _complete_lines(setup),
-                COMPLETE_ROWS,
-                ok=True,
+            SetupPrompt(
+                key="connect.complete",
+                step=STEP_CONNECT,
+                title="Your self-hosting Yoke server is ready.",
+                message="This machine is connected to the loopback server.",
+                detail_lines=tuple(_complete_lines(setup)),
+                choices=tuple(COMPLETE_ROWS),
+                tone=TONE_OK,
             ),
             lambda choice: _on_complete(shell, choice),
         )

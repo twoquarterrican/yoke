@@ -13,8 +13,8 @@ from typing import Any, Callable, Protocol
 
 from yoke_cli.config import onboard_existing_project
 from yoke_cli.config import onboard_project
-from yoke_cli.config import onboard_wizard_steps as steps
-from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
+from yoke_cli.config.setup_prompt import TONE_OK, SelectionRow, SetupPrompt
 
 CHOICE_CONNECT = "connect"
 CHOICE_NEW_PROJECT = "new-project"
@@ -84,21 +84,18 @@ class ExistingProjectDetectedFlow:
         *,
         on_choice: Callable[[str], None] | None = None,
     ) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
-
         self._existing_project_details = False
         self._existing_project_on_choice = (
             on_choice or self._on_existing_project_detected
         )
-        self._goto(
-            _View(
-                STEP_PROJECT,
-                self._existing_project_body,
-                self._on_existing_project_choice,
-            )
-        )
+        self._goto(self._existing_project_view())
 
-    def _existing_project_body(self: _Shell) -> list:
+    def _existing_project_view(self: _Shell):
+        from yoke_cli.config.onboard_wizard_state import _View
+
+        return _View(self._existing_project_prompt(), self._on_existing_project_choice)
+
+    def _existing_project_prompt(self: _Shell) -> SetupPrompt:
         repo = (
             self.result.project_github_repo
             or self.result.project_checkout_origin_url
@@ -115,18 +112,21 @@ class ExistingProjectDetectedFlow:
         rows = list(DETECTED_ROWS)
         if getattr(self, "_existing_project_details", False):
             rows[1] = SelectionRow(CHOICE_DETAILS, "Hide details", "return to summary")
-        return steps.verification_body(
-            f"Existing project found: {self.result.project_name or self.result.project_slug}.",
-            "Yoke matched this code to a project already in the selected universe.",
-            summary,
-            rows,
-            ok=True,
+        return SetupPrompt(
+            key="project.existing_found",
+            step=STEP_PROJECT,
+            title=f"Existing project found: {self.result.project_name or self.result.project_slug}.",
+            message="Yoke matched this code to a project already in the selected universe.",
+            detail_lines=tuple(summary),
+            choices=tuple(rows),
+            tone=TONE_OK,
+            guidance="Connect unless the person says this code is a different project.",
         )
 
     def _on_existing_project_choice(self: _Shell, choice: str) -> None:
         if choice == CHOICE_DETAILS:
             self._existing_project_details = not self._existing_project_details
-            self._render_current()
+            self._replace_current(self._existing_project_view())
             return
         self._existing_project_on_choice(choice)
 

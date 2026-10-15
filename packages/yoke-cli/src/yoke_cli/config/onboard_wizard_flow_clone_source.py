@@ -10,6 +10,7 @@ from yoke_cli.config import onboard_wizard_clone_git_copy as clone_git_copy
 from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import project_git_prerequisite
 from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, SetupPrompt
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from yoke_cli.config.onboard_wizard_state import _View
@@ -204,14 +205,7 @@ class CloneSourceFlow:
         if isinstance(exc, project_git_prerequisite.MissingGitError):
             self._goto(
                 _View(
-                    STEP_PROJECT,
-                    lambda: steps.verification_body(
-                        "Git is required for project setup.",
-                        project_git_prerequisite.required_summary(),
-                        project_git_prerequisite.missing_git_detail_lines(),
-                        clone_git_copy.missing_rows(),
-                        ok=False,
-                    ),
+                    clone_git_copy.missing_git_prompt(),
                     lambda choice: self._on_clone_missing_git(choice, value),
                 )
             )
@@ -219,17 +213,18 @@ class CloneSourceFlow:
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Couldn't reach that repo.",
-                    str(exc),
-                    clone_git_copy.UNREACHABLE_RECOVERY_LINES,
-                    (
+                SetupPrompt(
+                    key="project.clone_remote_error",
+                    step=STEP_PROJECT,
+                    title="Couldn't reach that repo.",
+                    message=str(exc),
+                    detail_lines=tuple(clone_git_copy.UNREACHABLE_RECOVERY_LINES),
+                    choices=tuple(
                         clone_git_copy.PRIVATE_REMOTE_ERROR_ROWS
                         if self.result.project_clone_requires_machine_github
                         else clone_git_copy.CLONE_REMOTE_ERROR_ROWS
                     ),
-                    ok=False,
+                    tone=TONE_ERROR,
                 ),
                 lambda choice: self._on_clone_remote_error(choice, value),
             )
@@ -280,14 +275,7 @@ class CloneSourceFlow:
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Finish Apple's installer.",
-                    "The Command Line Tools installer should be open.",
-                    project_git_prerequisite.install_handoff_detail_lines(advice),
-                    clone_git_copy.handoff_rows(),
-                    ok=True,
-                ),
+                clone_git_copy.install_handoff_prompt(advice),
                 lambda choice: self._on_clone_git_handoff(choice, value),
             )
         )
@@ -319,14 +307,7 @@ class CloneSourceFlow:
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Couldn't install Git automatically.",
-                    str(exc),
-                    project_git_prerequisite.missing_git_detail_lines(),
-                    clone_git_copy.install_error_rows(),
-                    ok=False,
-                ),
+                clone_git_copy.install_error_prompt(str(exc)),
                 lambda choice: self._on_clone_missing_git(choice, value),
             )
         )

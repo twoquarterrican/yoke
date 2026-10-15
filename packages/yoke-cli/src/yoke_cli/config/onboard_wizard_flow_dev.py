@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol
 
-from yoke_cli.config import onboard_wizard_steps as steps
 from yoke_cli.config import yoke_dev_detect as dev_detect
-from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT, SelectionRow
+from yoke_cli.config.onboard_wizard_widgets import STEP_PROJECT
+from yoke_cli.config.setup_prompt import TONE_ERROR, SelectionRow, SetupPrompt
 
 if TYPE_CHECKING:  # pragma: no cover
-    from yoke_cli.config.onboard_wizard_app import _View
+    from yoke_cli.config.onboard_wizard_state import _View
 
 _USE_CHECKOUT = "checkout"
 _CLONE_SOURCE = "clone"
@@ -20,9 +20,10 @@ class _Shell(Protocol):
     _preset_dev_checkout: str | None
 
     def _goto(self, view: "_View") -> None: ...
-    def _selection_view(self, step, title, subtitle, rows, on_select) -> "_View": ...
+    def _selection_view(self, key, step, title, subtitle, rows, on_select) -> "_View": ...
     def _goto_input(
         self,
+        key,
         step,
         title,
         subtitle,
@@ -84,6 +85,7 @@ class DevFlow:
         )
         self._goto(
             self._selection_view(
+                "project.source_choice",
                 STEP_PROJECT,
                 "Edit Yoke source.",
                 "Use a local checkout or clone any source-available fork. No official Yoke access is required.",
@@ -95,6 +97,7 @@ class DevFlow:
     def _on_dev_checkout_pick(self: _Shell, choice: str) -> None:
         if choice == _USE_CHECKOUT:
             self._goto_input(
+                "project.source_checkout",
                 STEP_PROJECT,
                 "Where is the Yoke source checkout?",
                 "The folder must contain Yoke's pyproject.toml and runtime/harness source.",
@@ -105,6 +108,7 @@ class DevFlow:
             return
         if choice == _CLONE_SOURCE:
             self._goto_input(
+                "project.source_remote",
                 STEP_PROJECT,
                 "Which Yoke source repository?",
                 "Paste a public Git URL for Yoke or your fork.",
@@ -118,6 +122,7 @@ class DevFlow:
     def _after_dev_clone_url(self: _Shell, value: str) -> None:
         self.result.project_remote_url = value
         self._goto_input(
+            "project.source_folder",
             STEP_PROJECT,
             "Where should Yoke source be cloned?",
             "Choose a new or empty local folder.",
@@ -138,19 +143,20 @@ class DevFlow:
         self._goto_hosting()
 
     def _goto_dev_error(self: _Shell, message: str) -> None:
-        from yoke_cli.config.onboard_wizard_app import _View
+        from yoke_cli.config.onboard_wizard_state import _View
 
         self._goto(
             _View(
-                STEP_PROJECT,
-                lambda: steps.verification_body(
-                    "Yoke source is not ready.",
-                    message,
-                    [
+                SetupPrompt(
+                    key="project.dev_error",
+                    step=STEP_PROJECT,
+                    title="Yoke source is not ready.",
+                    message=message,
+                    detail_lines=tuple([
                         "Choose an existing Yoke source checkout, or an empty folder plus its clone URL."
-                    ],
-                    [SelectionRow("back", "Back", "choose the source again")],
-                    ok=False,
+                    ]),
+                    choices=tuple([SelectionRow("back", "Back", "choose the source again")]),
+                    tone=TONE_ERROR,
                 ),
                 lambda _choice: self._step_back(),
             )
