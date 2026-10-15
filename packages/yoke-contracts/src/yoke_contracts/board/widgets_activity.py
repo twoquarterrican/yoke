@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from yoke_contracts.board.config import BoardConfig
-from yoke_contracts.board.activity_cache import activity_day_counts
+from yoke_contracts.board.activity_data import activity_day_counts
 from yoke_contracts.board.board_db import BoardDBLike
 from yoke_contracts.board.momentum_series import display_bound, display_fraction
 from yoke_contracts.board.project_scope import (
@@ -125,9 +125,6 @@ def _project_age_days(db: BoardDBLike, scope: str) -> Tuple[Optional[str], int]:
     pf, params = _project_filter(scope)
     first_day = day_from_timestamp_expr(f"MIN({timestamp_expr('created_at')})")
     sql = f"SELECT {first_day} FROM items WHERE 1=1 {pf}"
-    probe = getattr(db, "has_scalar", None)
-    if callable(probe) and not probe(sql, params):
-        return None, 0
     first = db.scalar(sql, params)
     if not first:
         return None, 0
@@ -212,8 +209,7 @@ def collect_activity_series(
     }
 
     # One control-plane rollup covers the 14d bar, the 365d streak, and the
-    # lifetime percentage. Age-windowed SQL would change the replay key
-    # every midnight; the all-time rollup stays stable and callers clamp.
+    # lifetime percentage; callers clamp the all-time rollup to display windows.
     first_iso, project_days = _project_age_days(db, scope)
     commits = code_commit_days_all_time(db, scope)
     for day, n in commits.items():

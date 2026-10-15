@@ -46,10 +46,28 @@ def render_dashboard_data(data: dict) -> List[str]:
     if "weather" in data:
         lines.extend(["", render_weather_count(data["weather"])])
     activity = (
-        render_activity_series(**data["activity"]) if "activity" in data else None
+        render_activity_series(
+            *(
+                data["activity"][key]
+                for key in (
+                    "dates",
+                    "day_counts",
+                    "streak",
+                    "active_days",
+                    "project_days",
+                )
+            )
+        )
+        if "activity" in data
+        else None
     )
     badges = (
-        render_achievement_counts(**data["achievements"])
+        render_achievement_counts(
+            *(
+                data["achievements"][key]
+                for key in ("done", "streak", "bug_count", "idea_count")
+            )
+        )
         if "achievements" in data
         else None
     )
@@ -58,7 +76,14 @@ def render_dashboard_data(data: dict) -> List[str]:
         lines.extend(["", row])
     if "velocity" in data:
         lines.append("")
-        lines.extend(render_velocity_series(**data["velocity"]))
+        lines.extend(
+            render_velocity_series(
+                *(
+                    data["velocity"][key]
+                    for key in ("dates", "activity", "code", "issues", "strategy")
+                )
+            )
+        )
     age = render_age_counts(data["age"]) if data.get("age") is not None else None
     workflows = (
         render_workflow_counts(data["workflows"]) if "workflows" in data else None
