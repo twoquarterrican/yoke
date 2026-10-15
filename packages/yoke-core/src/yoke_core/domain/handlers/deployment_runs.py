@@ -59,6 +59,10 @@ def handle_deployment_run_get(request: FunctionCallRequest) -> HandlerOutcome:
     from yoke_core.domain.deployment_run_carried_work import parse_carried_work
     from yoke_core.domain.release_delivery_attestation import attestation_warnings
 
+    from yoke_core.domain.deployment_run_completion_preview import (
+        run_completion_diagnostics,
+    )
+
     parsed["carried_work"] = parse_carried_work(parsed.get("carried_work"))
     return HandlerOutcome(
         result_payload={
@@ -66,6 +70,7 @@ def handle_deployment_run_get(request: FunctionCallRequest) -> HandlerOutcome:
             "fields": list(RUN_FIELDS),
             "run": parsed,
             "attestation_warnings": attestation_warnings(parsed.get("carried_work")),
+            "member_closure": run_completion_diagnostics(resolved_run_id),
         },
         primary_success=True,
     )

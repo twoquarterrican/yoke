@@ -133,6 +133,20 @@ Release verification and notices — how release-to-done reads both QA
 authorities, who observes a stage receipt, and the verdict and owner
 notices — live in [release-delivery.md](release-delivery.md).
 
+## Member completion diagnostics
+
+`yoke deployment-runs get RUN` includes `member_closure` beside the run fields.
+During settlement it reads current canonical member prerequisites, requirement
+ids, phases and declared targets, independently blocked members, atomic siblings,
+and other-target deferrals. Its `blocked` flag describes member settlement,
+not the count of run-bound QA. An empty run-bound case set proves nothing about
+item completion. Closed members may still have finalization effects pending.
+
+Satisfy each named requirement or gate through its registered recovery. A live
+driver retains execution authority; do not dispatch another one. Repeating a
+success write cannot supply missing acceptance. These diagnostics never run
+close-out or change QA history, acceptance, lifecycle, or atomicity.
+
 ## Table: deployment_run_items
 
 Membership table linking items to deployment runs. Zero rows for a run are valid when the run is an environment-level deploy with no attached backlog item; do not infer failure from item-less membership after the run has started executing.
