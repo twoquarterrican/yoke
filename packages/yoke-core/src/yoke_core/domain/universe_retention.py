@@ -146,8 +146,8 @@ def _delete_cohort(conn, policy, deadline, rule, rows, custody):
         ).fetchall()
         protected += len(rows) - len(admitted)
         rows = admitted
-    # Parent+child graphs commit atomically. A graph larger than the cap is
-    # retained, diagnosed, and never partially thinned to meet the cap.
+    # Snapshot cohorts contain one whole inventory, regardless of child count.
+    # Other parent/child graphs must fit the physical row cap atomically.
     accepted = []
     child_counts = {}
     for table, child_key, parent_key in rule.children:
@@ -167,7 +167,7 @@ def _delete_cohort(conn, policy, deadline, rule, rows, custody):
         for table, child_key, parent_key in rule.children:
             parent_value = row[rule.keys.index(parent_key)]
             needed += int(child_counts.get(table, {}).get(parent_value, 0))
-        if needed > remaining:
+        if needed > remaining and rule.table != "path_snapshots":
             protected += 1
             continue
         if rule.table == "path_snapshot_sync_uploads":
@@ -226,7 +226,9 @@ def _table_pass(conn, policy, deadline, rule, apply):
             )
     columns = ",".join(f"t.{key}" for key in rule.keys)
     cohort_limit = (
-        1 if rule.table == "path_snapshot_sync_uploads" else policy.batch_rows
+        1
+        if rule.table in ("path_snapshots", "path_snapshot_sync_uploads")
+        else policy.batch_rows
     )
     rows = _execute(
         conn,

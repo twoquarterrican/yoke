@@ -22,8 +22,9 @@ yoke universe prune --apply
 ```
 
 The command runs in the foreground until no more safely eligible rows remain.
-It commits bounded transactions, normally up to 5,000 matching rows, with
-child/parent graphs kept atomic inside the same row cap. Short internal calls
+It commits bounded transactions, up to 5,000 physical rows for scalar records
+and other child/parent graphs. Each inventory snapshot transaction deletes one
+complete eligible inventory, even when its children exceed 5,000 rows. Short internal calls
 normally target eight seconds; the policy caps a pass at twenty seconds,
 each statement at ten seconds or its remaining budget, and locks at one
 second. Progress prints during the command and final output lists actual
@@ -86,8 +87,9 @@ inventory, the latest path generations' last sightings, active lane heads,
 nonterminal claim bases, and running/open-failure integrity references.
 Protected inventories remain whole. Other history has no age or count floor.
 Pruning coordinates with reference writers and rechecks protection before
-committing child-first deletion. A graph exceeding the transaction cap stays
-protected with its reason; it is never partially thinned to fit.
+committing child-first deletion. Each eligible inventory is deleted in one
+atomic transaction under the same time and lock bounds. Other graphs exceeding
+the physical row cap stay protected with their reason; no graph is partially thinned.
 
 Temporary upload cleanup shares custody with begin/append/finalize/abort,
 including internal commits and separate materialization. Expired or missing

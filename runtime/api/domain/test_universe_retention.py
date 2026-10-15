@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 from datetime import timedelta
 import json
+import time
 
 import pytest
 
@@ -160,7 +161,7 @@ def test_human_live_reference_snapshot_and_upload_protections(test_db):
     )
     main, gone = _target(test_db, "current.py"), _target(test_db, "gone.py")
     snapshots = []
-    for index in range(4):
+    for index in range(5):
         snap = test_db.execute(
             "INSERT INTO path_snapshots (project_id,commit_sha,built_at) VALUES (1,%s,%s) RETURNING id",
             (str(index) * 40, old),
@@ -174,6 +175,17 @@ def test_human_live_reference_snapshot_and_upload_protections(test_db):
         "INSERT INTO path_snapshot_entries (snapshot_id,target_id) VALUES (%s,%s)",
         (snapshots[0], gone),
     )
+    test_db.execute(
+        "INSERT INTO path_targets (project_id,kind,path_string,generation,created_at) "
+        "SELECT 1,'file','bulk/'||n,1,%s FROM generate_series(1,5001) n",
+        (old,),
+    )
+    for snap in snapshots[2:]:
+        test_db.execute(
+            "INSERT INTO path_snapshot_entries (snapshot_id,target_id) "
+            "SELECT %s,id FROM path_targets WHERE path_string LIKE 'bulk/%%'",
+            (snap,),
+        )
     insert_item(test_db)
     insert_item_worktree(test_db, item_id=1, branch="active")
     test_db.execute("UPDATE item_worktrees SET commit_sha=%s", ("1" * 40,))
@@ -198,6 +210,28 @@ def test_human_live_reference_snapshot_and_upload_protections(test_db):
     with pytest.raises(ChunkUploadMissingError, match="restart"):
         require_fresh_upload(test_db, "expired")
     test_db.rollback()
+    from yoke_core.domain.universe_retention_snapshots import snapshot_policy
+
+    first = retention._table_pass(
+        test_db, RetentionPolicy(), time.monotonic() + 20, snapshot_policy(), True
+    )
+    assert first["deleted"] == {
+        "path_snapshot_entries": 5002,
+        "path_snapshot_symlink_facts": 0,
+        "path_snapshots": 1,
+    }
+    assert first["eligible_partial"] and first["protected_graphs"] == 0
+    assert not test_db.execute(
+        "SELECT 1 FROM path_snapshots WHERE id=%s", (snapshots[2],)
+    ).fetchone()
+    assert (
+        test_db.execute(
+            "SELECT COUNT(*) FROM path_snapshot_entries WHERE snapshot_id=%s",
+            (snapshots[3],),
+        ).fetchone()[0]
+        == 5002
+    )
+    test_db.commit()
     request = PruneRequest(apply=True)
     while True:
         result = retention.prune_pass(test_db, request)
@@ -216,7 +250,7 @@ def test_human_live_reference_snapshot_and_upload_protections(test_db):
     assert {r[0] for r in test_db.execute("SELECT id FROM path_snapshots")} == {
         snapshots[0],
         snapshots[1],
-        snapshots[3],
+        snapshots[4],
     }
     assert (
         test_db.execute(
@@ -239,7 +273,7 @@ def test_human_live_reference_snapshot_and_upload_protections(test_db):
     import psycopg
     from yoke_core.domain.path_snapshot_content_rows import find_content_snapshot_id
 
-    assert find_content_snapshot_id(test_db, 1, "3" * 40) == snapshots[3]
+    assert find_content_snapshot_id(test_db, 1, "4" * 40) == snapshots[4]
     with psycopg.connect(test_db.info.dsn) as other:
         with pytest.raises(psycopg.errors.LockNotAvailable):
             other.execute("LOCK TABLE path_snapshots IN ACCESS EXCLUSIVE MODE NOWAIT")
