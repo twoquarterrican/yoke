@@ -24,6 +24,11 @@ from yoke_core.domain.qa_pending_agent_review import (
     stage_review_pending_blocker,
 )
 from yoke_core.domain.refusal_recovery import compose_refusal
+from yoke_core.domain.deployment_qa_acceptance_reads import (
+    acceptance_waived,
+    completed_execution,
+    existing_acceptance_requirement,
+)
 
 
 def latest_verdict(conn: Any, requirement_id: int) -> str:
@@ -34,89 +39,6 @@ def latest_verdict(conn: Any, requirement_id: int) -> str:
     if row is None:
         return ""
     return str(row["verdict"] or "")
-
-
-def acceptance_waived(conn: Any, requirement_id: int) -> bool:
-    """True when an authorized waiver already discharged this requirement."""
-    row = conn.execute(
-        "SELECT waived_at FROM qa_requirements WHERE id=%s", (int(requirement_id),)
-    ).fetchone()
-    if row is None:
-        return False
-    return bool(row["waived_at"] if hasattr(row, "keys") else row[0])
-
-
-def completed_execution(
-    conn: Any,
-    *,
-    run_id: str,
-    stage_name: str,
-    member_item_id: int | None,
-    execution_target_digest: str,
-) -> dict[str, Any] | None:
-    """The newest completed execution recorded against this exact target.
-
-    The digest predicate is the target-identity check: an execution
-    recorded against a replaced target simply is not selected, so a
-    superseded producer receipt can never answer for the current one.
-    """
-    from yoke_core.domain.qa_plan_execution_store import select_plan_execution
-
-    row = conn.execute(
-        "SELECT id FROM qa_plan_executions WHERE deployment_run_id=%s "
-        "AND deployment_stage=%s "
-        "AND COALESCE(deployment_member_item_id,0)=%s "
-        "AND execution_target_digest=%s AND state='completed' "
-        "ORDER BY created_at DESC,id DESC LIMIT 1",
-        (run_id, stage_name, member_item_id or 0, execution_target_digest),
-    ).fetchone()
-    if row is None:
-        return None
-    execution_id = row["id"] if hasattr(row, "keys") else row[0]
-    return select_plan_execution(conn, str(execution_id), lock=False)
-
-
-def existing_acceptance_requirement(
-    conn: Any,
-    *,
-    subject: Mapping[str, Any],
-    target: Mapping[str, Any],
-    acceptance_qa_kind: str,
-) -> int | None:
-    """This subject's acceptance requirement for the target, if it exists.
-
-    ``None`` means no acceptance requirement has been materialized for
-    this exact target yet. A stage whose target was replaced keeps its
-    older requirement rows untouched and unmatched -- the replacement
-    target gets its own row rather than inheriting the earlier verdict.
-    """
-    run_id = str(subject["id"])
-    stage_name = str(subject["stage"]["name"])
-    member = subject.get("member_item_id")
-    rows = conn.execute(
-        "SELECT id,execution_target_json,execution_target_digest "
-        "FROM qa_requirements WHERE deployment_run_id=%s AND deployment_stage=%s "
-        "AND COALESCE(deployment_member_item_id,0)=%s AND qa_kind=%s "
-        "ORDER BY id",
-        (run_id, stage_name, member or 0, acceptance_qa_kind),
-    ).fetchall()
-    expected_json = target_authority.canonical_target(target)
-    expected_digest = target_authority.target_digest(target)
-    matches = [
-        row
-        for row in rows
-        if str(row["execution_target_json"] or "") == expected_json
-        and str(row["execution_target_digest"] or "") == expected_digest
-    ]
-    if len(matches) > 1:
-        raise ValueError(
-            "deployment stage acceptance was materialized more than once; "
-            "resolve the duplicate before resuming the pipeline"
-        )
-    if not matches:
-        return None
-    row = matches[0]
-    return int(row["id"] if hasattr(row, "keys") else row[0])
 
 
 #: What one stage subject's acceptance currently is, in one word. Closed

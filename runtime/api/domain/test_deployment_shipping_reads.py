@@ -117,16 +117,17 @@ def test_member_presentation_shares_reads_without_reusing_next_request(test_db):
         for sql, n in conn.queries.items()
         if "SELECT id FROM deployment_stage_receipts" in sql
     )
-    assert (run_reads, member_reads, receipt_reads) == (12, 12, 12)
+    assert (run_reads, member_reads, receipt_reads) == (1, 0, 0)
+    assert conn.callers["yoke_core.domain.deployment_qa_presentation_facts.read"] <= 7
     assert (
         conn.callers["yoke_core.domain.deployment_requirement_snapshots._plan_snapshot"]
-        == 2
+        == 0
     )
     assert (
         conn.callers[
             "yoke_core.domain.deployment_stage_receipts.deployment_stage_receipt_for_qa"
         ]
-        == 12
+        == 0
     )
     assert conn.callers["yoke_core.domain.item_ref_render.fetch_item_ref_rows"] == 0
     print(
@@ -189,10 +190,11 @@ def test_member_presentation_shares_reads_without_reusing_next_request(test_db):
     complete = outcome.result_payload["rows"]
     assert {row["id"] for row in complete} == set(run_ids)
     assert sum(len(row["member_items"]) for row in complete) == 194
+    assert sum(full.queries.values()) < 60
     assert all(row["carried_work"]["items"] for row in complete)
     print(
         f"Shipping complete handler: local_authority=true approval_records=0 runs=12 members=194 history_runs=148 "
-        f"queries={sum(full.queries.values())} dominant_callers={full.callers.most_common(12)}"
+        f"queries={sum(full.queries.values())} dominant_callers={full.callers.most_common(30)}"
     )
     print(f"Shipping member QA dominant_callers={conn.callers.most_common(12)}")
     # A later request must read a changed verdict, rather than reuse a cached pass.

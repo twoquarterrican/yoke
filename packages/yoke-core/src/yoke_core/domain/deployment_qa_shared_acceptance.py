@@ -20,6 +20,19 @@ def acceptance_subjects(conn, subject, target):
         return []
 
     def private_members():
+        from yoke_core.domain.deployment_qa_presentation_facts import (
+            stage_requirement_rows,
+        )
+
+        rows = stage_requirement_rows(conn, subject["id"], subject["stage"]["name"])
+        if rows is not None:
+            return {
+                row["deployment_member_item_id"]
+                for row in rows
+                if not row["settled"]
+                and row["qa_kind"] is not None
+                and row["qa_kind"] != "deployment_stage_acceptance"
+            }
         batch = presentation_active()
         member_filter = "" if batch else "AND deployment_member_item_id=%s "
         rows = conn.execute(

@@ -152,6 +152,15 @@ def test_deployment_runs_list_prints_pipe_rows() -> None:
     assert req.payload == {"project": "yoke", "limit": 7}
 
 
+def test_deployment_runs_overview_uses_the_shipping_read() -> None:
+    rc, _, _ = _run_capture(
+        _stub_ok, "deployment-runs", "list", "--relevance", "overview"
+    )
+    assert rc == 0
+    assert _CAPTURED_REQUESTS[-1].function == "deployment_runs.list"
+    assert _CAPTURED_REQUESTS[-1].payload == {"relevance": "overview"}
+
+
 def test_deployment_run_update_dispatches_and_prints_receipt() -> None:
     rc, out, _err = _run_capture(
         _stub_ok,

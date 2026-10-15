@@ -38,7 +38,7 @@ DEPLOYMENT_RUNS_GET_USAGE = (
 )
 DEPLOYMENT_RUNS_LIST_USAGE = (
     "yoke deployment-runs list [--project P] [--status STATUS] "
-    "[--limit N] [--session-id S] [--json]"
+    "[--relevance overview] [--limit N] [--session-id S] [--json]"
 )
 DEPLOYMENT_RUNS_UPDATE_USAGE = (
     "yoke deployment-runs update RUN-ID FIELD VALUE [--force] [--session-id S] [--json]"
@@ -171,6 +171,12 @@ def deployment_runs_list(args: List[str]) -> int:
     parser.add_argument("--project", default=None)
     parser.add_argument("--status", default=None)
     parser.add_argument(
+        "--relevance",
+        choices=["overview"],
+        default=None,
+        help="Shipping's live/recent runs with member QA and delivery facts.",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -190,6 +196,8 @@ def deployment_runs_list(args: List[str]) -> int:
         payload["project"] = parsed.project
     if parsed.status is not None:
         payload["status"] = parsed.status
+    if parsed.relevance is not None:
+        payload["relevance"] = parsed.relevance
     if parsed.limit is not None:
         payload["limit"] = parsed.limit
     return dispatch_and_emit(

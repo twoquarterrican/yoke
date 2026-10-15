@@ -56,6 +56,16 @@ is labeled separately. Empty windows do not assert health or zero latency.
 
 ## Registered queries and bounds
 
+To inspect Shipping's authorized overview through the same registered read:
+
+```text
+yoke deployment-runs list --relevance overview
+```
+
+This includes current member QA and delivery facts, with a bounded live/recent
+run window per project. Read its handler timing separately from browser HTTP
+and selection-to-card timings; SQL call counts alone do not prove latency.
+
 `events.performance.aggregate` and `events.performance.detail` authorize every
 selected project with `events.read` before reading or serializing observations
 and summaries. All contains only accessible projects; universe-attributed rows

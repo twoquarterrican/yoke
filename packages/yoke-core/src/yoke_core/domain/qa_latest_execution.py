@@ -65,6 +65,11 @@ def latest_executions(
     ids = tuple(sorted(set(int(value) for value in requirement_ids)))
     if not ids:
         return {}
+    from yoke_core.domain.deployment_qa_presentation_facts import execution_rows
+
+    batch = execution_rows(conn, ids)
+    if batch is not None:
+        return select_latest_executions(batch)
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
     rows = query_rows(
         conn,

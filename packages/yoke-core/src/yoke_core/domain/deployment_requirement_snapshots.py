@@ -9,7 +9,6 @@ from typing import Any
 from yoke_core.domain import db_backend
 from yoke_core.domain.deployment_requirement_snapshot_format import (
     CASE_FIELDS,
-    PLAN_CASE_COLUMNS,
     PLAN_FIELDS,
     REQUIREMENT_FIELDS,
     semantic_row,
@@ -109,19 +108,14 @@ def _plan_snapshot(
     case_keys: Iterable[str] | None = None,
     lock_plan: bool = True,
 ) -> dict[str, Any]:
-    marker = _p(conn)
-    lock = (
-        " FOR UPDATE" if lock_plan and db_backend.connection_is_postgres(conn) else ""
+    from yoke_core.domain.deployment_qa_shared_plan_reads import (
+        plan_snapshot_row,
+        plan_snapshot_cases,
     )
-    cursor = conn.execute(
-        f"SELECT {converged_select(conn, 'qa_plans', (*PLAN_FIELDS, 'retired_at'))} "
-        f"FROM qa_plans WHERE id={marker}{lock}",
-        (int(plan_id),),
-    )
-    row = cursor.fetchone()
-    if row is None:
+
+    raw_plan = plan_snapshot_row(conn, plan_id, lock_plan=lock_plan)
+    if raw_plan is None:
         raise LookupError(f"QA plan {plan_id} not found")
-    raw_plan = _row_dict(cursor, row)
     plan = semantic_row(raw_plan, PLAN_FIELDS)
     if int(plan["project_id"]) != int(project_id):
         raise ValueError(f"QA plan {plan_id} belongs to another project")
@@ -130,16 +124,9 @@ def _plan_snapshot(
     requested = [str(value) for value in (case_keys or ())]
     if any(not value for value in requested) or len(requested) != len(set(requested)):
         raise ValueError(f"QA plan {plan_id} case_keys must be unique non-empty names")
-    case_columns = converged_select(conn, "qa_plan_cases", PLAN_CASE_COLUMNS, "c")
-    cursor = conn.execute(
-        f"SELECT {case_columns},m.name AS method_name,m.runner_id,"
-        "m.required_capability_kinds,m.verdict_path,m.config_contract_id "
-        "FROM qa_plan_cases c JOIN qa_methods m ON m.id=c.method_id "
-        f"WHERE c.plan_id={marker} ORDER BY c.position,c.id",
-        (int(plan_id),),
-    )
     cases = [
-        semantic_row(_row_dict(cursor, raw), CASE_FIELDS) for raw in cursor.fetchall()
+        semantic_row(raw, CASE_FIELDS)
+        for raw in plan_snapshot_cases(conn, plan_id, lock_plan=lock_plan)
     ]
     from yoke_contracts.qa_case_starting_state import (
         StartingStateError,

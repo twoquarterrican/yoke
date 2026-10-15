@@ -48,6 +48,17 @@ def _object(raw: Any, *, subject: str) -> dict[str, Any]:
 
 
 def _run_stage(conn: Any, run_id: str, stage_name: str) -> dict[str, Any]:
+    from yoke_core.domain.deployment_qa_presentation_facts import run_facts
+
+    run = run_facts(conn, run_id)
+    if run is None:
+        run = _read_run(conn, run_id)
+    else:
+        run = dict(run)
+    return _validate_run_stage(run, run_id, stage_name)
+
+
+def _read_run(conn, run_id):
     cursor = conn.execute(
         "SELECT dr.id,dr.project_id,p.slug AS project_slug,p.name AS project_name,"
         "o.id AS tenant_id,o.slug AS tenant_slug,o.name AS tenant_name,"
@@ -60,7 +71,10 @@ def _run_stage(conn: Any, run_id: str, stage_name: str) -> dict[str, Any]:
         f"WHERE dr.id={_p(conn)}",
         (str(run_id),),
     )
-    run = _row(cursor, cursor.fetchone())
+    return _row(cursor, cursor.fetchone())
+
+
+def _validate_run_stage(run, run_id, stage_name):
     if run is None:
         raise LookupError(f"deployment run {run_id!r} not found")
     if int(run["definition_schema_version"] or 1) != RELEASE_POLICY_SCHEMA_VERSION:
@@ -167,6 +181,13 @@ def deployment_qa_stage_subject(
     if member_item_id is not None:
 
         def read_members():
+            from yoke_core.domain.deployment_qa_presentation_facts import (
+                run_member_rows,
+            )
+
+            batch = run_member_rows(conn, str(run_id)) if not require_active else None
+            if batch is not None:
+                return batch
             member_filter = (
                 "" if presentation_active() else f" AND dri.item_id={_p(conn)}"
             )

@@ -166,6 +166,13 @@ def qa_artifact_counts_by_run(
     """Return artifact-type counts for a batch of QA runs."""
     if not run_ids:
         return {}
+    from yoke_core.domain.deployment_qa_acceptance_reads import (
+        presented_artifact_counts,
+    )
+
+    batch = presented_artifact_counts(conn, run_ids)
+    if batch is not None:
+        return batch
     marker = "%s" if db_backend.connection_is_postgres(conn) else "?"
     placeholders = ", ".join(marker for _ in run_ids)
     rows = query_rows(

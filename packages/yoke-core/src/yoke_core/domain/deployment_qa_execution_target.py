@@ -41,13 +41,16 @@ def _row(cursor: Any, value: Any) -> dict[str, Any] | None:
 def _read_persistent_target(
     conn: Any, project_id: int, environment: str, run_id: str
 ) -> dict:
-    cursor = conn.execute(
-        "SELECT e.id AS environment_id,e.name AS environment_name,e.url,e.settings,"
-        "s.name AS site_name FROM environments e JOIN sites s ON s.id=e.site "
-        f"WHERE s.project_id={_p(conn)} AND e.name={_p(conn)}",
-        (project_id, environment),
-    )
-    row = _row(cursor, cursor.fetchone())
+    def read():
+        cursor = conn.execute(
+            "SELECT e.id AS environment_id,e.name AS environment_name,e.url,e.settings,"
+            "s.name AS site_name FROM environments e JOIN sites s ON s.id=e.site "
+            f"WHERE s.project_id={_p(conn)} AND e.name={_p(conn)}",
+            (project_id, environment),
+        )
+        return _row(cursor, cursor.fetchone())
+
+    row = presentation_read(conn, ("qa_environment_row", project_id, environment), read)
     if row is None:
         raise ValueError(
             f"deployment_member_target_missing: project {project_id} has no registered "

@@ -55,6 +55,7 @@ from yoke_core.domain.deployment_qa_execution_target import (
 )
 from yoke_core.domain.schema_common import _column_exists, _table_exists
 from yoke_core.domain.deployment_qa_presentation_reads import presentation_operation
+from yoke_core.domain.deployment_qa_presentation_facts import member_presentation
 
 
 #: Every storage surface the scoped QA vocabulary is expressed in. A
@@ -96,13 +97,25 @@ def _pinned_stages(conn: Any, run_id: str) -> list[dict[str, Any]]:
     """Every stage the run pinned, in order, or ``[]`` for a legacy flow."""
     if not _scoped_qa_storage_present(conn):
         return []
+    from yoke_core.domain.deployment_qa_presentation_facts import run_facts
+
+    row = run_facts(conn, run_id)
+    if row is None:
+        row = _read_pinned_flow(conn, run_id)
+    return _decode_pinned_stages(row, run_id)
+
+
+def _read_pinned_flow(conn, run_id):
     marker = _p(conn)
-    row = conn.execute(
+    return conn.execute(
         "SELECT df.definition_schema_version, df.stages FROM deployment_runs dr "
         "JOIN deployment_flows df ON df.id=dr.flow "
         f"WHERE dr.id={marker}",
         (str(run_id),),
     ).fetchone()
+
+
+def _decode_pinned_stages(row, run_id):
     if row is None:
         raise LookupError(f"deployment run {run_id!r} not found")
     schema_version = (
@@ -227,6 +240,7 @@ def current_item_qa(
 
 
 @presentation_operation
+@member_presentation
 def member_qa_standings(
     conn: Any, subjects: list[tuple[str, int, str]]
 ) -> dict[tuple[str, int], dict[str, Any]]:

@@ -107,6 +107,20 @@ def run_source_facts(conn: Any, run_id: str) -> dict[str, Any] | None:
     from yoke_core.domain.schema_read_scope import shared_read
 
     def read():
+        from yoke_core.domain.deployment_qa_presentation_facts import run_facts
+
+        batch = run_facts(conn, str(run_id))
+        if batch is not None:
+            return {
+                key: batch[key]
+                for key in (
+                    "project_id",
+                    "release_lineage",
+                    BOUND_SOURCES_FIELD,
+                    "flow",
+                    "stages",
+                )
+            }
         row = conn.execute(
             "SELECT dr.project_id,COALESCE(dr.release_lineage,'') AS release_lineage,"
             f"{_stored_column(conn, 'dr')} AS {BOUND_SOURCES_FIELD},dr.flow,df.stages "
