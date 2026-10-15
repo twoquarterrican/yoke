@@ -1,6 +1,6 @@
 {
  "id": "reviewed-data-repair-document",
- "title": "Reviewed data-repair document, including public references for item-keyed rows",
+ "title": "Reviewed data-repair document, including public references for item columns",
  "status": "draft-copy",
  "audience": "Maintainers",
  "page": "contributing",
