@@ -49,8 +49,8 @@ Mutable member status/intent is read afresh. Freeze reuses one custody resolutio
 for both membership and completion-authority checks; unknown custody still refuses.
 
 Create validates provisionally before the creation lock, rolls that transaction
-back, then validates again under the lock. Each enrollment pass reads its
-members' outstanding intake together and locks selected requirements in ID
+back, then validates again under the lock. Each enrollment pass first pins
+members' completion flows, reads their outstanding intake together, and locks selected requirements in ID
 order. It reads attachments together, locks distinct plans in ID order, and
 reads their cases once. Every member still passes the existing ownership,
 waiver, retraction, attachment, project, retirement and case-chain checks.

@@ -132,7 +132,8 @@ def admit_run_item(
     if requires_release_admission(conn, run_id):
         if refusal := completion_flow_refusal(conn, int(item_id)):
             raise ValueError(refusal)
-    freeze_item_completion_flow(conn, int(item_id))
+    if admission is None:
+        freeze_item_completion_flow(conn, int(item_id))
     intent = validate_delivery_intent_for_item(conn, int(item_id), delivery_intent)
     selected_requirements = tuple(requirement_ids)
     selected_plans = tuple(plan_ids)

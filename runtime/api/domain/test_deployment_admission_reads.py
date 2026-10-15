@@ -213,3 +213,40 @@ def test_progress_handler_flushes_stderr_and_returns_same_records(capsys):
         record["run_id"] == RUN and record["source_sha"] == "a" * 40
         for record in records
     )
+
+
+def test_completion_defaults_are_pinned_before_qa_selection(
+    test_db,
+    admission_catalog,
+    monkeypatch,
+):
+    from yoke_core.domain import workflow_project_defaults as defaults
+    from yoke_core.domain import deployment_member_post_deploy_admission as admission
+    from yoke_core.domain.deployment_item_flow_resolution import item_completion_flows
+
+    original_flow = f"flow-{RUN}"
+    default = [original_flow]
+    monkeypatch.setattr(
+        defaults, "get_delivery_default", lambda conn, **kwargs: default[0]
+    )
+    derive = admission.post_deploy_admission_sets
+
+    def changed_default(conn, **kwargs):
+        default[0] = "changed-after-enrollment-began"
+        return derive(conn, **kwargs)
+
+    monkeypatch.setattr(admission, "post_deploy_admission_sets", changed_default)
+    selected, _ = read_enrollment_inputs(test_db, run_id=RUN, item_ids=MEMBERS)
+    assert selected == {
+        member: (value,) for member, value in admission_catalog[1].items()
+    }
+    assert item_completion_flows(test_db, MEMBERS) == dict.fromkeys(
+        MEMBERS, original_flow
+    )
+    assert all(
+        row[0] == original_flow
+        for row in test_db.execute(
+            "SELECT deployment_flow FROM items WHERE id=ANY(%s)",
+            (list(MEMBERS),),
+        )
+    )
