@@ -49,7 +49,8 @@ CREATE TABLE deployment_flows (
     created_at TIMESTAMPTZ NOT NULL, target_tier TEXT DEFAULT NULL,
     target_environment_id INTEGER DEFAULT NULL,
     done_description TEXT DEFAULT NULL,
-    status TEXT NOT NULL DEFAULT 'active', UNIQUE(project_id, name)
+    status TEXT NOT NULL DEFAULT 'active', UNIQUE(project_id, name),
+    definition_schema_version INTEGER NOT NULL DEFAULT 2
 );
 CREATE TABLE deployment_runs (
     id TEXT PRIMARY KEY, project_id INTEGER NOT NULL, flow TEXT NOT NULL,

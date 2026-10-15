@@ -89,7 +89,8 @@ _MINIMAL_SCHEMA_DDL = """
         project_id INTEGER NOT NULL DEFAULT 1 REFERENCES projects(id),
         project_sequence INTEGER NOT NULL DEFAULT 0,
         deployment_flow TEXT,
-        merged_at TIMESTAMPTZ
+        merged_at TIMESTAMPTZ,
+        merge_queue_landed_at TIMESTAMPTZ
     );
 
     CREATE TABLE IF NOT EXISTS item_dependencies (

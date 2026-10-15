@@ -96,6 +96,7 @@ _SCHEMA_DDL = """
         project_sequence INTEGER NOT NULL DEFAULT 0,
         deployment_flow TEXT,
         merged_at TIMESTAMPTZ,
+        merge_queue_landed_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL,
         source TEXT NOT NULL DEFAULT '2',
