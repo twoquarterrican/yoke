@@ -1,4 +1,4 @@
-"""Retire a wake hold only when its recorded native is proven gone."""
+"""Retire a wake hold after native death or a later delivered wake."""
 
 from __future__ import annotations
 
@@ -18,6 +18,10 @@ def held_native_is_gone(record: Mapping[str, Any], evidence: Mapping[str, Any]) 
         current_native_process_observation,
     )
 
+    held_at = parse_timestamp(record.get("held_at"))
+    delivered_at = parse_timestamp(record.get("wake_delivered_at"))
+    if held_at is not None and delivered_at is not None and delivered_at > held_at:
+        return True
     observation = current_native_process_observation(record, include_expected_exit=True)
     if observation is None:
         return False
@@ -56,6 +60,12 @@ def recover_dead_native_holds(
         f"AND m.cancelled_at IS NULL AND m.expires_at>{p}",
         (session_id, instant_parameter(conn, death_at)),
     ).fetchall()
+    delivered = conn.execute(
+        "SELECT MAX(completed_at) FROM session_message_attempts "
+        f"WHERE target_session_id={p} AND result_code='wake_delivered'",
+        (session_id,),
+    ).fetchone()
+    delivered_at = parse_timestamp(delivered[0]) if delivered else None
     for row in rows:
         if row[1] != NATIVE_TURN_RUNNING_RESULT or row[3] is None:
             continue
@@ -65,7 +75,10 @@ def recover_dead_native_holds(
             held = json.loads(str(row[2] or "{}"))
         except ValueError:
             continue
-        if not isinstance(held, Mapping) or not _same_native(held, evidence):
+        superseded = delivered_at is not None and delivered_at > parse_timestamp(row[3])
+        if not superseded and (
+            not isinstance(held, Mapping) or not _same_native(held, evidence)
+        ):
             continue
         conn.execute(
             "UPDATE session_message_recipients SET wake_attempt_count=0,"

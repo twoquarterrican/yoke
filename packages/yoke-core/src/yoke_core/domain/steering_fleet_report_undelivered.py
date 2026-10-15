@@ -3,13 +3,8 @@
 Classify undelivered project receipts through steering_fleet_report_delivery_states
 and group their reasons for the steering report.
 
-Two decisions shape the query. Terminal receipts are never included, on the
-delivery plane's own test rather than the receipt's ``state`` column, so an
-envelope past its expiry but ahead of the sweep does not read as a worker
-left waiting. Recipients that have ended or been terminated ARE included and
-labelled as such: an envelope addressed to a session that is gone is the one
-shape no later poll will ever resolve, and dropping it made the loss
-invisible to the only reader who could act on it.
+Terminal receipts are excluded; ended recipients stay visible so lost
+envelopes remain actionable.
 
 Grouping stays per recipient, split by state. The action is per recipient:
 one session with four stuck envelopes is one worker to wake, not four
@@ -100,6 +95,7 @@ class UndeliveredMessages:
     #: its machine could measure that. Set only for the held state, where it
     #: is the difference between a turn that is working and one to look at.
     held_native_silent_for_seconds: int | None = None
+    held_native_observed_at: datetime | None = None
     #: True when an explicit wake was requested for this recipient, the
     #: delivery plane has still made no attempt on it, and every such receipt
     #: has waited out the wake grace. The row then names a queued wake and
@@ -136,6 +132,7 @@ class _Group:
     turn_in_flight_since: datetime | None = None
     recipient_gone_at: datetime | None = None
     held_native_silent_for_seconds: int | None = None
+    held_native_observed_at: datetime | None = None
     queued_wake: bool = False
     wake_releasable_at: datetime | None = None
     failed_attempt_count: int = 0
@@ -204,16 +201,14 @@ class _Group:
         if reference is not None:
             self.evidence_id = reference
 
-    def note_held_native(self, *, evidence: Mapping[str, Any]) -> None:
-        """Record how long the native holding this wake has been silent.
-
-        The machine measures it from the native's own output clock and may
-        not be able to at all, so an absent reading stays absent: a held row
-        that claims zero silence would read as a turn that just spoke.
-        """
+    def note_held_native(
+        self, *, evidence: Mapping[str, Any], observed_at: datetime | None
+    ) -> None:
+        """Keep the measured silence paired with its observation time."""
         silent = evidence.get("running_native_silent_for_seconds")
         if isinstance(silent, int) and not isinstance(silent, bool):
             self.held_native_silent_for_seconds = silent
+            self.held_native_observed_at = observed_at
 
 
 def undelivered_messages(
@@ -281,6 +276,10 @@ def undelivered_messages(
         result_code = view.result_code if view else ""
         evidence = view.evidence if view else {}
         failed_count = view.failed_count if view else 0
+        record.update(
+            held_at=view.completed_at if view else None,
+            wake_delivered_at=view.wake_delivered_at if view else None,
+        )
         state = delivery_state(
             record,
             result_code=result_code,
@@ -308,7 +307,9 @@ def undelivered_messages(
                 evidence = view.last_failed_evidence
             group.name_the_failure(result_code=result_code, evidence=evidence)
         elif state == WAKE_HELD_FOR_NATIVE_TURN:
-            group.note_held_native(evidence=evidence)
+            group.note_held_native(
+                evidence=evidence, observed_at=view.completed_at if view else None
+            )
     return tuple(
         UndeliveredMessages(
             session_id=session_id,
@@ -321,6 +322,7 @@ def undelivered_messages(
             diagnostic=group.diagnostic,
             failed_attempt_count=group.failed_attempt_count,
             held_native_silent_for_seconds=group.held_native_silent_for_seconds,
+            held_native_observed_at=group.held_native_observed_at,
             evidence_id=group.evidence_id,
             turn_in_flight_since=group.turn_in_flight_since,
             recipient_gone_at=group.recipient_gone_at,

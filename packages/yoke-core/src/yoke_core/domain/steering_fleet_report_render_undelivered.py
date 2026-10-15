@@ -168,7 +168,9 @@ def _held_silence(entry: UndeliveredMessages) -> str:
     silent = entry.held_native_silent_for_seconds
     if silent is None:
         return ""
-    return f" and silent for {minutes(silent)}"
+    observed = entry.held_native_observed_at
+    as_of = observed.strftime("%H:%MZ") if observed else "unknown observation time"
+    return f" and silent for {minutes(silent)} as of {as_of}"
 
 
 def undelivered_line(entry: UndeliveredMessages) -> str:
