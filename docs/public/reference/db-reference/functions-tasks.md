@@ -41,7 +41,7 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 
 ## Generated task and dispatch contracts
 
-The parent epic claim authorizes task writes. Body replacement preserves guards
+The parent epic claim authorizes task editing. Body replacement preserves guards
 and reports line counts. Split preserves dependency intent and renumbers
 downstream tasks atomically; reassign changes lane assignment; remove cascades
 task dependency edges. Metadata updates validate task fields. Parent planning
@@ -75,3 +75,21 @@ bad/missing fields refuse rather than treating narrative as proof.
 Dispatch-chain reads and checkpoints retain exact lane/head/task and activation
 facts. Claim and preparation handoffs belong to the pinned binding. Read the
 current returned dispatch facts before choosing work; [workflow catalog](functions-workflows.md).
+
+## Conduct task status authority
+
+```text
+yoke conduct epic-task update-status --epic PREFIX-N --task-num N --status implementing
+```
+
+Claim the exact task first with `yoke claims work acquire --epic PREFIX-N
+--task-num N --reason "<intent>"`. The Conduct pipeline checks the authenticated
+actor session against that task's active claim or the parent epic claim. A
+claim on another task, a released claim, or identity carried in the payload
+grants no authority. The server passes the actor session through nested claim
+verification; it never borrows the server process's harness identity. Retained
+local updater calls resolve their session through the canonical ambient chain.
+A denied write returns `status_pipeline_failed` with the claim recovery command;
+acquire the required claim before retrying. Task scope and merge guards still
+run before the write, and attempts, heartbeat and transition history keep their
+existing pipeline behavior.
