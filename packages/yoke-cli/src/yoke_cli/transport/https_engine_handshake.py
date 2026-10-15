@@ -65,8 +65,7 @@ def observe_server_version(
         if raw_server_version and not local_version
         else None
     )
-    server_build = f"v{raw_server_version}" if raw_server_version else ""
-    control_plane_payload.observe_server_build(server_build, source_comparison)
+    control_plane_payload.observe_server_build(raw_server_version, source_comparison)
 
 
 def _header_engine_version(headers) -> str:

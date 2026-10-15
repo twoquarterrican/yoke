@@ -7,14 +7,59 @@ from pathlib import Path
 
 import pytest
 
-from runtime.api.tools.session_relay_release_test_support import RELEASE, relay_instance
+from runtime.api.tools.session_relay_release_test_support import (
+    RELEASE,
+    fake_venv,
+    relay_instance,
+    runner_for,
+    reuse_only_runner,
+)
 from yoke_core.tools.session_relay_release import (
     RELAY_RELEASE_FETCH_FAILED,
     RelayReleaseError,
     distribution_index_for_instance,
     relay_release_status,
+    release_version_from_build,
 )
 from yoke_core.tools.session_relay_release_install import pin_relay_release
+
+
+@pytest.mark.parametrize("build", ("0.2.0.202610150430", "v0.1.1+launch.365", "2.0.0"))
+def test_handshake_build_is_an_exact_wheel_version(build: str) -> None:
+    from packaging.version import Version
+
+    assert release_version_from_build(build) == str(Version(build))
+    with pytest.raises(RelayReleaseError, match="not a valid Yoke release version"):
+        release_version_from_build("not-a-version")
+
+
+def test_numeric_served_build_installs_exact_origin_then_reuses(tmp_path: Path) -> None:
+    instance = relay_instance(tmp_path)
+    release = "0.2.0.202610150430"
+    calls: list[list[str]] = []
+    status = pin_relay_release(
+        instance=instance,
+        fetch_manifest=lambda _env: {"server_engine_version": release},
+        create_venv=fake_venv,
+        runner=runner_for(release, calls),
+    )
+    assert status.current
+    assert status.pinned_release == status.served_build == release
+    assert calls[0][-4:] == [
+        f"https://wheels.example.test/dist/releases/{release}/wheels/"
+        f"yoke_{name}-{release}-py3-none-any.whl"
+        for name in ("contracts", "cli", "harness", "core")
+    ]
+    assert "--extra-index-url" not in calls[0]
+    prior = (instance.state_dir / "release").resolve()
+    reused = pin_relay_release(
+        instance=instance,
+        served_build=release,
+        create_venv=lambda _path: pytest.fail("current release created a venv"),
+        runner=reuse_only_runner(release),
+    )
+    assert reused.current
+    assert (instance.state_dir / "release").resolve() == prior
 
 
 @pytest.mark.parametrize(

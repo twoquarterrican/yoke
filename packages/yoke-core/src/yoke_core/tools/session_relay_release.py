@@ -130,11 +130,6 @@ def release_version_from_build(build: str) -> str:
             RELAY_RELEASE_FETCH_FAILED,
             f"served build {build!r} is not a valid Yoke release version",
         ) from exc
-    if version.local is None:
-        raise RelayReleaseError(
-            RELAY_RELEASE_FETCH_FAILED,
-            f"served build {build!r} has no immutable release segment",
-        )
     return str(version)
 
 
@@ -212,7 +207,7 @@ def fetch_served_build(
             f"environment {instance.environment!r} did not return its served build",
         )
     release_version_from_build(build)
-    return build if build.startswith("v") else f"v{build}"
+    return build
 
 
 def relay_release_status(
