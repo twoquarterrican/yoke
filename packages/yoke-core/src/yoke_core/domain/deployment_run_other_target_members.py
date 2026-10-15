@@ -143,7 +143,7 @@ def member_completion_blocker(conn: Any, *, run_id: str, item_id: int) -> str:
     """Name the exact still-open acceptance facts without changing them."""
     from yoke_core.domain.project_identity import render_item_ref
 
-    ref = render_item_ref(conn, item_id)
+    public_ref = render_item_ref(conn, item_id)
     blockers = unsatisfied_blocking(conn, item_id=item_id, target_status="done")
     details = []
     for row in blockers.rows:
@@ -156,12 +156,12 @@ def member_completion_blocker(conn: Any, *, run_id: str, item_id: int) -> str:
         )
     if details:
         return (
-            f"final member {ref} still owes "
+            f"final member {public_ref} still owes "
             + "; ".join(details)
-            + f"; read `yoke qa requirement list --item {ref}` and satisfy each named "
+            + f"; read `yoke qa requirement list --item {public_ref}` and satisfy each named "
             "requirement on its declared target; delivery never accepts or waives it"
         )
     return (
-        f"final member {ref} has not independently closed; read `yoke items get {ref} status` "
+        f"final member {public_ref} has not independently closed; read `yoke items get {public_ref} status` "
         f"and `yoke deployment-runs get {run_id}` and complete its pinned close-out"
     )

@@ -39,9 +39,11 @@ narrowed run.
 
 ``--record-receipt`` writes only after the entire fleet passes. Coverage names
 the exact project environment, history, schema-shape digest and source artifact.
-The receipt authority comes from ``--receipt-env`` or ``YOKE_ENV``, independently
-of the admin connection used to read the covered fleet. Authority is probed
-before copying. See docs/public/reference/deployment-start.md for diagnostics.
+A receipt covers one target; one environment's receipt never satisfies another.
+Receipts write to the control plane ``--receipt-env`` (or ``YOKE_ENV``)
+names, independently of the admin connection used to read the covered fleet.
+Authority is probed before copying. See docs/public/reference/deployment-start.md
+for diagnostics.
 
 ``--engine-wheel`` puts a named already-built artifact at the head of the
 import path before any ``yoke_core`` module loads. Omit it for ordinary
