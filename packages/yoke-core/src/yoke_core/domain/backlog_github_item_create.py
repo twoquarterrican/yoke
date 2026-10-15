@@ -124,7 +124,13 @@ def sync_item(
         # not an auth error. Gated before auth so a disabled project
         # without a GitHub App auth still short-circuits cleanly.
         if _bgs()._github_sync_skip(gh_project, "sync-item", conn=conn, out=stdout):
-            return 0
+            return _bgs()._sync_task_children(
+                item_pk,
+                enabled=sync_task_children,
+                conn=conn,
+                stdout=stdout,
+                stderr=stderr,
+            )
 
         # Resolve project GitHub auth BEFORE any dedup search, label
         # seeding, body render, body-size measurement, temp-file write, or

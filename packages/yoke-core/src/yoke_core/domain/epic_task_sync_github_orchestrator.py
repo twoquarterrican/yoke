@@ -10,15 +10,12 @@ import yoke_core.domain.epic_task_sync_github_orchestrator_body as _body
 from yoke_core.domain import github_rest
 from yoke_core.domain.github_constraints import is_real_issue_num
 from yoke_core.domain.github_dedup import IssueSearchCache
-from yoke_core.domain.item_worktrees import record_worker_item_worktree
-from yoke_core.domain.worktree_naming import worktree_name_for_item
 from yoke_core.domain.epic_task_sync import (
     _connect_db,
     _epic_parent_item_id,
     _epic_project,
     _epic_ref_name,
     _placeholder,
-    _repo_root,
 )
 from yoke_core.domain.epic_task_sync_github_label_setup import (
     labels_for_task,
@@ -26,9 +23,9 @@ from yoke_core.domain.epic_task_sync_github_label_setup import (
 )
 from yoke_core.domain.epic_task_sync_github_orchestrator_setup import (
     finalize_sync,
-    load_task_rows,
     preflight_sync,
 )
+from yoke_core.domain.epic_task_sync_local import load_task_rows
 from yoke_core.domain.project_github_auth import resolve_project_github_auth
 from yoke_core.domain.project_identity import render_item_ref
 from yoke_core.domain.project_attribution import resolved_project
@@ -76,11 +73,6 @@ def sync_epic_tasks(
         if preflight_result is not None:
             return preflight_result
 
-        try:
-            repo_root = str(_repo_root())
-        except (RuntimeError, FileNotFoundError):
-            repo_root = ""  # no checkout: skip local worktree/dispatch scaffolding
-
         # Read parent backlog item info
         parent_item_id = _epic_parent_item_id(epic_name, conn=conn)
         backlog_id = (
@@ -125,7 +117,6 @@ def sync_epic_tasks(
             print("Error: epic parent issue create failed; aborting", file=stderr)
             return 1
 
-        worktree_map: list[tuple[str, str]] = []  # (worktree_branch, task_num_str)
         task_list_lines: list[str] = []
         created = 0
         skipped = 0
@@ -155,60 +146,9 @@ def sync_epic_tasks(
             if existing_gh and existing_gh != "null" and is_real_issue_num(existing_gh):
                 print(f"Skipping task {task_num_str} (already synced)", file=stdout)
                 skipped += 1
-                # Preserve an explicit worktree before falling back to the parent.
-                skip_wt = db_wt
-                if parent_item_id and not skip_wt:
-                    skip_wt = worktree_name_for_item(conn, parent_item_id)
-                    print(
-                        f"Warning: task {task_num_str} has empty worktree, "
-                        f"defaulting to {skip_wt}",
-                        file=stderr,
-                    )
-                    conn.execute(
-                        f"UPDATE epic_tasks SET item_worktree_id = {p} WHERE epic_id = {p} AND task_num = {p}",
-                        (
-                            int(
-                                record_worker_item_worktree(
-                                    conn,
-                                    item_id=int(epic_name),
-                                    branch=skip_wt,
-                                    path=None,
-                                )["id"]
-                            ),
-                            epic_name,
-                            int(db_tnum),
-                        ),
-                    )
-                    conn.commit()
-                if skip_wt:
-                    worktree_map.append((skip_wt, task_num_str))
                 continue
 
-            # Legacy unslotted tasks fall back to the item's public ref.
             task_worktree = db_wt
-            if parent_item_id and not task_worktree:
-                task_worktree = worktree_name_for_item(conn, parent_item_id)
-                print(
-                    f"Warning: task {task_num_str} has empty worktree, "
-                    f"defaulting to {task_worktree}",
-                    file=stderr,
-                )
-                conn.execute(
-                    f"UPDATE epic_tasks SET item_worktree_id = {p} WHERE epic_id = {p} AND task_num = {p}",
-                    (
-                        int(
-                            record_worker_item_worktree(
-                                conn,
-                                item_id=int(epic_name),
-                                branch=task_worktree,
-                                path=None,
-                            )["id"]
-                        ),
-                        epic_name,
-                        int(db_tnum),
-                    ),
-                )
-                conn.commit()
 
             task_title = db_title or f"Task {task_num_str}"
 
@@ -271,10 +211,6 @@ def sync_epic_tasks(
 
             created += 1
 
-            # Record worktree mapping
-            if task_worktree:
-                worktree_map.append((task_worktree, task_num_str))
-
             if dry_run:
                 print("[DRY-RUN] Skipping GitHub: would link task to epic", file=stdout)
             elif has_sub_issue:
@@ -295,19 +231,6 @@ def sync_epic_tasks(
                 f"UPDATE epic_tasks SET github_issue = {p} WHERE epic_id = {p} AND task_num = {p}",
                 (f"#{task_issue_num}", epic_name, int(db_tnum)),
             )
-            if task_worktree and repo_root:
-                wt_slug = task_worktree.replace("/", "-")
-                wt_path = f"{repo_root}/.worktrees/{wt_slug}"
-                lane = record_worker_item_worktree(
-                    conn,
-                    item_id=int(epic_name),
-                    branch=task_worktree,
-                    path=wt_path,
-                )
-                conn.execute(
-                    f"UPDATE epic_tasks SET item_worktree_id = {p} WHERE epic_id = {p} AND task_num = {p}",
-                    (int(lane["id"]), epic_name, int(db_tnum)),
-                )
             conn.commit()
 
         return finalize_sync(
@@ -319,9 +242,7 @@ def sync_epic_tasks(
             parent_item_id=parent_item_id,
             conn=conn,
             stderr=stderr,
-            repo_root=repo_root,
             epic_name=epic_name,
-            worktree_map=worktree_map,
             stdout=stdout,
             created=created,
             skipped=skipped,
