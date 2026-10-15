@@ -148,6 +148,23 @@ authorization likewise prove through that paired HTTPS plane.
 
 ### Source execution and release rules
 
+If run creation itself needs a merged correction that the serving API predates,
+the control-plane operator can bootstrap creation from that verified source
+checkout through the existing paired authority:
+
+```text
+yoke --env prod-db-admin dev run -- yoke deployment-runs create yoke FLOW --environment prod --source-ref FULL_SHA --idempotency-key KEY
+```
+
+Use the exact reviewed, merged commit with its own successful branch CI run;
+the registered creation command retains candidate, source, membership, target,
+lineage, custody and live-driver checks. Review its named recovery and receipt
+before driving anything. Creation runs before the normal driver's candidate
+re-exec, so the driver's re-exec alone cannot repair a creation-time reader.
+Keep the intended idempotency key on retries. Workers report this route and
+its focused regression evidence to steering; steering reviews and executes it.
+No cancellation, historical QA rewrite or direct database repair is implied.
+
 Build local teaching views from the mapped main checkout with
 `yoke dev run -- python3 docs/teaching/tools/build.py`. This registered scanner
 needs no work claim and writes only ignored output; `--check` validates in memory

@@ -71,6 +71,20 @@ content. Missing first-baseline attribution must be resolved explicitly before
 start. Cancellation preserves the frozen evidence. Schema-v1 runs retain their
 legacy start behavior.
 
+QA acceptance, target occupancy, takeover selection and audited member removal
+read the run's saved obligations, never a later standing-plan publication.
+Admission freezes attached post-deploy plans and plans named by admitted
+requirements. When an older snapshot has empty plan arrays but already holds
+materialized shared requirements, those rows retain the original source,
+target, case order, method configuration, effective policies and every host
+baseline variant. Reading or reusing them creates no new cases and rewrites
+no history. Candidate ancestry checks still apply to the saved source; a new
+run selects its own definitions. Missing or inconsistent historical identity
+refuses as `qa_saved_plan_contract_missing` or
+`qa_saved_plan_contract_invalid`: preserve the evidence and ask the
+control-plane operator to reconcile the saved admission contract. Authorized
+attachment withdrawals and declared case replacements keep their usual effect.
+
 **Composition completes candidate membership.** Run creation and item-bound composition (`deployment_runs.start_for_item`, `deployment_runs.validate_composition`) enroll every delivery-ready item the pinned candidate carries and the run does not hold, through the same admission validation `add_item` uses. Creation validates provisionally in its insertion transaction and rolls back on refusal. It runs that validation twice in one read scope: first before the creation lock, on a provisional `run-unlocked-*` row that is always rolled back and whose verdict decides nothing, so the repository reads (bound branch heads, commit comparisons, containment) happen outside the lock; then under the lock on the real row, re-checking database facts against those same reads and re-deriving any comparison whose preceding release changed meanwhile. `deployment_runs.execution.context` revalidates before dispatch. Its driver reuses that context once; [start diagnostics](../deployment-start.md) explain containment-only refresh, batched reads, and flushed timing records.
 
 Before a stage first consumes a bound project, `deployment_runs.execution.bound_sources_prepare` may replace a stale pin with the declared branch's current head. It records `rebindings` (from/to commit, stage and time), re-derives carried work and admits newly carried members through existing custody, dependency and target rules. Recorded carried-work facts for the carrier and unchanged bound projects stay fixed. Existing requirement snapshots remain fixed; new members get snapshots. Containment is refreshed against the candidate. The source's `consumed_by` and `consumed_at` are persisted before dispatch; retries copy them, and a moved consumed source still requires a new run. Source walks happen before item/run locks; changed preparation state refuses a same-run retry. Missing or unreadable evidence never authorizes dispatch.
