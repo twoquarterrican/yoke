@@ -115,18 +115,6 @@ def _coalesce(val: Any, default: str = "") -> str:
     return format_instant(val) if isinstance(val, datetime) else str(val)
 
 
-def _normalize_qa_phase(qa_phase: str) -> str:
-    """Normalize retired qa_phase values to canonical vocab."""
-    _phase_map = {"validation": "verification"}
-    return _phase_map.get(qa_phase, qa_phase)
-
-
-def _normalize_qa_kind(qa_kind: str) -> str:
-    """Normalize retired qa_kind values to canonical vocab."""
-    _kind_map = {"review": "implementation_review"}
-    return _kind_map.get(qa_kind, qa_kind)
-
-
 def _pipe_row(row, cols: Optional[Sequence[str]] = None) -> str:
     if cols:
         return "|".join(_coalesce(row[c]) for c in cols)
