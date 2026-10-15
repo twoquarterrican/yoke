@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date
 from typing import List, Optional
 
+from yoke_contracts.board.widget_data import _allocate_proportional  # noqa: F401
 from yoke_contracts.board.config import BoardConfig
 from yoke_contracts.project_contract.board_art import emoji as E
 from yoke_contracts.board.board_db import BoardDBLike
@@ -72,66 +73,15 @@ def render_age_heatmap(
         return None
 
     r = row[0]
-    fresh = int(r[0] or 0)
-    week = int(r[1] or 0)
-    biweek = int(r[2] or 0)
-    month = int(r[3] or 0)
-    ancient = int(r[4] or 0)
-    total = int(r[5] or 0)
+    from yoke_contracts.board.widget_data import render_age_counts
 
-    if total == 0:
-        return None
-
-    # Allocate up to 20 cells proportionally
-    max_cells = 20
-    buckets = [
-        ("fresh", fresh, _AGE_FRESH),
-        ("week", week, _AGE_WEEK),
-        ("biweek", biweek, _AGE_BIWEEK),
-        ("month", month, _AGE_MONTH),
-        ("ancient", ancient, _AGE_ANCIENT),
-    ]
-
-    cells = _allocate_proportional([count for _, count, _ in buckets], total, max_cells)
-
-    bar = ""
-    for i, (_, _, emoji) in enumerate(buckets):
-        bar += emoji * cells[i]
-
-    return (
-        f"{_CLOCK} {bar} age: "
-        f"{_AGE_FRESH}<6h {_AGE_WEEK}<1d {_AGE_BIWEEK}<3d "
-        f"{_AGE_MONTH}<1w {_AGE_ANCIENT}>1w"
+    return render_age_counts(
+        dict(
+            zip(
+                ("fresh", "week", "biweek", "month", "ancient", "total"), r, strict=True
+            )
+        )
     )
-
-
-def _allocate_proportional(counts: List[int], total: int, max_cells: int) -> List[int]:
-    """Allocate cells proportionally with rounding.
-
-    Non-zero counts get at least 1 cell. Excess is trimmed from the largest.
-    """
-    if total <= 0:
-        return [0] * len(counts)
-
-    half = total // 2
-    cells = [((c * max_cells + half) // total) for c in counts]
-
-    # Ensure at least 1 for non-zero
-    for i, c in enumerate(counts):
-        if c > 0 and cells[i] < 1:
-            cells[i] = 1
-
-    # Clamp: reduce largest bucket if over max_cells
-    while sum(cells) > max_cells:
-        largest_idx = 0
-        largest_val = cells[0]
-        for i in range(1, len(cells)):
-            if cells[i] > largest_val:
-                largest_val = cells[i]
-                largest_idx = i
-        cells[largest_idx] -= 1
-
-    return cells
 
 
 # ---------------------------------------------------------------------------
@@ -157,20 +107,9 @@ def render_workflow_badges(
         " GROUP BY workflow_id ORDER BY COUNT(*) DESC"
     )
     rows = db.query_quiet(sql, params)
-    if not rows:
-        return None
+    from yoke_contracts.board.widget_data import render_workflow_counts
 
-    parts = []
-    for row in rows:
-        workflow_id = row[0]
-        if not workflow_id:
-            continue
-        parts.append(f"{workflow_id}:{int(row[1])}")
-
-    if not parts:
-        return None
-
-    return f"{_TAG} {' '.join(parts)}"
+    return render_workflow_counts(rows)
 
 
 # ---------------------------------------------------------------------------

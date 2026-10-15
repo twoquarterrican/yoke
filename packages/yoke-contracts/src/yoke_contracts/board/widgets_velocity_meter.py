@@ -25,9 +25,7 @@ from yoke_contracts.board.momentum_series import (
 )
 from yoke_contracts.board.sql import day_text_expr, days_ago_expr
 from yoke_contracts.board.widgets_activity import (
-    _CHART,
     _activity_day_counts,
-    _build_sparkline,
     _date_range,
     _project_filter,
 )
@@ -77,17 +75,11 @@ def render_velocity_meter(
             db, scope, project_ids, days, dates
         )
 
-    act_spark = _build_sparkline([act_counts.get(d, 0) for d in dates])
-    effort_spark = _build_sparkline([effort_counts.get(d, 0) for d in dates])
-    del_spark = _build_sparkline([del_counts.get(d, 0) for d in dates])
-    sml_spark = _build_sparkline([sml_counts.get(d, 0) for d in dates])
+    from yoke_contracts.board.widget_data import render_velocity_series
 
-    return [
-        f"{_CHART} {act_spark} 120d activity",
-        f"{_FLOPPY} {effort_spark} 120d code",
-        f"{_PACKAGE} {del_spark} 120d issues",
-        f"{_COMPASS} {sml_spark} 120d strategy",
-    ]
+    return render_velocity_series(
+        dates, act_counts, effort_counts, del_counts, sml_counts
+    )
 
 
 def _payload_serves_shared_series(

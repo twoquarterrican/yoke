@@ -177,12 +177,9 @@ def render_weather(db: BoardDBLike, config: BoardConfig, scope: str) -> str:
     backlog = db.scalar(sql, params) or 0
     backlog = int(backlog)
 
-    if backlog < 10:
-        return "🌞 Clear"  # sun (Clear)
-    elif backlog < 25:
-        return "\u26c5 Fair"  # ⛅ Fair
-    else:
-        return "☔ Stormy"  # umbrella (Stormy)
+    from yoke_contracts.board.widget_data import render_weather_count
+
+    return render_weather_count(backlog)
 
 
 # ---------------------------------------------------------------------------
