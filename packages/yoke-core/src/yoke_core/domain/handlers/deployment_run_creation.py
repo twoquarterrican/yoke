@@ -20,6 +20,12 @@ from yoke_core.domain.deployment_run_retry_membership import (
 from yoke_core.domain.deployment_run_target_resolution import (
     EnvironmentRegistryMigrationRequired,
 )
+from yoke_core.domain.deployment_start_timing import (
+    timed_handler,
+    timed_preparation,
+    timing_facts,
+    start_step,
+)
 
 
 class DeploymentRunCreateRequest(BaseModel):
@@ -34,6 +40,7 @@ class DeploymentRunCreateRequest(BaseModel):
 
 
 class DeploymentRunCreateResponse(BaseModel):
+    start_timings: list[dict] = []
     run_id: str
     project: str
     flow: str
@@ -84,6 +91,7 @@ def _member_item_ids(run_id: str) -> tuple[int, ...]:
         conn.close()
 
 
+@timed_handler(progress=True)
 def handle_deployment_run_create(
     request: FunctionCallRequest,
 ) -> HandlerOutcome:
@@ -210,7 +218,9 @@ def handle_deployment_run_create(
         from yoke_core.domain.deployment_runs_crud_mutate import create_run
 
         try:
-            release_lineage = bind_tested_release_source(
+            release_lineage = timed_preparation(
+                "create_source",
+                bind_tested_release_source,
                 clean_project,
                 clean_flow,
                 (environment or "").strip() or None,
@@ -219,6 +229,7 @@ def handle_deployment_run_create(
             )
         except ReleaseSourceRefused as exc:
             return error(exc.code, str(exc), jsonpath="$.payload.release_lineage")
+        timing_facts(source_sha=release_lineage or "")
 
         create_kwargs = {
             "environment": (environment or "").strip() or None,
@@ -262,6 +273,7 @@ def handle_deployment_run_create(
     )
 
 
+@start_step("create_response", heartbeat=True)
 def _created_outcome(
     run_id: str,
     *,
@@ -274,11 +286,16 @@ def _created_outcome(
 ) -> HandlerOutcome:
     from yoke_core.domain.deployment_runs_crud_query import get_run
 
-    inherited_items = _member_item_ids(run_id) if retry_source else ()
     member_items = _member_item_ids(run_id)
+    inherited_items = member_items if retry_source else ()
     created = get_run(run_id)
     if created is None:
         return error("not_found", f"deployment run {run_id!r} not found")
+    timing_facts(
+        run_id=run_id,
+        member_count=len(member_items),
+        source_sha=created.get("release_lineage") or "",
+    )
     supersedes = _superseded_run(run_id)
     return HandlerOutcome(
         result_payload={
