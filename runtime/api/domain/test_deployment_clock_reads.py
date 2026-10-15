@@ -32,6 +32,11 @@ RUN = "run-clock-filter"
 
 @pytest.fixture
 def native_clocks(clocks, monkeypatch):
+    clocks.execute("CREATE TABLE environments (id integer PRIMARY KEY, name text)")
+    clocks.execute(
+        "ALTER TABLE deployment_runs ADD target_tier text, "
+        "ADD target_environment_id integer, ADD created_by text"
+    )
     clocks.execute(
         "ALTER TABLE items ADD merge_queue_pr_number text, ADD merge_queue_enqueued_at text, ADD merge_queue_notified_at text"
     )

@@ -87,7 +87,7 @@ def _row_snapshot(row: Any) -> dict[str, Any]:
 
 
 def _locked_existing(conn: Any, run_id: str) -> dict[str, Any] | None:
-    columns, env_join = _run_named_columns(conn)
+    columns, env_join = _run_named_columns()
     row = conn.execute(
         f"SELECT {columns} "
         "FROM deployment_runs dr JOIN projects p ON p.id=dr.project_id "
