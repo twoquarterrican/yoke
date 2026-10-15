@@ -65,6 +65,12 @@ def preboot(clocks, monkeypatch):
     clocks.execute(
         "CREATE TABLE merge_queue_landing_records (item_id integer PRIMARY KEY,project_id integer,pr_number text,state text,head_sha text,queue_holding text,queue_entry_state text,merge_when_ready text,failed_checks text,narrative text,disarm_note text,observed_at text,changed_at text)"
     )
+    clocks.execute(
+        "CREATE TABLE item_sections (item_id integer NOT NULL,section_name text NOT NULL,"
+        "content text,ordering integer,source text NOT NULL DEFAULT 'operator',"
+        "created_at timestamptz NOT NULL,updated_at timestamptz NOT NULL,"
+        "PRIMARY KEY(item_id,section_name))"
+    )
     clocks.execute(DEPLOYMENT_STAGE_RECEIPTS_SQL.replace("TIMESTAMPTZ", "TEXT"))
     proxy = SimpleNamespace(
         execute=clocks.execute,
