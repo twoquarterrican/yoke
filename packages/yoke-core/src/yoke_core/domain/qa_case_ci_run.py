@@ -40,8 +40,7 @@ def _resolve_checkout(case: dict, checkout_path: Optional[str | Path]) -> Path:
     if case.get("deployment_run_id"):
         raise QaCaseExecutionError(
             "deployment_ci_candidate_unverified: command-ci verifies an item "
-            "lane, not the candidate pinned by deployment run "
-            f"{case['deployment_run_id']!r}. No checkout, push, or verdict was "
+            f"lane, not deployment run {case['deployment_run_id']!r}. No action was "
             "produced. Replace this post-deploy case with the command method "
             "and run the same stage/member QA plan; without --checkout-path "
             "that runner checks out the run's pinned candidate."
@@ -170,7 +169,12 @@ def execute_ci_case(
     superseded_ci_run_id = ""
     try:
         qa_case_ci_lane.push_lane(
-            checkout, branch, project=project, target=target, source_ref=head_sha
+            checkout,
+            branch,
+            project=project,
+            target=target,
+            source_ref=head_sha,
+            selected_checkout=case.get("lane_path"),
         )
         with qa_case_ci_lane.github_actions_authority():
             covering_run = lane.resumed_run
@@ -343,8 +347,4 @@ def execute_ci_case(
     }
 
 
-__all__ = [
-    "DEFAULT_CI_RUN_TIMEOUT_SECONDS",
-    "EXECUTOR_ID",
-    "execute_ci_case",
-]
+__all__ = ["DEFAULT_CI_RUN_TIMEOUT_SECONDS", "EXECUTOR_ID", "execute_ci_case"]
