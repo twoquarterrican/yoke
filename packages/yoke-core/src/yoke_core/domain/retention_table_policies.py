@@ -37,8 +37,11 @@ def policies(policy, cutoff):
     event_where = "(" + " OR ".join(event_parts) + ")"
     # Unknown severities never become eligible, including name overrides.
     event_where += " AND t.severity IN ('DEBUG','INFO','WARN','ERROR','FATAL','STATUS')"
+    # Hash reference membership so LIMIT can stop the primary-key scan early;
+    # anti joins otherwise sort millions of events before returning a cohort.
+    # event_id is NOT NULL; excluding nullable references preserves protection.
     for table in ("path_moves", "path_context_values", "path_integrity_repairs"):
-        event_where += f" AND NOT EXISTS (SELECT 1 FROM {table} r WHERE r.recorded_event_id=t.event_id)"
+        event_where += f" AND t.event_id NOT IN (SELECT r.recorded_event_id FROM {table} r WHERE r.recorded_event_id IS NOT NULL)"
     rules = [
         Cleanup(
             "events",

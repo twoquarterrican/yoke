@@ -194,6 +194,17 @@ def test_human_live_reference_snapshot_and_upload_protections(test_db):
         "INSERT INTO path_moves (before_target_id,after_target_id,recorded_event_id,recorded_at) VALUES (%s,%s,'pinned',%s)",
         (main, main, old),
     )
+    # A nullable reference must neither suppress eligible events nor unpin one.
+    insert_event(test_db, event_id="unreferenced", severity="INFO", created_at=old)
+    test_db.execute(
+        "WITH run AS (INSERT INTO path_integrity_runs (status,started_at) "
+        "VALUES ('completed',%s) RETURNING id), "
+        "failure AS (INSERT INTO path_integrity_failures (run_id,invariant_kind,recorded_at) "
+        "SELECT id,'missing',%s FROM run RETURNING id) "
+        "INSERT INTO path_integrity_repairs (failure_id,operation,status,requested_at,recorded_event_id) "
+        "SELECT id,'repair','failed',%s,NULL FROM failure",
+        (old, old, old),
+    )
     test_db.execute(
         "INSERT INTO path_snapshot_sync_uploads (upload_id,project_ref,ref,commit_sha,expected_file_count,expected_chunk_count,warnings_json,symlinks_json,created_at) "
         "VALUES ('expired','yoke','main',%s,1,1,'[]','[]',%s)",
@@ -247,6 +258,9 @@ def test_human_live_reference_snapshot_and_upload_protections(test_db):
     assert {
         r[0] for r in test_db.execute("SELECT message_id FROM session_messages")
     } == {"human", "received", "unknown", "pending"}
+    assert test_db.execute(
+        "SELECT event_id FROM events WHERE event_id IN ('pinned','unreferenced')"
+    ).fetchall() == [("pinned",)]
     assert {r[0] for r in test_db.execute("SELECT id FROM path_snapshots")} == {
         snapshots[0],
         snapshots[1],
