@@ -43,7 +43,8 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "create_session_control_tables; assuming harness_sessions alone is "
             "enough leaves session_launches absent during delivery checks. Current "
             "launch reads also require workspace, offered_at and episode_started_at; "
-            "isolated SQLite roster fixtures must model those columns and launch tables."
+            "isolated SQLite roster fixtures must model those columns and launch tables. "
+            "Wake attempt fixtures also seed their message and recipient foreign-key parents."
         ),
     },
     "runtime.api.domain.test_session_native_turn_end": {
