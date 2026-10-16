@@ -6,9 +6,25 @@ import json
 import os
 import subprocess
 import sys
+from urllib.parse import urlsplit
 
 from yoke_cli.config.machine_config import active_connection
 from yoke_contracts.machine_config.schema import MachineConfigContractError
+
+
+def _https_origin(value: str) -> tuple[str, int] | None:
+    try:
+        parsed = urlsplit(value)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+        ):
+            return None
+        return parsed.hostname, parsed.port or 443
+    except ValueError:
+        return None
 
 
 def require_target() -> None:
@@ -20,14 +36,16 @@ def require_target() -> None:
             "agent_route_connection_unavailable: restore the authenticated HTTPS "
             "connection for BASE_URL, then rerun this member case"
         ) from exc
+    expected_origin = _https_origin(base_url)
     if (
-        not base_url
+        expected_origin is None
         or connection.get("transport") != "https"
-        or str(connection.get("api_url") or "").rstrip("/") != base_url
+        or _https_origin(str(connection.get("api_url") or "")) != expected_origin
     ):
         raise RuntimeError(
             "agent_route_target_mismatch: select the authenticated HTTPS connection "
-            "for the runner's BASE_URL, then rerun this member case"
+            "for the runner's BASE_URL origin, keeping its organization API path, "
+            "then rerun this member case"
         )
 
 

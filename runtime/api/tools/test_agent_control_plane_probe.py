@@ -14,6 +14,25 @@ from runtime.api.tools import agent_control_plane_probe as probe
             "https://candidate.test",
             {"transport": "https", "api_url": "https://other.test"},
         ),
+        (
+            "https://candidate.test",
+            {"transport": "https", "api_url": "http://candidate.test"},
+        ),
+        (
+            "https://candidate.test",
+            {
+                "transport": "https",
+                "api_url": "https://candidate.test:8443/api/orgs/team",
+            },
+        ),
+        (
+            "https://candidate.test",
+            {"transport": "https", "api_url": "https://candidate.test:invalid"},
+        ),
+        (
+            "https://candidate.test",
+            {"transport": "https", "api_url": "https://user@candidate.test"},
+        ),
     ],
 )
 def test_wrong_target_refuses_before_public_calls(
@@ -29,11 +48,23 @@ def test_wrong_target_refuses_before_public_calls(
     assert "agent_route_target_mismatch" in capsys.readouterr().err
 
 
-def test_same_target_tolerates_trailing_slash(monkeypatch):
+@pytest.mark.parametrize(
+    "api_url",
+    [
+        "https://candidate.test",
+        "https://candidate.test/api/orgs/team",
+        "https://CANDIDATE.test:443/api/orgs/team/",
+    ],
+)
+def test_same_origin_accepts_organization_api_path_without_rewriting(
+    monkeypatch, api_url
+):
     monkeypatch.setenv("BASE_URL", "https://candidate.test/")
+    connection = {"transport": "https", "api_url": api_url}
     monkeypatch.setattr(
         probe,
         "active_connection",
-        lambda: {"transport": "https", "api_url": "https://candidate.test"},
+        lambda: connection,
     )
     probe.require_target()
+    assert connection["api_url"] == api_url
