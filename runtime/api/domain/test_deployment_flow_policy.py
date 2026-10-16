@@ -102,7 +102,7 @@ def test_preview_qa_requires_a_preview_producing_execution_stage() -> None:
 
 def test_qa_runner_requires_a_stage_kind() -> None:
     with pytest.raises(ValueError, match="stage_kind"):
-        validate_stages(json.dumps([{"name": "qa", "step_runner": "qa"}]))
+        definition_schema_version(json.dumps([{"name": "qa", "step_runner": "qa"}]))
 
 
 def _second_preview_stage(name: str, **target: object) -> dict:

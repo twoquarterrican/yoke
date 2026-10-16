@@ -50,7 +50,8 @@ CREATE TABLE deployment_flows (
     target_environment_id INTEGER DEFAULT NULL,
     done_description TEXT DEFAULT NULL,
     status TEXT NOT NULL DEFAULT 'active', UNIQUE(project_id, name),
-    definition_schema_version INTEGER NOT NULL DEFAULT 2
+    definition_schema_version INTEGER NOT NULL DEFAULT 2,
+    takes_delivery_custody INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE deployment_runs (
     id TEXT PRIMARY KEY, project_id INTEGER NOT NULL, flow TEXT NOT NULL,
@@ -58,7 +59,14 @@ CREATE TABLE deployment_runs (
     status TEXT NOT NULL DEFAULT 'created'
       CHECK(status IN ('created','executing','succeeded','failed','cancelled')),
     current_stage TEXT, created_at TIMESTAMPTZ NOT NULL, started_at TIMESTAMPTZ,
-    completed_at TIMESTAMPTZ, created_by TEXT DEFAULT 'operator'
+    completed_at TIMESTAMPTZ, created_by TEXT DEFAULT 'operator',
+    current_stage_entered_at TIMESTAMPTZ,
+    carried_work TEXT, bound_sources TEXT, candidate_containment TEXT,
+    artifact_identity TEXT, composition_resolution TEXT,
+    composition_frozen_at TIMESTAMPTZ, requirement_snapshot TEXT,
+    driver_attachment TEXT, settling_at TIMESTAMPTZ, membership_removals TEXT,
+    superseded_by_run_id TEXT, supersedes_run_id TEXT,
+    create_idempotency_key TEXT, create_request TEXT
 );
 CREATE TABLE deployment_run_items (
     run_id TEXT NOT NULL, item_id INTEGER NOT NULL, added_at TIMESTAMPTZ NOT NULL,

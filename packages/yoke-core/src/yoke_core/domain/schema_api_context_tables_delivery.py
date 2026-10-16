@@ -91,6 +91,11 @@ DELIVERY_TABLES: dict[str, dict] = {
             ("supersedes_run_id", "TEXT"),
         ],
         "notes": (
+            "`flow` column joins to `deployment_flows.id`. There is no "
+            "`item_id` column on this table. Item-bound delivery joins "
+            "through `deployment_run_items`. Use `deployment_runs.id` in "
+            "raw run queries; do not look for a `run_id` column on the run "
+            "table (that column lives on `deployment_run_items`). "
             "Completion QA counts come from run-bound qa_requirements and their "
             "current passing evidence; live reports share that obligation source. "
             "One row per deployment-flow execution. There is no `updated_at`; "
@@ -102,12 +107,7 @@ DELIVERY_TABLES: dict[str, dict] = {
             "requesting `current_stage_entered_at` there is invalid_field. For "
             "deployed QA proof, use the registered QA requirement's run, stage "
             "and execution_candidate_revision binding, not an assumed run field. "
-            "`flow` column joins to `deployment_flows.id`. There is no "
-            "`item_id` column on this table. Item-bound delivery joins "
-            "through `deployment_run_items`. Use `deployment_runs.id` in "
-            "raw run queries; do not look for a `run_id` column on the run "
-            "table (that column lives on `deployment_run_items`). Membership "
-            "is empty while status is 'created' and is filled at the start "
+            "Membership is empty while status is 'created' and is filled at the start "
             "from the candidate; a run that stays empty is an environment "
             "release and still advances this run row. "
             "`deployment_runs.list` still projects the items whose recorded "
