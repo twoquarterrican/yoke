@@ -25,6 +25,8 @@ Apply codebase-reader naming before every first write: names/headings explain
 current function, purpose, mechanics or domain to a reader without the planning artifacts.
 No planning/work-item/AC/phase/branch provenance unless runtime-domain data.
 
+Optional UI self-check, never a merge or QA requirement: `yoke dev run -- env YOKE_ENV=render-proof python3 -m runtime.api.tools.serve_workbench_for_review` serves this lane against a disposable local universe and refuses prod and remote connections. Formal Browser QA runs post-deploy on production.
+
 ## DB discovery: stop and amend
 
 If implementation discovers schema, migration, bulk authoritative mutation
