@@ -1,8 +1,4 @@
-"""Refresh pending deployment cases and their existing frozen selection atomically.
-
-Passed acceptance stays frozen, failed attempts retain their evidence and
-explicit replacements, and every case keeps the target admitted by its run.
-"""
+"""Refresh pending deployment cases and their existing frozen selection atomically."""
 
 from __future__ import annotations
 
@@ -37,8 +33,8 @@ from yoke_core.domain.qa_plan_requirement_snapshot import (
     insert_requirement,
     refresh_requirement,
 )
-from yoke_core.domain.deployment_qa_snapshot_selection import (
-    selected_plan_owner,
+from yoke_core.domain.deployment_qa_snapshot_correction import (
+    selected_plan_owners,
     refresh_selected_cases,
 )
 from yoke_core.domain.workflow_item_binding_lock import (
@@ -229,12 +225,13 @@ def rematerialize_for_deployment_stage(
 
     for plan_id in rows_by_plan:
         require_candidate_plan(conn, _plan_row(conn, plan_id), str(deployment_run_id))
-        selected_plan_owner(
+        selected_plan_owners(
             conn,
             run_id=deployment_run_id,
             stage=deployment_stage,
             plan_id=plan_id,
             member_item_id=_selection_member_item_id or deployment_member_item_id,
+            shared_target_digest=_execution_target_digest,
         )
     created: list[int] = []
     refreshed: list[int] = []
@@ -315,6 +312,7 @@ def rematerialize_for_deployment_stage(
                 member_item_id=_selection_member_item_id or deployment_member_item_id,
                 cases=corrected_cases,
                 allow_added=True,
+                shared_target_digest=_execution_target_digest,
             )
     declare_refreshed_replacements(conn, created)
     waived = [

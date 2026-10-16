@@ -256,7 +256,7 @@ def test_snapshot_correction_refusal_and_failure_roll_back_all_rows(
     monkeypatch,
     boundary,
 ):
-    from yoke_core.domain import deployment_qa_snapshot_selection as selection
+    from yoke_core.domain import deployment_qa_snapshot_correction as selection
 
     plan, source, copy = _seed(test_db)
     if boundary in {"ambiguous_owner", "missing_owner"}:

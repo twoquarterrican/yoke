@@ -219,8 +219,8 @@ def require_reachable_admitted_copies(conn: Any, requirement_ids: list[int]) -> 
 
 
 def _correct_selected_copy(conn, source_id, copy_id, *, write):
-    from yoke_core.domain.deployment_qa_snapshot_selection import (
-        selected_plan_owner,
+    from yoke_core.domain.deployment_qa_snapshot_correction import (
+        selected_plan_owners,
         refresh_selected_cases,
     )
     from yoke_core.domain.qa_plan_case_definition import plan_cases
@@ -230,6 +230,7 @@ def _correct_selected_copy(conn, source_id, copy_id, *, write):
     row = query_one(
         conn,
         "SELECT q.plan_id,q.plan_case_key,q.deployment_run_id,q.deployment_stage,"
+        "q.execution_target_json,q.execution_target_digest,"
         "s.item_id FROM qa_requirements q JOIN qa_requirements s ON s.id=%s "
         "WHERE q.id=%s",
         (source_id, copy_id),
@@ -245,8 +246,14 @@ def _correct_selected_copy(conn, source_id, copy_id, *, write):
         plan_id=row["plan_id"],
         member_item_id=row["item_id"],
     )
+    import json
+
+    target = row["execution_target_json"]
+    target = target if isinstance(target, dict) else json.loads(str(target or "{}"))
+    if (target.get("deployment") or {}).get("shared_plan"):
+        scope["shared_target_digest"] = row["execution_target_digest"]
     if not write:
-        selected_plan_owner(conn, **scope)
+        selected_plan_owners(conn, **scope)
         return
     cases = [
         case

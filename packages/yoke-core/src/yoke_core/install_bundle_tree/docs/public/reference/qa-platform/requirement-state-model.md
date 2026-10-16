@@ -94,6 +94,9 @@ ownership refuses before writes. Other owners, unchanged siblings, passed
 acceptance, source provenance and execution targets stay frozen. A historical
 capture awaiting review remains evidence of its original definition and cannot
 prove the corrected definition.
+Shared correction may enter through any attaching member; it reaches only
+already-frozen owners of that exact plan/source/target group and creates no
+selection on a peer whose plan was not frozen yet.
 
 A successful machine capture awaiting independent review preserves intermediate
 chain state and permits its immediate inherited follower in the same execution.
