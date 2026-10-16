@@ -59,6 +59,12 @@ them again after provisional rollback. Membership and takeover still commit
 atomically, and derived selections are still derived again at composition freeze.
 Old runs continue to use their saved QA contracts.
 
+After each member removal, the read-only orphaned shared-plan check shares
+peer snapshots and attachment facts within that check. It still resolves every
+remaining member through the canonical validators. The read scope ends before
+retraction or the next deletion, so a removed member cannot keep a group alive
+through cached membership. The outer schema/source cache is a separate scope.
+
 Completion publishes exact run/member/environment/candidate attribution in the
 existing delivery-stamp facts, in the same transaction as the item's done status.
 An independently completed member stays delivered even if its siblings or run
