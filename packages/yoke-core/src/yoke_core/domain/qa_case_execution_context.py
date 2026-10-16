@@ -235,11 +235,10 @@ def get_case_execution_context(
         "workflow_transition_id": row["workflow_transition_id"],
         "project_id": int(row["project_id"]),
         "project": str(row["project"]),
-        "lane_id": None,
         "lane_branch": None,
-        "lane_path": None,
-        "lane_commit_sha": None,
     }
+    if context["runner_id"] in {"ci_run", "worktree_run"}:
+        context.update(lane_id=None, lane_path=None, lane_commit_sha=None)
     if is_machine_runner(context["runner_id"]):
         context.update(
             (key, row[key]) for key in ("starting_state", "starting_state_reason")

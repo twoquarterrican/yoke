@@ -32,10 +32,30 @@ from yoke_core.domain.qa_case_execution import (
     required_case_command,
 )
 
-#: Runner id recorded on runs this module produces.
 EXECUTOR_ID = "ci_run"
-
 DEFAULT_CI_RUN_TIMEOUT_SECONDS = qa_case_budget.DEFAULT_CI_RUN_TIMEOUT_SECONDS
+
+
+def _resolve_checkout(case: dict, checkout_path: Optional[str | Path]) -> Path:
+    if case.get("deployment_run_id"):
+        raise QaCaseExecutionError(
+            "deployment_ci_candidate_unverified: command-ci verifies an item "
+            "lane, not the candidate pinned by deployment run "
+            f"{case['deployment_run_id']!r}. No checkout, push, or verdict was "
+            "produced. Replace this post-deploy case with the command method "
+            "and run the same stage/member QA plan; without --checkout-path "
+            "that runner checks out the run's pinned candidate."
+        )
+    from yoke_core.domain.qa_case_execution import _execution_checkout
+
+    checkout = (
+        Path(checkout_path).resolve()
+        if checkout_path is not None
+        else _execution_checkout(case)
+    )
+    if not checkout.is_dir():
+        raise QaCaseExecutionError(f"CI execution checkout does not exist: {checkout}")
+    return checkout
 
 
 def execute_ci_case(
@@ -58,10 +78,9 @@ def execute_ci_case(
             checkout_path=checkout_path,
             actor=actor,
         )
-    # Refuse an incomplete case before publishing anything.
     required_case_command(case)
     workflow = qa_case_ci_lane.workflow_file(case)
-    checkout = qa_case_ci_source.resolve_checkout(case, checkout_path)
+    checkout = _resolve_checkout(case, checkout_path)
     qa_case_ci_source.require_source_agreement(
         case,
         checkout,
@@ -111,23 +130,10 @@ def execute_ci_case(
     )
     entry_run_base = lane.queue_target
     tree = verification_tree_binding.resolve_tree_identity(checkout)
-    if not checked_out_branch:
-        checked_out_branch = branch if tree else "HEAD"
-    source_ref = (
-        "HEAD"
-        if checked_out_branch == branch
-        else str(case.get("lane_commit_sha") or "").strip()
+    tree = qa_case_ci_source.source_tree(
+        case, checkout, branch, checked_out_branch, tree
     )
-    if not source_ref:
-        raise QaCaseExecutionError(
-            f"CI case for {branch!r} has no recorded commit after lane cleanup"
-        )
-    head_sha = (
-        tree.head_sha
-        if source_ref == "HEAD" and tree is not None
-        else qa_case_ci_lane.ref_sha(checkout, source_ref)
-    )
-    tree = verification_tree_binding.TreeIdentity(str(checkout), head_sha)
+    head_sha = tree.head_sha
     target = entry_run_base or qa_case_ci_entry_run.base_branch(project, checkout)
     empty = qa_case_ci_empty_diff.record_pass_if_empty(
         case,
@@ -241,8 +247,7 @@ def execute_ci_case(
                     source=ci_run_source,
                 )
             if ci_run_source == qa_case_ci_covering_run.ADOPTED:
-                # The run is already over. Nothing is polled and no CI
-                # capacity is spent: its conclusion is the verdict.
+                # Reuse the completed verdict without spending CI capacity twice.
                 known_conclusion = covering_run.conclusion
                 exit_code = 0 if known_conclusion == "success" else 1
                 poll_output = f"adopted completed run: {known_conclusion}"
