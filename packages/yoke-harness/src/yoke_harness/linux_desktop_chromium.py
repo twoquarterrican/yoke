@@ -243,7 +243,7 @@ def tabs(origin):
         time.sleep(POLL_SECONDS)
 
 
-def approve(allowed_urls, label):
+def approve(allowed_urls, label, confirmation):
     """Press the visible control only in an allowed, unchanged tab."""
     port = _port()
     match = next(
@@ -284,6 +284,22 @@ def approve(allowed_urls, label):
         )
         if url is not None and url != start:
             return {"state": "approved", "starting_url": start, "result_url": url}
+        confirmed = page.call(
+            "Runtime.evaluate",
+            returnByValue=True,
+            expression="location.href === "
+            + json.dumps(start)
+            + " && [...document.querySelectorAll('h1')].some(e => "
+            + "e.getClientRects().length && e.innerText.trim() === "
+            + json.dumps(confirmation)
+            + ")",
+        )
+        if url == start and confirmed.get("result", {}).get("value") is True:
+            return {
+                "state": "approved_in_place",
+                "starting_url": start,
+                "result_url": url,
+            }
     return {"state": "approval_navigation_missing"}
 
 
@@ -295,7 +311,7 @@ def main():
         elif command == "tabs":
             result = tabs(arguments[0])
         elif command == "approve":
-            result = approve(json.loads(arguments[0]), arguments[1])
+            result = approve(json.loads(arguments[0]), arguments[1], arguments[2])
         elif command == "quit":
             result = {"quit": quit_chromium()}
         else:

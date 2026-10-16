@@ -181,7 +181,12 @@ def test_chromium_presses_only_in_the_allowed_tabs(monkeypatch):
     )
     assert calls == [
         ("tabs", "https://example.invalid"),
-        ("approve", json.dumps([ENTRY, REDIRECT]), "Approve machine"),
+        (
+            "approve",
+            json.dumps([ENTRY, REDIRECT]),
+            "Approve machine",
+            "Machine connected",
+        ),
     ]
 
 
