@@ -85,7 +85,6 @@ _PATH_METHODS = frozenset(
         "expanduser",
         "samefile",
         "readlink",
-        "owner",
     }
 )
 _PATH_CLASSMETHODS = frozenset({"cwd", "home"})
