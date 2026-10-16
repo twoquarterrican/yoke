@@ -165,6 +165,15 @@ def bind_recorded_raw_result(
         head_sha=head_sha,
     ):
         return raw_result, ""
+    if (
+        requirement is not None
+        and requirement.get("qa_kind") == "implementation_review"
+        and requirement.get("epic_id") is not None
+        and requirement.get("task_num") is not None
+    ):
+        from yoke_core.domain.qa_task_review_candidate import bind_task_review_candidate
+
+        return bind_task_review_candidate(conn, requirement, raw_result, head_sha)
     existing = recorded_head_sha(raw_result)
     override = str(head_sha or "").strip()
     root = ""
@@ -197,7 +206,8 @@ def bind_cli_raw_result(
     try:
         row = query_one(
             conn,
-            "SELECT blocking_mode, waived_at, item_id, method_config, runner_id "
+            "SELECT blocking_mode, waived_at, item_id, epic_id, task_num, qa_kind, "
+            "method_config, runner_id "
             "FROM qa_requirements WHERE id = %s",
             (int(requirement_id),),
         )

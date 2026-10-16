@@ -218,10 +218,19 @@ def review_insert(
     body: str,
     *,
     scripts_dir: Optional[str] = None,
+    head_sha: Optional[str] = None,
 ) -> str:
     from yoke_core.domain.epic_review import review_insert as _impl
 
-    return _impl(conn, epic_id, task_num, verdict, body, scripts_dir=scripts_dir)
+    return _impl(
+        conn,
+        epic_id,
+        task_num,
+        verdict,
+        body,
+        scripts_dir=scripts_dir,
+        head_sha=head_sha,
+    )
 
 
 def progress_note_insert(
