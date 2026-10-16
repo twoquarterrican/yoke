@@ -5,28 +5,29 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from yoke_core.domain import qa_case_ci_lane
-from yoke_core.domain.qa_case_execution import QaCaseExecutionError, _execution_checkout
+from yoke_core.domain import qa_case_ci_lane, verification_tree_binding
+from yoke_core.domain.qa_case_execution import QaCaseExecutionError
 
 
-def resolve_checkout(case: dict, checkout_path: str | Path | None) -> Path:
-    if case.get("deployment_run_id"):
-        raise QaCaseExecutionError(
-            "deployment_ci_candidate_unverified: command-ci verifies an item "
-            "lane, not the candidate pinned by deployment run "
-            f"{case['deployment_run_id']!r}. No checkout, push, or verdict was "
-            "produced. Replace this post-deploy case with the command method "
-            "and run the same stage/member QA plan; without --checkout-path "
-            "that runner checks out the run's pinned candidate."
-        )
-    checkout = (
-        Path(checkout_path).resolve()
-        if checkout_path is not None
-        else _execution_checkout(case)
+def source_tree(case: dict, checkout: Path, branch: str, checked_out_branch: str, tree):
+    """Bind the commit from the selected live lane or its recorded cleanup source."""
+    if not checked_out_branch:
+        checked_out_branch = branch if tree else "HEAD"
+    source_ref = (
+        "HEAD"
+        if checked_out_branch == branch
+        else str(case.get("lane_commit_sha") or "").strip()
     )
-    if not checkout.is_dir():
-        raise QaCaseExecutionError(f"CI execution checkout does not exist: {checkout}")
-    return checkout
+    if not source_ref:
+        raise QaCaseExecutionError(
+            f"CI case for {branch!r} has no recorded commit after lane cleanup"
+        )
+    head_sha = (
+        tree.head_sha
+        if source_ref == "HEAD" and tree is not None
+        else qa_case_ci_lane.ref_sha(checkout, source_ref)
+    )
+    return verification_tree_binding.TreeIdentity(str(checkout), head_sha)
 
 
 def require_source_agreement(
