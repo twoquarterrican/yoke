@@ -30,7 +30,9 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "and engine dedupe indexes reserve only uncancelled keys. Wrong "
             "guess: session_launches has the same cancellation column. It does "
             "not; leave the requester launch dedupe predicate unchanged when "
-            "altering message intent indexes."
+            "altering message intent indexes. Session lifecycle fixtures must call "
+            "create_session_control_tables; assuming harness_sessions alone is "
+            "enough leaves session_launches absent during delivery checks."
         ),
     },
     "runtime.api.domain.test_session_native_turn_end": {
