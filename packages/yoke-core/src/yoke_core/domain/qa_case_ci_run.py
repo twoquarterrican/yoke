@@ -19,6 +19,7 @@ from yoke_core.domain import (
     qa_case_ci_never_started,
     qa_case_ci_progress,
     qa_case_ci_resume,
+    qa_case_ci_source,
     qa_case_ci_superseded_run,
     verification_tree_binding,
 )
@@ -37,28 +38,6 @@ EXECUTOR_ID = "ci_run"
 DEFAULT_CI_RUN_TIMEOUT_SECONDS = qa_case_budget.DEFAULT_CI_RUN_TIMEOUT_SECONDS
 
 
-def _resolve_checkout(case: dict, checkout_path: Optional[str | Path]) -> Path:
-    if case.get("deployment_run_id"):
-        raise QaCaseExecutionError(
-            "deployment_ci_candidate_unverified: command-ci verifies an item "
-            "lane, not the candidate pinned by deployment run "
-            f"{case['deployment_run_id']!r}. No checkout, push, or verdict was "
-            "produced. Replace this post-deploy case with the command method "
-            "and run the same stage/member QA plan; without --checkout-path "
-            "that runner checks out the run's pinned candidate."
-        )
-    from yoke_core.domain.qa_case_execution import _execution_checkout
-
-    checkout = (
-        Path(checkout_path).resolve()
-        if checkout_path is not None
-        else _execution_checkout(case)
-    )
-    if not checkout.is_dir():
-        raise QaCaseExecutionError(f"CI execution checkout does not exist: {checkout}")
-    return checkout
-
-
 def execute_ci_case(
     case: dict,
     *,
@@ -66,6 +45,8 @@ def execute_ci_case(
     checkout_path: Optional[str | Path] = None,
     allow_tree_mismatch: bool = False,
     actor: Optional[ActorContext] = None,
+    expected_branch: Optional[str] = None,
+    expected_sha: Optional[str] = None,
 ) -> dict[str, Any]:
     """Push the lane, reuse or run its CI workflow, and record the verdict."""
     if case.get("standalone_execution_id"):
@@ -80,7 +61,14 @@ def execute_ci_case(
     # Refuse an incomplete case before publishing anything.
     required_case_command(case)
     workflow = qa_case_ci_lane.workflow_file(case)
-    checkout = _resolve_checkout(case, checkout_path)
+    checkout = qa_case_ci_source.resolve_checkout(case, checkout_path)
+    qa_case_ci_source.require_source_agreement(
+        case,
+        checkout,
+        expected_branch=expected_branch,
+        expected_sha=expected_sha,
+        explicit_checkout=checkout_path is not None,
+    )
     selected_budget = qa_case_budget.resolve_command_case_budget(
         case["method_config"],
         explicit_override=timeout_seconds,
@@ -113,6 +101,13 @@ def execute_ci_case(
         requirement_id=requirement_id,
         timeout_seconds=budget,
         required_inputs=workflow_inputs,
+    )
+    qa_case_ci_source.require_source_agreement(
+        case,
+        checkout,
+        expected_branch=expected_branch,
+        expected_sha=expected_sha,
+        explicit_checkout=checkout_path is not None,
     )
     entry_run_base = lane.queue_target
     tree = verification_tree_binding.resolve_tree_identity(checkout)
@@ -169,7 +164,7 @@ def execute_ci_case(
     superseded_ci_run_id = ""
     try:
         qa_case_ci_lane.push_lane(
-            checkout, branch, project=project, target=target, source_ref=source_ref
+            checkout, branch, project=project, target=target, source_ref=head_sha
         )
         with qa_case_ci_lane.github_actions_authority():
             covering_run = lane.resumed_run
