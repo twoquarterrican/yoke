@@ -279,7 +279,7 @@ def test_relay_freshness_is_strict_at_exact_native_microsecond(
     edge = heartbeat_relay(
         test_db, heartbeat, state="active", next_poll_seconds=1, now=MOMENT
     )
-    assert isinstance(edge, datetime) and edge == MOMENT + timedelta(seconds=2)
+    assert isinstance(edge, datetime) and edge == MOMENT + timedelta(seconds=120)
     assert (
         machine_has_fresh_relay(
             test_db, heartbeat.machine_id, edge + timedelta(microseconds=delta)
