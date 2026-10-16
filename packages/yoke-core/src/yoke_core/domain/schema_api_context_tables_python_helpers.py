@@ -41,7 +41,9 @@ PYTHON_HELPERS_TABLES: dict[str, dict] = {
             "not; leave the requester launch dedupe predicate unchanged when "
             "altering message intent indexes. Session lifecycle fixtures must call "
             "create_session_control_tables; assuming harness_sessions alone is "
-            "enough leaves session_launches absent during delivery checks."
+            "enough leaves session_launches absent during delivery checks. Current "
+            "launch reads also require workspace, offered_at and episode_started_at; "
+            "isolated SQLite roster fixtures must model those columns and launch tables."
         ),
     },
     "runtime.api.domain.test_session_native_turn_end": {
