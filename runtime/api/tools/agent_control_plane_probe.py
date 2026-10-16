@@ -77,7 +77,8 @@ def call(*args: str, stdin: str | None = None) -> dict:
 
 def main() -> int:
     member = os.environ.get("DEPLOYMENT_MEMBER_REF", "").strip()
-    if not member:
+    project = os.environ.get("YOKE_PROJECT", "").strip()
+    if not member or not project:
         print(
             "agent_route_subject_missing: run this probe through the member's post-deploy Command case",
             file=sys.stderr,
@@ -85,8 +86,6 @@ def main() -> int:
         return 2
     try:
         require_target()
-        detail = call("items", "detail", "get", member, "--include", "")
-        project = detail["item"]["project"]["slug"]
         gate = call(
             "advance", "preflight", "hard-blocks", member, "--gate-point", "activation"
         )

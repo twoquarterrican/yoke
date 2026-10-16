@@ -1,6 +1,7 @@
 """The deployed probe must prove the runner's endpoint through public CLI calls."""
 
 import pytest
+from types import SimpleNamespace
 
 from runtime.api.tools import agent_control_plane_probe as probe
 
@@ -44,6 +45,7 @@ def test_wrong_target_refuses_before_public_calls(
 ):
     monkeypatch.setenv("BASE_URL", base_url)
     monkeypatch.setenv("DEPLOYMENT_MEMBER_REF", "YOK-42")
+    monkeypatch.setenv("YOKE_PROJECT", "fixture-project")
     monkeypatch.setattr(probe, "active_connection", lambda: connection)
     monkeypatch.setattr(
         probe, "call", lambda *a, **k: pytest.fail("wrong endpoint called")
@@ -72,3 +74,38 @@ def test_same_origin_accepts_organization_api_path_without_rewriting(
     )
     probe.require_target()
     assert connection["api_url"] == api_url
+
+
+def test_probe_uses_runner_project_without_reading_full_item(monkeypatch):
+    member = f"YOK-{42}"
+    project = "fixture-project"
+    monkeypatch.setenv("DEPLOYMENT_MEMBER_REF", member)
+    monkeypatch.setenv("YOKE_PROJECT", project)
+    monkeypatch.setattr(probe, "require_target", lambda: None)
+    calls = []
+
+    def call(*args, **kwargs):
+        calls.append(args)
+        if args[0] == "advance":
+            return {"blockers": []}
+        assert args[:3] == ("ouroboros", "reflection", "capture")
+        return dict.fromkeys(
+            [
+                "entries_parsed",
+                "entries_persisted",
+                "entries_persist_failed",
+                "entries_duplicate_skipped",
+            ],
+            0,
+        ) | {"errors": [], "blocks_seen": 1}
+
+    monkeypatch.setattr(probe, "call", call)
+    monkeypatch.setattr(
+        probe.subprocess,
+        "run",
+        lambda *a, **k: SimpleNamespace(
+            returncode=0, stdout="# Merge Readiness Audit", stderr=""
+        ),
+    )
+    assert probe.main() == 0
+    assert calls[1][calls[1].index("--project") + 1] == project

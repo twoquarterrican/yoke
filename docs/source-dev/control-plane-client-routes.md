@@ -74,3 +74,5 @@ The deployed probe matches the runner's HTTPS origin with the active API
 connection's origin. Organization-scoped API paths remain intact for CLI
 authorization and routing; they are not part of the server origin comparison.
 Different hosts, ports, non-HTTPS URLs and malformed origins refuse before calls.
+The probe takes project and member identity from the QA runner, avoiding a
+full item-detail read just to discover the already bound project.
