@@ -101,6 +101,17 @@ Rehearse Yoke migrations from the claimed lane through the paired authority:
 yoke --env prod-db-admin dev run -- yoke migration rehearse PREFIX-N
 ```
 
+With multiple claimed lanes, select the migration's worker:
+
+```text
+yoke --env prod-db-admin dev run --lane <registered-worker-path> -- yoke migration rehearse PREFIX-N
+```
+
+Rehearsal validates that source root as the item's active registered lane
+under the caller's matching item/task work claim, then uses that exact tree.
+`rehearsal_source_lane_invalid` names the failed binding and claim recovery.
+Without a source binding, the ordinary item-lane default still wins over cwd.
+
 The item and durable lease/audit receipts live on prod. Migration code runs only
 against the separately bound disposable validation database, whose live cluster
 and database identity must differ from the authority. Preserve each
