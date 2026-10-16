@@ -11,7 +11,7 @@ from yoke_core.domain.path_claim_task_coverage import (
     eligible_task_status_clause,
 )
 from yoke_core.domain.project_identity import render_item_ref
-from yoke_core.domain.schema_common import _column_exists, _table_exists
+from yoke_core.domain.schema_common import _table_exists
 from yoke_core.domain.workflow_effective_policies import (
     load_item_effective_workflow_policies,
 )
@@ -35,25 +35,6 @@ def _load_effective_policy(conn: Any, item_id: int):
         raise
     conn.execute(f"RELEASE SAVEPOINT {_POLICY_READ_SAVEPOINT}")
     return effective
-
-
-def workflow_policy_schema_available(conn: Any) -> bool:
-    """Whether policy-aware gates can read a complete immutable item pin."""
-    required = {
-        "items": ("workflow_id", "workflow_version_id", "workflow_posture"),
-        "workflow_versions": (
-            "id",
-            "workflow_id",
-            "version",
-            "definition_json",
-            "definition_digest",
-        ),
-    }
-    return all(
-        _table_exists(conn, table)
-        and all(_column_exists(conn, table, column) for column in columns)
-        for table, columns in required.items()
-    )
 
 
 def _required_task_budgets(
@@ -155,12 +136,6 @@ def evaluate_required_budget(
 def evaluate(conn: Any, item_id: int) -> dict[str, object]:
     """Evaluate the effective File Budget requirement for one item."""
     public_ref = render_item_ref(conn, int(item_id))
-    if not workflow_policy_schema_available(conn):
-        return {
-            "verdict": GATE_PASS,
-            "reason": "workflow pin schema unavailable; legacy gate applies",
-            "missing_tasks": [],
-        }
     try:
         effective = _load_effective_policy(conn, int(item_id))
     except Exception as exc:
@@ -192,5 +167,4 @@ __all__ = [
     "GATE_PASS",
     "evaluate",
     "evaluate_required_budget",
-    "workflow_policy_schema_available",
 ]
