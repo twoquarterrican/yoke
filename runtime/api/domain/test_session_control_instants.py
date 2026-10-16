@@ -53,7 +53,10 @@ def fleet_identity(test_db):
 
 
 @pytest.mark.parametrize("zone", ["UTC", "America/New_York", "Asia/Kolkata"])
-def test_relay_lease_edge_is_native_exact_and_half_open(test_db, fleet_identity, zone):
+@pytest.mark.parametrize("batch_seconds", [90, 120])
+def test_relay_lease_edge_is_native_exact_and_half_open(
+    test_db, fleet_identity, zone, batch_seconds
+):
     test_db.execute("SELECT set_config('TimeZone',%s,false)", (zone,))
     actor_id, project_id, machine_id = fleet_identity
     relay_id = f"machine:{machine_id}"
@@ -69,8 +72,9 @@ def test_relay_lease_edge_is_native_exact_and_half_open(test_db, fleet_identity,
     connected = heartbeat_relay(
         test_db, heartbeat, state="active", next_poll_seconds=1, now=INSTANT
     )
-    assert connected == INSTANT + timedelta(seconds=2)
-    edge = INSTANT + timedelta(seconds=90, microseconds=1)
+    minimum_horizon = INSTANT + timedelta(seconds=120)
+    assert connected == minimum_horizon
+    edge = INSTANT + timedelta(seconds=batch_seconds, microseconds=1)
     mark_relay_batch(
         test_db,
         relay_id=relay_id,
@@ -81,7 +85,7 @@ def test_relay_lease_edge_is_native_exact_and_half_open(test_db, fleet_identity,
     connected = heartbeat_relay(
         test_db, heartbeat, state="active", next_poll_seconds=1, now=INSTANT
     )
-    assert connected == edge
+    assert connected == max(minimum_horizon, edge)
     stored, kind = test_db.execute(
         "SELECT lease_expires_at,pg_typeof(lease_expires_at)::text FROM session_relays WHERE relay_id=%s",
         (relay_id,),
