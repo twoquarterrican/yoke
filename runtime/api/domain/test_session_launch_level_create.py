@@ -10,7 +10,6 @@ from yoke_contracts.timestamps import parse_instant
 
 from yoke_contracts.session_control.extra_usage import (
     EXTRA_AVAILABLE,
-    EXTRA_DISABLED,
     extra_usage,
 )
 from yoke_contracts.session_control.models import (
@@ -29,6 +28,7 @@ from yoke_core.domain.session_launch_types import LaunchRequest, SessionLaunchEr
 from runtime.api.domain.session_launch_level_test_support import (
     CLAUDE_OPUS,
     CODEX_SOL,
+    EXTRA_OFF,
     LEVEL,
     add_surface,
     level_connection,
@@ -52,8 +52,7 @@ def _no_live_workers(monkeypatch):
     pin_live_workers(monkeypatch, {})
 
 
-# Paid extra usage switched off, so an empty included pool really stops work.
-NO_EXTRA = extra_usage(EXTRA_DISABLED, meter="extra", reason="user_disabled")
+NO_EXTRA = EXTRA_OFF
 
 
 def _meters(

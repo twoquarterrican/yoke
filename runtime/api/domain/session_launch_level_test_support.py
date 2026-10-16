@@ -11,6 +11,7 @@ from yoke_core.domain.model_reference_store import (
 from yoke_contracts.session_control.native_models import models_reading, native_model
 from runtime.api.domain.session_launch_test_support import NOW
 
+from yoke_contracts.session_control.extra_usage import EXTRA_DISABLED, extra_usage
 from yoke_contracts.session_control.plan_limits import (
     ALL_MODELS_SCOPE,
     plan_limit_window,
@@ -101,6 +102,10 @@ def unreadable() -> dict[str, Any]:
 def weekly(remaining: float, *, scope: str = ALL_MODELS_SCOPE) -> dict[str, Any]:
     """A weekly window whose headroom is twice ``remaining``."""
     return window("rolling_7d", remaining, scope=scope)
+
+
+#: Paid extra usage switched off: an empty included pool really stops work.
+EXTRA_OFF = extra_usage(EXTRA_DISABLED, meter="fixture", reason="user_disabled")
 
 
 def plan_reading(
