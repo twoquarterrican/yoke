@@ -5,15 +5,47 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
 from typing import Any
 
-from yoke_core.domain.db_helpers import query_one
+from yoke_core.domain.db_helpers import connect, query_one
 
 RECOVERY = (
     "Review the current committed task candidate, then retry review-insert "
     "with its full --head-sha. If the registered task lane/head is stale, "
     "ask the control-plane operator to repair its normal post-commit snapshot."
 )
+
+
+def prepare_task_review_run(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Validate the Epic review bridge before ordinary commit-bound recording."""
+    if (
+        arguments.get("qa_kind") != "implementation_review"
+        or arguments.get("verdict") != "pass"
+    ):
+        return arguments
+    with connect(path=arguments.get("db_path")) as conn:
+        requirement = query_one(
+            conn,
+            "SELECT epic_id,task_num FROM qa_requirements WHERE id=%s",
+            (arguments["requirement_id"],),
+        )
+        if (
+            not requirement
+            or requirement["epic_id"] is None
+            or requirement["task_num"] is None
+        ):
+            return arguments
+        raw, refusal = bind_task_review_candidate(
+            conn,
+            requirement,
+            arguments.get("raw_result"),
+            arguments.get("head_sha"),
+        )
+    if refusal:
+        print("Error: " + refusal, file=sys.stderr)
+        raise SystemExit(2)
+    return {**arguments, "raw_result": raw}
 
 
 def bind_task_review_candidate(

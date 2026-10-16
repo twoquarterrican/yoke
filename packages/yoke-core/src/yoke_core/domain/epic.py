@@ -98,8 +98,10 @@ def _qa_requirement_add_silent(**kwargs) -> int:
 
 def _qa_run_add_silent(**kwargs) -> int:
     """Call the QA domain in-process without emitting its CLI stdout."""
+    from yoke_core.domain.qa_task_review_candidate import prepare_task_review_run
+
     with contextlib.redirect_stdout(io.StringIO()):
-        return cmd_run_add(**kwargs)
+        return cmd_run_add(**prepare_task_review_run(kwargs))
 
 
 # Mutations: files
