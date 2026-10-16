@@ -51,6 +51,9 @@ and name the narrower recipe or --full opt-in.
 
 After compaction, resume, watcher exit or subscription loss, verify live mode
 and existing process. Reattach its stream/subscription; rearm only if absent.
+A hook `FLEET WATCHER ALERT` block means this machine's process list shows no
+live watcher for an active seat (a `Monitor` wait also needs its live
+`yoke watch tail` subscriber); run the re-arm command it names.
 Read failed capture's named reason/recovery before retry. Successful bounded
 exit is not the end of continuous steering.
 
