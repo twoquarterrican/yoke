@@ -38,6 +38,104 @@ def require_complete_snapshot(snapshot):
             incomplete_snapshot(plan_id, "frozen method config contract is missing")
 
 
+def selected_plan_owner(conn, *, run_id, stage, plan_id, member_item_id=None):
+    """Lock and resolve one existing selection; never create another owner."""
+    run = conn.execute(
+        "SELECT requirement_snapshot FROM deployment_runs WHERE id=%s FOR UPDATE",
+        (run_id,),
+    ).fetchone()
+    if run is None:
+        incomplete_snapshot(plan_id, "deployment run is missing")
+    candidates = []
+    owners = [("deployment_runs", "id=%s", (run_id,), "selections", run)]
+    if member_item_id is not None:
+        member = conn.execute(
+            "SELECT requirement_snapshot FROM deployment_run_items "
+            "WHERE run_id=%s AND item_id=%s FOR UPDATE",
+            (run_id, member_item_id),
+        ).fetchone()
+        if member is not None:
+            owners.append(
+                (
+                    "deployment_run_items",
+                    "run_id=%s AND item_id=%s",
+                    (run_id, member_item_id),
+                    "plans",
+                    member,
+                )
+            )
+    for table, where, params, field, row in owners:
+        raw = row["requirement_snapshot"]
+        payload = dict(raw) if isinstance(raw, Mapping) else json.loads(str(raw))
+        for index, value in enumerate(payload.get(field, [])):
+            if (field == "selections" and value.get("stage") != stage) or int(
+                value.get("plan", {}).get("id") or 0
+            ) != int(plan_id):
+                continue
+            require_complete_snapshot(value)
+            candidates.append((table, where, params, field, payload, index))
+    if len(candidates) != 1:
+        incomplete_snapshot(plan_id, "selected plan owner is missing or ambiguous")
+    return candidates[0]
+
+
+def refresh_selected_cases(
+    conn, *, run_id, stage, plan_id, member_item_id, cases, allow_added=False
+):
+    """Correct only eligible cases, preserving owner and admission provenance."""
+    from yoke_core.domain.deployment_requirement_snapshot_format import semantic_row
+
+    table, where, params, field, payload, index = selected_plan_owner(
+        conn,
+        run_id=run_id,
+        stage=stage,
+        plan_id=plan_id,
+        member_item_id=member_item_id,
+    )
+    snapshot = payload[field][index]
+    replacements = {
+        str(case["case_key"]): semantic_row(case, CASE_FIELDS) for case in cases
+    }
+    from yoke_core.domain.qa_plan_management import _plan_row
+
+    current_plan = semantic_row(dict(_plan_row(conn, plan_id)), PLAN_FIELDS)
+    for case in replacements.values():
+        for field in ("success_policy_id", "success_policy_params"):
+            if case[field] is None and current_plan[field] != snapshot["plan"][field]:
+                case[field] = current_plan[field]
+    existing = {str(case["case_key"]) for case in snapshot["cases"]}
+    if replacements.keys() - existing and not allow_added:
+        incomplete_snapshot(plan_id, "corrected case has no admitted selection")
+    from yoke_core.domain.qa_deployment_case_correction_window import (
+        determinate_verdict,
+    )
+
+    for frozen in snapshot["cases"]:
+        key = str(frozen["case_key"])
+        if key not in replacements or replacements[key] == frozen:
+            continue
+        rows = query_rows(
+            conn,
+            "SELECT id FROM qa_requirements WHERE deployment_run_id=%s "
+            "AND deployment_stage=%s AND plan_id=%s AND plan_case_key=%s",
+            (run_id, stage, plan_id, key),
+        )
+        if any(determinate_verdict(conn, int(row["id"])) == "pass" for row in rows):
+            incomplete_snapshot(plan_id, "case already has passed acceptance")
+    snapshot["cases"] = [
+        replacements.get(str(case["case_key"]), case) for case in snapshot["cases"]
+    ]
+    if allow_added:
+        snapshot["cases"].extend(
+            case for key, case in replacements.items() if key not in existing
+        )
+    require_complete_snapshot(snapshot)
+    conn.execute(
+        f"UPDATE {table} SET requirement_snapshot=%s WHERE {where}",
+        (_canonical(payload), *params),
+    )
+
+
 def materialized_plan_ids(conn, subject):
     """Detect prior selection, without reconstructing a plan from requirements."""
     from yoke_core.domain.deployment_qa_presentation_facts import stage_requirement_rows
