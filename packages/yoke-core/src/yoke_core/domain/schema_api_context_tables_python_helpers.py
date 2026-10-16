@@ -23,6 +23,15 @@ from __future__ import annotations
 
 
 PYTHON_HELPERS_TABLES: dict[str, dict] = {
+    "yoke_core.domain.epic_task_scope": {
+        "columns": [("reopen_generated_task_scopes", "callable")],
+        "notes": (
+            "Task amendment clears epic_tasks.scope_finalized_at and "
+            "items.generated_task_membership_finalized_at. Fixtures omitting "
+            "these current columns cannot model task amendment; a missing "
+            "scope schema is not an empty membership snapshot."
+        ),
+    },
     "yoke_core.domain.session_control_schema": {
         "columns": [("create_session_control_tables", "callable")],
         "notes": (
