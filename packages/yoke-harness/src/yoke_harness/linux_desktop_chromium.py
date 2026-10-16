@@ -20,6 +20,7 @@ from urllib.parse import quote
 from urllib.request import urlopen
 
 from yoke_harness.linux_devtools_page import DevToolsPage  # host: prepended source
+from yoke_harness.machine_browser_approval import CONNECTED_CONFIRMATION
 
 CHROMIUM_EXECUTABLES = ("chromium", "chromium-browser", "/snap/bin/chromium")
 CHROMIUM_DESKTOP_ENTRIES = (
@@ -243,7 +244,7 @@ def tabs(origin):
         time.sleep(POLL_SECONDS)
 
 
-def approve(allowed_urls, label, confirmation):
+def approve(allowed_urls, label):
     """Press the visible control only in an allowed, unchanged tab."""
     port = _port()
     match = next(
@@ -284,16 +285,19 @@ def approve(allowed_urls, label, confirmation):
         )
         if url is not None and url != start:
             return {"state": "approved", "starting_url": start, "result_url": url}
-        confirmed = page.call(
-            "Runtime.evaluate",
-            returnByValue=True,
-            expression="location.href === "
-            + json.dumps(start)
-            + " && [...document.querySelectorAll('h1')].some(e => "
-            + "e.getClientRects().length && e.innerText.trim() === "
-            + json.dumps(confirmation)
-            + ")",
-        )
+        try:
+            confirmed = page.call(
+                "Runtime.evaluate",
+                returnByValue=True,
+                expression="location.href === "
+                + json.dumps(start)
+                + " && [...document.querySelectorAll('h1')].some(e => "
+                + "e.getClientRects().length && e.innerText.trim() === "
+                + json.dumps(CONNECTED_CONFIRMATION)
+                + ")",
+            )
+        except (OSError, ValueError, IndexError):
+            confirmed = {}
         if url == start and confirmed.get("result", {}).get("value") is True:
             return {
                 "state": "approved_in_place",
@@ -311,7 +315,7 @@ def main():
         elif command == "tabs":
             result = tabs(arguments[0])
         elif command == "approve":
-            result = approve(json.loads(arguments[0]), arguments[1], arguments[2])
+            result = approve(json.loads(arguments[0]), arguments[1])
         elif command == "quit":
             result = {"quit": quit_chromium()}
         else:

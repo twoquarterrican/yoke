@@ -38,15 +38,20 @@ NO_DESKTOP_RECOVERY = (
 HELPER_UNREADABLE = "linux_desktop_chromium_unreadable"
 _HOST_TIMEOUT_SECONDS = 90
 _DEVTOOLS_IMPORT = "from yoke_harness.linux_devtools_page import DevToolsPage"
+_CONFIRMATION_IMPORT = (
+    "from yoke_harness.machine_browser_approval import CONNECTED_CONFIRMATION"
+)
 
 
 def _host(control: Any, *arguments: str, desktop: bool = True) -> dict[str, Any]:
     program = "\n".join(
         [
             Path(linux_devtools_page.__file__).read_text(),
+            f"CONNECTED_CONFIRMATION = {json.dumps(CONNECTED_CONFIRMATION)}",
             Path(linux_desktop_chromium.__file__)
             .read_text()
-            .replace(_DEVTOOLS_IMPORT, ""),
+            .replace(_DEVTOOLS_IMPORT, "")
+            .replace(_CONFIRMATION_IMPORT, ""),
             "main()\n",
         ]
     )
@@ -115,7 +120,6 @@ def approve_machine_in_desktop_chromium(
                 "approve",
                 json.dumps(allowed_urls),
                 APPROVE_CONTROL_LABEL,
-                CONNECTED_CONFIRMATION,
             )
         else:
             outcome = tabs

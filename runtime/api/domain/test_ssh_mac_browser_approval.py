@@ -173,7 +173,7 @@ def test_chromium_confirms_the_heading_on_the_exact_clicked_page(
     monkeypatch.setattr(browser, "DevToolsPage", Page)
     monkeypatch.setattr(browser, "NAVIGATION_ATTEMPTS", 1)
     monkeypatch.setattr(browser.time, "sleep", lambda _seconds: None)
-    result = browser.approve([ENTRY_URL], "Approve machine", "Machine connected")
+    result = browser.approve([ENTRY_URL], "Approve machine")
     assert result["state"] == (
         "approved_in_place" if confirmed else "approval_navigation_missing"
     )
