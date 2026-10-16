@@ -310,8 +310,7 @@ def _is_free_path(
         return True
     if claude_job_tmp_root and _is_inside(target, claude_job_tmp_root):
         return True
-    # A hook passes str facts; only an in-process caller selects its own root.
-    own = not watcher_capture_root and machine_home is None
+    own = not watcher_capture_root and machine_home is None  # in-process caller
     return is_yoke_watcher_capture_path(
         target,
         scratch_root=None if own else watcher_capture_root,
