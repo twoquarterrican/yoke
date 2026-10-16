@@ -141,7 +141,7 @@ def test_relay_subset_reports_client_free_path_roots(
         "codex",
         None,
         _deadline(),
-        defer_main_commit=True,
+        collect_facts=True,
     )
 
     reported = dict(result.payload_extra)

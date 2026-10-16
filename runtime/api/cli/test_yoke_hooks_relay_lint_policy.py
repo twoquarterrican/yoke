@@ -15,28 +15,35 @@ from runtime.api.cli.test_yoke_operations_cli_hooks import (  # noqa: F401
 from yoke_contracts.hook_runner import lint_policy
 
 
-def test_hook_evaluate_https_posts_client_lint_config_snapshot(
-    monkeypatch, capsys, https_connection, local_subset,
+def test_hook_evaluate_https_postslint_config_snapshot(
+    monkeypatch,
+    capsys,
+    https_connection,
+    local_subset,
 ) -> None:
     raw_stdin = '{"tool_name": "Bash"}'
     snapshot = {"lint_db_cmd_remote_claude_cli": {"mode": "warn"}}
     monkeypatch.setattr(sys, "stdin", io.StringIO(raw_stdin))
     monkeypatch.setattr(
-        "yoke_harness.hooks.relay._client_lint_config_snapshot",
+        "yoke_harness.hooks.relay.lint_config_snapshot",
         lambda _payload: snapshot,
     )
     captured: dict = {}
 
     def fake_urlopen(request, timeout=None):
         captured["body"] = json.loads(request.data.decode("utf-8"))
-        return _FakeResponse(json.dumps({
-            "hook_schema": 1,
-            "stdout": "",
-            "exit_code": 0,
-            "wait_ms": 1,
-            "degraded": [],
-            "outcome": "completed",
-        }).encode("utf-8"))
+        return _FakeResponse(
+            json.dumps(
+                {
+                    "hook_schema": 1,
+                    "stdout": "",
+                    "exit_code": 0,
+                    "wait_ms": 1,
+                    "degraded": [],
+                    "outcome": "completed",
+                }
+            ).encode("utf-8")
+        )
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
 
