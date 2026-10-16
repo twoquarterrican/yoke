@@ -46,7 +46,7 @@ def _active_flow(conn, flow_id: str, *, environment: str | None = None) -> None:
         "yoke",
         flow_id,
         "",
-        json.dumps([{"name": "deploy", "step_runner": "auto"}]),
+        json.dumps([{"name": "deploy", "stage_kind": "execution", "step_runner": "auto"}]),
         status="active",
         target_tier="persistent" if environment else None,
         environment=environment,

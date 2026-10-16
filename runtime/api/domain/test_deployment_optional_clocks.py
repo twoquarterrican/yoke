@@ -1,4 +1,4 @@
-"""Optional empty TEXT clocks keep the same absence semantics as native NULL."""
+"""Optional clocks preserve absence and required clocks remain strict."""
 
 from types import SimpleNamespace
 from dataclasses import replace
@@ -8,9 +8,10 @@ import pytest
 from runtime.api.domain.test_deployment_composition_clock_filters import (
     DRIVER_STAMP,
     clocks as clocks,
-    history,
 )
-from runtime.api.domain.test_deployment_preboot_driver_reads import preboot as preboot
+from runtime.api.domain.test_deployment_clock_reads import (
+    native_clocks as native_clocks,
+)
 from yoke_contracts.timestamps import InvalidInstant, format_instant
 from yoke_core.domain import merge_queue_landing_marker as marker
 from yoke_core.domain import merge_queue_landing_outcome as outcome
@@ -33,16 +34,16 @@ def test_required_observation_null_refuses_before_storage(field):
         write_landing_record(object(), record)
 
 
-def test_empty_optional_queue_clocks_close_out_from_commit_evidence(
-    preboot, monkeypatch
+def test_absent_optional_queue_clocks_close_out_from_commit_evidence(
+    native_clocks, monkeypatch
 ):
     from yoke_core.domain import item_landings_close_out as closeout
     from yoke_core.domain import standalone_item_merge_evidence as evidence
 
-    preboot.execute(
-        "UPDATE items SET merged_at='', merge_queue_pr_number='42', merge_queue_enqueued_at='', merge_queue_landed_at='', merge_queue_notified_at='' WHERE id=1"
+    native_clocks.execute(
+        "UPDATE items SET merged_at=NULL, merge_queue_pr_number='42', merge_queue_enqueued_at=NULL, merge_queue_landed_at=NULL, merge_queue_notified_at=NULL WHERE id=1"
     )
-    row = marker.read_landing_marker(preboot, 1)
+    row = marker.read_landing_marker(native_clocks, 1)
     assert row == dict(
         pr_number="42", enqueued_at=None, landed_at=None, notified_at=None
     )
@@ -52,7 +53,7 @@ def test_empty_optional_queue_clocks_close_out_from_commit_evidence(
         lambda **_: SimpleNamespace(success=True, result={"fields": {"merged_at": ""}}),
     )
     assert evidence._merged_at(ITEM_REF) is None
-    queue_stamp = preboot.execute(
+    queue_stamp = native_clocks.execute(
         "SELECT merge_queue_landed_at FROM items WHERE id=1"
     ).fetchone()[0]
     monkeypatch.setattr(closeout.git, "commit_time", lambda *_: DRIVER_STAMP)
@@ -82,9 +83,8 @@ def test_empty_optional_queue_clocks_close_out_from_commit_evidence(
             merge_sha="b" * 40,
             queue_landed_at="2026-10-10 23:07:54.69593+00",
         )
-    history.apply(preboot)
     assert (
-        preboot.execute(
+        native_clocks.execute(
             "SELECT merge_queue_landed_at FROM items WHERE id=1"
         ).fetchone()[0]
         is None
@@ -121,24 +121,26 @@ def test_empty_optional_receipt_and_arming_clock_are_absent():
     assert writes[0]["enqueued_at"] == format_instant(DRIVER_STAMP)
 
 
-def test_observer_discovers_and_stamps_empty_optional_text_clocks(preboot, monkeypatch):
+def test_observer_discovers_and_stamps_absent_optional_clocks(
+    native_clocks, monkeypatch
+):
     from runtime.api.domain.merge_queue_observer_test_helpers import merged
     from yoke_core.domain import merge_queue_landing_observer as observer
 
-    preboot.execute(
+    native_clocks.execute(
         "ALTER TABLE projects ADD public_item_prefix text DEFAULT 'ITEM', ADD default_branch text DEFAULT 'main'"
     )
-    preboot.execute(
+    native_clocks.execute(
         "ALTER TABLE items ADD project_sequence integer DEFAULT 1, ADD status text DEFAULT 'implementing'"
     )
-    preboot.execute(
-        "UPDATE items SET merge_queue_pr_number='42',merge_queue_enqueued_at='',merge_queue_landed_at='',merge_queue_notified_at='' WHERE id=1"
+    native_clocks.execute(
+        "UPDATE items SET merge_queue_pr_number='42',merge_queue_enqueued_at=NULL,merge_queue_landed_at=NULL,merge_queue_notified_at=NULL WHERE id=1"
     )
     monkeypatch.setattr(observer, "push_notice", lambda *_, **__: "delivered")
     result = observer.observe_pending_landings(
-        preboot, [1], now=DRIVER_STAMP, read_state=merged
+        native_clocks, [1], now=DRIVER_STAMP, read_state=merged
     )
     assert result["checked"] == result["landed"] == result["notified"] == 1
     assert not result.get("notice_errors")
-    clocks = marker.read_landing_marker(preboot, 1)
+    clocks = marker.read_landing_marker(native_clocks, 1)
     assert clocks["landed_at"] is not None and clocks["notified_at"] == DRIVER_STAMP

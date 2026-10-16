@@ -43,10 +43,8 @@ def stamp_landing(
         f"WHERE id={marker} AND merge_queue_pr_number={marker} "
         "AND NULLIF(CAST(merge_queue_landed_at AS TEXT),'') IS NULL",
         (
-            instant_parameter(
-                conn, landed_at, table="items", column="merge_queue_landed_at"
-            ),
-            instant_parameter(conn, landed_at, table="items", column="merged_at"),
+            instant_parameter(conn, landed_at),
+            instant_parameter(conn, landed_at),
             item_id,
             pr_number,
         ),

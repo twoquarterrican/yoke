@@ -286,7 +286,7 @@ def list_deployment_runs(
         if relevance == "overview":
             append_overview_run_window(clauses, params, conn=conn)
         where = f"WHERE {' AND '.join(clauses)} " if clauses else ""
-        run_columns, env_join = _run_named_columns(conn)
+        run_columns, env_join = _run_named_columns()
         priority_order = ""
         if relevance == "overview":
             quoted = ", ".join(f"'{status}'" for status in TERMINAL_RUN_STATUSES)

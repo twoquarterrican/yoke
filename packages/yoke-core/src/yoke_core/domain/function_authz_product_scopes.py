@@ -210,8 +210,6 @@ PRODUCT_AUTHZ_BY_ID = {
     "deployment_runs.execution.ephemeral_qa_ready": AuthzSpec(
         PROJECT, PERM_PROJECT_ADMIN
     ),
-    "deployment_runs.execution.qa_seed": AuthzSpec(PROJECT, PERM_PROJECT_ADMIN),
-    "deployment_runs.execution.qa_record": AuthzSpec(PROJECT, PERM_PROJECT_ADMIN),
     "deployment_runs.execution.qa_pending": AuthzSpec(PROJECT, PERM_PROJECT_ADMIN),
     "deployment_runs.execution.stage_receipt_allocate": AuthzSpec(
         PROJECT, PERM_PROJECT_ADMIN

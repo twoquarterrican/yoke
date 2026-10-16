@@ -250,10 +250,7 @@ def handle_deployment_run_create(
             actor_id=int(actor_id) if str(actor_id or "").isdigit() else None,
             **create_kwargs,
         )
-    except (
-        idempotency.IdempotencyKeyConflict,
-        idempotency.UnconvergedReplayAmbiguous,
-    ) as exc:
+    except (idempotency.IdempotencyKeyConflict,) as exc:
         return error(exc.code, str(exc), jsonpath="$.payload.idempotency_key")
     except EnvironmentRegistryMigrationRequired as exc:
         return error(exc.code, str(exc))

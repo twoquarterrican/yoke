@@ -83,7 +83,6 @@ from yoke_core.domain.deployment_requirement_snapshots import (
     snapshot_member_requirements,
 )
 from yoke_core.domain.project_identity import render_item_ref
-from yoke_core.domain.schema_common import _column_exists
 from yoke_core.domain.workflow_delivery_binding_validation import (
     validate_deployment_run_item,
 )
@@ -190,8 +189,6 @@ def carried_enrollment_blocked(
     """Name why this run enrolls nothing, or ``''`` when it may enroll."""
     if not requires_release_admission(conn, run_id):
         return "flow_without_delivery_custody"
-    if not _column_exists(conn, "deployment_runs", "composition_resolution"):
-        return "composition_schema_unconverged"
     if not refreshing_bound_sources and has_frozen_composition(conn, run_id):
         return "composition_already_frozen"
     if not refreshing_bound_sources and inherited_frozen_membership(conn, run_id):

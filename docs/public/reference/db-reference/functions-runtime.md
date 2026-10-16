@@ -41,8 +41,6 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `deployment_runs.execution.context` | `none` |
 | `deployment_runs.execution.ephemeral_qa_ready` | `none` |
 | `deployment_runs.execution.qa_pending` | `none` |
-| `deployment_runs.execution.qa_record` | `none` |
-| `deployment_runs.execution.qa_seed` | `none` |
 | `deployment_runs.execution.release_driver` | `none` |
 | `deployment_runs.execution.stage_receipt_allocate` | `none` |
 | `deployment_runs.execution.stage_receipt_complete` | `none` |
@@ -220,8 +218,11 @@ owns apply, permanent protections and the command-output-only audit exception;
 prune stores no replay receipt and a lost pass reply has an unknown count.
 
 The board data read is the server half of explicit board rebuilding: it returns
-the recorded DB plan and the checkout project's VISION identity; the client
-renders/writes markdown with local inputs. Nothing rebuilds automatically.
+named item, task, session, activity, timeline and architecture facts plus the
+checkout project's VISION identity. The client renders/writes markdown with
+local art and VISION labels. SQL stays inside collection; changing a query
+requires no matching client query or fallback. Optional added facts do not
+change the snapshot contract. Nothing rebuilds automatically.
 Packet budget reports configured line usage/headroom per role and in aggregate;
 character counts measure usage and are not enforced limits. Agent render/check
 compose native adapters from the same canonical sources.

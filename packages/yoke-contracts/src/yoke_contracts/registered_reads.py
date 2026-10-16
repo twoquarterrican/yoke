@@ -27,7 +27,7 @@ READ_FUNCTION_IDS = frozenset(
         "done_transition.epic_task_github_issues done_transition.epic_task_list "
         "done_transition.item_context done_transition.item_field "
         "done_transition.latest_deployment_run "
-        "done_transition.registered_flow_ids done_transition.run_blocking_qa "
+        "done_transition.registered_flow_ids "
         "done_transition.run_stage done_transition.run_stage_qa_acceptance "
         "env.list.run ephemeral_env.get epic_tasks.list.run events.anomalies.run "
         "events.count.run events.emit events.performance.aggregate "

@@ -152,12 +152,7 @@ def observe_pending_landings(
                         f"WHERE id={marker} AND merge_queue_pr_number={marker} "
                         "AND NULLIF(CAST(merge_queue_enqueued_at AS TEXT),'') IS NULL",
                         (
-                            instant_parameter(
-                                conn,
-                                episode,
-                                table="items",
-                                column="merge_queue_enqueued_at",
-                            ),
+                            instant_parameter(conn, episode),
                             item_id,
                             pr_number,
                         ),
@@ -233,12 +228,7 @@ def observe_pending_landings(
                         (
                             item_id,
                             pr_number,
-                            instant_parameter(
-                                conn,
-                                episode,
-                                table="items",
-                                column="merge_queue_enqueued_at",
-                            ),
+                            instant_parameter(conn, episode),
                         ),
                     )
                 result["ejected"] += 1
@@ -286,12 +276,7 @@ def observe_pending_landings(
                     f"WHERE id={marker} AND merge_queue_pr_number={marker} "
                     "AND NULLIF(CAST(merge_queue_notified_at AS TEXT),'') IS NULL",
                     (
-                        instant_parameter(
-                            conn,
-                            current,
-                            table="items",
-                            column="merge_queue_notified_at",
-                        ),
+                        instant_parameter(conn, current),
                         item_id,
                         pr_number,
                     ),

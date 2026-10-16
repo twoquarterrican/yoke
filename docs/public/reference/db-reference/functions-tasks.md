@@ -32,7 +32,6 @@ Read [envelope and authority](functions.md) first. `none` means no dispatcher wo
 | `workflow_item.epic_task.scope_finalize` | `epic` |
 | `workflow_item.epic_task.scope_no_files` | `epic` |
 | `workflow_item.epic_task.scope_reopen` | `epic` |
-| `workflow_item.epic_task.scope_repair_legacy` | `epic` |
 | `workflow_item.epic_task.simulation_get` | `none` |
 | `workflow_item.epic_task.simulation_upsert` | `epic` |
 | `workflow_item.epic_task.split` | `epic` |

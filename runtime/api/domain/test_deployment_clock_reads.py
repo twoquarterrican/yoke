@@ -1,4 +1,4 @@
-"""Candidate writes and their repeated reads on the pre-boot TEXT schema."""
+"""Deployment and merge writers read back native timestamp values."""
 
 import json
 from types import SimpleNamespace
@@ -10,14 +10,13 @@ from runtime.api.domain.test_deployment_composition_clock_filters import (
     clocks as clocks,
     history,
 )
-from yoke_contracts.timestamps import InvalidInstant, format_instant, parse_instant
-from yoke_core.domain import db_helpers, deploy_qa_recorder, deployment_runs_crud_query
+from yoke_contracts.timestamps import format_instant, parse_instant
+from yoke_core.domain import deployment_runs_crud_query
 from yoke_core.domain import deployment_run_composition_freeze as composition
 from yoke_core.domain import deployment_run_driver_attachment as driver
 from yoke_core.domain import merge_queue_landing_marker as marker
 from yoke_core.domain import merge_queue_landing_record as records
 from yoke_core.domain import merge_queue_landing_refresh as refresh
-from yoke_core.domain import preboot_instant_parameters as storage
 from yoke_core.domain import deployment_runs_crud_mutate as updates
 from yoke_core.domain.qa_latest_execution import select_latest_executions
 from yoke_core.domain.qa_run_verdict_record import _clock_columns
@@ -32,7 +31,12 @@ RUN = "run-clock-filter"
 
 
 @pytest.fixture
-def preboot(clocks, monkeypatch):
+def native_clocks(clocks, monkeypatch):
+    clocks.execute("CREATE TABLE environments (id integer PRIMARY KEY, name text)")
+    clocks.execute(
+        "ALTER TABLE deployment_runs ADD target_tier text, "
+        "ADD target_environment_id integer, ADD created_by text"
+    )
     clocks.execute(
         "ALTER TABLE items ADD merge_queue_pr_number text, ADD merge_queue_enqueued_at text, ADD merge_queue_notified_at text"
     )
@@ -80,87 +84,50 @@ def preboot(clocks, monkeypatch):
         info=clocks.info,
     )
     monkeypatch.setattr(deployment_runs_crud_query, "connect", lambda *_: proxy)
-    monkeypatch.setattr(deploy_qa_recorder, "connect", lambda *_: proxy)
     monkeypatch.setattr(updates, "connect", lambda *_: proxy)
-    storage.clear_storage_types()
+    history.apply(clocks)
+    history.invariants(clocks)
     yield clocks
-    storage.clear_storage_types()
 
 
-@pytest.mark.parametrize("field", sorted(storage.FIELDS))
-def test_declared_writer_is_canonical_on_text_and_native_after_boot(preboot, field):
-    table, column = field
-    value = db_helpers.instant_parameter(
-        preboot, DRIVER_STAMP, table=table, column=column
-    )
-    assert value == format_instant(DRIVER_STAMP)
-    assert parse_instant(value) == DRIVER_STAMP
-    history.apply(preboot)
-    history.invariants(preboot)
-    storage.clear_storage_types()  # The boot owner invalidates after convergence.
-    assert (
-        db_helpers.instant_parameter(preboot, DRIVER_STAMP, table=table, column=column)
-        == DRIVER_STAMP
-    )
-
-
-def test_catalog_is_read_once_per_database_across_connections(preboot):
-    reads = []
-
-    def execute(sql, params=()):
-        reads.append(sql)
-        return preboot.execute(sql, params)
-
-    first = SimpleNamespace(info=preboot.info, execute=execute)
-    second = SimpleNamespace(info=preboot.info, execute=execute)
-    for conn in (first, second):
-        for table, column in storage.FIELDS:
-            db_helpers.instant_parameter(conn, DRIVER_STAMP, table=table, column=column)
-    assert len(reads) == 1
-    with pytest.raises(ValueError, match="undeclared"):
-        db_helpers.instant_parameter(
-            first, DRIVER_STAMP, table="deployment_runs", column="created_at"
-        )
-    with pytest.raises(InvalidInstant):
-        db_helpers.instant_parameter(
-            first, "2026-10-10 23:07:54+00", table="items", column="merged_at"
-        )
-
-
-def test_superseded_marker_skips_old_clocks_then_same_pr_replays_strictly(preboot):
-    preboot.execute(
+def test_superseded_marker_skips_old_clocks_then_same_pr_replays_strictly(
+    native_clocks,
+):
+    native_clocks.execute(
         "UPDATE items SET merge_queue_pr_number='old', merge_queue_enqueued_at='2026-03-09 02:32:26', merge_queue_landed_at='2026-07-30 15:00:27.569899+00', merge_queue_notified_at='2026-07-30 15:00:27+00' WHERE id=1"
     )
-    with pytest.raises(InvalidInstant):
-        marker.read_landing_marker(preboot, 1)
-    assert marker.point_item_at_pull_request(preboot, 1, "new")["landed_at"] is None
-    marker.point_item_at_pull_request(preboot, 1, "new", enqueued_at=DRIVER_STAMP)
-    assert marker.read_landing_marker(preboot, 1)["enqueued_at"] == DRIVER_STAMP
     assert (
-        marker.point_item_at_pull_request(preboot, 1, "new")["enqueued_at"]
+        marker.point_item_at_pull_request(native_clocks, 1, "new")["landed_at"] is None
+    )
+    marker.point_item_at_pull_request(native_clocks, 1, "new", enqueued_at=DRIVER_STAMP)
+    assert marker.read_landing_marker(native_clocks, 1)["enqueued_at"] == DRIVER_STAMP
+    assert (
+        marker.point_item_at_pull_request(native_clocks, 1, "new")["enqueued_at"]
         == DRIVER_STAMP
     )
 
 
-def test_driver_attach_heartbeat_release_keep_canonical_json_on_text(preboot):
+def test_driver_attach_heartbeat_release_keep_canonical_json(native_clocks):
     args = dict(
         session_id="driver", pid=42, phase=driver.PHASE_EXECUTING, now=DRIVER_STAMP
     )
-    driver.attach_driver(preboot, RUN, **args)
-    repeated = driver.attach_driver(preboot, RUN, **args)
+    driver.attach_driver(native_clocks, RUN, **args)
+    repeated = driver.attach_driver(native_clocks, RUN, **args)
     assert repeated.attached_at == DRIVER_STAMP
     assert (
-        driver.live_attachment_for_run(preboot, run_id_value=RUN, now=DRIVER_STAMP)
+        driver.live_attachment_for_run(
+            native_clocks, run_id_value=RUN, now=DRIVER_STAMP
+        )
         == repeated
     )
-    raw = preboot.execute(
+    raw = native_clocks.execute(
         "SELECT driver_attachment FROM deployment_runs WHERE id=%s", (RUN,)
     ).fetchone()[0]
     assert json.loads(raw)["heartbeat_at"] == format_instant(DRIVER_STAMP)
-    assert driver.release_driver(preboot, RUN, session_id="driver", pid=42)
+    assert driver.release_driver(native_clocks, RUN, session_id="driver", pid=42)
 
 
-def test_freeze_replay_reads_its_own_canonical_text_stamp(preboot, monkeypatch):
+def test_freeze_replay_reads_its_own_stamp(native_clocks, monkeypatch):
     from yoke_core.domain import deployment_run_unheld_candidates as custody
     from yoke_core.domain import deployment_run_carried_membership_refusal as membership
     from yoke_core.domain import deployment_member_run_coverage as coverage
@@ -173,16 +140,15 @@ def test_freeze_replay_reads_its_own_canonical_text_stamp(preboot, monkeypatch):
         coverage, "unclosable_final_member_refusal", lambda *_, **__: None
     )
     monkeypatch.setattr(composition, "utc_now", lambda: DRIVER_STAMP)
-    preboot.execute(
-        "UPDATE deployment_runs SET composition_frozen_at='' WHERE id=%s", (RUN,)
+    native_clocks.execute(
+        "UPDATE deployment_runs SET composition_frozen_at=NULL WHERE id=%s", (RUN,)
     )
-    first = composition.freeze_run_composition(preboot, RUN)
-    assert first == composition.freeze_run_composition(preboot, RUN)
+    first = composition.freeze_run_composition(native_clocks, RUN)
+    assert first == composition.freeze_run_composition(native_clocks, RUN)
     assert first["frozen_at"] == format_instant(DRIVER_STAMP)
-    assert deploy_qa_recorder.cmd_seed_from_flow(RUN) == 0
 
 
-def test_queue_observation_and_refresh_read_their_own_text_clocks(preboot):
+def test_queue_observation_and_refresh_read_their_own_clocks(native_clocks):
     record = records.LandingRecord(
         item_id=1,
         project_id=1,
@@ -195,43 +161,43 @@ def test_queue_observation_and_refresh_read_their_own_text_clocks(preboot):
         observed_at=DRIVER_STAMP,
         changed_at=DRIVER_STAMP,
     )
-    records.write_landing_record(preboot, record)
-    assert records.read_landing_record(preboot, 1).observed_at == DRIVER_STAMP
+    records.write_landing_record(native_clocks, record)
+    assert records.read_landing_record(native_clocks, 1).observed_at == DRIVER_STAMP
     assert (
         refresh.record_age_seconds(
-            records.read_landing_record(preboot, 1).observed_at, now=DRIVER_STAMP
+            records.read_landing_record(native_clocks, 1).observed_at, now=DRIVER_STAMP
         )
         == 0
     )
-    assert refresh.claim_due_projects(preboot, [1], now=DRIVER_STAMP) == (1,)
-    refresh.complete_projects(preboot, [1], now=DRIVER_STAMP)
-    assert refresh.read_refresh(preboot, 1).completed_at == DRIVER_STAMP
-    preboot.execute(
-        "UPDATE merge_queue_landing_refreshes SET completed_at='' WHERE project_id=1"
+    assert refresh.claim_due_projects(native_clocks, [1], now=DRIVER_STAMP) == (1,)
+    refresh.complete_projects(native_clocks, [1], now=DRIVER_STAMP)
+    assert refresh.read_refresh(native_clocks, 1).completed_at == DRIVER_STAMP
+    native_clocks.execute(
+        "UPDATE merge_queue_landing_refreshes SET completed_at=NULL WHERE project_id=1"
     )
-    assert refresh.read_refresh(preboot, 1).completed_at is None
-    refresh.fail_projects(preboot, [1], now=DRIVER_STAMP, error="fixture")
-    assert refresh.read_refresh(preboot, 1).started_at == DRIVER_STAMP
+    assert refresh.read_refresh(native_clocks, 1).completed_at is None
+    refresh.fail_projects(native_clocks, [1], now=DRIVER_STAMP, error="fixture")
+    assert refresh.read_refresh(native_clocks, 1).started_at == DRIVER_STAMP
 
 
-def test_qa_attempt_order_uses_its_own_canonical_text_start(preboot):
+def test_qa_attempt_order_uses_its_own_start(native_clocks):
     values = _clock_columns(
-        preboot,
+        native_clocks,
         dict(
             started_at=DRIVER_STAMP, completed_at=DRIVER_STAMP, created_at=DRIVER_STAMP
         ),
     )
-    preboot.execute(
+    native_clocks.execute(
         "INSERT INTO qa_runs(id,qa_requirement_id,started_at,completed_at,created_at) VALUES (1,2,%s,%s,%s)",
         tuple(values.values()),
     )
-    row = dict(preboot.execute("SELECT * FROM qa_runs").fetchone())
+    row = dict(native_clocks.execute("SELECT * FROM qa_runs").fetchone())
     assert select_latest_executions([row])[2]["id"] == 1
     assert all(parse_instant(row[name]) == DRIVER_STAMP for name in values)
 
 
-def test_receipt_attempts_and_retry_reads_do_not_decode_text_clocks(preboot):
-    preboot.execute(
+def test_receipt_attempts_and_retry_reads_preserve_identity(native_clocks):
+    native_clocks.execute(
         "UPDATE deployment_flows SET stages=%s WHERE id='successor'",
         (
             json.dumps(
@@ -239,7 +205,7 @@ def test_receipt_attempts_and_retry_reads_do_not_decode_text_clocks(preboot):
             ),
         ),
     )
-    preboot.execute(
+    native_clocks.execute(
         "UPDATE deployment_runs SET status='executing',current_stage='deploy' WHERE id=%s",
         (RUN,),
     )
@@ -250,10 +216,13 @@ def test_receipt_attempts_and_retry_reads_do_not_decode_text_clocks(preboot):
         target_kind="persistent_environment",
         executor="fixture",
     )
-    receipt = allocate_deployment_stage_receipt(preboot, **params)
-    assert allocate_deployment_stage_receipt(preboot, **params)["id"] == receipt["id"]
+    receipt = allocate_deployment_stage_receipt(native_clocks, **params)
+    assert (
+        allocate_deployment_stage_receipt(native_clocks, **params)["id"]
+        == receipt["id"]
+    )
     completed = complete_deployment_stage_receipt(
-        preboot,
+        native_clocks,
         run_id=RUN,
         receipt_id=receipt["id"],
         correlation_id="attempt",
@@ -261,10 +230,10 @@ def test_receipt_attempts_and_retry_reads_do_not_decode_text_clocks(preboot):
         target_name="prod",
         observed_release_lineage="a" * 40,
     )
-    assert isinstance(completed["completed_at"], str)
+    assert parse_instant(completed["completed_at"]) == completed["completed_at"]
     assert (
         deployment_stage_receipt_for_qa(
-            preboot,
+            native_clocks,
             run_id=RUN,
             source_stage="deploy",
             expected_target_kind="persistent_environment",
@@ -281,25 +250,25 @@ def test_receipt_attempts_and_retry_reads_do_not_decode_text_clocks(preboot):
         assert deployment_runs_crud_query.cmd_get(RUN, field) == expected
 
 
-def test_run_updates_and_retry_projection_leave_unused_clocks_opaque(preboot):
-    preboot.execute("UPDATE deployment_runs SET carried_work='{}' WHERE id=%s", (RUN,))
+def test_run_updates_and_retry_projection_leave_unused_clocks_opaque(native_clocks):
+    native_clocks.execute(
+        "UPDATE deployment_runs SET carried_work='{}' WHERE id=%s", (RUN,)
+    )
     assert updates.cmd_update(RUN, "current_stage", "deploy") is None
-    entered = preboot.execute(
+    entered = native_clocks.execute(
         "SELECT current_stage_entered_at FROM deployment_runs WHERE id=%s", (RUN,)
     ).fetchone()[0]
-    assert isinstance(entered, str)
-    assert format_instant(parse_instant(entered)) == entered
+    assert not isinstance(entered, str)
+    assert parse_instant(entered) == entered
     assert updates.cmd_update(RUN, "current_stage", "deploy") is None
     assert (
-        preboot.execute(
+        native_clocks.execute(
             "SELECT current_stage_entered_at FROM deployment_runs WHERE id=%s", (RUN,)
         ).fetchone()[0]
         == entered
     )
-    history.apply(preboot)
-    history.invariants(preboot)
     assert updates.cmd_update(RUN, "current_stage", "qa") is None
-    native = preboot.execute(
+    native = native_clocks.execute(
         "SELECT current_stage_entered_at FROM deployment_runs WHERE id=%s", (RUN,)
     ).fetchone()[0]
     assert parse_instant(native) == native
