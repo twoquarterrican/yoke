@@ -16,7 +16,7 @@ is true on a Bash call):
 
 1. ``tail -[fF] <tempdir-prefix>/<path>`` — duplicate tail waiter.
 2. ``sleep N && (peek-verb) <tempdir-prefix>/<path>`` — sleep-then-peek
-   waiter (any peek verb in :data:`_PEEK_VERB_RE`).
+   waiter (any peek verb in :data:`PEEK_VERB_ALT`).
 3. ``while [ ! -f <tempdir-prefix>/<path> ]; do sleep N; done`` —
    sentinel polling.
 4. ``yoke watch tail <tempdir-prefix>/<path>`` (or the module

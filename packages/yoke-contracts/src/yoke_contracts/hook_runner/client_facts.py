@@ -124,21 +124,18 @@ def live_worktrees(payload: Mapping[str, Any]) -> frozenset[str] | None:
     return frozenset(p for p in lanes if isinstance(p, str))
 
 
-def main_head(payload: Mapping[str, Any]) -> tuple[str, list[tuple[str, str]]] | None:
-    """Return ``(repo, [(sha, subject), ...])`` newest first, or ``None``."""
+def main_head(payload: Mapping[str, Any]) -> list[tuple[str, str]] | None:
+    """Return the client's newest ``main`` commits as ``(sha, subject)``."""
     fact = read_client_fact(payload, MAIN_HEAD_KEY)
-    if not isinstance(fact, Mapping):
-        return None
-    repo = fact.get("repo")
-    commits = fact.get("commits")
-    if not isinstance(repo, str) or not isinstance(commits, list) or not commits:
+    commits = fact.get("commits") if isinstance(fact, Mapping) else None
+    if not isinstance(commits, list):
         return None
     pairs = [
         (c[0], c[1])
         for c in commits
         if isinstance(c, list) and len(c) == 2 and all(isinstance(v, str) for v in c)
     ]
-    return (repo, pairs) if pairs else None
+    return pairs or None
 
 
 __all__ = [

@@ -238,7 +238,7 @@ def _emit_denial(
             project=working_project_for_event(
                 conn=conn,
                 session_id=record.session_id,
-                directory=_resolve_cwd(record)[0] if conn is None else None,
+                directory=_resolve_cwd(record) if conn is None else None,
             ),
             context={
                 "bash_verb": verdict.bash_verb,

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import subprocess
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -52,10 +53,48 @@ def _operands(payload: Mapping[str, object]) -> list[str]:
         if isinstance(value, str) and value.strip():
             found.append(value)
     # The guard falls back to the command's cwd for a write with no operand.
-    found.append(cwd_from_payload(dict(payload)))
+    found.append(execution_cwd(payload))
     command = command_from_payload(dict(payload))
     found.extend(t for t in _OPERAND_RE.findall(command or "") if _path_shaped(t))
     return list(dict.fromkeys(found))[:_MAX_OPERANDS]
+
+
+_CD_OPTIONS = frozenset({"-L", "-P", "-e", "-@", "--"})
+
+
+def execution_cwd(payload: Mapping[str, object]) -> str:
+    """The directory the payload's command runs in, as the write guard sees it.
+
+    The declared call workdir, else the session cwd, then each leading plain
+    ``cd DIR`` segment, stopping at the first segment that is not one or at
+    an operand this machine cannot resolve without running the shell.
+    """
+    data = tool_input(dict(payload))
+    declared = data.get("workdir") or data.get("working_directory")
+    cwd = (
+        declared
+        if isinstance(declared, str) and declared
+        else cwd_from_payload(dict(payload))
+    )
+    cwd = os.path.realpath(os.path.expanduser(cwd))
+    try:
+        tokens = shlex.split(command_from_payload(dict(payload)) or "", posix=True)
+    except ValueError:
+        return cwd
+    segment: list[str] = []
+    for token in [*tokens, "&&"]:
+        if token not in {"&&", ";"}:
+            segment.append(token)
+            continue
+        operands = [t for t in segment[1:] if t not in _CD_OPTIONS]
+        if segment[:1] != ["cd"] or len(operands) != 1:
+            break
+        target = os.path.expanduser(operands[0])
+        if "$" in target or "`" in target or target == "-" or target.startswith("~"):
+            break
+        cwd = os.path.realpath(os.path.join(cwd, target))
+        segment = []
+    return cwd
 
 
 def _resolve(raw: str, cwd: str) -> str:
@@ -111,7 +150,7 @@ def _worktrees(repo: str) -> list[str]:
 
 def write_targets_fact(payload: Mapping[str, object]) -> dict:
     """Report resolution, ignore status and live lanes for every operand."""
-    cwd = cwd_from_payload(dict(payload))
+    cwd = execution_cwd(payload)
     resolved = {raw: _resolve(raw, cwd) for raw in _operands(payload)}
     by_repo: dict[str, list[str]] = {}
     for path in resolved.values():

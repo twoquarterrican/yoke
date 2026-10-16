@@ -57,15 +57,17 @@ def _git(cwd: str, *args: str) -> str | None:
 
 def main_head_fact(payload: Mapping[str, object]) -> dict:
     """Report the newest ``main`` commits of the checkout the session runs in."""
-    cwd = cwd_from_payload(dict(payload))
-    repo = _git(cwd, "rev-parse", "--show-toplevel")
-    log = _git(cwd, "log", "main", f"-{cf.MAIN_HEAD_HISTORY}", "--format=%H%x1f%s")
-    if not repo or log is None:
-        return {}
-    commits = [line.split("\x1f", 1) for line in log.splitlines() if "\x1f" in line]
-    if not commits:
-        return {}
-    return cf.client_fact(cf.MAIN_HEAD_KEY, {"repo": repo.strip(), "commits": commits})
+    log = _git(
+        cwd_from_payload(dict(payload)),
+        "log",
+        "main",
+        f"-{cf.MAIN_HEAD_HISTORY}",
+        "--format=%H%x1f%s",
+    )
+    commits = [
+        line.split("\x1f", 1) for line in (log or "").splitlines() if "\x1f" in line
+    ]
+    return cf.client_fact(cf.MAIN_HEAD_KEY, {"commits": commits}) if commits else {}
 
 
 def yoke_source_root() -> str:

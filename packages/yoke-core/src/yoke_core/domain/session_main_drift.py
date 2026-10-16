@@ -57,10 +57,9 @@ def check_drift(
     throttle_seconds: int = THROTTLE_SECONDS,
 ) -> Optional[DriftAdvisory]:
     """Return a drift advisory when ``main`` moved since this session last checked."""
-    head = main_head(payload)
-    if not session_id or head is None:
+    commits = main_head(payload)
+    if not session_id or commits is None:
         return None
-    _repo, commits = head
     checked_dt = utc_now() if now is None else parse_instant(now)
     conn = connect()
     p = "%s" if db_backend.connection_is_postgres(conn) else "?"

@@ -9,6 +9,7 @@ import shlex
 from typing import Any, List, Mapping, Sequence
 
 from yoke_contracts.hook_runner.client_facts import live_worktrees, write_target
+from yoke_contracts.hook_runner.session_cwd import client_machine_home
 
 from yoke_core.domain import lint_lane_main_write_derivation as derivation
 from yoke_contracts.project_contract.file_line_policy import (
@@ -25,6 +26,7 @@ from yoke_core.domain.lint_lane_main_write_messages import (
     SUPPRESSION_TOKEN,
 )
 from yoke_core.domain.lint_lane_main_write_lanes import matching_claim_for_main_target
+from yoke_core.domain.lint_session_cwd_home import expand_machine_home
 from yoke_core.domain.lint_session_cwd_path_authority import (
     repo_root_from_worktree_path,
 )
@@ -212,7 +214,9 @@ def _client_target(
     fact = write_target(payload, raw)
     if fact is not None and isinstance(fact.get("path"), str):
         return fact["path"], fact.get("ignored") is True
-    target = raw
+    target = expand_machine_home(raw, machine_home=client_machine_home(payload))
+    if target.startswith("~"):
+        return target, False  # no client home: names no path on any machine
     if not os.path.isabs(target) and fallback_cwd.strip():
         target = os.path.join(fallback_cwd, target)
     return os.path.normpath(target), False
