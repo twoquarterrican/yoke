@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from yoke_harness.ssh_mac_preserved_state import OS_MANAGED_HOME_ENTRIES
 
-from pathlib import Path
-
 from runtime.api.domain.ssh_mac_full_reset_test_support import (
     run_zsh_syntax_if_available,
 )
@@ -30,9 +28,16 @@ from yoke_harness.ssh_mac_full_reset_script import (
 
 
 def test_rendered_program_restores_a_baseline_rather_than_enumerating_residue() -> None:
-    assert STARTUP_FILE_NAMES == tuple(
-        path.relative_to("/").as_posix()
-        for path in path_doctor.supported_startup_files(Path("/"))
+    assert STARTUP_FILE_NAMES == (
+        ".zprofile",
+        ".zshenv",
+        ".zshrc",
+        ".zlogin",
+        ".bashrc",
+        ".bash_profile",
+        ".bash_login",
+        ".profile",
+        ".config/fish/config.fish",
     )
     assert FULL_DISK_ACCESS_PROBE_PATH in FULL_RESET_SCRIPT
     assert "assert_full_disk_access" in FULL_RESET_SCRIPT

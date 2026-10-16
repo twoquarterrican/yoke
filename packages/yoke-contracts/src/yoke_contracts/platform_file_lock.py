@@ -14,6 +14,9 @@ else:
 
 def acquire_exclusive(descriptor: int) -> None:
     """Wait until an exclusive cross-process lock can be acquired."""
+    if os.name != "nt":
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        return
     while True:
         try:
             acquire_exclusive_nonblocking(descriptor)

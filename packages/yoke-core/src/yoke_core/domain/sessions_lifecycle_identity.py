@@ -206,6 +206,7 @@ def refresh_active_duplicate_identity(
     executor_surface: Optional[str],
     executor_version: Optional[str],
     machine_id: Optional[str],
+    executor: str,
     native_thread_id: Optional[str] = None,
 ) -> None:
     """Upgrade mutable identity fields on an active duplicate registration.
@@ -258,6 +259,7 @@ def refresh_active_duplicate_identity(
         observed_values.append(machine_id)
     stored_native_thread_id = _stored_value(existing, "native_thread_id") or None
     resolved_native_thread_id = trusted_native_thread_id(
+        executor,
         session_id,
         stored_native_thread_id,
         native_thread_id,
@@ -276,16 +278,17 @@ def refresh_active_duplicate_identity(
 
 
 def trusted_native_thread_id(
+    executor: str,
     session_id: str,
     stored_native_thread_id: Optional[str],
     incoming_native_thread_id: Optional[str],
 ) -> Optional[str]:
-    """Accept a first native id or a self-corroborating Codex correction."""
+    """Apply Codex's anti-delegation rule without freezing other harness ids."""
     stored = str(stored_native_thread_id or "").strip() or None
     incoming = str(incoming_native_thread_id or "").strip() or None
     if incoming is None:
         return stored
-    if stored is None or incoming == session_id:
+    if executor != "codex" or stored is None or incoming == session_id:
         return incoming
     return stored
 

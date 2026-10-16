@@ -4,13 +4,13 @@ from __future__ import annotations
 
 if __package__:
     from yoke_contracts import platform_file_lock, platform_file_sync
-    from yoke_contracts import windows_private_directory
     from yoke_contracts.designed_wait import announce_designed_wait
     from yoke_contracts.machine_config.directories import create_private_directory
+    from yoke_cli.config import github_git_credential_permissions
 else:
     import _yoke_platform_file_lock as platform_file_lock
     import _yoke_platform_file_sync as platform_file_sync
-    import _yoke_windows_private_directory as windows_private_directory
+    import _yoke_github_git_credential_permissions as github_git_credential_permissions
     from _yoke_designed_wait import announce_designed_wait
     from _yoke_private_directories import create_private_directory
 
@@ -18,13 +18,13 @@ from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
-import stat
 import tempfile
 import time
 from typing import Any, Iterator, Mapping
 
 
 MAX_CREDENTIAL_DOCUMENT_BYTES = 64 * 1024
+# One refresh exchange per holder; a bounded wait reports retryable contention.
 CREDENTIAL_LOCK_WAIT_SECONDS = 20.0
 _LOCK_POLL_SECONDS = 0.05
 _LOCK_POLL_MAX_SECONDS = 0.5
@@ -44,8 +44,9 @@ def read_json_document(
     require_private_parent: bool = True,
 ) -> dict[str, Any]:
     selected = Path(path).expanduser()
-    _assert_secure_parent(
+    github_git_credential_permissions.assert_secure_parent(
         selected.parent,
+        CredentialFileError,
         require_private=require_private_parent,
     )
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
@@ -57,7 +58,9 @@ def read_json_document(
         ) from exc
     try:
         info = os.fstat(descriptor)
-        _assert_owner_only_file(info, selected)
+        github_git_credential_permissions.assert_owner_only_file(
+            info, selected, CredentialFileError
+        )
         if info.st_size > MAX_CREDENTIAL_DOCUMENT_BYTES:
             raise CredentialFileError(
                 "GitHub App credential document is too large; reconnect GitHub"
@@ -101,7 +104,9 @@ def write_json_document(path: str | Path, payload: Mapping[str, Any]) -> Path:
             "GitHub App credential document is too large; reconnect GitHub"
         )
     create_private_directory(selected.parent)
-    _assert_secure_parent(selected.parent)
+    github_git_credential_permissions.assert_secure_parent(
+        selected.parent, CredentialFileError
+    )
     descriptor, raw_tmp = tempfile.mkstemp(
         prefix=f".{selected.name}.", suffix=".tmp", dir=selected.parent
     )
@@ -188,7 +193,9 @@ def exclusive_lock(
     selected_lock_path = lock_path(selected)
     try:
         create_private_directory(selected.parent)
-        _assert_secure_parent(selected.parent)
+        github_git_credential_permissions.assert_secure_parent(
+            selected.parent, CredentialFileError
+        )
         flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
         descriptor = os.open(selected_lock_path, flags, 0o600)
     except OSError as exc:
@@ -198,7 +205,9 @@ def exclusive_lock(
     try:
         try:
             os.fchmod(descriptor, 0o600)
-            _assert_owner_only_file(os.fstat(descriptor), selected_lock_path)
+            github_git_credential_permissions.assert_owner_only_file(
+                os.fstat(descriptor), selected_lock_path, CredentialFileError
+            )
             _wait_for_exclusive_lock(
                 descriptor,
                 selected_lock_path,
@@ -283,56 +292,6 @@ def _wait_for_exclusive_lock(
             )
         sleep(min(delay, remaining))
         delay = min(delay * 2, _LOCK_POLL_MAX_SECONDS)
-
-
-def _assert_secure_parent(
-    path: Path,
-    *,
-    require_private: bool = True,
-) -> None:
-    try:
-        info = path.lstat()
-    except OSError as exc:
-        raise CredentialFileError(
-            f"GitHub App credential directory is missing: {path}"
-        ) from exc
-    if not stat.S_ISDIR(info.st_mode):
-        raise CredentialFileError(
-            f"GitHub App credential parent must be a directory: {path}"
-        )
-    if hasattr(os, "getuid") and info.st_uid != os.getuid():
-        raise CredentialFileError(
-            f"GitHub App credential directory is not owned by the current user: {path}"
-        )
-    forbidden_mode = 0o077 if require_private else 0o022
-    if os.name == "nt" and not windows_private_directory.is_private_directory(path):
-        raise CredentialFileError(
-            f"GitHub App credential directory Windows permissions are unsafe: {path}"
-        )
-    if os.name != "nt" and stat.S_IMODE(info.st_mode) & forbidden_mode:
-        raise CredentialFileError(
-            f"GitHub App credential directory permissions are unsafe: {path}; "
-            "set directory permissions to 700, then retry"
-        )
-
-
-def _assert_owner_only_file(info: os.stat_result, path: Path) -> None:
-    if not stat.S_ISREG(info.st_mode):
-        raise CredentialFileError(
-            f"GitHub App credential must be a regular file: {path}"
-        )
-    if hasattr(os, "getuid") and info.st_uid != os.getuid():
-        raise CredentialFileError(
-            f"GitHub App credential is not owned by the current user: {path}"
-        )
-    if os.name == "nt" and not windows_private_directory.is_private_file(path):
-        raise CredentialFileError(
-            f"GitHub App credential Windows permissions are unsafe: {path}"
-        )
-    if os.name != "nt" and stat.S_IMODE(info.st_mode) & 0o077:
-        raise CredentialFileError(
-            f"GitHub App credential permissions must be 0600: {path}"
-        )
 
 
 __all__ = [

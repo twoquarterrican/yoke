@@ -36,9 +36,10 @@ class PathStateContract:
     harness_clis: tuple[str, ...]
     tool_paths: tuple[str, ...]
     yoke_bin: str
+    posix_paths: bool = False
 
     def __post_init__(self) -> None:
-        path_type = PurePosixPath if self.tool_bin_dir.startswith("/") else Path
+        path_type = PurePosixPath if self.posix_paths else Path
         expected = tuple(str(path_type(self.tool_bin_dir) / tool) for tool in self.tools)
         if self.tool_paths != expected or self.yoke_bin != str(
             path_type(self.tool_bin_dir) / "yoke"
@@ -124,45 +125,29 @@ def resolve_path_state_contract(
 ) -> PathStateContract:
     environ = dict(os.environ if env is None else env)
     requested_home = environ.get("HOME") or str(Path.home())
-    posix_contract = home is None and requested_home.startswith("/") and environ.get(
-        "SHELL", ""
-    ).startswith("/")
-    home_path = home or (
-        PurePosixPath(requested_home) if posix_contract else Path(requested_home)
-    )
+    home_path = home or Path(requested_home)
     environ["HOME"] = str(home_path)
 
-    def contract_path(path: str | Path) -> str:
-        rendered = str(path)
-        return rendered.replace("\\", "/") if posix_contract else rendered
-
     shell = current_shell(environ)
-    bindir = contract_path(tool_bin_dir(environ))
+    bindir = tool_bin_dir(environ)
     ssh_startup = default_ssh_startup_file(shell, home_path)
     return PathStateContract(
-        home=contract_path(home_path),
+        home=str(home_path),
         shell=shell,
         shell_path=environ.get("SHELL") or f"/bin/{shell}",
         tool_bin_dir=bindir,
-        startup_file=contract_path(default_startup_file(shell, home_path)),
-        ssh_startup_file=(
-            contract_path(ssh_startup) if ssh_startup is not None else None
-        ),
+        startup_file=str(default_startup_file(shell, home_path)),
+        ssh_startup_file=str(ssh_startup) if ssh_startup is not None else None,
         supported_startup_files=tuple(
-            contract_path(path) for path in supported_startup_files(home_path)
+            str(path) for path in supported_startup_files(home_path)
         ),
         managed_begin=MANAGED_BEGIN,
         managed_end=MANAGED_END,
         tools=TOOLS,
         harness_clis=HARNESS_CLIS,
-        tool_paths=tuple(str(PurePosixPath(bindir) / tool) for tool in TOOLS)
-        if posix_contract
-        else tuple(str(Path(bindir) / tool) for tool in TOOLS),
-        yoke_bin=(
-            str(PurePosixPath(bindir) / "yoke")
-            if posix_contract
-            else str(Path(bindir) / "yoke")
-        ),
+        tool_paths=tuple(str(Path(bindir) / tool) for tool in TOOLS),
+        yoke_bin=str(Path(bindir) / "yoke"),
+        posix_paths=False,
     )
 
 

@@ -27,6 +27,7 @@ BUNDLE_DESIGNED_WAIT_NAME = "_yoke_designed_wait.py"
 BUNDLE_PLATFORM_FILE_LOCK_NAME = "_yoke_platform_file_lock.py"
 BUNDLE_PLATFORM_FILE_SYNC_NAME = "_yoke_platform_file_sync.py"
 BUNDLE_WINDOWS_PRIVATE_DIRECTORY_NAME = "_yoke_windows_private_directory.py"
+BUNDLE_FILE_PERMISSIONS_NAME = "_yoke_github_git_credential_permissions.py"
 BUNDLE_FILE_IO_NAME = "_yoke_github_git_credential_file.py"
 BUNDLE_DOCUMENT_NAME = "_yoke_github_git_credential_document.py"
 BUNDLE_ACCESS_CACHE_NAME = "_yoke_github_git_credential_access_cache.py"
@@ -44,6 +45,7 @@ BUNDLE_MODULE_NAMES = (
     BUNDLE_PLATFORM_FILE_LOCK_NAME,
     BUNDLE_PLATFORM_FILE_SYNC_NAME,
     BUNDLE_WINDOWS_PRIVATE_DIRECTORY_NAME,
+    BUNDLE_FILE_PERMISSIONS_NAME,
     BUNDLE_FILE_IO_NAME,
     BUNDLE_DOCUMENT_NAME,
     BUNDLE_ACCESS_CACHE_NAME,
