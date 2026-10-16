@@ -29,7 +29,7 @@ def test_windows_owner_private_file_uses_dacl_validator(
     path = tmp_path / "config.json"
     path.write_text("{}", encoding="utf-8")
     checked: list[Path] = []
-    monkeypatch.setattr(owner_private_path.os, "name", "nt")
+    monkeypatch.setattr(owner_private_path, "_WINDOWS_PERMISSIONS", True)
     monkeypatch.setattr(
         owner_private_path.windows_private_directory,
         "is_private_file",
