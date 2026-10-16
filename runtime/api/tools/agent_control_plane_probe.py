@@ -22,7 +22,8 @@ def _https_origin(value: str) -> tuple[str, int] | None:
             or parsed.password
         ):
             return None
-        return parsed.hostname, parsed.port or 443
+        port = parsed.port
+        return parsed.hostname, 443 if port is None else port
     except ValueError:
         return None
 

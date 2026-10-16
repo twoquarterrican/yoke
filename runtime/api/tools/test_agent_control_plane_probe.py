@@ -27,6 +27,10 @@ from runtime.api.tools import agent_control_plane_probe as probe
         ),
         (
             "https://candidate.test",
+            {"transport": "https", "api_url": "https://candidate.test:0/api/orgs/team"},
+        ),
+        (
+            "https://candidate.test",
             {"transport": "https", "api_url": "https://candidate.test:invalid"},
         ),
         (
