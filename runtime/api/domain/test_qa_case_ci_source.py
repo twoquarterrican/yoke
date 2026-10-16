@@ -156,3 +156,35 @@ def test_case_entry_sends_selection_to_the_authoritative_context(source, monkeyp
         {"checkout_path": str(checkout.resolve()), "expected_branch": "schema-worker"},
         actor=None,
     )
+
+
+@pytest.mark.parametrize("recorded", [True, False])
+def test_missing_lane_never_borrows_matching_parent_branch_head(source, recorded):
+    from yoke_core.domain import qa_case_ci_source, verification_tree_binding
+
+    checkout, sha, case = source
+    case["lane_path"] = str(checkout / "missing-worker")
+    case["lane_commit_sha"] = sha if recorded else None
+    git(
+        checkout,
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.test",
+        "commit",
+        "--allow-empty",
+        "-m",
+        "parent checkout source",
+    )
+    parent_tree = verification_tree_binding.resolve_tree_identity(checkout)
+    assert parent_tree.head_sha != sha
+    if recorded:
+        tree = qa_case_ci_source.source_tree(
+            case, checkout, "schema-worker", "schema-worker", parent_tree
+        )
+        assert tree.head_sha == sha
+    else:
+        with pytest.raises(QaCaseExecutionError, match="no recorded commit"):
+            qa_case_ci_source.source_tree(
+                case, checkout, "schema-worker", "schema-worker", parent_tree
+            )

@@ -13,14 +13,21 @@ def source_tree(case: dict, checkout: Path, branch: str, checked_out_branch: str
     """Bind the commit from the selected live lane or its recorded cleanup source."""
     if not checked_out_branch:
         checked_out_branch = branch if tree else "HEAD"
+    selected_path = case.get("lane_path")
+    selected_tree = (
+        not selected_path or Path(selected_path).resolve() == checkout.resolve()
+    )
     source_ref = (
         "HEAD"
-        if checked_out_branch == branch
+        if selected_tree and checked_out_branch == branch
         else str(case.get("lane_commit_sha") or "").strip()
     )
     if not source_ref:
         raise QaCaseExecutionError(
-            f"CI case for {branch!r} has no recorded commit after lane cleanup"
+            f"qa_ci_source_commit_missing: CI case for {branch!r} has no recorded commit "
+            "after lane cleanup. Restore the selected registered lane under its "
+            "matching item/task claim and rerun the normal gate with its exact "
+            "checkout, branch and full SHA; a parent checkout HEAD is not its source."
         )
     head_sha = (
         tree.head_sha
