@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from yoke_cli.config import github_binding_auth, machine_config, writer
+from yoke_cli.config import github_binding_auth, machine_config, machine_config_file, writer
 from yoke_cli.config import github_git_credential_file as credential_file
 from yoke_cli.config import github_git_credential_helper
 from yoke_cli.config import github_git_credential_store as credential_store
@@ -87,8 +87,8 @@ def test_binding_wraps_config_lock_flock_failure(tmp_path, monkeypatch):
         raise OSError("raw flock detail")
 
     monkeypatch.setattr(
-        credential_file.platform_file_lock,
-        "acquire_exclusive_nonblocking",
+        machine_config_file.platform_file_lock,
+        "acquire_exclusive",
         fail_lock,
     )
     with pytest.raises(github_binding_auth.GitHubBindingAuthError) as caught:
